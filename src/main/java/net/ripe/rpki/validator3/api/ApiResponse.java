@@ -16,7 +16,7 @@ public class ApiResponse<T> {
         return ApiResponse.of(Optional.of(data), Collections.emptyList());
     }
 
-    public static ApiResponse<Void> of(ApiError... errors) {
+    public static <T> ApiResponse<T> of(ApiError... errors) {
         return ApiResponse.of(Optional.empty(), Arrays.asList(errors));
     }
 }
