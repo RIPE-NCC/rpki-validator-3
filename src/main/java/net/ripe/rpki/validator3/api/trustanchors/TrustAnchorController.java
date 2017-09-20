@@ -16,7 +16,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(path = "/trust-anchors", consumes = Api.API_MIME_TYPE, produces = Api.API_MIME_TYPE)
+@RequestMapping(path = "/trust-anchors", produces = Api.API_MIME_TYPE)
 @Slf4j
 public class TrustAnchorController {
     @RequestMapping(method = RequestMethod.GET)
@@ -33,10 +33,9 @@ public class TrustAnchorController {
         )));
     }
 
-    @RequestMapping(method = RequestMethod.POST)
+    @RequestMapping(method = RequestMethod.POST, consumes = Api.API_MIME_TYPE)
     public ApiResponse<AddTrustAnchorResult> add(@RequestBody ApiCommand<AddTrustAnchor> command) {
-        log.info("{}", command);
+        log.info("{} {}", command);
         return ApiResponse.<AddTrustAnchorResult>of(ApiError.of(Optional.of("not implemented")));
     }
-
 }
