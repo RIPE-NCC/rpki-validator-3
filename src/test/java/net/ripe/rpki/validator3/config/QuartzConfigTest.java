@@ -58,7 +58,7 @@ public class QuartzConfigTest {
     }
 
     @Test
-    public void quartz_job_should_start_before_transaction_completes() throws InterruptedException, SchedulerException {
+    public void quartz_job_should_not_start_before_transaction_completes() throws InterruptedException, SchedulerException {
         log.info("Starting transaction");
         transactionTemplate.execute((status) -> {
             try {
