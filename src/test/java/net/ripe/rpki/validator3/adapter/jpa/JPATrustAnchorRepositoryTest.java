@@ -11,11 +11,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.persistence.EntityManager;
+import javax.persistence.EntityNotFoundException;
 import javax.transaction.Transactional;
-
+import javax.validation.ConstraintViolationException;
+import java.util.Arrays;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -37,15 +39,35 @@ public class JPATrustAnchorRepositoryTest {
     }
 
     @Test
+    public void should_use_native_jpa_exceptions() {
+        assertThatExceptionOfType(EntityNotFoundException.class).isThrownBy(() -> subject.get(-4));
+    }
+
+    @Test
     public void should_find_trust_anchors_by_case_insensitive_name() {
-        TrustAnchor trustAnchor = new TrustAnchor();
-        trustAnchor.setName("trust anchor");
-        trustAnchor.setRsyncURI("rsync://rpki.test/trust-anchor.cer");
-        trustAnchor.setSubjectPublicKeyInfo(RIPE_NCC_TRUST_ANCHOR_SUBJECT_PUBLIC_KEY_INFO);
+        TrustAnchor trustAnchor = newTrustAnchor();
         subject.add(trustAnchor);
 
         List<TrustAnchor> byName = subject.findByName("Trust Anchor");
         assertThat(byName).isNotEmpty();
         assertThat(byName.get(0)).isEqualTo(trustAnchor);
+    }
+
+    @Test
+    public void should_validate_rsync_uri() {
+        Throwable throwable = catchThrowable(() -> {
+            TrustAnchor trustAnchor = newTrustAnchor();
+            trustAnchor.setLocations(Arrays.asList("foo"));
+            subject.add(trustAnchor);
+        });
+        assertThat(throwable).isInstanceOf(ConstraintViolationException.class);
+    }
+
+    private TrustAnchor newTrustAnchor() {
+        TrustAnchor trustAnchor = new TrustAnchor();
+        trustAnchor.setName("trust anchor");
+        trustAnchor.setLocations(Arrays.asList("rsync://rpki.test/trust-anchor.cer"));
+        trustAnchor.setSubjectPublicKeyInfo(RIPE_NCC_TRUST_ANCHOR_SUBJECT_PUBLIC_KEY_INFO);
+        return trustAnchor;
     }
 }

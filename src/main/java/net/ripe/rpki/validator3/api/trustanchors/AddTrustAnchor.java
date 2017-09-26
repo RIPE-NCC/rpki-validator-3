@@ -1,10 +1,25 @@
 package net.ripe.rpki.validator3.api.trustanchors;
 
-import lombok.Value;
+import lombok.Data;
+import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
+import net.ripe.rpki.validator3.domain.constraints.ValidPublicKeyInfo;
 
-@Value(staticConstructor = "of")
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+import java.util.List;
+
+@Data(staticConstructor = "of")
 class AddTrustAnchor {
-    String type = "add-trust-anchor";
+    String type = "trust-anchor";
+
+    @NotNull
     String name;
-    String certificate;
+
+    @NotNull
+    @Size(min = 1, max = 1)
+    List<@NotNull @ValidLocationURI String> locations;
+
+    @NotNull
+    @ValidPublicKeyInfo
+    String subjectPublicKeyInfo;
 }

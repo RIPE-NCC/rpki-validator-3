@@ -9,6 +9,7 @@ import java.util.Optional;
 
 @Value(staticConstructor = "of")
 public class ApiResponse<T> {
+
     Optional<T> data;
     List<ApiError> errors;
 
