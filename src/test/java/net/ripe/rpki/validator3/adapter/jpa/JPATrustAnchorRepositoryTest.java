@@ -8,16 +8,16 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.orm.ObjectRetrievalFailureException;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.persistence.EntityManager;
-import javax.persistence.EntityNotFoundException;
 import javax.transaction.Transactional;
-import javax.validation.ConstraintViolationException;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -39,28 +39,19 @@ public class JPATrustAnchorRepositoryTest {
     }
 
     @Test
-    public void should_use_native_jpa_exceptions() {
-        assertThatExceptionOfType(EntityNotFoundException.class).isThrownBy(() -> subject.get(-4));
+    public void should_use_spring_data_access_Exceptions() {
+        log.info("subject {}", subject.getClass());
+        assertThatExceptionOfType(ObjectRetrievalFailureException.class).isThrownBy(() -> subject.get(-4));
     }
 
     @Test
     public void should_find_trust_anchors_by_case_insensitive_name() {
         TrustAnchor trustAnchor = newTrustAnchor();
-        subject.add(trustAnchor);
+        entityManager.persist(trustAnchor);
 
         List<TrustAnchor> byName = subject.findByName("Trust Anchor");
         assertThat(byName).isNotEmpty();
         assertThat(byName.get(0)).isEqualTo(trustAnchor);
-    }
-
-    @Test
-    public void should_validate_rsync_uri() {
-        Throwable throwable = catchThrowable(() -> {
-            TrustAnchor trustAnchor = newTrustAnchor();
-            trustAnchor.setLocations(Arrays.asList("foo"));
-            subject.add(trustAnchor);
-        });
-        assertThat(throwable).isInstanceOf(ConstraintViolationException.class);
     }
 
     private TrustAnchor newTrustAnchor() {

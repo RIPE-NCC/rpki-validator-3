@@ -5,20 +5,16 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import org.springframework.validation.annotation.Validated;
+import org.springframework.stereotype.Repository;
 
 import javax.persistence.EntityManager;
-import javax.persistence.EntityNotFoundException;
 import javax.transaction.Transactional;
-import javax.validation.Valid;
 import java.util.List;
 
 import static net.ripe.rpki.validator3.domain.querydsl.QTrustAnchor.trustAnchor;
 
-@Component
+@Repository
 @Transactional(Transactional.TxType.REQUIRED)
-@Validated
 public class JPATrustAnchorRepository implements TrustAnchorRepository {
 
     private final EntityManager entityManager;
@@ -26,20 +22,15 @@ public class JPATrustAnchorRepository implements TrustAnchorRepository {
     private final JPAQueryFactory queryFactory;
 
     @Autowired
-    public JPATrustAnchorRepository(EntityManager entityManager) {
+    public JPATrustAnchorRepository(EntityManager entityManager, JPAQueryFactory queryFactory) {
         this.entityManager = entityManager;
-        this.queryFactory = new JPAQueryFactory(entityManager);
+        this.queryFactory = queryFactory;
     }
 
     @Override
-    public void add(@Valid TrustAnchor trustAnchor) {
-        entityManager.persist(trustAnchor);
-    }
-
-    @Override
-    public TrustAnchor get(long id) throws EntityNotFoundException {
+    public TrustAnchor get(long id) {
         TrustAnchor result = entityManager.getReference(TrustAnchor.class, id);
-        result.getId();
+        result.getName();
         return result;
     }
 

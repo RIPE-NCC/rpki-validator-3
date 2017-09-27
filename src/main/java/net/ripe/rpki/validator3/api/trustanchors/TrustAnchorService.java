@@ -1,11 +1,11 @@
 package net.ripe.rpki.validator3.api.trustanchors;
 
 import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.TrustAnchorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
+import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 import javax.validation.Valid;
 
@@ -13,11 +13,11 @@ import javax.validation.Valid;
 @Transactional
 @Validated
 public class TrustAnchorService {
-    private final TrustAnchorRepository trustAnchorRepository;
+    private final EntityManager entityManager;
 
     @Autowired
-    public TrustAnchorService(TrustAnchorRepository trustAnchorRepository) {
-        this.trustAnchorRepository = trustAnchorRepository;
+    public TrustAnchorService(EntityManager entityManager) {
+        this.entityManager = entityManager;
     }
 
     public long execute(@Valid AddTrustAnchor command) {
@@ -25,7 +25,7 @@ public class TrustAnchorService {
         trustAnchor.setName(command.getName());
         trustAnchor.setLocations(command.getLocations());
         trustAnchor.setSubjectPublicKeyInfo(command.getSubjectPublicKeyInfo());
-        trustAnchorRepository.add(trustAnchor);
+        entityManager.persist(trustAnchor);
         return trustAnchor.getId();
     }
 }
