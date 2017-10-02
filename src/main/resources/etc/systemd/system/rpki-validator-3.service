@@ -1,0 +1,12 @@
+[Unit]
+Description=RPKI Validator
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/rpki-validator-3 start
+ExecStop=/usr/bin/rpki-validator-3 stop
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
