@@ -1,10 +1,8 @@
-package net.ripe.rpki.validator3.adapter.quartz;
+package net.ripe.rpki.validator3.adapter.jpa;
 
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.TrustAnchorRepository;
 import net.ripe.rpki.validator3.domain.validation.ValidationService;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
@@ -17,9 +15,6 @@ public class QuartzValidationJob implements Job {
     public static final String TRUST_ANCHOR_ID_KEY = "trustAnchorId";
 
     @Autowired
-    private TrustAnchorRepository trustAnchorRepository;
-
-    @Autowired
     private ValidationService validationService;
 
     @Getter
@@ -30,7 +25,6 @@ public class QuartzValidationJob implements Job {
     public void execute(JobExecutionContext context) throws JobExecutionException {
         log.info("starting {} for trust anchor {}", getClass().getSimpleName(), trustAnchorId);
 
-        TrustAnchor trustAnchor = trustAnchorRepository.get(trustAnchorId);
-        validationService.validate(trustAnchor);
+        validationService.validate(trustAnchorId);
     }
 }

@@ -1,9 +1,8 @@
-package net.ripe.rpki.validator3.adapter.quartz;
+package net.ripe.rpki.validator3.adapter.jpa;
 
 import com.google.common.base.Preconditions;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.validation.ValidationScheduler;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -11,7 +10,7 @@ import org.springframework.stereotype.Component;
 import javax.transaction.Transactional;
 
 @Component
-public class QuartzValidationScheduler implements ValidationScheduler {
+public class QuartzValidationScheduler {
 
     private final Scheduler scheduler;
 
@@ -21,7 +20,6 @@ public class QuartzValidationScheduler implements ValidationScheduler {
     }
 
     @Transactional(Transactional.TxType.MANDATORY)
-    @Override
     public void addTrustAnchor(TrustAnchor trustAnchor) {
         Preconditions.checkArgument(
             trustAnchor.getId() >= Api.MINIMUM_VALID_ID,
