@@ -14,4 +14,8 @@ public class ApiError {
     public static ApiError of(HttpStatus status) {
         return ApiError.of(Optional.of(Integer.toString(status.value())), Optional.of(status.getReasonPhrase()), Optional.empty());
     }
+
+    public static ApiError of(HttpStatus status, String detail) {
+        return ApiError.of(Optional.of(Integer.toString(status.value())), Optional.of(status.getReasonPhrase()), Optional.of(detail));
+    }
 }

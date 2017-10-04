@@ -49,6 +49,7 @@ public class ValidationService {
         Rsync rsync = new Rsync(validationRun.getTrustAnchorCertificateURI(), trustAnchorDirectory.getAbsolutePath());
         try {
             rsync.execute();
+            log.info("Downloaded certificate {}", validationRun.getTrustAnchorCertificateURI());
         } catch (CommandExecutionException e) {
 
         }

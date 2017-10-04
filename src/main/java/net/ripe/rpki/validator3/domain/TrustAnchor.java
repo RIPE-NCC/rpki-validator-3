@@ -14,6 +14,8 @@ import java.util.List;
 @Entity
 public class TrustAnchor extends AbstractEntity {
 
+    public static final String TYPE = "trust-anchor";
+
     @Basic
     @Getter
     @Setter
