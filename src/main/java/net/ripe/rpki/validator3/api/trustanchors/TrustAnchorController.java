@@ -65,4 +65,10 @@ public class TrustAnchorController {
             )
         ));
     }
+
+    @RequestMapping(path = "/{id}", method = RequestMethod.DELETE)
+    public ResponseEntity<?> delete(@PathVariable long id) {
+        trustAnchorService.remove(id);
+        return ResponseEntity.noContent().build();
+    }
 }

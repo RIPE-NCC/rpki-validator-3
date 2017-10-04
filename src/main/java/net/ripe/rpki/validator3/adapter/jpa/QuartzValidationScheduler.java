@@ -5,6 +5,7 @@ import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Component;
 
 import javax.transaction.Transactional;
@@ -38,6 +39,17 @@ public class QuartzValidationScheduler {
                     .withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(10))
                     .build()
             );
+        } catch (SchedulerException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public void removeTrustAnchor(TrustAnchor trustAnchor) {
+        try {
+            boolean deleted = scheduler.deleteJob(getJobKey(trustAnchor));
+            if (!deleted) {
+                throw new EmptyResultDataAccessException("validation job for trust anchor not found", 1);
+            }
         } catch (SchedulerException ex) {
             throw new RuntimeException(ex);
         }
