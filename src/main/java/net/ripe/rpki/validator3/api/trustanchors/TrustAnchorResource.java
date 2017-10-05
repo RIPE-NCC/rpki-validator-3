@@ -13,9 +13,9 @@ import java.util.List;
 class TrustAnchorResource {
     @ApiModelProperty(allowableValues = TrustAnchor.TYPE, required = true, position = 1)
     String type;
-    @ApiModelProperty(required = true, allowableValues = "range[" + Api.MINIMUM_VALID_ID + ",infinity]", position = 2)
+    @ApiModelProperty(required = true, allowableValues = "range[" + Api.MINIMUM_VALID_ID + ",infinity]", example = "1", position = 2)
     long id;
-    @ApiModelProperty(required = true, position = 3)
+    @ApiModelProperty(required = true, example = "RPKI CA", position = 3)
     String name;
     @ApiModelProperty(required = true, position = 4)
     List<String> locations;

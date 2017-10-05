@@ -1,11 +1,13 @@
 package net.ripe.rpki.validator3.api;
 
+import io.swagger.annotations.ApiModel;
 import lombok.Value;
 import org.springframework.http.HttpStatus;
 
 import java.util.Optional;
 
 @Value(staticConstructor = "of")
+@ApiModel(value = "Error")
 public class ApiError {
     Optional<String> status;
     Optional<String> title;
