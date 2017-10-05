@@ -1,6 +1,7 @@
 package net.ripe.rpki.validator3.api.trustanchors;
 
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Builder;
 import lombok.Data;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
@@ -12,7 +13,8 @@ import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 import java.util.List;
 
-@Data
+@Data(staticConstructor = "of")
+@Builder
 class AddTrustAnchor {
     @NotNull
     @Pattern(regexp = "^trust-anchor$")
