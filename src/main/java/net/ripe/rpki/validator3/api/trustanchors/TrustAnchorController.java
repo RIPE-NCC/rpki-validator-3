@@ -65,11 +65,12 @@ public class TrustAnchorController {
     public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@RequestParam("file") MultipartFile trustAnchorLocator) throws IOException {
         try {
             TrustAnchorLocator locator = TrustAnchorLocator.fromMultipartFile(trustAnchorLocator);
-            AddTrustAnchor command = new AddTrustAnchor();
-            command.setType("trust-anchor");
-            command.setName(locator.getCaName());
-            command.setLocations(locator.getCertificateLocations().stream().map(URI::toASCIIString).collect(Collectors.toList()));
-            command.setSubjectPublicKeyInfo(locator.getPublicKeyInfo());
+            AddTrustAnchor command = AddTrustAnchor.builder()
+                .type(TrustAnchor.TYPE)
+                .name(locator.getCaName())
+                .locations(locator.getCertificateLocations().stream().map(URI::toASCIIString).collect(Collectors.toList()))
+                .subjectPublicKeyInfo(locator.getPublicKeyInfo())
+                .build();
             long id = trustAnchorService.execute(command);
             TrustAnchor trustAnchor = trustAnchorRepository.get(id);
             Link selfRel = linkTo(methodOn(TrustAnchorController.class).get(id)).withSelfRel();

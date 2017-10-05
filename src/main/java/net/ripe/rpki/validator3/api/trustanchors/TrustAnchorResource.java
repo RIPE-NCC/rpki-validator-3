@@ -21,7 +21,7 @@ class TrustAnchorResource {
     List<String> locations;
     @ApiModelProperty(required = true, position = 5)
     String subjectPublicKeyInfo;
-    @ApiModelProperty(required = true, position = Integer.MAX_VALUE)
+    @ApiModelProperty(required = true, position = 6)
     Links links;
 
     static TrustAnchorResource of(TrustAnchor trustAnchor, Link selfRel) {
