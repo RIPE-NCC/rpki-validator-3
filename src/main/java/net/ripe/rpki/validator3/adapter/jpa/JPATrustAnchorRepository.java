@@ -21,16 +21,31 @@ public class JPATrustAnchorRepository implements TrustAnchorRepository {
 
     private final JPAQueryFactory queryFactory;
 
+    private final QuartzValidationScheduler validationScheduler;
+
     @Autowired
-    public JPATrustAnchorRepository(EntityManager entityManager, JPAQueryFactory queryFactory) {
+    public JPATrustAnchorRepository(EntityManager entityManager, JPAQueryFactory queryFactory, QuartzValidationScheduler validationScheduler) {
         this.entityManager = entityManager;
         this.queryFactory = queryFactory;
+        this.validationScheduler = validationScheduler;
+    }
+
+    @Override
+    public void add(TrustAnchor trustAnchor) {
+        entityManager.persist(trustAnchor);
+        validationScheduler.addTrustAnchor(trustAnchor);
+    }
+
+    @Override
+    public void remove(TrustAnchor trustAnchor) {
+        validationScheduler.removeTrustAnchor(trustAnchor);
+        entityManager.remove(trustAnchor);
     }
 
     @Override
     public TrustAnchor get(long id) {
         TrustAnchor result = entityManager.getReference(TrustAnchor.class, id);
-        result.getName();
+        result.getName(); // Throws EntityNotFoundException if the id is not valid
         return result;
     }
 

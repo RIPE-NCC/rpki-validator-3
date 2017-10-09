@@ -1,5 +1,6 @@
 package net.ripe.rpki.validator3.api;
 
+import io.swagger.annotations.ApiModel;
 import lombok.Value;
 import org.springframework.hateoas.Links;
 
@@ -9,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Value(staticConstructor = "of")
+@ApiModel(value = "Response")
 public class ApiResponse<T> {
 
     Optional<Links> links;

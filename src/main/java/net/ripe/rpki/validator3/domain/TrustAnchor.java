@@ -12,12 +12,9 @@ import javax.validation.constraints.Size;
 import java.util.List;
 
 @Entity
-public class TrustAnchor {
+public class TrustAnchor extends AbstractEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
-    @Getter
-    private long id = -1;
+    public static final String TYPE = "trust-anchor";
 
     @Basic
     @Getter
