@@ -191,6 +191,97 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>rpm-maven-plugin</artifactId>
+                <version>2.1.5</version>
+                <executions>
+                    <execution>
+                        <id>generate-rpm</id>
+                        <goals>
+                            <goal>rpm</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <license>No idea yet</license>
+                    <distribution>CentOS 7</distribution>
+                    <group>Applications/System</group>
+                    <packager>RIPE NCC</packager>
+                    <changelogFile>Changelog.txt</changelogFile>
+                    <needarch>noarch</needarch>
+                    <targetOS>linux</targetOS>
+                    <mappings>
+                        <mapping>
+                            <directory>/usr/lib/</directory>
+                            <filemode>750</filemode>
+                            <username>rpki</username>
+                            <groupname>rpki</groupname>
+                            <directoryIncluded>false</directoryIncluded>
+                            <sources>
+                                <source>
+                                    <location>target/rpki-validator-${version}.jar</location>
+                                </source>
+                            </sources>
+                        </mapping>
+                        <mapping>
+                            <directory>/usr/bin/</directory>
+                            <filemode>755</filemode>
+                            <username>rpki</username>
+                            <groupname>rpki</groupname>
+                            <directoryIncluded>false</directoryIncluded>
+                            <sources>
+                                <source>
+                                    <location>src/main/resources/bin</location>
+                                    <includes>
+                                        <include>rpki-validator-3.sh</include>
+                                    </includes>
+                                </source>
+                            </sources>
+                        </mapping>
+                        <mapping>
+                            <directory>/etc/</directory>
+                            <configuration>true</configuration>
+                            <filemode>640</filemode>
+                            <username>rpki</username>
+                            <groupname>rpki</groupname>
+                            <directoryIncluded>false</directoryIncluded>
+                            <sources>
+                                <source>
+                                    <location>src/main/resources/etc/</location>
+                                    <includes>
+                                        <include>rpki-validator-3.conf</include>
+                                    </includes>
+                                </source>
+                            </sources>
+                        </mapping>
+                        <mapping>
+                            <directory>/etc/systemd/system/</directory>
+                            <configuration>true</configuration>
+                            <filemode>640</filemode>
+                            <username>rpki</username>
+                            <groupname>rpki</groupname>
+                            <directoryIncluded>false</directoryIncluded>
+                            <sources>
+                                <source>
+                                    <location>src/main/resources/etc/systemd/system/</location>
+                                    <includes>
+                                        <include>rpki-validator-3.service</include>
+                                    </includes>
+                                </source>
+                            </sources>
+                        </mapping>
+                    </mappings>
+                    <preinstallScriptlet>
+                        <script>echo "installing now"</script>
+                    </preinstallScriptlet>
+                    <autoRequires>true</autoRequires>
+                    <requires>
+                        <require>java-1.8.0-openjdk</require>
+                        <require>rsync</require>
+                    </requires>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
