@@ -28,11 +28,11 @@ public abstract class AbstractEntity {
     private Instant updatedAt;
 
     protected AbstractEntity() {
-        this.createdAt = Instant.now();
+        this.createdAt = this.updatedAt = Instant.now();
     }
 
     @PrePersist
-    private void prePersist() {
+    protected void prePersist() {
         this.updatedAt = Instant.now();
     }
 }
