@@ -67,8 +67,7 @@ public class TrustAnchorControllerTest {
             .andExpect(status().isCreated())
             .andExpect(content().contentType(Api.API_MIME_TYPE));
 
-        ApiResponse<TrustAnchorResource> response = response(result, new TypeReference<ApiResponse<TrustAnchorResource>>() {
-        });
+        ApiResponse<TrustAnchorResource> response = addTrustAnchorResponse(result);
         assertThat(response.getData()).isPresent();
 
         TrustAnchorResource resource = response.getData().get();
@@ -83,8 +82,34 @@ public class TrustAnchorControllerTest {
             .andExpect(jsonPath("$.data.name").value(TEST_CA_NAME));
     }
 
-    private <T> ApiResponse<T> response(ResultActions result, TypeReference<ApiResponse<T>> responseTypeRef) throws java.io.IOException {
-        String contentAsString = result.andReturn().getResponse().getContentAsString();
-        return objectMapper.readValue(contentAsString, responseTypeRef);
+    @Test
+    public void should_fail_on_invalid_request() throws Exception {
+        ResultActions result = mvc.perform(
+            post("/trust-anchors")
+                .accept(Api.API_MIME_TYPE)
+                .contentType(Api.API_MIME_TYPE)
+                .content(objectMapper.writeValueAsString(ApiCommand.of(AddTrustAnchor.builder()
+                    .type(TrustAnchor.TYPE)
+                    .name(TEST_CA_NAME)
+                    .locations(Arrays.asList("invalid-location"))
+                    .subjectPublicKeyInfo("public key info too short")
+                    .build()
+                )))
+        );
+
+        result
+            .andExpect(status().isBadRequest())
+            .andExpect(content().contentType(Api.API_MIME_TYPE));
+
+        ApiResponse<TrustAnchorResource> response = addTrustAnchorResponse(result);
+
+        assertThat(response.getErrors()).isNotEmpty();
     }
+
+    private ApiResponse<TrustAnchorResource> addTrustAnchorResponse(ResultActions result) throws java.io.IOException {
+        String contentAsString = result.andReturn().getResponse().getContentAsString();
+        return objectMapper.readValue(contentAsString, new TypeReference<ApiResponse<TrustAnchorResource>>() {
+        });
+    }
+
 }

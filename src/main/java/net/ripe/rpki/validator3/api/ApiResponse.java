@@ -26,6 +26,10 @@ public class ApiResponse<T> {
     }
 
     public static <T> ApiResponse<T> error(ApiError... errors) {
-        return ApiResponse.of(Optional.empty(), Optional.empty(), Arrays.asList(errors));
+        return error(Arrays.asList(errors));
+    }
+
+    public static <T> ApiResponse<T> error(List<ApiError> errors) {
+        return ApiResponse.of(Optional.empty(), Optional.empty(), errors);
     }
 }
