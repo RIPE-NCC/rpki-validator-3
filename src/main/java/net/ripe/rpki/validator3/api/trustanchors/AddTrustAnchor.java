@@ -27,7 +27,8 @@ class AddTrustAnchor {
     String name;
 
     @NotNull
-    @Size(min = 1, max = 1)
+    @NotEmpty
+    @Size(max = 1)
     @ApiModelProperty(required = true, position = 3)
     List<@NotNull @ValidLocationURI String> locations;
 
