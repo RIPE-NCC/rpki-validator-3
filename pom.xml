@@ -271,9 +271,27 @@
                                 </source>
                             </sources>
                         </mapping>
+                        <mapping>
+                            <directory>/var/lib/rpki-validator-3</directory>
+                            <configuration>true</configuration>
+                            <filemode>640</filemode>
+                            <username>rpki</username>
+                            <groupname>rpki</groupname>
+                            <sources>
+                                <source>
+                                    <location>src/main/resources/var/lib/rpki-validator-3</location>
+                                    <includes>
+                                        <include>rsync</include>
+                                    </includes>
+                                </source>
+                            </sources>
+                        </mapping>
                     </mappings>
                     <preinstallScriptlet>
-                        <script>echo "installing now"</script>
+                        <script>
+                            /usr/bin/getent group rpki  > /dev/null || /usr/sbin/groupadd -r rpki
+                            /usr/bin/getent passwd rpki > /dev/null || /usr/sbin/useradd -r -d /var/lib/rpki-validator-3 -s /sbin/nologin -g rpki rpki
+                        </script>
                     </preinstallScriptlet>
                     <autoRequires>true</autoRequires>
                     <requires>
