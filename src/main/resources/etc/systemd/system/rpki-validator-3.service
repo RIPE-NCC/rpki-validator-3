@@ -3,9 +3,8 @@ Description=RPKI Validator
 After=network.target
 
 [Service]
-Type=oneshot
-ExecStart=/usr/bin/rpki-validator-3 start
-ExecStop=/usr/bin/rpki-validator-3 stop
+ExecStart=/usr/bin/rpki-validator-3.sh start
+ExecStop=/usr/bin/rpki-validator-3.sh stop
 RemainAfterExit=yes
 
 [Install]

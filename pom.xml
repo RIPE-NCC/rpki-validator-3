@@ -221,6 +221,7 @@
                             <sources>
                                 <source>
                                     <location>target/rpki-validator-${version}.jar</location>
+                                    <destination>rpki-validator-3.jar</destination>
                                 </source>
                             </sources>
                         </mapping>
@@ -232,7 +233,7 @@
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
-                                    <location>src/main/resources/bin</location>
+                                    <location>src/main/resources/bin/linux</location>
                                     <includes>
                                         <include>rpki-validator-3.sh</include>
                                     </includes>
@@ -243,8 +244,6 @@
                             <directory>/etc/</directory>
                             <configuration>true</configuration>
                             <filemode>640</filemode>
-                            <username>rpki</username>
-                            <groupname>rpki</groupname>
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
