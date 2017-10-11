@@ -6,6 +6,8 @@ After=network.target
 ExecStart=/usr/bin/rpki-validator-3.sh start
 ExecStop=/usr/bin/rpki-validator-3.sh stop
 RemainAfterExit=yes
+User=rpki
+Group=rpki
 
 [Install]
 WantedBy=multi-user.target
