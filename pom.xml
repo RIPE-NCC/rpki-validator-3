@@ -243,7 +243,7 @@
                         <mapping>
                             <directory>/etc/</directory>
                             <configuration>true</configuration>
-                            <filemode>640</filemode>
+                            <filemode>644</filemode>
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
@@ -281,6 +281,7 @@
                                     <location>src/main/resources/var/lib/rpki-validator-3</location>
                                     <includes>
                                         <include>rsync</include>
+                                        <include>data</include>
                                     </includes>
                                 </source>
                             </sources>
