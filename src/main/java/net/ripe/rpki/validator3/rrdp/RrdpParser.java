@@ -6,6 +6,7 @@ import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.Attribute;
 import javax.xml.stream.events.Characters;
+import javax.xml.stream.events.EndElement;
 import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
 import java.io.StringReader;
@@ -26,6 +27,8 @@ public class RrdpParser {
             XMLEventReader eventReader = factory.createXMLEventReader(new StringReader(xml));
 
             String uri = null;
+            StringBuilder base64 = new StringBuilder();
+            boolean inPublishElement = false;
 
             final Base64.Decoder decoder = Base64.getDecoder();
 
@@ -40,16 +43,26 @@ public class RrdpParser {
                         if (qName.equalsIgnoreCase("publish")) {
                             Iterator<Attribute> attributes = startElement.getAttributes();
                             uri = attributes.next().getValue();
+                            inPublishElement = true;
                         }
                         break;
 
                     case XMLStreamConstants.CHARACTERS:
                         final Characters characters = event.asCharacters();
-                        if (uri != null) {
-                            final String base64 = characters.getData();
-                            final byte[] decoded = decoder.decode(base64);
+                        if (inPublishElement) {
+                            final String thisBase64 = characters.getData();
+                            base64.append(thisBase64.replaceAll("\\s", ""));
+                        }
+                        break;
+
+                    case XMLStreamConstants.END_ELEMENT:
+                        final EndElement endElement = event.asEndElement();
+                        final String qqName = endElement.getName().getLocalPart();
+
+                        if (qqName.equalsIgnoreCase("publish")) {
+                            final byte[] decoded = decoder.decode(base64.toString());
                             objects.put(uri, new RepoObject(decoded));
-                            uri = null;
+                            inPublishElement = false;
                         }
                         break;
                 }
