@@ -1,3 +1,22 @@
+CREATE TABLE rpki_object (
+    id BIGINT NOT NULL,
+    version INTEGER NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    serial_number DECIMAL(40, 0) NOT NULL,
+    sha256 BINARY(32) NOT NULL,
+    encoded BINARY,
+    CONSTRAINT rpki_object__pk PRIMARY KEY (id)
+);
+
+CREATE TABLE rpki_object_locations (
+    rpki_object_id BIGINT NOT NULL,
+    locations_order INT NOT NULL,
+    locations VARCHAR(16000) NOT NULL,
+    CONSTRAINT rpki_object_locations__pk PRIMARY KEY (rpki_object_id, locations_order),
+    CONSTRAINT rpki_object_locations__rpki_object_fk FOREIGN KEY (rpki_object_id) REFERENCES rpki_object (id) ON DELETE CASCADE
+);
+
 CREATE TABLE trust_anchor (
     id BIGINT NOT NULL,
     version INTEGER NOT NULL,
@@ -5,7 +24,9 @@ CREATE TABLE trust_anchor (
     updated_at TIMESTAMP NOT NULL,
     name VARCHAR_IGNORECASE(1000) NOT NULL,
     subject_public_key_info VARCHAR(2000) NOT NULL,
-    CONSTRAINT trust_anchor__pk PRIMARY KEY (id)
+    certificate_id BIGINT,
+    CONSTRAINT trust_anchor__pk PRIMARY KEY (id),
+    CONSTRAINT trust_anchor__rpki_object_fk FOREIGN KEY (certificate_id) REFERENCES rpki_object (id) ON DELETE RESTRICT
 );
 CREATE INDEX trust_anchor__name ON trust_anchor (name ASC);
 
@@ -24,7 +45,10 @@ CREATE TABLE validation_run (
     updated_at TIMESTAMP NOT NULL,
     trust_anchor_id BIGINT NOT NULL,
     trust_anchor_certificate_uri VARCHAR(16000) NOT NULL,
+    status VARCHAR NOT NULL,
+    failure_message VARCHAR,
     CONSTRAINT validation_run__pk PRIMARY KEY (id),
     CONSTRAINT validation_run__trust_anchor_fk FOREIGN KEY (trust_anchor_id) REFERENCES trust_anchor (id) ON DELETE RESTRICT
 );
 CREATE INDEX validation_run__trust_anchor_id_idx ON validation_run (trust_anchor_id ASC, created_at DESC);
+

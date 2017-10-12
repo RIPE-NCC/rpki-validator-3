@@ -21,7 +21,7 @@ public @interface ValidLocationURI {
     int MIN = 5;
     int MAX = 160000;
 
-    String message() default "{ValidLocationURI.message}";
+    String message() default "{net.ripe.rpki.validator3.domain.constraints.ValidLocationURI.message}";
 
     Class<?>[] groups() default {};
 

@@ -13,6 +13,12 @@ import java.util.Objects;
 @Entity
 public class ValidationRun extends AbstractEntity {
 
+    public enum Status {
+        RUNNING,
+        SUCCEEDED,
+        FAILED
+    }
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false, cascade = {CascadeType.PERSIST})
     @Getter
     private TrustAnchor trustAnchor;
@@ -23,11 +29,32 @@ public class ValidationRun extends AbstractEntity {
     @Getter
     private String trustAnchorCertificateURI;
 
-    protected ValidationRun() {
+    @Enumerated(value = EnumType.STRING)
+    @NotNull
+    @Getter
+    private Status status = Status.RUNNING;
+
+    @Basic
+    @Getter
+    private String failureMessage;
+
+    @SuppressWarnings("unused")
+    public ValidationRun() {
+        super();
     }
 
     public ValidationRun(TrustAnchor trustAnchor) {
+        this();
         this.trustAnchor = Objects.requireNonNull(trustAnchor, "trust anchor is required");
         this.trustAnchorCertificateURI = trustAnchor.getLocations().get(0);
+    }
+
+    public void succeeded() {
+        this.status = Status.SUCCEEDED;
+    }
+
+    public void failed(String failureMessage) {
+        this.status = Status.FAILED;
+        this.failureMessage = Objects.requireNonNull(failureMessage, "failure message is required");
     }
 }

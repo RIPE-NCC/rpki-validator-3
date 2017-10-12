@@ -38,4 +38,9 @@ public class TrustAnchor extends AbstractEntity {
     @NotNull
     @ValidPublicKeyInfo
     private String subjectPublicKeyInfo;
+
+    @ManyToOne(cascade = CascadeType.PERSIST)
+    @Getter
+    @Setter
+    private RpkiObject certificate;
 }

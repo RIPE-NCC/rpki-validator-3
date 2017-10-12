@@ -21,7 +21,9 @@ class TrustAnchorResource {
     List<String> locations;
     @ApiModelProperty(required = true, position = 5)
     String subjectPublicKeyInfo;
-    @ApiModelProperty(required = true, position = 6)
+    @ApiModelProperty(position = 6)
+    byte[] certificate;
+    @ApiModelProperty(required = true, position = 7)
     Links links;
 
     static TrustAnchorResource of(TrustAnchor trustAnchor, Link selfRel) {
@@ -31,6 +33,7 @@ class TrustAnchorResource {
             trustAnchor.getName(),
             trustAnchor.getLocations(),
             trustAnchor.getSubjectPublicKeyInfo(),
+            trustAnchor.getCertificate() == null ? null : trustAnchor.getCertificate().getEncoded(),
             new Links(selfRel)
         );
     }
