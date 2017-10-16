@@ -68,9 +68,9 @@ public class TrustAnchorControllerTest {
             .andExpect(content().contentType(Api.API_MIME_TYPE));
 
         ApiResponse<TrustAnchorResource> response = addTrustAnchorResponse(result);
-        assertThat(response.getData()).isPresent();
+        assertThat(response.getData()).isNotNull();
 
-        TrustAnchorResource resource = response.getData().get();
+        TrustAnchorResource resource = response.getData();
 
         Link selfRel = resource.getLinks().getLink("self");
         mvc.perform(

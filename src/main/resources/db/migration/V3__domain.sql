@@ -52,3 +52,26 @@ CREATE TABLE validation_run (
 );
 CREATE INDEX validation_run__trust_anchor_id_idx ON validation_run (trust_anchor_id ASC, created_at DESC);
 
+CREATE TABLE validation_check (
+    id BIGINT NOT NULL,
+    version INTEGER NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    validation_run_id BIGINT NOT NULL,
+    rpki_object_id BIGINT,
+    location VARCHAR(16000) NOT NULL,
+    status VARCHAR NOT NULL,
+    key VARCHAR NOT NULL,
+    CONSTRAINT validation_check__pk PRIMARY KEY (id),
+    CONSTRAINT validation_check__validation_run_fk FOREIGN KEY (validation_run_id) REFERENCES validation_run (id) ON DELETE CASCADE,
+    CONSTRAINT validation_check__rpki_object_fk FOREIGN KEY (rpki_object_id) REFERENCES rpki_object (id) ON DELETE SET NULL
+);
+CREATE INDEX validation_check__validation_run_id_idx ON validation_check (validation_run_id ASC, id ASC);
+
+CREATE TABLE validation_check_parameters (
+    validation_check_id BIGINT NOT NULL,
+    parameters_order INT NOT NULL,
+    parameters VARCHAR NOT NULL,
+    CONSTRAINT validation_check_parameters__pk PRIMARY KEY (validation_check_id, parameters_order),
+    CONSTRAINT validation_check_parameters__validation_check_fk FOREIGN KEY (validation_check_id) REFERENCES validation_check (id) ON DELETE CASCADE
+);

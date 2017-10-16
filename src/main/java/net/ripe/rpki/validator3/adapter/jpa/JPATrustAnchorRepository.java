@@ -45,7 +45,7 @@ public class JPATrustAnchorRepository implements TrustAnchorRepository {
     @Override
     public TrustAnchor get(long id) {
         TrustAnchor result = entityManager.getReference(TrustAnchor.class, id);
-        result.getName(); // Throws EntityNotFoundException if the id is not valid
+        result.getId(); // Throws EntityNotFoundException if the id is not valid
         return result;
     }
 

@@ -5,6 +5,8 @@ import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -12,6 +14,8 @@ import java.util.Objects;
  */
 @Entity
 public class ValidationRun extends AbstractEntity {
+
+    public static final String TYPE = "validation-run";
 
     public enum Status {
         RUNNING,
@@ -38,6 +42,10 @@ public class ValidationRun extends AbstractEntity {
     @Getter
     private String failureMessage;
 
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "validationRun")
+    @Getter
+    private List<ValidationCheck> validationChecks = new ArrayList<>();
+
     @SuppressWarnings("unused")
     public ValidationRun() {
         super();
@@ -56,5 +64,9 @@ public class ValidationRun extends AbstractEntity {
     public void failed(String failureMessage) {
         this.status = Status.FAILED;
         this.failureMessage = Objects.requireNonNull(failureMessage, "failure message is required");
+    }
+
+    public void addCheck(ValidationCheck validationCheck) {
+        this.validationChecks.add(validationCheck);
     }
 }

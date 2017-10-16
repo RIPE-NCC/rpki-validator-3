@@ -10,6 +10,7 @@ import net.ripe.rpki.commons.rsync.Rsync;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.*;
 import net.ripe.rpki.validator3.util.Sha256;
+import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -52,18 +53,19 @@ public class ValidationService {
 
         try {
             URI trustAnchorCertificateURI = URI.create(validationRun.getTrustAnchorCertificateURI()).normalize();
-            File targetFile = fetchTrustAnchorCertificate(trustAnchor, trustAnchorCertificateURI);
-
             ValidationResult validationResult = ValidationResult.withLocation(trustAnchorCertificateURI);
-            long trustAnchorCertificateSize = targetFile.length();
+            RpkiObject rpkiObject = null;
 
-            if (trustAnchorCertificateSize == 0L) {
+            File targetFile = fetchTrustAnchorCertificate(trustAnchor, trustAnchorCertificateURI, validationResult);
+
+            long trustAnchorCertificateSize = targetFile.length();
+            if (validationResult.hasFailures()) {
+
+            } else if (trustAnchorCertificateSize == 0L) {
                 validationResult.error("repository.object.empty");
             } else if (trustAnchorCertificateSize > RpkiObject.MAX_SIZE) {
                 validationResult.error("repository.object.too.large", String.valueOf(trustAnchorCertificateSize), String.valueOf(RpkiObject.MAX_SIZE));
             } else {
-                RpkiObject rpkiObject = null;
-
                 CertificateRepositoryObject trustAnchorCertificate = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(Files.toByteArray(targetFile), validationResult);
                 if (trustAnchorCertificate instanceof X509ResourceCertificate) {
                     byte[] sha256 = Sha256.hash(trustAnchorCertificate.getEncoded());
@@ -85,6 +87,12 @@ public class ValidationService {
                 }
             }
 
+            for (net.ripe.rpki.commons.validation.ValidationCheck check: validationResult.getFailuresForCurrentLocation()) {
+                log.info("failed check {}", check);
+                ValidationCheck validationCheck = new ValidationCheck(validationRun, rpkiObject, trustAnchorCertificateURI.toASCIIString(), check);
+                validationRun.addCheck(validationCheck);
+            }
+
             if (validationResult.hasFailures()) {
                 validationRun.failed(validationResult.toString());
             } else {
@@ -97,7 +105,7 @@ public class ValidationService {
 
     }
 
-    private File fetchTrustAnchorCertificate(TrustAnchor trustAnchor, URI trustAnchorCertificateURI) throws IOException {
+    private File fetchTrustAnchorCertificate(TrustAnchor trustAnchor, URI trustAnchorCertificateURI, ValidationResult validationResult) throws IOException {
         File trustAnchorDirectory = new File(localRsyncStorageDirectory, String.valueOf(trustAnchor.getId()));
         String trustAnchorHost = trustAnchorCertificateURI.getHost() + "/" + (trustAnchorCertificateURI.getPort() < 0 ? DEFAULT_RSYNC_PORT : trustAnchorCertificateURI.getPort());
         File targetFile = new File(
@@ -111,7 +119,10 @@ public class ValidationService {
 
         Rsync rsync = new Rsync(trustAnchorCertificateURI.toASCIIString(), targetFile.getPath());
         rsync.addOptions("--update", "--times", "--copy-links");
-        rsync.execute();
+        int exitStatus = rsync.execute();
+        if (exitStatus != 0) {
+            validationResult.error("rsync.error", String.valueOf(exitStatus), ArrayUtils.toString(rsync.getErrorLines()));
+        }
 
         log.info("Downloaded certificate {} to {}", trustAnchorCertificateURI, targetFile);
         return targetFile;

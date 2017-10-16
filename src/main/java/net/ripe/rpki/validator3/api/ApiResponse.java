@@ -1,28 +1,37 @@
 package net.ripe.rpki.validator3.api;
 
 import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.Builder;
 import lombok.Value;
 import org.springframework.hateoas.Links;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 @Value(staticConstructor = "of")
 @ApiModel(value = "Response")
+@Builder
 public class ApiResponse<T> {
 
-    Optional<Links> links;
-    Optional<T> data;
+    @ApiModelProperty(required = false, position = 1)
+    Links links;
+
+    @ApiModelProperty(required = false, position = 2)
+    T data;
+
+    @ApiModelProperty(required = false, position = 3)
+    List<Object> includes;
+
+    @ApiModelProperty(required = false, position = 4)
     List<ApiError> errors;
 
     public static <T> ApiResponse<T> data(T data) {
-        return ApiResponse.of(Optional.empty(), Optional.of(data), Collections.emptyList());
+        return ApiResponse.<T>builder().data(data).build();
     }
 
     public static <T> ApiResponse<T> data(Links links, T data) {
-        return ApiResponse.of(Optional.of(links), Optional.of(data), Collections.emptyList());
+        return ApiResponse.<T>builder().links(links).data(data).build();
     }
 
     public static <T> ApiResponse<T> error(ApiError... errors) {
@@ -30,6 +39,6 @@ public class ApiResponse<T> {
     }
 
     public static <T> ApiResponse<T> error(List<ApiError> errors) {
-        return ApiResponse.of(Optional.empty(), Optional.empty(), errors);
+        return ApiResponse.<T>builder().errors(errors).build();
     }
 }

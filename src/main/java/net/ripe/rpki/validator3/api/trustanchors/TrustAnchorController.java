@@ -5,8 +5,12 @@ import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiCommand;
 import net.ripe.rpki.validator3.api.ApiError;
 import net.ripe.rpki.validator3.api.ApiResponse;
+import net.ripe.rpki.validator3.api.validationruns.ValidationRunController;
+import net.ripe.rpki.validator3.api.validationruns.ValidationRunResource;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchorRepository;
+import net.ripe.rpki.validator3.domain.ValidationRun;
+import net.ripe.rpki.validator3.domain.ValidationRunRepository;
 import net.ripe.rpki.validator3.util.TrustAnchorExtractorException;
 import net.ripe.rpki.validator3.util.TrustAnchorLocator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +24,9 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
@@ -33,11 +39,13 @@ public class TrustAnchorController {
 
     private final TrustAnchorRepository trustAnchorRepository;
     private final TrustAnchorService trustAnchorService;
+    private final ValidationRunRepository validationRunRepository;
 
     @Autowired
-    public TrustAnchorController(TrustAnchorRepository trustAnchorRepository, TrustAnchorService trustAnchorService) {
+    public TrustAnchorController(TrustAnchorRepository trustAnchorRepository, TrustAnchorService trustAnchorService, ValidationRunRepository validationRunRepository) {
         this.trustAnchorRepository = trustAnchorRepository;
         this.trustAnchorService = trustAnchorService;
+        this.validationRunRepository = validationRunRepository;
     }
 
     @GetMapping
@@ -56,9 +64,7 @@ public class TrustAnchorController {
         long id = trustAnchorService.execute(command.getData());
         TrustAnchor trustAnchor = trustAnchorRepository.get(id);
         Link selfRel = linkTo(methodOn(TrustAnchorController.class).get(id)).withSelfRel();
-        return ResponseEntity.created(URI.create(selfRel.getHref())).body(ApiResponse.data(
-            TrustAnchorResource.of(trustAnchor, selfRel)
-        ));
+        return ResponseEntity.created(URI.create(selfRel.getHref())).body(trustAnchorResource(trustAnchor, selfRel));
     }
 
     @PostMapping(path = "/upload", consumes = "multipart/form-data")
@@ -74,9 +80,7 @@ public class TrustAnchorController {
             long id = trustAnchorService.execute(command);
             TrustAnchor trustAnchor = trustAnchorRepository.get(id);
             Link selfRel = linkTo(methodOn(TrustAnchorController.class).get(id)).withSelfRel();
-            return ResponseEntity.created(URI.create(selfRel.getHref())).body(ApiResponse.data(
-                TrustAnchorResource.of(trustAnchor, selfRel)
-            ));
+            return ResponseEntity.created(URI.create(selfRel.getHref())).body(trustAnchorResource(trustAnchor, selfRel));
         } catch (TrustAnchorExtractorException ex) {
             return ResponseEntity.badRequest().body(ApiResponse.error(ApiError.of(
                 HttpStatus.BAD_REQUEST,
@@ -88,17 +92,21 @@ public class TrustAnchorController {
     @GetMapping(path = "/{id}")
     public ResponseEntity<ApiResponse<TrustAnchorResource>> get(@PathVariable long id) {
         TrustAnchor trustAnchor = trustAnchorRepository.get(id);
-        return ResponseEntity.ok(ApiResponse.data(
-            TrustAnchorResource.of(
-                trustAnchor,
-                linkTo(methodOn(TrustAnchorController.class).get(id)).withSelfRel()
-            )
-        ));
+        return ResponseEntity.ok(trustAnchorResource(trustAnchor, linkTo(methodOn(TrustAnchorController.class).get(id)).withSelfRel()));
     }
 
     @DeleteMapping(path = "/{id}")
     public ResponseEntity<?> delete(@PathVariable long id) {
         trustAnchorService.remove(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private ApiResponse<TrustAnchorResource> trustAnchorResource(TrustAnchor trustAnchor, Link selfRel) {
+        Optional<ValidationRun> validationRun = validationRunRepository.findLatestCompletedForTrustAnchor(trustAnchor);
+        ArrayList<Object> includes = new ArrayList<>(1);
+        validationRun.ifPresent(run -> includes.add(ValidationRunResource.of(run, linkTo(methodOn(ValidationRunController.class).get(run.getId())).withSelfRel())));
+        return ApiResponse.<TrustAnchorResource>builder().data(
+            TrustAnchorResource.of(trustAnchor, selfRel)
+        ).includes(includes).build();
     }
 }
