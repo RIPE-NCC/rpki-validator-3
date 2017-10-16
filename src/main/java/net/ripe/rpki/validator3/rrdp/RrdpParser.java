@@ -16,7 +16,8 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
- * TODO We must validate XML agains RelaxNG schema and reject the invalid ones.
+ * TODO We must validate XML against RelaxNG schema and reject the invalid ones.
+ * TODO No session or serial number is taken into account for now, but it should be.
  */
 public class RrdpParser {
 

@@ -5,7 +5,9 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.springframework.stereotype.Component;
 
+@Component
 public class RrdpClient {
 
     private HttpClient httpClient;
