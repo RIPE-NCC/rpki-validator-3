@@ -55,7 +55,7 @@ public class RrdpService {
                 parser.parse(uri, content);
                 if (parser.isSuccess()) {
                     final X509ResourceCertificate certificate = parser.getCertificate();
-                    return Either.right(makeRpkiObject(uri, content, certificate.getSerialNumber()));
+                    return Either.right(makeRpkiObject(content, certificate.getSerialNumber()));
                 }
                 return Either.left(parser.getValidationResult());
             } else if (endsWith(uri, ".mft")) {
@@ -63,20 +63,20 @@ public class RrdpService {
                 parser.parse(uri, content);
                 if (parser.isSuccess()) {
                     final X509ResourceCertificate certificate = parser.getManifestCms().getCertificate();
-                    return Either.right(makeRpkiObject(uri, content, certificate.getSerialNumber()));
+                    return Either.right(makeRpkiObject(content, certificate.getSerialNumber()));
                 }
                 return Either.left(parser.getValidationResult());
             } else if (endsWith(uri, ".crl")) {
                 final X509Crl crl = new X509Crl(content);
                 // TODO @mpuzanov Use proper serial number
                 BigInteger serialNumber = crl.getNumber();
-                return Either.right(makeRpkiObject(uri, content, serialNumber));
+                return Either.right(makeRpkiObject(content, serialNumber));
             } else if (endsWith(uri, ".roa")) {
                 final RoaCmsParser parser = new RoaCmsParser();
                 parser.parse(uri, content);
                 if (parser.isSuccess()) {
                     final X509ResourceCertificate certificate = parser.getRoaCms().getCertificate();
-                    return Either.right(makeRpkiObject(uri, content, certificate.getSerialNumber()));
+                    return Either.right(makeRpkiObject(content, certificate.getSerialNumber()));
                 }
                 return Either.left(parser.getValidationResult());
             } else if (endsWith(uri, ".gbr")) {
@@ -90,8 +90,8 @@ public class RrdpService {
         }
     }
 
-    private RpkiObject makeRpkiObject(final String uri, final byte[] content, final BigInteger serialNumber) throws IOException {
-        return new RpkiObject(Collections.singletonList(uri), serialNumber, Sha256.hash(content), content);
+    private RpkiObject makeRpkiObject(final byte[] content, final BigInteger serialNumber) throws IOException {
+        return new RpkiObject(serialNumber, Sha256.hash(content), content);
     }
 
     private boolean endsWith(final String s, final String end) {
