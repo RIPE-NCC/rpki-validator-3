@@ -126,12 +126,18 @@
         <dependency>
             <groupId>org.eclipse.jetty.http2</groupId>
             <artifactId>http2-client</artifactId>
-            <version>9.4.7.v20170914</version>
+            <version>9.4.6.v20170531</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty.http2</groupId>
             <artifactId>http2-http-client-transport</artifactId>
-            <version>9.4.7.v20170914</version>
+            <version>9.4.6.v20170531</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.functionaljava</groupId>
+            <artifactId>functionaljava-java8</artifactId>
+            <version>4.7</version>
         </dependency>
 
     </dependencies>
