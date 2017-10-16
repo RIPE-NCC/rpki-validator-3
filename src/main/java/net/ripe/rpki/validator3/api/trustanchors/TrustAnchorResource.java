@@ -4,10 +4,12 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Value;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
-import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
 
 import java.util.List;
+
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @Value(staticConstructor = "of")
 class TrustAnchorResource {
@@ -26,7 +28,7 @@ class TrustAnchorResource {
     @ApiModelProperty(required = true, position = 7)
     Links links;
 
-    static TrustAnchorResource of(TrustAnchor trustAnchor, Link selfRel) {
+    static TrustAnchorResource of(TrustAnchor trustAnchor) {
         return of(
             "trust-anchor",
             trustAnchor.getId(),
@@ -34,7 +36,9 @@ class TrustAnchorResource {
             trustAnchor.getLocations(),
             trustAnchor.getSubjectPublicKeyInfo(),
             trustAnchor.getCertificate() == null ? null : trustAnchor.getCertificate().getEncoded(),
-            new Links(selfRel)
+            new Links(
+                linkTo(methodOn(TrustAnchorController.class).get(trustAnchor.getId())).withSelfRel()
+            )
         );
     }
 }

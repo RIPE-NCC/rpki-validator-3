@@ -11,4 +11,8 @@ public class ValidationCheckResource {
     final ValidationCheck.Status status;
     final String key;
     final List<String> parameters;
+
+    public static ValidationCheckResource of(ValidationCheck check) {
+        return of(check.getLocation(), check.getStatus(), check.getKey(), check.getParameters());
+    }
 }

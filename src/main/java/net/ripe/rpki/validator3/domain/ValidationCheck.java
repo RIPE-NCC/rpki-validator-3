@@ -5,6 +5,7 @@ import lombok.Getter;
 import javax.persistence.*;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -16,6 +17,7 @@ public class ValidationCheck extends AbstractEntity {
     }
 
     @ManyToOne(optional = false, cascade = CascadeType.PERSIST)
+    @NotNull
     @Getter
     private ValidationRun validationRun;
 
@@ -45,7 +47,7 @@ public class ValidationCheck extends AbstractEntity {
     @OrderColumn
     @Getter
     @NotNull
-    private List<String> parameters;
+    private List<String> parameters = new ArrayList<>();
 
     protected ValidationCheck() {
     }
@@ -68,5 +70,14 @@ public class ValidationCheck extends AbstractEntity {
 
         this.key = check.getKey();
         this.parameters = Arrays.asList(check.getParams());
+    }
+
+    public ValidationCheck(ValidationRun validationRun, String location, Status status, String key, String... parameters) {
+        this.validationRun = validationRun;
+        this.rpkiObject = null;
+        this.location = location;
+        this.status = status;
+        this.key = key;
+        this.parameters.addAll(Arrays.asList(parameters));
     }
 }

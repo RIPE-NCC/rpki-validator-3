@@ -7,7 +7,6 @@ import lombok.Data;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorController;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.ValidationRun;
-import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
 
 import java.util.List;
@@ -24,18 +23,21 @@ public class ValidationRunResource {
     String type;
 
     String status;
-    String failureMessage;
 
     List<ValidationCheckResource> validationChecks;
 
     Links links;
 
-    public static ValidationRunResource of(ValidationRun validationRun, Link selfRel) {
+    public static ValidationRunResource of(ValidationRun validationRun) {
         return ValidationRunResource.builder()
             .type(ValidationRun.TYPE)
             .status(validationRun.getStatus().name())
-            .failureMessage(validationRun.getFailureMessage())
-            .validationChecks(validationRun.getValidationChecks().stream().map(c -> ValidationCheckResource.of(c.getLocation(), c.getStatus(), c.getKey(), c.getParameters())).collect(Collectors.toList()))
+            .validationChecks(
+                validationRun.getValidationChecks()
+                    .stream()
+                    .map(ValidationCheckResource::of)
+                    .collect(Collectors.toList())
+            )
             .links(new Links(
                 linkTo(methodOn(ValidationRunController.class).get(validationRun.getId())).withSelfRel(),
                 linkTo(methodOn(TrustAnchorController.class).get(validationRun.getTrustAnchor().getId())).withRel(TrustAnchor.TYPE)

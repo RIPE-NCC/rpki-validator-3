@@ -38,10 +38,6 @@ public class ValidationRun extends AbstractEntity {
     @Getter
     private Status status = Status.RUNNING;
 
-    @Basic
-    @Getter
-    private String failureMessage;
-
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "validationRun")
     @Getter
     private List<ValidationCheck> validationChecks = new ArrayList<>();
@@ -61,9 +57,8 @@ public class ValidationRun extends AbstractEntity {
         this.status = Status.SUCCEEDED;
     }
 
-    public void failed(String failureMessage) {
+    public void failed() {
         this.status = Status.FAILED;
-        this.failureMessage = Objects.requireNonNull(failureMessage, "failure message is required");
     }
 
     public void addCheck(ValidationCheck validationCheck) {
