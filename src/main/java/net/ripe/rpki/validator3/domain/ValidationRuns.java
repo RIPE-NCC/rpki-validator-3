@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ValidationRunRepository {
+public interface ValidationRuns {
     void add(ValidationRun validationRun);
 
     void removeAllForTrustAnchor(TrustAnchor trustAnchor);

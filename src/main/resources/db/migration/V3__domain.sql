@@ -72,3 +72,15 @@ CREATE TABLE validation_check_parameters (
     CONSTRAINT validation_check_parameters__pk PRIMARY KEY (validation_check_id, parameters_order),
     CONSTRAINT validation_check_parameters__validation_check_fk FOREIGN KEY (validation_check_id) REFERENCES validation_check (id) ON DELETE CASCADE
 );
+
+CREATE TABLE rpki_repository (
+    id BIGINT NOT NULL,
+    version INTEGER NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    trust_anchor_id BIGINT NOT NULL,
+    uri VARCHAR(16000) NOT NULL,
+    CONSTRAINT rpki_repository__pk PRIMARY KEY (id),
+    CONSTRAINT rpki_repository__trust_anchor_fk FOREIGN KEY (trust_anchor_id) REFERENCES trust_anchor (id) ON DELETE RESTRICT
+);
+CREATE UNIQUE INDEX rpki_repository__trust_anchor_id_idx ON rpki_repository (trust_anchor_id ASC, uri ASC);

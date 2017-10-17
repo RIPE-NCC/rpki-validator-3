@@ -4,7 +4,7 @@ import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.ValidationRun;
-import net.ripe.rpki.validator3.domain.ValidationRunRepository;
+import net.ripe.rpki.validator3.domain.ValidationRuns;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
@@ -17,12 +17,12 @@ import static net.ripe.rpki.validator3.domain.querydsl.QValidationRun.validation
 
 @Repository
 @Transactional(Transactional.TxType.REQUIRED)
-public class JPAValidationRunRepository implements ValidationRunRepository {
+public class JPAValidationRuns implements ValidationRuns {
     private final EntityManager entityManager;
     private final JPAQueryFactory jpaQueryFactory;
 
     @Autowired
-    public JPAValidationRunRepository(EntityManager entityManager, JPAQueryFactory jpaQueryFactory) {
+    public JPAValidationRuns(EntityManager entityManager, JPAQueryFactory jpaQueryFactory) {
         this.entityManager = entityManager;
         this.jpaQueryFactory = jpaQueryFactory;
     }

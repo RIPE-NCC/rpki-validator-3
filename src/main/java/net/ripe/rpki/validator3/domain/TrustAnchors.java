@@ -2,7 +2,7 @@ package net.ripe.rpki.validator3.domain;
 
 import java.util.List;
 
-public interface TrustAnchorRepository {
+public interface TrustAnchors {
     void add(TrustAnchor trustAnchor);
 
     void remove(TrustAnchor trustAnchor);

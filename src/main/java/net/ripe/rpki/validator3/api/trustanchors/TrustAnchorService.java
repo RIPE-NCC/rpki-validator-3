@@ -2,8 +2,8 @@ package net.ripe.rpki.validator3.api.trustanchors;
 
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.TrustAnchorRepository;
-import net.ripe.rpki.validator3.domain.ValidationRunRepository;
+import net.ripe.rpki.validator3.domain.TrustAnchors;
+import net.ripe.rpki.validator3.domain.ValidationRuns;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -16,11 +16,11 @@ import javax.validation.Valid;
 @Validated
 @Slf4j
 public class TrustAnchorService {
-    private final TrustAnchorRepository trustAnchorRepository;
-    private final ValidationRunRepository validationRunRepository;
+    private final TrustAnchors trustAnchorRepository;
+    private final ValidationRuns validationRunRepository;
 
     @Autowired
-    public TrustAnchorService(TrustAnchorRepository trustAnchorRepository, ValidationRunRepository validationRunRepository) {
+    public TrustAnchorService(TrustAnchors trustAnchorRepository, ValidationRuns validationRunRepository) {
         this.trustAnchorRepository = trustAnchorRepository;
         this.validationRunRepository = validationRunRepository;
     }

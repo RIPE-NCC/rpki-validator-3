@@ -9,14 +9,13 @@ import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificateParser;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.RpkiObject;
-import net.ripe.rpki.validator3.domain.RpkiObjectRepository;
+import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.util.Sha256;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.Collections;
 
 @Service
 @Slf4j
@@ -26,10 +25,10 @@ public class RrdpService {
 
     private RrdpClient rrdpClient;
 
-    private RpkiObjectRepository rpkiObjectRepository;
+    private RpkiObjects rpkiObjectRepository;
 
     @Autowired
-    public RrdpService(final RrdpClient rrdpClient, final RpkiObjectRepository rpkiObjectRepository) {
+    public RrdpService(final RrdpClient rrdpClient, final RpkiObjects rpkiObjectRepository) {
         this.rrdpClient = rrdpClient;
         this.rpkiObjectRepository = rpkiObjectRepository;
     }

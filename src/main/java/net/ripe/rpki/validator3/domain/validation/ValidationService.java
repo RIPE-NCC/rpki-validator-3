@@ -26,20 +26,23 @@ public class ValidationService {
 
     private static final int DEFAULT_RSYNC_PORT = 873;
 
-    private final TrustAnchorRepository trustAnchorRepository;
-    private final RpkiObjectRepository rpkiObjectRepository;
-    private final ValidationRunRepository validationRunRepository;
+    private final TrustAnchors trustAnchorRepository;
+    private final RpkiObjects rpkiObjectRepository;
+    private final ValidationRuns validationRunRepository;
+    private final RpkiRepositories rpkiRepositories;
     private final File localRsyncStorageDirectory;
 
     public ValidationService(
-        TrustAnchorRepository trustAnchorRepository,
-        RpkiObjectRepository rpkiObjectRepository,
-        ValidationRunRepository validationRunRepository,
+        TrustAnchors trustAnchorRepository,
+        RpkiObjects rpkiObjectRepository,
+        ValidationRuns validationRunRepository,
+        RpkiRepositories rpkiRepositories,
         @Value("${rpki.validator.local.rsync.storage.directory}") File localRsyncStorageDirectory
     ) {
         this.trustAnchorRepository = trustAnchorRepository;
         this.rpkiObjectRepository = rpkiObjectRepository;
         this.validationRunRepository = validationRunRepository;
+        this.rpkiRepositories = rpkiRepositories;
         this.localRsyncStorageDirectory = localRsyncStorageDirectory;
     }
 
@@ -73,6 +76,7 @@ public class ValidationService {
                         // validity time?
                         if (trustAnchor.getCertificate() == null || trustAnchor.getCertificate().getSerialNumber().compareTo(certificate.getSerialNumber()) <= 0) {
                             trustAnchor.setCertificate(certificate);
+                            rpkiRepositories.register(trustAnchor, certificate.getRepositoryUri().toASCIIString());
                         } else {
                             validationResult.warn("repository.object.is.older.than.previous.object", trustAnchorCertificateURI.toASCIIString());
                         }
@@ -145,5 +149,12 @@ public class ValidationService {
             log.info("Downloaded certificate {} to {}", trustAnchorCertificateURI, targetFile);
             return targetFile;
         }
+    }
+
+    @Transactional(Transactional.TxType.REQUIRED)
+    public void validateRpkiRepository(long rpkiRepositoryId) {
+        RpkiRepository rpkiRepository = rpkiRepositories.get(rpkiRepositoryId);
+        log.info("Starting RPKI repository validation for " + rpkiRepository);
+        // HOOK UP RRDP SERVICE
     }
 }

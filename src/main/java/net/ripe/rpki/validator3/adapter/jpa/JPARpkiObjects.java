@@ -3,7 +3,7 @@ package net.ripe.rpki.validator3.adapter.jpa;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import net.ripe.rpki.validator3.domain.RpkiObject;
-import net.ripe.rpki.validator3.domain.RpkiObjectRepository;
+import net.ripe.rpki.validator3.domain.RpkiObjects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
@@ -15,14 +15,14 @@ import static net.ripe.rpki.validator3.domain.querydsl.QRpkiObject.rpkiObject;
 
 @Repository
 @Transactional(Transactional.TxType.REQUIRED)
-public class JPARpkiObjectRepository implements RpkiObjectRepository {
+public class JPARpkiObjects implements RpkiObjects {
 
     private final EntityManager entityManager;
 
     private final JPAQueryFactory queryFactory;
 
     @Autowired
-    public JPARpkiObjectRepository(EntityManager entityManager, JPAQueryFactory queryFactory) {
+    public JPARpkiObjects(EntityManager entityManager, JPAQueryFactory queryFactory) {
         this.entityManager = entityManager;
         this.queryFactory = queryFactory;
     }

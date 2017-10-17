@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.domain.ValidationRun;
-import net.ripe.rpki.validator3.domain.ValidationRunRepository;
+import net.ripe.rpki.validator3.domain.ValidationRuns;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
@@ -24,10 +24,10 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 @Slf4j
 public class ValidationRunController {
 
-    private final ValidationRunRepository validationRunRepository;
+    private final ValidationRuns validationRunRepository;
 
     @Autowired
-    public ValidationRunController(ValidationRunRepository validationRunRepository) {
+    public ValidationRunController(ValidationRuns validationRunRepository) {
         this.validationRunRepository = validationRunRepository;
     }
 

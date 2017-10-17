@@ -8,9 +8,9 @@ import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.validationruns.ValidationRunController;
 import net.ripe.rpki.validator3.api.validationruns.ValidationRunResource;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.TrustAnchorRepository;
+import net.ripe.rpki.validator3.domain.TrustAnchors;
 import net.ripe.rpki.validator3.domain.ValidationRun;
-import net.ripe.rpki.validator3.domain.ValidationRunRepository;
+import net.ripe.rpki.validator3.domain.ValidationRuns;
 import net.ripe.rpki.validator3.util.TrustAnchorExtractorException;
 import net.ripe.rpki.validator3.util.TrustAnchorLocator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,12 +39,12 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 @Slf4j
 public class TrustAnchorController {
 
-    private final TrustAnchorRepository trustAnchorRepository;
+    private final TrustAnchors trustAnchorRepository;
     private final TrustAnchorService trustAnchorService;
-    private final ValidationRunRepository validationRunRepository;
+    private final ValidationRuns validationRunRepository;
 
     @Autowired
-    public TrustAnchorController(TrustAnchorRepository trustAnchorRepository, TrustAnchorService trustAnchorService, ValidationRunRepository validationRunRepository) {
+    public TrustAnchorController(TrustAnchors trustAnchorRepository, TrustAnchorService trustAnchorService, ValidationRuns validationRunRepository) {
         this.trustAnchorRepository = trustAnchorRepository;
         this.trustAnchorService = trustAnchorService;
         this.validationRunRepository = validationRunRepository;
