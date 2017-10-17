@@ -19,7 +19,7 @@ public class RrdpClient {
         httpClient.start();
     }
 
-    public String getSnapshot(final String uri) {
+    public String getFile(final String uri) {
         try {
             final ContentResponse response = httpClient.GET(uri);
             return response.getContentAsString();

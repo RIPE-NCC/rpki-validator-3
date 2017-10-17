@@ -34,7 +34,7 @@ public class RrdpService {
     }
 
     public void storeSnapshot(final String snapshotUrl) {
-        final String snapshotXml = rrdpClient.getSnapshot(snapshotUrl);
+        final String snapshotXml = rrdpClient.getFile(snapshotUrl);
         final Snapshot snapshot = rrdpParser.snapshot(snapshotXml);
         snapshot.asMap().forEach((uri, value) -> {
             final Either<ValidationResult, RpkiObject> maybeRpkiObject = createRpkiObject(uri, value.content);

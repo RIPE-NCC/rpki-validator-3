@@ -10,9 +10,12 @@ import javax.xml.stream.events.EndElement;
 import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
 import java.io.StringReader;
+import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -42,8 +45,7 @@ public class RrdpParser {
                         final String qName = startElement.getName().getLocalPart();
 
                         if (qName.equalsIgnoreCase("publish")) {
-                            Iterator<Attribute> attributes = startElement.getAttributes();
-                            uri = attributes.next().getValue();
+                            uri = getAttr(startElement, "uri", "Uri is not present in 'publish' element");
                             inPublishElement = true;
                         }
                         break;
@@ -72,5 +74,58 @@ public class RrdpParser {
             throw new RrdpException("Couldn't parse snapshot: ", e);
         }
         return new Snapshot(objects);
+    }
+
+
+    public Notification notification(final String xml) {
+        try {
+            XMLInputFactory factory = XMLInputFactory.newInstance();
+            XMLEventReader eventReader = factory.createXMLEventReader(new StringReader(xml));
+
+            String sessionId = null;
+            BigInteger serial = null;
+            String snapshotUri = null;
+            String snapshotHash = null;
+            final List<Delta> deltas = new ArrayList<>();
+
+            while (eventReader.hasNext()) {
+                final XMLEvent event = eventReader.nextEvent();
+
+                switch (event.getEventType()) {
+                    case XMLStreamConstants.START_ELEMENT:
+                        final StartElement startElement = event.asStartElement();
+                        final String qName = startElement.getName().getLocalPart();
+
+                        if (qName.equalsIgnoreCase("notification")) {
+                            serial = new BigInteger(getAttr(startElement, "serial", "Notification serial is not present"));
+                            sessionId = getAttr(startElement, "session_id", "Session id is not present");
+                        } else if (qName.equalsIgnoreCase("snapshot")) {
+                            snapshotUri = getAttr(startElement, "uri", "Snapshot URI is not present");
+                            snapshotHash = getAttr(startElement, "hash", "Snapshot hash is not present");
+                        } else if (qName.equalsIgnoreCase("delta")) {
+                            final String deltaUri = getAttr(startElement, "uri", "Delta URI is not present");
+                            final String deltaHash = getAttr(startElement, "hash", "Delta hash is not present");
+                            final String deltaSerial = getAttr(startElement, "serial", "Delta serial is not present");
+                            deltas.add(new Delta(deltaUri, deltaHash, new BigInteger(deltaSerial)));
+                        }
+                        break;
+                }
+            }
+            return new Notification(sessionId, serial, snapshotUri, snapshotHash, deltas);
+        } catch (XMLStreamException e) {
+            throw new RrdpException("Couldn't parse snapshot: ", e);
+        }
+    }
+
+    private String getAttr(final StartElement startElement, final String attrName, final String absentMessage) {
+        final Iterator<Attribute> attributes = startElement.getAttributes();
+        while (attributes.hasNext()) {
+            final Attribute next = attributes.next();
+            final String name = next.getName().getLocalPart();
+            if (attrName.equals(name)) {
+                return next.getValue();
+            }
+        }
+        throw new RrdpException(absentMessage);
     }
 }
