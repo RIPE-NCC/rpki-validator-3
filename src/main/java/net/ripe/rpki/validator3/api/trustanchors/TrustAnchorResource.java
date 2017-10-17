@@ -35,7 +35,7 @@ class TrustAnchorResource {
             trustAnchor.getName(),
             trustAnchor.getLocations(),
             trustAnchor.getSubjectPublicKeyInfo(),
-            trustAnchor.getCertificate() == null ? null : trustAnchor.getCertificate().getEncoded(),
+            trustAnchor.getEncodedCertificate() == null ? null : trustAnchor.getEncodedCertificate(),
             new Links(
                 linkTo(methodOn(TrustAnchorController.class).get(trustAnchor.getId())).withSelfRel()
             )

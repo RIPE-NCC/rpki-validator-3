@@ -23,7 +23,7 @@ CREATE TABLE trust_anchor (
     updated_at TIMESTAMP NOT NULL,
     name VARCHAR_IGNORECASE(1000) NOT NULL,
     subject_public_key_info VARCHAR(2000) NOT NULL,
-    certificate BINARY,
+    encoded_certificate BINARY,
     CONSTRAINT trust_anchor__pk PRIMARY KEY (id)
 );
 CREATE INDEX trust_anchor__name ON trust_anchor (name ASC);

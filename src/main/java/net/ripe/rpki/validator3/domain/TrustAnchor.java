@@ -44,17 +44,21 @@ public class TrustAnchor extends AbstractEntity {
 
     @Basic
     @Size(max = RpkiObject.MAX_SIZE)
-    private byte[] certificate;
+    @Getter
+    private byte[] encodedCertificate;
 
     public void setCertificate(X509ResourceCertificate certificate) {
-        this.certificate = certificate.getEncoded();
+        this.encodedCertificate = certificate.getEncoded();
     }
 
     public X509ResourceCertificate getCertificate() {
-        if (certificate == null) {
+        if (encodedCertificate == null) {
             return null;
         }
 
-        return (X509ResourceCertificate) CertificateRepositoryObjectFactory.createCertificateRepositoryObject(certificate, ValidationResult.withLocation(locations.get(0)));
+        return (X509ResourceCertificate) CertificateRepositoryObjectFactory.createCertificateRepositoryObject(
+            encodedCertificate,
+            ValidationResult.withLocation(locations.get(0))
+        );
     }
 }
