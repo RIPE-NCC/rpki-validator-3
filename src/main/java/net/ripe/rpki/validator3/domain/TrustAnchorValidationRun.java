@@ -31,8 +31,4 @@ public class TrustAnchorValidationRun extends ValidationRun {
     public String getType() {
         return TYPE;
     }
-
-    public String getTrustAnchorCertificateURI() {
-        return this.trustAnchorCertificateURI;
-    }
 }

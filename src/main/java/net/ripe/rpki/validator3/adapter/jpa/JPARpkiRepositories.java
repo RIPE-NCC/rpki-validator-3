@@ -14,6 +14,8 @@ import javax.transaction.Transactional;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
+import java.util.List;
+
 import static net.ripe.rpki.validator3.domain.querydsl.QRpkiRepository.rpkiRepository;
 
 @Repository
@@ -28,12 +30,6 @@ public class JPARpkiRepositories implements RpkiRepositories {
         this.entityManager = entityManager;
         this.quartzValidationScheduler = quartzValidationScheduler;
         this.jpaQueryFactory = jpaQueryFactory;
-    }
-
-
-
-    private JPAQuery<RpkiRepository> select() {
-        return jpaQueryFactory.selectFrom(rpkiRepository);
     }
 
     @Override
@@ -51,5 +47,14 @@ public class JPARpkiRepositories implements RpkiRepositories {
         RpkiRepository result = entityManager.getReference(RpkiRepository.class, id);
         result.getId(); // Throws EntityNotFoundException if the id is not valid
         return result;
+    }
+
+    @Override
+    public List<RpkiRepository> findAll() {
+        return select().fetch();
+    }
+
+    private JPAQuery<RpkiRepository> select() {
+        return jpaQueryFactory.selectFrom(rpkiRepository);
     }
 }

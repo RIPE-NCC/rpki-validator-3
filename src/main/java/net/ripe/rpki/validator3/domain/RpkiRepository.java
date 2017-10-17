@@ -14,6 +14,8 @@ import javax.validation.constraints.NotNull;
 @ToString
 public class RpkiRepository extends AbstractEntity {
 
+    public static final String TYPE = "rpki-repository";
+
     @ManyToOne(optional = false)
     @NotNull
     @Getter

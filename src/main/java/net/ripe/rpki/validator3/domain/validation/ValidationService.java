@@ -154,7 +154,13 @@ public class ValidationService {
     @Transactional(Transactional.TxType.REQUIRED)
     public void validateRpkiRepository(long rpkiRepositoryId) {
         RpkiRepository rpkiRepository = rpkiRepositories.get(rpkiRepositoryId);
-        log.info("Starting RPKI repository validation for " + rpkiRepository);
+
         // HOOK UP RRDP SERVICE
+        RpkiRepositoryValidationRun validationRun = new RpkiRepositoryValidationRun(rpkiRepository);
+        validationRunRepository.add(validationRun);
+
+        log.info("Starting RPKI repository validation for " + rpkiRepository);
+
+        validationRun.succeeded();
     }
 }
