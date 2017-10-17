@@ -11,7 +11,7 @@ import javax.validation.constraints.NotNull;
 @Entity
 @DiscriminatorValue("RR")
 public class RpkiRepositoryValidationRun extends ValidationRun {
-    public static String TYPE ="rpki-repository-validation-run";
+    public final static String TYPE = "rpki-repository-validation-run";
 
     @ManyToOne(optional = false)
     @NotNull

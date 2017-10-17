@@ -8,7 +8,9 @@ import net.ripe.rpki.commons.crypto.x509cert.X509CertificateUtil;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.rsync.CommandExecutionException;
 import net.ripe.rpki.commons.rsync.Rsync;
+import net.ripe.rpki.commons.validation.ValidationLocation;
 import net.ripe.rpki.commons.validation.ValidationResult;
+import net.ripe.rpki.commons.validation.ValidationStatus;
 import net.ripe.rpki.validator3.domain.*;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -60,7 +62,7 @@ public class ValidationService {
             ValidationResult validationResult = ValidationResult.withLocation(trustAnchorCertificateURI);
 
             File targetFile = fetchTrustAnchorCertificate(trustAnchor, trustAnchorCertificateURI, validationResult);
-            if (targetFile != null) {
+            if (!validationResult.hasFailureForCurrentLocation()) {
                 long trustAnchorCertificateSize = targetFile.length();
 
                 if (trustAnchorCertificateSize == 0L) {
@@ -84,16 +86,7 @@ public class ValidationService {
                 }
             }
 
-            for (net.ripe.rpki.commons.validation.ValidationCheck check : validationResult.getFailuresForCurrentLocation()) {
-                ValidationCheck validationCheck = new ValidationCheck(validationRun, null, trustAnchorCertificateURI.toASCIIString(), check);
-                validationRun.addCheck(validationCheck);
-            }
-
-            if (validationResult.hasFailures()) {
-                validationRun.failed();
-            } else {
-                validationRun.succeeded();
-            }
+            completeWith(validationRun, validationResult);
         } catch (CommandExecutionException | IOException e) {
             log.error("validation run for trust anchor {} failed", trustAnchor, e);
             validationRun.addCheck(new ValidationCheck(validationRun, validationRun.getTrustAnchorCertificateURI(), ValidationCheck.Status.ERROR, "unhandled.exception", e.toString()));
@@ -162,5 +155,22 @@ public class ValidationService {
         log.info("Starting RPKI repository validation for " + rpkiRepository);
 
         validationRun.succeeded();
+    }
+
+    private void completeWith(TrustAnchorValidationRun validationRun, ValidationResult validationResult) {
+        for (ValidationLocation location : validationResult.getValidatedLocations()) {
+            for (net.ripe.rpki.commons.validation.ValidationCheck check : validationResult.getAllValidationChecksForLocation(location)) {
+                if (check.getStatus() != ValidationStatus.PASSED) {
+                    ValidationCheck validationCheck = new ValidationCheck(validationRun, null, location.getName(), check);
+                    validationRun.addCheck(validationCheck);
+                }
+            }
+        }
+
+        if (validationResult.hasFailures()) {
+            validationRun.failed();
+        } else {
+            validationRun.succeeded();
+        }
     }
 }
