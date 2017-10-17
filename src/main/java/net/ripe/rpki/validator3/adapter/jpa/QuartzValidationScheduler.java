@@ -3,7 +3,9 @@ package net.ripe.rpki.validator3.adapter.jpa;
 import com.google.common.base.Preconditions;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
+import net.ripe.rpki.validator3.domain.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
+import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -57,7 +59,7 @@ public class QuartzValidationScheduler {
     }
 
     private JobKey getJobKey(TrustAnchor trustAnchor) {
-        return new JobKey(String.format("validate-trust-anchor#%d", trustAnchor.getId()));
+        return new JobKey(String.format("%s#%d", TrustAnchorValidationRun.TYPE, trustAnchor.getId()));
     }
 
     public void addRpkiRepository(RpkiRepository rpkiRepository) {
@@ -84,6 +86,6 @@ public class QuartzValidationScheduler {
     }
 
     private JobKey getJobKey(RpkiRepository rpkiRepository) {
-        return new JobKey(String.format("validate-rpkiRepository#%d", rpkiRepository.getId()));
+        return new JobKey(String.format("%s#%d", RpkiRepositoryValidationRun.TYPE, rpkiRepository.getId()));
     }
 }

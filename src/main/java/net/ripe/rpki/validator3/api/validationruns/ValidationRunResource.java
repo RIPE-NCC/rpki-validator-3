@@ -19,7 +19,7 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 @Builder
 @ApiModel(value = "ValidationRun")
 public class ValidationRunResource {
-    @ApiModelProperty(allowableValues = ValidationRun.TYPE, required = true, position = 1)
+    @ApiModelProperty(allowableValues = "trust-anchor-validation-run,rpki-repository-validation-run", required = true, position = 1)
     String type;
 
     String status;
@@ -30,7 +30,7 @@ public class ValidationRunResource {
 
     public static ValidationRunResource of(ValidationRun validationRun) {
         return ValidationRunResource.builder()
-            .type(ValidationRun.TYPE)
+            .type(validationRun.getType())
             .status(validationRun.getStatus().name())
             .validationChecks(
                 validationRun.getValidationChecks()

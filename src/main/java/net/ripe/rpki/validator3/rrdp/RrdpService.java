@@ -90,7 +90,8 @@ public class RrdpService {
     }
 
     private RpkiObject makeRpkiObject(final byte[] content, final BigInteger serialNumber) throws IOException {
-        return new RpkiObject(serialNumber, Sha256.hash(content), content);
+        // FIXME set RPKI repository
+        return new RpkiObject(null, serialNumber, Sha256.hash(content), content);
     }
 
     private boolean endsWith(final String s, final String end) {

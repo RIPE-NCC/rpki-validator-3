@@ -7,10 +7,7 @@ import net.ripe.rpki.validator3.api.ApiError;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.validationruns.ValidationRunController;
 import net.ripe.rpki.validator3.api.validationruns.ValidationRunResource;
-import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.TrustAnchors;
-import net.ripe.rpki.validator3.domain.ValidationRun;
-import net.ripe.rpki.validator3.domain.ValidationRuns;
+import net.ripe.rpki.validator3.domain.*;
 import net.ripe.rpki.validator3.util.TrustAnchorExtractorException;
 import net.ripe.rpki.validator3.util.TrustAnchorLocator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -112,7 +109,7 @@ public class TrustAnchorController {
     }
 
     private ApiResponse<TrustAnchorResource> trustAnchorResource(TrustAnchor trustAnchor) {
-        Optional<ValidationRun> validationRun = validationRunRepository.findLatestCompletedForTrustAnchor(trustAnchor);
+        Optional<TrustAnchorValidationRun> validationRun = validationRunRepository.findLatestCompletedForTrustAnchor(trustAnchor);
         ArrayList<Object> includes = new ArrayList<>(1);
         validationRun.ifPresent(run -> includes.add(ValidationRunResource.of(run)));
         return ApiResponse.<TrustAnchorResource>builder().data(

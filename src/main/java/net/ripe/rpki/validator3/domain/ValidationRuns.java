@@ -11,9 +11,9 @@ public interface ValidationRuns {
 
     void removeAllForTrustAnchor(TrustAnchor trustAnchor);
 
-    ValidationRun get(long id);
+    <T extends ValidationRun> T get(Class<T> type, long id);
 
-    List<ValidationRun> findAll();
+    <T extends ValidationRun> List<T> findAll(Class<T> type);
 
-    Optional<ValidationRun> findLatestCompletedForTrustAnchor(TrustAnchor trustAnchor);
+    Optional<TrustAnchorValidationRun> findLatestCompletedForTrustAnchor(TrustAnchor trustAnchor);
 }

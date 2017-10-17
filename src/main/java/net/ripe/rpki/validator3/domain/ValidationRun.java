@@ -1,7 +1,6 @@
 package net.ripe.rpki.validator3.domain;
 
 import lombok.Getter;
-import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -9,13 +8,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+
 /**
  * Represents the a single run of validating a single trust anchor and all it's child CAs and related RPKI objects.
  */
 @Entity
-public class ValidationRun extends AbstractEntity {
-
-    public static final String TYPE = "validation-run";
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "TYPE", columnDefinition = "CHAR(2)")
+public abstract class ValidationRun extends AbstractEntity {
 
     public enum Status {
         RUNNING,
@@ -26,12 +26,6 @@ public class ValidationRun extends AbstractEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false, cascade = {CascadeType.PERSIST})
     @Getter
     private TrustAnchor trustAnchor;
-
-    @Column(name = "trust_anchor_certificate_uri")
-    @NotNull
-    @ValidLocationURI
-    @Getter
-    private String trustAnchorCertificateURI;
 
     @Enumerated(value = EnumType.STRING)
     @NotNull
@@ -50,8 +44,9 @@ public class ValidationRun extends AbstractEntity {
     public ValidationRun(TrustAnchor trustAnchor) {
         this();
         this.trustAnchor = Objects.requireNonNull(trustAnchor, "trust anchor is required");
-        this.trustAnchorCertificateURI = trustAnchor.getLocations().get(0);
     }
+
+    public abstract String getType();
 
     public void succeeded() {
         this.status = Status.SUCCEEDED;

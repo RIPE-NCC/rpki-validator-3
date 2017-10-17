@@ -52,7 +52,7 @@ public class ValidationService {
 
         log.debug("trust anchor {} located at {} with subject public key info {}", trustAnchor.getName(), trustAnchor.getLocations(), trustAnchor.getSubjectPublicKeyInfo());
 
-        ValidationRun validationRun = new ValidationRun(trustAnchor);
+        TrustAnchorValidationRun validationRun = new TrustAnchorValidationRun(trustAnchor);
         validationRunRepository.add(validationRun);
 
         try {

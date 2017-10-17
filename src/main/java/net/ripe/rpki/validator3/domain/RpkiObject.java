@@ -18,6 +18,12 @@ public class RpkiObject extends AbstractEntity {
 
     public static final int MAX_SIZE = 1024 * 1024;
 
+    @ManyToOne(optional = false)
+    @Getter
+    @NotNull
+    @Valid
+    private RpkiRepository rpkiRepository;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @OrderBy("locations")
     @Getter
@@ -46,7 +52,8 @@ public class RpkiObject extends AbstractEntity {
         super();
     }
 
-    public RpkiObject(BigInteger serialNumber, byte[] sha256, byte[] encoded) {
+    public RpkiObject(RpkiRepository rpkiRepository, BigInteger serialNumber, byte[] sha256, byte[] encoded) {
+        this.rpkiRepository = rpkiRepository;
         this.serialNumber = Objects.requireNonNull(serialNumber, "serialNumber is required");
         this.sha256 = Objects.requireNonNull(sha256, "sha256 is required");
         this.encoded = Objects.requireNonNull(encoded, "encoded is required");

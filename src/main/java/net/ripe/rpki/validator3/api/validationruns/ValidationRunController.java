@@ -35,7 +35,7 @@ public class ValidationRunController {
     public ResponseEntity<ApiResponse<List<ValidationRunResource>>> list() {
         return ResponseEntity.ok(ApiResponse.data(
             new Links(linkTo(methodOn(ValidationRunController.class).list()).withSelfRel()),
-            validationRunRepository.findAll()
+            validationRunRepository.findAll(ValidationRun.class)
                 .stream()
                 .map(ValidationRunResource::of)
                 .collect(Collectors.toList())
@@ -44,7 +44,7 @@ public class ValidationRunController {
 
     @GetMapping(path = "/{id}")
     public ResponseEntity<ApiResponse<ValidationRunResource>> get(@PathVariable long id) {
-        ValidationRun validationRun = validationRunRepository.get(id);
+        ValidationRun validationRun = validationRunRepository.get(ValidationRun.class, id);
         return ResponseEntity.ok(ApiResponse.data(ValidationRunResource.of(validationRun)));
     }
 }
