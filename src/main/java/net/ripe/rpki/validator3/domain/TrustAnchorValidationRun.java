@@ -1,7 +1,6 @@
 package net.ripe.rpki.validator3.domain;
 
 import lombok.Getter;
-import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 
 import javax.persistence.Column;
 import javax.persistence.DiscriminatorValue;
@@ -15,7 +14,6 @@ public class TrustAnchorValidationRun extends ValidationRun {
 
     @Column(name = "trust_anchor_certificate_uri")
     @NotNull
-    @ValidLocationURI
     @Getter
     private String trustAnchorCertificateURI;
 
