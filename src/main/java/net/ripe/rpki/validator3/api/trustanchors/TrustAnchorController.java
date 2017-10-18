@@ -95,11 +95,12 @@ public class TrustAnchorController {
     }
 
     @GetMapping(path = "/{id}/validation-run")
-    public void validationResults(@PathVariable long id, HttpServletResponse response) throws IOException {
+    public ResponseEntity<ApiResponse<ValidationRunResource>>  validationResults(@PathVariable long id, HttpServletResponse response) throws IOException {
         TrustAnchor trustAnchor = trustAnchorRepository.get(id);
         ValidationRun validationRun = validationRunRepository.findLatestCompletedForTrustAnchor(trustAnchor)
             .orElseThrow(() -> new EmptyResultDataAccessException("latest validation run for trust anchor " + id, 1));
         response.sendRedirect(linkTo(methodOn(ValidationRunController.class).get(validationRun.getId())).toString());
+        return null;
     }
 
     @DeleteMapping(path = "/{id}")
