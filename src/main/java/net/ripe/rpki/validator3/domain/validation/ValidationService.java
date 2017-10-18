@@ -12,14 +12,12 @@ import net.ripe.rpki.commons.validation.ValidationLocation;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.commons.validation.ValidationStatus;
 import net.ripe.rpki.validator3.domain.*;
-import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.rrdp.RrdpService;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
-import javax.validation.constraints.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -79,8 +77,6 @@ public class ValidationService {
                     X509ResourceCertificate certificate = parseCertificate(trustAnchor, targetFile, validationResult);
 
                     if (!validationResult.hasFailureForCurrentLocation()) {
-                        // check valid self-signed signature (trust anchor rules)
-                        // check subject public key hash against TAL
                         // validity time?
                         if (trustAnchor.getCertificate() == null || trustAnchor.getCertificate().getSerialNumber().compareTo(certificate.getSerialNumber()) <= 0) {
                             trustAnchor.setCertificate(certificate);
