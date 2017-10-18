@@ -23,12 +23,18 @@ CREATE TABLE rpki_repository (
     version INTEGER NOT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
-    trust_anchor_id BIGINT NOT NULL,
     uri VARCHAR(16000) NOT NULL,
     CONSTRAINT rpki_repository__pk PRIMARY KEY (id),
-    CONSTRAINT rpki_repository__trust_anchor_fk FOREIGN KEY (trust_anchor_id) REFERENCES trust_anchor (id) ON DELETE RESTRICT
 );
-CREATE UNIQUE INDEX rpki_repository__trust_anchor_id_idx ON rpki_repository (trust_anchor_id ASC, uri ASC);
+
+CREATE TABLE rpki_repository_trust_anchors (
+    rpki_repository_id BIGINT NOT NULL,
+    trust_anchor_id BIGINT NOT NULL,
+    CONSTRAINT rpki_repository_trust_anchors__pk PRIMARY KEY (rpki_repository_id, trust_anchor_id),
+    CONSTRAINT rpki_repository_trust_anchors__trust_anchor_fk FOREIGN KEY (trust_anchor_id) REFERENCES trust_anchor (id) ON DELETE RESTRICT,
+    CONSTRAINT rpki_repository_trust_anchors__rpki_repository_fk FOREIGN KEY (rpki_repository_id) REFERENCES rpki_repository (id) ON DELETE RESTRICT
+);
+CREATE INDEX rpki_repository_trust_anchors__trust_anchor_id_idx ON rpki_repository_trust_anchors (trust_anchor_id ASC);
 
 CREATE TABLE rpki_object (
     id BIGINT NOT NULL,
@@ -57,10 +63,15 @@ CREATE TABLE validation_run (
     version INTEGER NOT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
-    trust_anchor_id BIGINT NOT NULL,
-    trust_anchor_certificate_uri VARCHAR(16000),
-    rpki_repository_id BIGINT,
     status VARCHAR NOT NULL,
+
+    -- Trust anchor validation run
+    trust_anchor_id BIGINT,
+    trust_anchor_certificate_uri VARCHAR(16000),
+
+    -- RPKI repository validation run
+    rpki_repository_id BIGINT,
+
     CONSTRAINT validation_run__pk PRIMARY KEY (id),
     CONSTRAINT validation_run__trust_anchor_fk FOREIGN KEY (trust_anchor_id) REFERENCES trust_anchor (id) ON DELETE RESTRICT,
     CONSTRAINT validation_run__rpki_repository_fk FOREIGN KEY (rpki_repository_id) REFERENCES rpki_repository (id) ON DELETE RESTRICT

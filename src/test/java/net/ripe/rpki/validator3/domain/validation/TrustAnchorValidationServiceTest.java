@@ -1,5 +1,6 @@
 package net.ripe.rpki.validator3.domain.validation;
 
+import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.validator3.domain.*;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,6 +31,30 @@ public class TrustAnchorValidationServiceTest {
     @Autowired
     private ValidationRuns validationRuns;
 
+    @Autowired
+    private RpkiRepositories rpkiRepositories;
+
+    @Test
+    public void test_success() {
+        TrustAnchor ta = createRipeNccTrustAnchor();
+
+        ta.setLocations(Arrays.asList("src/test/resources/ripe-ncc-ta.cer"));
+        validationService.validate(ta.getId());
+        ta.setLocations(Arrays.asList(DUMMY_RSYNC_URI));
+
+        X509ResourceCertificate certificate = ta.getCertificate();
+        assertThat(certificate).isNotNull();
+
+        Optional<TrustAnchorValidationRun> validationRun = validationRuns.findLatestCompletedForTrustAnchor(ta);
+        assertThat(validationRun).isPresent();
+        assertThat(validationRun.get().getStatus()).isEqualTo(ValidationRun.Status.SUCCEEDED);
+
+        assertThat(validationRun.get().getValidationChecks()).isEmpty();
+
+        Optional<RpkiRepository> rpkiRepository = rpkiRepositories.findByURI(certificate.getRrdpNotifyUri().toASCIIString());
+        assertThat(rpkiRepository).isPresent();
+    }
+
     @Test
     public void test_rsync_failure() {
         TrustAnchor ta = createRipeNccTrustAnchor();
@@ -46,23 +71,6 @@ public class TrustAnchorValidationServiceTest {
         List<ValidationCheck> validationChecks = validationRun.get().getValidationChecks();
         assertThat(validationChecks).hasSize(1);
         assertThat(validationChecks.get(0).getKey()).isEqualTo("rsync.error");
-    }
-
-    @Test
-    public void test_rsync_success() {
-        TrustAnchor ta = createRipeNccTrustAnchor();
-
-        ta.setLocations(Arrays.asList("src/test/resources/ripe-ncc-ta.cer"));
-        validationService.validate(ta.getId());
-        ta.setLocations(Arrays.asList(DUMMY_RSYNC_URI));
-
-        assertThat(ta.getCertificate()).isNotNull();
-
-        Optional<TrustAnchorValidationRun> validationRun = validationRuns.findLatestCompletedForTrustAnchor(ta);
-        assertThat(validationRun).isPresent();
-        assertThat(validationRun.get().getStatus()).isEqualTo(ValidationRun.Status.SUCCEEDED);
-
-        assertThat(validationRun.get().getValidationChecks()).isEmpty();
     }
 
     @Test

@@ -2,15 +2,17 @@ package net.ripe.rpki.validator3.domain;
 
 import lombok.Getter;
 
-import javax.persistence.Column;
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.Entity;
+import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 
 @Entity
 @DiscriminatorValue("TA")
 public class TrustAnchorValidationRun extends ValidationRun {
     public static final String TYPE = "trust-anchor-validation-run";
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false, cascade = {CascadeType.PERSIST})
+    @Getter
+    private TrustAnchor trustAnchor;
 
     @Column(name = "trust_anchor_certificate_uri")
     @NotNull
@@ -21,7 +23,7 @@ public class TrustAnchorValidationRun extends ValidationRun {
     }
 
     public TrustAnchorValidationRun(TrustAnchor trustAnchor) {
-        super(trustAnchor);
+        this.trustAnchor = trustAnchor;
         this.trustAnchorCertificateURI = trustAnchor.getLocations().get(0);
     }
 

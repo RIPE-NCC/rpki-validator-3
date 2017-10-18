@@ -13,8 +13,8 @@ import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
-
 import java.util.List;
+import java.util.Optional;
 
 import static net.ripe.rpki.validator3.domain.querydsl.QRpkiRepository.rpkiRepository;
 
@@ -34,12 +34,19 @@ public class JPARpkiRepositories implements RpkiRepositories {
 
     @Override
     public void register(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String uri) {
-        RpkiRepository existing = select().where(rpkiRepository.trustAnchor.eq(trustAnchor).and(rpkiRepository.uri.eq(uri.toLowerCase()))).fetchFirst();
-        if (existing == null) {
+        Optional<RpkiRepository> existing = findByURI(uri);
+        if (existing.isPresent()) {
+            existing.get().addTrustAnchor(trustAnchor);
+        } else {
             RpkiRepository repository = new RpkiRepository(trustAnchor, uri.toLowerCase());
             entityManager.persist(repository);
             quartzValidationScheduler.addRpkiRepository(repository);
         }
+    }
+
+    @Override
+    public Optional<RpkiRepository> findByURI(@NotNull @ValidLocationURI String uri) {
+        return Optional.ofNullable(select().where(rpkiRepository.uri.eq(uri.toLowerCase())).fetchFirst());
     }
 
     @Override

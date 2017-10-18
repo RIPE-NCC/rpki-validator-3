@@ -33,13 +33,18 @@ public class ValidationRunResource {
     public static ValidationRunResource of(ValidationRun validationRun) {
         List<Link> links = new ArrayList<>();
         links.add(linkTo(methodOn(ValidationRunController.class).get(validationRun.getId())).withSelfRel());
-        links.add(linkTo(methodOn(TrustAnchorController.class).get(validationRun.getTrustAnchor().getId())).withRel(TrustAnchor.TYPE));
 
         switch (validationRun.getType()) {
-            case RpkiRepositoryValidationRun.TYPE:
+            case RpkiRepositoryValidationRun.TYPE: {
                 RpkiRepositoryValidationRun run = (RpkiRepositoryValidationRun) validationRun;
                 links.add(linkTo(methodOn(RpkiRepositoriesController.class).get(run.getRpkiRepository().getId())).withRel(RpkiRepository.TYPE));
                 break;
+            }
+            case TrustAnchorValidationRun.TYPE: {
+                TrustAnchorValidationRun run = (TrustAnchorValidationRun) validationRun;
+                links.add(linkTo(methodOn(TrustAnchorController.class).get(run.getTrustAnchor().getId())).withRel(TrustAnchor.TYPE));
+                break;
+            }
         }
 
         return ValidationRunResource.builder()

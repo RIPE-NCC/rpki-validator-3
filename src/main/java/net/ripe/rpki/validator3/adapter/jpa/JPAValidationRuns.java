@@ -7,6 +7,7 @@ import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.domain.ValidationRun;
 import net.ripe.rpki.validator3.domain.ValidationRuns;
+import net.ripe.rpki.validator3.domain.querydsl.QTrustAnchorValidationRun;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
@@ -15,6 +16,7 @@ import javax.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+import static net.ripe.rpki.validator3.domain.querydsl.QTrustAnchorValidationRun.trustAnchorValidationRun;
 import static net.ripe.rpki.validator3.domain.querydsl.QValidationRun.validationRun;
 
 @Repository
@@ -36,7 +38,7 @@ public class JPAValidationRuns implements ValidationRuns {
 
     @Override
     public void removeAllForTrustAnchor(TrustAnchor trustAnchor) {
-        jpaQueryFactory.delete(validationRun).where(validationRun.trustAnchor.id.eq(trustAnchor.getId())).execute();
+        jpaQueryFactory.delete(trustAnchorValidationRun).where(trustAnchorValidationRun.trustAnchor.id.eq(trustAnchor.getId())).execute();
     }
 
     @Override
@@ -56,7 +58,7 @@ public class JPAValidationRuns implements ValidationRuns {
         return Optional.ofNullable(
             select(TrustAnchorValidationRun.class)
                 .where(
-                    validationRun.trustAnchor.eq(trustAnchor)
+                    validationRun.as(QTrustAnchorValidationRun.class).trustAnchor.eq(trustAnchor)
                         .and(validationRun.status.in(ValidationRun.Status.FAILED, ValidationRun.Status.SUCCEEDED))
                 )
                 .orderBy(validationRun.updatedAt.desc(), validationRun.id.desc())

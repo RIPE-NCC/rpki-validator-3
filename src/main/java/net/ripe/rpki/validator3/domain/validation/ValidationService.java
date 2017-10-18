@@ -84,7 +84,12 @@ public class ValidationService {
                         // validity time?
                         if (trustAnchor.getCertificate() == null || trustAnchor.getCertificate().getSerialNumber().compareTo(certificate.getSerialNumber()) <= 0) {
                             trustAnchor.setCertificate(certificate);
-                            rpkiRepositories.register(trustAnchor, certificate.getRepositoryUri().toASCIIString());
+                            URI rrdpNotifyUri = certificate.getRrdpNotifyUri();
+                            if (rrdpNotifyUri != null) {
+                                rpkiRepositories.register(trustAnchor, rrdpNotifyUri.toASCIIString());
+                            } else {
+                                rpkiRepositories.register(trustAnchor, certificate.getRepositoryUri().toASCIIString());
+                            }
                         } else {
                             validationResult.warn("repository.object.is.older.than.previous.object", trustAnchorCertificateURI.toASCIIString());
                         }

@@ -6,7 +6,6 @@ import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 
 /**
@@ -23,10 +22,6 @@ public abstract class ValidationRun extends AbstractEntity {
         FAILED
     }
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false, cascade = {CascadeType.PERSIST})
-    @Getter
-    private TrustAnchor trustAnchor;
-
     @Enumerated(value = EnumType.STRING)
     @NotNull
     @Getter
@@ -39,11 +34,6 @@ public abstract class ValidationRun extends AbstractEntity {
     @SuppressWarnings("unused")
     public ValidationRun() {
         super();
-    }
-
-    public ValidationRun(TrustAnchor trustAnchor) {
-        this();
-        this.trustAnchor = Objects.requireNonNull(trustAnchor, "trust anchor is required");
     }
 
     public abstract String getType();
