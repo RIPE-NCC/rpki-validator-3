@@ -9,8 +9,12 @@ import javax.xml.stream.events.Characters;
 import javax.xml.stream.events.EndElement;
 import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
@@ -24,11 +28,11 @@ import java.util.Map;
  */
 public class RrdpParser {
 
-    public Snapshot snapshot(final String xml) {
+    public Snapshot snapshot(final InputStream inputStream) {
         final Map<String, RepoObject> objects = new HashMap<>();
         try {
             XMLInputFactory factory = XMLInputFactory.newInstance();
-            XMLEventReader eventReader = factory.createXMLEventReader(new StringReader(xml));
+            XMLEventReader eventReader = factory.createXMLEventReader(inputStream);
 
             String uri = null;
             StringBuilder base64 = new StringBuilder();
@@ -66,6 +70,7 @@ public class RrdpParser {
                             final byte[] decoded = decoder.decode(base64.toString());
                             objects.put(uri, new RepoObject(decoded));
                             inPublishElement = false;
+                            base64 = new StringBuilder();
                         }
                         break;
                 }
@@ -76,11 +81,19 @@ public class RrdpParser {
         return new Snapshot(objects);
     }
 
+    public Snapshot snapshot(final String xml) {
+        try {
+            return snapshot(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8.name())));
+        } catch (UnsupportedEncodingException e) {
+            throw new RrdpException("Couldn't read snapshot: ", e);
+        }
+    }
 
-    public Notification notification(final String xml) {
+
+    public Notification notification(final InputStream inputStream) {
         try {
             XMLInputFactory factory = XMLInputFactory.newInstance();
-            XMLEventReader eventReader = factory.createXMLEventReader(new StringReader(xml));
+            XMLEventReader eventReader = factory.createXMLEventReader(inputStream);
 
             String sessionId = null;
             BigInteger serial = null;

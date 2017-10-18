@@ -33,11 +33,13 @@ public class RrdpService {
         this.rpkiObjectRepository = rpkiObjectRepository;
     }
 
-    public void storeSnapshot(final String snapshotUrl) {
-        final String snapshotXml = rrdpClient.getFile(snapshotUrl);
-        final Snapshot snapshot = rrdpParser.snapshot(snapshotXml);
-        snapshot.asMap().forEach((uri, value) -> {
-            final Either<ValidationResult, RpkiObject> maybeRpkiObject = createRpkiObject(uri, value.content);
+    public void storeRepository(final String uri) {
+        final Snapshot snapshot = rrdpClient.readStream(uri, is -> {
+            Notification notification = rrdpParser.notification(is);
+            return rrdpClient.readStream(notification.snapshotUri, iis -> rrdpParser.snapshot(iis));
+        });
+        snapshot.asMap().forEach((objUri, value) -> {
+            final Either<ValidationResult, RpkiObject> maybeRpkiObject = createRpkiObject(objUri, value.content);
             if (maybeRpkiObject.isLeft()) {
                 // TODO @mpuzanov Do something with the error, store it somewhere
             } else {

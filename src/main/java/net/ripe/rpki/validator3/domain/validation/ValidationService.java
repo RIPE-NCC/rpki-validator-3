@@ -12,15 +12,19 @@ import net.ripe.rpki.commons.validation.ValidationLocation;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.commons.validation.ValidationStatus;
 import net.ripe.rpki.validator3.domain.*;
+import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
+import net.ripe.rpki.validator3.rrdp.RrdpService;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import javax.validation.constraints.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
+import java.util.Locale;
 
 @Service
 @Slf4j
@@ -33,19 +37,21 @@ public class ValidationService {
     private final ValidationRuns validationRunRepository;
     private final RpkiRepositories rpkiRepositories;
     private final File localRsyncStorageDirectory;
+    private final RrdpService rrdpService;
 
     public ValidationService(
-        TrustAnchors trustAnchorRepository,
-        RpkiObjects rpkiObjectRepository,
-        ValidationRuns validationRunRepository,
-        RpkiRepositories rpkiRepositories,
-        @Value("${rpki.validator.local.rsync.storage.directory}") File localRsyncStorageDirectory
-    ) {
+            TrustAnchors trustAnchorRepository,
+            RpkiObjects rpkiObjectRepository,
+            ValidationRuns validationRunRepository,
+            RpkiRepositories rpkiRepositories,
+            @Value("${rpki.validator.local.rsync.storage.directory}") File localRsyncStorageDirectory,
+            RrdpService rrdpService) {
         this.trustAnchorRepository = trustAnchorRepository;
         this.rpkiObjectRepository = rpkiObjectRepository;
         this.validationRunRepository = validationRunRepository;
         this.rpkiRepositories = rpkiRepositories;
         this.localRsyncStorageDirectory = localRsyncStorageDirectory;
+        this.rrdpService = rrdpService;
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
@@ -148,14 +154,21 @@ public class ValidationService {
     public void validateRpkiRepository(long rpkiRepositoryId) {
         RpkiRepository rpkiRepository = rpkiRepositories.get(rpkiRepositoryId);
 
+        final String uri = rpkiRepository.getUri();
+        if (isRrdpUri(uri)) {
+            rrdpService.storeRepository(uri);
+        } else if (isRsyncUri(uri)) {
+
+        }
+
         // HOOK UP RRDP SERVICE
         RpkiRepositoryValidationRun validationRun = new RpkiRepositoryValidationRun(rpkiRepository);
         validationRunRepository.add(validationRun);
 
         log.info("Starting RPKI repository validation for " + rpkiRepository);
-
         validationRun.succeeded();
     }
+
 
     private void completeWith(TrustAnchorValidationRun validationRun, ValidationResult validationResult) {
         for (ValidationLocation location : validationResult.getValidatedLocations()) {
@@ -172,5 +185,13 @@ public class ValidationService {
         } else {
             validationRun.succeeded();
         }
+    }
+
+    private boolean isRrdpUri(final String uri) {
+        return uri.toLowerCase(Locale.ROOT).startsWith("https://") || uri.toLowerCase(Locale.ROOT).startsWith("http://");
+    }
+
+    private boolean isRsyncUri(final String uri) {
+        return uri.toLowerCase(Locale.ROOT).startsWith("rsync://");
     }
 }
