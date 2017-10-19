@@ -38,23 +38,6 @@ PID_FILE="/var/run/${APP_NAME}.pid"
 CONFIG_FILE="/etc/${APP_NAME}.conf"
 JAR="/usr/lib/${APP_NAME}.jar"
 
-function error_exit {
-    echo -e "[ error ] $1"
-    exit 1
-}
-
-function info {
-    echo -e "[ info ] $1"
-}
-
-function warn {
-    echo -e "[ warn ] $1"
-}
-
-if [[ ! -r $CONFIG_FILE ]]; then
-    error_exit "Can't read config file: $CONFIG_FILE"
-fi
-
 function parse_optional_config_line {
     local CONFIG_KEY=$1
     local VALUE=`grep "^$CONFIG_KEY" $CONFIG_FILE | sed 's/#.*//g' | awk -F "=" '{ print $2 }'`
@@ -71,7 +54,6 @@ function parse_config_line {
     eval "$2=$VALUE"
 }
 
-
 parse_config_line "ui.http.port" HTTP_PORT_VALUE
 parse_config_line "rtr.port" RTR_PORT_VALUE
 
@@ -81,90 +63,8 @@ parse_config_line "locations.pidfile" PID_FILE
 parse_config_line "jvm.memory.initial" JVM_XMS
 parse_config_line "jvm.memory.maximum" JVM_XMX
 
-#
-# Determine if the application is already running
-#
-RUNNING=is_running
+CLASSPATH=:"$LIB_DIR/*"
+MEM_OPTIONS="-Xms$JVM_XMS -Xmx$JVM_XMX"
 
-
-function is_running {
-    if [ -e ${PID_FILE} ]; then
-        if [ x`cat ${PID_FILE}` == x`pgrep -f -- -Dapp.name=${APP_NAME}` ]; then
-            echo "true";
-            exit;
-        fi
-    fi
-    echo "false";
-}
-
-function start_validator {
-    if [ ${RUNNING} == "true" ]; then
-        error_exit "${APP_NAME} is already running"
-    fi
-
-    info "Starting ${APP_NAME}..."
-    info "writing logs under log directory"
-    info "Web user interface is available on port ${HTTP_PORT_VALUE}"
-    info "Routers can connect on port ${RTR_PORT_VALUE}"
-
-    CLASSPATH=:"$LIB_DIR/*"
-    MEM_OPTIONS="-Xms$JVM_XMS -Xmx$JVM_XMX"
-
-    CMDLINE="${JAVA_CMD} ${JVM_OPTIONS} ${MEM_OPTIONS} ${JAVA_OPTS} \
-             -Dapp.name=${APP_NAME} -Dconfig.file=${CONFIG_FILE} \
-             -jar ${JAR}"
-
-    ${CMDLINE}
-    exit $?
-
-    PID=$!
-    echo $PID > $PID_FILE
-    info "Writing PID ${PID} to ${PID_FILE}"
-}
-
-function stop_validator {
-    info "Stopping ${APP_NAME}..."
-    RUNNING=$(is_running)
-    if [ ${RUNNING} == "true" ]; then
-        kill `cat ${PID_FILE}` && rm ${PID_FILE}
-    else
-        info "${APP_NAME} in not running"
-    fi
-}
-
-function check_status {
-    if [ ${RUNNING} == "true" ]; then
-        info "${APP_NAME} is running"
-    else
-        info "${APP_NAME} is not running"
-    fi
-    exit 0
-}
-
-function usage {
-cat << EOF
-Usage: $0 start
-   or  $0 stop
-   or  $0 status
-EOF
-}
-
-FIRST_ARG="$1"
-case ${FIRST_ARG} in
-    start)
-        start_validator
-        ;;
-    stop)
-        stop_validator
-        ;;
-    status)
-        check_status
-        ;;
-    *)
-        usage
-        exit
-        ;;
-esac
-
-exit $?
+${JAVA_CMD} ${MEM_OPTIONS} -Dapp.name=${APP_NAME} -Dconfig.file=${CONFIG_FILE} -jar ${JAR}
 
