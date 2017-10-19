@@ -2,7 +2,7 @@ package net.ripe.rpki.validator3.adapter.jpa;
 
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.TrustAnchorRepository;
+import net.ripe.rpki.validator3.domain.TrustAnchors;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,7 +31,7 @@ public class JPATrustAnchorRepositoryTest {
     private EntityManager entityManager;
 
     @Autowired
-    private TrustAnchorRepository subject;
+    private TrustAnchors subject;
 
     @After
     public void tearDown() {

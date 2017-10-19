@@ -1,33 +1,52 @@
 package net.ripe.rpki.validator3.domain;
 
 import lombok.Getter;
-import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.List;
+
 
 /**
  * Represents the a single run of validating a single trust anchor and all it's child CAs and related RPKI objects.
  */
 @Entity
-public class ValidationRun extends AbstractEntity {
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "TYPE", columnDefinition = "CHAR(2)")
+public abstract class ValidationRun extends AbstractEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false, cascade = {CascadeType.PERSIST})
-    @Getter
-    private TrustAnchor trustAnchor;
-
-    @Column(name = "trust_anchor_certificate_uri")
-    @NotNull
-    @ValidLocationURI
-    @Getter
-    private String trustAnchorCertificateURI;
-
-    protected ValidationRun() {
+    public enum Status {
+        RUNNING,
+        SUCCEEDED,
+        FAILED
     }
 
-    public ValidationRun(TrustAnchor trustAnchor) {
-        this.trustAnchor = Objects.requireNonNull(trustAnchor, "trust anchor is required");
-        this.trustAnchorCertificateURI = trustAnchor.getLocations().get(0);
+    @Enumerated(value = EnumType.STRING)
+    @NotNull
+    @Getter
+    private Status status = Status.RUNNING;
+
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "validationRun")
+    @Getter
+    private List<ValidationCheck> validationChecks = new ArrayList<>();
+
+    @SuppressWarnings("unused")
+    public ValidationRun() {
+        super();
+    }
+
+    public abstract String getType();
+
+    public void succeeded() {
+        this.status = Status.SUCCEEDED;
+    }
+
+    public void failed() {
+        this.status = Status.FAILED;
+    }
+
+    public void addCheck(ValidationCheck validationCheck) {
+        this.validationChecks.add(validationCheck);
     }
 }

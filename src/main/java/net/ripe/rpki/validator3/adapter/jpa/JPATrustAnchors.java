@@ -3,7 +3,7 @@ package net.ripe.rpki.validator3.adapter.jpa;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.TrustAnchorRepository;
+import net.ripe.rpki.validator3.domain.TrustAnchors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
@@ -15,7 +15,7 @@ import static net.ripe.rpki.validator3.domain.querydsl.QTrustAnchor.trustAnchor;
 
 @Repository
 @Transactional(Transactional.TxType.REQUIRED)
-public class JPATrustAnchorRepository implements TrustAnchorRepository {
+public class JPATrustAnchors implements TrustAnchors {
 
     private final EntityManager entityManager;
 
@@ -24,7 +24,7 @@ public class JPATrustAnchorRepository implements TrustAnchorRepository {
     private final QuartzValidationScheduler validationScheduler;
 
     @Autowired
-    public JPATrustAnchorRepository(EntityManager entityManager, JPAQueryFactory queryFactory, QuartzValidationScheduler validationScheduler) {
+    public JPATrustAnchors(EntityManager entityManager, JPAQueryFactory queryFactory, QuartzValidationScheduler validationScheduler) {
         this.entityManager = entityManager;
         this.queryFactory = queryFactory;
         this.validationScheduler = validationScheduler;
@@ -45,7 +45,7 @@ public class JPATrustAnchorRepository implements TrustAnchorRepository {
     @Override
     public TrustAnchor get(long id) {
         TrustAnchor result = entityManager.getReference(TrustAnchor.class, id);
-        result.getName(); // Throws EntityNotFoundException if the id is not valid
+        result.getId(); // Throws EntityNotFoundException if the id is not valid
         return result;
     }
 

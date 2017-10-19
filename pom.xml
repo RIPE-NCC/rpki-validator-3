@@ -122,6 +122,31 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty.http2</groupId>
+            <artifactId>http2-client</artifactId>
+            <version>9.4.6.v20170531</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty.http2</groupId>
+            <artifactId>http2-http-client-transport</artifactId>
+            <version>9.4.6.v20170531</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mortbay.jetty.alpn</groupId>
+            <artifactId>alpn-boot</artifactId>
+            <version>8.1.11.v20170118</version>
+            <scope>test</scope>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.functionaljava</groupId>
+            <artifactId>functionaljava-java8</artifactId>
+            <version>4.7</version>
+        </dependency>
+
     </dependencies>
 
     <dependencyManagement>

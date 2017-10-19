@@ -14,6 +14,7 @@ public abstract class AbstractEntity {
     @Getter
     private long id = -1;
 
+    @SuppressWarnings("unused")
     @Version
     private Integer version;
 

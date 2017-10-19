@@ -64,7 +64,7 @@ public class TrustAnchorLocator {
         try {
             String contents = new String(file.getBytes(), Charsets.UTF_8);
             String trimmed = contents.trim();
-            if (trimmed.startsWith("rsync://") || trimmed.startsWith("https://") || trimmed.startsWith("http://")) {
+            if (looksLikeUri(trimmed)) {
                 return readStandardTrustAnchorLocator(file.getOriginalFilename(), trimmed);
             } else {
                 return readExtendedTrustAnchorLocator(contents);
@@ -78,7 +78,7 @@ public class TrustAnchorLocator {
         try {
             String contents = Files.toString(file, Charsets.UTF_8);
             String trimmed = contents.trim();
-            if (trimmed.startsWith("rsync://") || trimmed.startsWith("https://") || trimmed.startsWith("http://")) {
+            if (looksLikeUri(trimmed)) {
                 return readStandardTrustAnchorLocator(file.getName(), trimmed);
             } else {
                 return readExtendedTrustAnchorLocator(trimmed);

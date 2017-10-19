@@ -16,12 +16,12 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Documented
 @Constraint(validatedBy = {})
 @Size(min = ValidLocationURI.MIN, max = ValidLocationURI.MAX)
-@Pattern(regexp = "^rsync://.+$", flags = Pattern.Flag.CASE_INSENSITIVE)
+@Pattern(regexp = "^(rsync|https)://.+$", flags = Pattern.Flag.CASE_INSENSITIVE)
 public @interface ValidLocationURI {
     int MIN = 5;
     int MAX = 160000;
 
-    String message() default "{ValidLocationURI.message}";
+    String message() default "{net.ripe.rpki.validator3.domain.constraints.ValidLocationURI.message}";
 
     Class<?>[] groups() default {};
 

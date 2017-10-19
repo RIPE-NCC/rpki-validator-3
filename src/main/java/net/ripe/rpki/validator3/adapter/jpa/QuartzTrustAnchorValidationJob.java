@@ -10,7 +10,7 @@ import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Slf4j
-public class QuartzValidationJob implements Job {
+public class QuartzTrustAnchorValidationJob implements Job {
 
     public static final String TRUST_ANCHOR_ID_KEY = "trustAnchorId";
 

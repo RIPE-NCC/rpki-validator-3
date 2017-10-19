@@ -2,6 +2,9 @@ package net.ripe.rpki.validator3.domain;
 
 import lombok.Getter;
 import lombok.Setter;
+import net.ripe.rpki.commons.crypto.util.CertificateRepositoryObjectFactory;
+import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
+import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.domain.constraints.ValidPublicKeyInfo;
 
@@ -38,4 +41,24 @@ public class TrustAnchor extends AbstractEntity {
     @NotNull
     @ValidPublicKeyInfo
     private String subjectPublicKeyInfo;
+
+    @Basic
+    @Size(max = RpkiObject.MAX_SIZE)
+    @Getter
+    private byte[] encodedCertificate;
+
+    public void setCertificate(X509ResourceCertificate certificate) {
+        this.encodedCertificate = certificate.getEncoded();
+    }
+
+    public X509ResourceCertificate getCertificate() {
+        if (encodedCertificate == null) {
+            return null;
+        }
+
+        return (X509ResourceCertificate) CertificateRepositoryObjectFactory.createCertificateRepositoryObject(
+            encodedCertificate,
+            ValidationResult.withLocation(locations.get(0))
+        );
+    }
 }
