@@ -245,7 +245,7 @@
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
-                                    <location>target/rpki-validator-${version}.jar</location>
+                                    <location>target/rpki-validator-${project.version}.jar</location>
                                     <destination>rpki-validator-3.jar</destination>
                                 </source>
                             </sources>
