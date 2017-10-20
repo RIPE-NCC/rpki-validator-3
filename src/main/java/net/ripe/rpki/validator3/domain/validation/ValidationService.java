@@ -157,7 +157,7 @@ public class ValidationService {
 
         final String uri = rpkiRepository.getUri();
         if (isRrdpUri(uri)) {
-            rrdpService.storeRepository(uri);
+            rrdpService.storeRepository(rpkiRepository);
         } else if (isRsyncUri(uri)) {
 
         }

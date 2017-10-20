@@ -31,13 +31,6 @@ public class RrdpParserTest {
         assertEquals(0, notification.deltas.size());
     }
 
-    private static String file(String path) throws IOException {
-        final InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(path);
-        try (BufferedReader buffer = new BufferedReader(new InputStreamReader(is))) {
-            return buffer.lines().collect(Collectors.joining("\n"));
-        }
-    }
-
     private static InputStream fileIS(String path) throws IOException {
         return Thread.currentThread().getContextClassLoader().getResourceAsStream(path);
     }

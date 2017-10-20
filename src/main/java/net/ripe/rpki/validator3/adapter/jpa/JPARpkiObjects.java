@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
+import java.util.List;
 import java.util.Optional;
 
 import static net.ripe.rpki.validator3.domain.querydsl.QRpkiObject.rpkiObject;
@@ -42,6 +43,11 @@ public class JPARpkiObjects implements RpkiObjects {
     @Override
     public Optional<RpkiObject> findBySha256(byte[] sha256) {
         return Optional.ofNullable(select().where(rpkiObject.sha256.eq(sha256)).fetchFirst());
+    }
+
+    @Override
+    public List<RpkiObject> all() {
+        return select().fetch();
     }
 
     private JPAQuery<RpkiObject> select() {

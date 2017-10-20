@@ -1,7 +1,6 @@
 package net.ripe.rpki.validator3.rrdp;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -22,15 +21,6 @@ public class RrdpClient {
         // TODO @mpuzanov find out why using HttpClientTransportOverHTTP2 makes GET request hang
         httpClient = new HttpClient(sslContextFactory);
         httpClient.start();
-    }
-
-    public String getFile(final String uri) {
-        try {
-            final ContentResponse response = httpClient.GET(uri);
-            return response.getContentAsString();
-        } catch (Exception e) {
-            throw new RrdpException("Couldn't fetch snapshot " + uri, e);
-        }
     }
 
     public <T> T readStream(final String uri, Function<InputStream, T> reader) {
