@@ -1,6 +1,7 @@
 package net.ripe.rpki.validator3.domain;
 
 import lombok.Getter;
+import net.ripe.rpki.commons.validation.ValidationStatus;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotEmpty;
@@ -56,18 +57,7 @@ public class ValidationCheck extends AbstractEntity {
         this.validationRun = validationRun;
         this.rpkiObject = rpkiObject;
         this.location = location;
-
-        switch (check.getStatus()) {
-            case PASSED:
-                throw new IllegalArgumentException("PASSED checks should not be stored: " + check);
-            case WARNING:
-                this.status = Status.WARNING;
-                break;
-            case ERROR: case FETCH_ERROR:
-                this.status = Status.ERROR;
-                break;
-        }
-
+        this.status = mapStatus(check.getStatus());
         this.key = check.getKey();
         this.parameters = Arrays.asList(check.getParams());
     }
@@ -79,5 +69,22 @@ public class ValidationCheck extends AbstractEntity {
         this.status = status;
         this.key = key;
         this.parameters.addAll(Arrays.asList(parameters));
+    }
+
+    static Status mapStatus(ValidationStatus status) {
+        switch (status) {
+            case PASSED:
+                throw new IllegalArgumentException("PASSED checks should not be stored: " + status);
+            case WARNING:
+                return Status.WARNING;
+            case ERROR: case FETCH_ERROR:
+                return Status.ERROR;
+        }
+        throw new IllegalArgumentException("Unknown status: " + status);
+    }
+
+    public static ValidationCheck of(net.ripe.rpki.commons.validation.ValidationResult result) {
+
+        return null;
     }
 }

@@ -8,12 +8,14 @@ import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
+import net.ripe.rpki.validator3.domain.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.util.Sha256;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.io.IOException;
+
 
 @Service
 @Slf4j
@@ -32,22 +34,25 @@ public class RrdpService {
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
-    public void storeRepository(final RpkiRepository rpkiRepository) {
-        final String uri = rpkiRepository.getUri();
-        final Snapshot snapshot = rrdpClient.readStream(uri, is -> {
+    public void storeRepository(final RpkiRepository rpkiRepository, final RpkiRepositoryValidationRun validationRun) {
+        final Snapshot snapshot = getSnapshot(rpkiRepository.getUri());
+        storeSnapshot(rpkiRepository, snapshot, validationRun);
+    }
+
+    private Snapshot getSnapshot(final String uri) {
+        return rrdpClient.readStream(uri, is -> {
             final Notification notification = rrdpParser.notification(is);
             return rrdpClient.readStream(notification.snapshotUri, i -> rrdpParser.snapshot(i));
         });
-        storeSnapshot(rpkiRepository, snapshot);
     }
 
-    void storeSnapshot(RpkiRepository rpkiRepository, Snapshot snapshot) {
+    void storeSnapshot(final RpkiRepository rpkiRepository, final Snapshot snapshot, final RpkiRepositoryValidationRun validationRun) {
         snapshot.asMap().forEach((objUri, value) -> {
             try {
                 RpkiObject rpkiObject = rpkiObjectRepository.findBySha256(Sha256.hash(value.content)).orElseGet(() -> {
                     final Either<ValidationResult, RpkiObject> maybeRpkiObject = createRpkiObject(objUri, value.content);
                     if (maybeRpkiObject.isLeft()) {
-                        // TODO @mpuzanov Do something with the error, store it somewhere
+                        validationRun.addChecks(maybeRpkiObject.left().value());
                         return null;
                     } else {
                         return maybeRpkiObject.right().value();
@@ -64,7 +69,6 @@ public class RrdpService {
     }
 
     Either<ValidationResult, RpkiObject> createRpkiObject(final String uri, final byte[] content) {
-        // TODO serialNumber must be taken from the parsed object
         try {
             ValidationResult validationResult = ValidationResult.withLocation(uri);
             CertificateRepositoryObject repositoryObject = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(content, validationResult);

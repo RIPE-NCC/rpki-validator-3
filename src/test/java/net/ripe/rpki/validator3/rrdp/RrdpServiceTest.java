@@ -4,6 +4,7 @@ import net.ripe.rpki.validator3.TestObjects;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
+import net.ripe.rpki.validator3.domain.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -15,13 +16,9 @@ import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 import java.io.IOException;
 import java.io.InputStream;
-import java.math.BigInteger;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(SpringRunner.class)
@@ -46,8 +43,10 @@ public class RrdpServiceTest {
         final RpkiRepository rpkiRepository = new RpkiRepository(trustAnchor, "https://rrdp.ripe.net/notification.xml");
         entityManager.persist(rpkiRepository);
 
+        final RpkiRepositoryValidationRun validationRun = new RpkiRepositoryValidationRun(rpkiRepository);
+
         final Snapshot snapshot = new RrdpParser().snapshot(fileIS("rrdp/snapshot2.xml"));
-        subject.storeSnapshot(rpkiRepository, snapshot);
+        subject.storeSnapshot(rpkiRepository, snapshot, validationRun);
 
         final List<RpkiObject> objects = rpkiObjects.all();
         assertEquals(3, objects.size());

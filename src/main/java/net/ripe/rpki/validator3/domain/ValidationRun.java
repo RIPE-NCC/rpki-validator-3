@@ -1,11 +1,14 @@
 package net.ripe.rpki.validator3.domain;
 
 import lombok.Getter;
+import net.ripe.rpki.commons.validation.ValidationResult;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
+
+import static net.ripe.rpki.validator3.domain.ValidationCheck.mapStatus;
 
 
 /**
@@ -49,4 +52,12 @@ public abstract class ValidationRun extends AbstractEntity {
     public void addCheck(ValidationCheck validationCheck) {
         this.validationChecks.add(validationCheck);
     }
+
+    public void addChecks(ValidationResult validationResult) {
+        validationResult.getAllValidationChecksForCurrentLocation().forEach(c -> {
+            final ValidationCheck.Status status = mapStatus(c.getStatus());
+            addCheck(new ValidationCheck(this, validationResult.getCurrentLocation().getName(), status, c.getKey(), c.getParams()));
+        });
+    }
+
 }
