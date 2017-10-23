@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
-import java.io.IOException;
 
 
 @Service
@@ -48,44 +47,31 @@ public class RrdpService {
 
     void storeSnapshot(final RpkiRepository rpkiRepository, final Snapshot snapshot, final RpkiRepositoryValidationRun validationRun) {
         snapshot.asMap().forEach((objUri, value) -> {
-            try {
-                RpkiObject rpkiObject = rpkiObjectRepository.findBySha256(Sha256.hash(value.content)).orElseGet(() -> {
-                    final Either<ValidationResult, RpkiObject> maybeRpkiObject = createRpkiObject(objUri, value.content);
-                    if (maybeRpkiObject.isLeft()) {
-                        validationRun.addChecks(maybeRpkiObject.left().value());
-                        return null;
-                    } else {
-                        return maybeRpkiObject.right().value();
-                    }
-                });
-                if (rpkiObject != null) {
-                    rpkiObject.addLocation(objUri);
-                    rpkiObjectRepository.add(rpkiObject);
+            rpkiObjectRepository.findBySha256(Sha256.hash(value.content)).map(existing -> {
+                existing.addLocation(objUri);
+                return existing;
+            }).orElseGet(() -> {
+                final Either<ValidationResult, RpkiObject> maybeRpkiObject = createRpkiObject(objUri, value.content);
+                if (maybeRpkiObject.isLeft()) {
+                    validationRun.addChecks(maybeRpkiObject.left().value());
+                    return null;
+                } else {
+                    RpkiObject result = maybeRpkiObject.right().value();
+                    rpkiObjectRepository.add(result);
+                    log.debug("added to database {}", result);
+                    return result;
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            });
         });
     }
 
     Either<ValidationResult, RpkiObject> createRpkiObject(final String uri, final byte[] content) {
-        try {
-            ValidationResult validationResult = ValidationResult.withLocation(uri);
-            CertificateRepositoryObject repositoryObject = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(content, validationResult);
-            if (validationResult.hasFailures()) {
-                return Either.left(validationResult);
-            } else {
-                RpkiObject rpkiObject = makeRpkiObject(repositoryObject);
-                rpkiObject.addLocation(uri);
-                return Either.right(rpkiObject);
-            }
-        } catch (IOException e) {
-            log.error("Couldn't parse and store object with URI " + uri);
-            return Either.left(ValidationResult.withLocation(uri).error("parsing.object", e.getMessage()));
+        ValidationResult validationResult = ValidationResult.withLocation(uri);
+        CertificateRepositoryObject repositoryObject = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(content, validationResult);
+        if (validationResult.hasFailures()) {
+            return Either.left(validationResult);
+        } else {
+            return Either.right(new RpkiObject(uri, repositoryObject));
         }
-    }
-
-    private RpkiObject makeRpkiObject(CertificateRepositoryObject object) throws IOException {
-        return new RpkiObject(object);
     }
 }

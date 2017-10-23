@@ -37,6 +37,7 @@ public class RpkiRepository extends AbstractEntity {
     @Basic(optional = false)
     @Enumerated(EnumType.STRING)
     @NotNull
+    @Getter
     private Status status;
 
     protected RpkiRepository() {
@@ -58,5 +59,9 @@ public class RpkiRepository extends AbstractEntity {
 
     public boolean isFailed() {
         return status == Status.FAILED;
+    }
+
+    public void setDownloaded() {
+        this.status = Status.DOWNLOADED;
     }
 }

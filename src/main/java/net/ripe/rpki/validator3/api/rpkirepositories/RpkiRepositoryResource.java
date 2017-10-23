@@ -24,6 +24,9 @@ public class RpkiRepositoryResource {
     @ValidLocationURI
     final String locationURI;
 
+    @NotNull
+    final RpkiRepository.Status status;
+
     final Links links;
 
     public static RpkiRepositoryResource of(RpkiRepository rpkiRepository) {
@@ -31,6 +34,7 @@ public class RpkiRepositoryResource {
             RpkiRepository.TYPE,
             rpkiRepository.getId(),
             rpkiRepository.getUri(),
+            rpkiRepository.getStatus(),
             new Links(
                 linkTo(methodOn(RpkiRepositoriesController.class).get(rpkiRepository.getId())).withSelfRel()
             )

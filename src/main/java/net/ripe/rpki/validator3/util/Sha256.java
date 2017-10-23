@@ -6,9 +6,11 @@ import org.bouncycastle.crypto.digests.SHA256Digest;
 import java.io.*;
 
 public class Sha256 {
-    public static byte[] hash(byte[] data) throws IOException {
+    public static byte[] hash(byte[] data) {
         try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
             return hash(in);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 

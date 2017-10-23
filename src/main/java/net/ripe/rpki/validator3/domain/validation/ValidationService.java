@@ -154,6 +154,9 @@ public class ValidationService {
     @Transactional(Transactional.TxType.REQUIRED)
     public void validateRpkiRepository(long rpkiRepositoryId) {
         final RpkiRepository rpkiRepository = rpkiRepositories.get(rpkiRepositoryId);
+        log.info("Starting RPKI repository validation for " + rpkiRepository);
+
+        ValidationResult validationResult = ValidationResult.withLocation(rpkiRepository.getUri());
 
         final RpkiRepositoryValidationRun validationRun = new RpkiRepositoryValidationRun(rpkiRepository);
         validationRunRepository.add(validationRun);
@@ -161,15 +164,18 @@ public class ValidationService {
         final String uri = rpkiRepository.getUri();
         if (isRrdpUri(uri)) {
             rrdpService.storeRepository(rpkiRepository, validationRun);
+            rpkiRepository.setDownloaded();
         } else if (isRsyncUri(uri)) {
-            // download, parse and store rsync repository
-
+            validationResult.error("rsync.repository.not.supported");
         } else {
             log.error("Unsupported type of the URI " + uri);
         }
 
-        log.info("Starting RPKI repository validation for " + rpkiRepository);
-        validationRun.succeeded();
+        if (validationResult.hasFailures()) {
+            validationRun.failed();
+        } else {
+            validationRun.succeeded();
+        }
     }
 
 

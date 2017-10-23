@@ -15,7 +15,6 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
-import java.io.IOException;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.SortedSet;
@@ -73,7 +72,8 @@ public class RpkiObject extends AbstractEntity {
         super();
     }
 
-    public RpkiObject(CertificateRepositoryObject object) throws IOException {
+    public RpkiObject(String location, CertificateRepositoryObject object) {
+        this.locations.add(location);
         this.encoded = object.getEncoded();
         this.sha256 = Sha256.hash(this.encoded);
         if (object instanceof X509ResourceCertificate) {
