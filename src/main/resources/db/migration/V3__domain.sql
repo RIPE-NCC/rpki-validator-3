@@ -23,6 +23,7 @@ CREATE TABLE rpki_repository (
     version INTEGER NOT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
+    status VARCHAR NOT NULL,
     uri VARCHAR(16000) NOT NULL,
     CONSTRAINT rpki_repository__pk PRIMARY KEY (id),
 );
@@ -41,14 +42,16 @@ CREATE TABLE rpki_object (
     version INTEGER NOT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
-    rpki_repository_id BIGINT NOT NULL,
-    serial_number DECIMAL(40, 0) NOT NULL,
+    type VARCHAR NOT NULL,
+    serial_number DECIMAL(40, 0),
+    signing_time TIMESTAMP,
+    authority_key_identifier BINARY(32),
     sha256 BINARY(32) NOT NULL,
     encoded BINARY,
-    CONSTRAINT rpki_object__pk PRIMARY KEY (id),
-    CONSTRAINT rpki_object__rpki_repository_fk FOREIGN KEY (rpki_repository_id) REFERENCES rpki_repository (id) ON DELETE CASCADE
+    CONSTRAINT rpki_object__pk PRIMARY KEY (id)
 );
-CREATE INDEX rpki_object__rpki_repository_id_idx ON rpki_object (rpki_repository_id ASC);
+CREATE UNIQUE INDEX rpki_object__sha256_idx ON rpki_object (sha256 ASC);
+CREATE INDEX rpki_object__authority_key_idenfitifier_idx ON rpki_object (authority_key_identifier ASC, type ASC, serial_number DESC, signing_time DESC, id DESC);
 
 CREATE TABLE rpki_object_locations (
     rpki_object_id BIGINT NOT NULL,

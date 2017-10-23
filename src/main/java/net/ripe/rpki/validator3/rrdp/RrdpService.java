@@ -2,11 +2,8 @@ package net.ripe.rpki.validator3.rrdp;
 
 import fj.data.Either;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCmsParser;
-import net.ripe.rpki.commons.crypto.cms.roa.RoaCmsParser;
-import net.ripe.rpki.commons.crypto.crl.X509Crl;
-import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
-import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificateParser;
+import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
+import net.ripe.rpki.commons.crypto.util.CertificateRepositoryObjectFactory;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
@@ -17,7 +14,6 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.io.IOException;
-import java.math.BigInteger;
 
 @Service
 @Slf4j
@@ -47,73 +43,45 @@ public class RrdpService {
 
     void storeSnapshot(RpkiRepository rpkiRepository, Snapshot snapshot) {
         snapshot.asMap().forEach((objUri, value) -> {
-            final Either<ValidationResult, RpkiObject> maybeRpkiObject = createRpkiObject(objUri, value.content, rpkiRepository);
-            if (maybeRpkiObject.isLeft()) {
-                // TODO @mpuzanov Do something with the error, store it somewhere
-            } else {
-                rpkiObjectRepository.add(maybeRpkiObject.right().value());
+            try {
+                RpkiObject rpkiObject = rpkiObjectRepository.findBySha256(Sha256.hash(value.content)).orElseGet(() -> {
+                    final Either<ValidationResult, RpkiObject> maybeRpkiObject = createRpkiObject(objUri, value.content);
+                    if (maybeRpkiObject.isLeft()) {
+                        // TODO @mpuzanov Do something with the error, store it somewhere
+                        return null;
+                    } else {
+                        return maybeRpkiObject.right().value();
+                    }
+                });
+                if (rpkiObject != null) {
+                    rpkiObject.addLocation(objUri);
+                    rpkiObjectRepository.add(rpkiObject);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         });
     }
 
-    Either<ValidationResult, RpkiObject> createRpkiObject(final String uri, final byte[] content, final RpkiRepository rpkiRepository) {
+    Either<ValidationResult, RpkiObject> createRpkiObject(final String uri, final byte[] content) {
         // TODO serialNumber must be taken from the parsed object
         try {
-            if (endsWith(uri, ".cer")) {
-                final X509ResourceCertificateParser parser = new X509ResourceCertificateParser();
-                parser.parse(uri, content);
-                if (parser.isSuccess()) {
-                    final X509ResourceCertificate certificate = parser.getCertificate();
-                    return Either.right(makeRpkiObject(uri, content, certificate.getSerialNumber(), rpkiRepository));
-                }
-                return Either.left(parser.getValidationResult());
-            } else if (endsWith(uri, ".mft")) {
-                final ManifestCmsParser parser = new ManifestCmsParser();
-                parser.parse(uri, content);
-                if (parser.isSuccess()) {
-                    final X509ResourceCertificate certificate = parser.getManifestCms().getCertificate();
-                    return Either.right(makeRpkiObject(uri, content, certificate.getSerialNumber(), rpkiRepository));
-                }
-                return Either.left(parser.getValidationResult());
-            } else if (endsWith(uri, ".crl")) {
-                final X509Crl crl = new X509Crl(content);
-                // TODO @mpuzanov Use proper serial number
-                BigInteger serialNumber = crl.getNumber();
-                return Either.right(makeRpkiObject(uri, content, serialNumber, rpkiRepository));
-            } else if (endsWith(uri, ".roa")) {
-                final RoaCmsParser parser = new RoaCmsParser();
-                parser.parse(uri, content);
-                if (parser.isSuccess()) {
-                    final X509ResourceCertificate certificate = parser.getRoaCms().getCertificate();
-                    return Either.right(makeRpkiObject(uri, content, certificate.getSerialNumber(), rpkiRepository));
-                }
-                return Either.left(parser.getValidationResult());
-            } else if (endsWith(uri, ".gbr")) {
-                // TODO @mpuzanov Support ghost busters records
+            ValidationResult validationResult = ValidationResult.withLocation(uri);
+            CertificateRepositoryObject repositoryObject = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(content, validationResult);
+            if (validationResult.hasFailures()) {
+                return Either.left(validationResult);
+            } else {
+                RpkiObject rpkiObject = makeRpkiObject(repositoryObject);
+                rpkiObject.addLocation(uri);
+                return Either.right(rpkiObject);
             }
-
-            return Either.left(ValidationResult.withLocation(uri).error("unknown.object", "Unknown object type"));
         } catch (IOException e) {
             log.error("Couldn't parse and store object with URI " + uri);
             return Either.left(ValidationResult.withLocation(uri).error("parsing.object", e.getMessage()));
         }
     }
 
-    private RpkiObject makeRpkiObject(final String uri, final byte[] content,
-                                      final BigInteger serialNumber,
-                                      final RpkiRepository rpkiRepository) throws IOException {
-        RpkiObject rpkiObject = new RpkiObject(rpkiRepository, serialNumber, Sha256.hash(content), content);
-        rpkiObject.addLocation(uri);
-        return rpkiObject;
+    private RpkiObject makeRpkiObject(CertificateRepositoryObject object) throws IOException {
+        return new RpkiObject(object);
     }
-
-    private boolean endsWith(final String s, final String end) {
-        if (s == null)
-            return false;
-        if (s.length() < end.length())
-            return false;
-        return s.substring(s.length() - end.length(), s.length()).equalsIgnoreCase(end);
-    }
-
-
 }

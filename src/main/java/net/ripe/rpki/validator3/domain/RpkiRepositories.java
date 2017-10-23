@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface RpkiRepositories {
-    void register(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String uri);
+    RpkiRepository register(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String uri);
 
     Optional<RpkiRepository> findByURI(@NotNull @ValidLocationURI String uri);
 

@@ -11,4 +11,6 @@ public interface RpkiObjects {
     Optional<RpkiObject> findBySha256(byte[] sha256);
 
     List<RpkiObject> all();
+
+    Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type type, byte[] authorityKeyIdentifier);
 }

@@ -17,6 +17,10 @@ public class RpkiRepository extends AbstractEntity {
 
     public static final String TYPE = "rpki-repository";
 
+    public enum Status {
+        PENDING, FAILED, DOWNLOADED
+    }
+
     @ManyToMany
     @JoinTable(joinColumns = @JoinColumn(name = "rpki_repository_id"), inverseJoinColumns = @JoinColumn(name = "trust_anchor_id"))
     @NotNull
@@ -30,16 +34,29 @@ public class RpkiRepository extends AbstractEntity {
     @Getter
     private String uri;
 
+    @Basic(optional = false)
+    @Enumerated(EnumType.STRING)
+    @NotNull
+    private Status status;
+
     protected RpkiRepository() {
     }
 
     public RpkiRepository(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String uri) {
         addTrustAnchor(trustAnchor);
         this.uri = uri;
+        this.status = Status.PENDING;
     }
 
     public void addTrustAnchor(@NotNull @Valid TrustAnchor trustAnchor) {
         this.trustAnchors.add(trustAnchor);
     }
 
+    public boolean isPending() {
+        return status == Status.PENDING;
+    }
+
+    public boolean isFailed() {
+        return status == Status.FAILED;
+    }
 }

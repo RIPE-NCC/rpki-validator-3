@@ -33,15 +33,15 @@ public class JPARpkiRepositories implements RpkiRepositories {
     }
 
     @Override
-    public void register(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String uri) {
-        Optional<RpkiRepository> existing = findByURI(uri);
-        if (existing.isPresent()) {
-            existing.get().addTrustAnchor(trustAnchor);
-        } else {
+    public RpkiRepository register(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String uri) {
+        RpkiRepository result = findByURI(uri).orElseGet(() -> {
             RpkiRepository repository = new RpkiRepository(trustAnchor, uri.toLowerCase());
             entityManager.persist(repository);
             quartzValidationScheduler.addRpkiRepository(repository);
-        }
+            return repository;
+        });
+        result.addTrustAnchor(trustAnchor);
+        return result;
     }
 
     @Override

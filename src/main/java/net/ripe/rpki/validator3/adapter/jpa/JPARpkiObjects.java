@@ -50,6 +50,15 @@ public class JPARpkiObjects implements RpkiObjects {
         return select().fetch();
     }
 
+    @Override
+    public Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type type, byte[] authorityKeyIdentifier) {
+        return Optional.ofNullable(select()
+            .where(rpkiObject.type.eq(type).and(rpkiObject.authorityKeyIdentifier.eq(authorityKeyIdentifier)))
+            .orderBy(rpkiObject.serialNumber.desc(), rpkiObject.signingTime.desc(), rpkiObject.id.desc())
+            .fetchFirst()
+        );
+    }
+
     private JPAQuery<RpkiObject> select() {
         return queryFactory.selectFrom(rpkiObject);
     }

@@ -3,19 +3,19 @@ package net.ripe.rpki.validator3.adapter.jpa;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
-import net.ripe.rpki.validator3.domain.validation.ValidationService;
+import net.ripe.rpki.validator3.domain.validation.CertificateTreeValidationService;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Slf4j
-public class QuartzTrustAnchorValidationJob implements Job {
+public class QuartzCertificateTreeValidationJob implements Job {
 
     public static final String TRUST_ANCHOR_ID_KEY = "trustAnchorId";
 
     @Autowired
-    private ValidationService validationService;
+    private CertificateTreeValidationService validationService;
 
     @Getter
     @Setter
@@ -29,13 +29,13 @@ public class QuartzTrustAnchorValidationJob implements Job {
     }
 
     static JobDetail buildJob(TrustAnchor trustAnchor) {
-        return JobBuilder.newJob(QuartzTrustAnchorValidationJob.class)
+        return JobBuilder.newJob(QuartzCertificateTreeValidationJob.class)
             .withIdentity(getJobKey(trustAnchor))
             .usingJobData(TRUST_ANCHOR_ID_KEY, trustAnchor.getId())
             .build();
     }
 
     static JobKey getJobKey(TrustAnchor trustAnchor) {
-        return new JobKey(String.format("%s#%d", TrustAnchorValidationRun.TYPE, trustAnchor.getId()));
+        return new JobKey(String.format("%s#%d", CertificateTreeValidationRun.TYPE, trustAnchor.getId()));
     }
 }

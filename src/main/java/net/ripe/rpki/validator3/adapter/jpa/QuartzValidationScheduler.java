@@ -5,7 +5,6 @@ import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -33,10 +32,14 @@ public class QuartzValidationScheduler {
 
         try {
             scheduler.scheduleJob(
-                JobBuilder.newJob(QuartzTrustAnchorValidationJob.class)
-                    .withIdentity(getJobKey(trustAnchor))
-                    .usingJobData(QuartzTrustAnchorValidationJob.TRUST_ANCHOR_ID_KEY, trustAnchor.getId())
-                    .build(),
+                QuartzTrustAnchorValidationJob.buildJob(trustAnchor),
+                TriggerBuilder.newTrigger()
+                    .startNow()
+                    .withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(10))
+                    .build()
+            );
+            scheduler.scheduleJob(
+                QuartzCertificateTreeValidationJob.buildJob(trustAnchor),
                 TriggerBuilder.newTrigger()
                     .startNow()
                     .withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(10))
@@ -49,17 +52,14 @@ public class QuartzValidationScheduler {
 
     public void removeTrustAnchor(TrustAnchor trustAnchor) {
         try {
-            boolean deleted = scheduler.deleteJob(getJobKey(trustAnchor));
-            if (!deleted) {
-                throw new EmptyResultDataAccessException("validation job for trust anchor not found", 1);
+            boolean trustAnchorValidationDeleted = scheduler.deleteJob(QuartzTrustAnchorValidationJob.getJobKey(trustAnchor));
+            boolean certificateTreeValidationDeleted = scheduler.deleteJob(QuartzCertificateTreeValidationJob.getJobKey(trustAnchor));
+            if (!trustAnchorValidationDeleted || !certificateTreeValidationDeleted) {
+                throw new EmptyResultDataAccessException("validation job for trust anchor or certificate tree not found", 1);
             }
         } catch (SchedulerException ex) {
             throw new RuntimeException(ex);
         }
-    }
-
-    private JobKey getJobKey(TrustAnchor trustAnchor) {
-        return new JobKey(String.format("%s#%d", TrustAnchorValidationRun.TYPE, trustAnchor.getId()));
     }
 
     public void addRpkiRepository(RpkiRepository rpkiRepository) {
