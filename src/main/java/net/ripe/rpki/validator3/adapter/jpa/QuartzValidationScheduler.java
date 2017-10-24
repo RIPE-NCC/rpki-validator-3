@@ -42,7 +42,7 @@ public class QuartzValidationScheduler {
                 QuartzCertificateTreeValidationJob.buildJob(trustAnchor),
                 TriggerBuilder.newTrigger()
                     .startNow()
-                    .withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(10))
+                    .withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(1))
                     .build()
             );
         } catch (SchedulerException ex) {
@@ -77,7 +77,7 @@ public class QuartzValidationScheduler {
                     .build(),
                 TriggerBuilder.newTrigger()
                     .startNow()
-                    .withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(10))
+                    .withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(1))
                     .build()
             );
         } catch (SchedulerException ex) {
