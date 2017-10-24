@@ -11,7 +11,6 @@ import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -29,7 +28,7 @@ import java.util.Map;
 public class RrdpParser {
 
     public Snapshot snapshot(final InputStream inputStream) {
-        final Map<String, RepoObject> objects = new HashMap<>();
+        final Map<String, SnapshotObject> objects = new HashMap<>();
         try {
             XMLInputFactory factory = XMLInputFactory.newInstance();
             XMLEventReader eventReader = factory.createXMLEventReader(inputStream);
@@ -68,7 +67,7 @@ public class RrdpParser {
 
                         if (qqName.equalsIgnoreCase("publish")) {
                             final byte[] decoded = decoder.decode(base64.toString());
-                            objects.put(uri, new RepoObject(decoded));
+                            objects.put(uri, new SnapshotObject(decoded, uri));
                             inPublishElement = false;
                             base64 = new StringBuilder();
                         }
@@ -90,6 +89,62 @@ public class RrdpParser {
     }
 
 
+    public Delta delta(final InputStream inputStream) {
+        final Map<String, DeltaPublish> objects = new HashMap<>();
+        try {
+            XMLInputFactory factory = XMLInputFactory.newInstance();
+            XMLEventReader eventReader = factory.createXMLEventReader(inputStream);
+
+            String uri = null;
+            String hash = null;
+            StringBuilder base64 = new StringBuilder();
+            boolean inPublishElement = false;
+
+            final Base64.Decoder decoder = Base64.getDecoder();
+
+            while (eventReader.hasNext()) {
+                final XMLEvent event = eventReader.nextEvent();
+
+                switch (event.getEventType()) {
+                    case XMLStreamConstants.START_ELEMENT:
+                        final StartElement startElement = event.asStartElement();
+                        final String qName = startElement.getName().getLocalPart();
+
+                        if (qName.equalsIgnoreCase("publish")) {
+                            uri = getAttr(startElement, "uri", "Uri is not present in 'publish' element");
+                            hash = getAttr(startElement, "uri", "Uri is not present in 'publish' element");
+                            inPublishElement = true;
+                        }
+                        break;
+
+                    case XMLStreamConstants.CHARACTERS:
+                        final Characters characters = event.asCharacters();
+                        if (inPublishElement) {
+                            final String thisBase64 = characters.getData();
+                            base64.append(thisBase64.replaceAll("\\s", ""));
+                        }
+                        break;
+
+                    case XMLStreamConstants.END_ELEMENT:
+                        final EndElement endElement = event.asEndElement();
+                        final String qqName = endElement.getName().getLocalPart();
+
+                        if (qqName.equalsIgnoreCase("publish")) {
+                            final byte[] decoded = decoder.decode(base64.toString());
+                            objects.put(uri, new DeltaPublish(decoded, uri, hash));
+                            inPublishElement = false;
+                            base64 = new StringBuilder();
+                        }
+                        break;
+                }
+            }
+        } catch (XMLStreamException e) {
+            throw new RrdpException("Couldn't parse snapshot: ", e);
+        }
+        return new Delta(objects);
+    }
+
+
     public Notification notification(final InputStream inputStream) {
         try {
             XMLInputFactory factory = XMLInputFactory.newInstance();
@@ -99,7 +154,7 @@ public class RrdpParser {
             BigInteger serial = null;
             String snapshotUri = null;
             String snapshotHash = null;
-            final List<Delta> deltas = new ArrayList<>();
+            final List<DeltaInfo> deltas = new ArrayList<>();
 
             while (eventReader.hasNext()) {
                 final XMLEvent event = eventReader.nextEvent();
@@ -119,7 +174,7 @@ public class RrdpParser {
                             final String deltaUri = getAttr(startElement, "uri", "Delta URI is not present");
                             final String deltaHash = getAttr(startElement, "hash", "Delta hash is not present");
                             final String deltaSerial = getAttr(startElement, "serial", "Delta serial is not present");
-                            deltas.add(new Delta(deltaUri, deltaHash, new BigInteger(deltaSerial)));
+                            deltas.add(new DeltaInfo(deltaUri, deltaHash, new BigInteger(deltaSerial)));
                         }
                         break;
                 }
@@ -131,6 +186,13 @@ public class RrdpParser {
     }
 
     private String getAttr(final StartElement startElement, final String attrName, final String absentMessage) {
+        final String attr = getAttr(startElement, attrName);
+        if (attr == null)
+            throw new RrdpException(absentMessage);
+        return attr;
+    }
+
+    private String getAttr(final StartElement startElement, final String attrName) {
         final Iterator<Attribute> attributes = startElement.getAttributes();
         while (attributes.hasNext()) {
             final Attribute next = attributes.next();
@@ -139,6 +201,6 @@ public class RrdpParser {
                 return next.getValue();
             }
         }
-        throw new RrdpException(absentMessage);
+        return null;
     }
 }

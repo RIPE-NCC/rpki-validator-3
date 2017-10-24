@@ -1,15 +1,10 @@
 package net.ripe.rpki.validator3.rrdp;
 
-import java.math.BigInteger;
+import java.util.Map;
 
-public class Delta {
-    public final String uri;
-    public final String hash;
-    public final BigInteger serial;
+public class Delta extends RepoObjects<DeltaPublish> {
 
-    public Delta(String uri, String hash, BigInteger serial) {
-        this.uri = uri;
-        this.hash = hash;
-        this.serial = serial;
+    public Delta(Map<String, DeltaPublish> objects) {
+        super(objects);
     }
 }

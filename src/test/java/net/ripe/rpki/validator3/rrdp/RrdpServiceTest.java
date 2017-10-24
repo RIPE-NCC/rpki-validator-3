@@ -46,7 +46,7 @@ public class RrdpServiceTest {
         final RpkiRepositoryValidationRun validationRun = new RpkiRepositoryValidationRun(rpkiRepository);
 
         final Snapshot snapshot = new RrdpParser().snapshot(fileIS("rrdp/snapshot2.xml"));
-        subject.storeSnapshot(rpkiRepository, snapshot, validationRun);
+        subject.storeSnapshot(snapshot, validationRun);
 
         final List<RpkiObject> objects = rpkiObjects.all();
         assertEquals(3, objects.size());

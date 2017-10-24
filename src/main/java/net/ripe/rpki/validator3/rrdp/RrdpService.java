@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.math.BigInteger;
 
 
 @Service
@@ -26,6 +27,9 @@ public class RrdpService {
 
     private RpkiObjects rpkiObjectRepository;
 
+    private String currentSessionId;
+    private BigInteger currentSerial;
+
     @Autowired
     public RrdpService(final RrdpClient rrdpClient, final RpkiObjects rpkiObjectRepository) {
         this.rrdpClient = rrdpClient;
@@ -34,8 +38,17 @@ public class RrdpService {
 
     @Transactional(Transactional.TxType.REQUIRED)
     public void storeRepository(final RpkiRepository rpkiRepository, final RpkiRepositoryValidationRun validationRun) {
-        final Snapshot snapshot = getSnapshot(rpkiRepository.getUri());
-        storeSnapshot(rpkiRepository, snapshot, validationRun);
+        final Notification notification = rrdpClient.readStream(rpkiRepository.getUri(), is -> rrdpParser.notification(is));
+        if (notification.sessionId.equals(currentSessionId)) {
+            notification.deltas.stream().filter(d -> d.getSerial().compareTo(currentSerial) > 0).forEach(d -> {
+
+            });
+        } else {
+            final Snapshot snapshot = rrdpClient.readStream(notification.snapshotUri, i -> rrdpParser.snapshot(i));
+            storeSnapshot(snapshot, validationRun);
+            currentSessionId = notification.sessionId;
+            currentSerial = notification.serial;
+        }
     }
 
     private Snapshot getSnapshot(final String uri) {
@@ -45,7 +58,7 @@ public class RrdpService {
         });
     }
 
-    void storeSnapshot(final RpkiRepository rpkiRepository, final Snapshot snapshot, final RpkiRepositoryValidationRun validationRun) {
+    void storeSnapshot(final Snapshot snapshot, final RpkiRepositoryValidationRun validationRun) {
         snapshot.asMap().forEach((objUri, value) -> {
             rpkiObjectRepository.findBySha256(Sha256.hash(value.content)).map(existing -> {
                 existing.addLocation(objUri);
