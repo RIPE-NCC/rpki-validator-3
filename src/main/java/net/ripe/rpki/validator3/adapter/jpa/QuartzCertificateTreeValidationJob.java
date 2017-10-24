@@ -9,6 +9,7 @@ import net.ripe.rpki.validator3.domain.validation.CertificateTreeValidationServi
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
+@DisallowConcurrentExecution
 @Slf4j
 public class QuartzCertificateTreeValidationJob implements Job {
 

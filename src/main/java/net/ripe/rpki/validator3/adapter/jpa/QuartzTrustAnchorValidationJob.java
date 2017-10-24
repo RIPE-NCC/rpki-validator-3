@@ -9,6 +9,7 @@ import net.ripe.rpki.validator3.domain.validation.ValidationService;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
+@DisallowConcurrentExecution
 @Slf4j
 public class QuartzTrustAnchorValidationJob implements Job {
 
