@@ -17,6 +17,8 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.EntityManager;
+import javax.persistence.FlushModeType;
 import javax.transaction.Transactional;
 import java.io.File;
 import java.io.IOException;
@@ -30,6 +32,7 @@ public class ValidationService {
 
     private static final int DEFAULT_RSYNC_PORT = 873;
 
+    private final EntityManager entityManager;
     private final TrustAnchors trustAnchorRepository;
     private final RpkiObjects rpkiObjectRepository;
     private final ValidationRuns validationRunRepository;
@@ -38,12 +41,14 @@ public class ValidationService {
     private final RrdpService rrdpService;
 
     public ValidationService(
-            TrustAnchors trustAnchorRepository,
-            RpkiObjects rpkiObjectRepository,
-            ValidationRuns validationRunRepository,
-            RpkiRepositories rpkiRepositories,
-            @Value("${rpki.validator.local.rsync.storage.directory}") File localRsyncStorageDirectory,
-            RrdpService rrdpService) {
+        EntityManager entityManager, TrustAnchors trustAnchorRepository,
+        RpkiObjects rpkiObjectRepository,
+        ValidationRuns validationRunRepository,
+        RpkiRepositories rpkiRepositories,
+        @Value("${rpki.validator.local.rsync.storage.directory}") File localRsyncStorageDirectory,
+        RrdpService rrdpService
+    ) {
+        this.entityManager = entityManager;
         this.trustAnchorRepository = trustAnchorRepository;
         this.rpkiObjectRepository = rpkiObjectRepository;
         this.validationRunRepository = validationRunRepository;
@@ -112,7 +117,7 @@ public class ValidationService {
         X509ResourceCertificate certificate = (X509ResourceCertificate) trustAnchorCertificate;
 
         String encodedSubjectPublicKeyInfo = X509CertificateUtil.getEncodedSubjectPublicKeyInfo(certificate.getCertificate());
-        validationResult.rejectIfFalse(encodedSubjectPublicKeyInfo.equals(trustAnchor.getSubjectPublicKeyInfo()),"trust.anchor.subject.key.matches.locator");
+        validationResult.rejectIfFalse(encodedSubjectPublicKeyInfo.equals(trustAnchor.getSubjectPublicKeyInfo()), "trust.anchor.subject.key.matches.locator");
 
         boolean signatureValid;
         try {
@@ -153,6 +158,8 @@ public class ValidationService {
 
     @Transactional(Transactional.TxType.REQUIRED)
     public void validateRpkiRepository(long rpkiRepositoryId) {
+        entityManager.setFlushMode(FlushModeType.COMMIT);
+
         final RpkiRepository rpkiRepository = rpkiRepositories.get(rpkiRepositoryId);
         log.info("Starting RPKI repository validation for " + rpkiRepository);
 
@@ -177,7 +184,6 @@ public class ValidationService {
             validationRun.succeeded();
         }
     }
-
 
     private void completeWith(TrustAnchorValidationRun validationRun, ValidationResult validationResult) {
         for (ValidationLocation location : validationResult.getValidatedLocations()) {

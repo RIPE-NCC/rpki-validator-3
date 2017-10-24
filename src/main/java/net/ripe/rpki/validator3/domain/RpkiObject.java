@@ -6,7 +6,9 @@ import net.ripe.rpki.commons.crypto.UnknownCertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.RpkiSignedObject;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.crypto.crl.X509Crl;
+import net.ripe.rpki.commons.crypto.util.CertificateRepositoryObjectFactory;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
+import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.util.Sha256;
 
@@ -17,6 +19,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -95,6 +98,15 @@ public class RpkiObject extends AbstractEntity {
             // FIXME store these at all?
         } else {
             throw new IllegalArgumentException("unsupported certificate repository object type " + object);
+        }
+    }
+
+    public <T extends CertificateRepositoryObject> Optional<T> get(Class<T> clazz, ValidationResult validationResult) {
+        CertificateRepositoryObject candidate = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(encoded, validationResult);
+        if (clazz.isInstance(candidate)) {
+            return Optional.of(clazz.cast(candidate));
+        } else {
+            return Optional.empty();
         }
     }
 
