@@ -50,9 +50,6 @@ public class TrustAnchorValidationServiceTest {
         assertThat(validationRun.get().getStatus()).isEqualTo(ValidationRun.Status.SUCCEEDED);
 
         assertThat(validationRun.get().getValidationChecks()).isEmpty();
-
-        Optional<RpkiRepository> rpkiRepository = rpkiRepositories.findByURI(certificate.getRrdpNotifyUri().toASCIIString());
-        assertThat(rpkiRepository).isPresent();
     }
 
     @Test

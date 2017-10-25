@@ -34,7 +34,6 @@ public class ValidationService {
 
     private final EntityManager entityManager;
     private final TrustAnchors trustAnchorRepository;
-    private final RpkiObjects rpkiObjectRepository;
     private final ValidationRuns validationRunRepository;
     private final RpkiRepositories rpkiRepositories;
     private final File localRsyncStorageDirectory;
@@ -42,7 +41,6 @@ public class ValidationService {
 
     public ValidationService(
         EntityManager entityManager, TrustAnchors trustAnchorRepository,
-        RpkiObjects rpkiObjectRepository,
         ValidationRuns validationRunRepository,
         RpkiRepositories rpkiRepositories,
         @Value("${rpki.validator.local.rsync.storage.directory}") File localRsyncStorageDirectory,
@@ -50,7 +48,6 @@ public class ValidationService {
     ) {
         this.entityManager = entityManager;
         this.trustAnchorRepository = trustAnchorRepository;
-        this.rpkiObjectRepository = rpkiObjectRepository;
         this.validationRunRepository = validationRunRepository;
         this.rpkiRepositories = rpkiRepositories;
         this.localRsyncStorageDirectory = localRsyncStorageDirectory;
@@ -85,12 +82,6 @@ public class ValidationService {
                         // validity time?
                         if (trustAnchor.getCertificate() == null || trustAnchor.getCertificate().getSerialNumber().compareTo(certificate.getSerialNumber()) <= 0) {
                             trustAnchor.setCertificate(certificate);
-                            URI rrdpNotifyUri = certificate.getRrdpNotifyUri();
-                            if (rrdpNotifyUri != null) {
-                                rpkiRepositories.register(trustAnchor, rrdpNotifyUri.toASCIIString());
-                            } else {
-                                rpkiRepositories.register(trustAnchor, certificate.getRepositoryUri().toASCIIString());
-                            }
                         } else {
                             validationResult.warn("repository.object.is.older.than.previous.object", trustAnchorCertificateURI.toASCIIString());
                         }
