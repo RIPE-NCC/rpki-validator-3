@@ -17,6 +17,10 @@ public class RpkiRepositoryValidationRun extends ValidationRun {
     @Getter
     private RpkiRepository rpkiRepository;
 
+    @Basic(optional = false)
+    @Getter
+    private int addedObjectCount;
+
     protected RpkiRepositoryValidationRun() {
     }
 
@@ -27,5 +31,9 @@ public class RpkiRepositoryValidationRun extends ValidationRun {
     @Override
     public String getType() {
         return TYPE;
+    }
+
+    public void objectAdded() {
+        ++this.addedObjectCount;
     }
 }

@@ -5,6 +5,7 @@ import net.ripe.rpki.commons.validation.ValidationResult;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,6 +26,10 @@ public abstract class ValidationRun extends AbstractEntity {
         FAILED
     }
 
+    @Basic
+    @Getter
+    private Instant completedAt;
+
     @Enumerated(value = EnumType.STRING)
     @NotNull
     @Getter
@@ -41,11 +46,17 @@ public abstract class ValidationRun extends AbstractEntity {
 
     public abstract String getType();
 
-    public void succeeded() {
+    public boolean isSucceeded() {
+        return this.status == Status.SUCCEEDED;
+    }
+
+    public void setSucceeded() {
+        this.completedAt = Instant.now();
         this.status = Status.SUCCEEDED;
     }
 
-    public void failed() {
+    public void setFailed() {
+        this.completedAt = Instant.now();
         this.status = Status.FAILED;
     }
 

@@ -64,6 +64,7 @@ public class RrdpService {
                 } else {
                     RpkiObject result = maybeRpkiObject.right().value();
                     rpkiObjectRepository.add(result);
+                    validationRun.objectAdded();
                     log.debug("added to database {}", result);
                     return result;
                 }

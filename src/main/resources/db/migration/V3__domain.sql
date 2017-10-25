@@ -66,6 +66,7 @@ CREATE TABLE validation_run (
     version INTEGER NOT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
+    completed_at TIMESTAMP,
     status VARCHAR NOT NULL,
 
     -- Trust anchor validation run
@@ -74,6 +75,7 @@ CREATE TABLE validation_run (
 
     -- RPKI repository validation run
     rpki_repository_id BIGINT,
+    added_object_count INTEGER,
 
     CONSTRAINT validation_run__pk PRIMARY KEY (id),
     CONSTRAINT validation_run__trust_anchor_fk FOREIGN KEY (trust_anchor_id) REFERENCES trust_anchor (id) ON DELETE RESTRICT,

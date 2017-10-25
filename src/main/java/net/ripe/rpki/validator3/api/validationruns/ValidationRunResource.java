@@ -10,6 +10,7 @@ import net.ripe.rpki.validator3.domain.*;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,11 +25,17 @@ public class ValidationRunResource {
     @ApiModelProperty(allowableValues = TrustAnchorValidationRun.TYPE + "," + RpkiRepositoryValidationRun.TYPE, required = true, position = 1)
     String type;
 
+    Instant startedAt;
+
+    Instant completedAt;
+
     String status;
 
     List<ValidationCheckResource> validationChecks;
 
     Integer validatedObjectCount;
+
+    Integer addedObjectCount;
 
     Links links;
 
@@ -38,6 +45,8 @@ public class ValidationRunResource {
 
         ValidationRunResourceBuilder builder = ValidationRunResource.builder()
             .type(validationRun.getType())
+            .startedAt(validationRun.getCreatedAt())
+            .completedAt(validationRun.getCompletedAt())
             .status(validationRun.getStatus().name())
             .validationChecks(
                 validationRun.getValidationChecks()
@@ -55,6 +64,7 @@ public class ValidationRunResource {
             }
             case RpkiRepositoryValidationRun.TYPE: {
                 RpkiRepositoryValidationRun run = (RpkiRepositoryValidationRun) validationRun;
+                builder.addedObjectCount(run.getAddedObjectCount());
                 links.add(linkTo(methodOn(RpkiRepositoriesController.class).get(run.getRpkiRepository().getId())).withRel(RpkiRepository.TYPE));
                 break;
             }

@@ -14,6 +14,7 @@ import net.ripe.rpki.commons.validation.ValidationStatus;
 import net.ripe.rpki.validator3.domain.*;
 import net.ripe.rpki.validator3.rrdp.RrdpService;
 import org.apache.commons.lang3.ArrayUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -39,8 +40,10 @@ public class ValidationService {
     private final File localRsyncStorageDirectory;
     private final RrdpService rrdpService;
 
+    @Autowired
     public ValidationService(
-        EntityManager entityManager, TrustAnchors trustAnchorRepository,
+        EntityManager entityManager,
+        TrustAnchors trustAnchorRepository,
         ValidationRuns validationRunRepository,
         RpkiRepositories rpkiRepositories,
         @Value("${rpki.validator.local.rsync.storage.directory}") File localRsyncStorageDirectory,
@@ -64,6 +67,8 @@ public class ValidationService {
         validationRunRepository.add(validationRun);
 
         try {
+            boolean updated = false;
+
             URI trustAnchorCertificateURI = URI.create(validationRun.getTrustAnchorCertificateURI()).normalize();
             ValidationResult validationResult = ValidationResult.withLocation(trustAnchorCertificateURI);
 
@@ -80,20 +85,24 @@ public class ValidationService {
 
                     if (!validationResult.hasFailureForCurrentLocation()) {
                         // validity time?
-                        if (trustAnchor.getCertificate() == null || trustAnchor.getCertificate().getSerialNumber().compareTo(certificate.getSerialNumber()) <= 0) {
+                        int comparedSerial = trustAnchor.getCertificate() == null ? 1 : trustAnchor.getCertificate().getSerialNumber().compareTo(certificate.getSerialNumber());
+                        validationResult.warnIfTrue(comparedSerial < 0, "repository.object.is.older.than.previous.object", trustAnchorCertificateURI.toASCIIString());
+                        if (comparedSerial > 0) {
                             trustAnchor.setCertificate(certificate);
-                        } else {
-                            validationResult.warn("repository.object.is.older.than.previous.object", trustAnchorCertificateURI.toASCIIString());
+                            updated = true;
                         }
                     }
                 }
             }
 
             completeWith(validationRun, validationResult);
+            if (updated) {
+                validationRunRepository.runCertificateTreeValidation(trustAnchor);
+            }
         } catch (CommandExecutionException | IOException e) {
             log.error("validation run for trust anchor {} failed", trustAnchor, e);
             validationRun.addCheck(new ValidationCheck(validationRun, validationRun.getTrustAnchorCertificateURI(), ValidationCheck.Status.ERROR, "unhandled.exception", e.toString()));
-            validationRun.failed();
+            validationRun.setFailed();
         }
 
     }
@@ -170,9 +179,15 @@ public class ValidationService {
         }
 
         if (validationResult.hasFailures()) {
-            validationRun.failed();
+            validationRun.setFailed();
         } else {
-            validationRun.succeeded();
+            validationRun.setSucceeded();
+        }
+
+        if (validationRun.isSucceeded() && validationRun.getAddedObjectCount() > 0) {
+            rpkiRepository.getTrustAnchors().forEach(trustAnchor -> {
+                validationRunRepository.runCertificateTreeValidation(trustAnchor);
+            });
         }
     }
 
@@ -187,9 +202,9 @@ public class ValidationService {
         }
 
         if (validationResult.hasFailures()) {
-            validationRun.failed();
+            validationRun.setFailed();
         } else {
-            validationRun.succeeded();
+            validationRun.setSucceeded();
         }
     }
 

@@ -38,13 +38,16 @@ public class QuartzValidationScheduler {
                     .withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(10))
                     .build()
             );
-            scheduler.scheduleJob(
-                QuartzCertificateTreeValidationJob.buildJob(trustAnchor),
-                TriggerBuilder.newTrigger()
-                    .startNow()
-                    .withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(1))
-                    .build()
-            );
+            scheduler.addJob(QuartzCertificateTreeValidationJob.buildJob(trustAnchor), true);
+        } catch (SchedulerException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    @Transactional(Transactional.TxType.MANDATORY)
+    public void triggerCertificateTreeValidation(TrustAnchor trustAnchor) {
+        try {
+            scheduler.triggerJob(QuartzCertificateTreeValidationJob.getJobKey(trustAnchor));
         } catch (SchedulerException ex) {
             throw new RuntimeException(ex);
         }

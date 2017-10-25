@@ -24,11 +24,13 @@ import static net.ripe.rpki.validator3.domain.querydsl.QValidationRun.validation
 public class JPAValidationRuns implements ValidationRuns {
     private final EntityManager entityManager;
     private final JPAQueryFactory jpaQueryFactory;
+    private final QuartzValidationScheduler validationScheduler;
 
     @Autowired
-    public JPAValidationRuns(EntityManager entityManager, JPAQueryFactory jpaQueryFactory) {
+    public JPAValidationRuns(EntityManager entityManager, JPAQueryFactory jpaQueryFactory, QuartzValidationScheduler validationScheduler) {
         this.entityManager = entityManager;
         this.jpaQueryFactory = jpaQueryFactory;
+        this.validationScheduler = validationScheduler;
     }
 
     @Override
@@ -64,6 +66,11 @@ public class JPAValidationRuns implements ValidationRuns {
                 .orderBy(validationRun.updatedAt.desc(), validationRun.id.desc())
                 .fetchFirst()
         );
+    }
+
+    @Override
+    public void runCertificateTreeValidation(TrustAnchor trustAnchor) {
+        validationScheduler.triggerCertificateTreeValidation(trustAnchor);
     }
 
     private <T extends ValidationRun> JPAQuery<T> select(Class<T> type) {

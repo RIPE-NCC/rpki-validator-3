@@ -89,10 +89,10 @@ public class CertificateTreeValidationService {
             addValidationResults(validationRun, validationResult);
             if (validationResult.hasFailures()) {
                 log.info("tree validation failed for {}", trustAnchor);
-                validationRun.failed();
+                validationRun.setFailed();
             } else {
                 log.info("tree validation succeeded for {}", trustAnchor);
-                validationRun.succeeded();
+                validationRun.setSucceeded();
             }
         }
     }

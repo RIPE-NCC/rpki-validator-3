@@ -61,4 +61,12 @@ public class TrustAnchor extends AbstractEntity {
             ValidationResult.withLocation(locations.get(0))
         );
     }
+
+    @Override
+    public String toString() {
+        return toStringBuilder()
+            .append("name", getName())
+            .append("locations", getLocations())
+            .build();
+    }
 }

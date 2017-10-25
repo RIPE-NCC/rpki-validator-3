@@ -13,4 +13,6 @@ public interface ValidationRuns {
     <T extends ValidationRun> List<T> findAll(Class<T> type);
 
     Optional<TrustAnchorValidationRun> findLatestCompletedForTrustAnchor(TrustAnchor trustAnchor);
+
+    void runCertificateTreeValidation(TrustAnchor trustAnchor);
 }
