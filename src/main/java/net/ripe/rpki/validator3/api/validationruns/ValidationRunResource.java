@@ -28,13 +28,31 @@ public class ValidationRunResource {
 
     List<ValidationCheckResource> validationChecks;
 
+    Integer validatedObjectCount;
+
     Links links;
 
     public static ValidationRunResource of(ValidationRun validationRun) {
         List<Link> links = new ArrayList<>();
         links.add(linkTo(methodOn(ValidationRunController.class).get(validationRun.getId())).withSelfRel());
 
+        ValidationRunResourceBuilder builder = ValidationRunResource.builder()
+            .type(validationRun.getType())
+            .status(validationRun.getStatus().name())
+            .validationChecks(
+                validationRun.getValidationChecks()
+                    .stream()
+                    .map(ValidationCheckResource::of)
+                    .collect(Collectors.toList())
+            );
+
         switch (validationRun.getType()) {
+            case CertificateTreeValidationRun.TYPE: {
+                CertificateTreeValidationRun run = (CertificateTreeValidationRun) validationRun;
+                builder.validatedObjectCount(run.getValidatedObjects().size());
+                links.add(linkTo(methodOn(TrustAnchorController.class).get(run.getTrustAnchor().getId())).withRel(TrustAnchor.TYPE));
+                break;
+            }
             case RpkiRepositoryValidationRun.TYPE: {
                 RpkiRepositoryValidationRun run = (RpkiRepositoryValidationRun) validationRun;
                 links.add(linkTo(methodOn(RpkiRepositoriesController.class).get(run.getRpkiRepository().getId())).withRel(RpkiRepository.TYPE));
@@ -47,16 +65,6 @@ public class ValidationRunResource {
             }
         }
 
-        return ValidationRunResource.builder()
-            .type(validationRun.getType())
-            .status(validationRun.getStatus().name())
-            .validationChecks(
-                validationRun.getValidationChecks()
-                    .stream()
-                    .map(ValidationCheckResource::of)
-                    .collect(Collectors.toList())
-            )
-            .links(new Links(links))
-            .build();
+        return builder.links(new Links(links)).build();
     }
 }

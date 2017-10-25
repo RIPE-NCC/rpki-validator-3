@@ -1,10 +1,12 @@
 package net.ripe.rpki.validator3.domain;
 
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.Entity;
-import javax.persistence.ManyToOne;
+import lombok.Getter;
+
+import javax.persistence.*;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @DiscriminatorValue("CT")
@@ -14,7 +16,17 @@ public class CertificateTreeValidationRun extends ValidationRun {
     @ManyToOne(optional = false)
     @NotNull
     @Valid
+    @Getter
     private TrustAnchor trustAnchor;
+
+    @ManyToMany
+    @JoinTable(
+        joinColumns = @JoinColumn(name = "validation_run_id"),
+        inverseJoinColumns = @JoinColumn(name = "rpki_object_id")
+    )
+    @NotNull
+    @Getter
+    private Set<RpkiObject> validatedObjects = new HashSet<>();
 
     protected CertificateTreeValidationRun() {
     }

@@ -106,3 +106,11 @@ CREATE TABLE validation_check_parameters (
     CONSTRAINT validation_check_parameters__validation_check_fk FOREIGN KEY (validation_check_id) REFERENCES validation_check (id) ON DELETE CASCADE
 );
 
+CREATE TABLE validation_run_validated_objects (
+    validation_run_id BIGINT NOT NULL,
+    rpki_object_id BIGINT NOT NULL,
+    CONSTRAINT validation_run_validatied_objects__pk PRIMARY KEY (validation_run_id, rpki_object_id),
+    CONSTRAINT validation_run_validated_objects__validation_run_fk FOREIGN KEY (validation_run_id) REFERENCES validation_run (id) ON DELETE CASCADE,
+    CONSTRAINT validation_run_validated_objects__rpki_object_fk FOREIGN KEY (rpki_object_id) REFERENCES rpki_object (id) ON DELETE CASCADE
+);
+CREATE INDEX validation_run_validated_objects__rpki_object_idx ON validation_run_validated_objects (rpki_object_id);

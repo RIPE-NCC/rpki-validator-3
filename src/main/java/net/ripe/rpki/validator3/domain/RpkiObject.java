@@ -19,6 +19,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -102,11 +103,32 @@ public class RpkiObject extends AbstractEntity {
     }
 
     public <T extends CertificateRepositoryObject> Optional<T> get(Class<T> clazz, ValidationResult validationResult) {
-        CertificateRepositoryObject candidate = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(encoded, validationResult);
-        if (clazz.isInstance(candidate)) {
+        ValidationResult temporary = ValidationResult.withLocation(validationResult.getCurrentLocation());
+        try {
+            temporary.rejectIfFalse(Arrays.equals(Sha256.hash(encoded), sha256), "rpki.object.sha256.matches");
+            if (temporary.hasFailureForCurrentLocation()) {
+                return Optional.empty();
+            }
+
+            ValidationResult ignored = ValidationResult.withLocation(validationResult.getCurrentLocation());
+            CertificateRepositoryObject candidate = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(
+                encoded,
+                ignored // Ignore any parse errors, as all stored objects must be parsable
+            );
+
+            temporary.rejectIfNull(candidate, "rpki.object.parsable");
+            if (temporary.hasFailureForCurrentLocation()) {
+                return Optional.empty();
+            }
+
+            temporary.rejectIfFalse(clazz.isInstance(candidate), "rpki.object.type.matches", clazz.getSimpleName(), candidate.getClass().getSimpleName());
+            if (temporary.hasFailureForCurrentLocation()) {
+                return Optional.empty();
+            }
+
             return Optional.of(clazz.cast(candidate));
-        } else {
-            return Optional.empty();
+        } finally {
+            validationResult.addAll(temporary);
         }
     }
 
