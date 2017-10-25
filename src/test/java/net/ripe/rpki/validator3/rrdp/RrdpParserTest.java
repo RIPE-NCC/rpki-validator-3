@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class RrdpParserTest {
 
@@ -18,7 +19,25 @@ public class RrdpParserTest {
     public void should_parse_snapshot() throws Exception {
         final Snapshot snapshot = new RrdpParser().snapshot(fileIS("rrdp/snapshot1.xml"));
         assertNotNull(snapshot.asMap().get("rsync://bandito.ripe.net/repo/671570f06499fbd2d6ab76c4f22566fe49d5de60.cer"));
-        assertNotNull(snapshot);
+    }
+
+    @Test
+    public void should_parse_delta() throws Exception {
+        final Delta delta = new RrdpParser().delta(fileIS("rrdp/delta1.xml"));
+        final String uri1 = "rsync://bandito.ripe.net/repo/3a87a4b1-6e22-4a63-ad0f-06f83ad3ca16/default/671570f06499fbd2d6ab76c4f22566fe49d5de60.mft";
+        DeltaElement e1 = delta.asMap().get(uri1);
+        assertEquals(uri1, ((DeltaPublish)e1).uri);
+        assertEquals("226AB8CD3C887A6EBDDDF317F2FAFC9CF3EFC5D43A86347AC0FEFFE4DC0F607E", ((DeltaPublish)e1).getHash().get());
+
+        final String uri2 = "rsync://bandito.ripe.net/repo/3a87a4b1-6e22-4a63-ad0f-06f83ad3ca16/default/671570f06499fbd2d6ab76c4f22566fe49d5de60.crl";
+        DeltaElement e2 = delta.asMap().get(uri2);
+        assertEquals(uri2, ((DeltaPublish)e2).uri);
+        assertEquals("2B551A6C10CCA04C174B0CEB3B64652A5534D1385BEAA40A55A68CB06055E6BB", ((DeltaPublish)e2).getHash().get());
+
+        final String uri3 = "rsync://bandito.ripe.net/repo/3a87a4b1-6e22-4a63-ad0f-06f83ad3ca16/default/example.roa";
+        DeltaElement e3 = delta.asMap().get(uri3);
+        assertEquals(uri3, ((DeltaWithdraw)e3).uri);
+        assertEquals("2B551A6C10CCA04C174B0CEB3B64652A5534D1385BEAA40A55A68CB06055E6BB", ((DeltaWithdraw)e3).getHash());
     }
 
     @Test

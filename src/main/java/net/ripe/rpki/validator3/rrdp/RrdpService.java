@@ -51,13 +51,6 @@ public class RrdpService {
         }
     }
 
-    private Snapshot getSnapshot(final String uri) {
-        return rrdpClient.readStream(uri, is -> {
-            final Notification notification = rrdpParser.notification(is);
-            return rrdpClient.readStream(notification.snapshotUri, i -> rrdpParser.snapshot(i));
-        });
-    }
-
     void storeSnapshot(final Snapshot snapshot, final RpkiRepositoryValidationRun validationRun) {
         snapshot.asMap().forEach((objUri, value) -> {
             rpkiObjectRepository.findBySha256(Sha256.hash(value.content)).map(existing -> {

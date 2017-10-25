@@ -19,6 +19,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -45,9 +46,9 @@ public class RrdpParser {
                 switch (event.getEventType()) {
                     case XMLStreamConstants.START_ELEMENT:
                         final StartElement startElement = event.asStartElement();
-                        final String qName = startElement.getName().getLocalPart();
+                        final String qName = startElement.getName().getLocalPart().toLowerCase(Locale.ROOT);
 
-                        if (qName.equalsIgnoreCase("publish")) {
+                        if ("publish".equals(qName)) {
                             uri = getAttr(startElement, "uri", "Uri is not present in 'publish' element");
                             inPublishElement = true;
                         }
@@ -63,9 +64,8 @@ public class RrdpParser {
 
                     case XMLStreamConstants.END_ELEMENT:
                         final EndElement endElement = event.asEndElement();
-                        final String qqName = endElement.getName().getLocalPart();
-
-                        if (qqName.equalsIgnoreCase("publish")) {
+                        final String qqName = endElement.getName().getLocalPart().toLowerCase(Locale.ROOT);
+                        if ("publish".equals(qqName)) {
                             final byte[] decoded = decoder.decode(base64.toString());
                             objects.put(uri, new SnapshotObject(decoded, uri));
                             inPublishElement = false;
@@ -80,17 +80,12 @@ public class RrdpParser {
         return new Snapshot(objects);
     }
 
-    public Snapshot snapshot(final String xml) {
-        try {
-            return snapshot(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8.name())));
-        } catch (UnsupportedEncodingException e) {
-            throw new RrdpException("Couldn't read snapshot: ", e);
-        }
+    private enum ElementCtx {
+        PUBLISH, WITHDRAW
     }
 
-
     public Delta delta(final InputStream inputStream) {
-        final Map<String, DeltaPublish> objects = new HashMap<>();
+        final Map<String, DeltaElement> objects = new HashMap<>();
         try {
             XMLInputFactory factory = XMLInputFactory.newInstance();
             XMLEventReader eventReader = factory.createXMLEventReader(inputStream);
@@ -110,10 +105,16 @@ public class RrdpParser {
                         final StartElement startElement = event.asStartElement();
                         final String qName = startElement.getName().getLocalPart();
 
-                        if (qName.equalsIgnoreCase("publish")) {
-                            uri = getAttr(startElement, "uri", "Uri is not present in 'publish' element");
-                            hash = getAttr(startElement, "uri", "Uri is not present in 'publish' element");
-                            inPublishElement = true;
+                        switch (qName) {
+                            case "publish":
+                                uri = getAttr(startElement, "uri", "Uri is not present in 'publish' element");
+                                hash = getAttr(startElement, "hash");
+                                inPublishElement = true;
+                                break;
+                            case "withdraw":
+                                uri = getAttr(startElement, "uri", "Uri is not present in 'publish' element");
+                                hash = getAttr(startElement, "hash", "Hash is not present in 'withdraw' element");
+                                break;
                         }
                         break;
 
@@ -129,11 +130,15 @@ public class RrdpParser {
                         final EndElement endElement = event.asEndElement();
                         final String qqName = endElement.getName().getLocalPart();
 
-                        if (qqName.equalsIgnoreCase("publish")) {
-                            final byte[] decoded = decoder.decode(base64.toString());
-                            objects.put(uri, new DeltaPublish(decoded, uri, hash));
-                            inPublishElement = false;
-                            base64 = new StringBuilder();
+                        switch (qqName) {
+                            case "publish":
+                                final byte[] decoded = decoder.decode(base64.toString());
+                                objects.put(uri, new DeltaPublish(decoded, uri, hash));
+                                base64 = new StringBuilder();
+                                break;
+                            case "withdraw":
+                                objects.put(uri, new DeltaWithdraw(uri, hash));
+                                break;
                         }
                         break;
                 }
