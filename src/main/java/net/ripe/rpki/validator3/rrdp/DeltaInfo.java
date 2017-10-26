@@ -1,7 +1,10 @@
 package net.ripe.rpki.validator3.rrdp;
 
+import lombok.ToString;
+
 import java.math.BigInteger;
 
+@ToString
 public class DeltaInfo {
 
     private final String uri;

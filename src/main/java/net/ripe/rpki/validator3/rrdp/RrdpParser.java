@@ -33,9 +33,11 @@ public class RrdpParser {
     public Snapshot snapshot(final InputStream inputStream) {
         final Map<String, SnapshotObject> objects = new HashMap<>();
         try {
-            XMLInputFactory factory = XMLInputFactory.newInstance();
-            XMLEventReader eventReader = factory.createXMLEventReader(inputStream);
+            final XMLInputFactory factory = XMLInputFactory.newInstance();
+            final XMLEventReader eventReader = factory.createXMLEventReader(inputStream);
 
+            String sessionId = null;
+            BigInteger serial = null;
             String uri = null;
             StringBuilder base64 = new StringBuilder();
             boolean inPublishElement = false;
@@ -50,9 +52,15 @@ public class RrdpParser {
                         final StartElement startElement = event.asStartElement();
                         final String qName = startElement.getName().getLocalPart().toLowerCase(Locale.ROOT);
 
-                        if ("publish".equals(qName)) {
-                            uri = getAttr(startElement, "uri", "Uri is not present in 'publish' element");
-                            inPublishElement = true;
+                        switch (qName) {
+                            case "publish":
+                                uri = getAttr(startElement, "uri", "Uri is not present in 'publish' element");
+                                inPublishElement = true;
+                                break;
+                            case "snapshot":
+                                serial = new BigInteger(getAttr(startElement, "serial", "Notification serial is not present"));
+                                sessionId = getAttr(startElement, "session_id", "Session id is not present");
+                                break;
                         }
                         break;
 
@@ -76,22 +84,20 @@ public class RrdpParser {
                         break;
                 }
             }
+            return new Snapshot(objects, sessionId, serial);
         } catch (XMLStreamException e) {
             throw new RrdpException("Couldn't parse snapshot: ", e);
         }
-        return new Snapshot(objects);
-    }
-
-    private enum ElementCtx {
-        PUBLISH, WITHDRAW
     }
 
     public Delta delta(final InputStream inputStream) {
         final Map<String, DeltaElement> objects = new HashMap<>();
         try {
-            XMLInputFactory factory = XMLInputFactory.newInstance();
-            XMLEventReader eventReader = factory.createXMLEventReader(inputStream);
+            final XMLInputFactory factory = XMLInputFactory.newInstance();
+            final XMLEventReader eventReader = factory.createXMLEventReader(inputStream);
 
+            String sessionId = null;
+            BigInteger serial = null;
             String uri = null;
             String hash = null;
             StringBuilder base64 = new StringBuilder();
@@ -116,6 +122,10 @@ public class RrdpParser {
                             case "withdraw":
                                 uri = getAttr(startElement, "uri", "Uri is not present in 'publish' element");
                                 hash = getAttr(startElement, "hash", "Hash is not present in 'withdraw' element");
+                                break;
+                            case "delta":
+                                serial = new BigInteger(getAttr(startElement, "serial", "Notification serial is not present"));
+                                sessionId = getAttr(startElement, "session_id", "Session id is not present");
                                 break;
                         }
                         break;
@@ -145,17 +155,17 @@ public class RrdpParser {
                         break;
                 }
             }
+            return new Delta(objects, sessionId, serial);
         } catch (XMLStreamException e) {
             throw new RrdpException("Couldn't parse snapshot: ", e);
         }
-        return new Delta(objects);
     }
 
 
     public Notification notification(final InputStream inputStream) {
         try {
-            XMLInputFactory factory = XMLInputFactory.newInstance();
-            XMLEventReader eventReader = factory.createXMLEventReader(inputStream);
+            final XMLInputFactory factory = XMLInputFactory.newInstance();
+            final XMLEventReader eventReader = factory.createXMLEventReader(inputStream);
 
             String sessionId = null;
             BigInteger serial = null;
@@ -171,17 +181,21 @@ public class RrdpParser {
                         final StartElement startElement = event.asStartElement();
                         final String qName = startElement.getName().getLocalPart();
 
-                        if (qName.equalsIgnoreCase("notification")) {
-                            serial = new BigInteger(getAttr(startElement, "serial", "Notification serial is not present"));
-                            sessionId = getAttr(startElement, "session_id", "Session id is not present");
-                        } else if (qName.equalsIgnoreCase("snapshot")) {
-                            snapshotUri = getAttr(startElement, "uri", "Snapshot URI is not present");
-                            snapshotHash = getAttr(startElement, "hash", "Snapshot hash is not present");
-                        } else if (qName.equalsIgnoreCase("delta")) {
-                            final String deltaUri = getAttr(startElement, "uri", "Delta URI is not present");
-                            final String deltaHash = getAttr(startElement, "hash", "Delta hash is not present");
-                            final String deltaSerial = getAttr(startElement, "serial", "Delta serial is not present");
-                            deltas.add(new DeltaInfo(deltaUri, deltaHash, new BigInteger(deltaSerial)));
+                        switch (qName) {
+                            case "notification":
+                                serial = new BigInteger(getAttr(startElement, "serial", "Notification serial is not present"));
+                                sessionId = getAttr(startElement, "session_id", "Session id is not present");
+                                break;
+                            case "snapshot":
+                                snapshotUri = getAttr(startElement, "uri", "Snapshot URI is not present");
+                                snapshotHash = getAttr(startElement, "hash", "Snapshot hash is not present");
+                                break;
+                            case "delta":
+                                final String deltaUri = getAttr(startElement, "uri", "Delta URI is not present");
+                                final String deltaHash = getAttr(startElement, "hash", "Delta hash is not present");
+                                final String deltaSerial = getAttr(startElement, "serial", "Delta serial is not present");
+                                deltas.add(new DeltaInfo(deltaUri, deltaHash, new BigInteger(deltaSerial)));
+                                break;
                         }
                         break;
                 }
