@@ -1,5 +1,6 @@
 package net.ripe.rpki.validator3.rrdp;
 
+import com.pholser.junit.quickcheck.Property;
 import net.ripe.rpki.validator3.util.Sha256;
 import org.junit.Test;
 
@@ -52,4 +53,9 @@ public class RrdpParserTest {
         return Thread.currentThread().getContextClassLoader().getResourceAsStream(path);
     }
 
+
+    @Property
+    public void parse_consistently() {
+
+    }
 }

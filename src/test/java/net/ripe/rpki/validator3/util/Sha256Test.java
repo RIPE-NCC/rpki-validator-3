@@ -1,23 +1,17 @@
 package net.ripe.rpki.validator3.util;
 
-import org.junit.Test;
+import com.pholser.junit.quickcheck.Property;
+import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
+import org.junit.runner.RunWith;
 
-import java.io.IOException;
+import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
+@RunWith(JUnitQuickcheck.class)
 public class Sha256Test {
-    @Test
-    public void parse() throws Exception {
-        check(null);
-        check("");
-        check("22");
-        check("6AB8");
-        check("226AB8CD3C887A6EBDDDF317F2FAFC9CF3EFC5D43A86347AC0FEFFE4DC0F607E");
+    @Property
+    public void formatAndParse(byte[] bytes) throws Exception {
+        assertTrue(Arrays.equals(bytes, Sha256.parse(Sha256.format(bytes))));
     }
-
-    private static void check(String hex) throws IOException {
-        assertEquals(hex, Sha256.format(Sha256.parse(hex)));
-    }
-
 }
