@@ -1,5 +1,7 @@
 package net.ripe.rpki.validator3.rrdp;
 
+import net.ripe.rpki.validator3.util.Sha256;
+
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -133,11 +135,11 @@ public class RrdpParser {
                         switch (qqName) {
                             case "publish":
                                 final byte[] decoded = decoder.decode(base64.toString());
-                                objects.put(uri, new DeltaPublish(decoded, uri, hash));
+                                objects.put(uri, new DeltaPublish(decoded, uri, Sha256.parse(hash)));
                                 base64 = new StringBuilder();
                                 break;
                             case "withdraw":
-                                objects.put(uri, new DeltaWithdraw(uri, hash));
+                                objects.put(uri, new DeltaWithdraw(uri, Sha256.parse(hash)));
                                 break;
                         }
                         break;

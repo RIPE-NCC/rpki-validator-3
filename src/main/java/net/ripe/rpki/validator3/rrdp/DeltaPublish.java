@@ -4,10 +4,10 @@ import java.util.Optional;
 
 public class DeltaPublish extends DeltaElement {
 
-    private String hash;
+    private byte[] hash;
     private byte[] content;
 
-    public DeltaPublish(byte[] content, String uri, String hash) {
+    public DeltaPublish(byte[] content, String uri, byte[] hash) {
         super(uri);
         this.content = content;
         this.uri = uri;
@@ -20,7 +20,7 @@ public class DeltaPublish extends DeltaElement {
         this.uri = uri;
     }
 
-    public Optional<String> getHash() {
+    public Optional<byte[]> getHash() {
         return Optional.ofNullable(hash);
     }
 
