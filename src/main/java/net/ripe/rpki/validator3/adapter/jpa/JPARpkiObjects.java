@@ -59,6 +59,11 @@ public class JPARpkiObjects implements RpkiObjects {
         );
     }
 
+    @Override
+    public void remove(RpkiObject o) {
+        entityManager.remove(o);
+    }
+
     private JPAQuery<RpkiObject> select() {
         return queryFactory.selectFrom(rpkiObject);
     }

@@ -13,4 +13,6 @@ public interface RpkiObjects {
     List<RpkiObject> all();
 
     Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type type, byte[] authorityKeyIdentifier);
+
+    void remove(RpkiObject o);
 }
