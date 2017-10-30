@@ -5,6 +5,7 @@ import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.crypto.crl.X509Crl;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
+import net.ripe.rpki.commons.util.RepositoryObjectType;
 import net.ripe.rpki.commons.validation.ValidationLocation;
 import net.ripe.rpki.commons.validation.ValidationOptions;
 import net.ripe.rpki.commons.validation.ValidationResult;
@@ -19,6 +20,8 @@ import javax.persistence.FlushModeType;
 import javax.transaction.Transactional;
 import java.net.URI;
 import java.util.*;
+
+import static java.util.stream.Collectors.toList;
 
 @Service
 @Slf4j
@@ -116,15 +119,20 @@ public class CertificateTreeValidationService {
             }
 
             ManifestCms manifest = maybeManifest.get();
-            URI crlUri = manifest.getCrlUri();
-            temporary.rejectIfNull(crlUri, "manifest.crl.uri");
+            List<Map.Entry<String, byte[]>> crlEntries = manifest.getFiles().entrySet().stream()
+                .filter((entry) -> RepositoryObjectType.parse(entry.getKey()) == RepositoryObjectType.Crl)
+                .collect(toList());
+            validationResult.rejectIfFalse(crlEntries.size() == 1, "manifest.contains.one.crl.entry", String.valueOf(crlEntries.size()));
             if (temporary.hasFailureForCurrentLocation()) {
                 return validatedObjects;
             }
 
+            Map.Entry<String, byte[]> crlEntry = crlEntries.get(0);
+            URI crlUri = manifestUri.resolve(crlEntry.getKey());
+
             temporary.setLocation(new ValidationLocation(crlUri));
-            Optional<RpkiObject> crlObject = rpkiObjects.findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type.CRL, context.getSubjectKeyIdentifier());
-            temporary.rejectIfFalse(crlObject.isPresent(), "rpki.crl.found", crlUri.toASCIIString());
+            Optional<RpkiObject> crlObject = rpkiObjects.findBySha256(crlEntry.getValue());
+            temporary.rejectIfFalse(crlObject.isPresent(), "rpki.crl.found");
             Optional<X509Crl> crl = crlObject.flatMap(x -> x.get(X509Crl.class, temporary));
             if (temporary.hasFailureForCurrentLocation()) {
                 return validatedObjects;
