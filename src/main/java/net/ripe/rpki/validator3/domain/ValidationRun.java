@@ -1,6 +1,7 @@
 package net.ripe.rpki.validator3.domain;
 
 import lombok.Getter;
+import net.ripe.rpki.commons.validation.ValidationLocation;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.commons.validation.ValidationStatus;
 
@@ -59,6 +60,23 @@ public abstract class ValidationRun extends AbstractEntity {
     public void setFailed() {
         this.completedAt = Instant.now();
         this.status = Status.FAILED;
+    }
+
+    public void completeWith(ValidationResult validationResult) {
+        for (ValidationLocation location : validationResult.getValidatedLocations()) {
+            for (net.ripe.rpki.commons.validation.ValidationCheck check : validationResult.getAllValidationChecksForLocation(location)) {
+                if (check.getStatus() != ValidationStatus.PASSED) {
+                    ValidationCheck validationCheck = new ValidationCheck(this, location.getName(), check);
+                    addCheck(validationCheck);
+                }
+            }
+        }
+
+        if (validationResult.hasFailures()) {
+            setFailed();
+        } else {
+            setSucceeded();
+        }
     }
 
     public void addCheck(ValidationCheck validationCheck) {

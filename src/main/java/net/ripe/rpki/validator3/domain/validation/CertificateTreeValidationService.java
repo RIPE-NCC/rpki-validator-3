@@ -8,7 +8,6 @@ import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.validation.ValidationLocation;
 import net.ripe.rpki.commons.validation.ValidationOptions;
 import net.ripe.rpki.commons.validation.ValidationResult;
-import net.ripe.rpki.commons.validation.ValidationStatus;
 import net.ripe.rpki.commons.validation.objectvalidators.CertificateRepositoryObjectValidationContext;
 import net.ripe.rpki.validator3.domain.*;
 import net.ripe.rpki.validator3.util.Sha256;
@@ -86,25 +85,8 @@ public class CertificateTreeValidationService {
                 validateCertificateAuthority(trustAnchor, context, validationResult)
             );
         } finally {
-            addValidationResults(validationRun, validationResult);
-            if (validationResult.hasFailures()) {
-                log.info("tree validation failed for {}", trustAnchor);
-                validationRun.setFailed();
-            } else {
-                log.info("tree validation succeeded for {}", trustAnchor);
-                validationRun.setSucceeded();
-            }
-        }
-    }
-
-    private void addValidationResults(ValidationRun validationRun, ValidationResult validationResult) {
-        for (ValidationLocation location : validationResult.getValidatedLocations()) {
-            for (net.ripe.rpki.commons.validation.ValidationCheck check : validationResult.getAllValidationChecksForLocation(location)) {
-                if (check.getStatus() != ValidationStatus.PASSED) {
-                    ValidationCheck validationCheck = new ValidationCheck(validationRun, location.getName(), check);
-                    validationRun.addCheck(validationCheck);
-                }
-            }
+            validationRun.completeWith(validationResult);
+            log.info("tree validation {} for {}", validationRun.getStatus(), trustAnchor);
         }
     }
 

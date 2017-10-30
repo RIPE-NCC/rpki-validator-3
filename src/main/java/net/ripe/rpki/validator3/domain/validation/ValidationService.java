@@ -8,9 +8,7 @@ import net.ripe.rpki.commons.crypto.x509cert.X509CertificateUtil;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.rsync.CommandExecutionException;
 import net.ripe.rpki.commons.rsync.Rsync;
-import net.ripe.rpki.commons.validation.ValidationLocation;
 import net.ripe.rpki.commons.validation.ValidationResult;
-import net.ripe.rpki.commons.validation.ValidationStatus;
 import net.ripe.rpki.validator3.domain.*;
 import net.ripe.rpki.validator3.rrdp.RrdpService;
 import org.apache.commons.lang3.ArrayUtils;
@@ -95,7 +93,7 @@ public class ValidationService {
                 }
             }
 
-            completeWith(validationRun, validationResult);
+            validationRun.completeWith(validationResult);
             if (updated) {
                 validationRunRepository.runCertificateTreeValidation(trustAnchor);
             }
@@ -188,23 +186,6 @@ public class ValidationService {
             rpkiRepository.getTrustAnchors().forEach(trustAnchor -> {
                 validationRunRepository.runCertificateTreeValidation(trustAnchor);
             });
-        }
-    }
-
-    private void completeWith(TrustAnchorValidationRun validationRun, ValidationResult validationResult) {
-        for (ValidationLocation location : validationResult.getValidatedLocations()) {
-            for (net.ripe.rpki.commons.validation.ValidationCheck check : validationResult.getAllValidationChecksForLocation(location)) {
-                if (check.getStatus() != ValidationStatus.PASSED) {
-                    ValidationCheck validationCheck = new ValidationCheck(validationRun, location.getName(), check);
-                    validationRun.addCheck(validationCheck);
-                }
-            }
-        }
-
-        if (validationResult.hasFailures()) {
-            validationRun.setFailed();
-        } else {
-            validationRun.setSucceeded();
         }
     }
 
