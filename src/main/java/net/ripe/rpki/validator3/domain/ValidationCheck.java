@@ -22,10 +22,6 @@ public class ValidationCheck extends AbstractEntity {
     @Getter
     private ValidationRun validationRun;
 
-    @ManyToOne(optional = true, cascade = CascadeType.PERSIST)
-    @Getter
-    private RpkiObject rpkiObject;
-
     @Basic(optional = false)
     @NotEmpty
     @NotNull
@@ -53,9 +49,8 @@ public class ValidationCheck extends AbstractEntity {
     protected ValidationCheck() {
     }
 
-    public ValidationCheck(ValidationRun validationRun, RpkiObject rpkiObject, String location, net.ripe.rpki.commons.validation.ValidationCheck check) {
+    public ValidationCheck(ValidationRun validationRun, String location, net.ripe.rpki.commons.validation.ValidationCheck check) {
         this.validationRun = validationRun;
-        this.rpkiObject = rpkiObject;
         this.location = location;
         this.status = mapStatus(check.getStatus());
         this.key = check.getKey();
@@ -64,7 +59,6 @@ public class ValidationCheck extends AbstractEntity {
 
     public ValidationCheck(ValidationRun validationRun, String location, Status status, String key, String... parameters) {
         this.validationRun = validationRun;
-        this.rpkiObject = null;
         this.location = location;
         this.status = status;
         this.key = key;

@@ -195,7 +195,7 @@ public class ValidationService {
         for (ValidationLocation location : validationResult.getValidatedLocations()) {
             for (net.ripe.rpki.commons.validation.ValidationCheck check : validationResult.getAllValidationChecksForLocation(location)) {
                 if (check.getStatus() != ValidationStatus.PASSED) {
-                    ValidationCheck validationCheck = new ValidationCheck(validationRun, null, location.getName(), check);
+                    ValidationCheck validationCheck = new ValidationCheck(validationRun, location.getName(), check);
                     validationRun.addCheck(validationCheck);
                 }
             }

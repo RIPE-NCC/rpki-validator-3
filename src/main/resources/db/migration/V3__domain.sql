@@ -90,13 +90,11 @@ CREATE TABLE validation_check (
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
     validation_run_id BIGINT NOT NULL,
-    rpki_object_id BIGINT,
     location VARCHAR(16000) NOT NULL,
     status VARCHAR NOT NULL,
     key VARCHAR NOT NULL,
     CONSTRAINT validation_check__pk PRIMARY KEY (id),
-    CONSTRAINT validation_check__validation_run_fk FOREIGN KEY (validation_run_id) REFERENCES validation_run (id) ON DELETE CASCADE,
-    CONSTRAINT validation_check__rpki_object_fk FOREIGN KEY (rpki_object_id) REFERENCES rpki_object (id) ON DELETE SET NULL
+    CONSTRAINT validation_check__validation_run_fk FOREIGN KEY (validation_run_id) REFERENCES validation_run (id) ON DELETE CASCADE
 );
 CREATE INDEX validation_check__validation_run_id_idx ON validation_check (validation_run_id ASC, id ASC);
 
