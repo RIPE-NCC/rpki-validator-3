@@ -1,13 +1,9 @@
 package net.ripe.rpki.validator3.adapter.jpa;
 
-import com.querydsl.jpa.JPAExpressions;
-import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
-import net.ripe.rpki.validator3.domain.ValidationRun;
-import net.ripe.rpki.validator3.domain.querydsl.QCertificateTreeValidationRun;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
@@ -71,20 +67,14 @@ public class JPARpkiObjects implements RpkiObjects {
 
     @Override
     public List<RpkiObject> findCurrentlyValidated(RpkiObject.Type type) {
-        QCertificateTreeValidationRun latest = new QCertificateTreeValidationRun("latest");
-        JPQLQuery<Long> latestSuccessfulRuns = JPAExpressions
-            .select(latest.id.max())
-            .where(latest.status.eq(ValidationRun.Status.SUCCEEDED))
-            .groupBy(certificateTreeValidationRun.trustAnchor)
-            .from(latest);
-
         return queryFactory
             .from(certificateTreeValidationRun)
             .join(certificateTreeValidationRun.validatedObjects, rpkiObject)
             .where(
                 rpkiObject.type.eq(type)
-                    .and(certificateTreeValidationRun.id.in(latestSuccessfulRuns))
-
+                    .and(certificateTreeValidationRun.id.in(
+                        JPAValidationRuns.latestSuccessfulValidationRuns())
+                    )
             )
             .select(rpkiObject)
             .fetch();

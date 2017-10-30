@@ -42,6 +42,17 @@ public class ValidationRunController {
         ));
     }
 
+    @GetMapping(path = "/latest")
+    public ResponseEntity<ApiResponse<List<ValidationRunResource>>> listLatestSuccessful() {
+        return ResponseEntity.ok(ApiResponse.data(
+            new Links(linkTo(methodOn(ValidationRunController.class).listLatestSuccessful()).withSelfRel()),
+            validationRunRepository.findLatestSuccessful(ValidationRun.class)
+                .stream()
+                .map(ValidationRunResource::of)
+                .collect(Collectors.toList())
+        ));
+    }
+
     @GetMapping(path = "/{id}")
     public ResponseEntity<ApiResponse<ValidationRunResource>> get(@PathVariable long id) {
         ValidationRun validationRun = validationRunRepository.get(ValidationRun.class, id);
