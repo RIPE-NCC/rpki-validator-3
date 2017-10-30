@@ -6,6 +6,8 @@ import java.util.Optional;
 public interface RpkiObjects {
     void add(RpkiObject rpkiObject);
 
+    void remove(RpkiObject o);
+
     RpkiObject get(long id);
 
     Optional<RpkiObject> findBySha256(byte[] sha256);
@@ -14,5 +16,5 @@ public interface RpkiObjects {
 
     Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type type, byte[] authorityKeyIdentifier);
 
-    void remove(RpkiObject o);
+    List<RpkiObject> findCurrentlyValidated(RpkiObject.Type type);
 }

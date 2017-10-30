@@ -5,6 +5,7 @@ import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.UnknownCertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.RpkiSignedObject;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
+import net.ripe.rpki.commons.crypto.cms.roa.RoaCms;
 import net.ripe.rpki.commons.crypto.crl.X509Crl;
 import net.ripe.rpki.commons.crypto.util.CertificateRepositoryObjectFactory;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
@@ -30,7 +31,7 @@ public class RpkiObject extends AbstractEntity {
     public static final int MAX_SIZE = 1024 * 1024;
 
     public enum Type {
-        MFT, CRL, OTHER
+        CER, MFT, CRL, ROA, OTHER
     }
 
     @Basic(optional = false)
@@ -39,7 +40,7 @@ public class RpkiObject extends AbstractEntity {
     @Getter
     private Type type;
 
-    @ElementCollection(fetch = FetchType.EAGER)
+    @ElementCollection(fetch = FetchType.LAZY)
     @OrderBy("locations")
     @Getter
     @NotNull
@@ -84,7 +85,7 @@ public class RpkiObject extends AbstractEntity {
             this.serialNumber = ((X509ResourceCertificate) object).getSerialNumber();
             this.signingTime = null; // Use not valid before instead?
             this.authorityKeyIdentifier = ((X509ResourceCertificate) object).getAuthorityKeyIdentifier();
-            this.type = Type.OTHER;
+            this.type = Type.CER; // FIXME separate certificate types? CA, EE, Router, ?
         } else if (object instanceof X509Crl) {
             this.serialNumber = ((X509Crl) object).getNumber();
             this.signingTime = Instant.ofEpochMilli(((X509Crl) object).getThisUpdateTime().getMillis());
@@ -94,9 +95,14 @@ public class RpkiObject extends AbstractEntity {
             this.serialNumber = ((RpkiSignedObject) object).getCertificate().getSerialNumber();
             this.signingTime = Instant.ofEpochMilli(((RpkiSignedObject) object).getSigningTime().getMillis());
             this.authorityKeyIdentifier = ((RpkiSignedObject) object).getCertificate().getAuthorityKeyIdentifier();
-            this.type = (object instanceof ManifestCms) ? Type.MFT : Type.OTHER;
+            this.type = (
+                (object instanceof ManifestCms) ? Type.MFT
+                    : (object instanceof RoaCms) ? Type.ROA
+                    : Type.OTHER
+            );
         } else if (object instanceof UnknownCertificateRepositoryObject) {
             // FIXME store these at all?
+            throw new IllegalArgumentException("unsupported certificate repository object type " + object);
         } else {
             throw new IllegalArgumentException("unsupported certificate repository object type " + object);
         }

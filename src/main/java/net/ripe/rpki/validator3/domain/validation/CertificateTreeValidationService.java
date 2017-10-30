@@ -106,7 +106,6 @@ public class CertificateTreeValidationService {
                 }
             }
         }
-
     }
 
     private List<RpkiObject> validateCertificateAuthority(TrustAnchor trustAnchor, CertificateRepositoryObjectValidationContext context, ValidationResult validationResult) {
