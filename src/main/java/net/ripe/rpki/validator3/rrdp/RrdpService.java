@@ -26,7 +26,7 @@ public class RrdpService {
 
     private RrdpParser rrdpParser = new RrdpParser();
 
-    private HttpRrdpClient rrdpClient;
+    private RrdpClient rrdpClient;
 
     private RpkiObjects rpkiObjectRepository;
 
@@ -34,7 +34,7 @@ public class RrdpService {
     private BigInteger currentSerial;
 
     @Autowired
-    public RrdpService(final HttpRrdpClient rrdpClient, final RpkiObjects rpkiObjectRepository) {
+    public RrdpService(final RrdpClient rrdpClient, final RpkiObjects rpkiObjectRepository) {
         this.rrdpClient = rrdpClient;
         this.rpkiObjectRepository = rpkiObjectRepository;
     }
