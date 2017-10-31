@@ -1,5 +1,10 @@
 package net.ripe.rpki.validator3.rrdp;
 
+import net.ripe.rpki.validator3.util.Sha256;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.Base64;
 
 public class Objects {
@@ -90,4 +95,120 @@ public class Objects {
         return new String(Base64.getEncoder().encode(s));
     }
 
+    static InputStream fileIS(final String path) throws IOException {
+        return Thread.currentThread().getContextClassLoader().getResourceAsStream(path);
+    }
+
+    static byte[] notificationXml(long serial, String sessionId, SnapshotInfo snapshot, DeltaInfo... deltas) {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("<notification xmlns=\"HTTP://www.ripe.net/rpki/rrdp\" version=\"1\" session_id=\"").append(sessionId).append("\" serial=\"").append(serial).append("\">");
+        sb.append("    <snapshot uri=\"").append(snapshot.uri).append("\" hash=\"").append(Sha256.format(snapshot.hash)).append("\"/>");
+        for (DeltaInfo di : deltas) {
+            sb.append("  <delta uri=\"").append(di.uri).append("\" hash=\"").append(Sha256.format(di.hash)).append("\" serial=\"").append(di.serial).append("\"/>");
+        }
+        sb.append("</notification>");
+        return sb.toString().getBytes(Charset.forName("UTF-8"));
+    }
+
+    static byte[] snapshotXml(long serial, String sessionId, Publish... publishes) {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("<snapshot xmlns=\"http://www.ripe.net/rpki/rrdp\" version=\"1\" session_id=\"").append(sessionId).append("\" serial=\"").append(serial).append("\">");
+        for (Publish publish : publishes) {
+            sb.append("  <publish uri=\"").append(publish.uri).append("\">\n    ").append(encode(publish.content)).append("\n</publish>\n");
+        }
+        sb.append("</snapshot>");
+        return sb.toString().getBytes(Charset.forName("UTF-8"));
+    }
+
+    static byte[] deltaXml(long serial, String sessionId, Change... updates) {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("<delta xmlns=\"http://www.ripe.net/rpki/rrdp\" version=\"1\" session_id=\"").append(sessionId).append("\" serial=\"").append(serial).append("\">");
+        for (final Change change : updates) {
+            if (change instanceof DeltaPublish) {
+                DeltaPublish publish = (DeltaPublish) change;
+                if (publish.hash != null) {
+                    sb.append("  <publish uri=\"").append(publish.uri).
+                            append("\" hash=\"").append(Sha256.format(publish.hash)).append("\">\n    ").
+                            append(encode(publish.content)).
+                            append("\n</publish>\n");
+                } else {
+                    sb.append("  <publish uri=\"").append(publish.uri).append("\">\n    ").
+                            append(encode(publish.content)).
+                            append("\n</publish>\n");
+                }
+            } else if (change instanceof DeltaWithdraw) {
+                DeltaWithdraw withdraw = (DeltaWithdraw) change;
+                sb.append("  <withdraw uri=\"").append(withdraw.uri).
+                        append("\" hash=\"").append(Sha256.format(withdraw.hash)).append("\"/>");
+            }
+        }
+        sb.append("</delta>");
+        return sb.toString().getBytes(Charset.forName("UTF-8"));
+    }
+
+    static class SnapshotInfo {
+        public final String uri;
+        public final byte[] hash;
+
+        SnapshotInfo(String uri, byte[] hash) {
+            this.uri = uri;
+            this.hash = hash;
+        }
+    }
+
+    static class DeltaInfo {
+        public final String uri;
+        public final byte[] hash;
+        public final long serial;
+
+        DeltaInfo(String uri, byte[] hash, long serial) {
+            this.uri = uri;
+            this.hash = hash;
+            this.serial = serial;
+        }
+    }
+
+    static class Publish {
+        public final String uri;
+        public final byte[] content;
+
+        Publish(String uri, byte[] content) {
+            this.uri = uri;
+            this.content = content;
+        }
+    }
+
+    static class Change {
+        public final String uri;
+
+        private Change(String uri) {
+            this.uri = uri;
+        }
+    }
+
+    static class DeltaPublish extends Change {
+        public final byte[] hash;
+        public final byte[] content;
+
+        private DeltaPublish(String uri, byte[] hash, byte[] content) {
+            super(uri);
+            this.hash = hash;
+            this.content = content;
+        }
+
+        DeltaPublish(String uri, byte[] content) {
+            super(uri);
+            hash = null;
+            this.content = content;
+        }
+    }
+
+    private static class DeltaWithdraw extends Change {
+        public final byte[] hash;
+
+        private DeltaWithdraw(String uri, byte[] hash) {
+            super(uri);
+            this.hash = hash;
+        }
+    }
 }

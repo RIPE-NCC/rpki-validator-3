@@ -38,6 +38,16 @@ public class RrdpService {
 
     @Transactional(Transactional.TxType.REQUIRED)
     public void storeRepository(final RpkiRepository rpkiRepository, final RpkiRepositoryValidationRun validationRun) {
+        try {
+            doStoreRepository(rpkiRepository, validationRun);
+        } catch (RrdpException e) {
+            ValidationCheck validationCheck = new ValidationCheck(validationRun, rpkiRepository.getRrdpNotifyUri(),
+                    ValidationCheck.Status.ERROR, "rrdp.error", e.getMessage());
+            validationRun.addCheck(validationCheck);
+        }
+    }
+
+    private void doStoreRepository(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun) {
         final Notification notification = rrdpClient.readStream(rpkiRepository.getRrdpNotifyUri(), rrdpParser::notification);
         if (notification.sessionId.equals(rpkiRepository.getRrdpSessionId())) {
             if (rpkiRepository.getRrdpSerial().compareTo(notification.serial) <= 0) {

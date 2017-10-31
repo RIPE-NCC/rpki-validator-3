@@ -1,8 +1,5 @@
 package net.ripe.rpki.validator3.rrdp;
 
-import com.pholser.junit.quickcheck.Property;
-import com.pholser.junit.quickcheck.generator.InRange;
-import fj.P;
 import net.ripe.rpki.validator3.TestObjects;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
@@ -19,10 +16,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
-import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigInteger;
-import java.nio.charset.Charset;
 import java.util.List;
 import java.util.UUID;
 
@@ -62,7 +56,7 @@ public class RrdpServiceTest {
 
         final RpkiRepositoryValidationRun validationRun = new RpkiRepositoryValidationRun(rpkiRepository);
 
-        final Snapshot snapshot = new RrdpParser().snapshot(fileIS("rrdp/snapshot2.xml"));
+        final Snapshot snapshot = new RrdpParser().snapshot(Objects.fileIS("rrdp/snapshot2.xml"));
         subject.storeSnapshot(snapshot, validationRun);
 
         final List<RpkiObject> objects = rpkiObjects.all();
@@ -78,25 +72,21 @@ public class RrdpServiceTest {
         assertTrue(objects.stream().anyMatch(o -> uri3.equals(o.getLocations().first())));
     }
 
-    private static InputStream fileIS(final String path) throws IOException {
-        return Thread.currentThread().getContextClassLoader().getResourceAsStream(path);
-    }
-
     @Test
     public void should_parse_notification_and_snapshot() {
-        final Publish cert = new Publish("rsync://host/path/cert.cer", Objects.aParseableCertificate());
-        final Publish crl = new Publish("rsync://host/path/crl1.crl", Objects.aParseableCrl());
+        final Objects.Publish cert = new Objects.Publish("rsync://host/path/cert.cer", Objects.aParseableCertificate());
+        final Objects.Publish crl = new Objects.Publish("rsync://host/path/crl1.crl", Objects.aParseableCrl());
         rrdpClient.add(cert.uri, cert.content);
         rrdpClient.add(crl.uri, crl.content);
 
         final int serial = 1;
         final String sessionId = UUID.randomUUID().toString();
-        final byte[] snapshotXml = snapshotXml(serial, sessionId, cert, crl);
+        final byte[] snapshotXml = Objects.snapshotXml(serial, sessionId, cert, crl);
 
-        final SnapshotInfo snapshot = new SnapshotInfo("https://host/path/snapshot.xml", Sha256.hash(snapshotXml));
+        final Objects.SnapshotInfo snapshot = new Objects.SnapshotInfo("https://host/path/snapshot.xml", Sha256.hash(snapshotXml));
         rrdpClient.add(snapshot.uri, snapshotXml);
 
-        final byte[] notificationXml = notificationXml(serial, sessionId, snapshot);
+        final byte[] notificationXml = Objects.notificationXml(serial, sessionId, snapshot);
         final String notificationUri = "https://rrdp.ripe.net/notification.xml";
         rrdpClient.add(notificationUri, notificationXml);
 
@@ -116,25 +106,24 @@ public class RrdpServiceTest {
         assertTrue(objects.stream().anyMatch(o -> crl.uri.equals(o.getLocations().first())));
     }
 
-
     @Test
     public void should_parse_notification_use_delta() {
         final byte[] certificate = Objects.aParseableCertificate();
         final long serial = 2;
         final String sessionId = UUID.randomUUID().toString();
-        final byte[] emptySnapshotXml = snapshotXml(serial, sessionId);
+        final byte[] emptySnapshotXml = Objects.snapshotXml(serial, sessionId);
 
-        final SnapshotInfo emptySnapshot = new SnapshotInfo("https://host/path/snapshot.xml", Sha256.hash(emptySnapshotXml));
+        final Objects.SnapshotInfo emptySnapshot = new Objects.SnapshotInfo("https://host/path/snapshot.xml", Sha256.hash(emptySnapshotXml));
         rrdpClient.add(emptySnapshot.uri, emptySnapshotXml);
 
-        final DeltaPublish publishCert = new DeltaPublish("rsync://host/path/cert.cer", certificate);
-        final byte[] deltaXml = deltaXml(serial, sessionId, publishCert);
+        final Objects.DeltaPublish publishCert = new Objects.DeltaPublish("rsync://host/path/cert.cer", certificate);
+        final byte[] deltaXml = Objects.deltaXml(serial, sessionId, publishCert);
 
-        final DeltaInfo deltaInfo = new DeltaInfo("https://host/path/delta1.xml", Sha256.hash(deltaXml), serial);
+        final Objects.DeltaInfo deltaInfo = new Objects.DeltaInfo("https://host/path/delta1.xml", Sha256.hash(deltaXml), serial);
         rrdpClient.add(deltaInfo.uri, deltaXml);
 
         final String notificationUri = "https://rrdp.ripe.net/notification.xml";
-        rrdpClient.add(notificationUri, notificationXml(serial, sessionId, emptySnapshot, deltaInfo));
+        rrdpClient.add(notificationUri, Objects.notificationXml(serial, sessionId, emptySnapshot, deltaInfo));
 
         final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
         entityManager.persist(trustAnchor);
@@ -146,123 +135,50 @@ public class RrdpServiceTest {
         entityManager.persist(rpkiRepository);
 
         // do the first run to get the snapshot
-        subject.storeRepository(rpkiRepository, new RpkiRepositoryValidationRun(rpkiRepository));
+        RpkiRepositoryValidationRun validationRun = new RpkiRepositoryValidationRun(rpkiRepository);
+        subject.storeRepository(rpkiRepository, validationRun);
 
         final List<RpkiObject> objects = rpkiObjects.all();
         assertEquals(1, objects.size());
+
     }
 
-    private static class SnapshotInfo {
-        public final String uri;
-        public final byte[] hash;
 
-        private SnapshotInfo(String uri, byte[] hash) {
-            this.uri = uri;
-            this.hash = hash;
-        }
-    }
+    @Test
+    public void should_parse_notification_use_decline_delta_with_different_session_id() {
+        final byte[] certificate = Objects.aParseableCertificate();
+        final long serial = 2;
+        final String sessionId = UUID.randomUUID().toString();
+        final String wrongSessionId = UUID.randomUUID().toString();
+        final byte[] emptySnapshotXml = Objects.snapshotXml(serial, sessionId);
 
-    private static class DeltaInfo {
-        public final String uri;
-        public final byte[] hash;
-        public final long serial;
+        final Objects.SnapshotInfo emptySnapshot = new Objects.SnapshotInfo("https://host/path/snapshot.xml", Sha256.hash(emptySnapshotXml));
+        rrdpClient.add(emptySnapshot.uri, emptySnapshotXml);
 
-        private DeltaInfo(String uri, byte[] hash, long serial) {
-            this.uri = uri;
-            this.hash = hash;
-            this.serial = serial;
-        }
-    }
+        final Objects.DeltaPublish publishCert = new Objects.DeltaPublish("rsync://host/path/cert.cer", certificate);
+        final byte[] deltaXml = Objects.deltaXml(serial, wrongSessionId, publishCert);
 
-    private static class Publish {
-        public final String uri;
-        public final byte[] content;
+        final Objects.DeltaInfo deltaInfo = new Objects.DeltaInfo("https://host/path/delta1.xml", Sha256.hash(deltaXml), serial);
+        rrdpClient.add(deltaInfo.uri, deltaXml);
 
-        private Publish(String uri, byte[] content) {
-            this.uri = uri;
-            this.content = content;
-        }
-    }
+        final String notificationUri = "https://rrdp.ripe.net/notification.xml";
+        rrdpClient.add(notificationUri, Objects.notificationXml(serial, sessionId, emptySnapshot, deltaInfo));
 
-    private static class Change {
-        public final String uri;
+        final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
+        entityManager.persist(trustAnchor);
 
-        private Change(String uri) {
-            this.uri = uri;
-        }
-    }
+        // make current serial lower to trigger delta download
+        final RpkiRepository rpkiRepository = new RpkiRepository(trustAnchor, notificationUri);
+        rpkiRepository.setRrdpSerial(BigInteger.valueOf(serial - 1));
+        rpkiRepository.setRrdpSessionId(sessionId);
+        entityManager.persist(rpkiRepository);
 
-    private static class DeltaPublish extends Change {
-        public final byte[] hash;
-        public final byte[] content;
+        // do the first run to get the snapshot
+        final RpkiRepositoryValidationRun validationRun = new RpkiRepositoryValidationRun(rpkiRepository);
+        subject.storeRepository(rpkiRepository, validationRun);
 
-        private DeltaPublish(String uri, byte[] hash, byte[] content) {
-            super(uri);
-            this.hash = hash;
-            this.content = content;
-        }
-
-        private DeltaPublish(String uri, byte[] content) {
-            super(uri);
-            hash = null;
-            this.content = content;
-        }
-    }
-
-    private static class DeltaWithdraw extends Change {
-        public final byte[] hash;
-
-        private DeltaWithdraw(String uri, byte[] hash) {
-            super(uri);
-            this.hash = hash;
-        }
-    }
-
-    private byte[] notificationXml(long serial, String sessionId, SnapshotInfo snapshot, DeltaInfo... deltas) {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("<notification xmlns=\"HTTP://www.ripe.net/rpki/rrdp\" version=\"1\" session_id=\"").append(sessionId).append("\" serial=\"").append(serial).append("\">");
-        sb.append("    <snapshot uri=\"").append(snapshot.uri).append("\" hash=\"").append(Sha256.format(snapshot.hash)).append("\"/>");
-        for (DeltaInfo di : deltas) {
-            sb.append("  <delta uri=\"").append(di.uri).append("\" hash=\"").append(Sha256.format(di.hash)).append("\" serial=\"").append(di.serial).append("\"/>");
-        }
-        sb.append("</notification>");
-        return sb.toString().getBytes(Charset.forName("UTF-8"));
-    }
-
-    private byte[] snapshotXml(long serial, String sessionId, Publish... publishes) {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("<snapshot xmlns=\"http://www.ripe.net/rpki/rrdp\" version=\"1\" session_id=\"").append(sessionId).append("\" serial=\"").append(serial).append("\">");
-        for (Publish publish : publishes) {
-            sb.append("  <publish uri=\"").append(publish.uri).append("\">\n    ").append(Objects.encode(publish.content)).append("\n</publish>\n");
-        }
-        sb.append("</snapshot>");
-        return sb.toString().getBytes(Charset.forName("UTF-8"));
-    }
-
-    private byte[] deltaXml(long serial, String sessionId, Change... updates) {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("<delta xmlns=\"http://www.ripe.net/rpki/rrdp\" version=\"1\" session_id=\"").append(sessionId).append("\" serial=\"").append(serial).append("\">");
-        for (Change change : updates) {
-            if (change instanceof DeltaPublish) {
-                DeltaPublish publish = (DeltaPublish) change;
-                if (publish.hash != null) {
-                    sb.append("  <publish uri=\"").append(publish.uri).
-                            append("\" hash=\"").append(Sha256.format(publish.hash)).append("\">\n    ").
-                            append(Objects.encode(publish.content)).
-                            append("\n</publish>\n");
-                } else {
-                    sb.append("  <publish uri=\"").append(publish.uri).append("\">\n    ").
-                            append(Objects.encode(publish.content)).
-                            append("\n</publish>\n");
-                }
-            } else if (change instanceof DeltaWithdraw) {
-                DeltaWithdraw withdraw = (DeltaWithdraw) change;
-                sb.append("  <withdraw uri=\"").append(withdraw.uri).
-                        append("\" hash=\"").append(Sha256.format(withdraw.hash)).append("\"/>");
-            }
-        }
-        sb.append("</delta>");
-        return sb.toString().getBytes(Charset.forName("UTF-8"));
+        final List<RpkiObject> objects = rpkiObjects.all();
+        assertEquals(0, objects.size());
     }
 
 }
