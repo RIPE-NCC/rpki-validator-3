@@ -2,7 +2,7 @@ package net.ripe.rpki.validator3.adapter.jpa;
 
 import lombok.Getter;
 import lombok.Setter;
-import net.ripe.rpki.validator3.domain.validation.ValidationService;
+import net.ripe.rpki.validator3.domain.validation.RpkiRepositoryValidationService;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
@@ -15,7 +15,7 @@ public class QuartzRpkiRepositoryValidationJob implements Job {
     public static final String RPKI_REPOSITORY_ID = "rpkiRepositoryId";
 
     @Autowired
-    private ValidationService validationService;
+    private RpkiRepositoryValidationService validationService;
 
     @Getter
     @Setter

@@ -26,7 +26,7 @@ public class TrustAnchorValidationServiceTest {
     private TrustAnchors trustAnchors;
 
     @Autowired
-    private ValidationService validationService;
+    private TrustAnchorValidationService subject;
 
     @Autowired
     private ValidationRuns validationRuns;
@@ -39,7 +39,7 @@ public class TrustAnchorValidationServiceTest {
         TrustAnchor ta = createRipeNccTrustAnchor();
 
         ta.setLocations(Arrays.asList("src/test/resources/ripe-ncc-ta.cer"));
-        validationService.validate(ta.getId());
+        subject.validate(ta.getId());
         ta.setLocations(Arrays.asList(DUMMY_RSYNC_URI));
 
         X509ResourceCertificate certificate = ta.getCertificate();
@@ -57,7 +57,7 @@ public class TrustAnchorValidationServiceTest {
         TrustAnchor ta = createRipeNccTrustAnchor();
         ta.setLocations(Arrays.asList(DUMMY_RSYNC_URI));
 
-        validationService.validate(ta.getId());
+        subject.validate(ta.getId());
 
         assertThat(ta.getCertificate()).isNull();
 
@@ -75,7 +75,7 @@ public class TrustAnchorValidationServiceTest {
         TrustAnchor ta = createRipeNccTrustAnchor();
 
         ta.setLocations(Arrays.asList("src/test/resources/empty-file.cer"));
-        validationService.validate(ta.getId());
+        subject.validate(ta.getId());
         ta.setLocations(Arrays.asList(DUMMY_RSYNC_URI));
 
         assertThat(ta.getCertificate()).isNull();
@@ -95,7 +95,7 @@ public class TrustAnchorValidationServiceTest {
         ta.setSubjectPublicKeyInfo(ta.getSubjectPublicKeyInfo().toUpperCase());
 
         ta.setLocations(Arrays.asList("src/test/resources/ripe-ncc-ta.cer"));
-        validationService.validate(ta.getId());
+        subject.validate(ta.getId());
         ta.setLocations(Arrays.asList(DUMMY_RSYNC_URI));
 
         assertThat(ta.getCertificate()).isNull();

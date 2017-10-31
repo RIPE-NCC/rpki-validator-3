@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
-import net.ripe.rpki.validator3.domain.validation.ValidationService;
+import net.ripe.rpki.validator3.domain.validation.TrustAnchorValidationService;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -14,7 +14,7 @@ public class QuartzTrustAnchorValidationJob implements Job {
     public static final String TRUST_ANCHOR_ID_KEY = "trustAnchorId";
 
     @Autowired
-    private ValidationService validationService;
+    private TrustAnchorValidationService validationService;
 
     @Getter
     @Setter

@@ -17,17 +17,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityManager;
-import javax.persistence.FlushModeType;
 import javax.transaction.Transactional;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
-import java.util.Locale;
 
 @Service
 @Slf4j
-public class ValidationService {
+public class TrustAnchorValidationService {
 
     private static final int DEFAULT_RSYNC_PORT = 873;
 
@@ -39,7 +37,7 @@ public class ValidationService {
     private final RrdpService rrdpService;
 
     @Autowired
-    public ValidationService(
+    public TrustAnchorValidationService(
         EntityManager entityManager,
         TrustAnchors trustAnchorRepository,
         ValidationRuns validationRunRepository,
@@ -152,48 +150,5 @@ public class ValidationService {
             log.info("Downloaded certificate {} to {}", trustAnchorCertificateURI, targetFile);
             return targetFile;
         }
-    }
-
-    @Transactional(Transactional.TxType.REQUIRED)
-    public void validateRpkiRepository(long rpkiRepositoryId) {
-        entityManager.setFlushMode(FlushModeType.COMMIT);
-
-        final RpkiRepository rpkiRepository = rpkiRepositories.get(rpkiRepositoryId);
-        log.info("Starting RPKI repository validation for " + rpkiRepository);
-
-        ValidationResult validationResult = ValidationResult.withLocation(rpkiRepository.getRrdpNotifyUri());
-
-        final RpkiRepositoryValidationRun validationRun = new RpkiRepositoryValidationRun(rpkiRepository);
-        validationRunRepository.add(validationRun);
-
-        final String uri = rpkiRepository.getRrdpNotifyUri();
-        if (isRrdpUri(uri)) {
-            rrdpService.storeRepository(rpkiRepository, validationRun);
-            rpkiRepository.setDownloaded();
-        } else if (isRsyncUri(uri)) {
-            validationResult.error("rsync.repository.not.supported");
-        } else {
-            log.error("Unsupported type of the URI " + uri);
-        }
-
-        if (validationResult.hasFailures()) {
-            validationRun.setFailed();
-        } else {
-            validationRun.setSucceeded();
-        }
-
-        if (validationRun.isSucceeded() && validationRun.getAddedObjectCount() > 0) {
-            rpkiRepository.getTrustAnchors().forEach(trustAnchor -> {
-                validationRunRepository.runCertificateTreeValidation(trustAnchor);
-            });
-        }
-    }
-
-    private boolean isRrdpUri(final String uri) {
-        return uri.toLowerCase(Locale.ROOT).startsWith("https://") || uri.toLowerCase(Locale.ROOT).startsWith("http://");
-    }
-
-    private boolean isRsyncUri(final String uri) {
-        return uri.toLowerCase(Locale.ROOT).startsWith("rsync://");
     }
 }
