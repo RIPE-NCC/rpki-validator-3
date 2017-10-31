@@ -161,12 +161,12 @@ public class ValidationService {
         final RpkiRepository rpkiRepository = rpkiRepositories.get(rpkiRepositoryId);
         log.info("Starting RPKI repository validation for " + rpkiRepository);
 
-        ValidationResult validationResult = ValidationResult.withLocation(rpkiRepository.getUri());
+        ValidationResult validationResult = ValidationResult.withLocation(rpkiRepository.getRrdpNotifyUri());
 
         final RpkiRepositoryValidationRun validationRun = new RpkiRepositoryValidationRun(rpkiRepository);
         validationRunRepository.add(validationRun);
 
-        final String uri = rpkiRepository.getUri();
+        final String uri = rpkiRepository.getRrdpNotifyUri();
         if (isRrdpUri(uri)) {
             rrdpService.storeRepository(rpkiRepository, validationRun);
             rpkiRepository.setDownloaded();

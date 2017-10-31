@@ -1,6 +1,7 @@
 package net.ripe.rpki.validator3.domain;
 
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 
@@ -8,6 +9,7 @@ import javax.persistence.*;
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+import java.math.BigInteger;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -32,7 +34,17 @@ public class RpkiRepository extends AbstractEntity {
     @NotNull
     @ValidLocationURI
     @Getter
-    private String uri;
+    private String rrdpNotifyUri;
+
+    @Basic
+    @Getter
+    @Setter
+    private String rrdpSessionId;
+
+    @Basic
+    @Getter
+    @Setter
+    private BigInteger rrdpSerial;
 
     @Basic(optional = false)
     @Enumerated(EnumType.STRING)
@@ -45,7 +57,7 @@ public class RpkiRepository extends AbstractEntity {
 
     public RpkiRepository(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String uri) {
         addTrustAnchor(trustAnchor);
-        this.uri = uri;
+        this.rrdpNotifyUri = uri;
         this.status = Status.PENDING;
     }
 

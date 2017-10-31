@@ -24,7 +24,9 @@ CREATE TABLE rpki_repository (
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
     status VARCHAR NOT NULL,
-    uri VARCHAR(16000) NOT NULL,
+    rrdp_notify_uri VARCHAR(16000) NOT NULL,
+    rrdp_session_id VARCHAR(100),
+    rrdp_serial DECIMAL(40, 0),
     CONSTRAINT rpki_repository__pk PRIMARY KEY (id),
 );
 

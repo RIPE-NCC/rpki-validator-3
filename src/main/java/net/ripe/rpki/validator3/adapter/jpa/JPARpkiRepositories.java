@@ -46,7 +46,7 @@ public class JPARpkiRepositories implements RpkiRepositories {
 
     @Override
     public Optional<RpkiRepository> findByURI(@NotNull @ValidLocationURI String uri) {
-        return Optional.ofNullable(select().where(rpkiRepository.uri.eq(uri.toLowerCase())).fetchFirst());
+        return Optional.ofNullable(select().where(rpkiRepository.rrdpNotifyUri.eq(uri.toLowerCase())).fetchFirst());
     }
 
     @Override

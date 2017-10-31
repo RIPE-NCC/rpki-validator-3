@@ -24,14 +24,11 @@ import java.util.Optional;
 @Slf4j
 public class RrdpService {
 
-    private RrdpParser rrdpParser = new RrdpParser();
+    private final RrdpParser rrdpParser = new RrdpParser();
 
-    private RrdpClient rrdpClient;
+    private final RrdpClient rrdpClient;
 
-    private RpkiObjects rpkiObjectRepository;
-
-    private String currentSessionId;
-    private BigInteger currentSerial;
+    private final RpkiObjects rpkiObjectRepository;
 
     @Autowired
     public RrdpService(final RrdpClient rrdpClient, final RpkiObjects rpkiObjectRepository) {
@@ -41,13 +38,13 @@ public class RrdpService {
 
     @Transactional(Transactional.TxType.REQUIRED)
     public void storeRepository(final RpkiRepository rpkiRepository, final RpkiRepositoryValidationRun validationRun) {
-        final Notification notification = rrdpClient.readStream(rpkiRepository.getUri(), is -> rrdpParser.notification(is));
-        if (notification.sessionId.equals(currentSessionId)) {
-            if (currentSerial.compareTo(notification.serial) <= 0) {
+        final Notification notification = rrdpClient.readStream(rpkiRepository.getRrdpNotifyUri(), is -> rrdpParser.notification(is));
+        if (notification.sessionId.equals(rpkiRepository.getRrdpSessionId())) {
+            if (rpkiRepository.getRrdpSerial().compareTo(notification.serial) <= 0) {
                 notification.deltas.stream().
-                        filter(d -> d.getSerial().compareTo(currentSerial) > 0).
+                        filter(d -> d.getSerial().compareTo(rpkiRepository.getRrdpSerial()) > 0).
                         sorted(Comparator.comparing(DeltaInfo::getSerial)).
-                        map(di -> {
+                        forEach(di -> {
                             // TODO @mpuzanov Verify delta file hash, it will break the whole
                             // nice idea of streaming, but we MUST do it according to RFC
                             final Delta d = rrdpClient.readStream(di.getUri(), i -> rrdpParser.delta(i));
@@ -55,14 +52,11 @@ public class RrdpService {
                                 throw new RrdpException("Session id of the delta (" + di +
                                         ") is not the same as in the notification file: " + notification.sessionId);
                             }
-                            if (d.getSerial().equals(currentSerial.add(BigInteger.ONE))) {
+                            if (!d.getSerial().equals(rpkiRepository.getRrdpSerial().add(BigInteger.ONE))) {
                                 throw new RrdpException("Serials of the deltas (" + di + "), is not contiguous.");
                             }
-                            return d;
-                        }).
-                        forEach(d -> {
                             storeDelta(d, validationRun);
-                            currentSerial = currentSerial.add(BigInteger.ONE);
+                            rpkiRepository.setRrdpSerial(rpkiRepository.getRrdpSerial().add(BigInteger.ONE));
                         });
             } else {
 
@@ -70,8 +64,8 @@ public class RrdpService {
         } else {
             final Snapshot snapshot = rrdpClient.readStream(notification.snapshotUri, i -> rrdpParser.snapshot(i));
             storeSnapshot(snapshot, validationRun);
-            currentSessionId = notification.sessionId;
-            currentSerial = notification.serial;
+            rpkiRepository.setRrdpSessionId(notification.sessionId);
+            rpkiRepository.setRrdpSerial(notification.serial);
         }
     }
 
