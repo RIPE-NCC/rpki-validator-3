@@ -38,7 +38,7 @@ public class RrdpService {
 
     @Transactional(Transactional.TxType.REQUIRED)
     public void storeRepository(final RpkiRepository rpkiRepository, final RpkiRepositoryValidationRun validationRun) {
-        final Notification notification = rrdpClient.readStream(rpkiRepository.getRrdpNotifyUri(), is -> rrdpParser.notification(is));
+        final Notification notification = rrdpClient.readStream(rpkiRepository.getRrdpNotifyUri(), rrdpParser::notification);
         if (notification.sessionId.equals(rpkiRepository.getRrdpSessionId())) {
             if (rpkiRepository.getRrdpSerial().compareTo(notification.serial) <= 0) {
                 notification.deltas.stream().
@@ -47,7 +47,7 @@ public class RrdpService {
                         forEach(di -> {
                             // TODO @mpuzanov Verify delta file hash, it will break the whole
                             // nice idea of streaming, but we MUST do it according to RFC
-                            final Delta d = rrdpClient.readStream(di.getUri(), i -> rrdpParser.delta(i));
+                            final Delta d = rrdpClient.readStream(di.getUri(), rrdpParser::delta);
                             if (!d.getSessionId().equals(notification.sessionId)) {
                                 throw new RrdpException("Session id of the delta (" + di +
                                         ") is not the same as in the notification file: " + notification.sessionId);
@@ -62,7 +62,7 @@ public class RrdpService {
 
             }
         } else {
-            final Snapshot snapshot = rrdpClient.readStream(notification.snapshotUri, i -> rrdpParser.snapshot(i));
+            final Snapshot snapshot = rrdpClient.readStream(notification.snapshotUri, rrdpParser::snapshot);
             storeSnapshot(snapshot, validationRun);
             rpkiRepository.setRrdpSessionId(notification.sessionId);
             rpkiRepository.setRrdpSerial(notification.serial);
