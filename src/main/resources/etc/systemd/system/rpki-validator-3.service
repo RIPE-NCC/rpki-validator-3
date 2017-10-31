@@ -1,0 +1,11 @@
+[Unit]
+Description=RPKI Validator
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/rpki-validator-3.sh
+User=rpki
+Group=rpki
+
+[Install]
+WantedBy=multi-user.target
