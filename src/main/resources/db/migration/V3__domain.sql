@@ -62,6 +62,17 @@ CREATE TABLE rpki_object_locations (
     CONSTRAINT rpki_object_locations__rpki_object_fk FOREIGN KEY (rpki_object_id) REFERENCES rpki_object (id) ON DELETE CASCADE
 );
 
+CREATE TABLE rpki_object_roa_prefixes (
+    rpki_object_id BIGINT NOT NULL,
+    roa_prefixes_order INTEGER NOT NULL,
+    prefix VARCHAR NOT NULL,
+    maximum_length INTEGER,
+    effective_length INTEGER NOT NULL,
+    asn BIGINT NOT NULL,
+    CONSTRAINT rpki_object_roa_prefixes__pk PRIMARY KEY (rpki_object_id, roa_prefixes_order),
+    CONSTRAINT rpki_object_roa_prefixes__rpki_object_fk FOREIGN KEY (rpki_object_id) REFERENCES rpki_object (id) ON DELETE CASCADE
+);
+
 CREATE TABLE validation_run (
     type CHAR(2) NOT NULL,
     id BIGINT NOT NULL,
@@ -102,7 +113,7 @@ CREATE INDEX validation_check__validation_run_id_idx ON validation_check (valida
 
 CREATE TABLE validation_check_parameters (
     validation_check_id BIGINT NOT NULL,
-    parameters_order INT NOT NULL,
+    parameters_order INTEGER NOT NULL,
     parameters VARCHAR NOT NULL,
     CONSTRAINT validation_check_parameters__pk PRIMARY KEY (validation_check_id, parameters_order),
     CONSTRAINT validation_check_parameters__validation_check_fk FOREIGN KEY (validation_check_id) REFERENCES validation_check (id) ON DELETE CASCADE

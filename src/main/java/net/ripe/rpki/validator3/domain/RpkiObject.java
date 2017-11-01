@@ -23,6 +23,7 @@ import java.math.BigInteger;
 import java.net.URI;
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Entity
 public class RpkiObject extends AbstractEntity {
@@ -72,6 +73,13 @@ public class RpkiObject extends AbstractEntity {
     @Size(max = MAX_SIZE)
     private byte[] encoded;
 
+    @ElementCollection(fetch = FetchType.LAZY)
+    @OrderColumn
+    @NotNull
+    @Valid
+    @Getter
+    private List<RoaPrefix> roaPrefixes = new ArrayList<>();
+
     protected RpkiObject() {
         super();
     }
@@ -103,6 +111,12 @@ public class RpkiObject extends AbstractEntity {
                     : (object instanceof RoaCms) ? Type.ROA
                     : Type.OTHER
             );
+            if (object instanceof RoaCms) {
+                RoaCms roaCms = (RoaCms) object;
+                this.roaPrefixes = roaCms.getPrefixes().stream()
+                    .map(prefix -> RoaPrefix.of(prefix.getPrefix(), prefix.getMaximumLength(), roaCms.getAsn()))
+                    .collect(Collectors.toList());
+            }
         } else if (object instanceof UnknownCertificateRepositoryObject) {
             // FIXME store these at all?
             throw new IllegalArgumentException("unsupported certificate repository object type " + object);

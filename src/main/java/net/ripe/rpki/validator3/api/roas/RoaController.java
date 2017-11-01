@@ -1,8 +1,6 @@
 package net.ripe.rpki.validator3.api.roas;
 
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.commons.crypto.cms.roa.RoaCms;
-import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.domain.RpkiObject;
@@ -14,7 +12,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
 
@@ -31,14 +28,11 @@ public class RoaController {
 
     @GetMapping(path = "/validated-prefixes")
     public ResponseEntity<ApiResponse<List<ValidatedPrefix>>> list() {
-        ValidationResult validationResult = ValidationResult.withLocation("X.roa");
         List<RpkiObject> validatedRoas = rpkiObjects.findCurrentlyValidated(RpkiObject.Type.ROA);
         log.debug("validated ROAs count {}", validatedRoas.size());
-        List<ValidatedPrefix> validatedPrefixes = validatedRoas
-            .stream().map(x -> x.get(RoaCms.class, validationResult))
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .flatMap(ValidatedPrefix::of)
+        List<ValidatedPrefix> validatedPrefixes = validatedRoas.stream()
+            .flatMap(x -> x.getRoaPrefixes().stream())
+            .map(ValidatedPrefix::of)
             .collect(toList());
         log.debug("validated prefixes count {}", validatedPrefixes.size());
         return ResponseEntity.ok(ApiResponse.data(validatedPrefixes));
