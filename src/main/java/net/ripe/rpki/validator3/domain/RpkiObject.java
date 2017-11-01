@@ -12,6 +12,7 @@ import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.util.Sha256;
+import org.bouncycastle.util.encoders.Hex;
 
 import javax.persistence.*;
 import javax.validation.Valid;
@@ -21,10 +22,7 @@ import javax.validation.constraints.Size;
 import java.math.BigInteger;
 import java.net.URI;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 
 @Entity
 public class RpkiObject extends AbstractEntity {
@@ -145,5 +143,15 @@ public class RpkiObject extends AbstractEntity {
 
     public void addLocation(String location) {
         this.locations.add(location);
+    }
+
+    @Override
+    public String toString() {
+        return toStringBuilder()
+            .append("type", getType())
+            .append("hash", Hex.toHexString(getSha256()))
+            .append("serialNumber", getSerialNumber())
+            .append("locations", getLocations())
+            .build();
     }
 }
