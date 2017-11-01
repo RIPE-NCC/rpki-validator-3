@@ -19,6 +19,7 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.math.BigInteger;
+import java.net.URI;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Optional;
@@ -75,6 +76,10 @@ public class RpkiObject extends AbstractEntity {
 
     protected RpkiObject() {
         super();
+    }
+
+    public RpkiObject(URI location, CertificateRepositoryObject object) {
+        this(location.toASCIIString(), object);
     }
 
     public RpkiObject(String location, CertificateRepositoryObject object) {

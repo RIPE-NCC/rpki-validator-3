@@ -37,6 +37,7 @@ public class TrustAnchorValidationServiceTest {
     @Test
     public void test_success() {
         TrustAnchor ta = createRipeNccTrustAnchor();
+        trustAnchors.add(ta);
 
         ta.setLocations(Arrays.asList("src/test/resources/ripe-ncc-ta.cer"));
         subject.validate(ta.getId());
@@ -56,6 +57,7 @@ public class TrustAnchorValidationServiceTest {
     public void test_rsync_failure() {
         TrustAnchor ta = createRipeNccTrustAnchor();
         ta.setLocations(Arrays.asList(DUMMY_RSYNC_URI));
+        trustAnchors.add(ta);
 
         subject.validate(ta.getId());
 
@@ -73,6 +75,7 @@ public class TrustAnchorValidationServiceTest {
     @Test
     public void test_empty_file() {
         TrustAnchor ta = createRipeNccTrustAnchor();
+        trustAnchors.add(ta);
 
         ta.setLocations(Arrays.asList("src/test/resources/empty-file.cer"));
         subject.validate(ta.getId());
@@ -93,6 +96,7 @@ public class TrustAnchorValidationServiceTest {
     public void test_bad_subject_public_key() {
         TrustAnchor ta = createRipeNccTrustAnchor();
         ta.setSubjectPublicKeyInfo(ta.getSubjectPublicKeyInfo().toUpperCase());
+        trustAnchors.add(ta);
 
         ta.setLocations(Arrays.asList("src/test/resources/ripe-ncc-ta.cer"));
         subject.validate(ta.getId());
@@ -109,12 +113,11 @@ public class TrustAnchorValidationServiceTest {
         assertThat(validationChecks.get(0).getKey()).isEqualTo("trust.anchor.subject.key.matches.locator");
     }
 
-    private TrustAnchor createRipeNccTrustAnchor() {
+    public static TrustAnchor createRipeNccTrustAnchor() {
         TrustAnchor ta = new TrustAnchor();
         ta.setName("RIPE NCC");
         ta.setLocations(Arrays.asList("rsync://rpki.ripe.net/ta/ripe-ncc-ta.cer"));
         ta.setSubjectPublicKeyInfo("MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0URYSGqUz2myBsOzeW1jQ6NsxNvlLMyhWknvnl8NiBCs/T/S2XuNKQNZ+wBZxIgPPV2pFBFeQAvoH/WK83HwA26V2siwm/MY2nKZ+Olw+wlpzlZ1p3Ipj2eNcKrmit8BwBC8xImzuCGaV0jkRB0GZ0hoH6Ml03umLprRsn6v0xOP0+l6Qc1ZHMFVFb385IQ7FQQTcVIxrdeMsoyJq9eMkE6DoclHhF/NlSllXubASQ9KUWqJ0+Ot3QCXr4LXECMfkpkVR2TZT+v5v658bHVs6ZxRD1b6Uk1uQKAyHUbn/tXvP8lrjAibGzVsXDT2L0x4Edx+QdixPgOji3gBMyL2VwIDAQAB");
-        trustAnchors.add(ta);
         return ta;
     }
 }

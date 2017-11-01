@@ -81,4 +81,14 @@ public class ValidationCheck extends AbstractEntity {
 
         return null;
     }
+
+    @Override
+    public String toString() {
+        return toStringBuilder()
+            .append("location", location)
+            .append("status", status)
+            .append("key", key)
+            .append("parameters", parameters)
+            .build();
+    }
 }

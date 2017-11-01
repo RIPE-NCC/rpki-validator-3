@@ -6,6 +6,7 @@ import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
+import org.springframework.validation.annotation.Validated;
 
 import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
@@ -15,6 +16,7 @@ import static net.ripe.rpki.validator3.domain.querydsl.QTrustAnchor.trustAnchor;
 
 @Repository
 @Transactional(Transactional.TxType.REQUIRED)
+@Validated
 public class JPATrustAnchors implements TrustAnchors {
 
     private final EntityManager entityManager;

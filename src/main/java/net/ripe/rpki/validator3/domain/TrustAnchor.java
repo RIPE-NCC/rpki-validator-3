@@ -10,8 +10,10 @@ import net.ripe.rpki.validator3.domain.constraints.ValidPublicKeyInfo;
 
 import javax.persistence.*;
 import javax.validation.Valid;
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -31,9 +33,10 @@ public class TrustAnchor extends AbstractEntity {
     @Getter
     @Setter
     @NotNull
-    @Size(min = 1, max = 1)
+    @NotEmpty
+    @Size(max = 1)
     @Valid
-    private List<@NotNull @ValidLocationURI String> locations;
+    private List<@NotNull @ValidLocationURI String> locations = new ArrayList<>();
 
     @Column(name = "subject_public_key_info")
     @Getter

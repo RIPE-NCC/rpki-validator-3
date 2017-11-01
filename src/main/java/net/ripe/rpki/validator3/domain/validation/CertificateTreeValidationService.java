@@ -9,9 +9,11 @@ import net.ripe.rpki.commons.util.RepositoryObjectType;
 import net.ripe.rpki.commons.validation.ValidationLocation;
 import net.ripe.rpki.commons.validation.ValidationOptions;
 import net.ripe.rpki.commons.validation.ValidationResult;
+import net.ripe.rpki.commons.validation.ValidationString;
 import net.ripe.rpki.commons.validation.objectvalidators.CertificateRepositoryObjectValidationContext;
 import net.ripe.rpki.validator3.domain.*;
 import net.ripe.rpki.validator3.util.Sha256;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -63,7 +65,7 @@ public class CertificateTreeValidationService {
 
         try {
             X509ResourceCertificate certificate = trustAnchor.getCertificate();
-            validationResult.warnIfNull(certificate, "trust.anchor.certificate.available");
+            validationResult.rejectIfNull(certificate, "trust.anchor.certificate.available");
             if (certificate == null) {
                 return;
             }
@@ -112,7 +114,7 @@ public class CertificateTreeValidationService {
             temporary.setLocation(new ValidationLocation(manifestUri));
 
             Optional<RpkiObject> manifestObject = rpkiObjects.findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type.MFT, context.getSubjectKeyIdentifier());
-            temporary.rejectIfFalse(manifestObject.isPresent(), "rpki.manifest.found", manifestUri.toASCIIString());
+            temporary.rejectIfFalse(manifestObject.isPresent(), ValidationString.VALIDATOR_CA_SHOULD_HAVE_MANIFEST, manifestUri.toASCIIString());
             Optional<ManifestCms> maybeManifest = manifestObject.flatMap(x -> x.get(ManifestCms.class, temporary));
             if (temporary.hasFailureForCurrentLocation()) {
                 return validatedObjects;
@@ -122,7 +124,7 @@ public class CertificateTreeValidationService {
             List<Map.Entry<String, byte[]>> crlEntries = manifest.getFiles().entrySet().stream()
                 .filter((entry) -> RepositoryObjectType.parse(entry.getKey()) == RepositoryObjectType.Crl)
                 .collect(toList());
-            validationResult.rejectIfFalse(crlEntries.size() == 1, "manifest.contains.one.crl.entry", String.valueOf(crlEntries.size()));
+            temporary.rejectIfFalse(crlEntries.size() == 1, "manifest.contains.one.crl.entry", String.valueOf(crlEntries.size()));
             if (temporary.hasFailureForCurrentLocation()) {
                 return validatedObjects;
             }
@@ -148,6 +150,7 @@ public class CertificateTreeValidationService {
             if (temporary.hasFailureForCurrentLocation()) {
                 return validatedObjects;
             }
+            validatedObjects.add(manifestObject.get());
 
             Map<URI, RpkiObject> manifestEntries = retrieveManifestEntries(manifest, manifestUri, temporary);
 
@@ -179,6 +182,8 @@ public class CertificateTreeValidationService {
                     }
                 });
             });
+        } catch (Exception e) {
+            validationResult.error("exception.occurred", e.toString(), ExceptionUtils.getStackTrace(e));
         } finally {
             validationResult.addAll(temporary);
         }
