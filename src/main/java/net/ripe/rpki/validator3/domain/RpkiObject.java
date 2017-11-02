@@ -159,13 +159,17 @@ public class RpkiObject extends AbstractEntity {
         this.locations.add(location);
     }
 
+    public void removeLocation(String location) {
+        this.locations.remove(location);
+    }
+
     @Override
     public String toString() {
         return toStringBuilder()
-            .append("type", getType())
-            .append("hash", Hex.toHexString(getSha256()))
-            .append("serialNumber", getSerialNumber())
-            .append("locations", getLocations())
-            .build();
+                .append("type", getType())
+                .append("hash", Hex.toHexString(getSha256()))
+                .append("serialNumber", getSerialNumber())
+                .append("locations", getLocations())
+                .build();
     }
 }

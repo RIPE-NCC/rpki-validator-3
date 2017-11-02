@@ -80,6 +80,11 @@ public class JPARpkiObjects implements RpkiObjects {
             .fetch();
     }
 
+    @Override
+    public void merge(RpkiObject object) {
+        entityManager.merge(object);
+    }
+
     private JPAQuery<RpkiObject> select() {
         return queryFactory.selectFrom(rpkiObject);
     }

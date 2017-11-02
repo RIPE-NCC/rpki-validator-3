@@ -17,4 +17,6 @@ public interface RpkiObjects {
     Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type type, byte[] authorityKeyIdentifier);
 
     List<RpkiObject> findCurrentlyValidated(RpkiObject.Type type);
+
+    void merge(RpkiObject object);
 }

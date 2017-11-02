@@ -15,7 +15,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import javax.validation.constraints.NotNull;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Optional;
 
@@ -68,8 +70,6 @@ public class RrdpService {
                             storeDelta(d, validationRun);
                             rpkiRepository.setRrdpSerial(rpkiRepository.getRrdpSerial().add(BigInteger.ONE));
                         });
-            } else {
-
             }
         } else {
             final Snapshot snapshot = rrdpClient.readStream(notification.snapshotUri, rrdpParser::snapshot);
@@ -90,11 +90,11 @@ public class RrdpService {
                     validationRun.addChecks(maybeRpkiObject.left().value());
                     return null;
                 } else {
-                    RpkiObject result = maybeRpkiObject.right().value();
-                    rpkiObjectRepository.add(result);
-                    validationRun.objectAdded();
-                    log.debug("added to database {}", result);
-                    return result;
+                    RpkiObject object = maybeRpkiObject.right().value();
+                    rpkiObjectRepository.add(object);
+                    validationRun.addRpkiObject(object);
+                    log.debug("added to database {}", object);
+                    return object;
                 }
             });
         });
@@ -113,7 +113,7 @@ public class RrdpService {
     private void applyDeltaWithdraw(RpkiRepositoryValidationRun validationRun, String uri, DeltaWithdraw deltaWithdraw) {
         final Optional<RpkiObject> maybeObject = rpkiObjectRepository.findBySha256(deltaWithdraw.getHash());
         if (maybeObject.isPresent()) {
-            rpkiObjectRepository.remove(maybeObject.get());
+            maybeObject.get().removeLocation(uri);
         } else {
             ValidationCheck validationCheck = new ValidationCheck(validationRun, uri,
                     ValidationCheck.Status.ERROR, "rrdp.withdraw.nonexistent.object", Sha256.format(deltaWithdraw.getHash()));
@@ -123,31 +123,37 @@ public class RrdpService {
 
     private void applyDeltaPublish(RpkiRepositoryValidationRun validationRun, String uri, DeltaPublish deltaPublish) {
         if (deltaPublish.getHash().isPresent()) {
-            final Optional<RpkiObject> existing = rpkiObjectRepository.findBySha256(deltaPublish.getHash().get());
+            final byte[] sha256 = deltaPublish.getHash().get();
+            final Optional<RpkiObject> existing = rpkiObjectRepository.findBySha256(sha256);
             if (existing.isPresent()) {
-                addRpkiObject(validationRun, uri, deltaPublish);
+                addRpkiObject(validationRun, uri, deltaPublish, sha256);
             } else {
                 ValidationCheck validationCheck = new ValidationCheck(validationRun, uri,
-                        ValidationCheck.Status.ERROR, "rrdp.replace.nonexistent.object", Sha256.format(deltaPublish.getHash().get()));
+                        ValidationCheck.Status.ERROR, "rrdp.replace.nonexistent.object", Sha256.format(sha256));
                 validationRun.addCheck(validationCheck);
             }
         } else {
-            addRpkiObject(validationRun, uri, deltaPublish);
+            addRpkiObject(validationRun, uri, deltaPublish, null);
         }
     }
 
-    private void addRpkiObject(RpkiRepositoryValidationRun validationRun, String uri, DeltaPublish deltaPublish) {
+    private void addRpkiObject(RpkiRepositoryValidationRun validationRun, String uri, DeltaPublish deltaPublish, final byte[] existingHash) {
         final Either<ValidationResult, RpkiObject> maybeRpkiObject = createRpkiObject(uri, deltaPublish.getContent());
         if (maybeRpkiObject.isLeft()) {
             validationRun.addChecks(maybeRpkiObject.left().value());
         } else {
             RpkiObject object = maybeRpkiObject.right().value();
-            rpkiObjectRepository.add(object);
+            if (existingHash == null || !Arrays.equals(object.getSha256(), existingHash)) {
+                validationRun.addRpkiObject(object);
+                rpkiObjectRepository.add(object);
+            } else {
+                log.debug("The object added is the same {}", object);
+            }
             log.debug("Added to database {}", object);
         }
     }
 
-    Either<ValidationResult, RpkiObject> createRpkiObject(final String uri, final byte[] content) {
+    private Either<ValidationResult, RpkiObject> createRpkiObject(final String uri, final byte[] content) {
         ValidationResult validationResult = ValidationResult.withLocation(uri);
         CertificateRepositoryObject repositoryObject = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(content, validationResult);
         if (validationResult.hasFailures()) {

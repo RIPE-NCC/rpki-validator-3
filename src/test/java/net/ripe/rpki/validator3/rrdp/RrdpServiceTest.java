@@ -6,8 +6,11 @@ import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
+import net.ripe.rpki.validator3.domain.ValidationCheck;
+import net.ripe.rpki.validator3.domain.ValidationRun;
 import net.ripe.rpki.validator3.util.Sha256;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -137,6 +140,7 @@ public class RrdpServiceTest {
         // do the first run to get the snapshot
         RpkiRepositoryValidationRun validationRun = new RpkiRepositoryValidationRun(rpkiRepository);
         subject.storeRepository(rpkiRepository, validationRun);
+        assertEquals(0, validationRun.getValidationChecks().size());
 
         final List<RpkiObject> objects = rpkiObjects.all();
         assertEquals(1, objects.size());
@@ -177,8 +181,55 @@ public class RrdpServiceTest {
         final RpkiRepositoryValidationRun validationRun = new RpkiRepositoryValidationRun(rpkiRepository);
         subject.storeRepository(rpkiRepository, validationRun);
 
+        assertEquals(1, validationRun.getValidationChecks().size());
+        assertEquals("rrdp.error", validationRun.getValidationChecks().get(0).getKey());
+        assertEquals(ValidationCheck.Status.ERROR, validationRun.getValidationChecks().get(0).getStatus());
+        assertEquals(rpkiRepository.getRrdpNotifyUri(), validationRun.getValidationChecks().get(0).getLocation());
+
         final List<RpkiObject> objects = rpkiObjects.all();
         assertEquals(0, objects.size());
+    }
+
+    @Test
+    public void should_parse_notification_use_delta_add_and_replace_an_object() {
+        final byte[] certificate = Objects.aParseableCertificate();
+        final String sessionId = UUID.randomUUID().toString();
+        final byte[] emptySnapshotXml = Objects.snapshotXml(3, sessionId);
+
+        final Objects.SnapshotInfo emptySnapshot = new Objects.SnapshotInfo("https://host/path/snapshot.xml", Sha256.hash(emptySnapshotXml));
+        rrdpClient.add(emptySnapshot.uri, emptySnapshotXml);
+
+        final Objects.DeltaPublish publishCert = new Objects.DeltaPublish("rsync://host/path/cert.cer", certificate);
+        final byte[] deltaXml1 = Objects.deltaXml(2, sessionId, publishCert);
+
+        final Objects.DeltaPublish republishCert = new Objects.DeltaPublish("rsync://host/path/cert.cer", Sha256.hash(publishCert.content), certificate);
+        final byte[] deltaXml2 = Objects.deltaXml(3, sessionId, republishCert);
+
+        final Objects.DeltaInfo deltaInfo1 = new Objects.DeltaInfo("https://host/path/delta1.xml", Sha256.hash(deltaXml1), 2);
+        final Objects.DeltaInfo deltaInfo2 = new Objects.DeltaInfo("https://host/path/delta2.xml", Sha256.hash(deltaXml2), 3);
+        rrdpClient.add(deltaInfo1.uri, deltaXml1);
+        rrdpClient.add(deltaInfo2.uri, deltaXml2);
+
+        final String notificationUri = "https://rrdp.ripe.net/notification.xml";
+        rrdpClient.add(notificationUri, Objects.notificationXml(3, sessionId, emptySnapshot, deltaInfo1, deltaInfo2));
+
+        final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
+        entityManager.persist(trustAnchor);
+
+        // make current serial lower to trigger delta download
+        final RpkiRepository rpkiRepository = new RpkiRepository(trustAnchor, notificationUri);
+        rpkiRepository.setRrdpSerial(BigInteger.valueOf(1L));
+        rpkiRepository.setRrdpSessionId(sessionId);
+        entityManager.persist(rpkiRepository);
+
+        // do the first run to get the snapshot
+        RpkiRepositoryValidationRun validationRun = new RpkiRepositoryValidationRun(rpkiRepository);
+        subject.storeRepository(rpkiRepository, validationRun);
+        assertEquals(0, validationRun.getValidationChecks().size());
+
+        final List<RpkiObject> objects = rpkiObjects.all();
+        assertEquals(1, objects.size());
+
     }
 
 }

@@ -190,7 +190,7 @@ public class Objects {
         public final byte[] hash;
         public final byte[] content;
 
-        private DeltaPublish(String uri, byte[] hash, byte[] content) {
+        DeltaPublish(String uri, byte[] hash, byte[] content) {
             super(uri);
             this.hash = hash;
             this.content = content;
