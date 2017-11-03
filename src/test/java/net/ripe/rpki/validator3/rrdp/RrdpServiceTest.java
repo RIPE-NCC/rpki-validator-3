@@ -7,10 +7,8 @@ import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.ValidationCheck;
-import net.ripe.rpki.validator3.domain.ValidationRun;
 import net.ripe.rpki.validator3.util.Sha256;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -182,8 +180,8 @@ public class RrdpServiceTest {
         subject.storeRepository(rpkiRepository, validationRun);
 
         assertEquals(1, validationRun.getValidationChecks().size());
-        assertEquals("rrdp.error", validationRun.getValidationChecks().get(0).getKey());
-        assertEquals(ValidationCheck.Status.ERROR, validationRun.getValidationChecks().get(0).getStatus());
+        assertEquals("rrdp.deltas.failure", validationRun.getValidationChecks().get(0).getKey());
+        assertEquals(ValidationCheck.Status.WARNING, validationRun.getValidationChecks().get(0).getStatus());
         assertEquals(rpkiRepository.getRrdpNotifyUri(), validationRun.getValidationChecks().get(0).getLocation());
 
         final List<RpkiObject> objects = rpkiObjects.all();

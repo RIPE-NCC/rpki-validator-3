@@ -15,11 +15,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
-import javax.validation.constraints.NotNull;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -51,32 +52,67 @@ public class RrdpService {
 
     private void doStoreRepository(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun) {
         final Notification notification = rrdpClient.readStream(rpkiRepository.getRrdpNotifyUri(), rrdpParser::notification);
+
+        log.info("The local serial is '{}' and the latest serial is {}", rpkiRepository.getRrdpSerial(), notification.serial);
+
         if (notification.sessionId.equals(rpkiRepository.getRrdpSessionId())) {
             if (rpkiRepository.getRrdpSerial().compareTo(notification.serial) <= 0) {
-                notification.deltas.stream().
-                        filter(d -> d.getSerial().compareTo(rpkiRepository.getRrdpSerial()) > 0).
-                        sorted(Comparator.comparing(DeltaInfo::getSerial)).
-                        forEach(di -> {
-                            // TODO @mpuzanov Verify delta file hash, it will break the whole
-                            // nice idea of streaming, but we MUST do it according to RFC
-                            final Delta d = rrdpClient.readStream(di.getUri(), rrdpParser::delta);
-                            if (!d.getSessionId().equals(notification.sessionId)) {
-                                throw new RrdpException("Session id of the delta (" + di +
-                                        ") is not the same as in the notification file: " + notification.sessionId);
-                            }
-                            if (!d.getSerial().equals(rpkiRepository.getRrdpSerial().add(BigInteger.ONE))) {
-                                throw new RrdpException("Serials of the deltas (" + di + "), is not contiguous.");
-                            }
-                            storeDelta(d, validationRun);
-                            rpkiRepository.setRrdpSerial(rpkiRepository.getRrdpSerial().add(BigInteger.ONE));
-                        });
+                try {
+                    final List<Delta> deltas = notification.deltas.parallelStream().
+                            filter(d -> d.getSerial().compareTo(rpkiRepository.getRrdpSerial()) > 0).
+                            sorted(Comparator.comparing(DeltaInfo::getSerial)).
+                            map(di -> {
+                                // TODO @mpuzanov Verify delta file hash, it will break the whole
+                                // nice idea of streaming, but we MUST do it according to RFC
+                                final Delta d = rrdpClient.readStream(di.getUri(), rrdpParser::delta);
+                                if (!d.getSessionId().equals(notification.sessionId)) {
+                                    throw new RrdpException("Session id of the delta (" + di +
+                                            ") is not the same as in the notification file: " + notification.sessionId);
+                                }
+                                return d;
+                            }).collect(Collectors.toList());
+
+                    verifyContigousSerials(deltas);
+
+                    deltas.forEach(d -> {
+                        storeDelta(d, validationRun);
+                        rpkiRepository.setRrdpSerial(rpkiRepository.getRrdpSerial().add(BigInteger.ONE));
+                    });
+
+                } catch (RrdpException e) {
+                    log.info("Processing deltas failed {}, falling back to snapshot processing.", e.getMessage());
+                    ValidationCheck validationCheck = new ValidationCheck(validationRun, rpkiRepository.getRrdpNotifyUri(),
+                            ValidationCheck.Status.WARNING, "rrdp.deltas.failure", e.getMessage());
+                    validationRun.addCheck(validationCheck);
+                    readSnapshot(rpkiRepository, validationRun, notification);
+                }
             }
         } else {
-            final Snapshot snapshot = rrdpClient.readStream(notification.snapshotUri, rrdpParser::snapshot);
-            storeSnapshot(snapshot, validationRun);
-            rpkiRepository.setRrdpSessionId(notification.sessionId);
-            rpkiRepository.setRrdpSerial(notification.serial);
+            log.info("Repository has session id '{}' but the downloaded version has session id '{}', fetching the snapshot",
+                    rpkiRepository.getRrdpSessionId(), notification.sessionId);
+            readSnapshot(rpkiRepository, validationRun, notification);
         }
+    }
+
+    private void verifyContigousSerials(List<Delta> deltas) {
+        final BigInteger[] previous = {null};
+        deltas.forEach(d -> {
+                    if (previous[0] == null) {
+                        previous[0] = d.getSerial();
+                    } else {
+                        if (!d.getSerial().equals(previous[0].add(BigInteger.ONE))) {
+                            throw new RrdpException("Serials of the deltas (" + d + ") are not contiguous.");
+                        }
+                    }
+                }
+        );
+    }
+
+    private void readSnapshot(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun, Notification notification) {
+        final Snapshot snapshot = rrdpClient.readStream(notification.snapshotUri, rrdpParser::snapshot);
+        storeSnapshot(snapshot, validationRun);
+        rpkiRepository.setRrdpSessionId(notification.sessionId);
+        rpkiRepository.setRrdpSerial(notification.serial);
     }
 
     void storeSnapshot(final Snapshot snapshot, final RpkiRepositoryValidationRun validationRun) {
