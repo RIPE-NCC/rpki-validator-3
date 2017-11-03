@@ -72,7 +72,7 @@ public class RrdpService {
                                 return d;
                             }).collect(Collectors.toList());
 
-                    verifyContigousSerials(deltas);
+                    verifyContiguousSerials(deltas);
 
                     deltas.forEach(d -> {
                         storeDelta(d, validationRun);
@@ -94,14 +94,14 @@ public class RrdpService {
         }
     }
 
-    private void verifyContigousSerials(List<Delta> deltas) {
+    private void verifyContiguousSerials(final List<Delta> deltas) {
         final BigInteger[] previous = {null};
         deltas.forEach(d -> {
                     if (previous[0] == null) {
                         previous[0] = d.getSerial();
                     } else {
                         if (!d.getSerial().equals(previous[0].add(BigInteger.ONE))) {
-                            throw new RrdpException("Serials of the deltas (" + d + ") are not contiguous.");
+                            throw new RrdpException(String.format("Serials of the deltas are not contiguous: found %d and %d after it", previous[0], d.getSerial()));
                         }
                     }
                 }
