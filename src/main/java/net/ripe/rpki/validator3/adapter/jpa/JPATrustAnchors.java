@@ -1,14 +1,10 @@
 package net.ripe.rpki.validator3.adapter.jpa;
 
-import com.querydsl.jpa.impl.JPAQuery;
-import com.querydsl.jpa.impl.JPAQueryFactory;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
-import org.springframework.validation.annotation.Validated;
 
-import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 import java.util.List;
 
@@ -16,39 +12,26 @@ import static net.ripe.rpki.validator3.domain.querydsl.QTrustAnchor.trustAnchor;
 
 @Repository
 @Transactional(Transactional.TxType.REQUIRED)
-@Validated
-public class JPATrustAnchors implements TrustAnchors {
-
-    private final EntityManager entityManager;
-
-    private final JPAQueryFactory queryFactory;
+public class JPATrustAnchors extends JPARepository<TrustAnchor> implements TrustAnchors {
 
     private final QuartzValidationScheduler validationScheduler;
 
     @Autowired
-    public JPATrustAnchors(EntityManager entityManager, JPAQueryFactory queryFactory, QuartzValidationScheduler validationScheduler) {
-        this.entityManager = entityManager;
-        this.queryFactory = queryFactory;
+    public JPATrustAnchors(QuartzValidationScheduler validationScheduler) {
+        super(trustAnchor);
         this.validationScheduler = validationScheduler;
     }
 
     @Override
     public void add(TrustAnchor trustAnchor) {
-        entityManager.persist(trustAnchor);
+        super.add(trustAnchor);
         validationScheduler.addTrustAnchor(trustAnchor);
     }
 
     @Override
     public void remove(TrustAnchor trustAnchor) {
         validationScheduler.removeTrustAnchor(trustAnchor);
-        entityManager.remove(trustAnchor);
-    }
-
-    @Override
-    public TrustAnchor get(long id) {
-        TrustAnchor result = entityManager.getReference(TrustAnchor.class, id);
-        result.getId(); // Throws EntityNotFoundException if the id is not valid
-        return result;
+        super.remove(trustAnchor);
     }
 
     @Override
@@ -59,9 +42,5 @@ public class JPATrustAnchors implements TrustAnchors {
     @Override
     public List<TrustAnchor> findByName(String name) {
         return select().where(trustAnchor.name.eq(name)).orderBy(trustAnchor.name.asc(), trustAnchor.id.asc()).fetch();
-    }
-
-    private JPAQuery<TrustAnchor> select() {
-        return queryFactory.selectFrom(trustAnchor);
     }
 }

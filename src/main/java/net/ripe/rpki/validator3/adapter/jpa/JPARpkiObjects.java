@@ -1,49 +1,27 @@
 package net.ripe.rpki.validator3.adapter.jpa;
 
+import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQuery;
-import com.querydsl.jpa.impl.JPAQueryFactory;
+import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Repository;
 
-import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static net.ripe.rpki.validator3.domain.querydsl.QCertificateTreeValidationRun.certificateTreeValidationRun;
 import static net.ripe.rpki.validator3.domain.querydsl.QRpkiObject.rpkiObject;
 
 @Repository
 @Transactional(Transactional.TxType.REQUIRED)
-public class JPARpkiObjects implements RpkiObjects {
+public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObjects {
 
-    private final EntityManager entityManager;
-
-    private final JPAQueryFactory queryFactory;
-
-    @Autowired
-    public JPARpkiObjects(EntityManager entityManager, JPAQueryFactory queryFactory) {
-        this.entityManager = entityManager;
-        this.queryFactory = queryFactory;
-    }
-
-    @Override
-    public void add(RpkiObject trustAnchor) {
-        entityManager.persist(trustAnchor);
-    }
-
-    @Override
-    public void remove(RpkiObject o) {
-        entityManager.remove(o);
-    }
-
-    @Override
-    public RpkiObject get(long id) {
-        RpkiObject result = entityManager.getReference(RpkiObject.class, id);
-        result.getId(); // Throws EntityNotFoundException if the id is not valid
-        return result;
+    public JPARpkiObjects() {
+        super(rpkiObject);
     }
 
     @Override
@@ -66,8 +44,8 @@ public class JPARpkiObjects implements RpkiObjects {
     }
 
     @Override
-    public List<RpkiObject> findCurrentlyValidated(RpkiObject.Type type) {
-        return queryFactory
+    public Stream<Pair<CertificateTreeValidationRun, RpkiObject>> findCurrentlyValidated(RpkiObject.Type type) {
+        JPAQuery<Tuple> query = queryFactory
             .from(certificateTreeValidationRun)
             .join(certificateTreeValidationRun.validatedObjects, rpkiObject)
             .where(
@@ -76,16 +54,13 @@ public class JPARpkiObjects implements RpkiObjects {
                         JPAValidationRuns.latestSuccessfulValidationRuns())
                     )
             )
-            .select(rpkiObject)
-            .fetch();
+            .select(certificateTreeValidationRun, rpkiObject);
+        return stream(query)
+            .map(x -> Pair.of(x.get(0, CertificateTreeValidationRun.class), x.get(1, RpkiObject.class)));
     }
 
     @Override
     public void merge(RpkiObject object) {
         entityManager.merge(object);
-    }
-
-    private JPAQuery<RpkiObject> select() {
-        return queryFactory.selectFrom(rpkiObject);
     }
 }

@@ -11,10 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.List;
 import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.toList;
 
 /**
  * Controller to export validated ROA prefix information.
@@ -35,7 +32,7 @@ public class ExportsController {
 
     @GetMapping(path = "/export.json", produces = "text/json; charset=UTF-8")
     public JsonExport exportJson() {
-        return new JsonExport(loadValidatedPrefixes().collect(toList()));
+        return new JsonExport(loadValidatedPrefixes());
     }
 
     @GetMapping(path = "/export.csv", produces = "text/csv; charset=UTF-8")
@@ -53,27 +50,25 @@ public class ExportsController {
     }
 
     protected Stream<ExportRoaPrefix> loadValidatedPrefixes() {
-        List<RpkiObject> validatedRoas = rpkiObjects.findCurrentlyValidated(RpkiObject.Type.ROA);
-        log.debug("validated ROAs count {}", validatedRoas.size());
-
-        return validatedRoas.stream()
-            .flatMap(roa -> roa.getRoaPrefixes().stream()
+        return rpkiObjects
+            .findCurrentlyValidated(RpkiObject.Type.ROA)
+            .flatMap(pair -> pair.getValue().getRoaPrefixes().stream()
                 .map(prefix -> new ExportRoaPrefix(
                     String.valueOf(prefix.getAsn()),
                     prefix.getPrefix(),
                     prefix.getEffectiveLength(),
-                    "TODO" // FIXME retrieve trust anchor
+                    pair.getKey().getTrustAnchor().getName()
                 ))
             );
     }
 
     @Value
-    private static class JsonExport {
-        List<ExportRoaPrefix> roa;
+    public static class JsonExport {
+        Stream<ExportRoaPrefix> roa;
     }
 
     @Value
-    private static class ExportRoaPrefix {
+    public static class ExportRoaPrefix {
         private String asn;
         private String prefix;
         private int maxLength;

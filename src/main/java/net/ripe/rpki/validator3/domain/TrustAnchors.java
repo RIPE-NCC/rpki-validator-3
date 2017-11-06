@@ -1,10 +1,9 @@
 package net.ripe.rpki.validator3.domain;
 
-import javax.validation.Valid;
 import java.util.List;
 
 public interface TrustAnchors {
-    void add(@Valid TrustAnchor trustAnchor);
+    void add(TrustAnchor trustAnchor);
 
     void remove(TrustAnchor trustAnchor);
 

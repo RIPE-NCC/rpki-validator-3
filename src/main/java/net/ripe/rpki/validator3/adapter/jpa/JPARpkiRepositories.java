@@ -1,7 +1,5 @@
 package net.ripe.rpki.validator3.adapter.jpa;
 
-import com.querydsl.jpa.impl.JPAQuery;
-import com.querydsl.jpa.impl.JPAQueryFactory;
 import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
@@ -9,7 +7,6 @@ import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
-import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -20,16 +17,13 @@ import static net.ripe.rpki.validator3.domain.querydsl.QRpkiRepository.rpkiRepos
 
 @Repository
 @Transactional(Transactional.TxType.REQUIRED)
-public class JPARpkiRepositories implements RpkiRepositories {
-    private final EntityManager entityManager;
+public class JPARpkiRepositories extends JPARepository<RpkiRepository> implements RpkiRepositories {
     private final QuartzValidationScheduler quartzValidationScheduler;
-    private final JPAQueryFactory jpaQueryFactory;
 
     @Autowired
-    public JPARpkiRepositories(EntityManager entityManager, QuartzValidationScheduler quartzValidationScheduler, JPAQueryFactory jpaQueryFactory) {
-        this.entityManager = entityManager;
+    public JPARpkiRepositories(QuartzValidationScheduler quartzValidationScheduler) {
+        super(rpkiRepository);
         this.quartzValidationScheduler = quartzValidationScheduler;
-        this.jpaQueryFactory = jpaQueryFactory;
     }
 
     @Override
@@ -50,18 +44,7 @@ public class JPARpkiRepositories implements RpkiRepositories {
     }
 
     @Override
-    public RpkiRepository get(long id) {
-        RpkiRepository result = entityManager.getReference(RpkiRepository.class, id);
-        result.getId(); // Throws EntityNotFoundException if the id is not valid
-        return result;
-    }
-
-    @Override
     public List<RpkiRepository> findAll() {
         return select().fetch();
-    }
-
-    private JPAQuery<RpkiRepository> select() {
-        return jpaQueryFactory.selectFrom(rpkiRepository);
     }
 }

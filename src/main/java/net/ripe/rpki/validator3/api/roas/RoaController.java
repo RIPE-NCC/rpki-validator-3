@@ -11,9 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
-import static java.util.stream.Collectors.toList;
+import java.util.stream.Stream;
 
 @RestController
 @RequestMapping(path = "/roas", produces = Api.API_MIME_TYPE)
@@ -27,14 +25,11 @@ public class RoaController {
     }
 
     @GetMapping(path = "/validated-prefixes")
-    public ResponseEntity<ApiResponse<List<ValidatedPrefix>>> list() {
-        List<RpkiObject> validatedRoas = rpkiObjects.findCurrentlyValidated(RpkiObject.Type.ROA);
-        log.debug("validated ROAs count {}", validatedRoas.size());
-        List<ValidatedPrefix> validatedPrefixes = validatedRoas.stream()
-            .flatMap(x -> x.getRoaPrefixes().stream())
-            .map(ValidatedPrefix::of)
-            .collect(toList());
-        log.debug("validated prefixes count {}", validatedPrefixes.size());
+    public ResponseEntity<ApiResponse<Stream<ValidatedPrefix>>> list() {
+        Stream<ValidatedPrefix> validatedPrefixes = rpkiObjects
+            .findCurrentlyValidated(RpkiObject.Type.ROA)
+            .flatMap(x -> x.getValue().getRoaPrefixes().stream())
+            .map(ValidatedPrefix::of);
         return ResponseEntity.ok(ApiResponse.data(validatedPrefixes));
     }
 }

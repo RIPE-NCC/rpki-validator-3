@@ -1,11 +1,13 @@
 package net.ripe.rpki.validator3.api.validationruns;
 
+import io.swagger.annotations.ApiModel;
 import lombok.Data;
 import net.ripe.rpki.validator3.domain.ValidationCheck;
 
 import java.util.List;
 
 @Data(staticConstructor = "of")
+@ApiModel(value = "ValidationCheck")
 public class ValidationCheckResource {
     final String location;
     final ValidationCheck.Status status;

@@ -1,5 +1,6 @@
 package net.ripe.rpki.validator3.api.trustanchors;
 
+import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Value;
 import net.ripe.rpki.validator3.api.Api;
@@ -12,6 +13,7 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @Value(staticConstructor = "of")
+@ApiModel(value = "TrustAnchor")
 class TrustAnchorResource {
     @ApiModelProperty(allowableValues = TrustAnchor.TYPE, required = true, position = 1)
     String type;
