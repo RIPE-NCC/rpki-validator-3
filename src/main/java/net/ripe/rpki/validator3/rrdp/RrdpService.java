@@ -65,7 +65,7 @@ public class RrdpService {
                             map(di -> readDelta(notification, di)).
                             collect(Collectors.toList());
 
-                    verifyContiguousSerials(deltas);
+                    verifyDeltaSerials(deltas, notification, rpkiRepository);
 
                     deltas.forEach(d -> {
                         storeDelta(d, validationRun);
@@ -117,9 +117,20 @@ public class RrdpService {
         return d;
     }
 
-    private void verifyContiguousSerials(final List<Delta> deltas) {
+    private void verifyDeltaSerials(final List<Delta> orderedDeltas, final Notification notification, RpkiRepository rpkiRepository) {
+        if (orderedDeltas.isEmpty()) {
+            throw new RrdpException("The current serial is " + rpkiRepository.getRrdpSerial() +
+                    ", notification file serial is " + notification.serial + ", but the list of deltas is empty.");
+        }
+
+        final BigInteger lastDeltaSerial = orderedDeltas.get(orderedDeltas.size() - 1).getSerial();
+        if (!notification.serial.equals(lastDeltaSerial)) {
+            throw new RrdpException("The last delta serial is " + lastDeltaSerial +
+                    ", notification file serial is " + notification.serial);
+        }
+
         final BigInteger[] previous = {null};
-        deltas.forEach(d -> {
+        orderedDeltas.forEach(d -> {
                     if (previous[0] == null) {
                         previous[0] = d.getSerial();
                     } else {
