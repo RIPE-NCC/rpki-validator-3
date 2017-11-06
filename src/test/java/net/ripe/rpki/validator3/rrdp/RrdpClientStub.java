@@ -16,6 +16,11 @@ public class RrdpClientStub implements RrdpClient {
         return reader.apply(new ByteArrayInputStream(bytes));
     }
 
+    @Override
+    public byte[] getBody(String uri) {
+        return contents.get(uri);
+    }
+
     public void add(String uri, byte[] content) {
         contents.put(uri, content);
     }

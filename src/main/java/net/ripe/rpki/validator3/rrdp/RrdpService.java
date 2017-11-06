@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.io.ByteArrayInputStream;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -61,16 +62,8 @@ public class RrdpService {
                     final List<Delta> deltas = notification.deltas.parallelStream().
                             filter(d -> d.getSerial().compareTo(rpkiRepository.getRrdpSerial()) > 0).
                             sorted(Comparator.comparing(DeltaInfo::getSerial)).
-                            map(di -> {
-                                // TODO @mpuzanov Verify delta file hash, it will break the whole
-                                // nice idea of streaming, but we MUST do it according to RFC
-                                final Delta d = rrdpClient.readStream(di.getUri(), rrdpParser::delta);
-                                if (!d.getSessionId().equals(notification.sessionId)) {
-                                    throw new RrdpException("Session id of the delta (" + di +
-                                            ") is not the same as in the notification file: " + notification.sessionId);
-                                }
-                                return d;
-                            }).collect(Collectors.toList());
+                            map(di -> readDelta(notification, di)).
+                            collect(Collectors.toList());
 
                     verifyContiguousSerials(deltas);
 
@@ -94,6 +87,36 @@ public class RrdpService {
         }
     }
 
+    private void readSnapshot(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun, Notification notification) {
+        final byte[] snapshotBody = rrdpClient.getBody(notification.snapshotUri);
+        final byte[] snapshotHash = Sha256.hash(snapshotBody);
+        if (!Arrays.equals(Sha256.parse(notification.snapshotHash), snapshotHash)) {
+            throw new RrdpException("Hash of the snapshot file " + notification.snapshotUri + " is " + Sha256.format(snapshotHash) +
+                    ", but notification file says " + notification.snapshotHash);
+        }
+
+        final Snapshot snapshot = rrdpParser.snapshot(new ByteArrayInputStream(snapshotBody));
+        storeSnapshot(snapshot, validationRun);
+        rpkiRepository.setRrdpSessionId(notification.sessionId);
+        rpkiRepository.setRrdpSerial(notification.serial);
+    }
+
+    private Delta readDelta(Notification notification, DeltaInfo di) {
+        final byte[] deltaBody = rrdpClient.getBody(di.getUri());
+        final byte[] deltaHash = Sha256.hash(deltaBody);
+        if (!Arrays.equals(Sha256.parse(di.getHash()), deltaHash)) {
+            throw new RrdpException("Hash of the delta file " + di + " is " + Sha256.format(deltaHash) +
+                    ", but notification file says " + di.getHash());
+        }
+
+        final Delta d = rrdpParser.delta(new ByteArrayInputStream(deltaBody));
+        if (!d.getSessionId().equals(notification.sessionId)) {
+            throw new RrdpException("Session id of the delta (" + di +
+                    ") is not the same as in the notification file: " + notification.sessionId);
+        }
+        return d;
+    }
+
     private void verifyContiguousSerials(final List<Delta> deltas) {
         final BigInteger[] previous = {null};
         deltas.forEach(d -> {
@@ -106,13 +129,6 @@ public class RrdpService {
                     }
                 }
         );
-    }
-
-    private void readSnapshot(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun, Notification notification) {
-        final Snapshot snapshot = rrdpClient.readStream(notification.snapshotUri, rrdpParser::snapshot);
-        storeSnapshot(snapshot, validationRun);
-        rpkiRepository.setRrdpSessionId(notification.sessionId);
-        rpkiRepository.setRrdpSerial(notification.serial);
     }
 
     void storeSnapshot(final Snapshot snapshot, final RpkiRepositoryValidationRun validationRun) {

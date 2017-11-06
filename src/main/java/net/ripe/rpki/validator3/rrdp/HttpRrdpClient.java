@@ -6,10 +6,13 @@ import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.springframework.stereotype.Component;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+
+import static org.springframework.util.StreamUtils.copy;
 
 @Component
 public class HttpRrdpClient implements RrdpClient {
@@ -38,12 +41,25 @@ public class HttpRrdpClient implements RrdpClient {
         if (response.getStatus() == 200) {
             try (InputStream inputStream = listener.getInputStream()) {
                 return reader.apply(inputStream);
-            } catch (IOException e) {
+            } catch (Exception e) {
                 response.abort(new RrdpException("Couldn't read response stream", e));
             }
         }
         response.abort(new RrdpException("Response status: " + response.getStatus()));
         return null;
+    }
+
+    @Override
+    public byte[] getBody(String uri) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        readStream(uri, s -> {
+            try {
+                return copy(s, baos);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        return baos.toByteArray();
     }
 
 }

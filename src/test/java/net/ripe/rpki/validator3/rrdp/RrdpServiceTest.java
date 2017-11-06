@@ -109,6 +109,46 @@ public class RrdpServiceTest {
     }
 
     @Test
+    public void should_parse_notification_verify_snapshot_hash() {
+        final Objects.Publish cert = new Objects.Publish("rsync://host/path/cert.cer", Objects.aParseableCertificate());
+        final Objects.Publish crl = new Objects.Publish("rsync://host/path/crl1.crl", Objects.aParseableCrl());
+        rrdpClient.add(cert.uri, cert.content);
+        rrdpClient.add(crl.uri, crl.content);
+
+        final int serial = 1;
+        final String sessionId = UUID.randomUUID().toString();
+        final byte[] snapshotXml = Objects.snapshotXml(serial, sessionId, cert, crl);
+
+        final String snapshotUri = "https://host/path/snapshot.xml";
+        final Objects.SnapshotInfo snapshot = new Objects.SnapshotInfo(snapshotUri, Sha256.parse("FFFFFF"));
+        rrdpClient.add(snapshot.uri, snapshotXml);
+
+        final byte[] notificationXml = Objects.notificationXml(serial, sessionId, snapshot);
+        final String notificationUri = "https://rrdp.ripe.net/notification.xml";
+        rrdpClient.add(notificationUri, notificationXml);
+
+        final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
+        entityManager.persist(trustAnchor);
+
+        final RpkiRepository rpkiRepository = new RpkiRepository(trustAnchor, notificationUri);
+        entityManager.persist(rpkiRepository);
+
+        final RpkiRepositoryValidationRun validationRun = new RpkiRepositoryValidationRun(rpkiRepository);
+        subject.storeRepository(rpkiRepository, validationRun);
+
+        final List<RpkiObject> objects = rpkiObjects.all();
+        assertEquals(0, objects.size());
+
+        assertEquals(1, validationRun.getValidationChecks().size());
+        final ValidationCheck validationCheck = validationRun.getValidationChecks().get(0);
+        assertEquals("rrdp.error", validationCheck.getKey());
+        assertEquals(ValidationCheck.Status.ERROR, validationCheck.getStatus());
+        assertEquals("Hash of the snapshot file " + snapshotUri + " is " + Sha256.format(Sha256.hash(snapshotXml)) +
+                ", but notification file says FFFFFF", validationCheck.getParameters().get(0));
+        assertEquals(rpkiRepository.getRrdpNotifyUri(), validationCheck.getLocation());
+    }
+
+    @Test
     public void should_parse_notification_use_delta() {
         final byte[] certificate = Objects.aParseableCertificate();
         final long serial = 2;
@@ -237,13 +277,16 @@ public class RrdpServiceTest {
 
 
     @Test
-    public void should_parse_notification_use_delta_non_contiguous_delta() {
+    public void should_parse_notification_use_delta_non_contiguous_delta_fallback_to_snapshot() {
         final byte[] certificate = Objects.aParseableCertificate();
         final String sessionId = UUID.randomUUID().toString();
-        final byte[] emptySnapshotXml = Objects.snapshotXml(3, sessionId);
+        final Objects.Publish crl = new Objects.Publish("rsync://host/path/crl1.crl", Objects.aParseableCrl());
+        rrdpClient.add(crl.uri, crl.content);
 
-        final Objects.SnapshotInfo emptySnapshot = new Objects.SnapshotInfo("https://host/path/snapshot.xml", Sha256.hash(emptySnapshotXml));
-        rrdpClient.add(emptySnapshot.uri, emptySnapshotXml);
+        final byte[] snapshotXml = Objects.snapshotXml(3, sessionId, crl);
+
+        final Objects.SnapshotInfo emptySnapshot = new Objects.SnapshotInfo("https://host/path/snapshot.xml", Sha256.hash(snapshotXml));
+        rrdpClient.add(emptySnapshot.uri, snapshotXml);
 
         final Objects.DeltaPublish publishCert = new Objects.DeltaPublish("rsync://host/path/cert.cer", certificate);
         final byte[] deltaXml1 = Objects.deltaXml(2, sessionId, publishCert);
@@ -269,15 +312,69 @@ public class RrdpServiceTest {
         entityManager.persist(rpkiRepository);
 
         // do the first run to get the snapshot
+        final RpkiRepositoryValidationRun validationRun = new RpkiRepositoryValidationRun(rpkiRepository);
+        subject.storeRepository(rpkiRepository, validationRun);
+        assertEquals(1, validationRun.getValidationChecks().size());
+
+        final ValidationCheck validationCheck = validationRun.getValidationChecks().get(0);
+        assertEquals("rrdp.deltas.failure", validationCheck.getKey());
+        assertEquals(ValidationCheck.Status.WARNING, validationCheck.getStatus());
+        assertEquals(rpkiRepository.getRrdpNotifyUri(), validationCheck.getLocation());
+
+        final List<RpkiObject> objects = rpkiObjects.all();
+        assertEquals(1, objects.size());
+
+        final RpkiObject rpkiObject = objects.get(0);
+        assertEquals(RpkiObject.Type.CRL, rpkiObject.getType());
+        assertEquals(Sets.newHashSet("rsync://host/path/crl1.crl"), rpkiObject.getLocations());
+    }
+
+
+    @Test
+    public void should_parse_notification_use_delta_mismatching_delta_hash_fallback_to_snapshot() {
+        final byte[] certificate = Objects.aParseableCertificate();
+        final String sessionId = UUID.randomUUID().toString();
+        final Objects.Publish crl = new Objects.Publish("rsync://host/path/crl1.crl", Objects.aParseableCrl());
+        rrdpClient.add(crl.uri, crl.content);
+
+        final byte[] snapshotXml = Objects.snapshotXml(3, sessionId, crl);
+
+        final Objects.SnapshotInfo emptySnapshot = new Objects.SnapshotInfo("https://host/path/snapshot.xml", Sha256.hash(snapshotXml));
+        rrdpClient.add(emptySnapshot.uri, snapshotXml);
+
+        final Objects.DeltaPublish publishCert = new Objects.DeltaPublish("rsync://host/path/cert.cer", certificate);
+        final byte[] deltaXml1 = Objects.deltaXml(3, sessionId, publishCert);
+
+        final Objects.DeltaInfo deltaInfo1 = new Objects.DeltaInfo("https://host/path/delta1.xml", Sha256.parse("FFFFFFFF"), 3);
+        rrdpClient.add(deltaInfo1.uri, deltaXml1);
+
+        final String notificationUri = "https://rrdp.ripe.net/notification.xml";
+        rrdpClient.add(notificationUri, Objects.notificationXml(3, sessionId, emptySnapshot, deltaInfo1));
+
+        final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
+        entityManager.persist(trustAnchor);
+
+        // make current serial lower to trigger delta download
+        final RpkiRepository rpkiRepository = new RpkiRepository(trustAnchor, notificationUri);
+        rpkiRepository.setRrdpSerial(BigInteger.valueOf(1L));
+        rpkiRepository.setRrdpSessionId(sessionId);
+        entityManager.persist(rpkiRepository);
+
+        // do the first run to get the snapshot
         RpkiRepositoryValidationRun validationRun = new RpkiRepositoryValidationRun(rpkiRepository);
         subject.storeRepository(rpkiRepository, validationRun);
         assertEquals(1, validationRun.getValidationChecks().size());
-        assertEquals("rrdp.deltas.failure", validationRun.getValidationChecks().get(0).getKey());
-        assertEquals(ValidationCheck.Status.WARNING, validationRun.getValidationChecks().get(0).getStatus());
-        assertEquals(rpkiRepository.getRrdpNotifyUri(), validationRun.getValidationChecks().get(0).getLocation());
+        final ValidationCheck validationCheck = validationRun.getValidationChecks().get(0);
+        assertEquals("rrdp.deltas.failure", validationCheck.getKey());
+        assertEquals(ValidationCheck.Status.WARNING, validationCheck.getStatus());
+        assertEquals(rpkiRepository.getRrdpNotifyUri(), validationCheck.getLocation());
 
         final List<RpkiObject> objects = rpkiObjects.all();
-        assertEquals(0, objects.size());
+        assertEquals(1, objects.size());
+
+        final RpkiObject rpkiObject = objects.get(0);
+        assertEquals(RpkiObject.Type.CRL, rpkiObject.getType());
+        assertEquals(Sets.newHashSet("rsync://host/path/crl1.crl"), rpkiObject.getLocations());
     }
 
 }

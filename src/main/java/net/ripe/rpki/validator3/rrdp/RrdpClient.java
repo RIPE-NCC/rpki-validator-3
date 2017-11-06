@@ -5,4 +5,6 @@ import java.util.function.Function;
 
 public interface RrdpClient {
     <T> T readStream(String uri, Function<InputStream, T> reader);
+
+    byte[] getBody(String uri);
 }
