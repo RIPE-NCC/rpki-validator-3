@@ -119,27 +119,28 @@ public class RrdpService {
 
     private void verifyDeltaSerials(final List<Delta> orderedDeltas, final Notification notification, RpkiRepository rpkiRepository) {
         if (orderedDeltas.isEmpty()) {
-            throw new RrdpException("The current serial is " + rpkiRepository.getRrdpSerial() +
-                    ", notification file serial is " + notification.serial + ", but the list of deltas is empty.");
-        }
-
-        final BigInteger lastDeltaSerial = orderedDeltas.get(orderedDeltas.size() - 1).getSerial();
-        if (!notification.serial.equals(lastDeltaSerial)) {
-            throw new RrdpException("The last delta serial is " + lastDeltaSerial +
-                    ", notification file serial is " + notification.serial);
-        }
-
-        final BigInteger[] previous = {null};
-        orderedDeltas.forEach(d -> {
-                    if (previous[0] == null) {
-                        previous[0] = d.getSerial();
-                    } else {
-                        if (!d.getSerial().equals(previous[0].add(BigInteger.ONE))) {
-                            throw new RrdpException(String.format("Serials of the deltas are not contiguous: found %d and %d after it", previous[0], d.getSerial()));
+            if (!rpkiRepository.getRrdpSerial().equals(notification.serial)) {
+                throw new RrdpException("The current serial is " + rpkiRepository.getRrdpSerial() +
+                        ", notification file serial is " + notification.serial + ", but the list of deltas is empty.");
+            }
+        } else {
+            final BigInteger lastDeltaSerial = orderedDeltas.get(orderedDeltas.size() - 1).getSerial();
+            if (!notification.serial.equals(lastDeltaSerial)) {
+                throw new RrdpException("The last delta serial is " + lastDeltaSerial +
+                        ", notification file serial is " + notification.serial);
+            }
+            final BigInteger[] previous = {null};
+            orderedDeltas.forEach(d -> {
+                        if (previous[0] == null) {
+                            previous[0] = d.getSerial();
+                        } else {
+                            if (!d.getSerial().equals(previous[0].add(BigInteger.ONE))) {
+                                throw new RrdpException(String.format("Serials of the deltas are not contiguous: found %d and %d after it", previous[0], d.getSerial()));
+                            }
                         }
                     }
-                }
-        );
+            );
+        }
     }
 
     void storeSnapshot(final Snapshot snapshot, final RpkiRepositoryValidationRun validationRun) {
