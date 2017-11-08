@@ -9,7 +9,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Repository;
 
 import javax.transaction.Transactional;
-import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -30,8 +29,8 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
     }
 
     @Override
-    public List<RpkiObject> all() {
-        return select().fetch();
+    public Stream<RpkiObject> all() {
+        return stream(select());
     }
 
     @Override
@@ -57,6 +56,17 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
             .select(certificateTreeValidationRun, rpkiObject);
         return stream(query)
             .map(x -> Pair.of(x.get(0, CertificateTreeValidationRun.class), x.get(1, RpkiObject.class)));
+    }
+
+    @Override
+    public Stream<Pair<CertificateTreeValidationRun, RpkiObject>> findCurrentlyValidated() {
+        JPAQuery<Tuple> query = queryFactory
+                .from(certificateTreeValidationRun)
+                .join(certificateTreeValidationRun.validatedObjects, rpkiObject)
+                .where(certificateTreeValidationRun.id.in(JPAValidationRuns.latestSuccessfulValidationRuns()))
+                .select(certificateTreeValidationRun, rpkiObject);
+        return stream(query)
+                .map(x -> Pair.of(x.get(0, CertificateTreeValidationRun.class), x.get(1, RpkiObject.class)));
     }
 
     @Override
