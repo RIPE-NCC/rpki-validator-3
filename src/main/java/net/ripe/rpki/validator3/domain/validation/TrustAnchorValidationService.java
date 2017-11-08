@@ -27,7 +27,7 @@ import java.security.GeneralSecurityException;
 @Slf4j
 public class TrustAnchorValidationService {
 
-    private static final int DEFAULT_RSYNC_PORT = 873;
+    static final int DEFAULT_RSYNC_PORT = 873;
 
     private final EntityManager entityManager;
     private final TrustAnchors trustAnchorRepository;

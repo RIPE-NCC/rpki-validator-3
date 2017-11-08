@@ -12,6 +12,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static net.ripe.rpki.validator3.domain.querydsl.QRpkiRepository.rpkiRepository;
 
@@ -51,5 +52,14 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
     @Override
     public List<RpkiRepository> findAll() {
         return select().fetch();
+    }
+
+    @Override
+    public Stream<RpkiRepository> findRsyncRepositories() {
+        return stream(
+            select()
+                .where(rpkiRepository.type.eq(RpkiRepository.Type.RSYNC))
+                .orderBy(rpkiRepository.rsyncRepositoryUri.asc(), rpkiRepository.id.asc())
+        );
     }
 }

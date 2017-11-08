@@ -2,22 +2,16 @@ package net.ripe.rpki.validator3.domain;
 
 import lombok.Getter;
 
-import javax.persistence.*;
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
+import javax.persistence.Basic;
+import javax.persistence.CascadeType;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import java.util.HashSet;
 import java.util.Set;
 
-@Entity
-@DiscriminatorValue("RR")
-public class RpkiRepositoryValidationRun extends ValidationRun {
+public abstract class RpkiRepositoryValidationRun extends ValidationRun {
     public final static String TYPE = "rpki-repository-validation-run";
-
-    @ManyToOne(optional = false)
-    @NotNull
-    @Valid
-    @Getter
-    private RpkiRepository rpkiRepository;
 
     @Basic(optional = false)
     @Getter
@@ -35,10 +29,6 @@ public class RpkiRepositoryValidationRun extends ValidationRun {
     protected RpkiRepositoryValidationRun() {
     }
 
-    public RpkiRepositoryValidationRun(RpkiRepository rpkiRepository) {
-        this.rpkiRepository = rpkiRepository;
-    }
-
     @Override
     public String getType() {
         return TYPE;
@@ -46,10 +36,6 @@ public class RpkiRepositoryValidationRun extends ValidationRun {
 
     public void objectAdded() {
         ++this.addedObjectCount;
-    }
-
-    public Set<RpkiObject> getRpkiObjects() {
-        return rpkiObjects;
     }
 
     public void addRpkiObject(RpkiObject rpkiObject) {

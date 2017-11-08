@@ -4,9 +4,12 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Builder;
 import lombok.Data;
-import net.ripe.rpki.validator3.api.rpkirepositories.RpkiRepositoriesController;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorController;
-import net.ripe.rpki.validator3.domain.*;
+import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
+import net.ripe.rpki.validator3.domain.RpkiRepositoryValidationRun;
+import net.ripe.rpki.validator3.domain.TrustAnchor;
+import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
+import net.ripe.rpki.validator3.domain.ValidationRun;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
 
@@ -65,7 +68,6 @@ public class ValidationRunResource {
             case RpkiRepositoryValidationRun.TYPE: {
                 RpkiRepositoryValidationRun run = (RpkiRepositoryValidationRun) validationRun;
                 builder.addedObjectCount(run.getAddedObjectCount());
-                links.add(linkTo(methodOn(RpkiRepositoriesController.class).get(run.getRpkiRepository().getId())).withRel(RpkiRepository.TYPE));
                 break;
             }
             case TrustAnchorValidationRun.TYPE: {

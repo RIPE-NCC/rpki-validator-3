@@ -100,6 +100,10 @@ public class RpkiRepository extends AbstractEntity {
         return status == Status.FAILED;
     }
 
+    public void setFailed() {
+        this.status = Status.FAILED;
+    }
+
     public void setDownloaded() {
         this.status = Status.DOWNLOADED;
     }

@@ -145,11 +145,12 @@ public class RrdpService {
 
     void storeSnapshot(final Snapshot snapshot, final RpkiRepositoryValidationRun validationRun) {
         snapshot.asMap().forEach((objUri, value) -> {
-            rpkiObjectRepository.findBySha256(Sha256.hash(value.content)).map(existing -> {
+            byte[] content = value.content;
+            rpkiObjectRepository.findBySha256(Sha256.hash(content)).map(existing -> {
                 existing.addLocation(objUri);
                 return existing;
             }).orElseGet(() -> {
-                final Either<ValidationResult, RpkiObject> maybeRpkiObject = createRpkiObject(objUri, value.content);
+                final Either<ValidationResult, RpkiObject> maybeRpkiObject = createRpkiObject(objUri, content);
                 if (maybeRpkiObject.isLeft()) {
                     validationRun.addChecks(maybeRpkiObject.left().value());
                     return null;
