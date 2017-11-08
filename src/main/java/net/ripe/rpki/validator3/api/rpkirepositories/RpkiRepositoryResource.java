@@ -38,7 +38,7 @@ public class RpkiRepositoryResource {
         return of(
             RpkiRepository.TYPE,
             rpkiRepository.getId(),
-            rpkiRepository.getRrdpNotifyUri(),
+            rpkiRepository.getLocationUri(),
             rpkiRepository.getStatus(),
             rpkiRepository.getRrdpSessionId(),
             rpkiRepository.getRrdpSerial(),

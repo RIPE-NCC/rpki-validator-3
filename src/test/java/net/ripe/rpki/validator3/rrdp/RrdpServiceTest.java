@@ -5,7 +5,7 @@ import net.ripe.rpki.validator3.TestObjects;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
-import net.ripe.rpki.validator3.domain.RpkiRepositoryValidationRun;
+import net.ripe.rpki.validator3.domain.RrdpRepositoryValidationRun;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.ValidationCheck;
 import net.ripe.rpki.validator3.util.Sha256;
@@ -57,7 +57,7 @@ public class RrdpServiceTest {
         final RpkiRepository rpkiRepository = new RpkiRepository(trustAnchor, "https://rrdp.ripe.net/notification.xml");
         entityManager.persist(rpkiRepository);
 
-        final RpkiRepositoryValidationRun validationRun = new RpkiRepositoryValidationRun(rpkiRepository);
+        final RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepository);
 
         final Snapshot snapshot = new RrdpParser().snapshot(Objects.fileIS("rrdp/snapshot2.xml"));
         subject.storeSnapshot(snapshot, validationRun);
@@ -99,7 +99,7 @@ public class RrdpServiceTest {
         final RpkiRepository rpkiRepository = new RpkiRepository(trustAnchor, notificationUri);
         entityManager.persist(rpkiRepository);
 
-        final RpkiRepositoryValidationRun validationRun = new RpkiRepositoryValidationRun(rpkiRepository);
+        final RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepository);
         subject.storeRepository(rpkiRepository, validationRun);
 
         final List<RpkiObject> objects = rpkiObjects.all().collect(Collectors.toList());
@@ -134,7 +134,7 @@ public class RrdpServiceTest {
         final RpkiRepository rpkiRepository = new RpkiRepository(trustAnchor, notificationUri);
         entityManager.persist(rpkiRepository);
 
-        final RpkiRepositoryValidationRun validationRun = new RpkiRepositoryValidationRun(rpkiRepository);
+        final RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepository);
         subject.storeRepository(rpkiRepository, validationRun);
 
         final List<RpkiObject> objects = rpkiObjects.all().collect(Collectors.toList());
@@ -178,7 +178,7 @@ public class RrdpServiceTest {
         entityManager.persist(rpkiRepository);
 
         // do the first run to get the snapshot
-        RpkiRepositoryValidationRun validationRun = new RpkiRepositoryValidationRun(rpkiRepository);
+        RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepository);
         subject.storeRepository(rpkiRepository, validationRun);
         assertEquals(0, validationRun.getValidationChecks().size());
 
@@ -219,7 +219,7 @@ public class RrdpServiceTest {
         entityManager.persist(rpkiRepository);
 
         // do the first run to get the snapshot
-        final RpkiRepositoryValidationRun validationRun = new RpkiRepositoryValidationRun(rpkiRepository);
+        final RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepository);
         subject.storeRepository(rpkiRepository, validationRun);
 
         assertEquals(1, validationRun.getValidationChecks().size());
@@ -268,7 +268,7 @@ public class RrdpServiceTest {
         final RpkiRepository rpkiRepository = makeRpkiRepository(sessionId, notificationUri, trustAnchor);
 
         // do the first run to get the snapshot
-        RpkiRepositoryValidationRun validationRun = new RpkiRepositoryValidationRun(rpkiRepository);
+        RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepository);
         subject.storeRepository(rpkiRepository, validationRun);
         assertEquals(0, validationRun.getValidationChecks().size());
 
@@ -310,7 +310,7 @@ public class RrdpServiceTest {
         final RpkiRepository rpkiRepository = makeRpkiRepository(sessionId, notificationUri, trustAnchor);
 
         // do the first run to get the snapshot
-        final RpkiRepositoryValidationRun validationRun = new RpkiRepositoryValidationRun(rpkiRepository);
+        final RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepository);
         subject.storeRepository(rpkiRepository, validationRun);
         assertEquals(1, validationRun.getValidationChecks().size());
 
@@ -361,7 +361,7 @@ public class RrdpServiceTest {
         final RpkiRepository rpkiRepository = makeRpkiRepository(sessionId, notificationUri, trustAnchor);
 
         // do the first run to get the snapshot
-        final RpkiRepositoryValidationRun validationRun = new RpkiRepositoryValidationRun(rpkiRepository);
+        final RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepository);
         subject.storeRepository(rpkiRepository, validationRun);
         assertEquals(1, validationRun.getValidationChecks().size());
 
@@ -407,7 +407,7 @@ public class RrdpServiceTest {
         final RpkiRepository rpkiRepository = makeRpkiRepository(sessionId, notificationUri, trustAnchor);
 
         // do the first run to get the snapshot
-        RpkiRepositoryValidationRun validationRun = new RpkiRepositoryValidationRun(rpkiRepository);
+        RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepository);
         subject.storeRepository(rpkiRepository, validationRun);
         assertEquals(1, validationRun.getValidationChecks().size());
         final ValidationCheck validationCheck = validationRun.getValidationChecks().get(0);

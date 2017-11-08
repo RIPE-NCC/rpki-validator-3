@@ -1,5 +1,6 @@
 package net.ripe.rpki.validator3.domain;
 
+import com.google.common.base.Objects;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -10,6 +11,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.math.BigInteger;
+import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -19,9 +21,19 @@ public class RpkiRepository extends AbstractEntity {
 
     public static final String TYPE = "rpki-repository";
 
+    public enum Type {
+        RSYNC, RRDP
+    }
+
     public enum Status {
         PENDING, FAILED, DOWNLOADED
     }
+
+    @Basic(optional = false)
+    @Enumerated(EnumType.STRING)
+    @NotNull
+    @Getter
+    private Type type;
 
     @ManyToMany
     @JoinTable(joinColumns = @JoinColumn(name = "rpki_repository_id"), inverseJoinColumns = @JoinColumn(name = "trust_anchor_id"))
@@ -30,8 +42,12 @@ public class RpkiRepository extends AbstractEntity {
     @Getter
     private Set<TrustAnchor> trustAnchors = new HashSet<>();
 
-    @Basic(optional = false)
-    @NotNull
+    @Basic
+    @ValidLocationURI
+    @Getter
+    private String rsyncRepositoryUri;
+
+    @Basic
     @ValidLocationURI
     @Getter
     private String rrdpNotifyUri;
@@ -55,10 +71,21 @@ public class RpkiRepository extends AbstractEntity {
     protected RpkiRepository() {
     }
 
-    public RpkiRepository(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String uri) {
+    public RpkiRepository(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String location) {
         addTrustAnchor(trustAnchor);
-        this.rrdpNotifyUri = uri;
+        URI uri = URI.create(location);
+        if ("rsync".equals(uri.getScheme().toLowerCase())) {
+            this.type = Type.RSYNC;
+            this.rsyncRepositoryUri = location;
+        } else {
+            this.type = Type.RRDP;
+            this.rrdpNotifyUri = location;
+        }
         this.status = Status.PENDING;
+    }
+
+    public @ValidLocationURI @NotNull String getLocationUri() {
+        return Objects.firstNonNull(rrdpNotifyUri, rsyncRepositoryUri);
     }
 
     public void addTrustAnchor(@NotNull @Valid TrustAnchor trustAnchor) {
@@ -71,6 +98,10 @@ public class RpkiRepository extends AbstractEntity {
 
     public boolean isFailed() {
         return status == Status.FAILED;
+    }
+
+    public void setFailed() {
+        this.status = Status.FAILED;
     }
 
     public void setDownloaded() {

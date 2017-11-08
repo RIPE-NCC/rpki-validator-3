@@ -42,7 +42,7 @@ public abstract class ValidationRun extends AbstractEntity {
     private List<ValidationCheck> validationChecks = new ArrayList<>();
 
     @SuppressWarnings("unused")
-    public ValidationRun() {
+    protected ValidationRun() {
         super();
     }
 

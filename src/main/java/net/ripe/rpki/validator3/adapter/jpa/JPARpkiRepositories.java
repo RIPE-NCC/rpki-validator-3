@@ -12,6 +12,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static net.ripe.rpki.validator3.domain.querydsl.QRpkiRepository.rpkiRepository;
 
@@ -29,9 +30,11 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
     @Override
     public RpkiRepository register(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String uri) {
         RpkiRepository result = findByURI(uri).orElseGet(() -> {
-            RpkiRepository repository = new RpkiRepository(trustAnchor, uri.toLowerCase());
+            RpkiRepository repository = new RpkiRepository(trustAnchor, uri);
             entityManager.persist(repository);
-            quartzValidationScheduler.addRpkiRepository(repository);
+            if (repository.getType() == RpkiRepository.Type.RRDP) {
+                quartzValidationScheduler.addRpkiRepository(repository);
+            }
             return repository;
         });
         result.addTrustAnchor(trustAnchor);
@@ -40,11 +43,23 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
 
     @Override
     public Optional<RpkiRepository> findByURI(@NotNull @ValidLocationURI String uri) {
-        return Optional.ofNullable(select().where(rpkiRepository.rrdpNotifyUri.eq(uri.toLowerCase())).fetchFirst());
+        String normalized = uri;
+        return Optional.ofNullable(select().where(
+            rpkiRepository.rrdpNotifyUri.eq(normalized).or(rpkiRepository.rsyncRepositoryUri.eq(normalized))
+        ).fetchFirst());
     }
 
     @Override
     public List<RpkiRepository> findAll() {
         return select().fetch();
+    }
+
+    @Override
+    public Stream<RpkiRepository> findRsyncRepositories() {
+        return stream(
+            select()
+                .where(rpkiRepository.type.eq(RpkiRepository.Type.RSYNC))
+                .orderBy(rpkiRepository.rsyncRepositoryUri.asc(), rpkiRepository.id.asc())
+        );
     }
 }

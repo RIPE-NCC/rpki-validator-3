@@ -6,6 +6,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public interface RpkiRepositories {
     RpkiRepository register(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String uri);
@@ -15,4 +16,6 @@ public interface RpkiRepositories {
     RpkiRepository get(long id);
 
     List<RpkiRepository> findAll();
+
+    Stream<RpkiRepository> findRsyncRepositories();
 }

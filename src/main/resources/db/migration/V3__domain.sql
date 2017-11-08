@@ -23,11 +23,15 @@ CREATE TABLE rpki_repository (
     version INTEGER NOT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
+    type VARCHAR NOT NULL,
     status VARCHAR NOT NULL,
-    rrdp_notify_uri VARCHAR(16000) NOT NULL,
+    rsync_repository_uri VARCHAR(16000),
+    rrdp_notify_uri VARCHAR(16000),
     rrdp_session_id VARCHAR(100),
     rrdp_serial DECIMAL(40, 0),
     CONSTRAINT rpki_repository__pk PRIMARY KEY (id),
+    CONSTRAINT rpki_repository__rrdp_notify_uri_unique UNIQUE (rrdp_notify_uri),
+    CONSTRAINT rpki_repository__rsync_repository_uri_unique UNIQUE (rsync_repository_uri)
 );
 
 CREATE TABLE rpki_repository_trust_anchors (
@@ -92,7 +96,7 @@ CREATE TABLE validation_run (
 
     CONSTRAINT validation_run__pk PRIMARY KEY (id),
     CONSTRAINT validation_run__trust_anchor_fk FOREIGN KEY (trust_anchor_id) REFERENCES trust_anchor (id) ON DELETE RESTRICT,
-    CONSTRAINT validation_run__rpki_repository_fk FOREIGN KEY (rpki_repository_id) REFERENCES rpki_repository (id) ON DELETE RESTRICT
+    CONSTRAINT validation_run__rpki_repository_fk FOREIGN KEY (rpki_repository_id) REFERENCES rpki_repository (id) ON DELETE CASCADE
 );
 CREATE INDEX validation_run__trust_anchor_id_idx ON validation_run (trust_anchor_id ASC, created_at DESC);
 CREATE INDEX validation_run__rpki_repository_id_idx ON validation_run (rpki_repository_id ASC, created_at DESC);
@@ -122,8 +126,17 @@ CREATE TABLE validation_check_parameters (
 CREATE TABLE validation_run_validated_objects (
     validation_run_id BIGINT NOT NULL,
     rpki_object_id BIGINT NOT NULL,
-    CONSTRAINT validation_run_validatied_objects__pk PRIMARY KEY (validation_run_id, rpki_object_id),
+    CONSTRAINT validation_run_validated_objects__pk PRIMARY KEY (validation_run_id, rpki_object_id),
     CONSTRAINT validation_run_validated_objects__validation_run_fk FOREIGN KEY (validation_run_id) REFERENCES validation_run (id) ON DELETE CASCADE,
     CONSTRAINT validation_run_validated_objects__rpki_object_fk FOREIGN KEY (rpki_object_id) REFERENCES rpki_object (id) ON DELETE CASCADE
 );
 CREATE INDEX validation_run_validated_objects__rpki_object_idx ON validation_run_validated_objects (rpki_object_id);
+
+CREATE TABLE validation_run_rpki_repositories (
+    validation_run_id BIGINT NOT NULL,
+    rpki_repository_id BIGINT NOT NULL,
+    CONSTRAINT validation_run_rpki_repositories__pk PRIMARY KEY (validation_run_id, rpki_repository_id),
+    CONSTRAINT validation_run_rpki_repositories__validation_run_fk FOREIGN KEY (validation_run_id) REFERENCES validation_run (id) ON DELETE CASCADE,
+    CONSTRAINT validation_run_rpki_repositories__rpki_repository_fk FOREIGN KEY (rpki_repository_id) REFERENCES rpki_repository (id) ON DELETE CASCADE
+);
+CREATE INDEX validation_run_rpki_repositories__rpki_repository_idx ON validation_run_rpki_repositories (rpki_repository_id);

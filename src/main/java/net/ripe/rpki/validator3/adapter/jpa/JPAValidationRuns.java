@@ -9,7 +9,7 @@ import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.domain.ValidationRun;
 import net.ripe.rpki.validator3.domain.ValidationRuns;
 import net.ripe.rpki.validator3.domain.querydsl.QCertificateTreeValidationRun;
-import net.ripe.rpki.validator3.domain.querydsl.QRpkiRepositoryValidationRun;
+import net.ripe.rpki.validator3.domain.querydsl.QRrdpRepositoryValidationRun;
 import net.ripe.rpki.validator3.domain.querydsl.QTrustAnchorValidationRun;
 import net.ripe.rpki.validator3.domain.querydsl.QValidationRun;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +42,7 @@ public class JPAValidationRuns extends JPARepository<ValidationRun> implements V
                 JPAExpressions.type(latest),
                 latest.as(QTrustAnchorValidationRun.class).trustAnchor,
                 latest.as(QCertificateTreeValidationRun.class).trustAnchor,
-                latest.as(QRpkiRepositoryValidationRun.class).rpkiRepository
+                latest.as(QRrdpRepositoryValidationRun.class).rpkiRepository
             )
             .from(latest);
     }
