@@ -29,9 +29,11 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
     @Override
     public RpkiRepository register(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String uri) {
         RpkiRepository result = findByURI(uri).orElseGet(() -> {
-            RpkiRepository repository = new RpkiRepository(trustAnchor, uri.toLowerCase());
+            RpkiRepository repository = new RpkiRepository(trustAnchor, uri);
             entityManager.persist(repository);
-            quartzValidationScheduler.addRpkiRepository(repository);
+            if (repository.getType() == RpkiRepository.Type.RRDP) {
+                quartzValidationScheduler.addRpkiRepository(repository);
+            }
             return repository;
         });
         result.addTrustAnchor(trustAnchor);
@@ -40,7 +42,10 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
 
     @Override
     public Optional<RpkiRepository> findByURI(@NotNull @ValidLocationURI String uri) {
-        return Optional.ofNullable(select().where(rpkiRepository.rrdpNotifyUri.eq(uri.toLowerCase())).fetchFirst());
+        String normalized = uri;
+        return Optional.ofNullable(select().where(
+            rpkiRepository.rrdpNotifyUri.eq(normalized).or(rpkiRepository.rsyncRepositoryUri.eq(normalized))
+        ).fetchFirst());
     }
 
     @Override

@@ -41,6 +41,7 @@ import java.net.URI;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.security.Security;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
@@ -57,8 +58,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class CertificateTreeValidationServiceTest {
 
     private static final X509ResourceCertificate RIPE_NCC_TA_CERTIFICATE = loadCertificate("/ripe-ncc-ta.cer");
-    private static final String RPKI_NOTIFY_URI = "https://rpki.test/notification.xml";
-    private static final String TA_REPOSITORY_URI = "rsync://rpki.test/";
+    private static final String TA_RRDP_NOTIFY_URI = "https://rpki.test/notification.xml";
+    private static final String TA_CA_REPOSITORY_URI = "rsync://rpki.test/repository";
     private static final String TA_MANIFEST_URI = "rsync://rpki.test/test-trust-anchor.mft";
     private static final String TA_CRL_URI = "rsync://rpki.test/test-trust-anchor.crl";
     private static final KeyPairFactory KEY_PAIR_FACTORY = new KeyPairFactory(BouncyCastleProvider.PROVIDER_NAME);
@@ -99,7 +100,7 @@ public class CertificateTreeValidationServiceTest {
     }
 
     @Test
-    public void should_register_newly_discovered_repositories() {
+    public void should_register_rpki_repositories() {
         TrustAnchor ta = createRipeNccTrustAnchor();
         trustAnchors.add(ta);
 
@@ -112,8 +113,39 @@ public class CertificateTreeValidationServiceTest {
         CertificateTreeValidationRun result = completed.get(0);
         assertThat(result.getStatus()).isEqualTo(SUCCEEDED);
 
-        assertThat(rpkiRepositories.findAll())
-            .first().extracting(RpkiRepository::getStatus).containsExactly(RpkiRepository.Status.PENDING);
+        assertThat(rpkiRepositories.findAll()).first().extracting(
+            RpkiRepository::getStatus,
+            RpkiRepository::getLocationUri
+        ).containsExactly(
+            RpkiRepository.Status.PENDING,
+            "https://rrdp.ripe.net/notification.xml"
+        );
+    }
+
+    @Test
+    public void should_register_rsync_repositories() {
+        TrustAnchor ta = createTrustAnchor(x -> {
+            x.notifyURI(null);
+            x.repositoryURI(TA_CA_REPOSITORY_URI);
+        });
+        trustAnchors.add(ta);
+
+        subject.validate(ta.getId());
+        entityManager.flush();
+
+        List<CertificateTreeValidationRun> completed = validationRuns.findAll(CertificateTreeValidationRun.class);
+        assertThat(completed).hasSize(1);
+
+        CertificateTreeValidationRun result = completed.get(0);
+        assertThat(result.getStatus()).isEqualTo(SUCCEEDED);
+
+        assertThat(rpkiRepositories.findAll()).first().extracting(
+            RpkiRepository::getStatus,
+            RpkiRepository::getLocationUri
+        ).containsExactly(
+            RpkiRepository.Status.PENDING,
+            TA_CA_REPOSITORY_URI
+        );
 
     }
 
@@ -122,7 +154,7 @@ public class CertificateTreeValidationServiceTest {
         TrustAnchor ta = createTrustAnchor(x -> {
         });
         trustAnchors.add(ta);
-        RpkiRepository repository = rpkiRepositories.register(ta, RPKI_NOTIFY_URI);
+        RpkiRepository repository = rpkiRepositories.register(ta, TA_RRDP_NOTIFY_URI);
         repository.setDownloaded();
         entityManager.flush();
 
@@ -153,7 +185,7 @@ public class CertificateTreeValidationServiceTest {
                 .keyPair(childKeyPair)
                 .certificateLocation("rsync://rpki.test/CN=child-ca.cer")
                 .resources(IpResourceSet.parse("192.168.128.0/17"))
-                .notifyURI(RPKI_NOTIFY_URI)
+                .notifyURI(TA_RRDP_NOTIFY_URI)
                 .manifestURI("rsync://rpki.test/CN=child-ca/child-ca.mft")
                 .repositoryURI("rsync://rpki.test/CN=child-ca/")
                 .crlDistributionPoint("rsync://rpki.test/CN=child-ca/child-ca.crl")
@@ -161,7 +193,7 @@ public class CertificateTreeValidationServiceTest {
             x.children(Arrays.asList(child));
         });
         trustAnchors.add(ta);
-        RpkiRepository repository = rpkiRepositories.register(ta, RPKI_NOTIFY_URI);
+        RpkiRepository repository = rpkiRepositories.register(ta, TA_RRDP_NOTIFY_URI);
         repository.setDownloaded();
         entityManager.flush();
 
@@ -185,7 +217,7 @@ public class CertificateTreeValidationServiceTest {
             ));
         });
         trustAnchors.add(ta);
-        RpkiRepository repository = rpkiRepositories.register(ta, RPKI_NOTIFY_URI);
+        RpkiRepository repository = rpkiRepositories.register(ta, TA_RRDP_NOTIFY_URI);
         repository.setDownloaded();
         entityManager.flush();
 
@@ -210,9 +242,9 @@ public class CertificateTreeValidationServiceTest {
             .keyPair(rootKeyPair)
             .certificateLocation("rsync://rpki.test/test-trust-anchor.cer")
             .resources(IpResourceSet.parse("0.0.0.0/0"))
-            .notifyURI(RPKI_NOTIFY_URI)
+            .notifyURI(TA_RRDP_NOTIFY_URI)
             .manifestURI(TA_MANIFEST_URI)
-            .repositoryURI(TA_REPOSITORY_URI)
+            .repositoryURI(TA_CA_REPOSITORY_URI)
             .crlDistributionPoint(TA_CRL_URI);
         configure.accept(builder);
         CertificateAuthority root = builder.build();
@@ -308,14 +340,18 @@ public class CertificateTreeValidationServiceTest {
     }
 
     private X509ResourceCertificate createCaCertificate(CertificateAuthority ca, PublicKey publicKey, String issuerDN, String crlDistributionPoint, KeyPair signingKey) {
+        List<X509CertificateInformationAccessDescriptor> sia = new ArrayList<>();
+        sia.add(new X509CertificateInformationAccessDescriptor(X509CertificateInformationAccessDescriptor.ID_AD_RPKI_MANIFEST, URI.create(ca.manifestURI)));
+        sia.add(new X509CertificateInformationAccessDescriptor(X509CertificateInformationAccessDescriptor.ID_AD_CA_REPOSITORY, URI.create(ca.repositoryURI)));
+        if (ca.notifyURI != null) {
+            sia.add(new X509CertificateInformationAccessDescriptor(X509CertificateInformationAccessDescriptor.ID_AD_RPKI_NOTIFY, URI.create(ca.notifyURI)));
+        }
+
         return new X509ResourceCertificateBuilder()
             .withResources(ca.resources)
             .withIssuerDN(new X500Principal(issuerDN))
             .withSubjectDN(new X500Principal(ca.dn))
-            .withSubjectInformationAccess(
-                new X509CertificateInformationAccessDescriptor(X509CertificateInformationAccessDescriptor.ID_AD_RPKI_NOTIFY, URI.create(ca.notifyURI)),
-                new X509CertificateInformationAccessDescriptor(X509CertificateInformationAccessDescriptor.ID_AD_RPKI_MANIFEST, URI.create(ca.manifestURI))
-            )
+            .withSubjectInformationAccess(sia.toArray(new X509CertificateInformationAccessDescriptor[0]))
             .withCrlDistributionPoints(URI.create(crlDistributionPoint))
             .withCa(true)
             .withKeyUsage(KeyUsage.keyCertSign | KeyUsage.cRLSign)

@@ -1,5 +1,6 @@
 package net.ripe.rpki.validator3.domain.validation;
 
+import com.google.common.base.Objects;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
@@ -11,7 +12,14 @@ import net.ripe.rpki.commons.validation.ValidationOptions;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.commons.validation.ValidationString;
 import net.ripe.rpki.commons.validation.objectvalidators.CertificateRepositoryObjectValidationContext;
-import net.ripe.rpki.validator3.domain.*;
+import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
+import net.ripe.rpki.validator3.domain.RpkiObject;
+import net.ripe.rpki.validator3.domain.RpkiObjects;
+import net.ripe.rpki.validator3.domain.RpkiRepositories;
+import net.ripe.rpki.validator3.domain.RpkiRepository;
+import net.ripe.rpki.validator3.domain.TrustAnchor;
+import net.ripe.rpki.validator3.domain.TrustAnchors;
+import net.ripe.rpki.validator3.domain.ValidationRuns;
 import net.ripe.rpki.validator3.util.Sha256;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +29,12 @@ import javax.persistence.EntityManager;
 import javax.persistence.FlushModeType;
 import javax.transaction.Transactional;
 import java.net.URI;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
 
@@ -80,9 +93,9 @@ public class CertificateTreeValidationService {
                 return;
             }
 
-            URI rrdpNotifyUri = certificate.getRrdpNotifyUri();
-            validationResult.warnIfNull(rrdpNotifyUri, "trust.anchor.certificate.rrdp.notify.uri.present");
-            if (rrdpNotifyUri == null) {
+            URI locationUri = Objects.firstNonNull(certificate.getRrdpNotifyUri(), certificate.getRepositoryUri());
+            validationResult.warnIfNull(locationUri, "trust.anchor.certificate.rrdp.notify.uri.or.repository.uri.present");
+            if (locationUri == null) {
                 return;
             }
 
@@ -101,10 +114,10 @@ public class CertificateTreeValidationService {
         ValidationLocation certificateLocation = validationResult.getCurrentLocation();
         ValidationResult temporary = ValidationResult.withLocation(certificateLocation);
         try {
-            RpkiRepository rpkiRepository = rpkiRepositories.register(trustAnchor, context.getRpkiNotifyURI().toASCIIString());
+            RpkiRepository rpkiRepository = registerRepository(trustAnchor, context);
 
-            temporary.warnIfTrue(rpkiRepository.isPending(), "rpki.repository.pending", context.getRpkiNotifyURI().toASCIIString());
-            temporary.rejectIfTrue(rpkiRepository.isFailed(), "rpki.repository.failed", context.getRpkiNotifyURI().toASCIIString());
+            temporary.warnIfTrue(rpkiRepository.isPending(), "rpki.repository.pending", rpkiRepository.getLocationUri());
+            temporary.rejectIfTrue(rpkiRepository.isFailed(), "rpki.repository.failed", rpkiRepository.getLocationUri());
             if (rpkiRepository.isPending() || temporary.hasFailureForCurrentLocation()) {
                 return validatedObjects;
             }
@@ -189,6 +202,14 @@ public class CertificateTreeValidationService {
         }
 
         return validatedObjects;
+    }
+
+    private RpkiRepository registerRepository(TrustAnchor trustAnchor, CertificateRepositoryObjectValidationContext context) {
+        URI locationUri = Objects.firstNonNull(context.getRpkiNotifyURI(), context.getRepositoryURI());
+        return rpkiRepositories.register(
+            trustAnchor,
+            locationUri.toASCIIString()
+        );
     }
 
     private Map<URI, RpkiObject> retrieveManifestEntries(ManifestCms manifest, URI manifestUri, ValidationResult validationResult) {
