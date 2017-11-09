@@ -44,7 +44,6 @@ public class RpkiObject extends AbstractEntity {
     @OrderBy("locations")
     @Getter
     @NotNull
-    @NotEmpty
     @Size(max = 1)
     @Valid
     private SortedSet<@NotNull @ValidLocationURI String> locations = new TreeSet<>();
