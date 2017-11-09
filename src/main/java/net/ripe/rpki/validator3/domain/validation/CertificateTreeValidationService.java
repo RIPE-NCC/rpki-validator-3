@@ -31,6 +31,7 @@ import javax.transaction.Transactional;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +66,7 @@ public class CertificateTreeValidationService {
 
     @Transactional(Transactional.TxType.REQUIRED)
     public void validate(long trustAnchorId) {
+        Map<URI, RpkiRepository> registeredRepositories = new HashMap<>();
         entityManager.setFlushMode(FlushModeType.COMMIT);
 
         TrustAnchor trustAnchor = trustAnchors.get(trustAnchorId);
@@ -100,7 +102,7 @@ public class CertificateTreeValidationService {
             }
 
             validationRun.getValidatedObjects().addAll(
-                validateCertificateAuthority(trustAnchor, context, validationResult)
+                validateCertificateAuthority(trustAnchor, registeredRepositories, context, validationResult)
             );
         } finally {
             validationRun.completeWith(validationResult);
@@ -108,13 +110,13 @@ public class CertificateTreeValidationService {
         }
     }
 
-    private List<RpkiObject> validateCertificateAuthority(TrustAnchor trustAnchor, CertificateRepositoryObjectValidationContext context, ValidationResult validationResult) {
+    private List<RpkiObject> validateCertificateAuthority(TrustAnchor trustAnchor, Map<URI, RpkiRepository> registeredRepositories, CertificateRepositoryObjectValidationContext context, ValidationResult validationResult) {
         List<RpkiObject> validatedObjects = new ArrayList<>();
 
         ValidationLocation certificateLocation = validationResult.getCurrentLocation();
         ValidationResult temporary = ValidationResult.withLocation(certificateLocation);
         try {
-            RpkiRepository rpkiRepository = registerRepository(trustAnchor, context);
+            RpkiRepository rpkiRepository = registerRepository(trustAnchor, registeredRepositories, context);
 
             temporary.warnIfTrue(rpkiRepository.isPending(), "rpki.repository.pending", rpkiRepository.getLocationUri());
             temporary.rejectIfTrue(rpkiRepository.isFailed(), "rpki.repository.failed", rpkiRepository.getLocationUri());
@@ -191,7 +193,7 @@ public class CertificateTreeValidationService {
                         && !temporary.hasFailureForCurrentLocation()) {
 
                         CertificateRepositoryObjectValidationContext childContext = context.createChildContext(location, (X509ResourceCertificate) certificateRepositoryObject);
-                        validatedObjects.addAll(validateCertificateAuthority(trustAnchor, childContext, temporary));
+                        validatedObjects.addAll(validateCertificateAuthority(trustAnchor, registeredRepositories, childContext, temporary));
                     }
                 });
             });
@@ -204,12 +206,13 @@ public class CertificateTreeValidationService {
         return validatedObjects;
     }
 
-    private RpkiRepository registerRepository(TrustAnchor trustAnchor, CertificateRepositoryObjectValidationContext context) {
+    private RpkiRepository registerRepository(TrustAnchor trustAnchor, Map<URI, RpkiRepository> registeredRepositories, CertificateRepositoryObjectValidationContext context) {
         URI locationUri = Objects.firstNonNull(context.getRpkiNotifyURI(), context.getRepositoryURI());
-        return rpkiRepositories.register(
+
+        return registeredRepositories.computeIfAbsent(locationUri, (uri) -> rpkiRepositories.register(
             trustAnchor,
-            locationUri.toASCIIString()
-        );
+            uri.toASCIIString()
+        ));
     }
 
     private Map<URI, RpkiObject> retrieveManifestEntries(ManifestCms manifest, URI manifestUri, ValidationResult validationResult) {
