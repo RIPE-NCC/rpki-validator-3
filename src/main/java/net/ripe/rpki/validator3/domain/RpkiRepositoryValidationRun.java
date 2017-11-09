@@ -39,7 +39,9 @@ public abstract class RpkiRepositoryValidationRun extends ValidationRun {
     }
 
     public void addRpkiObject(RpkiObject rpkiObject) {
-        rpkiObjects.add(rpkiObject);
+        if (rpkiObjects.add(rpkiObject)) {
+            objectAdded();
+        }
     }
 
 }
