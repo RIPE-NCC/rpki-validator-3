@@ -34,6 +34,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
@@ -58,7 +60,8 @@ public class RpkiRepositoryValidationService {
         EntityManager entityManager,
         ValidationRuns validationRunRepository,
         RpkiRepositories rpkiRepositories,
-        RpkiObjects rpkiObjects, RrdpService rrdpService,
+        RpkiObjects rpkiObjects,
+        RrdpService rrdpService,
         @Value("${rpki.validator.local.rsync.storage.directory}") File localRsyncStorageDirectory) {
         this.entityManager = entityManager;
         this.validationRunRepository = validationRunRepository;
@@ -102,10 +105,11 @@ public class RpkiRepositoryValidationService {
         }
     }
 
-    @Scheduled(initialDelay = 60_000, fixedDelay = 300_000)
+    @Scheduled(initialDelay = 60_000, fixedDelay = 60_000)
     public void validateRsyncRepositories() {
         entityManager.setFlushMode(FlushModeType.COMMIT);
 
+        Instant cutoffTime = Instant.now().minus(Duration.ofMinutes(10));
         Set<TrustAnchor> affectedTrustAnchors = new HashSet<>();
 
         final RsyncRepositoryValidationRun validationRun = new RsyncRepositoryValidationRun();
@@ -113,17 +117,21 @@ public class RpkiRepositoryValidationService {
 
         Stream<RpkiRepository> repositories = rpkiRepositories.findRsyncRepositories();
 
-        Map<URI, RpkiRepository> fetchedLocations = new HashMap<>();
+        Map<URI, RpkiRepository.Status> fetchedLocations = new HashMap<>();
         ValidationResult results = repositories.map((repository) -> {
-            validationRun.getRpkiRepositories().add(repository);
-
             URI location = URI.create(repository.getRsyncRepositoryUri());
             ValidationResult validationResult = ValidationResult.withLocation(location);
+
+            if (repository.getLastDownloadedAt() != null && repository.getLastDownloadedAt().isBefore(cutoffTime)) {
+                return validationResult;
+            }
+
+            validationRun.getRpkiRepositories().add(repository);
 
             while (!"/".equals(location.getPath())) {
                 if (fetchedLocations.containsKey(location)) {
                     log.info("Already fetched {} as part of {}, skipping", repository.getLocationUri(), location);
-                    switch (fetchedLocations.get(location).getStatus()) {
+                    switch (fetchedLocations.get(location)) {
                         case PENDING:
                             break;
                         case FAILED:
@@ -177,8 +185,6 @@ public class RpkiRepositoryValidationService {
 
                     @Override
                     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                        log.debug("parsing {}", file);
-
                         super.visitFile(file, attrs);
 
                         validationResult.setLocation(new ValidationLocation(currentLocation.resolve(file.getFileName().toString())));
@@ -188,6 +194,7 @@ public class RpkiRepositoryValidationService {
                             existing.addLocation(validationResult.getCurrentLocation().getName());
                             return existing;
                         }).orElseGet(() -> {
+                            log.debug("parsing {}", file);
                             CertificateRepositoryObject obj = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(content, validationResult);
                             validationRun.addChecks(validationResult);
 
@@ -206,9 +213,9 @@ public class RpkiRepositoryValidationService {
                     }
                 });
 
-                fetchedLocations.put(URI.create(repository.getRsyncRepositoryUri()), repository);
                 affectedTrustAnchors.addAll(repository.getTrustAnchors());
                 repository.setDownloaded();
+                fetchedLocations.put(URI.create(repository.getRsyncRepositoryUri()), repository.getStatus());
             } catch (IOException e) {
                 e.printStackTrace();
             }

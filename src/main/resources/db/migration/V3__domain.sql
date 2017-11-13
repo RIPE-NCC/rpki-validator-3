@@ -25,6 +25,7 @@ CREATE TABLE rpki_repository (
     updated_at TIMESTAMP NOT NULL,
     type VARCHAR NOT NULL,
     status VARCHAR NOT NULL,
+    last_downloaded_at TIMESTAMP,
     rsync_repository_uri VARCHAR(16000),
     rrdp_notify_uri VARCHAR(16000),
     rrdp_session_id VARCHAR(100),

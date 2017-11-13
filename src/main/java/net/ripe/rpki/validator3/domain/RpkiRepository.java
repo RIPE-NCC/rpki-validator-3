@@ -6,12 +6,19 @@ import lombok.Setter;
 import lombok.ToString;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 
-import javax.persistence.*;
+import javax.persistence.Basic;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.math.BigInteger;
 import java.net.URI;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -34,6 +41,16 @@ public class RpkiRepository extends AbstractEntity {
     @NotNull
     @Getter
     private Type type;
+
+    @Basic(optional = false)
+    @Enumerated(EnumType.STRING)
+    @NotNull
+    @Getter
+    private Status status;
+
+    @Basic
+    @Getter
+    private Instant lastDownloadedAt;
 
     @ManyToMany
     @JoinTable(joinColumns = @JoinColumn(name = "rpki_repository_id"), inverseJoinColumns = @JoinColumn(name = "trust_anchor_id"))
@@ -61,12 +78,6 @@ public class RpkiRepository extends AbstractEntity {
     @Getter
     @Setter
     private BigInteger rrdpSerial;
-
-    @Basic(optional = false)
-    @Enumerated(EnumType.STRING)
-    @NotNull
-    @Getter
-    private Status status;
 
     protected RpkiRepository() {
     }
@@ -106,5 +117,6 @@ public class RpkiRepository extends AbstractEntity {
 
     public void setDownloaded() {
         this.status = Status.DOWNLOADED;
+        this.lastDownloadedAt = Instant.now();
     }
 }
