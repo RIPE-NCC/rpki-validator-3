@@ -130,7 +130,7 @@ public class TrustAnchorLocator {
         URI location = new URI(loc);
         String publicKeyInfo = p.getProperty("public.key.info", "").replaceAll("\\s+", "");
         String[] uris = p.getProperty("prefetch.uris", "").split(",");
-        List<URI> prefetchUris = new ArrayList<URI>(uris.length);
+        List<URI> prefetchUris = new ArrayList<>(uris.length);
         for (String uri : uris) {
             uri = uri.trim();
             if (StringUtils.isNotBlank(uri)) {

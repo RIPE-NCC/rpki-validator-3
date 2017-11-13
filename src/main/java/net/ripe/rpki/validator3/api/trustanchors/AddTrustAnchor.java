@@ -36,4 +36,8 @@ class AddTrustAnchor {
     @ValidPublicKeyInfo
     @ApiModelProperty(required = true, position = 4)
     String subjectPublicKeyInfo;
+
+    @ValidLocationURI
+    @ApiModelProperty(required = false, position = 5)
+    String rsyncPrefetchUri;
 }

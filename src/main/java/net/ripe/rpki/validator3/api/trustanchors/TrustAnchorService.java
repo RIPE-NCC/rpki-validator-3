@@ -1,6 +1,7 @@
 package net.ripe.rpki.validator3.api.trustanchors;
 
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchors;
 import net.ripe.rpki.validator3.domain.ValidationRuns;
@@ -17,11 +18,13 @@ import javax.validation.Valid;
 @Slf4j
 public class TrustAnchorService {
     private final TrustAnchors trustAnchorRepository;
+    private final RpkiRepositories rpkiRepositories;
     private final ValidationRuns validationRunRepository;
 
     @Autowired
-    public TrustAnchorService(TrustAnchors trustAnchorRepository, ValidationRuns validationRunRepository) {
+    public TrustAnchorService(TrustAnchors trustAnchorRepository, RpkiRepositories rpkiRepositories, ValidationRuns validationRunRepository) {
         this.trustAnchorRepository = trustAnchorRepository;
+        this.rpkiRepositories = rpkiRepositories;
         this.validationRunRepository = validationRunRepository;
     }
 
@@ -30,6 +33,10 @@ public class TrustAnchorService {
         trustAnchor.setName(command.getName());
         trustAnchor.setLocations(command.getLocations());
         trustAnchor.setSubjectPublicKeyInfo(command.getSubjectPublicKeyInfo());
+
+        if (command.getRsyncPrefetchUri() != null) {
+            rpkiRepositories.register(trustAnchor, command.getRsyncPrefetchUri());
+        }
 
         trustAnchorRepository.add(trustAnchor);
 

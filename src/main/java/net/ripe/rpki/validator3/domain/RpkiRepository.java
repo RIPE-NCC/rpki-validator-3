@@ -29,7 +29,7 @@ public class RpkiRepository extends AbstractEntity {
     public static final String TYPE = "rpki-repository";
 
     public enum Type {
-        RSYNC, RRDP
+        RRDP, RSYNC, RSYNC_PREFETCH
     }
 
     public enum Status {

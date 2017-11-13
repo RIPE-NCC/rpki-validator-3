@@ -5,6 +5,7 @@ CREATE TABLE trust_anchor (
     updated_at TIMESTAMP NOT NULL,
     name VARCHAR_IGNORECASE(1000) NOT NULL,
     subject_public_key_info VARCHAR(2000) NOT NULL,
+    rsync_prefetch_uri VARCHAR(2000),
     encoded_certificate BINARY,
     CONSTRAINT trust_anchor__pk PRIMARY KEY (id)
 );

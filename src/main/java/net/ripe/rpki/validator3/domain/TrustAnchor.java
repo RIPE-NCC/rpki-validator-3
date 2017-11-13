@@ -38,12 +38,17 @@ public class TrustAnchor extends AbstractEntity {
     @Valid
     private List<@NotNull @ValidLocationURI String> locations = new ArrayList<>();
 
-    @Column(name = "subject_public_key_info")
+    @Basic
     @Getter
     @Setter
     @NotNull
     @ValidPublicKeyInfo
     private String subjectPublicKeyInfo;
+
+    @Basic
+    @Getter
+    @ValidLocationURI
+    private String rsyncPrefetchUri;
 
     @Basic
     @Size(max = RpkiObject.MAX_SIZE)

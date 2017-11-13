@@ -58,7 +58,7 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
     public Stream<RpkiRepository> findRsyncRepositories() {
         return stream(
             select()
-                .where(rpkiRepository.type.eq(RpkiRepository.Type.RSYNC))
+                .where(rpkiRepository.type.in(RpkiRepository.Type.RSYNC, RpkiRepository.Type.RSYNC_PREFETCH))
                 .orderBy(rpkiRepository.rsyncRepositoryUri.asc(), rpkiRepository.id.asc())
         );
     }
