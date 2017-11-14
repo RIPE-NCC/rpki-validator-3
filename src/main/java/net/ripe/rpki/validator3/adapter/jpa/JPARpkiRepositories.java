@@ -28,9 +28,9 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
     }
 
     @Override
-    public RpkiRepository register(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String uri) {
+    public RpkiRepository register(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String uri, RpkiRepository.Type type) {
         RpkiRepository result = findByURI(uri).orElseGet(() -> {
-            RpkiRepository repository = new RpkiRepository(trustAnchor, uri);
+            RpkiRepository repository = new RpkiRepository(trustAnchor, uri, type);
             entityManager.persist(repository);
             if (repository.getType() == RpkiRepository.Type.RRDP) {
                 quartzValidationScheduler.addRpkiRepository(repository);

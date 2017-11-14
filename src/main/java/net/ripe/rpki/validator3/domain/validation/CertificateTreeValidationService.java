@@ -211,15 +211,23 @@ public class CertificateTreeValidationService {
     }
 
     private RpkiRepository registerRepository(TrustAnchor trustAnchor, Map<URI, RpkiRepository> registeredRepositories, CertificateRepositoryObjectValidationContext context) {
-        URI locationUri = Objects.firstNonNull(context.getRpkiNotifyURI(), context.getRepositoryURI());
-
-        return registeredRepositories.computeIfAbsent(locationUri, (uri) -> rpkiRepositories.register(
-            trustAnchor,
-            uri.toASCIIString()
-        ));
+        if (context.getRpkiNotifyURI() != null) {
+            return registeredRepositories.computeIfAbsent(context.getRpkiNotifyURI(), (uri) -> rpkiRepositories.register(
+                trustAnchor,
+                uri.toASCIIString(),
+                RpkiRepository.Type.RRDP
+            ));
+        } else {
+            return registeredRepositories.computeIfAbsent(context.getRepositoryURI(), (uri) -> rpkiRepositories.register(
+                trustAnchor,
+                uri.toASCIIString(),
+                RpkiRepository.Type.RSYNC
+            ));
+        }
     }
 
-    private Map<URI, RpkiObject> retrieveManifestEntries(ManifestCms manifest, URI manifestUri, ValidationResult validationResult) {
+    private Map<URI, RpkiObject> retrieveManifestEntries(ManifestCms manifest, URI manifestUri, ValidationResult
+        validationResult) {
         Map<URI, RpkiObject> result = new LinkedHashMap<>();
         for (Map.Entry<String, byte[]> entry : manifest.getFiles().entrySet()) {
             URI location = manifestUri.resolve(entry.getKey());

@@ -65,7 +65,6 @@ public class TrustAnchorValidationServiceTest {
 
         Optional<TrustAnchorValidationRun> validationRun = validationRuns.findLatestCompletedForTrustAnchor(ta);
         assertThat(validationRun).isPresent();
-        assertThat(validationRun.get().getStatus()).isEqualTo(ValidationRun.Status.FAILED);
 
         List<ValidationCheck> validationChecks = validationRun.get().getValidationChecks();
         assertThat(validationChecks).hasSize(1);
@@ -85,7 +84,6 @@ public class TrustAnchorValidationServiceTest {
 
         Optional<TrustAnchorValidationRun> validationRun = validationRuns.findLatestCompletedForTrustAnchor(ta);
         assertThat(validationRun).isPresent();
-        assertThat(validationRun.get().getStatus()).isEqualTo(ValidationRun.Status.FAILED);
 
         List<ValidationCheck> validationChecks = validationRun.get().getValidationChecks();
         assertThat(validationChecks).hasSize(1);
@@ -106,7 +104,6 @@ public class TrustAnchorValidationServiceTest {
 
         Optional<TrustAnchorValidationRun> validationRun = validationRuns.findLatestCompletedForTrustAnchor(ta);
         assertThat(validationRun).isPresent();
-        assertThat(validationRun.get().getStatus()).isEqualTo(ValidationRun.Status.FAILED);
 
         List<ValidationCheck> validationChecks = validationRun.get().getValidationChecks();
         assertThat(validationChecks).hasSize(1);

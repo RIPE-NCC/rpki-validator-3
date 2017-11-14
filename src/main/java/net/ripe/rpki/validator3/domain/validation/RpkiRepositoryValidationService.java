@@ -142,23 +142,14 @@ public class RpkiRepositoryValidationService {
 
         validationRun.getRpkiRepositories().add(repository);
 
-        URI location = URI.create(repository.getRsyncRepositoryUri());
-        while (!"/".equals(location.getPath())) {
-            RpkiRepository parentRepository = fetchedLocations.get(location);
-            if (parentRepository != null && parentRepository.isDownloaded()) {
-                log.debug("Already fetched {} as part of {}, skipping", repository.getLocationUri(), location);
-                repository.setDownloaded(parentRepository.getLastDownloadedAt());
-                return validationResult;
-            }
-            location = location.resolve("..").normalize();
-        }
+        try {
+            File targetDirectory = localTargetDirectory(repository);
 
-        try
-
-        {
-            File targetDirectory = fetchRsyncRepository(repository, validationResult);
-            if (targetDirectory == null || validationResult.hasFailureForCurrentLocation()) {
-                return validationResult;
+            if (!isAlreadyDownloaded(fetchedLocations, repository)) {
+                fetchRsyncRepository(repository, targetDirectory, validationResult);
+                if (validationResult.hasFailureForCurrentLocation()) {
+                    return validationResult;
+                }
             }
 
             if (repository.getType() == RpkiRepository.Type.RSYNC) {
@@ -175,6 +166,22 @@ public class RpkiRepositoryValidationService {
         return validationResult;
     }
 
+    private boolean isAlreadyDownloaded(Map<URI, RpkiRepository> fetchedLocations, RpkiRepository repository) {
+        boolean alreadyDownloaded = false;
+        URI location = URI.create(repository.getRsyncRepositoryUri());
+        while (!"/".equals(location.getPath())) {
+            RpkiRepository parentRepository = fetchedLocations.get(location);
+            if (parentRepository != null && parentRepository.isDownloaded()) {
+                log.debug("Already fetched {} as part of {}, skipping", repository.getLocationUri(), location);
+                repository.setDownloaded(parentRepository.getLastDownloadedAt());
+                alreadyDownloaded = true;
+                break;
+            }
+            location = location.resolve("..").normalize();
+        }
+        return alreadyDownloaded;
+    }
+
     protected void storeObjects(File targetDirectory, RsyncRepositoryValidationRun validationRun, ValidationResult validationResult, RpkiRepository repository) throws IOException {
         Files.walkFileTree(targetDirectory.toPath(), new SimpleFileVisitor<Path>() {
             private URI currentLocation = URI.create(repository.getLocationUri());
@@ -185,7 +192,7 @@ public class RpkiRepositoryValidationService {
                     return FileVisitResult.CONTINUE;
                 }
 
-                log.debug("visiting {}", dir);
+                log.trace("visiting {}", dir);
 
                 super.preVisitDirectory(dir, attrs);
                 currentLocation = currentLocation.resolve(dir.getFileName().toString() + "/");
@@ -199,7 +206,7 @@ public class RpkiRepositoryValidationService {
                     return FileVisitResult.CONTINUE;
                 }
 
-                log.debug("leaving {}", dir);
+                log.trace("leaving {}", dir);
                 super.postVisitDirectory(dir, exc);
                 currentLocation = currentLocation.resolve("..").normalize();
                 validationResult.setLocation(new ValidationLocation(currentLocation));
@@ -217,11 +224,11 @@ public class RpkiRepositoryValidationService {
                     existing.addLocation(validationResult.getCurrentLocation().getName());
                     return existing;
                 }).orElseGet(() -> {
-                    log.debug("parsing {}", file);
                     CertificateRepositoryObject obj = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(content, validationResult);
                     validationRun.addChecks(validationResult);
 
                     if (validationResult.hasFailureForCurrentLocation()) {
+                        log.debug("parsing {} failed: {}", file, validationResult.getFailuresForCurrentLocation());
                         return null;
                     }
 
@@ -245,29 +252,28 @@ public class RpkiRepositoryValidationService {
         return uri.toLowerCase(Locale.ROOT).startsWith("rsync://");
     }
 
-    private File fetchRsyncRepository(RpkiRepository rpkiRepository, ValidationResult validationResult) throws IOException {
-        URI location = URI.create(rpkiRepository.getLocationUri()).normalize();
-        File trustAnchorDirectory = new File(localRsyncStorageDirectory, String.valueOf(rpkiRepository.getId()));
-        String host = location.getHost() + "/" + (location.getPort() < 0 ? TrustAnchorValidationService.DEFAULT_RSYNC_PORT : location.getPort());
-        File targetDirectory = new File(
-            new File(trustAnchorDirectory.getCanonicalFile(), host),
-            location.getRawPath()
-        ).getCanonicalFile();
-
+    private void fetchRsyncRepository(RpkiRepository rpkiRepository, File targetDirectory, ValidationResult validationResult) throws IOException {
         if (targetDirectory.mkdirs()) {
             log.info("created local rsync storage directory {} for repository {}", targetDirectory, rpkiRepository);
         }
 
-        Rsync rsync = new Rsync(location.toASCIIString(), targetDirectory.getPath());
+        Rsync rsync = new Rsync(rpkiRepository.getLocationUri(), targetDirectory.getPath());
         rsync.addOptions("--update", "--times", "--copy-links", "--recursive", "--delete");
         int exitStatus = rsync.execute();
         if (exitStatus != 0) {
             validationResult.error("rsync.error", String.valueOf(exitStatus), ArrayUtils.toString(rsync.getErrorLines()));
-            return null;
+            rpkiRepository.setFailed();
         } else {
             log.info("Downloaded repository {} to {}", rpkiRepository, targetDirectory);
-            return targetDirectory;
         }
     }
 
+    private File localTargetDirectory(RpkiRepository rpkiRepository) throws IOException {
+        URI location = URI.create(rpkiRepository.getLocationUri()).normalize();
+        String host = location.getHost() + "/" + (location.getPort() < 0 ? TrustAnchorValidationService.DEFAULT_RSYNC_PORT : location.getPort());
+        return new File(
+            new File(localRsyncStorageDirectory, host),
+            location.getRawPath()
+        ).getCanonicalFile();
+    }
 }

@@ -53,7 +53,7 @@ public class RrdpServiceTest {
         final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
         entityManager.persist(trustAnchor);
 
-        final RpkiRepository rpkiRepository = new RpkiRepository(trustAnchor, "https://rrdp.ripe.net/notification.xml");
+        final RpkiRepository rpkiRepository = new RpkiRepository(trustAnchor, "https://rrdp.ripe.net/notification.xml", RpkiRepository.Type.RRDP);
         entityManager.persist(rpkiRepository);
 
         final RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepository);
@@ -95,7 +95,7 @@ public class RrdpServiceTest {
         final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
         entityManager.persist(trustAnchor);
 
-        final RpkiRepository rpkiRepository = new RpkiRepository(trustAnchor, notificationUri);
+        final RpkiRepository rpkiRepository = new RpkiRepository(trustAnchor, notificationUri, RpkiRepository.Type.RRDP);
         entityManager.persist(rpkiRepository);
 
         final RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepository);
@@ -130,7 +130,7 @@ public class RrdpServiceTest {
         final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
         entityManager.persist(trustAnchor);
 
-        final RpkiRepository rpkiRepository = new RpkiRepository(trustAnchor, notificationUri);
+        final RpkiRepository rpkiRepository = new RpkiRepository(trustAnchor, notificationUri, RpkiRepository.Type.RRDP);
         entityManager.persist(rpkiRepository);
 
         final RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepository);
@@ -171,7 +171,7 @@ public class RrdpServiceTest {
         entityManager.persist(trustAnchor);
 
         // make current serial lower to trigger delta download
-        final RpkiRepository rpkiRepository = new RpkiRepository(trustAnchor, notificationUri);
+        final RpkiRepository rpkiRepository = new RpkiRepository(trustAnchor, notificationUri, RpkiRepository.Type.RRDP);
         rpkiRepository.setRrdpSerial(BigInteger.valueOf(serial - 1));
         rpkiRepository.setRrdpSessionId(sessionId);
         entityManager.persist(rpkiRepository);
@@ -212,7 +212,7 @@ public class RrdpServiceTest {
         entityManager.persist(trustAnchor);
 
         // make current serial lower to trigger delta download
-        final RpkiRepository rpkiRepository = new RpkiRepository(trustAnchor, notificationUri);
+        final RpkiRepository rpkiRepository = new RpkiRepository(trustAnchor, notificationUri, RpkiRepository.Type.RRDP);
         rpkiRepository.setRrdpSerial(BigInteger.valueOf(serial - 1));
         rpkiRepository.setRrdpSessionId(sessionId);
         entityManager.persist(rpkiRepository);
@@ -427,7 +427,7 @@ public class RrdpServiceTest {
 
 
     private RpkiRepository makeRpkiRepository(String sessionId, String notificationUri, TrustAnchor trustAnchor) {
-        final RpkiRepository rpkiRepository = new RpkiRepository(trustAnchor, notificationUri);
+        final RpkiRepository rpkiRepository = new RpkiRepository(trustAnchor, notificationUri, RpkiRepository.Type.RRDP);
         rpkiRepository.setRrdpSerial(BigInteger.valueOf(1L));
         rpkiRepository.setRrdpSessionId(sessionId);
         entityManager.persist(rpkiRepository);

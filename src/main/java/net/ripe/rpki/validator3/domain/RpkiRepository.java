@@ -17,7 +17,6 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.math.BigInteger;
-import java.net.URI;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
@@ -82,17 +81,19 @@ public class RpkiRepository extends AbstractEntity {
     protected RpkiRepository() {
     }
 
-    public RpkiRepository(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String location) {
+    public RpkiRepository(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String location, Type type) {
         addTrustAnchor(trustAnchor);
-        URI uri = URI.create(location);
-        if ("rsync".equals(uri.getScheme().toLowerCase())) {
-            this.type = Type.RSYNC;
-            this.rsyncRepositoryUri = location;
-        } else {
-            this.type = Type.RRDP;
-            this.rrdpNotifyUri = location;
-        }
         this.status = Status.PENDING;
+        switch (type) {
+            case RRDP:
+                this.type = Type.RRDP;
+                this.rrdpNotifyUri = location;
+                break;
+            case RSYNC: case RSYNC_PREFETCH:
+                this.type = type;
+                this.rsyncRepositoryUri = location;
+                break;
+        }
     }
 
     public @ValidLocationURI @NotNull String getLocationUri() {

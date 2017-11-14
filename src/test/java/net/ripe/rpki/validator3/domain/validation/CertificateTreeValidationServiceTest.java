@@ -154,7 +154,7 @@ public class CertificateTreeValidationServiceTest {
         TrustAnchor ta = createTrustAnchor(x -> {
         });
         trustAnchors.add(ta);
-        RpkiRepository repository = rpkiRepositories.register(ta, TA_RRDP_NOTIFY_URI);
+        RpkiRepository repository = rpkiRepositories.register(ta, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
         repository.setDownloaded();
         entityManager.flush();
 
@@ -193,7 +193,7 @@ public class CertificateTreeValidationServiceTest {
             x.children(Arrays.asList(child));
         });
         trustAnchors.add(ta);
-        RpkiRepository repository = rpkiRepositories.register(ta, TA_RRDP_NOTIFY_URI);
+        RpkiRepository repository = rpkiRepositories.register(ta, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
         repository.setDownloaded();
         entityManager.flush();
 
@@ -217,7 +217,7 @@ public class CertificateTreeValidationServiceTest {
             ));
         });
         trustAnchors.add(ta);
-        RpkiRepository repository = rpkiRepositories.register(ta, TA_RRDP_NOTIFY_URI);
+        RpkiRepository repository = rpkiRepositories.register(ta, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
         repository.setDownloaded();
         entityManager.flush();
 
