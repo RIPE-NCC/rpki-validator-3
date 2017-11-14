@@ -28,6 +28,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 import java.math.BigInteger;
 import java.security.cert.X509CRLEntry;
 import java.util.Arrays;
@@ -57,49 +59,61 @@ public class RpkiObjectController {
     @GetMapping(path = "/all")
     public ResponseEntity<ApiResponse<Stream<RpkiObj>>> list() {
         final List<CertificateTreeValidationRun> vrs = validationRuns.findLatestSuccessful(CertificateTreeValidationRun.class);
-        Stream<Set<RpkiObject>> setStream = vrs.stream().map(vr -> {
-            List<ValidationCheck> validationChecks = vr.getValidationChecks();
+
+        Stream<Pair<RpkiObject, Optional<ValidationCheck>>> objects = vrs.stream().flatMap(vr -> {
+
+            final Map<String, ValidationCheck> checkMap = vr.getValidationChecks().
+                    stream().collect(Collectors.toMap(ValidationCheck::getLocation, vc -> vc));
+
             final Set<RpkiObject> validatedObjects = vr.getValidatedObjects();
-            return validatedObjects;
+            return validatedObjects.stream().map(r -> {
+                Optional<ValidationCheck> check = r.getLocations().stream().map(checkMap::get).findFirst();
+                return Pair.of(r, check);
+            });
         });
 
-
-        final Stream<Pair<RpkiObject, ValidationResult>> objects = Stream.empty();
-
         final Stream<RpkiObj> rpkiObjStream = objects.map(p -> {
-            final RpkiObject rpkiObject = p.getLeft();
-            final ValidationResult validationResult = p.getRight();
-            switch (rpkiObject.getType()) {
-                case CER:
-                    final Optional<X509ResourceCertificate> maybeCertificate = rpkiObject.get(X509ResourceCertificate.class, validationResult);
-                    if (maybeCertificate.isPresent()) {
-                        return makeCertificate(validationResult, maybeCertificate.get(), rpkiObject);
+                    final Optional<ValidationCheck> right = p.getRight();
+                    if (right.isPresent()) {
+                        final ValidationResult temporary = ValidationResult.withLocation(right.get().getLocation());
+                        return mapRpkiObject(p.getLeft(), temporary);
                     }
                     return null;
-                case ROA:
-                    final Optional<RoaCms> maybeRoa = rpkiObject.get(RoaCms.class, validationResult);
-                    if (maybeRoa.isPresent()) {
-                        return makeRoa(validationResult, maybeRoa.get(), rpkiObject);
-                    }
-                    return null;
-                case MFT:
-                    final Optional<ManifestCms> maybeMft = rpkiObject.get(ManifestCms.class, validationResult);
-                    if (maybeMft.isPresent()) {
-                        return makeMft(validationResult, maybeMft.get(), rpkiObject);
-                    }
-                    return null;
-                case CRL:
-                    final Optional<X509Crl> maybeCrl = rpkiObject.get(X509Crl.class, validationResult);
-                    if (maybeCrl.isPresent()) {
-                        return makeCrl(validationResult, maybeCrl.get(), rpkiObject);
-                    }
-                    return null;
-                default:
-                    return makeSomething(validationResult, rpkiObject);
-            }
-        }).filter(Objects::nonNull);
+                }
+        ).filter(Objects::nonNull);
 
         return ResponseEntity.ok(ApiResponse.data(rpkiObjStream));
+    }
+
+    private RpkiObj mapRpkiObject(final RpkiObject rpkiObject, final ValidationResult validationResult) {
+        switch (rpkiObject.getType()) {
+            case CER:
+                final Optional<X509ResourceCertificate> maybeCertificate = rpkiObject.get(X509ResourceCertificate.class, validationResult);
+                if (maybeCertificate.isPresent()) {
+                    return makeCertificate(validationResult, maybeCertificate.get(), rpkiObject);
+                }
+                return null;
+            case ROA:
+                final Optional<RoaCms> maybeRoa = rpkiObject.get(RoaCms.class, validationResult);
+                if (maybeRoa.isPresent()) {
+                    return makeRoa(validationResult, maybeRoa.get(), rpkiObject);
+                }
+                return null;
+            case MFT:
+                final Optional<ManifestCms> maybeMft = rpkiObject.get(ManifestCms.class, validationResult);
+                if (maybeMft.isPresent()) {
+                    return makeMft(validationResult, maybeMft.get(), rpkiObject);
+                }
+                return null;
+            case CRL:
+                final Optional<X509Crl> maybeCrl = rpkiObject.get(X509Crl.class, validationResult);
+                if (maybeCrl.isPresent()) {
+                    return makeCrl(validationResult, maybeCrl.get(), rpkiObject);
+                }
+                return null;
+            default:
+                return makeSomething(validationResult, rpkiObject);
+        }
     }
 
     private ResourceCertificate makeCertificate(ValidationResult validationResult, X509ResourceCertificate certificate, RpkiObject rpkiObject) {
