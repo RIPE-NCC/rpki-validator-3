@@ -147,9 +147,13 @@ public class CertificateTreeValidationService {
             Map.Entry<String, byte[]> crlEntry = crlEntries.get(0);
             URI crlUri = manifestUri.resolve(crlEntry.getKey());
 
-            temporary.setLocation(new ValidationLocation(crlUri));
             Optional<RpkiObject> crlObject = rpkiObjects.findBySha256(crlEntry.getValue());
-            temporary.rejectIfFalse(crlObject.isPresent(), "rpki.crl.found");
+            temporary.rejectIfFalse(crlObject.isPresent(), "rpki.crl.found", crlUri.toASCIIString());
+            if (temporary.hasFailureForCurrentLocation()) {
+                return validatedObjects;
+            }
+
+            temporary.setLocation(new ValidationLocation(crlUri));
             Optional<X509Crl> crl = crlObject.flatMap(x -> x.get(X509Crl.class, temporary));
             if (temporary.hasFailureForCurrentLocation()) {
                 return validatedObjects;
