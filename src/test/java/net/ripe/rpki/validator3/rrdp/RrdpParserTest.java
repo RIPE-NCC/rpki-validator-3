@@ -1,7 +1,7 @@
 package net.ripe.rpki.validator3.rrdp;
 
 import com.pholser.junit.quickcheck.Property;
-import net.ripe.rpki.validator3.util.Sha256;
+import net.ripe.rpki.validator3.util.Hex;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -26,17 +26,17 @@ public class RrdpParserTest {
         final String uri1 = "rsync://bandito.ripe.net/repo/3a87a4b1-6e22-4a63-ad0f-06f83ad3ca16/default/671570f06499fbd2d6ab76c4f22566fe49d5de60.mft";
         DeltaElement e1 = delta.asMap().get(uri1);
         assertEquals(uri1, ((DeltaPublish)e1).uri);
-        assertEquals("226AB8CD3C887A6EBDDDF317F2FAFC9CF3EFC5D43A86347AC0FEFFE4DC0F607E", Sha256.format(((DeltaPublish)e1).getHash().get()));
+        assertEquals("226AB8CD3C887A6EBDDDF317F2FAFC9CF3EFC5D43A86347AC0FEFFE4DC0F607E", Hex.format(((DeltaPublish)e1).getHash().get()));
 
         final String uri2 = "rsync://bandito.ripe.net/repo/3a87a4b1-6e22-4a63-ad0f-06f83ad3ca16/default/671570f06499fbd2d6ab76c4f22566fe49d5de60.crl";
         DeltaElement e2 = delta.asMap().get(uri2);
         assertEquals(uri2, ((DeltaPublish)e2).uri);
-        assertEquals("2B551A6C10CCA04C174B0CEB3B64652A5534D1385BEAA40A55A68CB06055E6BB", Sha256.format(((DeltaPublish)e2).getHash().get()));
+        assertEquals("2B551A6C10CCA04C174B0CEB3B64652A5534D1385BEAA40A55A68CB06055E6BB", Hex.format(((DeltaPublish)e2).getHash().get()));
 
         final String uri3 = "rsync://bandito.ripe.net/repo/3a87a4b1-6e22-4a63-ad0f-06f83ad3ca16/default/example.roa";
         DeltaElement e3 = delta.asMap().get(uri3);
         assertEquals(uri3, ((DeltaWithdraw)e3).uri);
-        assertEquals("2B551A6C10CCA04C174B0CEB3B64652A5534D1385BEAA40A55A68CB06055E6BB", Sha256.format(((DeltaWithdraw) e3).getHash()));
+        assertEquals("2B551A6C10CCA04C174B0CEB3B64652A5534D1385BEAA40A55A68CB06055E6BB", Hex.format(((DeltaWithdraw) e3).getHash()));
     }
 
     @Test

@@ -96,9 +96,7 @@ public class RpkiRepositoryValidationService {
         }
 
         if (validationRun.isSucceeded() && validationRun.getAddedObjectCount() > 0) {
-            rpkiRepository.getTrustAnchors().forEach(trustAnchor -> {
-                validationRunRepository.runCertificateTreeValidation(trustAnchor);
-            });
+            rpkiRepository.getTrustAnchors().forEach(validationRunRepository::runCertificateTreeValidation);
         }
     }
 

@@ -1,6 +1,6 @@
 package net.ripe.rpki.validator3.rrdp;
 
-import net.ripe.rpki.validator3.util.Sha256;
+import net.ripe.rpki.validator3.util.Hex;
 
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
@@ -11,11 +11,8 @@ import javax.xml.stream.events.Characters;
 import javax.xml.stream.events.EndElement;
 import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
@@ -145,11 +142,11 @@ public class RrdpParser {
                         switch (qqName) {
                             case "publish":
                                 final byte[] decoded = decoder.decode(base64.toString());
-                                objects.put(uri, new DeltaPublish(decoded, uri, Sha256.parse(hash)));
+                                objects.put(uri, new DeltaPublish(decoded, uri, Hex.parse(hash)));
                                 base64 = new StringBuilder();
                                 break;
                             case "withdraw":
-                                objects.put(uri, new DeltaWithdraw(uri, Sha256.parse(hash)));
+                                objects.put(uri, new DeltaWithdraw(uri, Hex.parse(hash)));
                                 break;
                         }
                         break;

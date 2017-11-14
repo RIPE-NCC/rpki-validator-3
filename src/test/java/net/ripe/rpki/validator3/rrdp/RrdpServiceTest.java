@@ -8,6 +8,7 @@ import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.RrdpRepositoryValidationRun;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.ValidationCheck;
+import net.ripe.rpki.validator3.util.Hex;
 import net.ripe.rpki.validator3.util.Sha256;
 import org.junit.Before;
 import org.junit.Test;
@@ -121,7 +122,7 @@ public class RrdpServiceTest {
         final byte[] snapshotXml = Objects.snapshotXml(serial, sessionId, cert, crl);
 
         final String snapshotUri = "https://host/path/snapshot.xml";
-        final Objects.SnapshotInfo snapshot = new Objects.SnapshotInfo(snapshotUri, Sha256.parse("FFFFFF"));
+        final Objects.SnapshotInfo snapshot = new Objects.SnapshotInfo(snapshotUri, Hex.parse("FFFFFF"));
         rrdpClient.add(snapshot.uri, snapshotXml);
 
         final byte[] notificationXml = Objects.notificationXml(serial, sessionId, snapshot);
@@ -144,7 +145,7 @@ public class RrdpServiceTest {
         final ValidationCheck validationCheck = validationRun.getValidationChecks().get(0);
         assertEquals("rrdp.error", validationCheck.getKey());
         assertEquals(ValidationCheck.Status.ERROR, validationCheck.getStatus());
-        assertEquals("Hash of the snapshot file " + snapshotUri + " is " + Sha256.format(Sha256.hash(snapshotXml)) +
+        assertEquals("Hash of the snapshot file " + snapshotUri + " is " + Hex.format(Sha256.hash(snapshotXml)) +
                 ", but notification file says FFFFFF", validationCheck.getParameters().get(0));
         assertEquals(rpkiRepository.getRrdpNotifyUri(), validationCheck.getLocation());
     }
@@ -394,7 +395,7 @@ public class RrdpServiceTest {
         final Objects.DeltaPublish publishCert = new Objects.DeltaPublish("rsync://host/path/cert.cer", certificate);
         final byte[] deltaXml1 = Objects.deltaXml(3, sessionId, publishCert);
 
-        final Objects.DeltaInfo deltaInfo1 = new Objects.DeltaInfo("https://host/path/delta1.xml", Sha256.parse("FFFFFFFF"), 3);
+        final Objects.DeltaInfo deltaInfo1 = new Objects.DeltaInfo("https://host/path/delta1.xml", Hex.parse("FFFFFFFF"), 3);
         rrdpClient.add(deltaInfo1.uri, deltaXml1);
 
         final String notificationUri = "https://rrdp.ripe.net/notification.xml";
@@ -416,7 +417,7 @@ public class RrdpServiceTest {
         assertEquals(rpkiRepository.getRrdpNotifyUri(), validationCheck.getLocation());
 
         assertTrue(validationCheck.getParameters().get(0).startsWith("Hash of the delta file"));
-        assertTrue(validationCheck.getParameters().get(0).contains("is " + Sha256.format(Sha256.hash(deltaXml1)) + ", but notification file says FFFFFFFF"));
+        assertTrue(validationCheck.getParameters().get(0).contains("is " + Hex.format(Sha256.hash(deltaXml1)) + ", but notification file says FFFFFFFF"));
 
         final List<RpkiObject> objects = rpkiObjects.all().collect(Collectors.toList());
         assertEquals(1, objects.size());

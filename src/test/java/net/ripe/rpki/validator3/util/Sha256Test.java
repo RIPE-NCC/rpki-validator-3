@@ -12,6 +12,6 @@ import static org.junit.Assert.assertTrue;
 public class Sha256Test {
     @Property
     public void formatAndParse(byte[] bytes) throws Exception {
-        assertTrue(Arrays.equals(bytes, Sha256.parse(Sha256.format(bytes))));
+        assertTrue(Arrays.equals(bytes, Hex.parse(Hex.format(bytes))));
     }
 }

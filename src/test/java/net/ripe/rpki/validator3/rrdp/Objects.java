@@ -1,6 +1,6 @@
 package net.ripe.rpki.validator3.rrdp;
 
-import net.ripe.rpki.validator3.util.Sha256;
+import net.ripe.rpki.validator3.util.Hex;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -102,9 +102,9 @@ public class Objects {
     static byte[] notificationXml(long serial, String sessionId, SnapshotInfo snapshot, DeltaInfo... deltas) {
         final StringBuilder sb = new StringBuilder();
         sb.append("<notification xmlns=\"HTTP://www.ripe.net/rpki/rrdp\" version=\"1\" session_id=\"").append(sessionId).append("\" serial=\"").append(serial).append("\">");
-        sb.append("    <snapshot uri=\"").append(snapshot.uri).append("\" hash=\"").append(Sha256.format(snapshot.hash)).append("\"/>");
+        sb.append("    <snapshot uri=\"").append(snapshot.uri).append("\" hash=\"").append(Hex.format(snapshot.hash)).append("\"/>");
         for (DeltaInfo di : deltas) {
-            sb.append("  <delta uri=\"").append(di.uri).append("\" hash=\"").append(Sha256.format(di.hash)).append("\" serial=\"").append(di.serial).append("\"/>");
+            sb.append("  <delta uri=\"").append(di.uri).append("\" hash=\"").append(Hex.format(di.hash)).append("\" serial=\"").append(di.serial).append("\"/>");
         }
         sb.append("</notification>");
         return sb.toString().getBytes(Charset.forName("UTF-8"));
@@ -128,7 +128,7 @@ public class Objects {
                 DeltaPublish publish = (DeltaPublish) change;
                 if (publish.hash != null) {
                     sb.append("  <publish uri=\"").append(publish.uri).
-                            append("\" hash=\"").append(Sha256.format(publish.hash)).append("\">\n    ").
+                            append("\" hash=\"").append(Hex.format(publish.hash)).append("\">\n    ").
                             append(encode(publish.content)).
                             append("\n</publish>\n");
                 } else {
@@ -139,7 +139,7 @@ public class Objects {
             } else if (change instanceof DeltaWithdraw) {
                 DeltaWithdraw withdraw = (DeltaWithdraw) change;
                 sb.append("  <withdraw uri=\"").append(withdraw.uri).
-                        append("\" hash=\"").append(Sha256.format(withdraw.hash)).append("\"/>");
+                        append("\" hash=\"").append(Hex.format(withdraw.hash)).append("\"/>");
             }
         }
         sb.append("</delta>");
