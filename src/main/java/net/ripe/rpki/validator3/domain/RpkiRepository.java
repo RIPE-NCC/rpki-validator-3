@@ -111,12 +111,26 @@ public class RpkiRepository extends AbstractEntity {
         return status == Status.FAILED;
     }
 
-    public void setFailed() {
-        this.status = Status.FAILED;
+    public boolean isDownloaded() {
+        return status == Status.DOWNLOADED;
     }
 
+    public void setFailed() {
+        setFailed(Instant.now());
+    }
+
+    public void setFailed(Instant lastDownloadedAt) {
+        this.status = Status.FAILED;
+        this.lastDownloadedAt = lastDownloadedAt;
+    }
+
+
     public void setDownloaded() {
+        setDownloaded(Instant.now());
+    }
+
+    public void setDownloaded(Instant lastDownloadedAt) {
         this.status = Status.DOWNLOADED;
-        this.lastDownloadedAt = Instant.now();
+        this.lastDownloadedAt = lastDownloadedAt;
     }
 }
