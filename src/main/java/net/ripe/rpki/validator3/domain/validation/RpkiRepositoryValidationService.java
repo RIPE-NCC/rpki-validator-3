@@ -16,6 +16,7 @@ import net.ripe.rpki.validator3.domain.RsyncRepositoryValidationRun;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.ValidationRuns;
 import net.ripe.rpki.validator3.rrdp.RrdpService;
+import net.ripe.rpki.validator3.util.RsyncUtils;
 import net.ripe.rpki.validator3.util.Sha256;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -143,7 +144,10 @@ public class RpkiRepositoryValidationService {
         validationRun.getRpkiRepositories().add(repository);
 
         try {
-            File targetDirectory = localTargetDirectory(repository);
+            File targetDirectory = RsyncUtils.localFileFromRsyncUri(
+                localRsyncStorageDirectory,
+                URI.create(repository.getRsyncRepositoryUri())
+            );
 
             if (!isAlreadyDownloaded(fetchedLocations, repository)) {
                 fetchRsyncRepository(repository, targetDirectory, validationResult);
@@ -268,12 +272,4 @@ public class RpkiRepositoryValidationService {
         }
     }
 
-    private File localTargetDirectory(RpkiRepository rpkiRepository) throws IOException {
-        URI location = URI.create(rpkiRepository.getLocationUri()).normalize();
-        String host = location.getHost() + "/" + (location.getPort() < 0 ? TrustAnchorValidationService.DEFAULT_RSYNC_PORT : location.getPort());
-        return new File(
-            new File(localRsyncStorageDirectory, host),
-            location.getRawPath()
-        ).getCanonicalFile();
-    }
 }
