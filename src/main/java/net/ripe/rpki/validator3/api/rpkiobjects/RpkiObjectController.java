@@ -1,8 +1,10 @@
 package net.ripe.rpki.validator3.api.rpkiobjects;
 
 import lombok.Builder;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.IpResourceSet;
+import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.ValidityPeriod;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.crypto.cms.roa.RoaCms;
@@ -28,16 +30,19 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import java.math.BigInteger;
 import java.security.cert.X509CRLEntry;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -60,68 +65,69 @@ public class RpkiObjectController {
     public ResponseEntity<ApiResponse<Stream<RpkiObj>>> list() {
         final List<CertificateTreeValidationRun> vrs = validationRuns.findLatestSuccessful(CertificateTreeValidationRun.class);
 
-        Stream<Pair<RpkiObject, Optional<ValidationCheck>>> objects = vrs.stream().flatMap(vr -> {
-
+        final Stream<RpkiObj> rpkiObjStream = vrs.stream().flatMap(vr -> {
             final Map<String, ValidationCheck> checkMap = vr.getValidationChecks().
-                    stream().collect(Collectors.toMap(ValidationCheck::getLocation, vc -> vc));
+                    stream().collect(Collectors.toMap(ValidationCheck::getLocation, Function.identity()));
 
             final Set<RpkiObject> validatedObjects = vr.getValidatedObjects();
             return validatedObjects.stream().map(r -> {
-                Optional<ValidationCheck> check = r.getLocations().stream().map(checkMap::get).findFirst();
+                Optional<ValidationCheck> check = r.getLocations().stream().map(checkMap::get).filter(Objects::nonNull).findFirst();
                 return Pair.of(r, check);
             });
-        });
-
-        final Stream<RpkiObj> rpkiObjStream = objects.map(p -> {
-                    final Optional<ValidationCheck> right = p.getRight();
-                    if (right.isPresent()) {
-                        final ValidationResult temporary = ValidationResult.withLocation(right.get().getLocation());
-                        return mapRpkiObject(p.getLeft(), temporary);
-                    }
-                    return null;
+        }).sorted(Comparator.comparing(o -> location(o.getLeft()))).map(p -> {
+                    final Optional<ValidationCheck> maybeCheck = p.getRight();
+                    return mapRpkiObject(p.getLeft(), maybeCheck.map(c -> ValidationResult.withLocation(c.getLocation())));
                 }
         ).filter(Objects::nonNull);
 
         return ResponseEntity.ok(ApiResponse.data(rpkiObjStream));
     }
 
-    private RpkiObj mapRpkiObject(final RpkiObject rpkiObject, final ValidationResult validationResult) {
+    private RpkiObj mapRpkiObject(final RpkiObject rpkiObject, final Optional<ValidationResult> validationResult) {
         switch (rpkiObject.getType()) {
             case CER:
-                final Optional<X509ResourceCertificate> maybeCertificate = rpkiObject.get(X509ResourceCertificate.class, validationResult);
-                if (maybeCertificate.isPresent()) {
-                    return makeCertificate(validationResult, maybeCertificate.get(), rpkiObject);
-                }
-                return null;
+                return makeTypedObject(rpkiObject, validationResult, X509ResourceCertificate.class, cert -> makeCertificate(validationResult, cert, rpkiObject));
             case ROA:
-                final Optional<RoaCms> maybeRoa = rpkiObject.get(RoaCms.class, validationResult);
-                if (maybeRoa.isPresent()) {
-                    return makeRoa(validationResult, maybeRoa.get(), rpkiObject);
-                }
-                return null;
+                return makeTypedObject(rpkiObject, validationResult, RoaCms.class, cert -> makeRoa(validationResult, cert, rpkiObject));
             case MFT:
-                final Optional<ManifestCms> maybeMft = rpkiObject.get(ManifestCms.class, validationResult);
-                if (maybeMft.isPresent()) {
-                    return makeMft(validationResult, maybeMft.get(), rpkiObject);
-                }
-                return null;
+                return makeTypedObject(rpkiObject, validationResult, ManifestCms.class, cert -> makeMft(validationResult, cert, rpkiObject));
             case CRL:
-                final Optional<X509Crl> maybeCrl = rpkiObject.get(X509Crl.class, validationResult);
-                if (maybeCrl.isPresent()) {
-                    return makeCrl(validationResult, maybeCrl.get(), rpkiObject);
-                }
-                return null;
+                return makeTypedObject(rpkiObject, validationResult, X509Crl.class, cert -> makeCrl(validationResult, cert, rpkiObject));
             default:
-                return makeSomething(validationResult, rpkiObject);
+                return makeOther(validationResult, rpkiObject);
         }
     }
 
-    private ResourceCertificate makeCertificate(ValidationResult validationResult, X509ResourceCertificate certificate, RpkiObject rpkiObject) {
+    private <T extends CertificateRepositoryObject> RpkiObj makeTypedObject(final RpkiObject rpkiObject,
+                                                                            final Optional<ValidationResult> validationResult,
+                                                                            Class<T> clazz, Function<T, RpkiObj> create) {
+        Optional<T> maybeCert = validationResult.flatMap(vr -> rpkiObject.get(clazz, vr));
+        if (!maybeCert.isPresent()) {
+            maybeCert = rpkiObject.get(clazz, location(rpkiObject));
+        }
+        if (maybeCert.isPresent()) {
+            return create.apply(maybeCert.get());
+        }
+        return null;
+    }
+
+    private static String location(RpkiObject rpkiObject) {
+        SortedSet<String> locations = rpkiObject.getLocations();
+        if (locations.isEmpty()) {
+            return "unknown." + rpkiObject.getType().toString().toLowerCase(Locale.ROOT);
+        }
+        return locations.first();
+    }
+
+    private ResourceCertificate makeCertificate(Optional<ValidationResult> validationResult, X509ResourceCertificate certificate, RpkiObject rpkiObject) {
+        final String location = validationResult.map(vr -> vr.getCurrentLocation().getName()).orElse(rpkiObject.getLocations().first());
+        final boolean isValid = validationResult.filter(vr -> !vr.hasFailureForCurrentLocation()).isPresent();
+
         return ResourceCertificate.builder().
-                uri(validationResult.getCurrentLocation().getName()).
-                valid(!validationResult.hasFailureForCurrentLocation()).
-                warnings(formatChecks(validationResult.getWarnings())).
-                errors(formatChecks(validationResult.getFailuresForAllLocations())).
+                uri(location).
+                valid(isValid).
+                warnings(formatChecks(validationResult.map(ValidationResult::getWarnings).orElse(Collections.emptyList()))).
+                errors(formatChecks(validationResult.map(ValidationResult::getFailuresForAllLocations).orElse(Collections.emptyList()))).
                 resources(formatResources(certificate.getResources())).
                 subjectName(certificate.getSubject().getName()).
                 ski(Hex.format(certificate.getSubjectKeyIdentifier())).
@@ -133,16 +139,24 @@ public class RpkiObjectController {
                 build();
     }
 
-    private Roa makeRoa(ValidationResult validationResult, RoaCms roaCms, RpkiObject rpkiObject) {
+    private Roa makeRoa(Optional<ValidationResult> validationResult, RoaCms roaCms, RpkiObject rpkiObject) {
+        final String location = validationResult.map(vr -> vr.getCurrentLocation().getName()).orElse(rpkiObject.getLocations().first());
+        final boolean isValid = validationResult.filter(vr -> !vr.hasFailureForCurrentLocation()).isPresent();
+        List<net.ripe.rpki.commons.crypto.cms.roa.RoaPrefix> pref = roaCms.getPrefixes();
+        final List<RoaPrefix> prefixes = pref == null ? Collections.emptyList() : pref.stream().map(p ->
+                RoaPrefix.builder().
+                        prefix(p.getPrefix().toString()).
+                        maxLenght(p.getMaximumLength()).
+                        build()
+        ).collect(Collectors.toList());
+
         return Roa.builder().
-                uri(validationResult.getCurrentLocation().getName()).
-                valid(!validationResult.hasFailureForCurrentLocation()).
-                warnings(formatChecks(validationResult.getWarnings())).
-                errors(formatChecks(validationResult.getFailuresForAllLocations())).
+                uri(location).
+                valid(isValid).
+                warnings(formatChecks(validationResult.map(ValidationResult::getWarnings).orElse(Collections.emptyList()))).
+                errors(formatChecks(validationResult.map(ValidationResult::getFailuresForAllLocations).orElse(Collections.emptyList()))).
                 asn(roaCms.getAsn().toString()).
-                roaPrefixes(roaCms.getPrefixes().stream().map(p ->
-                        RoaPrefix.builder().maxLenght(p.getMaximumLength()).build()
-                ).collect(Collectors.toList())).
+                roaPrefixes(prefixes).
                 sha256(Hex.format(rpkiObject.getSha256())).
                 eeCertificate(makeEeCertificate(roaCms.getCertificate())).
                 build();
@@ -157,12 +171,14 @@ public class RpkiObjectController {
                 build();
     }
 
-    private Mft makeMft(ValidationResult validationResult, ManifestCms manifestCms, RpkiObject rpkiObject) {
+    private Mft makeMft(Optional<ValidationResult> validationResult, ManifestCms manifestCms, RpkiObject rpkiObject) {
+        final String location = validationResult.map(vr -> vr.getCurrentLocation().getName()).orElse(rpkiObject.getLocations().first());
+        final boolean isValid = validationResult.filter(vr -> !vr.hasFailureForCurrentLocation()).isPresent();
         return Mft.builder().
-                uri(validationResult.getCurrentLocation().getName()).
-                valid(!validationResult.hasFailureForCurrentLocation()).
-                warnings(formatChecks(validationResult.getWarnings())).
-                errors(formatChecks(validationResult.getFailuresForAllLocations())).
+                uri(location).
+                valid(isValid).
+                warnings(formatChecks(validationResult.map(ValidationResult::getWarnings).orElse(Collections.emptyList()))).
+                errors(formatChecks(validationResult.map(ValidationResult::getFailuresForAllLocations).orElse(Collections.emptyList()))).
                 eeCertificate(makeEeCertificate(manifestCms.getCertificate())).
                 thisUpdateTime(formatDateTime(manifestCms.getThisUpdateTime())).
                 nextUpdateTime(formatDateTime(manifestCms.getNextUpdateTime())).
@@ -178,20 +194,27 @@ public class RpkiObjectController {
         ).collect(Collectors.toList());
     }
 
-    private Crl makeCrl(ValidationResult validationResult, X509Crl crl, RpkiObject rpkiObject) {
+    private Crl makeCrl(Optional<ValidationResult> validationResult, X509Crl crl, RpkiObject rpkiObject) {
+        final String location = validationResult.map(vr -> vr.getCurrentLocation().getName()).orElse(rpkiObject.getLocations().first());
+        final boolean isValid = validationResult.filter(vr -> !vr.hasFailureForCurrentLocation()).isPresent();
+        final Set<? extends X509CRLEntry> revokedCertificates = crl.getCrl().getRevokedCertificates();
+        final List<BigInteger> revocations = revokedCertificates == null ?
+                Collections.emptyList() :
+                revokedCertificates.stream().map(X509CRLEntry::getSerialNumber).collect(Collectors.toList());
+
         return Crl.builder().
-                uri(validationResult.getCurrentLocation().getName()).
-                valid(!validationResult.hasFailureForCurrentLocation()).
-                warnings(formatChecks(validationResult.getWarnings())).
-                errors(formatChecks(validationResult.getFailuresForAllLocations())).
+                uri(location).
+                valid(isValid).
+                warnings(formatChecks(validationResult.map(ValidationResult::getWarnings).orElse(Collections.emptyList()))).
+                errors(formatChecks(validationResult.map(ValidationResult::getFailuresForAllLocations).orElse(Collections.emptyList()))).
                 aki(Hex.format(crl.getAuthorityKeyIdentifier())).
                 serial(crl.getNumber()).
-                revocations(crl.getCrl().getRevokedCertificates().stream().map(X509CRLEntry::getSerialNumber).collect(Collectors.toList())).
+                revocations(revocations).
                 build();
     }
 
-    private RpkiObj makeSomething(ValidationResult vr, RpkiObject ro) {
-        return new RpkiObj();
+    private RpkiObj makeOther(Optional<ValidationResult> vr, RpkiObject ro) {
+        return Other.builder().uri(ro.getLocations().first()).build();
     }
 
     private static List<String> formatResources(IpResourceSet resources) {
@@ -225,17 +248,24 @@ public class RpkiObjectController {
                 build()).collect(Collectors.toList());
     }
 
-
     static class RpkiObj {
     }
 
     @Builder
+    @Getter
+    private static class Other extends RpkiObj {
+        private String uri;
+    }
+
+    @Builder
+    @Getter
     private static class ValidityTime extends RpkiObj {
         private String notValidBefore;
         private String notValidAfter;
     }
 
     @Builder
+    @Getter
     private static class ResourceCertificate extends RpkiObj {
         private String uri;
         private boolean valid;
@@ -254,6 +284,7 @@ public class RpkiObjectController {
     }
 
     @Builder
+    @Getter
     static class EeCertificate {
         private List<String> resources;
         private String subjectName;
@@ -262,12 +293,14 @@ public class RpkiObjectController {
     }
 
     @Builder
+    @Getter
     static class RoaPrefix {
         private String prefix;
-        private int maxLenght;
+        private Integer maxLenght;
     }
 
     @Builder
+    @Getter
     private static class Roa extends RpkiObj {
         private String uri;
         private boolean valid;
@@ -281,6 +314,7 @@ public class RpkiObjectController {
     }
 
     @Builder
+    @Getter
     static class Mft extends RpkiObj {
         private String uri;
         private boolean valid;
@@ -296,12 +330,14 @@ public class RpkiObjectController {
     }
 
     @Builder
+    @Getter
     static class MftEntry {
         private String sha256;
         private String filename;
     }
 
     @Builder
+    @Getter
     static class Crl extends RpkiObj {
         private String uri;
         private boolean valid;
@@ -314,6 +350,7 @@ public class RpkiObjectController {
     }
 
     @Builder
+    @Getter
     static class Issue {
         private String status;
         private String key;
