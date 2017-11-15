@@ -39,6 +39,7 @@ public class RpkiRepository extends AbstractEntity {
     @Enumerated(EnumType.STRING)
     @NotNull
     @Getter
+    @Setter
     private Type type;
 
     @Basic(optional = false)

@@ -39,6 +39,9 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
             return repository;
         });
         result.addTrustAnchor(trustAnchor);
+        if (type == RpkiRepository.Type.RSYNC && result.getType() == RpkiRepository.Type.RSYNC_PREFETCH) {
+            result.setType(RpkiRepository.Type.RSYNC);
+        }
         return result;
     }
 

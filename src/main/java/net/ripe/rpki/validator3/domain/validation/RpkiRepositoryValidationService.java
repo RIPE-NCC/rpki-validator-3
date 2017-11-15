@@ -150,14 +150,15 @@ public class RpkiRepositoryValidationService {
                 URI.create(repository.getRsyncRepositoryUri())
             );
 
-            if (!isAlreadyDownloaded(fetchedLocations, repository)) {
+            RpkiRepository parentRepository = findDownloadedParentRepository(fetchedLocations, repository);
+            if (parentRepository == null) {
                 fetchRsyncRepository(repository, targetDirectory, validationResult);
                 if (validationResult.hasFailureForCurrentLocation()) {
                     return validationResult;
                 }
             }
 
-            if (repository.getType() == RpkiRepository.Type.RSYNC) {
+            if (repository.getType() == RpkiRepository.Type.RSYNC && (parentRepository == null || parentRepository.getType() == RpkiRepository.Type.RSYNC_PREFETCH)) {
                 storeObjects(targetDirectory, validationRun, validationResult, objectsBySha256, repository);
             }
 
@@ -171,20 +172,18 @@ public class RpkiRepositoryValidationService {
         return validationResult;
     }
 
-    private boolean isAlreadyDownloaded(Map<URI, RpkiRepository> fetchedLocations, RpkiRepository repository) {
-        boolean alreadyDownloaded = false;
+    private RpkiRepository findDownloadedParentRepository(Map<URI, RpkiRepository> fetchedLocations, RpkiRepository repository) {
         URI location = URI.create(repository.getRsyncRepositoryUri());
         while (!"/".equals(location.getPath())) {
             RpkiRepository parentRepository = fetchedLocations.get(location);
             if (parentRepository != null && parentRepository.isDownloaded()) {
                 log.debug("Already fetched {} as part of {}, skipping", repository.getLocationUri(), location);
                 repository.setDownloaded(parentRepository.getLastDownloadedAt());
-                alreadyDownloaded = true;
-                break;
+                return parentRepository;
             }
             location = location.resolve("..").normalize();
         }
-        return alreadyDownloaded;
+        return null;
     }
 
     protected void storeObjects(File targetDirectory, RsyncRepositoryValidationRun validationRun, ValidationResult validationResult, Map<String, RpkiObject> objectsBySha256, RpkiRepository repository) throws IOException {
