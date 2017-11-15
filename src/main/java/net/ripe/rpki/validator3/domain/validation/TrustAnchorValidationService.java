@@ -11,6 +11,7 @@ import net.ripe.rpki.commons.rsync.Rsync;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.*;
 import net.ripe.rpki.validator3.rrdp.RrdpService;
+import net.ripe.rpki.validator3.util.RsyncUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,8 +27,6 @@ import java.security.GeneralSecurityException;
 @Service
 @Slf4j
 public class TrustAnchorValidationService {
-
-    static final int DEFAULT_RSYNC_PORT = 873;
 
     private final EntityManager entityManager;
     private final TrustAnchors trustAnchorRepository;
@@ -68,7 +67,7 @@ public class TrustAnchorValidationService {
             URI trustAnchorCertificateURI = URI.create(validationRun.getTrustAnchorCertificateURI()).normalize();
             ValidationResult validationResult = ValidationResult.withLocation(trustAnchorCertificateURI);
 
-            File targetFile = fetchTrustAnchorCertificate(trustAnchor, trustAnchorCertificateURI, validationResult);
+            File targetFile = fetchTrustAnchorCertificate(trustAnchorCertificateURI, validationResult);
             if (!validationResult.hasFailureForCurrentLocation()) {
                 long trustAnchorCertificateSize = targetFile.length();
 
@@ -128,14 +127,8 @@ public class TrustAnchorValidationService {
         return certificate;
     }
 
-    private File fetchTrustAnchorCertificate(TrustAnchor trustAnchor, URI trustAnchorCertificateURI, ValidationResult validationResult) throws IOException {
-        File trustAnchorDirectory = new File(localRsyncStorageDirectory, String.valueOf(trustAnchor.getId()));
-        String trustAnchorHost = trustAnchorCertificateURI.getHost() + "/" + (trustAnchorCertificateURI.getPort() < 0 ? DEFAULT_RSYNC_PORT : trustAnchorCertificateURI.getPort());
-        File targetFile = new File(
-            new File(trustAnchorDirectory.getCanonicalFile(), trustAnchorHost),
-            trustAnchorCertificateURI.getRawPath()
-        ).getCanonicalFile();
-
+    private File fetchTrustAnchorCertificate(URI trustAnchorCertificateURI, ValidationResult validationResult) throws IOException {
+        File targetFile = RsyncUtils.localFileFromRsyncUri(localRsyncStorageDirectory, trustAnchorCertificateURI);
         if (targetFile.getParentFile().mkdirs()) {
             log.info("created local rsync storage directory {} for trust anchor {}", targetFile.getParentFile(), trustAnchorCertificateURI);
         }

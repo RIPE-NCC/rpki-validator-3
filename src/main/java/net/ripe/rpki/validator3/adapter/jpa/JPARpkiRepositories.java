@@ -1,5 +1,6 @@
 package net.ripe.rpki.validator3.adapter.jpa;
 
+import com.querydsl.core.BooleanBuilder;
 import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
@@ -28,9 +29,9 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
     }
 
     @Override
-    public RpkiRepository register(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String uri) {
+    public RpkiRepository register(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String uri, RpkiRepository.Type type) {
         RpkiRepository result = findByURI(uri).orElseGet(() -> {
-            RpkiRepository repository = new RpkiRepository(trustAnchor, uri);
+            RpkiRepository repository = new RpkiRepository(trustAnchor, uri, type);
             entityManager.persist(repository);
             if (repository.getType() == RpkiRepository.Type.RRDP) {
                 quartzValidationScheduler.addRpkiRepository(repository);
@@ -50,15 +51,19 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
     }
 
     @Override
-    public List<RpkiRepository> findAll() {
-        return select().fetch();
+    public List<RpkiRepository> findAll(RpkiRepository.Status optionalStatus) {
+        BooleanBuilder builder = new BooleanBuilder();
+        if (optionalStatus != null) {
+            builder.and(rpkiRepository.status.eq(optionalStatus));
+        }
+        return select().where(builder).fetch();
     }
 
     @Override
     public Stream<RpkiRepository> findRsyncRepositories() {
         return stream(
             select()
-                .where(rpkiRepository.type.eq(RpkiRepository.Type.RSYNC))
+                .where(rpkiRepository.type.in(RpkiRepository.Type.RSYNC, RpkiRepository.Type.RSYNC_PREFETCH))
                 .orderBy(rpkiRepository.rsyncRepositoryUri.asc(), rpkiRepository.id.asc())
         );
     }

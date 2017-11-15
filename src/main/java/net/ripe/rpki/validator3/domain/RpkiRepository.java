@@ -6,12 +6,18 @@ import lombok.Setter;
 import lombok.ToString;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 
-import javax.persistence.*;
+import javax.persistence.Basic;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.math.BigInteger;
-import java.net.URI;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -22,7 +28,7 @@ public class RpkiRepository extends AbstractEntity {
     public static final String TYPE = "rpki-repository";
 
     public enum Type {
-        RSYNC, RRDP
+        RRDP, RSYNC, RSYNC_PREFETCH
     }
 
     public enum Status {
@@ -34,6 +40,16 @@ public class RpkiRepository extends AbstractEntity {
     @NotNull
     @Getter
     private Type type;
+
+    @Basic(optional = false)
+    @Enumerated(EnumType.STRING)
+    @NotNull
+    @Getter
+    private Status status;
+
+    @Basic
+    @Getter
+    private Instant lastDownloadedAt;
 
     @ManyToMany
     @JoinTable(joinColumns = @JoinColumn(name = "rpki_repository_id"), inverseJoinColumns = @JoinColumn(name = "trust_anchor_id"))
@@ -62,26 +78,22 @@ public class RpkiRepository extends AbstractEntity {
     @Setter
     private BigInteger rrdpSerial;
 
-    @Basic(optional = false)
-    @Enumerated(EnumType.STRING)
-    @NotNull
-    @Getter
-    private Status status;
-
     protected RpkiRepository() {
     }
 
-    public RpkiRepository(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String location) {
+    public RpkiRepository(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String location, Type type) {
         addTrustAnchor(trustAnchor);
-        URI uri = URI.create(location);
-        if ("rsync".equals(uri.getScheme().toLowerCase())) {
-            this.type = Type.RSYNC;
-            this.rsyncRepositoryUri = location;
-        } else {
-            this.type = Type.RRDP;
-            this.rrdpNotifyUri = location;
-        }
         this.status = Status.PENDING;
+        switch (type) {
+            case RRDP:
+                this.type = Type.RRDP;
+                this.rrdpNotifyUri = location;
+                break;
+            case RSYNC: case RSYNC_PREFETCH:
+                this.type = type;
+                this.rsyncRepositoryUri = location;
+                break;
+        }
     }
 
     public @ValidLocationURI @NotNull String getLocationUri() {
@@ -100,11 +112,26 @@ public class RpkiRepository extends AbstractEntity {
         return status == Status.FAILED;
     }
 
-    public void setFailed() {
-        this.status = Status.FAILED;
+    public boolean isDownloaded() {
+        return status == Status.DOWNLOADED;
     }
 
+    public void setFailed() {
+        setFailed(Instant.now());
+    }
+
+    public void setFailed(Instant lastDownloadedAt) {
+        this.status = Status.FAILED;
+        this.lastDownloadedAt = lastDownloadedAt;
+    }
+
+
     public void setDownloaded() {
+        setDownloaded(Instant.now());
+    }
+
+    public void setDownloaded(Instant lastDownloadedAt) {
         this.status = Status.DOWNLOADED;
+        this.lastDownloadedAt = lastDownloadedAt;
     }
 }

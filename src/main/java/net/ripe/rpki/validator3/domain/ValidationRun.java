@@ -51,6 +51,9 @@ public abstract class ValidationRun extends AbstractEntity {
     public boolean isSucceeded() {
         return this.status == Status.SUCCEEDED;
     }
+    public boolean isFailed() {
+        return this.status == Status.FAILED;
+    }
 
     public void setSucceeded() {
         this.completedAt = Instant.now();
@@ -72,9 +75,7 @@ public abstract class ValidationRun extends AbstractEntity {
             }
         }
 
-        if (validationResult.hasFailures()) {
-            setFailed();
-        } else {
+        if (!isFailed()) {
             setSucceeded();
         }
     }

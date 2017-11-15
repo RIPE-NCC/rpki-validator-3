@@ -147,9 +147,13 @@ public class CertificateTreeValidationService {
             Map.Entry<String, byte[]> crlEntry = crlEntries.get(0);
             URI crlUri = manifestUri.resolve(crlEntry.getKey());
 
-            temporary.setLocation(new ValidationLocation(crlUri));
             Optional<RpkiObject> crlObject = rpkiObjects.findBySha256(crlEntry.getValue());
-            temporary.rejectIfFalse(crlObject.isPresent(), "rpki.crl.found");
+            temporary.rejectIfFalse(crlObject.isPresent(), "rpki.crl.found", crlUri.toASCIIString());
+            if (temporary.hasFailureForCurrentLocation()) {
+                return validatedObjects;
+            }
+
+            temporary.setLocation(new ValidationLocation(crlUri));
             Optional<X509Crl> crl = crlObject.flatMap(x -> x.get(X509Crl.class, temporary));
             if (temporary.hasFailureForCurrentLocation()) {
                 return validatedObjects;
@@ -207,15 +211,23 @@ public class CertificateTreeValidationService {
     }
 
     private RpkiRepository registerRepository(TrustAnchor trustAnchor, Map<URI, RpkiRepository> registeredRepositories, CertificateRepositoryObjectValidationContext context) {
-        URI locationUri = Objects.firstNonNull(context.getRpkiNotifyURI(), context.getRepositoryURI());
-
-        return registeredRepositories.computeIfAbsent(locationUri, (uri) -> rpkiRepositories.register(
-            trustAnchor,
-            uri.toASCIIString()
-        ));
+        if (context.getRpkiNotifyURI() != null) {
+            return registeredRepositories.computeIfAbsent(context.getRpkiNotifyURI(), (uri) -> rpkiRepositories.register(
+                trustAnchor,
+                uri.toASCIIString(),
+                RpkiRepository.Type.RRDP
+            ));
+        } else {
+            return registeredRepositories.computeIfAbsent(context.getRepositoryURI(), (uri) -> rpkiRepositories.register(
+                trustAnchor,
+                uri.toASCIIString(),
+                RpkiRepository.Type.RSYNC
+            ));
+        }
     }
 
-    private Map<URI, RpkiObject> retrieveManifestEntries(ManifestCms manifest, URI manifestUri, ValidationResult validationResult) {
+    private Map<URI, RpkiObject> retrieveManifestEntries(ManifestCms manifest, URI manifestUri, ValidationResult
+        validationResult) {
         Map<URI, RpkiObject> result = new LinkedHashMap<>();
         for (Map.Entry<String, byte[]> entry : manifest.getFiles().entrySet()) {
             URI location = manifestUri.resolve(entry.getKey());

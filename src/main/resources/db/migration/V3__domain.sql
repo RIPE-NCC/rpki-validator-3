@@ -5,6 +5,7 @@ CREATE TABLE trust_anchor (
     updated_at TIMESTAMP NOT NULL,
     name VARCHAR_IGNORECASE(1000) NOT NULL,
     subject_public_key_info VARCHAR(2000) NOT NULL,
+    rsync_prefetch_uri VARCHAR(2000),
     encoded_certificate BINARY,
     CONSTRAINT trust_anchor__pk PRIMARY KEY (id)
 );
@@ -25,6 +26,7 @@ CREATE TABLE rpki_repository (
     updated_at TIMESTAMP NOT NULL,
     type VARCHAR NOT NULL,
     status VARCHAR NOT NULL,
+    last_downloaded_at TIMESTAMP,
     rsync_repository_uri VARCHAR(16000),
     rrdp_notify_uri VARCHAR(16000),
     rrdp_session_id VARCHAR(100),

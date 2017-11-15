@@ -29,7 +29,8 @@ public class RoaController {
         Stream<ValidatedPrefix> validatedPrefixes = rpkiObjects
             .findCurrentlyValidated(RpkiObject.Type.ROA)
             .flatMap(x -> x.getValue().getRoaPrefixes().stream())
-            .map(ValidatedPrefix::of);
+            .map(ValidatedPrefix::of)
+            .distinct();
         return ResponseEntity.ok(ApiResponse.data(validatedPrefixes));
     }
 }

@@ -75,6 +75,11 @@ public class TrustAnchorController {
                 .name(locator.getCaName())
                 .locations(locator.getCertificateLocations().stream().map(URI::toASCIIString).collect(Collectors.toList()))
                 .subjectPublicKeyInfo(locator.getPublicKeyInfo())
+                .rsyncPrefetchUri(locator.getPrefetchUris().stream()
+                    .filter(uri -> "rsync".equalsIgnoreCase(uri.getScheme()))
+                    .map(URI::toASCIIString)
+                    .findFirst().orElse(null)
+                )
                 .build();
             long id = trustAnchorService.execute(command);
             TrustAnchor trustAnchor = trustAnchorRepository.get(id);
@@ -95,7 +100,7 @@ public class TrustAnchorController {
     }
 
     @GetMapping(path = "/{id}/validation-run")
-    public ResponseEntity<ApiResponse<ValidationRunResource>>  validationResults(@PathVariable long id, HttpServletResponse response) throws IOException {
+    public ResponseEntity<ApiResponse<ValidationRunResource>> validationResults(@PathVariable long id, HttpServletResponse response) throws IOException {
         TrustAnchor trustAnchor = trustAnchorRepository.get(id);
         ValidationRun validationRun = validationRunRepository.findLatestCompletedForTrustAnchor(trustAnchor)
             .orElseThrow(() -> new EmptyResultDataAccessException("latest validation run for trust anchor " + id, 1));
