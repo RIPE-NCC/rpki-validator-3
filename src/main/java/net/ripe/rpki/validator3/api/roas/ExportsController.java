@@ -59,7 +59,8 @@ public class ExportsController {
                     prefix.getEffectiveLength(),
                     pair.getKey().getTrustAnchor().getName()
                 ))
-            );
+            )
+            .distinct();
     }
 
     @Value
