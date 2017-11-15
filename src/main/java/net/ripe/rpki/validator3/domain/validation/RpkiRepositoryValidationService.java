@@ -118,6 +118,7 @@ public class RpkiRepositoryValidationService {
 
         Stream<RpkiRepository> repositories = rpkiRepositories.findRsyncRepositories();
 
+        Map<String, RpkiObject> objectsBySha256 = new HashMap<>();
         Map<URI, RpkiRepository> fetchedLocations = new HashMap<>();
         ValidationResult results = repositories
             .filter((repository) -> {
@@ -127,7 +128,7 @@ public class RpkiRepositoryValidationService {
                 }
                 return needsUpdate;
             })
-            .map((repository) -> processRsyncRepository(affectedTrustAnchors, validationRun, fetchedLocations, repository))
+            .map((repository) -> processRsyncRepository(affectedTrustAnchors, validationRun, fetchedLocations, objectsBySha256, repository))
             .collect(
                 () -> ValidationResult.withLocation("placeholder"),
                 ValidationResult::addAll,
@@ -138,7 +139,7 @@ public class RpkiRepositoryValidationService {
         affectedTrustAnchors.forEach(validationRunRepository::runCertificateTreeValidation);
     }
 
-    protected ValidationResult processRsyncRepository(Set<TrustAnchor> affectedTrustAnchors, RsyncRepositoryValidationRun validationRun, Map<URI, RpkiRepository> fetchedLocations, RpkiRepository repository) {
+    protected ValidationResult processRsyncRepository(Set<TrustAnchor> affectedTrustAnchors, RsyncRepositoryValidationRun validationRun, Map<URI, RpkiRepository> fetchedLocations, Map<String, RpkiObject> objectsBySha256, RpkiRepository repository) {
         ValidationResult validationResult = ValidationResult.withLocation(URI.create(repository.getRsyncRepositoryUri()));
 
         validationRun.getRpkiRepositories().add(repository);
@@ -157,7 +158,7 @@ public class RpkiRepositoryValidationService {
             }
 
             if (repository.getType() == RpkiRepository.Type.RSYNC) {
-                storeObjects(targetDirectory, validationRun, validationResult, repository);
+                storeObjects(targetDirectory, validationRun, validationResult, objectsBySha256, repository);
             }
 
             affectedTrustAnchors.addAll(repository.getTrustAnchors());
@@ -186,7 +187,7 @@ public class RpkiRepositoryValidationService {
         return alreadyDownloaded;
     }
 
-    protected void storeObjects(File targetDirectory, RsyncRepositoryValidationRun validationRun, ValidationResult validationResult, RpkiRepository repository) throws IOException {
+    protected void storeObjects(File targetDirectory, RsyncRepositoryValidationRun validationRun, ValidationResult validationResult, Map<String, RpkiObject> objectsBySha256, RpkiRepository repository) throws IOException {
         Files.walkFileTree(targetDirectory.toPath(), new SimpleFileVisitor<Path>() {
             private URI currentLocation = URI.create(repository.getLocationUri());
 
@@ -224,23 +225,30 @@ public class RpkiRepositoryValidationService {
                 validationResult.setLocation(new ValidationLocation(currentLocation.resolve(file.getFileName().toString())));
 
                 byte[] content = Files.readAllBytes(file);
-                rpkiObjects.findBySha256(Sha256.hash(content)).map(existing -> {
-                    existing.addLocation(validationResult.getCurrentLocation().getName());
-                    return existing;
-                }).orElseGet(() -> {
-                    CertificateRepositoryObject obj = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(content, validationResult);
-                    validationRun.addChecks(validationResult);
+                byte[] sha256 = Sha256.hash(content);
 
-                    if (validationResult.hasFailureForCurrentLocation()) {
-                        log.debug("parsing {} failed: {}", file, validationResult.getFailuresForCurrentLocation());
-                        return null;
+                objectsBySha256.compute(Sha256.format(sha256), (key, existing) -> {
+                    if (existing == null) {
+                        existing = rpkiObjects.findBySha256(sha256).orElse(null);
                     }
+                    if (existing != null) {
+                        existing.addLocation(validationResult.getCurrentLocation().getName());
+                        return existing;
+                    } else {
+                        CertificateRepositoryObject obj = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(content, validationResult);
+                        validationRun.addChecks(validationResult);
 
-                    RpkiObject object = new RpkiObject(validationResult.getCurrentLocation().getName(), obj);
-                    rpkiObjects.add(object);
-                    validationRun.addRpkiObject(object);
-                    log.debug("added to database {}", object);
-                    return object;
+                        if (validationResult.hasFailureForCurrentLocation()) {
+                            log.debug("parsing {} failed: {}", file, validationResult.getFailuresForCurrentLocation());
+                            return null;
+                        }
+
+                        RpkiObject object = new RpkiObject(validationResult.getCurrentLocation().getName(), obj);
+                        rpkiObjects.add(object);
+                        validationRun.addRpkiObject(object);
+                        log.debug("added to database {}", object);
+                        return object;
+                    }
                 });
 
                 return FileVisitResult.CONTINUE;
