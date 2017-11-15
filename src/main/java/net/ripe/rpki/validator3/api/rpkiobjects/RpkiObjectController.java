@@ -65,7 +65,7 @@ public class RpkiObjectController {
     public ResponseEntity<ApiResponse<Stream<RpkiObj>>> list() {
         final List<CertificateTreeValidationRun> vrs = validationRuns.findLatestSuccessful(CertificateTreeValidationRun.class);
 
-        final Stream<RpkiObj> rpkiObjStream = vrs.stream().flatMap(vr -> {
+        final Stream<RpkiObj> rpkiObjStream = vrs.parallelStream().flatMap(vr -> {
             final Map<String, ValidationCheck> checkMap = vr.getValidationChecks().
                     stream().collect(Collectors.toMap(ValidationCheck::getLocation, Function.identity()));
 
