@@ -15,7 +15,7 @@ public interface RpkiRepositories {
 
     RpkiRepository get(long id);
 
-    List<RpkiRepository> findAll();
+    List<RpkiRepository> findAll(RpkiRepository.Status optionalStatus);
 
     Stream<RpkiRepository> findRsyncRepositories();
 }

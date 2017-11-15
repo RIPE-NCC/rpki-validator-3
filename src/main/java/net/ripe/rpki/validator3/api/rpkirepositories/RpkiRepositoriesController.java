@@ -3,17 +3,15 @@ package net.ripe.rpki.validator3.api.rpkirepositories;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
-import net.ripe.rpki.validator3.api.validationruns.ValidationRunResource;
 import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
-import net.ripe.rpki.validator3.domain.ValidationRun;
-import net.ripe.rpki.validator3.domain.ValidationRuns;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -35,10 +33,12 @@ public class RpkiRepositoriesController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<RpkiRepositoryResource>>> list() {
+    public ResponseEntity<ApiResponse<List<RpkiRepositoryResource>>> list(
+        @RequestParam(name = "status", required = false) RpkiRepository.Status status
+    ) {
         return ResponseEntity.ok(ApiResponse.data(
-            new Links(linkTo(methodOn(RpkiRepositoriesController.class).list()).withSelfRel()),
-            rpkiRepositories.findAll()
+            new Links(linkTo(methodOn(RpkiRepositoriesController.class).list(status)).withSelfRel()),
+            rpkiRepositories.findAll(status)
                 .stream()
                 .map(RpkiRepositoryResource::of)
                 .collect(Collectors.toList())

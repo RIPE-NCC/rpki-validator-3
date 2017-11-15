@@ -1,5 +1,6 @@
 package net.ripe.rpki.validator3.adapter.jpa;
 
+import com.querydsl.core.BooleanBuilder;
 import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
@@ -50,8 +51,12 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
     }
 
     @Override
-    public List<RpkiRepository> findAll() {
-        return select().fetch();
+    public List<RpkiRepository> findAll(RpkiRepository.Status optionalStatus) {
+        BooleanBuilder builder = new BooleanBuilder();
+        if (optionalStatus != null) {
+            builder.and(rpkiRepository.status.eq(optionalStatus));
+        }
+        return select().where(builder).fetch();
     }
 
     @Override

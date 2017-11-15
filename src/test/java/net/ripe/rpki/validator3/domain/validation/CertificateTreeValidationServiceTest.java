@@ -113,7 +113,7 @@ public class CertificateTreeValidationServiceTest {
         CertificateTreeValidationRun result = completed.get(0);
         assertThat(result.getStatus()).isEqualTo(SUCCEEDED);
 
-        assertThat(rpkiRepositories.findAll()).first().extracting(
+        assertThat(rpkiRepositories.findAll(null)).first().extracting(
             RpkiRepository::getStatus,
             RpkiRepository::getLocationUri
         ).containsExactly(
@@ -139,7 +139,7 @@ public class CertificateTreeValidationServiceTest {
         CertificateTreeValidationRun result = completed.get(0);
         assertThat(result.getStatus()).isEqualTo(SUCCEEDED);
 
-        assertThat(rpkiRepositories.findAll()).first().extracting(
+        assertThat(rpkiRepositories.findAll(null)).first().extracting(
             RpkiRepository::getStatus,
             RpkiRepository::getLocationUri
         ).containsExactly(
