@@ -16,13 +16,11 @@ import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.domain.RpkiObject;
-import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.ValidationCheck;
 import net.ripe.rpki.validator3.domain.ValidationRuns;
 import net.ripe.rpki.validator3.util.Hex;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -83,22 +81,22 @@ public class RpkiObjectController {
     private RpkiObj mapRpkiObject(final RpkiObject rpkiObject, final Optional<ValidationResult> validationResult) {
         switch (rpkiObject.getType()) {
             case CER:
-                return makeTypedObject(rpkiObject, validationResult, X509ResourceCertificate.class, cert -> makeCertificate(validationResult, cert, rpkiObject));
+                return makeTypedDto(rpkiObject, validationResult, X509ResourceCertificate.class, cert -> makeCertificate(validationResult, cert, rpkiObject));
             case ROA:
-                return makeTypedObject(rpkiObject, validationResult, RoaCms.class, cert -> makeRoa(validationResult, cert, rpkiObject));
+                return makeTypedDto(rpkiObject, validationResult, RoaCms.class, cert -> makeRoa(validationResult, cert, rpkiObject));
             case MFT:
-                return makeTypedObject(rpkiObject, validationResult, ManifestCms.class, cert -> makeMft(validationResult, cert, rpkiObject));
+                return makeTypedDto(rpkiObject, validationResult, ManifestCms.class, cert -> makeMft(validationResult, cert, rpkiObject));
             case CRL:
-                return makeTypedObject(rpkiObject, validationResult, X509Crl.class, cert -> makeCrl(validationResult, cert, rpkiObject));
+                return makeTypedDto(rpkiObject, validationResult, X509Crl.class, cert -> makeCrl(validationResult, cert, rpkiObject));
             default:
                 return makeOther(validationResult, rpkiObject);
         }
     }
 
-    private <T extends CertificateRepositoryObject> RpkiObj makeTypedObject(final RpkiObject rpkiObject,
-                                                                            final Optional<ValidationResult> validationResult,
-                                                                            final Class<T> clazz,
-                                                                            final Function<T, RpkiObj> create) {
+    private <T extends CertificateRepositoryObject> RpkiObj makeTypedDto(final RpkiObject rpkiObject,
+                                                                         final Optional<ValidationResult> validationResult,
+                                                                         final Class<T> clazz,
+                                                                         final Function<T, RpkiObj> create) {
         Optional<T> maybeCert = validationResult.flatMap(vr -> rpkiObject.get(clazz, vr));
         if (!maybeCert.isPresent()) {
             maybeCert = rpkiObject.get(clazz, location(rpkiObject));
