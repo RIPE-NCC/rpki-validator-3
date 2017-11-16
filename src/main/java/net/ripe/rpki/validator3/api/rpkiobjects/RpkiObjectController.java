@@ -51,33 +51,30 @@ import java.util.stream.StreamSupport;
 @RequestMapping(path = "/rpki-objects", produces = Api.API_MIME_TYPE)
 @Slf4j
 public class RpkiObjectController {
-    private final RpkiObjects rpkiObjects;
 
     private final ValidationRuns validationRuns;
 
     @Autowired
-    public RpkiObjectController(RpkiObjects rpkiObjects, ValidationRuns validationRuns) {
-        this.rpkiObjects = rpkiObjects;
+    public RpkiObjectController(final ValidationRuns validationRuns) {
         this.validationRuns = validationRuns;
     }
 
     @GetMapping(path = "/all")
-    public ResponseEntity<ApiResponse<Stream<RpkiObj>>> list() {
+    public ResponseEntity<ApiResponse<Stream<RpkiObj>>> all() {
         final List<CertificateTreeValidationRun> vrs = validationRuns.findLatestSuccessful(CertificateTreeValidationRun.class);
 
-        final Stream<RpkiObj> rpkiObjStream = vrs.parallelStream().flatMap(vr -> {
+        final Stream<RpkiObj> rpkiObjStream = vrs.stream().flatMap(vr -> {
             final Map<String, ValidationCheck> checkMap = vr.getValidationChecks().
                     stream().collect(Collectors.toMap(ValidationCheck::getLocation, Function.identity()));
 
-            final Set<RpkiObject> validatedObjects = vr.getValidatedObjects();
-            return validatedObjects.stream().map(r -> {
+            return vr.getValidatedObjects().stream().map(r -> {
                 Optional<ValidationCheck> check = r.getLocations().stream().map(checkMap::get).filter(Objects::nonNull).findFirst();
                 return Pair.of(r, check);
             });
-        }).sorted(Comparator.comparing(o -> location(o.getLeft()))).map(p -> {
-                    final Optional<ValidationCheck> maybeCheck = p.getRight();
-                    return mapRpkiObject(p.getLeft(), maybeCheck.map(c -> ValidationResult.withLocation(c.getLocation())));
-                }
+        }).sorted(
+                Comparator.comparing(o -> location(o.getLeft()))
+        ).parallel().map(pair ->
+                mapRpkiObject(pair.getLeft(), pair.getRight().map(c -> ValidationResult.withLocation(c.getLocation())))
         ).filter(Objects::nonNull);
 
         return ResponseEntity.ok(ApiResponse.data(rpkiObjStream));
@@ -100,7 +97,8 @@ public class RpkiObjectController {
 
     private <T extends CertificateRepositoryObject> RpkiObj makeTypedObject(final RpkiObject rpkiObject,
                                                                             final Optional<ValidationResult> validationResult,
-                                                                            Class<T> clazz, Function<T, RpkiObj> create) {
+                                                                            final Class<T> clazz,
+                                                                            final Function<T, RpkiObj> create) {
         Optional<T> maybeCert = validationResult.flatMap(vr -> rpkiObject.get(clazz, vr));
         if (!maybeCert.isPresent()) {
             maybeCert = rpkiObject.get(clazz, location(rpkiObject));
@@ -111,16 +109,16 @@ public class RpkiObjectController {
         return null;
     }
 
-    private static String location(RpkiObject rpkiObject) {
-        SortedSet<String> locations = rpkiObject.getLocations();
+    private static String location(final RpkiObject rpkiObject) {
+        final SortedSet<String> locations = rpkiObject.getLocations();
         if (locations.isEmpty()) {
             return "unknown." + rpkiObject.getType().toString().toLowerCase(Locale.ROOT);
         }
         return locations.first();
     }
 
-    private ResourceCertificate makeCertificate(Optional<ValidationResult> validationResult, X509ResourceCertificate certificate, RpkiObject rpkiObject) {
-        final String location = validationResult.map(vr -> vr.getCurrentLocation().getName()).orElse(rpkiObject.getLocations().first());
+    private ResourceCertificate makeCertificate(final Optional<ValidationResult> validationResult, final X509ResourceCertificate certificate, final RpkiObject rpkiObject) {
+        final String location = validationResult.map(vr -> vr.getCurrentLocation().getName()).orElse(location(rpkiObject));
         final boolean isValid = validationResult.filter(vr -> !vr.hasFailureForCurrentLocation()).isPresent();
 
         return ResourceCertificate.builder().
@@ -139,8 +137,8 @@ public class RpkiObjectController {
                 build();
     }
 
-    private Roa makeRoa(Optional<ValidationResult> validationResult, RoaCms roaCms, RpkiObject rpkiObject) {
-        final String location = validationResult.map(vr -> vr.getCurrentLocation().getName()).orElse(rpkiObject.getLocations().first());
+    private Roa makeRoa(final Optional<ValidationResult> validationResult, RoaCms roaCms, final RpkiObject rpkiObject) {
+        final String location = validationResult.map(vr -> vr.getCurrentLocation().getName()).orElse(location(rpkiObject));
         final boolean isValid = validationResult.filter(vr -> !vr.hasFailureForCurrentLocation()).isPresent();
         List<net.ripe.rpki.commons.crypto.cms.roa.RoaPrefix> pref = roaCms.getPrefixes();
         final List<RoaPrefix> prefixes = pref == null ? Collections.emptyList() : pref.stream().map(p ->
@@ -171,8 +169,8 @@ public class RpkiObjectController {
                 build();
     }
 
-    private Mft makeMft(Optional<ValidationResult> validationResult, ManifestCms manifestCms, RpkiObject rpkiObject) {
-        final String location = validationResult.map(vr -> vr.getCurrentLocation().getName()).orElse(rpkiObject.getLocations().first());
+    private Mft makeMft(final Optional<ValidationResult> validationResult, ManifestCms manifestCms, final RpkiObject rpkiObject) {
+        final String location = validationResult.map(vr -> vr.getCurrentLocation().getName()).orElse(location(rpkiObject));
         final boolean isValid = validationResult.filter(vr -> !vr.hasFailureForCurrentLocation()).isPresent();
         return Mft.builder().
                 uri(location).
@@ -194,8 +192,8 @@ public class RpkiObjectController {
         ).collect(Collectors.toList());
     }
 
-    private Crl makeCrl(Optional<ValidationResult> validationResult, X509Crl crl, RpkiObject rpkiObject) {
-        final String location = validationResult.map(vr -> vr.getCurrentLocation().getName()).orElse(rpkiObject.getLocations().first());
+    private Crl makeCrl(final Optional<ValidationResult> validationResult, final X509Crl crl, final RpkiObject rpkiObject) {
+        final String location = validationResult.map(vr -> vr.getCurrentLocation().getName()).orElse(location(rpkiObject));
         final boolean isValid = validationResult.filter(vr -> !vr.hasFailureForCurrentLocation()).isPresent();
         final Set<? extends X509CRLEntry> revokedCertificates = crl.getCrl().getRevokedCertificates();
         final List<BigInteger> revocations = revokedCertificates == null ?
@@ -213,23 +211,22 @@ public class RpkiObjectController {
                 build();
     }
 
-    private RpkiObj makeOther(Optional<ValidationResult> vr, RpkiObject ro) {
-        return Other.builder().uri(ro.getLocations().first()).build();
+    private RpkiObj makeOther(final Optional<ValidationResult> vr, final RpkiObject ro) {
+        return Other.builder().uri(location(ro)).build();
     }
 
-    private static List<String> formatResources(IpResourceSet resources) {
+    private static List<String> formatResources(final IpResourceSet resources) {
         return StreamSupport.stream(resources.spliterator(), false).map(Object::toString).collect(Collectors.toList());
     }
 
-    private static Map<String, String> formatSia(X509CertificateInformationAccessDescriptor[] sia) {
+    private static Map<String, String> formatSia(final X509CertificateInformationAccessDescriptor[] sia) {
         return Arrays.stream(sia).collect(Collectors.toMap(
                 s -> s.getMethod().toString(),
                 s -> s.getLocation().toASCIIString()
         ));
     }
 
-    private static ValidityTime formatValidity(ValidityPeriod validityPeriod) {
-        final DateTimeFormatter formatter = ISODateTimeFormat.basicDateTime();
+    private static ValidityTime formatValidity(final ValidityPeriod validityPeriod) {
         return ValidityTime.builder().
                 notValidAfter(formatDateTime(validityPeriod.getNotValidAfter())).
                 notValidBefore(formatDateTime(validityPeriod.getNotValidBefore())).
