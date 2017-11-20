@@ -4,6 +4,7 @@ import com.querydsl.core.BooleanBuilder;
 import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
+import net.ripe.rpki.validator3.domain.ValidationRuns;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -21,11 +22,13 @@ import static net.ripe.rpki.validator3.domain.querydsl.QRpkiRepository.rpkiRepos
 @Transactional(Transactional.TxType.REQUIRED)
 public class JPARpkiRepositories extends JPARepository<RpkiRepository> implements RpkiRepositories {
     private final QuartzValidationScheduler quartzValidationScheduler;
+    private final ValidationRuns validationRuns;
 
     @Autowired
-    public JPARpkiRepositories(QuartzValidationScheduler quartzValidationScheduler) {
+    public JPARpkiRepositories(QuartzValidationScheduler quartzValidationScheduler, ValidationRuns validationRuns) {
         super(rpkiRepository);
         this.quartzValidationScheduler = quartzValidationScheduler;
+        this.validationRuns = validationRuns;
     }
 
     @Override
@@ -69,5 +72,19 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
                 .where(rpkiRepository.type.in(RpkiRepository.Type.RSYNC, RpkiRepository.Type.RSYNC_PREFETCH))
                 .orderBy(rpkiRepository.rsyncRepositoryUri.asc(), rpkiRepository.id.asc())
         );
+    }
+
+    @Override
+    public void removeAllForTrustAnchor(TrustAnchor trustAnchor) {
+        for (RpkiRepository repository: select().where(rpkiRepository.trustAnchors.contains(trustAnchor)).fetch()) {
+            repository.removeTrustAnchor(trustAnchor);
+            if (repository.getTrustAnchors().isEmpty()) {
+                if (repository.getType() == RpkiRepository.Type.RRDP) {
+                    quartzValidationScheduler.removeRpkiRepository(repository);
+                }
+                validationRuns.removeAllForRpkiRepository(repository);
+                entityManager.remove(repository);
+            }
+        }
     }
 }

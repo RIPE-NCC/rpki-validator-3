@@ -47,6 +47,7 @@ public class TrustAnchorService {
     public void remove(long trustAnchorId) {
         TrustAnchor trustAnchor = trustAnchorRepository.get(trustAnchorId);
         validationRunRepository.removeAllForTrustAnchor(trustAnchor);
+        rpkiRepositories.removeAllForTrustAnchor(trustAnchor);
         trustAnchorRepository.remove(trustAnchor);
     }
 }

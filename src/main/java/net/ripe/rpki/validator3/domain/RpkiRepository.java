@@ -105,6 +105,10 @@ public class RpkiRepository extends AbstractEntity {
         this.trustAnchors.add(trustAnchor);
     }
 
+    public void removeTrustAnchor(@NotNull @Valid TrustAnchor trustAnchor) {
+        this.trustAnchors.remove(trustAnchor);
+    }
+
     public boolean isPending() {
         return status == Status.PENDING;
     }

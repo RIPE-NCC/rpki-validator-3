@@ -19,6 +19,7 @@ import net.ripe.rpki.validator3.rrdp.RrdpService;
 import net.ripe.rpki.validator3.util.RsyncUtils;
 import net.ripe.rpki.validator3.util.Sha256;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -142,7 +143,7 @@ public class RpkiRepositoryValidationService {
     protected ValidationResult processRsyncRepository(Set<TrustAnchor> affectedTrustAnchors, RsyncRepositoryValidationRun validationRun, Map<URI, RpkiRepository> fetchedLocations, Map<String, RpkiObject> objectsBySha256, RpkiRepository repository) {
         ValidationResult validationResult = ValidationResult.withLocation(URI.create(repository.getRsyncRepositoryUri()));
 
-        validationRun.getRpkiRepositories().add(repository);
+        validationRun.addRpkiRepository(repository);
 
         try {
             File targetDirectory = RsyncUtils.localFileFromRsyncUri(
@@ -161,13 +162,14 @@ public class RpkiRepositoryValidationService {
             if (repository.getType() == RpkiRepository.Type.RSYNC && (parentRepository == null || parentRepository.getType() == RpkiRepository.Type.RSYNC_PREFETCH)) {
                 storeObjects(targetDirectory, validationRun, validationResult, objectsBySha256, repository);
             }
-
-            affectedTrustAnchors.addAll(repository.getTrustAnchors());
-            repository.setDownloaded();
-            fetchedLocations.put(URI.create(repository.getRsyncRepositoryUri()), repository);
         } catch (IOException e) {
-            e.printStackTrace();
+            repository.setFailed();
+            validationResult.error("rsync.repository.io.error", e.toString(), ExceptionUtils.getStackTrace(e));
         }
+
+        affectedTrustAnchors.addAll(repository.getTrustAnchors());
+        repository.setDownloaded();
+        fetchedLocations.put(URI.create(repository.getRsyncRepositoryUri()), repository);
 
         return validationResult;
     }
@@ -272,7 +274,7 @@ public class RpkiRepositoryValidationService {
         rsync.addOptions("--update", "--times", "--copy-links", "--recursive", "--delete");
         int exitStatus = rsync.execute();
         if (exitStatus != 0) {
-            validationResult.error("rsync.error", String.valueOf(exitStatus), ArrayUtils.toString(rsync.getErrorLines()));
+            validationResult.error("rsync.repository.rsync.error", String.valueOf(exitStatus), ArrayUtils.toString(rsync.getErrorLines()));
             rpkiRepository.setFailed();
         } else {
             log.info("Downloaded repository {} to {}", rpkiRepository, targetDirectory);

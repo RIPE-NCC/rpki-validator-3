@@ -17,4 +17,6 @@ public interface ValidationRuns {
     Optional<TrustAnchorValidationRun> findLatestCompletedForTrustAnchor(TrustAnchor trustAnchor);
 
     void runCertificateTreeValidation(TrustAnchor trustAnchor);
+
+    void removeAllForRpkiRepository(RpkiRepository repository);
 }

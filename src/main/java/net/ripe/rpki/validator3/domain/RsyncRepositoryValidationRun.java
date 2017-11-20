@@ -27,4 +27,8 @@ public class RsyncRepositoryValidationRun extends RpkiRepositoryValidationRun {
 
     public RsyncRepositoryValidationRun() {
     }
+
+    public boolean addRpkiRepository(RpkiRepository repository) {
+        return getRpkiRepositories().add(repository);
+    }
 }

@@ -3,7 +3,6 @@ package net.ripe.rpki.validator3.adapter.jpa;
 import com.google.common.base.Preconditions;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
-import net.ripe.rpki.validator3.domain.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +12,7 @@ import org.springframework.stereotype.Component;
 import javax.transaction.Transactional;
 
 @Component
+@Transactional(Transactional.TxType.MANDATORY)
 public class QuartzValidationScheduler {
 
     private final Scheduler scheduler;
@@ -22,7 +22,6 @@ public class QuartzValidationScheduler {
         this.scheduler = scheduler;
     }
 
-    @Transactional(Transactional.TxType.MANDATORY)
     public void addTrustAnchor(TrustAnchor trustAnchor) {
         Preconditions.checkArgument(
             trustAnchor.getId() >= Api.MINIMUM_VALID_ID,
@@ -39,15 +38,6 @@ public class QuartzValidationScheduler {
                     .build()
             );
             scheduler.addJob(QuartzCertificateTreeValidationJob.buildJob(trustAnchor), true);
-        } catch (SchedulerException ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
-    @Transactional(Transactional.TxType.MANDATORY)
-    public void triggerCertificateTreeValidation(TrustAnchor trustAnchor) {
-        try {
-            scheduler.triggerJob(QuartzCertificateTreeValidationJob.getJobKey(trustAnchor));
         } catch (SchedulerException ex) {
             throw new RuntimeException(ex);
         }
@@ -74,10 +64,7 @@ public class QuartzValidationScheduler {
 
         try {
             scheduler.scheduleJob(
-                JobBuilder.newJob(QuartzRpkiRepositoryValidationJob.class)
-                    .withIdentity(getJobKey(rpkiRepository))
-                    .usingJobData(QuartzRpkiRepositoryValidationJob.RPKI_REPOSITORY_ID, rpkiRepository.getId())
-                    .build(),
+                QuartzRpkiRepositoryValidationJob.buildJob(rpkiRepository),
                 TriggerBuilder.newTrigger()
                     .startNow()
                     .withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(1))
@@ -88,7 +75,22 @@ public class QuartzValidationScheduler {
         }
     }
 
-    private JobKey getJobKey(RpkiRepository rpkiRepository) {
-        return new JobKey(String.format("%s#%d", RpkiRepositoryValidationRun.TYPE, rpkiRepository.getId()));
+    public void removeRpkiRepository(RpkiRepository repository) {
+        try {
+            boolean jobDeleted = scheduler.deleteJob(QuartzRpkiRepositoryValidationJob.getJobKey(repository));
+            if (!jobDeleted) {
+                throw new EmptyResultDataAccessException("validation job for RPKI repository not found", 1);
+            }
+        } catch (SchedulerException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public void triggerCertificateTreeValidation(TrustAnchor trustAnchor) {
+        try {
+            scheduler.triggerJob(QuartzCertificateTreeValidationJob.getJobKey(trustAnchor));
+        } catch (SchedulerException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 }
