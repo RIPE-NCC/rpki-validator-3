@@ -41,7 +41,7 @@ public class TrustAnchorValidationService {
         TrustAnchors trustAnchorRepository,
         ValidationRuns validationRunRepository,
         RpkiRepositories rpkiRepositories,
-        @Value("${rpki.validator.local.rsync.storage.directory}") File localRsyncStorageDirectory,
+        @Value("${rpki.validator.rsync.local.storage.directory}") File localRsyncStorageDirectory,
         RrdpService rrdpService
     ) {
         this.entityManager = entityManager;

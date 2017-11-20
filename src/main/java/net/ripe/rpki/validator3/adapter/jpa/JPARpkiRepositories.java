@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 import javax.transaction.Transactional;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -66,17 +67,22 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
     }
 
     @Override
-    public Stream<RpkiRepository> findRsyncRepositories() {
+    public Stream<RpkiRepository> findRsyncRepositoriesLastDownloadedBefore(Instant instant) {
         return stream(
             select()
-                .where(rpkiRepository.type.in(RpkiRepository.Type.RSYNC, RpkiRepository.Type.RSYNC_PREFETCH))
+                .where(rpkiRepository.type.in(RpkiRepository.Type.RSYNC, RpkiRepository.Type.RSYNC_PREFETCH)
+                    .and(rpkiRepository.status.eq(RpkiRepository.Status.PENDING)
+                        .or(rpkiRepository.lastDownloadedAt.isNull())
+                        .or(rpkiRepository.lastDownloadedAt.before(instant))
+                    )
+                )
                 .orderBy(rpkiRepository.rsyncRepositoryUri.asc(), rpkiRepository.id.asc())
         );
     }
 
     @Override
     public void removeAllForTrustAnchor(TrustAnchor trustAnchor) {
-        for (RpkiRepository repository: select().where(rpkiRepository.trustAnchors.contains(trustAnchor)).fetch()) {
+        for (RpkiRepository repository : select().where(rpkiRepository.trustAnchors.contains(trustAnchor)).fetch()) {
             repository.removeTrustAnchor(trustAnchor);
             if (repository.getTrustAnchors().isEmpty()) {
                 if (repository.getType() == RpkiRepository.Type.RRDP) {
