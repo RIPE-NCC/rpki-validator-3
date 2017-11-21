@@ -4,7 +4,6 @@ import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -18,7 +17,7 @@ public interface RpkiRepositories {
 
     List<RpkiRepository> findAll(RpkiRepository.Status optionalStatus);
 
-    Stream<RpkiRepository> findRsyncRepositoriesLastDownloadedBefore(Instant instant);
+    Stream<RpkiRepository> findRsyncRepositories();
 
     void removeAllForTrustAnchor(TrustAnchor trustAnchor);
 }

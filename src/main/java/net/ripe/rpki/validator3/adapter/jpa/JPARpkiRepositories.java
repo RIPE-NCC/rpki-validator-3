@@ -12,7 +12,6 @@ import org.springframework.stereotype.Repository;
 import javax.transaction.Transactional;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -67,15 +66,10 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
     }
 
     @Override
-    public Stream<RpkiRepository> findRsyncRepositoriesLastDownloadedBefore(Instant instant) {
+    public Stream<RpkiRepository> findRsyncRepositories() {
         return stream(
             select()
-                .where(rpkiRepository.type.in(RpkiRepository.Type.RSYNC, RpkiRepository.Type.RSYNC_PREFETCH)
-                    .and(rpkiRepository.status.eq(RpkiRepository.Status.PENDING)
-                        .or(rpkiRepository.lastDownloadedAt.isNull())
-                        .or(rpkiRepository.lastDownloadedAt.before(instant))
-                    )
-                )
+                .where(rpkiRepository.type.in(RpkiRepository.Type.RSYNC, RpkiRepository.Type.RSYNC_PREFETCH))
                 .orderBy(rpkiRepository.rsyncRepositoryUri.asc(), rpkiRepository.id.asc())
         );
     }

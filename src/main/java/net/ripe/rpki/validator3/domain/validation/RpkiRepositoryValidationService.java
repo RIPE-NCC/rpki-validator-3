@@ -122,11 +122,18 @@ public class RpkiRepositoryValidationService {
         final RsyncRepositoryValidationRun validationRun = new RsyncRepositoryValidationRun();
         validationRunRepository.add(validationRun);
 
-        Stream<RpkiRepository> repositories = rpkiRepositories.findRsyncRepositoriesLastDownloadedBefore(cutoffTime);
+        Stream<RpkiRepository> repositories = rpkiRepositories.findRsyncRepositories();
 
         Map<String, RpkiObject> objectsBySha256 = new HashMap<>();
         Map<URI, RpkiRepository> fetchedLocations = new HashMap<>();
         ValidationResult results = repositories
+            .filter((repository) -> {
+                boolean needsUpdate = repository.isPending() || repository.getLastDownloadedAt() == null || repository.getLastDownloadedAt().isBefore(cutoffTime);
+                if (!needsUpdate) {
+                    fetchedLocations.put(URI.create(repository.getRsyncRepositoryUri()), repository);
+                }
+                return needsUpdate;
+            })
             .map((repository) -> processRsyncRepository(affectedTrustAnchors, validationRun, fetchedLocations, objectsBySha256, repository))
             .collect(
                 () -> ValidationResult.withLocation("placeholder"),
@@ -275,8 +282,7 @@ public class RpkiRepositoryValidationService {
             validationResult.error("rsync.repository.rsync.error", String.valueOf(exitStatus), ArrayUtils.toString(rsync.getErrorLines()));
             rpkiRepository.setFailed();
         } else {
-            log.info("Downloaded repository {} to {}", rpkiRepository, targetDirectory);
+            log.info("Downloaded repository {} to {}", rpkiRepository.getRsyncRepositoryUri(), targetDirectory);
         }
     }
-
 }
