@@ -26,8 +26,10 @@ class TrustAnchorResource {
     @ApiModelProperty(required = true, position = 5)
     String subjectPublicKeyInfo;
     @ApiModelProperty(position = 6)
+    String rsyncPrefetchUri;
+    @ApiModelProperty(position = 7)
     byte[] certificate;
-    @ApiModelProperty(required = true, position = 7)
+    @ApiModelProperty(required = true, position = 8)
     Links links;
 
     static TrustAnchorResource of(TrustAnchor trustAnchor) {
@@ -37,6 +39,7 @@ class TrustAnchorResource {
             trustAnchor.getName(),
             trustAnchor.getLocations(),
             trustAnchor.getSubjectPublicKeyInfo(),
+            trustAnchor.getRsyncPrefetchUri(),
             trustAnchor.getEncodedCertificate() == null ? null : trustAnchor.getEncodedCertificate(),
             new Links(
                 linkTo(methodOn(TrustAnchorController.class).get(trustAnchor.getId())).withSelfRel()

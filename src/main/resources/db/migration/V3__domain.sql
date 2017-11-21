@@ -7,7 +7,8 @@ CREATE TABLE trust_anchor (
     subject_public_key_info VARCHAR(2000) NOT NULL,
     rsync_prefetch_uri VARCHAR(2000),
     encoded_certificate BINARY,
-    CONSTRAINT trust_anchor__pk PRIMARY KEY (id)
+    CONSTRAINT trust_anchor__pk PRIMARY KEY (id),
+    CONSTRAINT trust_anchor__subject_public_key_info_unique UNIQUE (subject_public_key_info)
 );
 CREATE INDEX trust_anchor__name ON trust_anchor (name ASC);
 

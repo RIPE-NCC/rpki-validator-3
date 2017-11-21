@@ -47,6 +47,7 @@ public class TrustAnchor extends AbstractEntity {
 
     @Basic
     @Getter
+    @Setter
     @ValidLocationURI
     private String rsyncPrefetchUri;
 

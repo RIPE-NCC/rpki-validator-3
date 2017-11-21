@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import javax.transaction.Transactional;
 import java.util.List;
+import java.util.Optional;
 
 import static net.ripe.rpki.validator3.domain.querydsl.QTrustAnchor.trustAnchor;
 
@@ -42,5 +43,10 @@ public class JPATrustAnchors extends JPARepository<TrustAnchor> implements Trust
     @Override
     public List<TrustAnchor> findByName(String name) {
         return select().where(trustAnchor.name.eq(name)).orderBy(trustAnchor.name.asc(), trustAnchor.id.asc()).fetch();
+    }
+
+    @Override
+    public Optional<TrustAnchor> findBySubjectPublicKeyInfo(String subjectPublicKeyInfo) {
+        return Optional.ofNullable(select().where(trustAnchor.subjectPublicKeyInfo.eq(subjectPublicKeyInfo)).fetchOne());
     }
 }

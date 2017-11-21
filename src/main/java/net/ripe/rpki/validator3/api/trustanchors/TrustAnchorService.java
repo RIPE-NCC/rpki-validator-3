@@ -18,16 +18,12 @@ import javax.validation.Valid;
 @Validated
 @Slf4j
 public class TrustAnchorService {
-    private final TrustAnchors trustAnchorRepository;
-    private final RpkiRepositories rpkiRepositories;
-    private final ValidationRuns validationRunRepository;
-
     @Autowired
-    public TrustAnchorService(TrustAnchors trustAnchorRepository, RpkiRepositories rpkiRepositories, ValidationRuns validationRunRepository) {
-        this.trustAnchorRepository = trustAnchorRepository;
-        this.rpkiRepositories = rpkiRepositories;
-        this.validationRunRepository = validationRunRepository;
-    }
+    private TrustAnchors trustAnchors;
+    @Autowired
+    private RpkiRepositories rpkiRepositories;
+    @Autowired
+    private ValidationRuns validationRunRepository;
 
     public long execute(@Valid AddTrustAnchor command) {
         TrustAnchor trustAnchor = new TrustAnchor();
@@ -36,18 +32,22 @@ public class TrustAnchorService {
         trustAnchor.setSubjectPublicKeyInfo(command.getSubjectPublicKeyInfo());
 
         if (command.getRsyncPrefetchUri() != null) {
+            trustAnchor.setRsyncPrefetchUri(command.getRsyncPrefetchUri());
             rpkiRepositories.register(trustAnchor, command.getRsyncPrefetchUri(), RpkiRepository.Type.RSYNC_PREFETCH);
         }
 
-        trustAnchorRepository.add(trustAnchor);
+        trustAnchors.add(trustAnchor);
+
+        log.info("added trust anchor '{}'", trustAnchor);
 
         return trustAnchor.getId();
     }
 
     public void remove(long trustAnchorId) {
-        TrustAnchor trustAnchor = trustAnchorRepository.get(trustAnchorId);
+        TrustAnchor trustAnchor = trustAnchors.get(trustAnchorId);
         validationRunRepository.removeAllForTrustAnchor(trustAnchor);
         rpkiRepositories.removeAllForTrustAnchor(trustAnchor);
-        trustAnchorRepository.remove(trustAnchor);
+        trustAnchors.remove(trustAnchor);
     }
+
 }
