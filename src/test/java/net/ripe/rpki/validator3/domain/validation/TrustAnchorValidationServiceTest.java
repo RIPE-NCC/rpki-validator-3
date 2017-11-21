@@ -1,11 +1,17 @@
 package net.ripe.rpki.validator3.domain.validation;
 
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
-import net.ripe.rpki.validator3.domain.*;
+import net.ripe.rpki.validator3.IntegrationTest;
+import net.ripe.rpki.validator3.domain.RpkiRepositories;
+import net.ripe.rpki.validator3.domain.TrustAnchor;
+import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
+import net.ripe.rpki.validator3.domain.TrustAnchors;
+import net.ripe.rpki.validator3.domain.ValidationCheck;
+import net.ripe.rpki.validator3.domain.ValidationRun;
+import net.ripe.rpki.validator3.domain.ValidationRuns;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.transaction.Transactional;
@@ -16,7 +22,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@IntegrationTest
 @Transactional
 public class TrustAnchorValidationServiceTest {
 

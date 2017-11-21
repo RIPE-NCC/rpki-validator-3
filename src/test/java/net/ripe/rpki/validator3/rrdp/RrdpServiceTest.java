@@ -1,6 +1,7 @@
 package net.ripe.rpki.validator3.rrdp;
 
 import com.google.common.collect.Sets;
+import net.ripe.rpki.validator3.IntegrationTest;
 import net.ripe.rpki.validator3.TestObjects;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
@@ -13,7 +14,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.persistence.EntityManager;
@@ -26,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@IntegrationTest
 @Transactional
 public class RrdpServiceTest {
 

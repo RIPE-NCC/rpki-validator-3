@@ -8,6 +8,7 @@ import net.ripe.rpki.validator3.util.TrustAnchorLocator;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -17,6 +18,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Component
+@Profile("!test")
 @Slf4j
 public class PreconfiguredTrustAnchors {
     @Autowired
