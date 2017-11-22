@@ -252,7 +252,6 @@
                     <mappings>
                         <mapping>
                             <directory>/usr/lib/</directory>
-                            <filemode>750</filemode>
                             <username>rpki</username>
                             <groupname>rpki</groupname>
                             <directoryIncluded>false</directoryIncluded>
@@ -279,15 +278,14 @@
                             </sources>
                         </mapping>
                         <mapping>
-                            <directory>/etc/</directory>
+                            <directory>/etc/rpki-validator-3/</directory>
                             <configuration>true</configuration>
-                            <filemode>644</filemode>
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
-                                    <location>src/main/resources/etc/</location>
+                                    <location>src/main/resources/etc/rpki-validator-3/</location>
                                     <includes>
-                                        <include>rpki-validator-3.conf</include>
+                                        <include>application.properties</include>
                                     </includes>
                                 </source>
                             </sources>
@@ -295,7 +293,6 @@
                         <mapping>
                             <directory>/etc/systemd/system/</directory>
                             <configuration>true</configuration>
-                            <filemode>640</filemode>
                             <username>rpki</username>
                             <groupname>rpki</groupname>
                             <directoryIncluded>false</directoryIncluded>
@@ -311,13 +308,13 @@
                         <mapping>
                             <directory>/var/lib/rpki-validator-3</directory>
                             <configuration>true</configuration>
-                            <filemode>640</filemode>
                             <username>rpki</username>
                             <groupname>rpki</groupname>
                             <sources>
                                 <source>
                                     <location>src/main/resources/var/lib/rpki-validator-3</location>
                                     <includes>
+                                        <include>preconfigured-tals/*.tal</include>
                                         <include>rsync</include>
                                         <include>data</include>
                                     </includes>
@@ -327,7 +324,7 @@
                     </mappings>
                     <preinstallScriptlet>
                         <script>
-                            /usr/bin/getent group rpki  > /dev/null || /usr/sbin/groupadd -r rpki
+                            /usr/bin/getent group rpki > /dev/null || /usr/sbin/groupadd -r rpki
                             /usr/bin/getent passwd rpki > /dev/null || /usr/sbin/useradd -r -d /var/lib/rpki-validator-3 -s /sbin/nologin -g rpki rpki
                         </script>
                     </preinstallScriptlet>
