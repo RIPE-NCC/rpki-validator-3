@@ -39,6 +39,7 @@ public class RpkiRepository extends AbstractEntity {
     @Enumerated(EnumType.STRING)
     @NotNull
     @Getter
+    @Setter
     private Type type;
 
     @Basic(optional = false)
@@ -102,6 +103,10 @@ public class RpkiRepository extends AbstractEntity {
 
     public void addTrustAnchor(@NotNull @Valid TrustAnchor trustAnchor) {
         this.trustAnchors.add(trustAnchor);
+    }
+
+    public void removeTrustAnchor(@NotNull @Valid TrustAnchor trustAnchor) {
+        this.trustAnchors.remove(trustAnchor);
     }
 
     public boolean isPending() {

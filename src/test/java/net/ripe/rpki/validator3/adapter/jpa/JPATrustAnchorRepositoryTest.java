@@ -1,14 +1,13 @@
 package net.ripe.rpki.validator3.adapter.jpa;
 
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.IntegrationTest;
 import net.ripe.rpki.validator3.TestObjects;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchors;
-import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.orm.ObjectRetrievalFailureException;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -20,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@IntegrationTest
 @Transactional
 @Slf4j
 public class JPATrustAnchorRepositoryTest {
@@ -30,11 +29,6 @@ public class JPATrustAnchorRepositoryTest {
 
     @Autowired
     private TrustAnchors subject;
-
-    @After
-    public void tearDown() {
-        entityManager.flush();
-    }
 
     @Test
     public void should_use_spring_data_access_Exceptions() {

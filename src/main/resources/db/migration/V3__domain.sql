@@ -7,7 +7,8 @@ CREATE TABLE trust_anchor (
     subject_public_key_info VARCHAR(2000) NOT NULL,
     rsync_prefetch_uri VARCHAR(2000),
     encoded_certificate BINARY,
-    CONSTRAINT trust_anchor__pk PRIMARY KEY (id)
+    CONSTRAINT trust_anchor__pk PRIMARY KEY (id),
+    CONSTRAINT trust_anchor__subject_public_key_info_unique UNIQUE (subject_public_key_info)
 );
 CREATE INDEX trust_anchor__name ON trust_anchor (name ASC);
 
@@ -93,12 +94,14 @@ CREATE TABLE validation_run (
     trust_anchor_certificate_uri VARCHAR(16000),
 
     -- RPKI repository validation run
-    rpki_repository_id BIGINT,
     added_object_count INTEGER,
+
+    -- RRDP repository validation run
+    rpki_repository_id BIGINT,
 
     CONSTRAINT validation_run__pk PRIMARY KEY (id),
     CONSTRAINT validation_run__trust_anchor_fk FOREIGN KEY (trust_anchor_id) REFERENCES trust_anchor (id) ON DELETE RESTRICT,
-    CONSTRAINT validation_run__rpki_repository_fk FOREIGN KEY (rpki_repository_id) REFERENCES rpki_repository (id) ON DELETE CASCADE
+    CONSTRAINT validation_run__rpki_repository_fk FOREIGN KEY (rpki_repository_id) REFERENCES rpki_repository (id) ON DELETE RESTRICT,
 );
 CREATE INDEX validation_run__trust_anchor_id_idx ON validation_run (trust_anchor_id ASC, created_at DESC);
 CREATE INDEX validation_run__rpki_repository_id_idx ON validation_run (rpki_repository_id ASC, created_at DESC);
@@ -134,6 +137,7 @@ CREATE TABLE validation_run_validated_objects (
 );
 CREATE INDEX validation_run_validated_objects__rpki_object_idx ON validation_run_validated_objects (rpki_object_id);
 
+-- RSYNC repository validation run
 CREATE TABLE validation_run_rpki_repositories (
     validation_run_id BIGINT NOT NULL,
     rpki_repository_id BIGINT NOT NULL,

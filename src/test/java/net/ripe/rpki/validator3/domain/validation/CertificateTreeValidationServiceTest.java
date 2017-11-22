@@ -3,7 +3,11 @@ package net.ripe.rpki.validator3.domain.validation;
 import com.google.common.io.Resources;
 import lombok.Builder;
 import lombok.Value;
-import net.ripe.ipresource.*;
+import net.ripe.ipresource.Asn;
+import net.ripe.ipresource.IpAddress;
+import net.ripe.ipresource.IpRange;
+import net.ripe.ipresource.IpResourceSet;
+import net.ripe.ipresource.IpResourceType;
 import net.ripe.rpki.commons.crypto.ValidityPeriod;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCmsBuilder;
@@ -18,7 +22,16 @@ import net.ripe.rpki.commons.crypto.x509cert.X509CertificateUtil;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificateBuilder;
 import net.ripe.rpki.commons.validation.ValidationResult;
-import net.ripe.rpki.validator3.domain.*;
+import net.ripe.rpki.validator3.IntegrationTest;
+import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
+import net.ripe.rpki.validator3.domain.RoaPrefix;
+import net.ripe.rpki.validator3.domain.RpkiObject;
+import net.ripe.rpki.validator3.domain.RpkiObjects;
+import net.ripe.rpki.validator3.domain.RpkiRepositories;
+import net.ripe.rpki.validator3.domain.RpkiRepository;
+import net.ripe.rpki.validator3.domain.TrustAnchor;
+import net.ripe.rpki.validator3.domain.TrustAnchors;
+import net.ripe.rpki.validator3.domain.ValidationRuns;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -29,7 +42,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.persistence.EntityManager;
@@ -53,7 +65,7 @@ import static net.ripe.rpki.validator3.domain.ValidationRun.Status.SUCCEEDED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@IntegrationTest
 @Transactional
 public class CertificateTreeValidationServiceTest {
 

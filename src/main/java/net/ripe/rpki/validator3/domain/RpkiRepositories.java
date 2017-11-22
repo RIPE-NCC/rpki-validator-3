@@ -18,4 +18,6 @@ public interface RpkiRepositories {
     List<RpkiRepository> findAll(RpkiRepository.Status optionalStatus);
 
     Stream<RpkiRepository> findRsyncRepositories();
+
+    void removeAllForTrustAnchor(TrustAnchor trustAnchor);
 }

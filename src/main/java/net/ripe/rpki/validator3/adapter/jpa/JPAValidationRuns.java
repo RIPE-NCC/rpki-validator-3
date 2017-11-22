@@ -4,6 +4,7 @@ import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
+import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.domain.ValidationRun;
@@ -19,6 +20,8 @@ import javax.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+import static net.ripe.rpki.validator3.domain.querydsl.QCertificateTreeValidationRun.certificateTreeValidationRun;
+import static net.ripe.rpki.validator3.domain.querydsl.QRrdpRepositoryValidationRun.rrdpRepositoryValidationRun;
 import static net.ripe.rpki.validator3.domain.querydsl.QTrustAnchorValidationRun.trustAnchorValidationRun;
 import static net.ripe.rpki.validator3.domain.querydsl.QValidationRun.validationRun;
 
@@ -49,7 +52,8 @@ public class JPAValidationRuns extends JPARepository<ValidationRun> implements V
 
     @Override
     public void removeAllForTrustAnchor(TrustAnchor trustAnchor) {
-        queryFactory.delete(trustAnchorValidationRun).where(trustAnchorValidationRun.trustAnchor.id.eq(trustAnchor.getId())).execute();
+        queryFactory.delete(trustAnchorValidationRun).where(trustAnchorValidationRun.trustAnchor.eq(trustAnchor)).execute();
+        queryFactory.delete(certificateTreeValidationRun).where(certificateTreeValidationRun.trustAnchor.eq(trustAnchor)).execute();
     }
 
     @Override
@@ -83,6 +87,15 @@ public class JPAValidationRuns extends JPARepository<ValidationRun> implements V
     @Override
     public void runCertificateTreeValidation(TrustAnchor trustAnchor) {
         validationScheduler.triggerCertificateTreeValidation(trustAnchor);
+    }
+
+    @Override
+    public void removeAllForRpkiRepository(RpkiRepository repository) {
+        if (repository.getType() == RpkiRepository.Type.RRDP) {
+            queryFactory.delete(rrdpRepositoryValidationRun).where(rrdpRepositoryValidationRun.rpkiRepository.eq(repository)).execute();
+        } else {
+            // RPKI repository deletion for rsync validation runs cascades on delete in the DB, nothing to do here
+        }
     }
 
 
