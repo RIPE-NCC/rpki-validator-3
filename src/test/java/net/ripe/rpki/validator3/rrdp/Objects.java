@@ -1,11 +1,14 @@
 package net.ripe.rpki.validator3.rrdp;
 
 import net.ripe.rpki.validator3.util.Hex;
+import org.apache.commons.lang.StringEscapeUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Base64;
+
+import static org.apache.commons.lang.StringEscapeUtils.escapeXml;
 
 public class Objects {
 
@@ -87,11 +90,11 @@ public class Objects {
                 "        pHOiFA0PlD0vBPrvTR1hsgfKGd318Qzq+w==");
     }
 
-    public static byte[] decode(String s) {
+    private static byte[] decode(String s) {
         return Base64.getDecoder().decode(s.replaceAll("\\s", ""));
     }
 
-    public static String encode(byte[] s) {
+    private static String encode(byte[] s) {
         return new String(Base64.getEncoder().encode(s));
     }
 
@@ -102,22 +105,22 @@ public class Objects {
     static byte[] notificationXml(long serial, String sessionId, SnapshotInfo snapshot, DeltaInfo... deltas) {
         final StringBuilder sb = new StringBuilder();
         sb.append("<notification xmlns=\"HTTP://www.ripe.net/rpki/rrdp\" version=\"1\" session_id=\"").append(sessionId).append("\" serial=\"").append(serial).append("\">");
-        sb.append("    <snapshot uri=\"").append(snapshot.uri).append("\" hash=\"").append(Hex.format(snapshot.hash)).append("\"/>");
+        sb.append("    <snapshot uri=\"").append(escapeXml(snapshot.uri)).append("\" hash=\"").append(Hex.format(snapshot.hash)).append("\"/>");
         for (DeltaInfo di : deltas) {
-            sb.append("  <delta uri=\"").append(di.uri).append("\" hash=\"").append(Hex.format(di.hash)).append("\" serial=\"").append(di.serial).append("\"/>");
+            sb.append("  <delta uri=\"").append(escapeXml(di.uri)).append("\" hash=\"").append(Hex.format(di.hash)).append("\" serial=\"").append(di.serial).append("\"/>");
         }
         sb.append("</notification>");
-        return sb.toString().getBytes(Charset.forName("UTF-8"));
+        return getBytes(sb);
     }
 
     static byte[] snapshotXml(long serial, String sessionId, Publish... publishes) {
         final StringBuilder sb = new StringBuilder();
         sb.append("<snapshot xmlns=\"http://www.ripe.net/rpki/rrdp\" version=\"1\" session_id=\"").append(sessionId).append("\" serial=\"").append(serial).append("\">");
         for (Publish publish : publishes) {
-            sb.append("  <publish uri=\"").append(publish.uri).append("\">\n    ").append(encode(publish.content)).append("\n</publish>\n");
+            sb.append(publishXml(publish));
         }
         sb.append("</snapshot>");
-        return sb.toString().getBytes(Charset.forName("UTF-8"));
+        return getBytes(sb);
     }
 
     static byte[] deltaXml(long serial, String sessionId, Change... updates) {
@@ -125,24 +128,31 @@ public class Objects {
         sb.append("<delta xmlns=\"http://www.ripe.net/rpki/rrdp\" version=\"1\" session_id=\"").append(sessionId).append("\" serial=\"").append(serial).append("\">");
         for (final Change change : updates) {
             if (change instanceof DeltaPublish) {
-                DeltaPublish publish = (DeltaPublish) change;
-                if (publish.hash != null) {
-                    sb.append("  <publish uri=\"").append(publish.uri).
-                            append("\" hash=\"").append(Hex.format(publish.hash)).append("\">\n    ").
-                            append(encode(publish.content)).
-                            append("\n</publish>\n");
-                } else {
-                    sb.append("  <publish uri=\"").append(publish.uri).append("\">\n    ").
-                            append(encode(publish.content)).
-                            append("\n</publish>\n");
-                }
+                sb.append(publishXml((DeltaPublish) change));
             } else if (change instanceof DeltaWithdraw) {
-                DeltaWithdraw withdraw = (DeltaWithdraw) change;
-                sb.append("  <withdraw uri=\"").append(withdraw.uri).
-                        append("\" hash=\"").append(Hex.format(withdraw.hash)).append("\"/>");
+                sb.append(withdrawXml((DeltaWithdraw) change));
             }
         }
         sb.append("</delta>");
+        return getBytes(sb);
+    }
+
+    private static String publishXml(Publish publish) {
+        return "  <publish uri=\"" + escapeXml(publish.uri) + "\">\n    " + encode(publish.content) + "\n</publish>\n";
+    }
+
+    private static String publishXml(DeltaPublish publish) {
+        if (publish.hash != null) {
+            return "  <publish uri=\"" + escapeXml(publish.uri) + "\" hash=\"" + Hex.format(publish.hash) + "\">\n    " + encode(publish.content) + "\n</publish>\n";
+        }
+        return "  <publish uri=\"" + escapeXml(publish.uri) + "\">\n    " + encode(publish.content) + "\n</publish>\n";
+    }
+
+    private static String withdrawXml(DeltaWithdraw withdraw) {
+        return "  <withdraw uri=\"" + escapeXml(withdraw.uri) + "\" hash=\"" + Hex.format(withdraw.hash) + "\"/>";
+    }
+
+    private static byte[] getBytes(StringBuilder sb) {
         return sb.toString().getBytes(Charset.forName("UTF-8"));
     }
 
