@@ -35,7 +35,7 @@ cd ${EXECUTION_DIR}
 JAVA_CMD="/usr/bin/java"
 APP_NAME="rpki-validator-3"
 PID_FILE="/var/run/${APP_NAME}.pid"
-CONFIG_FILE="/etc/${APP_NAME}.conf"
+CONFIG_FILE="/etc/${APP_NAME}/application.properties"
 JAR="/usr/lib/${APP_NAME}.jar"
 
 function parse_optional_config_line {
@@ -66,5 +66,4 @@ parse_config_line "jvm.memory.maximum" JVM_XMX
 CLASSPATH=:"$LIB_DIR/*"
 MEM_OPTIONS="-Xms$JVM_XMS -Xmx$JVM_XMX"
 
-${JAVA_CMD} ${MEM_OPTIONS} -Dapp.name=${APP_NAME} -Dconfig.file=${CONFIG_FILE} -jar ${JAR}
-
+${JAVA_CMD} ${MEM_OPTIONS} -Dapp.name="${APP_NAME}" -Dspring.config.location="file:${CONFIG_FILE}" -jar "${JAR}"

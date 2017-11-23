@@ -35,7 +35,7 @@ public class PreconfiguredTrustAnchors {
 
         File[] tals = preconfiguredTrustAnchorDirectory.listFiles(new PatternFilenameFilter(Pattern.compile("^.*\\.tal$")));
         if (ArrayUtils.isEmpty(tals)) {
-            log.warn("No preconfigured trust anchors found, skipping");
+            log.warn("No preconfigured trust anchors found at {}, skipping", preconfiguredTrustAnchorDirectory);
             return;
         }
 
