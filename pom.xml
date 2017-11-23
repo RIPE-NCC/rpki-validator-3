@@ -249,6 +249,8 @@
                     <changelogFile>Changelog.txt</changelogFile>
                     <needarch>noarch</needarch>
                     <targetOS>linux</targetOS>
+                    <defaultUsername>rpki</defaultUsername>
+                    <defaultGroupname>rpki</defaultGroupname>
                     <mappings>
                         <mapping>
                             <directory>/usr/lib/</directory>
@@ -306,18 +308,18 @@
                             </sources>
                         </mapping>
                         <mapping>
-                            <directory>/var/lib/rpki-validator-3</directory>
+                            <directory>/var/lib/rpki-validator-3/</directory>
                             <configuration>true</configuration>
                             <username>rpki</username>
                             <groupname>rpki</groupname>
+                            <directoryIncluded>true</directoryIncluded>
+                            <recurseDirectories>true</recurseDirectories>
                             <sources>
                                 <source>
-                                    <location>src/main/resources/var/lib/rpki-validator-3</location>
-                                    <includes>
-                                        <include>preconfigured-tals/*.tal</include>
-                                        <include>rsync</include>
-                                        <include>data</include>
-                                    </includes>
+                                    <location>src/main/resources/var/lib/rpki-validator-3/</location>
+                                    <excludes>
+                                        <exclude>*/.ignore.me</exclude>
+                                    </excludes>
                                 </source>
                             </sources>
                         </mapping>
