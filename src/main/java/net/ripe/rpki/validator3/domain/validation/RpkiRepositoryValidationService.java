@@ -16,6 +16,7 @@ import net.ripe.rpki.validator3.domain.RsyncRepositoryValidationRun;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.ValidationRuns;
 import net.ripe.rpki.validator3.rrdp.RrdpService;
+import net.ripe.rpki.validator3.util.Hex;
 import net.ripe.rpki.validator3.util.RsyncUtils;
 import net.ripe.rpki.validator3.util.Sha256;
 import org.apache.commons.lang3.ArrayUtils;
@@ -104,9 +105,7 @@ public class RpkiRepositoryValidationService {
         }
 
         if (validationRun.isSucceeded() && validationRun.getAddedObjectCount() > 0) {
-            rpkiRepository.getTrustAnchors().forEach(trustAnchor -> {
-                validationRunRepository.runCertificateTreeValidation(trustAnchor);
-            });
+            rpkiRepository.getTrustAnchors().forEach(validationRunRepository::runCertificateTreeValidation);
         }
     }
 
@@ -233,7 +232,7 @@ public class RpkiRepositoryValidationService {
                 byte[] content = Files.readAllBytes(file);
                 byte[] sha256 = Sha256.hash(content);
 
-                objectsBySha256.compute(Sha256.format(sha256), (key, existing) -> {
+                objectsBySha256.compute(Hex.format(sha256), (key, existing) -> {
                     if (existing == null) {
                         existing = rpkiObjects.findBySha256(sha256).orElse(null);
                     }

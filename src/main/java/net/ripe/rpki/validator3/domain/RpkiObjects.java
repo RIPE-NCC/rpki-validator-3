@@ -11,13 +11,15 @@ public interface RpkiObjects {
 
     void remove(RpkiObject o);
 
+    Stream<Pair<CertificateTreeValidationRun, RpkiObject>> findCurrentlyValidated();
+
     void merge(RpkiObject object);
     
     RpkiObject get(long id);
 
     Optional<RpkiObject> findBySha256(byte[] sha256);
 
-    List<RpkiObject> all();
+    Stream<RpkiObject> all();
 
     Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type type, byte[] authorityKeyIdentifier);
 

@@ -12,6 +12,7 @@ import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.util.Sha256;
+import org.apache.commons.lang3.tuple.Pair;
 import org.bouncycastle.util.encoders.Hex;
 
 import javax.persistence.*;
@@ -127,31 +128,37 @@ public class RpkiObject extends AbstractEntity {
     public <T extends CertificateRepositoryObject> Optional<T> get(Class<T> clazz, ValidationResult validationResult) {
         ValidationResult temporary = ValidationResult.withLocation(validationResult.getCurrentLocation());
         try {
-            temporary.rejectIfFalse(Arrays.equals(Sha256.hash(encoded), sha256), "rpki.object.sha256.matches");
-            if (temporary.hasFailureForCurrentLocation()) {
-                return Optional.empty();
-            }
-
-            ValidationResult ignored = ValidationResult.withLocation(validationResult.getCurrentLocation());
-            CertificateRepositoryObject candidate = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(
-                encoded,
-                ignored // Ignore any parse errors, as all stored objects must be parsable
-            );
-
-            temporary.rejectIfNull(candidate, "rpki.object.parsable");
-            if (temporary.hasFailureForCurrentLocation()) {
-                return Optional.empty();
-            }
-
-            temporary.rejectIfFalse(clazz.isInstance(candidate), "rpki.object.type.matches", clazz.getSimpleName(), candidate.getClass().getSimpleName());
-            if (temporary.hasFailureForCurrentLocation()) {
-                return Optional.empty();
-            }
-
-            return Optional.of(clazz.cast(candidate));
+            return get(clazz, validationResult.getCurrentLocation().getName());
         } finally {
             validationResult.addAll(temporary);
         }
+    }
+
+    public <T extends CertificateRepositoryObject> Optional<T> get(final Class<T> clazz, final String location) {
+        ValidationResult temporary = ValidationResult.withLocation(location);
+
+        temporary.rejectIfFalse(Arrays.equals(Sha256.hash(encoded), sha256), "rpki.object.sha256.matches");
+        if (temporary.hasFailureForCurrentLocation()) {
+            return Optional.empty();
+        }
+
+        ValidationResult ignored = ValidationResult.withLocation(location);
+        CertificateRepositoryObject candidate = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(
+                encoded,
+                ignored // Ignore any parse errors, as all stored objects must be parsable
+        );
+
+        temporary.rejectIfNull(candidate, "rpki.object.parsable");
+        if (temporary.hasFailureForCurrentLocation()) {
+            return Optional.empty();
+        }
+
+        temporary.rejectIfFalse(clazz.isInstance(candidate), "rpki.object.type.matches", clazz.getSimpleName(), candidate.getClass().getSimpleName());
+        if (temporary.hasFailureForCurrentLocation()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(clazz.cast(candidate));
     }
 
     public void addLocation(String location) {

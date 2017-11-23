@@ -10,6 +10,7 @@ import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.domain.ValidationCheck;
+import net.ripe.rpki.validator3.util.Hex;
 import net.ripe.rpki.validator3.util.Sha256;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -90,8 +91,8 @@ public class RrdpService {
     private void readSnapshot(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun, Notification notification) {
         final byte[] snapshotBody = rrdpClient.getBody(notification.snapshotUri);
         final byte[] snapshotHash = Sha256.hash(snapshotBody);
-        if (!Arrays.equals(Sha256.parse(notification.snapshotHash), snapshotHash)) {
-            throw new RrdpException("Hash of the snapshot file " + notification.snapshotUri + " is " + Sha256.format(snapshotHash) +
+        if (!Arrays.equals(Hex.parse(notification.snapshotHash), snapshotHash)) {
+            throw new RrdpException("Hash of the snapshot file " + notification.snapshotUri + " is " + Hex.format(snapshotHash) +
                     ", but notification file says " + notification.snapshotHash);
         }
 
@@ -104,8 +105,8 @@ public class RrdpService {
     private Delta readDelta(Notification notification, DeltaInfo di) {
         final byte[] deltaBody = rrdpClient.getBody(di.getUri());
         final byte[] deltaHash = Sha256.hash(deltaBody);
-        if (!Arrays.equals(Sha256.parse(di.getHash()), deltaHash)) {
-            throw new RrdpException("Hash of the delta file " + di + " is " + Sha256.format(deltaHash) +
+        if (!Arrays.equals(Hex.parse(di.getHash()), deltaHash)) {
+            throw new RrdpException("Hash of the delta file " + di + " is " + Hex.format(deltaHash) +
                     ", but notification file says " + di.getHash());
         }
 
@@ -181,7 +182,7 @@ public class RrdpService {
             maybeObject.get().removeLocation(uri);
         } else {
             ValidationCheck validationCheck = new ValidationCheck(validationRun, uri,
-                    ValidationCheck.Status.ERROR, "rrdp.withdraw.nonexistent.object", Sha256.format(deltaWithdraw.getHash()));
+                    ValidationCheck.Status.ERROR, "rrdp.withdraw.nonexistent.object", Hex.format(deltaWithdraw.getHash()));
             validationRun.addCheck(validationCheck);
         }
     }
@@ -194,7 +195,7 @@ public class RrdpService {
                 addRpkiObject(validationRun, uri, deltaPublish, sha256);
             } else {
                 ValidationCheck validationCheck = new ValidationCheck(validationRun, uri,
-                        ValidationCheck.Status.ERROR, "rrdp.replace.nonexistent.object", Sha256.format(sha256));
+                        ValidationCheck.Status.ERROR, "rrdp.replace.nonexistent.object", Hex.format(sha256));
                 validationRun.addCheck(validationCheck);
             }
         } else {

@@ -9,6 +9,7 @@ import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.RrdpRepositoryValidationRun;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.ValidationCheck;
+import net.ripe.rpki.validator3.util.Hex;
 import net.ripe.rpki.validator3.util.Sha256;
 import org.junit.Before;
 import org.junit.Test;
@@ -21,6 +22,7 @@ import javax.transaction.Transactional;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -61,7 +63,7 @@ public class RrdpServiceTest {
         final Snapshot snapshot = new RrdpParser().snapshot(Objects.fileIS("rrdp/snapshot2.xml"));
         subject.storeSnapshot(snapshot, validationRun);
 
-        final List<RpkiObject> objects = rpkiObjects.all();
+        final List<RpkiObject> objects = rpkiObjects.all().collect(Collectors.toList());
         assertEquals(3, objects.size());
 
         final String uri1 = "rsync://rpki.ripe.net/repository/DEFAULT/61/fdce4c-2ea5-47eb-94bc-5b50ea88eeab/1/phQ5JfV8llJoaGylcrBcVa7oPfI.roa";
@@ -101,7 +103,7 @@ public class RrdpServiceTest {
         final RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepository);
         subject.storeRepository(rpkiRepository, validationRun);
 
-        final List<RpkiObject> objects = rpkiObjects.all();
+        final List<RpkiObject> objects = rpkiObjects.all().collect(Collectors.toList());
         assertEquals(2, objects.size());
 
         assertTrue(objects.stream().anyMatch(o -> cert.uri.equals(o.getLocations().first())));
@@ -120,7 +122,7 @@ public class RrdpServiceTest {
         final byte[] snapshotXml = Objects.snapshotXml(serial, sessionId, cert, crl);
 
         final String snapshotUri = "https://host/path/snapshot.xml";
-        final Objects.SnapshotInfo snapshot = new Objects.SnapshotInfo(snapshotUri, Sha256.parse("FFFFFF"));
+        final Objects.SnapshotInfo snapshot = new Objects.SnapshotInfo(snapshotUri, Hex.parse("FFFFFF"));
         rrdpClient.add(snapshot.uri, snapshotXml);
 
         final byte[] notificationXml = Objects.notificationXml(serial, sessionId, snapshot);
@@ -136,14 +138,14 @@ public class RrdpServiceTest {
         final RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepository);
         subject.storeRepository(rpkiRepository, validationRun);
 
-        final List<RpkiObject> objects = rpkiObjects.all();
+        final List<RpkiObject> objects = rpkiObjects.all().collect(Collectors.toList());
         assertEquals(0, objects.size());
 
         assertEquals(1, validationRun.getValidationChecks().size());
         final ValidationCheck validationCheck = validationRun.getValidationChecks().get(0);
         assertEquals("rrdp.error", validationCheck.getKey());
         assertEquals(ValidationCheck.Status.ERROR, validationCheck.getStatus());
-        assertEquals("Hash of the snapshot file " + snapshotUri + " is " + Sha256.format(Sha256.hash(snapshotXml)) +
+        assertEquals("Hash of the snapshot file " + snapshotUri + " is " + Hex.format(Sha256.hash(snapshotXml)) +
                 ", but notification file says FFFFFF", validationCheck.getParameters().get(0));
         assertEquals(rpkiRepository.getRrdpNotifyUri(), validationCheck.getLocation());
     }
@@ -181,7 +183,7 @@ public class RrdpServiceTest {
         subject.storeRepository(rpkiRepository, validationRun);
         assertEquals(0, validationRun.getValidationChecks().size());
 
-        final List<RpkiObject> objects = rpkiObjects.all();
+        final List<RpkiObject> objects = rpkiObjects.all().collect(Collectors.toList());
         assertEquals(1, objects.size());
     }
 
@@ -230,7 +232,7 @@ public class RrdpServiceTest {
         assertTrue(validationCheck.getParameters().get(0).contains("is not the same as in the notification file: " + sessionId));
 
         // make sure that it will be the CRL from the snapsh
-        final List<RpkiObject> objects = rpkiObjects.all();
+        final List<RpkiObject> objects = rpkiObjects.all().collect(Collectors.toList());
         assertEquals(1, objects.size());
         RpkiObject rpkiObject = objects.get(0);
         assertEquals(RpkiObject.Type.CRL, rpkiObject.getType());
@@ -271,7 +273,7 @@ public class RrdpServiceTest {
         subject.storeRepository(rpkiRepository, validationRun);
         assertEquals(0, validationRun.getValidationChecks().size());
 
-        final List<RpkiObject> objects = rpkiObjects.all();
+        final List<RpkiObject> objects = rpkiObjects.all().collect(Collectors.toList());
         assertEquals(1, objects.size());
     }
 
@@ -319,7 +321,7 @@ public class RrdpServiceTest {
         assertEquals(rpkiRepository.getRrdpNotifyUri(), validationCheck.getLocation());
         assertEquals("Serials of the deltas are not contiguous: found 2 and 4 after it", validationCheck.getParameters().get(0));
 
-        final List<RpkiObject> objects = rpkiObjects.all();
+        final List<RpkiObject> objects = rpkiObjects.all().collect(Collectors.toList());
         assertEquals(1, objects.size());
 
         final RpkiObject rpkiObject = objects.get(0);
@@ -370,7 +372,7 @@ public class RrdpServiceTest {
         assertEquals(rpkiRepository.getRrdpNotifyUri(), validationCheck.getLocation());
         assertEquals("The last delta serial is 3, notification file serial is 4", validationCheck.getParameters().get(0));
 
-        final List<RpkiObject> objects = rpkiObjects.all();
+        final List<RpkiObject> objects = rpkiObjects.all().collect(Collectors.toList());
         assertEquals(1, objects.size());
 
         final RpkiObject rpkiObject = objects.get(0);
@@ -393,7 +395,7 @@ public class RrdpServiceTest {
         final Objects.DeltaPublish publishCert = new Objects.DeltaPublish("rsync://host/path/cert.cer", certificate);
         final byte[] deltaXml1 = Objects.deltaXml(3, sessionId, publishCert);
 
-        final Objects.DeltaInfo deltaInfo1 = new Objects.DeltaInfo("https://host/path/delta1.xml", Sha256.parse("FFFFFFFF"), 3);
+        final Objects.DeltaInfo deltaInfo1 = new Objects.DeltaInfo("https://host/path/delta1.xml", Hex.parse("FFFFFFFF"), 3);
         rrdpClient.add(deltaInfo1.uri, deltaXml1);
 
         final String notificationUri = "https://rrdp.ripe.net/notification.xml";
@@ -415,9 +417,9 @@ public class RrdpServiceTest {
         assertEquals(rpkiRepository.getRrdpNotifyUri(), validationCheck.getLocation());
 
         assertTrue(validationCheck.getParameters().get(0).startsWith("Hash of the delta file"));
-        assertTrue(validationCheck.getParameters().get(0).contains("is " + Sha256.format(Sha256.hash(deltaXml1)) + ", but notification file says FFFFFFFF"));
+        assertTrue(validationCheck.getParameters().get(0).contains("is " + Hex.format(Sha256.hash(deltaXml1)) + ", but notification file says FFFFFFFF"));
 
-        final List<RpkiObject> objects = rpkiObjects.all();
+        final List<RpkiObject> objects = rpkiObjects.all().collect(Collectors.toList());
         assertEquals(1, objects.size());
 
         final RpkiObject rpkiObject = objects.get(0);
