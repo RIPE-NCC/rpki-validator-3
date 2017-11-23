@@ -24,8 +24,6 @@ import net.ripe.rpki.validator3.domain.ValidationCheck;
 import net.ripe.rpki.validator3.domain.ValidationRuns;
 import net.ripe.rpki.validator3.util.Hex;
 import org.apache.commons.lang3.tuple.Pair;
-import org.joda.time.DateTime;
-import org.joda.time.format.ISODateTimeFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,6 +35,7 @@ import java.security.cert.X509CRLEntry;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -75,7 +74,7 @@ public class RpkiObjectController {
             });
         }).sorted(
                 Comparator.comparing(o -> location(o.getLeft()))
-        ).parallel().map(pair ->
+        ).map(pair ->
                 mapRpkiObject(pair.getLeft(), pair.getRight().map(c -> ValidationResult.withLocation(c.getLocation())))
         ).filter(Objects::nonNull);
 
@@ -186,8 +185,8 @@ public class RpkiObjectController {
                 warnings(formatChecks(validationResult.map(ValidationResult::getWarnings).orElse(Collections.emptyList()))).
                 errors(formatChecks(validationResult.map(ValidationResult::getFailuresForAllLocations).orElse(Collections.emptyList()))).
                 eeCertificate(makeEeCertificate(manifestCms.getCertificate())).
-                thisUpdateTime(formatDateTime(manifestCms.getThisUpdateTime())).
-                nextUpdateTime(formatDateTime(manifestCms.getNextUpdateTime())).
+                thisUpdateTime(manifestCms.getThisUpdateTime().toDate()).
+                nextUpdateTime(manifestCms.getNextUpdateTime().toDate()).
                 manifestNumber(manifestCms.getNumber()).
                 entries(makeMftEntries(manifestCms.getFiles())).
                 sha256(Hex.format(rpkiObject.getSha256())).
@@ -237,13 +236,9 @@ public class RpkiObjectController {
 
     private static ValidityTime formatValidity(final ValidityPeriod validityPeriod) {
         return ValidityTime.builder().
-                notValidAfter(formatDateTime(validityPeriod.getNotValidAfter())).
-                notValidBefore(formatDateTime(validityPeriod.getNotValidBefore())).
+                notValidAfter(validityPeriod.getNotValidAfter().toDate()).
+                notValidBefore(validityPeriod.getNotValidBefore().toDate()).
                 build();
-    }
-
-    private static String formatDateTime(final DateTime dateTime) {
-        return dateTime == null ? null : dateTime.toString(ISODateTimeFormat.basicDateTime());
     }
 
     private static List<Issue> formatChecks(final List<net.ripe.rpki.commons.validation.ValidationCheck> checks) {
@@ -292,8 +287,8 @@ public class RpkiObjectController {
     @Builder
     @Getter
     private static class ValidityTime {
-        private String notValidBefore;
-        private String notValidAfter;
+        private Date notValidBefore;
+        private Date notValidAfter;
     }
 
     @Builder
@@ -357,8 +352,8 @@ public class RpkiObjectController {
         private List<Issue> errors;
 
         private EeCertificate eeCertificate;
-        private String thisUpdateTime;
-        private String nextUpdateTime;
+        private Date thisUpdateTime;
+        private Date nextUpdateTime;
         private BigInteger manifestNumber;
         private List<MftEntry> entries;
         private String sha256;
