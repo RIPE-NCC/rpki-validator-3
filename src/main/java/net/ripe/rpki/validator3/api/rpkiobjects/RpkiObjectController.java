@@ -1,5 +1,9 @@
 package net.ripe.rpki.validator3.api.rpkiobjects;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -58,10 +62,10 @@ public class RpkiObjectController {
     }
 
     @GetMapping(path = "/")
-    public ResponseEntity<ApiResponse<Stream<Object>>> all() {
+    public ResponseEntity<ApiResponse<Stream<RpkiObj>>> all() {
         final List<CertificateTreeValidationRun> vrs = validationRuns.findLatestSuccessful(CertificateTreeValidationRun.class);
 
-        final Stream<Object> rpkiObjStream = vrs.stream().flatMap(vr -> {
+        final Stream<RpkiObj> rpkiObjStream = vrs.stream().flatMap(vr -> {
             final Map<String, ValidationCheck> checkMap = vr.getValidationChecks().
                     stream().collect(Collectors.toMap(ValidationCheck::getLocation, Function.identity()));
 
@@ -78,7 +82,7 @@ public class RpkiObjectController {
         return ResponseEntity.ok(ApiResponse.data(rpkiObjStream));
     }
 
-    private Object mapRpkiObject(final RpkiObject rpkiObject, final Optional<ValidationResult> validationResult) {
+    private RpkiObj mapRpkiObject(final RpkiObject rpkiObject, final Optional<ValidationResult> validationResult) {
         switch (rpkiObject.getType()) {
             case CER:
                 return makeTypedDto(rpkiObject, validationResult, X509ResourceCertificate.class, cert -> makeCertificate(validationResult, cert, rpkiObject));
@@ -93,10 +97,10 @@ public class RpkiObjectController {
         }
     }
 
-    private <T extends CertificateRepositoryObject> Object makeTypedDto(final RpkiObject rpkiObject,
+    private <T extends CertificateRepositoryObject> RpkiObj makeTypedDto(final RpkiObject rpkiObject,
                                                                          final Optional<ValidationResult> validationResult,
                                                                          final Class<T> clazz,
-                                                                         final Function<T, Object> create) {
+                                                                         final Function<T, RpkiObj> create) {
         Optional<T> maybeCert = validationResult.flatMap(vr -> rpkiObject.get(clazz, vr));
         if (!maybeCert.isPresent()) {
             maybeCert = rpkiObject.get(clazz, location(rpkiObject));
@@ -216,7 +220,7 @@ public class RpkiObjectController {
                 build();
     }
 
-    private Object makeOther(final Optional<ValidationResult> vr, final RpkiObject ro) {
+    private RpkiObj makeOther(final Optional<ValidationResult> vr, final RpkiObject ro) {
         return Other.builder().uri(location(ro)).build();
     }
 
@@ -250,10 +254,39 @@ public class RpkiObjectController {
                 build()).collect(Collectors.toList());
     }
 
+    // @mpuzanov FIXME make it work and show some meaningful documentation
+    @JsonTypeInfo(
+            use = JsonTypeInfo.Id.NAME,
+            include = JsonTypeInfo.As.PROPERTY,
+            property = "type",
+            visible = true
+    )
+    @JsonSubTypes({
+            @JsonSubTypes.Type(value = ResourceCertificate.class, name = "certificate"),
+            @JsonSubTypes.Type(value = Roa.class, name = "roa"),
+            @JsonSubTypes.Type(value = Mft.class, name = "mft"),
+            @JsonSubTypes.Type(value = Crl.class, name = "crl")
+    })
+    @ApiModel(
+            value = "RpkiObj",
+            subTypes = {ResourceCertificate.class, Roa.class, Mft.class, Crl.class},
+            discriminator = "type"
+    )
+    static class RpkiObj {
+        @ApiModelProperty(value = "the discriminator field.")
+        protected String type;
+    }
+
     @Builder
     @Getter
-    private static class Other {
+    @ApiModel(value = "Other", parent = RpkiObj.class)
+    private static class Other extends RpkiObj {
         private String uri;
+
+        public Other(String uri) {
+            this.uri = uri;
+            this.type = "other";
+        }
     }
 
     @Builder
@@ -265,7 +298,8 @@ public class RpkiObjectController {
 
     @Builder
     @Getter
-    private static class ResourceCertificate {
+    @ApiModel(value = "Certificate", parent = RpkiObj.class)
+    private static class ResourceCertificate extends RpkiObj {
         private String uri;
         private boolean valid;
         private List<Issue> warnings;
@@ -300,7 +334,8 @@ public class RpkiObjectController {
 
     @Builder
     @Getter
-    private static class Roa {
+    @ApiModel(value = "Roa", parent = RpkiObj.class)
+    private static class Roa extends RpkiObj {
         private String uri;
         private boolean valid;
         private List<Issue> warnings;
@@ -314,7 +349,8 @@ public class RpkiObjectController {
 
     @Builder
     @Getter
-    static class Mft {
+    @ApiModel(value = "Mft", parent = RpkiObj.class)
+    static class Mft extends RpkiObj {
         private String uri;
         private boolean valid;
         private List<Issue> warnings;
@@ -337,7 +373,8 @@ public class RpkiObjectController {
 
     @Builder
     @Getter
-    static class Crl {
+    @ApiModel(value = "Crl", parent = RpkiObj.class)
+    static class Crl extends RpkiObj {
         private String uri;
         private boolean valid;
         private List<Issue> warnings;
