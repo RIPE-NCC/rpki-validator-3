@@ -39,4 +39,9 @@ public class CertificateTreeValidationRun extends ValidationRun {
     public String getType() {
         return TYPE;
     }
+
+    @Override
+    public void visit(Visitor visitor) {
+        visitor.accept(this);
+    }
 }

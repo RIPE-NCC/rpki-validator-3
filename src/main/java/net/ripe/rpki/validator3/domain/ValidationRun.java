@@ -93,4 +93,16 @@ public abstract class ValidationRun extends AbstractEntity {
         });
     }
 
+    public abstract void visit(Visitor visitor);
+
+    public interface Visitor<T> {
+        default void accept(CertificateTreeValidationRun validationRun) {
+        }
+        default void accept(RrdpRepositoryValidationRun validationRun) {
+        }
+        default void accept(RsyncRepositoryValidationRun validationRun) {
+        }
+        default void accept(TrustAnchorValidationRun validationRun) {
+        }
+    }
 }

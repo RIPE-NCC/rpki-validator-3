@@ -28,6 +28,11 @@ public class RsyncRepositoryValidationRun extends RpkiRepositoryValidationRun {
     public RsyncRepositoryValidationRun() {
     }
 
+    @Override
+    public void visit(Visitor visitor) {
+        visitor.accept(this);
+    }
+
     public boolean addRpkiRepository(RpkiRepository repository) {
         return getRpkiRepositories().add(repository);
     }

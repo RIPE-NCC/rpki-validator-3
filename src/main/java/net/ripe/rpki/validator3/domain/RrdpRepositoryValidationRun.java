@@ -20,7 +20,13 @@ public class RrdpRepositoryValidationRun extends RpkiRepositoryValidationRun {
     protected RrdpRepositoryValidationRun() {
     }
 
+    @Override
+    public void visit(Visitor visitor) {
+        visitor.accept(this);
+    }
+
     public RrdpRepositoryValidationRun(RpkiRepository rpkiRepository) {
         this.rpkiRepository = rpkiRepository;
     }
+
 }

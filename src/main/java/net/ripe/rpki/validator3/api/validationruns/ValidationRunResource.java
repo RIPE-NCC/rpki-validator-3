@@ -7,6 +7,8 @@ import lombok.Data;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorController;
 import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.domain.RpkiRepositoryValidationRun;
+import net.ripe.rpki.validator3.domain.RrdpRepositoryValidationRun;
+import net.ripe.rpki.validator3.domain.RsyncRepositoryValidationRun;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.domain.ValidationRun;
@@ -58,24 +60,28 @@ public class ValidationRunResource {
                     .collect(Collectors.toList())
             );
 
-        switch (validationRun.getType()) {
-            case CertificateTreeValidationRun.TYPE: {
-                CertificateTreeValidationRun run = (CertificateTreeValidationRun) validationRun;
-                builder.validatedObjectCount(run.getValidatedObjects().size());
-                links.add(linkTo(methodOn(TrustAnchorController.class).get(run.getTrustAnchor().getId())).withRel(TrustAnchor.TYPE));
-                break;
+        validationRun.visit(new ValidationRun.Visitor() {
+            @Override
+            public void accept(CertificateTreeValidationRun validationRun) {
+                builder.validatedObjectCount(validationRun.getValidatedObjects().size());
+                links.add(linkTo(methodOn(TrustAnchorController.class).get(validationRun.getTrustAnchor().getId())).withRel(TrustAnchor.TYPE));
             }
-            case RpkiRepositoryValidationRun.TYPE: {
-                RpkiRepositoryValidationRun run = (RpkiRepositoryValidationRun) validationRun;
-                builder.addedObjectCount(run.getAddedObjectCount());
-                break;
+
+            @Override
+            public void accept(RrdpRepositoryValidationRun validationRun) {
+                builder.addedObjectCount(validationRun.getAddedObjectCount());
             }
-            case TrustAnchorValidationRun.TYPE: {
-                TrustAnchorValidationRun run = (TrustAnchorValidationRun) validationRun;
-                links.add(linkTo(methodOn(TrustAnchorController.class).get(run.getTrustAnchor().getId())).withRel(TrustAnchor.TYPE));
-                break;
+
+            @Override
+            public void accept(RsyncRepositoryValidationRun validationRun) {
+                builder.addedObjectCount(validationRun.getAddedObjectCount());
             }
-        }
+
+            @Override
+            public void accept(TrustAnchorValidationRun validationRun) {
+                links.add(linkTo(methodOn(TrustAnchorController.class).get(validationRun.getTrustAnchor().getId())).withRel(TrustAnchor.TYPE));
+            }
+        });
 
         return builder.links(new Links(links)).build();
     }
