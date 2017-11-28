@@ -31,7 +31,7 @@ CREATE TABLE rpki_repository (
     rsync_repository_uri VARCHAR(16000),
     rrdp_notify_uri VARCHAR(16000),
     rrdp_session_id VARCHAR(100),
-    rrdp_serial DECIMAL(40, 0),
+    rrdp_serial DECIMAL(1000, 0),
     CONSTRAINT rpki_repository__pk PRIMARY KEY (id),
     CONSTRAINT rpki_repository__rrdp_notify_uri_unique UNIQUE (rrdp_notify_uri),
     CONSTRAINT rpki_repository__rsync_repository_uri_unique UNIQUE (rsync_repository_uri)
@@ -52,7 +52,7 @@ CREATE TABLE rpki_object (
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
     type VARCHAR NOT NULL,
-    serial_number DECIMAL(40, 0),
+    serial_number DECIMAL(1000, 0),
     signing_time TIMESTAMP,
     authority_key_identifier BINARY(32),
     sha256 BINARY(32) NOT NULL,
