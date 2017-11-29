@@ -192,7 +192,7 @@
                             <processor>com.querydsl.apt.jpa.JPAAnnotationProcessor</processor>
                             <options>
                                 <!-- See http://www.querydsl.com/static/querydsl/4.1.3/reference/html/ch03s03.html for available options -->
-                                <querydsl.includedPackages>net.ripe.rpki.validator3.domain</querydsl.includedPackages>
+                                <querydsl.includedPackages>net.ripe.rpki.validator3.domain,net.ripe.rpki.validator3.adapter.jpa</querydsl.includedPackages>
                                 <querydsl.packageSuffix>.querydsl</querydsl.packageSuffix>
                                 <querydsl.prefix>Q</querydsl.prefix>
                                 <querydsl.suffix></querydsl.suffix>

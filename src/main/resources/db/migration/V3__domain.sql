@@ -1,3 +1,15 @@
+CREATE TABLE setting (
+    id BIGINT NOT NULL,
+    version INTEGER NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    key VARCHAR NOT NULL,
+    value VARCHAR NOT NULL,
+    CONSTRAINT setting__pk PRIMARY KEY (id),
+    CONSTRAINT setting__key_unique UNIQUE (key)
+);
+CREATE INDEX setting__key_idx ON setting (key ASC);
+
 CREATE TABLE trust_anchor (
     id BIGINT NOT NULL,
     version INTEGER NOT NULL,
@@ -10,7 +22,7 @@ CREATE TABLE trust_anchor (
     CONSTRAINT trust_anchor__pk PRIMARY KEY (id),
     CONSTRAINT trust_anchor__subject_public_key_info_unique UNIQUE (subject_public_key_info)
 );
-CREATE INDEX trust_anchor__name ON trust_anchor (name ASC);
+CREATE INDEX trust_anchor__name_idx ON trust_anchor (name ASC);
 
 CREATE TABLE trust_anchor_locations (
     trust_anchor_id BIGINT NOT NULL,
