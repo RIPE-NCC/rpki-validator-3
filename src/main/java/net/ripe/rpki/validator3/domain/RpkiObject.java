@@ -4,6 +4,7 @@ import lombok.Getter;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.UnknownCertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.RpkiSignedObject;
+import net.ripe.rpki.commons.crypto.cms.ghostbuster.GhostbustersCms;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.crypto.cms.roa.RoaCms;
 import net.ripe.rpki.commons.crypto.crl.X509Crl;
@@ -12,10 +13,16 @@ import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.util.Sha256;
-import org.apache.commons.lang3.tuple.Pair;
 import org.bouncycastle.util.encoders.Hex;
 
-import javax.persistence.*;
+import javax.persistence.Basic;
+import javax.persistence.ElementCollection;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
+import javax.persistence.OrderBy;
+import javax.persistence.OrderColumn;
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -23,7 +30,12 @@ import javax.validation.constraints.Size;
 import java.math.BigInteger;
 import java.net.URI;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 @Entity
@@ -32,7 +44,7 @@ public class RpkiObject extends AbstractEntity {
     public static final int MAX_SIZE = 1024 * 1024;
 
     public enum Type {
-        CER, MFT, CRL, ROA, OTHER
+        CER, MFT, CRL, ROA, GBR, OTHER
     }
 
     @Basic(optional = false)
@@ -106,16 +118,18 @@ public class RpkiObject extends AbstractEntity {
             this.serialNumber = ((RpkiSignedObject) object).getCertificate().getSerialNumber();
             this.signingTime = Instant.ofEpochMilli(((RpkiSignedObject) object).getSigningTime().getMillis());
             this.authorityKeyIdentifier = ((RpkiSignedObject) object).getCertificate().getAuthorityKeyIdentifier();
-            this.type = (
-                (object instanceof ManifestCms) ? Type.MFT
-                    : (object instanceof RoaCms) ? Type.ROA
-                    : Type.OTHER
-            );
-            if (object instanceof RoaCms) {
+            if (object instanceof ManifestCms) {
+                this.type = Type.MFT;
+            } else if (object instanceof RoaCms) {
                 RoaCms roaCms = (RoaCms) object;
+                this.type = Type.ROA;
                 this.roaPrefixes = roaCms.getPrefixes().stream()
                     .map(prefix -> RoaPrefix.of(prefix.getPrefix(), prefix.getMaximumLength(), roaCms.getAsn()))
                     .collect(Collectors.toList());
+            } else if (object instanceof GhostbustersCms) {
+                this.type = Type.GBR;
+            } else {
+                this.type = Type.OTHER;
             }
         } else if (object instanceof UnknownCertificateRepositoryObject) {
             // FIXME store these at all?

@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.IpResourceSet;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.ValidityPeriod;
+import net.ripe.rpki.commons.crypto.cms.ghostbuster.GhostbustersCms;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.crypto.cms.roa.RoaCms;
 import net.ripe.rpki.commons.crypto.crl.X509Crl;
@@ -91,9 +92,12 @@ public class RpkiObjectController {
                 return makeTypedDto(rpkiObject, validationResult, ManifestCms.class, cert -> makeMft(validationResult, cert, rpkiObject));
             case CRL:
                 return makeTypedDto(rpkiObject, validationResult, X509Crl.class, cert -> makeCrl(validationResult, cert, rpkiObject));
-            default:
+            case GBR:
+                return makeTypedDto(rpkiObject, validationResult, GhostbustersCms.class, gbr -> makeGbr(validationResult, gbr, rpkiObject));
+            case OTHER:
                 return makeOther(validationResult, rpkiObject);
         }
+        throw new IllegalArgumentException("RPKI object with unknown type " + rpkiObject);
     }
 
     private <T extends CertificateRepositoryObject> RpkiObj makeTypedDto(final RpkiObject rpkiObject,
@@ -217,6 +221,21 @@ public class RpkiObjectController {
                 serial(crl.getNumber()).
                 revocations(revocations).
                 build();
+    }
+
+    private RpkiObj makeGbr(Optional<ValidationResult> validationResult, GhostbustersCms gbr, RpkiObject rpkiObject) {
+        final String location = validationResult.map(vr -> vr.getCurrentLocation().getName()).orElse(location(rpkiObject));
+        final boolean isValid = isValid(validationResult);
+
+        return GhostbustersRecord.builder()
+            .uri(location)
+            .valid(isValid)
+            .warnings(formatChecks(validationResult.map(ValidationResult::getWarnings).orElse(Collections.emptyList())))
+            .errors(formatChecks(validationResult.map(ValidationResult::getFailuresForAllLocations).orElse(Collections.emptyList())))
+            .sha256(Hex.format(rpkiObject.getSha256()))
+            .vCard(gbr.getVCardContent())
+            .eeCertificate(makeEeCertificate(gbr.getCertificate()))
+            .build();
     }
 
     private RpkiObj makeOther(final Optional<ValidationResult> vr, final RpkiObject ro) {
@@ -388,9 +407,22 @@ public class RpkiObjectController {
         private String[] parameters;
     }
 
+    @Builder
+    @Getter
+    @ApiModel(value = "GhostbustersRecord", parent = RpkiObj.class)
+    private static class GhostbustersRecord extends RpkiObj {
+        private String uri;
+        private boolean valid;
+        private List<Issue> warnings;
+        private List<Issue> errors;
+
+        private String vCard;
+        private EeCertificate eeCertificate;
+        private String sha256;
+    }
+
     /*
      TODO
-        Add GBR
         Add Router Certificate
     */
 
