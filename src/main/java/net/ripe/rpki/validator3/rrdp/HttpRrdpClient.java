@@ -1,5 +1,6 @@
 package net.ripe.rpki.validator3.rrdp;
 
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
@@ -9,12 +10,15 @@ import org.springframework.stereotype.Component;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 import static org.springframework.util.StreamUtils.copy;
 
 @Component
+@Slf4j
 public class HttpRrdpClient implements RrdpClient {
 
     private HttpClient httpClient;
@@ -31,22 +35,26 @@ public class HttpRrdpClient implements RrdpClient {
         InputStreamResponseListener listener = new InputStreamResponseListener();
         httpClient.newRequest(uri).send(listener);
 
-        final Response response;
+        Response response = null;
         try {
             response = listener.get(30, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            throw new RrdpException("Couldn't read response stream", e);
-        }
 
-        if (response.getStatus() == 200) {
+            if (response.getStatus() != 200) {
+                RrdpException error = new RrdpException("unexpected response status " + response.getStatus() + " for " + uri);
+                response.abort(error);
+                throw error;
+            }
+
             try (InputStream inputStream = listener.getInputStream()) {
                 return reader.apply(inputStream);
-            } catch (Exception e) {
-                response.abort(new RrdpException("Couldn't read response stream", e));
             }
+        } catch (IOException | InterruptedException | TimeoutException | ExecutionException e) {
+            RrdpException error = new RrdpException("failed reading response stream for " + uri + ": " + e, e);
+            if (response != null) {
+                response.abort(error);
+            }
+            throw error;
         }
-        response.abort(new RrdpException("Response status: " + response.getStatus()));
-        return null;
     }
 
     @Override
@@ -56,10 +64,9 @@ public class HttpRrdpClient implements RrdpClient {
             try {
                 return copy(s, baos);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new RrdpException("error reading response body for " + uri + ": " + e, e);
             }
         });
         return baos.toByteArray();
     }
-
 }

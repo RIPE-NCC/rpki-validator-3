@@ -91,7 +91,11 @@ public class RpkiRepositoryValidationService {
         final String uri = rpkiRepository.getRrdpNotifyUri();
         if (isRrdpUri(uri)) {
             rrdpService.storeRepository(rpkiRepository, validationRun);
-            rpkiRepository.setDownloaded();
+            if (validationRun.isFailed()) {
+                rpkiRepository.setFailed();
+            } else {
+                rpkiRepository.setDownloaded();
+            }
         } else if (isRsyncUri(uri)) {
             validationResult.error("rsync.repository.not.supported");
         } else {
