@@ -214,6 +214,40 @@
                 <version>2.20.1</version>
             </plugin>
             <plugin>
+                <groupId>com.mycila.maven-license-plugin</groupId>
+                <artifactId>maven-license-plugin</artifactId>
+                <version>1.9.0</version>
+                <configuration>
+                    <strictCheck>true</strictCheck>
+                    <header>LICENSE.txt</header>
+                    <excludes>
+                        <exclude>**/*.h2.mv.db</exclude>
+                        <exclude>**/*.h2.trace.db</exclude>
+                        <exclude>mvnw</exclude>
+                        <exclude>mvnw.cmd</exclude>
+                        <exclude>.mvn/**</exclude>
+                        <exclude>**/.ignore.me</exclude>
+                        <exclude>**/rpki-validator-3.service</exclude>
+                        <exclude>**/*.tal</exclude>
+                        <exclude>**/*.txt</exclude>
+                        <exclude>src/test/resources/**</exclude>
+                        <exclude>.idea/**</exclude>
+                        <exclude>.gitignore</exclude>
+                        <exclude>suppressions.xml</exclude>
+                        <exclude>README.md</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
                 <groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
                 <version>2.1.1</version>
