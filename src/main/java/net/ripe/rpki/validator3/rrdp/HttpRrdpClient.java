@@ -5,8 +5,10 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,10 +23,15 @@ import static org.springframework.util.StreamUtils.copy;
 @Slf4j
 public class HttpRrdpClient implements RrdpClient {
 
+    @Value("${rpki.validator.rrdp.trust.all.tls.certificates}")
+    private boolean trustAllTlsCertificates;
+
     private HttpClient httpClient;
 
-    public HttpRrdpClient() throws Exception {
+    @PostConstruct
+    public void postConstruct() throws Exception {
         final SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setTrustAll(trustAllTlsCertificates);
         // TODO @mpuzanov find out why using HttpClientTransportOverHTTP2 makes GET request hang
         httpClient = new HttpClient(sslContextFactory);
         httpClient.start();
