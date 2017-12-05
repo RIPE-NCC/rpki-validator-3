@@ -18,6 +18,14 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
+    <licenses>
+        <license>
+            <name>The BSD License</name>
+            <url>https://raw.github.com/RIPE-NCC/rpki-validator-3/master/LICENSE.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -207,6 +215,30 @@
                         <version>${querydsl.version}</version>
                     </dependency>
                 </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>com.mycila.maven-license-plugin</groupId>
+                <artifactId>maven-license-plugin</artifactId>
+                <version>1.9.0</version>
+                <configuration>
+                    <strictCheck>true</strictCheck>
+                    <header>LICENSE.txt</header>
+                    <excludes>
+                        <exclude>**/*.txt</exclude>
+                        <exclude>src/test/resources/**</exclude>
+                        <exclude>.idea/**</exclude>
+                        <exclude>.gitignore</exclude>
+                        <exclude>.pregenerated-test-key-pairs.keystore</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
