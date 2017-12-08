@@ -31,7 +31,7 @@ package net.ripe.rpki.validator3.domain;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.List;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -53,4 +53,6 @@ public interface RpkiObjects {
     Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type type, byte[] authorityKeyIdentifier);
 
     Stream<Pair<CertificateTreeValidationRun, RpkiObject>> findCurrentlyValidated(RpkiObject.Type type);
+
+    long deleteUnreachableObjects(Instant unreachableSince);
 }

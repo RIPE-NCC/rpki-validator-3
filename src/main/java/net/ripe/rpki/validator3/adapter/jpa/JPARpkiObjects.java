@@ -38,6 +38,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Repository;
 
 import javax.transaction.Transactional;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -85,6 +86,11 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
             .select(certificateTreeValidationRun, rpkiObject);
         return stream(query)
             .map(x -> Pair.of(x.get(0, CertificateTreeValidationRun.class), x.get(1, RpkiObject.class)));
+    }
+
+    @Override
+    public long deleteUnreachableObjects(Instant unreachableSince) {
+        return queryFactory.delete(rpkiObject).where(rpkiObject.lastMarkedReachableAt.before(unreachableSince)).execute();
     }
 
     @Override

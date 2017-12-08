@@ -96,6 +96,7 @@ CREATE TABLE rpki_object (
     type VARCHAR NOT NULL,
     serial_number DECIMAL(1000, 0),
     signing_time TIMESTAMP,
+    last_marked_reachable_at TIMESTAMP NOT NULL,
     authority_key_identifier BINARY(32),
     sha256 BINARY(32) NOT NULL,
     encoded BINARY,
