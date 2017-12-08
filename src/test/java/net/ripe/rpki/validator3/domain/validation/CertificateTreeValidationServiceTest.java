@@ -51,6 +51,7 @@ import net.ripe.rpki.commons.crypto.x509cert.X509CertificateUtil;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificateBuilder;
 import net.ripe.rpki.commons.validation.ValidationResult;
+import net.ripe.rpki.commons.validation.ValidationString;
 import net.ripe.rpki.validator3.IntegrationTest;
 import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.domain.RoaPrefix;
@@ -60,6 +61,7 @@ import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchors;
+import net.ripe.rpki.validator3.domain.ValidationCheck;
 import net.ripe.rpki.validator3.domain.ValidationRuns;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bouncycastle.asn1.x509.KeyUsage;
@@ -84,9 +86,12 @@ import java.security.PublicKey;
 import java.security.Security;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
@@ -251,12 +256,60 @@ public class CertificateTreeValidationServiceTest {
     }
 
     @Test
+    public void should_report_proper_error_when_repository_is_unavailable() {
+        KeyPair childKeyPair = KEY_PAIR_FACTORY.generate();
+
+        TrustAnchor ta = createTypicalTa(childKeyPair);
+        trustAnchors.add(ta);
+        RpkiRepository repository = rpkiRepositories.register(ta, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
+        repository.setFailed();
+        entityManager.flush();
+
+        final URI manifestUri = ta.getCertificate().getManifestUri();
+        final Optional<RpkiObject> mft = rpkiObjects.all().filter(o -> o.getLocations().contains(manifestUri.toASCIIString())).findFirst();
+        mft.ifPresent(m -> rpkiObjects.remove(m));
+        entityManager.flush();
+
+        subject.validate(ta.getId());
+        entityManager.flush();
+
+        List<CertificateTreeValidationRun> completed = validationRuns.findAll(CertificateTreeValidationRun.class);
+        assertThat(completed).hasSize(1);
+        final List<ValidationCheck> checks = completed.get(0).getValidationChecks();
+        assertThat(checks.get(0).getKey()).isEqualTo(ValidationString.VALIDATOR_NO_MANIFEST_REPOSITORY_FAILED);
+        assertThat(checks.get(0).getParameters()).isEqualTo(Collections.singletonList(repository.getRrdpNotifyUri()));
+    }
+
+    @Test
+    public void should_report_proper_error_when_repository_is_available_but_no_manifest() {
+        KeyPair childKeyPair = KEY_PAIR_FACTORY.generate();
+
+        TrustAnchor ta = createTypicalTa(childKeyPair);
+        trustAnchors.add(ta);
+        RpkiRepository repository = rpkiRepositories.register(ta, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
+        repository.setDownloaded();
+        entityManager.flush();
+
+        final URI manifestUri = ta.getCertificate().getManifestUri();
+        final Optional<RpkiObject> mft = rpkiObjects.all().filter(o -> o.getLocations().contains(manifestUri.toASCIIString())).findFirst();
+        mft.ifPresent(m -> rpkiObjects.remove(m));
+        entityManager.flush();
+
+        subject.validate(ta.getId());
+        entityManager.flush();
+
+        List<CertificateTreeValidationRun> completed = validationRuns.findAll(CertificateTreeValidationRun.class);
+        assertThat(completed).hasSize(1);
+        final List<ValidationCheck> checks = completed.get(0).getValidationChecks();
+        assertThat(checks.get(0).getKey()).isEqualTo(ValidationString.VALIDATOR_NO_LOCAL_MANIFEST_NO_MANIFEST_IN_REPOSITORY);
+        assertThat(checks.get(0).getParameters()).isEqualTo(Collections.singletonList(repository.getRrdpNotifyUri()));
+    }
+
+    @Test
     public void should_validate_roa() {
-        TrustAnchor ta = createTrustAnchor(x -> {
-            x.roaPrefixes(Arrays.asList(
+        TrustAnchor ta = createTrustAnchor(x -> x.roaPrefixes(Collections.singletonList(
                 RoaPrefix.of(IpRange.prefix(IpAddress.parse("192.168.0.0"), 16), 24, Asn.parse("64512"))
-            ));
-        });
+        )));
         trustAnchors.add(ta);
         RpkiRepository repository = rpkiRepositories.register(ta, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
         repository.setDownloaded();
@@ -274,6 +327,22 @@ public class CertificateTreeValidationServiceTest {
         assertThat(validatedRoas).hasSize(1);
         assertThat(validatedRoas.get(0).getLeft()).isEqualTo(result);
         assertThat(validatedRoas.get(0).getRight().getRoaPrefixes()).hasSize(1);
+    }
+
+    private TrustAnchor createTypicalTa(KeyPair childKeyPair) {
+        return createTrustAnchor(x -> {
+            CertificateAuthority child = CertificateAuthority.builder()
+                    .dn("CN=child-ca")
+                    .keyPair(childKeyPair)
+                    .certificateLocation("rsync://rpki.test/CN=child-ca.cer")
+                    .resources(IpResourceSet.parse("192.168.128.0/17"))
+                    .notifyURI(TA_RRDP_NOTIFY_URI)
+                    .manifestURI("rsync://rpki.test/CN=child-ca/child-ca.mft")
+                    .repositoryURI("rsync://rpki.test/CN=child-ca/")
+                    .crlDistributionPoint("rsync://rpki.test/CN=child-ca/child-ca.crl")
+                    .build();
+            x.children(Collections.singletonList(child));
+        });
     }
 
     private TrustAnchor createTrustAnchor(Consumer<CertificateAuthority.CertificateAuthorityBuilder> configure) {
@@ -329,7 +398,7 @@ public class CertificateTreeValidationServiceTest {
             ca.roaPrefixes.stream().collect(groupingBy(RoaPrefix::getAsn)).forEach((asn, roaPrefix) -> {
                 KeyPair roaKeyPair = KEY_PAIR_FACTORY.generate();
                 IpResourceSet resources = new IpResourceSet();
-                roaPrefix.stream().forEach(p -> resources.add(IpRange.parse(p.getPrefix())));
+                roaPrefix.forEach(p -> resources.add(IpRange.parse(p.getPrefix())));
                 X509ResourceCertificate roaCertificate = new X509ResourceCertificateBuilder()
 //                    .withInheritedResourceTypes(EnumSet.allOf(IpResourceType.class))
                     .withResources(resources)

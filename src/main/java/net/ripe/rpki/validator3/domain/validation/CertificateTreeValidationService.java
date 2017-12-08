@@ -72,6 +72,7 @@ import static java.util.stream.Collectors.toList;
 @Slf4j
 public class CertificateTreeValidationService {
     private static final ValidationOptions VALIDATION_OPTIONS = new ValidationOptions();
+
     private final EntityManager entityManager;
     private final TrustAnchors trustAnchors;
     private final RpkiObjects rpkiObjects;
@@ -139,8 +140,11 @@ public class CertificateTreeValidationService {
         }
     }
 
-    private List<RpkiObject> validateCertificateAuthority(TrustAnchor trustAnchor, Map<URI, RpkiRepository> registeredRepositories, CertificateRepositoryObjectValidationContext context, ValidationResult validationResult) {
-        List<RpkiObject> validatedObjects = new ArrayList<>();
+    private List<RpkiObject> validateCertificateAuthority(TrustAnchor trustAnchor,
+                                                          Map<URI, RpkiRepository> registeredRepositories,
+                                                          CertificateRepositoryObjectValidationContext context,
+                                                          ValidationResult validationResult) {
+        final List<RpkiObject> validatedObjects = new ArrayList<>();
 
         ValidationLocation certificateLocation = validationResult.getCurrentLocation();
         ValidationResult temporary = ValidationResult.withLocation(certificateLocation);
@@ -148,8 +152,7 @@ public class CertificateTreeValidationService {
             RpkiRepository rpkiRepository = registerRepository(trustAnchor, registeredRepositories, context);
 
             temporary.warnIfTrue(rpkiRepository.isPending(), "rpki.repository.pending", rpkiRepository.getLocationUri());
-            temporary.rejectIfTrue(rpkiRepository.isFailed(), "rpki.repository.failed", rpkiRepository.getLocationUri());
-            if (rpkiRepository.isPending() || temporary.hasFailureForCurrentLocation()) {
+            if (rpkiRepository.isPending()) {
                 return validatedObjects;
             }
 
@@ -158,8 +161,22 @@ public class CertificateTreeValidationService {
             temporary.setLocation(new ValidationLocation(manifestUri));
 
             Optional<RpkiObject> manifestObject = rpkiObjects.findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type.MFT, context.getSubjectKeyIdentifier());
-            temporary.rejectIfFalse(manifestObject.isPresent(), ValidationString.VALIDATOR_CA_SHOULD_HAVE_MANIFEST, manifestUri.toASCIIString());
+            if (!manifestObject.isPresent()) {
+                if (rpkiRepository.getStatus() == RpkiRepository.Status.FAILED) {
+                    temporary.error(ValidationString.VALIDATOR_NO_MANIFEST_REPOSITORY_FAILED, rpkiRepository.getLocationUri());
+                } else {
+                    temporary.error(ValidationString.VALIDATOR_NO_LOCAL_MANIFEST_NO_MANIFEST_IN_REPOSITORY, rpkiRepository.getLocationUri());
+                }
+            }
+
             Optional<ManifestCms> maybeManifest = manifestObject.flatMap(x -> x.get(ManifestCms.class, temporary));
+
+            temporary.rejectIfTrue(manifestObject.isPresent() &&
+                            rpkiRepository.getStatus() == RpkiRepository.Status.FAILED &&
+                            maybeManifest.isPresent() &&
+                            maybeManifest.get().isPastValidityTime(),
+                    ValidationString.VALIDATOR_OLD_LOCAL_MANIFEST_REPOSITORY_FAILED, rpkiRepository.getLocationUri());
+
             if (temporary.hasFailureForCurrentLocation()) {
                 return validatedObjects;
             }
@@ -255,8 +272,7 @@ public class CertificateTreeValidationService {
         }
     }
 
-    private Map<URI, RpkiObject> retrieveManifestEntries(ManifestCms manifest, URI manifestUri, ValidationResult
-        validationResult) {
+    private Map<URI, RpkiObject> retrieveManifestEntries(ManifestCms manifest, URI manifestUri, ValidationResult validationResult) {
         Map<URI, RpkiObject> result = new LinkedHashMap<>();
         for (Map.Entry<String, byte[]> entry : manifest.getFiles().entrySet()) {
             URI location = manifestUri.resolve(entry.getKey());
