@@ -91,7 +91,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
@@ -306,6 +305,44 @@ public class CertificateTreeValidationServiceTest {
     }
 
     @Test
+    public void should_report_proper_error_when_repository_is_available_but_manifest_is_invalid() {
+        KeyPair childKeyPair = KEY_PAIR_FACTORY.generate();
+
+        final ValidityPeriod mftValidityPeriod = new ValidityPeriod(
+                Instant.now().minus(Duration.standardDays(2)),
+                Instant.now().minus(Duration.standardDays(1))
+        );
+
+        TrustAnchor ta = createTrustAnchor(x -> {
+            CertificateAuthority child = CertificateAuthority.builder()
+                    .dn("CN=child-ca")
+                    .keyPair(childKeyPair)
+                    .certificateLocation("rsync://rpki.test/CN=child-ca.cer")
+                    .resources(IpResourceSet.parse("192.168.128.0/17"))
+                    .notifyURI(TA_RRDP_NOTIFY_URI)
+                    .manifestURI("rsync://rpki.test/CN=child-ca/child-ca.mft")
+                    .repositoryURI("rsync://rpki.test/CN=child-ca/")
+                    .crlDistributionPoint("rsync://rpki.test/CN=child-ca/child-ca.crl")
+                    .build();
+            x.children(Collections.singletonList(child));
+        }, mftValidityPeriod);
+
+        trustAnchors.add(ta);
+        RpkiRepository repository = rpkiRepositories.register(ta, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
+        repository.setFailed();
+        entityManager.flush();
+
+        subject.validate(ta.getId());
+        entityManager.flush();
+
+        List<CertificateTreeValidationRun> completed = validationRuns.findAll(CertificateTreeValidationRun.class);
+        assertThat(completed).hasSize(1);
+        final List<ValidationCheck> checks = completed.get(0).getValidationChecks();
+        assertThat(checks.get(0).getKey()).isEqualTo(ValidationString.VALIDATOR_OLD_LOCAL_MANIFEST_REPOSITORY_FAILED);
+        assertThat(checks.get(0).getParameters()).isEqualTo(Collections.singletonList(repository.getRrdpNotifyUri()));
+    }
+
+    @Test
     public void should_validate_roa() {
         TrustAnchor ta = createTrustAnchor(x -> x.roaPrefixes(Collections.singletonList(
                 RoaPrefix.of(IpRange.prefix(IpAddress.parse("192.168.0.0"), 16), 24, Asn.parse("64512"))
@@ -346,6 +383,10 @@ public class CertificateTreeValidationServiceTest {
     }
 
     private TrustAnchor createTrustAnchor(Consumer<CertificateAuthority.CertificateAuthorityBuilder> configure) {
+        return createTrustAnchor(configure, typicalValidityPeriod());
+    }
+
+    private TrustAnchor createTrustAnchor(Consumer<CertificateAuthority.CertificateAuthorityBuilder> configure, ValidityPeriod mftValidityPeriod) {
         KeyPair rootKeyPair = KEY_PAIR_FACTORY.generate();
         CertificateAuthority.CertificateAuthorityBuilder builder = CertificateAuthority.builder()
             .dn("CN=test-trust-anchor")
@@ -359,7 +400,7 @@ public class CertificateTreeValidationServiceTest {
         configure.accept(builder);
         CertificateAuthority root = builder.build();
 
-        X509ResourceCertificate certificate = createCertificateAuthority(root, root);
+        X509ResourceCertificate certificate = createCertificateAuthority(root, root, mftValidityPeriod);
 
         TrustAnchor ta = new TrustAnchor();
         ta.setName(root.dn);
@@ -370,6 +411,14 @@ public class CertificateTreeValidationServiceTest {
     }
 
     private X509ResourceCertificate createCertificateAuthority(CertificateAuthority ca, CertificateAuthority issuer) {
+        return createCertificateAuthority(ca, issuer, typicalValidityPeriod());
+    }
+
+    private ValidityPeriod typicalValidityPeriod() {
+        return new ValidityPeriod(Instant.now(), Instant.now().plus(Duration.standardDays(1)));
+    }
+
+    private X509ResourceCertificate createCertificateAuthority(CertificateAuthority ca, CertificateAuthority issuer, ValidityPeriod mftValidityPeriod) {
         ManifestCmsBuilder manifestBuilder = new ManifestCmsBuilder();
 
         X509ResourceCertificate caCertificate = createCaCertificate(ca, ca.keyPair.getPublic(), issuer.dn, issuer.crlDistributionPoint, issuer.keyPair);
@@ -404,7 +453,7 @@ public class CertificateTreeValidationServiceTest {
                     .withResources(resources)
                     .withIssuerDN(new X500Principal(ca.dn))
                     .withSubjectDN(new X500Principal("CN=AS" + asn + ", CN=roa, " + ca.dn))
-                    .withValidityPeriod(new ValidityPeriod(Instant.now(), Instant.now().plus(Duration.standardDays(1))))
+                    .withValidityPeriod(typicalValidityPeriod())
                     .withPublicKey(roaKeyPair.getPublic())
                     .withSigningKeyPair(ca.keyPair)
                     .withCa(false)
@@ -431,7 +480,7 @@ public class CertificateTreeValidationServiceTest {
             .withInheritedResourceTypes(EnumSet.allOf(IpResourceType.class))
             .withIssuerDN(caCertificate.getSubject())
             .withSubjectDN(new X500Principal("CN=manifest, " + caCertificate.getSubject()))
-            .withValidityPeriod(new ValidityPeriod(Instant.now(), Instant.now().plus(Duration.standardDays(1))))
+            .withValidityPeriod(mftValidityPeriod)
             .withPublicKey(manifestKeyPair.getPublic())
             .withSigningKeyPair(ca.keyPair)
             .withCa(false)
