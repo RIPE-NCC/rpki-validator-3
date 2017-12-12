@@ -29,9 +29,12 @@
  */
 package net.ripe.rpki.validator3.domain;
 
+import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.persistence.LockModeType;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -47,6 +50,8 @@ public interface RpkiObjects {
     RpkiObject get(long id);
 
     Optional<RpkiObject> findBySha256(byte[] sha256);
+
+    Map<String, RpkiObject> findObjectsInManifest(ManifestCms manifestCms, LockModeType lockMode);
 
     Stream<RpkiObject> all();
 

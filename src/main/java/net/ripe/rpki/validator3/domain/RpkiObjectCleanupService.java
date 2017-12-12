@@ -40,6 +40,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.persistence.EntityManager;
 import javax.persistence.FlushModeType;
+import javax.persistence.LockModeType;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
@@ -136,10 +137,8 @@ public class RpkiObjectCleanupService {
 
     private void traceManifest(Instant now, String name, RpkiObject manifest) {
         manifest.get(ManifestCms.class, name).ifPresent(manifestCms -> {
-            manifestCms.getFiles().forEach((entry, sha256) -> {
-                rpkiObjects.findBySha256(sha256).ifPresent(rpkiObject -> {
-                    markAndTraceObject(now, entry, rpkiObject);
-                });
+            rpkiObjects.findObjectsInManifest(manifestCms, LockModeType.PESSIMISTIC_WRITE).forEach((entry, rpkiObject) -> {
+                markAndTraceObject(now, entry, rpkiObject);
             });
         });
     }
