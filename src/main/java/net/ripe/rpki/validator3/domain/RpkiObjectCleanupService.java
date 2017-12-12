@@ -118,8 +118,10 @@ public class RpkiObjectCleanupService {
     }
 
     private void markAndTraceObject(Instant now, String name, RpkiObject rpkiObject) {
+        // Compare object instance identity to see if we've already visited
+        // the `rpkiObject` in the current run.
         if (now == rpkiObject.getLastMarkedReachableAt()) {
-            log.warn("object already marked, skipping {}", rpkiObject);
+            log.debug("object already marked, skipping {}", rpkiObject);
         }
 
         rpkiObject.markReachable(now);
