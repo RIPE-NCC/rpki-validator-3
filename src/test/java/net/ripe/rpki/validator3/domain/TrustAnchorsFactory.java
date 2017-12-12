@@ -70,6 +70,7 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 import java.security.Security;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Consumer;
@@ -107,8 +108,31 @@ public class TrustAnchorsFactory {
         Security.addProvider(new BouncyCastleProvider());
     }
 
+    public ValidityPeriod typicalValidityPeriod() {
+        return new ValidityPeriod(Instant.now(), Instant.now().plus(Duration.standardDays(1)));
+    }
+
+    public TrustAnchor createTypicalTa(KeyPair childKeyPair) {
+        return createTrustAnchor(x -> {
+            CertificateAuthority child = CertificateAuthority.builder()
+                .dn("CN=child-ca")
+                .keyPair(childKeyPair)
+                .certificateLocation("rsync://rpki.test/CN=child-ca.cer")
+                .resources(IpResourceSet.parse("192.168.128.0/17"))
+                .notifyURI(TA_RRDP_NOTIFY_URI)
+                .manifestURI("rsync://rpki.test/CN=child-ca/child-ca.mft")
+                .repositoryURI("rsync://rpki.test/CN=child-ca/")
+                .crlDistributionPoint("rsync://rpki.test/CN=child-ca/child-ca.crl")
+                .build();
+            x.children(Collections.singletonList(child));
+        });
+    }
 
     public TrustAnchor createTrustAnchor(Consumer<CertificateAuthority.CertificateAuthorityBuilder> configure) {
+        return createTrustAnchor(configure, typicalValidityPeriod());
+    }
+
+    public TrustAnchor createTrustAnchor(Consumer<CertificateAuthority.CertificateAuthorityBuilder> configure, ValidityPeriod mftValidityPeriod) {
         KeyPair rootKeyPair = KEY_PAIR_FACTORY.generate();
         CertificateAuthority.CertificateAuthorityBuilder builder = CertificateAuthority.builder()
             .dn("CN=test-trust-anchor")
@@ -122,7 +146,7 @@ public class TrustAnchorsFactory {
         configure.accept(builder);
         CertificateAuthority root = builder.build();
 
-        X509ResourceCertificate certificate = createCertificateAuthority(root, root);
+        X509ResourceCertificate certificate = createCertificateAuthority(root, root, mftValidityPeriod);
 
         TrustAnchor ta = new TrustAnchor();
         ta.setName(root.dn);
@@ -133,6 +157,10 @@ public class TrustAnchorsFactory {
     }
 
     public X509ResourceCertificate createCertificateAuthority(CertificateAuthority ca, CertificateAuthority issuer) {
+        return createCertificateAuthority(ca, issuer, typicalValidityPeriod());
+    }
+
+    public X509ResourceCertificate createCertificateAuthority(CertificateAuthority ca, CertificateAuthority issuer, ValidityPeriod mftValidityPeriod) {
         ManifestCmsBuilder manifestBuilder = new ManifestCmsBuilder();
 
         X509ResourceCertificate caCertificate = createCaCertificate(ca, ca.keyPair.getPublic(), issuer.dn, issuer.crlDistributionPoint, issuer.keyPair);
@@ -167,7 +195,7 @@ public class TrustAnchorsFactory {
                     .withResources(resources)
                     .withIssuerDN(new X500Principal(ca.dn))
                     .withSubjectDN(new X500Principal("CN=AS" + asn + ", CN=roa, " + ca.dn))
-                    .withValidityPeriod(new ValidityPeriod(org.joda.time.Instant.now(), org.joda.time.Instant.now().plus(Duration.standardDays(1))))
+                    .withValidityPeriod(typicalValidityPeriod())
                     .withPublicKey(roaKeyPair.getPublic())
                     .withSigningKeyPair(ca.keyPair)
                     .withCa(false)
@@ -194,7 +222,7 @@ public class TrustAnchorsFactory {
             .withInheritedResourceTypes(EnumSet.allOf(IpResourceType.class))
             .withIssuerDN(caCertificate.getSubject())
             .withSubjectDN(new X500Principal("CN=manifest, " + caCertificate.getSubject()))
-            .withValidityPeriod(new ValidityPeriod(org.joda.time.Instant.now(), org.joda.time.Instant.now().plus(Duration.standardDays(1))))
+            .withValidityPeriod(mftValidityPeriod)
             .withPublicKey(manifestKeyPair.getPublic())
             .withSigningKeyPair(ca.keyPair)
             .withCa(false)

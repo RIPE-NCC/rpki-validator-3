@@ -33,8 +33,10 @@ import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpAddress;
 import net.ripe.ipresource.IpRange;
 import net.ripe.ipresource.IpResourceSet;
+import net.ripe.rpki.commons.crypto.ValidityPeriod;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.validation.ValidationResult;
+import net.ripe.rpki.commons.validation.ValidationString;
 import net.ripe.rpki.validator3.IntegrationTest;
 import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.domain.RoaPrefix;
@@ -45,10 +47,11 @@ import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchors;
 import net.ripe.rpki.validator3.domain.TrustAnchorsFactory;
+import net.ripe.rpki.validator3.domain.ValidationCheck;
 import net.ripe.rpki.validator3.domain.ValidationRuns;
 import org.apache.commons.lang3.tuple.Pair;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.junit.BeforeClass;
+import org.joda.time.Duration;
+import org.joda.time.Instant;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,15 +60,15 @@ import org.springframework.test.context.junit4.SpringRunner;
 import javax.persistence.EntityManager;
 import javax.security.auth.x500.X500Principal;
 import javax.transaction.Transactional;
+import java.net.URI;
 import java.security.KeyPair;
-import java.security.Security;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
-import static net.ripe.rpki.validator3.domain.TrustAnchorsFactory.KEY_PAIR_FACTORY;
-import static net.ripe.rpki.validator3.domain.TrustAnchorsFactory.TA_CA_REPOSITORY_URI;
-import static net.ripe.rpki.validator3.domain.TrustAnchorsFactory.TA_RRDP_NOTIFY_URI;
+import static net.ripe.rpki.validator3.domain.TrustAnchorsFactory.*;
 import static net.ripe.rpki.validator3.domain.ValidationRun.Status.SUCCEEDED;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -206,12 +209,98 @@ public class CertificateTreeValidationServiceTest {
     }
 
     @Test
-    public void should_validate_roa() {
+    public void should_report_proper_error_when_repository_is_unavailable() {
+        KeyPair childKeyPair = KEY_PAIR_FACTORY.generate();
+
+        TrustAnchor ta = factory.createTypicalTa(childKeyPair);
+        trustAnchors.add(ta);
+        RpkiRepository repository = rpkiRepositories.register(ta, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
+        repository.setFailed();
+        entityManager.flush();
+
+        final URI manifestUri = ta.getCertificate().getManifestUri();
+        final Optional<RpkiObject> mft = rpkiObjects.all().filter(o -> o.getLocations().contains(manifestUri.toASCIIString())).findFirst();
+        mft.ifPresent(m -> rpkiObjects.remove(m));
+        entityManager.flush();
+
+        subject.validate(ta.getId());
+        entityManager.flush();
+
+        List<CertificateTreeValidationRun> completed = validationRuns.findAll(CertificateTreeValidationRun.class);
+        assertThat(completed).hasSize(1);
+        final List<ValidationCheck> checks = completed.get(0).getValidationChecks();
+        assertThat(checks.get(0).getKey()).isEqualTo(ValidationString.VALIDATOR_NO_MANIFEST_REPOSITORY_FAILED);
+        assertThat(checks.get(0).getParameters()).isEqualTo(Collections.singletonList(repository.getRrdpNotifyUri()));
+    }
+
+    @Test
+    public void should_report_proper_error_when_repository_is_available_but_no_manifest() {
+        KeyPair childKeyPair = KEY_PAIR_FACTORY.generate();
+
+        TrustAnchor ta = factory.createTypicalTa(childKeyPair);
+        trustAnchors.add(ta);
+        RpkiRepository repository = rpkiRepositories.register(ta, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
+        repository.setDownloaded();
+        entityManager.flush();
+
+        final URI manifestUri = ta.getCertificate().getManifestUri();
+        final Optional<RpkiObject> mft = rpkiObjects.all().filter(o -> o.getLocations().contains(manifestUri.toASCIIString())).findFirst();
+        mft.ifPresent(m -> rpkiObjects.remove(m));
+        entityManager.flush();
+
+        subject.validate(ta.getId());
+        entityManager.flush();
+
+        List<CertificateTreeValidationRun> completed = validationRuns.findAll(CertificateTreeValidationRun.class);
+        assertThat(completed).hasSize(1);
+        final List<ValidationCheck> checks = completed.get(0).getValidationChecks();
+        assertThat(checks.get(0).getKey()).isEqualTo(ValidationString.VALIDATOR_NO_LOCAL_MANIFEST_NO_MANIFEST_IN_REPOSITORY);
+        assertThat(checks.get(0).getParameters()).isEqualTo(Collections.singletonList(repository.getRrdpNotifyUri()));
+    }
+
+    @Test
+    public void should_report_proper_error_when_repository_is_available_but_manifest_is_invalid() {
+        KeyPair childKeyPair = KEY_PAIR_FACTORY.generate();
+
+        final ValidityPeriod mftValidityPeriod = new ValidityPeriod(
+                Instant.now().minus(Duration.standardDays(2)),
+                Instant.now().minus(Duration.standardDays(1))
+        );
+
         TrustAnchor ta = factory.createTrustAnchor(x -> {
-            x.roaPrefixes(Arrays.asList(
+            CertificateAuthority child = CertificateAuthority.builder()
+                    .dn("CN=child-ca")
+                    .keyPair(childKeyPair)
+                    .certificateLocation("rsync://rpki.test/CN=child-ca.cer")
+                    .resources(IpResourceSet.parse("192.168.128.0/17"))
+                    .notifyURI(TA_RRDP_NOTIFY_URI)
+                    .manifestURI("rsync://rpki.test/CN=child-ca/child-ca.mft")
+                    .repositoryURI("rsync://rpki.test/CN=child-ca/")
+                    .crlDistributionPoint("rsync://rpki.test/CN=child-ca/child-ca.crl")
+                    .build();
+            x.children(Collections.singletonList(child));
+        }, mftValidityPeriod);
+
+        trustAnchors.add(ta);
+        RpkiRepository repository = rpkiRepositories.register(ta, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
+        repository.setFailed();
+        entityManager.flush();
+
+        subject.validate(ta.getId());
+        entityManager.flush();
+
+        List<CertificateTreeValidationRun> completed = validationRuns.findAll(CertificateTreeValidationRun.class);
+        assertThat(completed).hasSize(1);
+        final List<ValidationCheck> checks = completed.get(0).getValidationChecks();
+        assertThat(checks.get(0).getKey()).isEqualTo(ValidationString.VALIDATOR_OLD_LOCAL_MANIFEST_REPOSITORY_FAILED);
+        assertThat(checks.get(0).getParameters()).isEqualTo(Collections.singletonList(repository.getRrdpNotifyUri()));
+    }
+
+    @Test
+    public void should_validate_roa() {
+        TrustAnchor ta = factory.createTrustAnchor(x -> x.roaPrefixes(Collections.singletonList(
                 RoaPrefix.of(IpRange.prefix(IpAddress.parse("192.168.0.0"), 16), 24, Asn.parse("64512"))
-            ));
-        });
+        )));
         trustAnchors.add(ta);
         RpkiRepository repository = rpkiRepositories.register(ta, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
         repository.setDownloaded();
@@ -230,5 +319,4 @@ public class CertificateTreeValidationServiceTest {
         assertThat(validatedRoas.get(0).getLeft()).isEqualTo(result);
         assertThat(validatedRoas.get(0).getRight().getRoaPrefixes()).hasSize(1);
     }
-
 }
