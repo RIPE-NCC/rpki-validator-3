@@ -45,6 +45,9 @@ public class RpkiObjectCleanupServiceTest {
             ta.roaPrefixes(Arrays.asList(RoaPrefix.of(IpRange.parse("127.0.0.0/8"), null, Asn.parse("123"))));
         });
 
+        // No orphans, so nothing to delete
+        assertThat(subject.cleanupRpkiObjects()).isEqualTo(0);
+
         RpkiObject orphan = new RpkiObject(
             "rsync://localhost/orphan.cer",
             new X509ResourceCertificateBuilder()
@@ -57,12 +60,16 @@ public class RpkiObjectCleanupServiceTest {
                 .withValidityPeriod(new ValidityPeriod(DateTime.now(), DateTime.now().plusYears(1)))
                 .build()
         );
-        orphan.markReachable(Instant.now().minus(Duration.ofDays(10)));
         rpkiObjects.add(orphan);
         entityManager.flush();
 
-        long deletedCount = subject.cleanupRpkiObjects();
+        // Orphan is still new, so nothing to delete
+        assertThat(subject.cleanupRpkiObjects()).isEqualTo(0);
 
-        assertThat(deletedCount).isEqualTo(1);
+        orphan.markReachable(Instant.now().minus(Duration.ofDays(10)));
+        entityManager.flush();
+
+        // Orphan is now old, so should be deleted
+        assertThat(subject.cleanupRpkiObjects()).isEqualTo(1);
     }
 }

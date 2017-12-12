@@ -68,6 +68,7 @@ public class RpkiObjectCleanupService {
 
     /**
      * Marks all RPKI objects that are reachable from a trust anchor by following the entries in the manifests.
+     * Objects that are no longer reachable will be deleted after a configurable grace duration.
      */
     @Scheduled(initialDelay = 60_000, fixedDelayString = "${rpki.validator.rpki.object.cleanup.interval.ms}")
     public long cleanupRpkiObjects() {
