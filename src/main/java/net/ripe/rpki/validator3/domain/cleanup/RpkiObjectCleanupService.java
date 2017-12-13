@@ -27,11 +27,15 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.domain;
+package net.ripe.rpki.validator3.domain.cleanup;
 
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
+import net.ripe.rpki.validator3.domain.RpkiObject;
+import net.ripe.rpki.validator3.domain.RpkiObjects;
+import net.ripe.rpki.validator3.domain.TrustAnchor;
+import net.ripe.rpki.validator3.domain.TrustAnchors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
