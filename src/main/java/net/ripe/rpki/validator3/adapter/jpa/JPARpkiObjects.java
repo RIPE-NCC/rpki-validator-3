@@ -29,16 +29,25 @@
  */
 package net.ripe.rpki.validator3.adapter.jpa;
 
+import com.google.common.primitives.UnsignedBytes;
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQuery;
+import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Repository;
 
+import javax.persistence.LockModeType;
 import javax.transaction.Transactional;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.ripe.rpki.validator3.domain.querydsl.QCertificateTreeValidationRun.certificateTreeValidationRun;
@@ -55,6 +64,16 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
     @Override
     public Optional<RpkiObject> findBySha256(byte[] sha256) {
         return Optional.ofNullable(select().where(rpkiObject.sha256.eq(sha256)).fetchFirst());
+    }
+
+    @Override
+    public Map<String, RpkiObject> findObjectsInManifest(ManifestCms manifestCms, LockModeType lockMode) {
+        SortedMap<byte[], String> hashes = new TreeMap<>(UnsignedBytes.lexicographicalComparator());
+        manifestCms.getFiles().forEach((name, hash) -> hashes.put(hash, name));
+
+        List<RpkiObject> objects = select().setLockMode(lockMode).where(rpkiObject.sha256.in(hashes.keySet())).fetch();
+
+        return objects.stream().collect(Collectors.toMap(object -> hashes.get(object.getSha256()), object -> object));
     }
 
     @Override
@@ -85,6 +104,11 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
             .select(certificateTreeValidationRun, rpkiObject);
         return stream(query)
             .map(x -> Pair.of(x.get(0, CertificateTreeValidationRun.class), x.get(1, RpkiObject.class)));
+    }
+
+    @Override
+    public long deleteUnreachableObjects(Instant unreachableSince) {
+        return queryFactory.delete(rpkiObject).where(rpkiObject.lastMarkedReachableAt.before(unreachableSince)).execute();
     }
 
     @Override

@@ -98,6 +98,11 @@ public class RpkiObject extends AbstractEntity {
     @Getter
     private Instant signingTime;
 
+    @Basic(optional = false)
+    @Getter
+    @NotNull
+    private Instant lastMarkedReachableAt;
+
     @Basic
     @Getter
     private byte[] authorityKeyIdentifier;
@@ -133,6 +138,7 @@ public class RpkiObject extends AbstractEntity {
         this.locations.add(location);
         this.encoded = object.getEncoded();
         this.sha256 = Sha256.hash(this.encoded);
+        this.lastMarkedReachableAt = Instant.now();
         if (object instanceof X509ResourceCertificate) {
             this.serialNumber = ((X509ResourceCertificate) object).getSerialNumber();
             this.signingTime = null; // Use not valid before instead?
@@ -210,6 +216,14 @@ public class RpkiObject extends AbstractEntity {
 
     public void removeLocation(String location) {
         this.locations.remove(location);
+    }
+
+    /**
+     * Mark this object as currently reachable by following a chain of references from the
+     * trust anchors through manifest to this object.
+     */
+    public void markReachable(Instant now) {
+        this.lastMarkedReachableAt = now;
     }
 
     @Override
