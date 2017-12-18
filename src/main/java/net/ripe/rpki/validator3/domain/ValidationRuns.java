@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.domain;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -48,4 +49,6 @@ public interface ValidationRuns {
     void runCertificateTreeValidation(TrustAnchor trustAnchor);
 
     void removeAllForRpkiRepository(RpkiRepository repository);
+
+    long removeOldValidationRuns(Instant completedBefore);
 }

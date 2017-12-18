@@ -33,12 +33,14 @@ import lombok.Getter;
 
 import javax.persistence.Basic;
 import javax.persistence.CascadeType;
+import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import java.util.HashSet;
 import java.util.Set;
 
+@Entity
 public abstract class RpkiRepositoryValidationRun extends ValidationRun {
     public final static String TYPE = "rpki-repository-validation-run";
 

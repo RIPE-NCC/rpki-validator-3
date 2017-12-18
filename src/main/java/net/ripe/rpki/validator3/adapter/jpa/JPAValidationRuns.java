@@ -40,17 +40,20 @@ import net.ripe.rpki.validator3.domain.ValidationRun;
 import net.ripe.rpki.validator3.domain.ValidationRuns;
 import net.ripe.rpki.validator3.domain.querydsl.QCertificateTreeValidationRun;
 import net.ripe.rpki.validator3.domain.querydsl.QRrdpRepositoryValidationRun;
+import net.ripe.rpki.validator3.domain.querydsl.QRsyncRepositoryValidationRun;
 import net.ripe.rpki.validator3.domain.querydsl.QTrustAnchorValidationRun;
 import net.ripe.rpki.validator3.domain.querydsl.QValidationRun;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import javax.transaction.Transactional;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
 import static net.ripe.rpki.validator3.domain.querydsl.QCertificateTreeValidationRun.certificateTreeValidationRun;
 import static net.ripe.rpki.validator3.domain.querydsl.QRrdpRepositoryValidationRun.rrdpRepositoryValidationRun;
+import static net.ripe.rpki.validator3.domain.querydsl.QRsyncRepositoryValidationRun.rsyncRepositoryValidationRun;
 import static net.ripe.rpki.validator3.domain.querydsl.QTrustAnchorValidationRun.trustAnchorValidationRun;
 import static net.ripe.rpki.validator3.domain.querydsl.QValidationRun.validationRun;
 
@@ -127,6 +130,70 @@ public class JPAValidationRuns extends JPARepository<ValidationRun> implements V
         }
     }
 
+    @Override
+    public long removeOldValidationRuns(Instant completedBefore) {
+        long removedCount = 0;
+        removedCount += removeOldRsyncRepositoryValidationRuns(completedBefore);
+        removedCount += removeOldRrdpRepositoryValidationRuns(completedBefore);
+        removedCount += removeOldCertificateTreeValidationRuns(completedBefore);
+        removedCount += removeOldTrustAnchorValidationRuns(completedBefore);
+        return removedCount;
+    }
+
+    private long removeOldRsyncRepositoryValidationRuns(Instant completedBefore) {
+        QRsyncRepositoryValidationRun newerValidationRun = new QRsyncRepositoryValidationRun("newer");
+        return queryFactory.delete(rsyncRepositoryValidationRun).where(
+            rsyncRepositoryValidationRun.completedAt.before(completedBefore)
+                .and(rsyncRepositoryValidationRun.status.ne(ValidationRun.Status.RUNNING))
+                .and(JPAExpressions.selectFrom(newerValidationRun)
+                    .where(newerValidationRun.id.gt(rsyncRepositoryValidationRun.id)
+                        .and(newerValidationRun.status.ne(ValidationRun.Status.RUNNING))
+                    ).exists()
+                )
+        ).execute();
+    }
+
+    private long removeOldRrdpRepositoryValidationRuns(Instant completedBefore) {
+        QRrdpRepositoryValidationRun newerValidationRun = new QRrdpRepositoryValidationRun("newer");
+        return queryFactory.delete(rrdpRepositoryValidationRun).where(
+            rrdpRepositoryValidationRun.completedAt.before(completedBefore)
+                .and(rrdpRepositoryValidationRun.status.ne(ValidationRun.Status.RUNNING))
+                .and(JPAExpressions.selectFrom(newerValidationRun)
+                    .where(newerValidationRun.id.gt(rrdpRepositoryValidationRun.id)
+                        .and(rrdpRepositoryValidationRun.rpkiRepository.eq(newerValidationRun.rpkiRepository))
+                        .and(newerValidationRun.status.ne(ValidationRun.Status.RUNNING))
+                    ).exists()
+                )
+        ).execute();
+    }
+
+    private long removeOldCertificateTreeValidationRuns(Instant completedBefore) {
+        QCertificateTreeValidationRun newerValidationRun = new QCertificateTreeValidationRun("newer");
+        return queryFactory.delete(certificateTreeValidationRun).where(
+            certificateTreeValidationRun.completedAt.before(completedBefore)
+                .and(certificateTreeValidationRun.status.ne(ValidationRun.Status.RUNNING))
+                .and(JPAExpressions.selectFrom(newerValidationRun)
+                    .where(newerValidationRun.id.gt(certificateTreeValidationRun.id)
+                        .and(certificateTreeValidationRun.trustAnchor.eq(newerValidationRun.trustAnchor))
+                        .and(newerValidationRun.status.ne(ValidationRun.Status.RUNNING))
+                    ).exists()
+                )
+        ).execute();
+    }
+
+    private long removeOldTrustAnchorValidationRuns(Instant completedBefore) {
+        QTrustAnchorValidationRun newerValidationRun = new QTrustAnchorValidationRun("newer");
+        return queryFactory.delete(trustAnchorValidationRun).where(
+            trustAnchorValidationRun.completedAt.before(completedBefore)
+                .and(trustAnchorValidationRun.status.ne(ValidationRun.Status.RUNNING))
+                .and(JPAExpressions.selectFrom(newerValidationRun)
+                    .where(newerValidationRun.id.gt(trustAnchorValidationRun.id)
+                        .and(trustAnchorValidationRun.trustAnchor.eq(newerValidationRun.trustAnchor))
+                        .and(newerValidationRun.status.ne(ValidationRun.Status.RUNNING))
+                    ).exists()
+                )
+        ).execute();
+    }
 
     protected <T extends ValidationRun> JPAQuery<T> select(Class<T> type) {
         return queryFactory.selectFrom(new PathBuilder<>(type, "validationRun"));

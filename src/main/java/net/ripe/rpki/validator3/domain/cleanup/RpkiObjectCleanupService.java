@@ -82,7 +82,7 @@ public class RpkiObjectCleanupService {
             transactionTemplate.execute((status) -> {
                 entityManager.setFlushMode(FlushModeType.COMMIT);
 
-                log.info("tracing objects for trust anchor {}", trustAnchor);
+                log.debug("tracing objects for trust anchor {}", trustAnchor);
 
                 X509ResourceCertificate resourceCertificate = trustAnchor.getCertificate();
                 if (resourceCertificate != null) {
@@ -102,7 +102,7 @@ public class RpkiObjectCleanupService {
 
             Instant unreachableSince = now.minus(cleanupGraceDuration);
             long count = rpkiObjects.deleteUnreachableObjects(unreachableSince);
-            log.info("Deleted {} RPKI objects that have not been marked reachable since {}", count, unreachableSince);
+            log.info("Removed {} RPKI objects that have not been marked reachable since {}", count, unreachableSince);
             return count;
         });
     }
