@@ -92,18 +92,17 @@ public class PreconfiguredTrustAnchors {
                     continue;
                 }
 
-                AddTrustAnchor command = AddTrustAnchor.builder()
-                    .type(TrustAnchor.TYPE)
-                    .name(locator.getCaName())
-                    .locations(locator.getCertificateLocations().stream().map(URI::toASCIIString).collect(Collectors.toList()))
-                    .subjectPublicKeyInfo(locator.getPublicKeyInfo())
-                    .rsyncPrefetchUri(locator.getPrefetchUris().stream()
+                TrustAnchor trustAnchor = new TrustAnchor(true);
+                trustAnchor.setName(locator.getCaName());
+                trustAnchor.setLocations(locator.getCertificateLocations().stream().map(URI::toASCIIString).collect(Collectors.toList()));
+                trustAnchor.setSubjectPublicKeyInfo(locator.getPublicKeyInfo());
+                trustAnchor.setRsyncPrefetchUri(
+                    locator.getPrefetchUris().stream()
                         .filter(uri -> "rsync".equalsIgnoreCase(uri.getScheme()))
                         .map(URI::toASCIIString)
                         .findFirst().orElse(null)
-                    )
-                    .build();
-                trustAnchorService.execute(command);
+                );
+                trustAnchorService.add(trustAnchor);
             }
 
             return null;

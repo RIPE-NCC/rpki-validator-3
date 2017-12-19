@@ -37,7 +37,11 @@ import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.domain.constraints.ValidPublicKeyInfo;
 
-import javax.persistence.*;
+import javax.persistence.Basic;
+import javax.persistence.ElementCollection;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.OrderColumn;
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -49,6 +53,14 @@ import java.util.List;
 public class TrustAnchor extends AbstractEntity {
 
     public static final String TYPE = "trust-anchor";
+
+    @Basic
+    @Getter
+    private boolean preconfigured;
+
+    @Basic
+    @Getter
+    private boolean ready;
 
     @Basic
     @Getter
@@ -84,6 +96,14 @@ public class TrustAnchor extends AbstractEntity {
     @Size(max = RpkiObject.MAX_SIZE)
     @Getter
     private byte[] encodedCertificate;
+
+    protected TrustAnchor() {
+    }
+
+    public TrustAnchor(boolean preconfigured) {
+        this.preconfigured = preconfigured;
+        this.ready = false;
+    }
 
     public void setCertificate(X509ResourceCertificate certificate) {
         this.encodedCertificate = certificate.getEncoded();
