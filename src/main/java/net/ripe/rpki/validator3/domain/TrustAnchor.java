@@ -120,6 +120,10 @@ public class TrustAnchor extends AbstractEntity {
         );
     }
 
+    public void markReady() {
+        this.ready = true;
+    }
+
     @Override
     public String toString() {
         return toStringBuilder()

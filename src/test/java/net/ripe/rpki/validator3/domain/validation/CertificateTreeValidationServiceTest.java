@@ -119,6 +119,8 @@ public class CertificateTreeValidationServiceTest {
             RpkiRepository.Status.PENDING,
             "https://rrdp.ripe.net/notification.xml"
         );
+
+        assertThat(ta.isReady()).as("trust anchor ready").isFalse();
     }
 
     @Test
@@ -146,6 +148,7 @@ public class CertificateTreeValidationServiceTest {
             TA_CA_REPOSITORY_URI
         );
 
+        assertThat(ta.isReady()).as("trust anchor ready").isFalse();
     }
 
     @Test
@@ -172,6 +175,9 @@ public class CertificateTreeValidationServiceTest {
             "rsync://rpki.test/test-trust-anchor.mft",
             "rsync://rpki.test/test-trust-anchor.crl"
         );
+
+
+        assertThat(ta.isReady()).as("trust anchor ready").isTrue();
     }
 
     @Test
@@ -201,6 +207,8 @@ public class CertificateTreeValidationServiceTest {
 
         List<CertificateTreeValidationRun> completed = validationRuns.findAll(CertificateTreeValidationRun.class);
         assertThat(completed).hasSize(1);
+
+        assertThat(ta.isReady()).as("trust anchor ready").isTrue();
 
         List<Pair<CertificateTreeValidationRun, RpkiObject>> validated = rpkiObjects.findCurrentlyValidated(RpkiObject.Type.CER).collect(toList());
         assertThat(validated).hasSize(1);
