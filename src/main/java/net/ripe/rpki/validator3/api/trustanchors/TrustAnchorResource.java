@@ -59,7 +59,7 @@ class TrustAnchorResource {
     @ApiModelProperty(required = true, position = 7)
     boolean preconfigured;
     @ApiModelProperty(required = true, position = 8)
-    boolean ready;
+    boolean initialCertificateTreeValidationRunCompleted;
     @ApiModelProperty(position = 9)
     byte[] certificate;
     @ApiModelProperty(required = true, position = 10)
@@ -74,7 +74,7 @@ class TrustAnchorResource {
             trustAnchor.getSubjectPublicKeyInfo(),
             trustAnchor.getRsyncPrefetchUri(),
             trustAnchor.isPreconfigured(),
-            trustAnchor.isReady(),
+            trustAnchor.isInitialCertificateTreeValidationRunCompleted(),
             trustAnchor.getEncodedCertificate() == null ? null : trustAnchor.getEncodedCertificate(),
             new Links(
                 linkTo(methodOn(TrustAnchorController.class).get(trustAnchor.getId())).withSelfRel()

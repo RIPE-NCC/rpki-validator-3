@@ -44,6 +44,7 @@ import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
+import net.ripe.rpki.validator3.domain.Settings;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchors;
 import net.ripe.rpki.validator3.domain.TrustAnchorsFactory;
@@ -98,6 +99,9 @@ public class CertificateTreeValidationServiceTest {
     @Autowired
     private RpkiObjects rpkiObjects;
 
+    @Autowired
+    private Settings settings;
+
     @Test
     public void should_register_rpki_repositories() {
         TrustAnchor ta = factory.createRipeNccTrustAnchor();
@@ -120,7 +124,8 @@ public class CertificateTreeValidationServiceTest {
             "https://rrdp.ripe.net/notification.xml"
         );
 
-        assertThat(ta.isReady()).as("trust anchor ready").isFalse();
+        assertThat(ta.isInitialCertificateTreeValidationRunCompleted()).as("trust anchor initial validation run completed").isFalse();
+        assertThat(settings.isInitialValidationRunCompleted()).as("validator initial validation run completed").isFalse();
     }
 
     @Test
@@ -148,7 +153,8 @@ public class CertificateTreeValidationServiceTest {
             TA_CA_REPOSITORY_URI
         );
 
-        assertThat(ta.isReady()).as("trust anchor ready").isFalse();
+        assertThat(ta.isInitialCertificateTreeValidationRunCompleted()).as("trust anchor initial validation run completed").isFalse();
+        assertThat(settings.isInitialValidationRunCompleted()).as("validator initial validation run completed").isFalse();
     }
 
     @Test
@@ -177,7 +183,8 @@ public class CertificateTreeValidationServiceTest {
         );
 
 
-        assertThat(ta.isReady()).as("trust anchor ready").isTrue();
+        assertThat(ta.isInitialCertificateTreeValidationRunCompleted()).as("trust anchor initial validation run completed").isTrue();
+        assertThat(settings.isInitialValidationRunCompleted()).as("validator initial validation run completed").isFalse();
     }
 
     @Test
@@ -208,7 +215,8 @@ public class CertificateTreeValidationServiceTest {
         List<CertificateTreeValidationRun> completed = validationRuns.findAll(CertificateTreeValidationRun.class);
         assertThat(completed).hasSize(1);
 
-        assertThat(ta.isReady()).as("trust anchor ready").isTrue();
+        assertThat(ta.isInitialCertificateTreeValidationRunCompleted()).as("trust anchor initial validation run completed").isTrue();
+        assertThat(settings.isInitialValidationRunCompleted()).as("validator initial validation run completed").isFalse();
 
         List<Pair<CertificateTreeValidationRun, RpkiObject>> validated = rpkiObjects.findCurrentlyValidated(RpkiObject.Type.CER).collect(toList());
         assertThat(validated).hasSize(1);

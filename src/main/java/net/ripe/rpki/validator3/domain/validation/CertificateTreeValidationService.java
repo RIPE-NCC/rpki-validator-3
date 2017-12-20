@@ -41,13 +41,13 @@ import net.ripe.rpki.commons.validation.ValidationOptions;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.commons.validation.ValidationStatus;
 import net.ripe.rpki.commons.validation.ValidationString;
-import static net.ripe.rpki.commons.validation.ValidationString.*;
 import net.ripe.rpki.commons.validation.objectvalidators.CertificateRepositoryObjectValidationContext;
 import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
+import net.ripe.rpki.validator3.domain.Settings;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchors;
 import net.ripe.rpki.validator3.domain.ValidationRuns;
@@ -69,32 +69,25 @@ import java.util.Map;
 import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
+import static net.ripe.rpki.commons.validation.ValidationString.*;
 
 @Service
 @Slf4j
 public class CertificateTreeValidationService {
     private static final ValidationOptions VALIDATION_OPTIONS = new ValidationOptions();
 
-    private final EntityManager entityManager;
-    private final TrustAnchors trustAnchors;
-    private final RpkiObjects rpkiObjects;
-    private final RpkiRepositories rpkiRepositories;
-    private final ValidationRuns validationRuns;
-
     @Autowired
-    public CertificateTreeValidationService(
-        EntityManager entityManager,
-        TrustAnchors trustAnchors,
-        RpkiObjects rpkiObjects,
-        RpkiRepositories rpkiRepositories,
-        ValidationRuns validationRuns
-    ) {
-        this.entityManager = entityManager;
-        this.trustAnchors = trustAnchors;
-        this.rpkiObjects = rpkiObjects;
-        this.rpkiRepositories = rpkiRepositories;
-        this.validationRuns = validationRuns;
-    }
+    private EntityManager entityManager;
+    @Autowired
+    private RpkiObjects rpkiObjects;
+    @Autowired
+    private TrustAnchors trustAnchors;
+    @Autowired
+    private RpkiRepositories rpkiRepositories;
+    @Autowired
+    private ValidationRuns validationRuns;
+    @Autowired
+    private Settings settings;
 
     @Transactional(Transactional.TxType.REQUIRED)
     public void validate(long trustAnchorId) {
@@ -137,8 +130,13 @@ public class CertificateTreeValidationService {
                 validateCertificateAuthority(trustAnchor, registeredRepositories, context, validationResult)
             );
 
-            if (isTrustAnchorReady(validationResult)) {
-                trustAnchor.markReady();
+            entityManager.setFlushMode(FlushModeType.AUTO);
+
+            if (isValidationRunCompleted(validationResult)) {
+                trustAnchor.markInitialCertificateTreeValidationRunCompleted();
+                if (trustAnchors.allInitialCertificateTreeValidationRunsCompleted()) {
+                    settings.markInitialValidationRunCompleted();
+                }
             }
         } finally {
             validationRun.completeWith(validationResult);
@@ -146,7 +144,7 @@ public class CertificateTreeValidationService {
         }
     }
 
-    private boolean isTrustAnchorReady(ValidationResult validationResult) {
+    private boolean isValidationRunCompleted(ValidationResult validationResult) {
         for (net.ripe.rpki.commons.validation.ValidationCheck check: validationResult.getWarnings()) {
             if (check.getStatus() != ValidationStatus.PASSED && VALIDATOR_RPKI_REPOSITORY_PENDING.equals(check.getKey())) {
                 return false;

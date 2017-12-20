@@ -60,7 +60,7 @@ public class TrustAnchor extends AbstractEntity {
 
     @Basic
     @Getter
-    private boolean ready;
+    private boolean initialCertificateTreeValidationRunCompleted;
 
     @Basic
     @Getter
@@ -102,7 +102,7 @@ public class TrustAnchor extends AbstractEntity {
 
     public TrustAnchor(boolean preconfigured) {
         this.preconfigured = preconfigured;
-        this.ready = false;
+        this.initialCertificateTreeValidationRunCompleted = false;
     }
 
     public void setCertificate(X509ResourceCertificate certificate) {
@@ -120,8 +120,8 @@ public class TrustAnchor extends AbstractEntity {
         );
     }
 
-    public void markReady() {
-        this.ready = true;
+    public void markInitialCertificateTreeValidationRunCompleted() {
+        this.initialCertificateTreeValidationRunCompleted = true;
     }
 
     @Override

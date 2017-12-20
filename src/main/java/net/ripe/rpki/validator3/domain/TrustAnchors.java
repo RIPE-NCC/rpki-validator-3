@@ -44,4 +44,6 @@ public interface TrustAnchors {
     List<TrustAnchor> findByName(String name);
 
     Optional<TrustAnchor> findBySubjectPublicKeyInfo(String subjectPublicKeyInfo);
+
+    boolean allInitialCertificateTreeValidationRunsCompleted();
 }

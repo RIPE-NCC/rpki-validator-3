@@ -53,8 +53,6 @@ import java.util.stream.Collectors;
 @Profile("!test")
 @Slf4j
 public class PreconfiguredTrustAnchors {
-    public static final String PRECONFIGURED_TAL_SETTINGS_KEY = "preconfigured.tals.loaded";
-
     @Autowired
     private PlatformTransactionManager transactionManager;
     @Autowired
@@ -72,12 +70,12 @@ public class PreconfiguredTrustAnchors {
         new TransactionTemplate(transactionManager).execute((status) -> {
             log.info("Automatically adding preconfigured trust anchors");
 
-            if ("true".equals(settings.get(PRECONFIGURED_TAL_SETTINGS_KEY).orElse("false"))) {
+            if (settings.isPreconfiguredTalsLoaded()) {
                 log.info("Preconfigured trust anchors are already loaded, skipping");
                 return null;
             }
 
-            settings.put(PRECONFIGURED_TAL_SETTINGS_KEY, "true");
+            settings.markPreconfiguredTalsLoaded();
 
             File[] tals = preconfiguredTrustAnchorDirectory.listFiles(new PatternFilenameFilter(Pattern.compile("^.*\\.tal$")));
             if (ArrayUtils.isEmpty(tals)) {

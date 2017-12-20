@@ -78,4 +78,9 @@ public class JPATrustAnchors extends JPARepository<TrustAnchor> implements Trust
     public Optional<TrustAnchor> findBySubjectPublicKeyInfo(String subjectPublicKeyInfo) {
         return Optional.ofNullable(select().where(trustAnchor.subjectPublicKeyInfo.eq(subjectPublicKeyInfo)).fetchOne());
     }
+
+    @Override
+    public boolean allInitialCertificateTreeValidationRunsCompleted() {
+        return queryFactory.from(trustAnchor).select(trustAnchor.id).where(trustAnchor.initialCertificateTreeValidationRunCompleted.eq(false)).fetchCount() == 0;
+    }
 }
