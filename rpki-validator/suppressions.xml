@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.1.xsd">
+    <suppress>
+        <notes><![CDATA[
+      file name: validation-api-1.1.0.Final.jar
+      ]]></notes>
+        <sha1>8613ae82954779d518631e05daa73a6a954817d5</sha1>
+        <cpe>cpe:/a:bean_project:bean:7.x-1.1::~~~drupal~~</cpe>
+    </suppress>
+    <suppress>
+        <notes><![CDATA[
+      file name: mapstruct-1.1.0.Final.jar
+      ]]></notes>
+        <sha1>65b81fa5234e1fd8461b77bbccee7b9ebc0bbbb2</sha1>
+        <cpe>cpe:/a:bean_project:bean:7.x-1.1::~~~drupal~~</cpe>
+    </suppress>
+    <suppress>
+        <notes><![CDATA[
+      file name: lombok-1.16.18.jar
+      ]]></notes>
+        <sha1>557d13dcb647038dc687390711ccb5c9b3ffbd60</sha1>
+        <cpe>cpe:/a:spice_project:spice:1.16.18</cpe>
+    </suppress>
+</suppressions>
