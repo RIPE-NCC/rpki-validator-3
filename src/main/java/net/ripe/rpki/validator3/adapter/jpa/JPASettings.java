@@ -40,7 +40,7 @@ import java.util.Optional;
 import static net.ripe.rpki.validator3.adapter.jpa.querydsl.QSetting.setting;
 
 @Component
-@Transactional(Transactional.TxType.MANDATORY)
+@Transactional(Transactional.TxType.REQUIRED)
 public class JPASettings extends JPARepository<Setting> implements Settings {
     private static final String PRECONFIGURED_TAL_SETTINGS_KEY = "internal.preconfigured.tals.loaded";
     private static final String INITIAL_VALIDATION_RUN_COMPLETED = "internal.initial.validation.run.completed";
@@ -72,7 +72,7 @@ public class JPASettings extends JPARepository<Setting> implements Settings {
 
     @Override
     public boolean isPreconfiguredTalsLoaded() {
-        return "true".equals(get(PRECONFIGURED_TAL_SETTINGS_KEY));
+        return get(PRECONFIGURED_TAL_SETTINGS_KEY).orElse("false").equals("true");
     }
 
     @Override
@@ -83,6 +83,6 @@ public class JPASettings extends JPARepository<Setting> implements Settings {
 
     @Override
     public boolean isInitialValidationRunCompleted() {
-        return "true".equals(get(INITIAL_VALIDATION_RUN_COMPLETED));
+        return get(INITIAL_VALIDATION_RUN_COMPLETED).orElse("false").equals("true");
     }
 }
