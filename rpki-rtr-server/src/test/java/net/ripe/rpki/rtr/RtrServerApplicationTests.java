@@ -37,7 +37,6 @@ import javax.transaction.Transactional;
 
 @RunWith(SpringRunner.class)
 @IntegrationTest
-@Transactional
 public class RtrServerApplicationTests {
 
 	@Test

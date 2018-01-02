@@ -345,22 +345,6 @@
                                 </source>
                             </sources>
                         </mapping>
-                        <mapping>
-                            <directory>/var/lib/rpki-rtr-server/</directory>
-                            <configuration>true</configuration>
-                            <username>rpki</username>
-                            <groupname>rpki</groupname>
-                            <directoryIncluded>true</directoryIncluded>
-                            <recurseDirectories>true</recurseDirectories>
-                            <sources>
-                                <source>
-                                    <location>src/main/resources/var/lib/rpki-rtr-server/</location>
-                                    <excludes>
-                                        <exclude>*/.ignore.me</exclude>
-                                    </excludes>
-                                </source>
-                            </sources>
-                        </mapping>
                     </mappings>
                     <preinstallScriptlet>
                         <script>
