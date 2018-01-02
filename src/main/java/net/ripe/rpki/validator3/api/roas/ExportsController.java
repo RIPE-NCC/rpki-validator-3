@@ -30,17 +30,27 @@
 package net.ripe.rpki.validator3.api.roas;
 
 import au.com.bytecode.opencsv.CSVWriter;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.api.ApiResponse;
+import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.Settings;
+import net.ripe.rpki.validator3.domain.TrustAnchor;
+import net.ripe.rpki.validator3.domain.TrustAnchors;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.Link;
+import org.springframework.hateoas.Links;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -54,14 +64,36 @@ import java.util.stream.Stream;
 public class ExportsController {
 
     @Autowired
+    private TrustAnchors trustAnchors;
+
+    @Autowired
     private RpkiObjects rpkiObjects;
 
     @Autowired
     private Settings settings;
 
     @GetMapping(path = "/export.json", produces = "text/json; charset=UTF-8")
-    public JsonExport exportJson() {
-        return new JsonExport(loadValidatedPrefixes());
+    public ApiResponse<JsonExport> exportJson() {
+        Map<Long, TrustAnchorResource> trustAnchorsById = trustAnchors.findAll().stream().collect(Collectors.toMap(ta -> ta.getId(), TrustAnchorResource::of));
+
+        Stream<JsonRoaPrefix> validatedPrefixes = rpkiObjects
+            .findCurrentlyValidated(RpkiObject.Type.ROA)
+            .flatMap(pair -> {
+                Link trustAnchorLink = trustAnchorsById.get(pair.getKey().getTrustAnchor().getId()).getLinks().getLink("self");
+                return pair.getValue().getRoaPrefixes().stream()
+                        .map(prefix -> new JsonRoaPrefix(
+                            String.valueOf(prefix.getAsn()),
+                            prefix.getPrefix(),
+                            prefix.getEffectiveLength(),
+                            new Links(trustAnchorLink.withRel(TrustAnchor.TYPE))
+                        ));
+                }
+            )
+            .distinct();
+
+        return ApiResponse.<JsonExport>builder()
+            .data(new JsonExport(settings.isInitialValidationRunCompleted(), trustAnchorsById.values(), validatedPrefixes))
+            .build();
     }
 
     @GetMapping(path = "/export.csv", produces = "text/csv; charset=UTF-8")
@@ -74,37 +106,51 @@ public class ExportsController {
         response.setContentType("text/csv; charset=UTF-8");
         try (CSVWriter writer = new CSVWriter(response.getWriter())) {
             writer.writeNext(new String[]{"ASN", "IP Prefix", "Max Length", "Trust Anchor"});
-            Stream<ExportRoaPrefix> validatedPrefixes = loadValidatedPrefixes();
+            Stream<CsvRoaPrefix> validatedPrefixes = rpkiObjects
+                .findCurrentlyValidated(RpkiObject.Type.ROA)
+                .flatMap(pair -> pair.getValue().getRoaPrefixes().stream()
+                    .map(prefix -> new CsvRoaPrefix(
+                        String.valueOf(prefix.getAsn()),
+                        prefix.getPrefix(),
+                        prefix.getEffectiveLength(),
+                        pair.getKey().getTrustAnchor().getName()
+                    ))
+                )
+                .distinct();
             validatedPrefixes.forEach(prefix -> {
-                writer.writeNext(new String[]{prefix.getAsn(), prefix.getPrefix(), String.valueOf(prefix.getMaxLength()), prefix.getTa()});
+                writer.writeNext(new String[]{
+                    prefix.getAsn(),
+                    prefix.getPrefix(),
+                    String.valueOf(prefix.getMaxLength()),
+                    prefix.getTrustAnchorName()
+                });
             });
         }
     }
 
-    protected Stream<ExportRoaPrefix> loadValidatedPrefixes() {
-        return rpkiObjects
-            .findCurrentlyValidated(RpkiObject.Type.ROA)
-            .flatMap(pair -> pair.getValue().getRoaPrefixes().stream()
-                .map(prefix -> new ExportRoaPrefix(
-                    String.valueOf(prefix.getAsn()),
-                    prefix.getPrefix(),
-                    prefix.getEffectiveLength(),
-                    pair.getKey().getTrustAnchor().getName()
-                ))
-            )
-            .distinct();
+    @Value
+    public static class CsvRoaPrefix {
+        private String asn;
+        private String prefix;
+        private int maxLength;
+        private String trustAnchorName;
     }
 
     @Value
     public static class JsonExport {
-        Stream<ExportRoaPrefix> roa;
+        @ApiModelProperty(position = 1)
+        boolean ready;
+        @ApiModelProperty(position = 2)
+        Collection<TrustAnchorResource> trustAnchors;
+        @ApiModelProperty(position = 3)
+        Stream<JsonRoaPrefix> roaPrefixes;
     }
 
     @Value
-    public static class ExportRoaPrefix {
+    public static class JsonRoaPrefix {
         private String asn;
         private String prefix;
         private int maxLength;
-        private String ta;
+        private Links links;
     }
 }
