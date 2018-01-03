@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.adapter.jpa;
 
+import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchors;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +43,7 @@ import static net.ripe.rpki.validator3.domain.querydsl.QTrustAnchor.trustAnchor;
 
 @Repository
 @Transactional(Transactional.TxType.REQUIRED)
+@Slf4j
 public class JPATrustAnchors extends JPARepository<TrustAnchor> implements TrustAnchors {
 
     private final QuartzValidationScheduler validationScheduler;
@@ -77,5 +79,12 @@ public class JPATrustAnchors extends JPARepository<TrustAnchor> implements Trust
     @Override
     public Optional<TrustAnchor> findBySubjectPublicKeyInfo(String subjectPublicKeyInfo) {
         return Optional.ofNullable(select().where(trustAnchor.subjectPublicKeyInfo.eq(subjectPublicKeyInfo)).fetchOne());
+    }
+
+    @Override
+    public boolean allInitialCertificateTreeValidationRunsCompleted() {
+        long l = queryFactory.from(trustAnchor).select(trustAnchor.id).where(trustAnchor.initialCertificateTreeValidationRunCompleted.eq(false)).fetchCount();
+        log.debug("still {} trust anchors need to complete initial validation run", l);
+        return l == 0;
     }
 }

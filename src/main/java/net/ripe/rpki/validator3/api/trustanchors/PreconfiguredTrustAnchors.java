@@ -53,8 +53,6 @@ import java.util.stream.Collectors;
 @Profile("!test")
 @Slf4j
 public class PreconfiguredTrustAnchors {
-    public static final String PRECONFIGURED_TAL_SETTINGS_KEY = "preconfigured.tals.loaded";
-
     @Autowired
     private PlatformTransactionManager transactionManager;
     @Autowired
@@ -72,12 +70,12 @@ public class PreconfiguredTrustAnchors {
         new TransactionTemplate(transactionManager).execute((status) -> {
             log.info("Automatically adding preconfigured trust anchors");
 
-            if ("true".equals(settings.get(PRECONFIGURED_TAL_SETTINGS_KEY).orElse("false"))) {
+            if (settings.isPreconfiguredTalsLoaded()) {
                 log.info("Preconfigured trust anchors are already loaded, skipping");
                 return null;
             }
 
-            settings.put(PRECONFIGURED_TAL_SETTINGS_KEY, "true");
+            settings.markPreconfiguredTalsLoaded();
 
             File[] tals = preconfiguredTrustAnchorDirectory.listFiles(new PatternFilenameFilter(Pattern.compile("^.*\\.tal$")));
             if (ArrayUtils.isEmpty(tals)) {
@@ -92,18 +90,17 @@ public class PreconfiguredTrustAnchors {
                     continue;
                 }
 
-                AddTrustAnchor command = AddTrustAnchor.builder()
-                    .type(TrustAnchor.TYPE)
-                    .name(locator.getCaName())
-                    .locations(locator.getCertificateLocations().stream().map(URI::toASCIIString).collect(Collectors.toList()))
-                    .subjectPublicKeyInfo(locator.getPublicKeyInfo())
-                    .rsyncPrefetchUri(locator.getPrefetchUris().stream()
+                TrustAnchor trustAnchor = new TrustAnchor(true);
+                trustAnchor.setName(locator.getCaName());
+                trustAnchor.setLocations(locator.getCertificateLocations().stream().map(URI::toASCIIString).collect(Collectors.toList()));
+                trustAnchor.setSubjectPublicKeyInfo(locator.getPublicKeyInfo());
+                trustAnchor.setRsyncPrefetchUri(
+                    locator.getPrefetchUris().stream()
                         .filter(uri -> "rsync".equalsIgnoreCase(uri.getScheme()))
                         .map(URI::toASCIIString)
                         .findFirst().orElse(null)
-                    )
-                    .build();
-                trustAnchorService.execute(command);
+                );
+                trustAnchorService.add(trustAnchor);
             }
 
             return null;

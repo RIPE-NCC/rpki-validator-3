@@ -55,14 +55,18 @@ public class TrustAnchorService {
     private ValidationRuns validationRunRepository;
 
     public long execute(@Valid AddTrustAnchor command) {
-        TrustAnchor trustAnchor = new TrustAnchor();
+        TrustAnchor trustAnchor = new TrustAnchor(false);
         trustAnchor.setName(command.getName());
         trustAnchor.setLocations(command.getLocations());
         trustAnchor.setSubjectPublicKeyInfo(command.getSubjectPublicKeyInfo());
+        trustAnchor.setRsyncPrefetchUri(command.getRsyncPrefetchUri());
 
-        if (command.getRsyncPrefetchUri() != null) {
-            trustAnchor.setRsyncPrefetchUri(command.getRsyncPrefetchUri());
-            rpkiRepositories.register(trustAnchor, command.getRsyncPrefetchUri(), RpkiRepository.Type.RSYNC_PREFETCH);
+        return add(trustAnchor);
+    }
+
+    long add(TrustAnchor trustAnchor) {
+        if (trustAnchor.getRsyncPrefetchUri() != null) {
+            rpkiRepositories.register(trustAnchor, trustAnchor.getRsyncPrefetchUri(), RpkiRepository.Type.RSYNC_PREFETCH);
         }
 
         trustAnchors.add(trustAnchor);
@@ -78,5 +82,4 @@ public class TrustAnchorService {
         rpkiRepositories.removeAllForTrustAnchor(trustAnchor);
         trustAnchors.remove(trustAnchor);
     }
-
 }

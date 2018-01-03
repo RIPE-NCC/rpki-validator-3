@@ -34,6 +34,7 @@ import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
+import net.ripe.rpki.validator3.domain.Settings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -52,12 +53,11 @@ import java.util.stream.Stream;
 @Slf4j
 public class ExportsController {
 
-    private final RpkiObjects rpkiObjects;
+    @Autowired
+    private RpkiObjects rpkiObjects;
 
     @Autowired
-    public ExportsController(RpkiObjects rpkiObjects) {
-        this.rpkiObjects = rpkiObjects;
-    }
+    private Settings settings;
 
     @GetMapping(path = "/export.json", produces = "text/json; charset=UTF-8")
     public JsonExport exportJson() {
@@ -66,12 +66,15 @@ public class ExportsController {
 
     @GetMapping(path = "/export.csv", produces = "text/csv; charset=UTF-8")
     public void exportCsv(HttpServletResponse response) throws IOException {
-        Stream<ExportRoaPrefix> validatedPrefixes = loadValidatedPrefixes();
+        if (!settings.isInitialValidationRunCompleted()) {
+            response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+            return;
+        }
 
         response.setContentType("text/csv; charset=UTF-8");
-
         try (CSVWriter writer = new CSVWriter(response.getWriter())) {
             writer.writeNext(new String[]{"ASN", "IP Prefix", "Max Length", "Trust Anchor"});
+            Stream<ExportRoaPrefix> validatedPrefixes = loadValidatedPrefixes();
             validatedPrefixes.forEach(prefix -> {
                 writer.writeNext(new String[]{prefix.getAsn(), prefix.getPrefix(), String.valueOf(prefix.getMaxLength()), prefix.getTa()});
             });
