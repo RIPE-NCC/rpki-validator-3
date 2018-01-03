@@ -40,8 +40,11 @@ import java.util.Optional;
 import static net.ripe.rpki.validator3.adapter.jpa.querydsl.QSetting.setting;
 
 @Component
-@Transactional(Transactional.TxType.MANDATORY)
+@Transactional(Transactional.TxType.REQUIRED)
 public class JPASettings extends JPARepository<Setting> implements Settings {
+    private static final String PRECONFIGURED_TAL_SETTINGS_KEY = "internal.preconfigured.tals.loaded";
+    private static final String INITIAL_VALIDATION_RUN_COMPLETED = "internal.initial.validation.run.completed";
+
     @Autowired
     private EntityManager entityManager;
 
@@ -49,18 +52,37 @@ public class JPASettings extends JPARepository<Setting> implements Settings {
         super(setting);
     }
 
-    @Override
-    public Optional<String> get(String key) {
+    private Optional<String> get(String key) {
         return Optional.ofNullable(select().where(setting.key.eq(key)).fetchFirst()).map(Setting::getValue);
     }
 
-    @Override
-    public void put(String key, String value) {
+    private void put(String key, String value) {
         Setting existing = select().where(setting.key.eq(key)).fetchFirst();
         if (existing == null) {
             entityManager.persist(new Setting(key, value));
         } else {
             existing.setValue(value);
         }
+    }
+
+    @Override
+    public void markPreconfiguredTalsLoaded() {
+        put(PRECONFIGURED_TAL_SETTINGS_KEY, "true");
+    }
+
+    @Override
+    public boolean isPreconfiguredTalsLoaded() {
+        return get(PRECONFIGURED_TAL_SETTINGS_KEY).orElse("false").equals("true");
+    }
+
+    @Override
+    public void markInitialValidationRunCompleted() {
+        put(INITIAL_VALIDATION_RUN_COMPLETED, "true");
+
+    }
+
+    @Override
+    public boolean isInitialValidationRunCompleted() {
+        return get(INITIAL_VALIDATION_RUN_COMPLETED).orElse("false").equals("true");
     }
 }

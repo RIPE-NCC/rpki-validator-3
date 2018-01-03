@@ -36,6 +36,7 @@ import lombok.Value;
 import org.springframework.hateoas.Links;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 @Value(staticConstructor = "of")
@@ -50,10 +51,10 @@ public class ApiResponse<T> {
     T data;
 
     @ApiModelProperty(required = false, position = 3)
-    List<Object> includes;
+    Collection<? extends Object> includes;
 
     @ApiModelProperty(required = false, position = 4)
-    List<ApiError> errors;
+    Collection<ApiError> errors;
 
     public static <T> ApiResponse<T> data(T data) {
         return ApiResponse.<T>builder().data(data).build();

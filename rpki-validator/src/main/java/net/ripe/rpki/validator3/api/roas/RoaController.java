@@ -29,37 +29,82 @@
  */
 package net.ripe.rpki.validator3.api.roas;
 
+import io.swagger.annotations.ApiModelProperty;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
+import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
+import net.ripe.rpki.validator3.domain.Settings;
+import net.ripe.rpki.validator3.domain.TrustAnchor;
+import net.ripe.rpki.validator3.domain.TrustAnchors;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.Link;
+import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @RestController
 @RequestMapping(path = "/roas", produces = Api.API_MIME_TYPE)
 @Slf4j
 public class RoaController {
-    private final RpkiObjects rpkiObjects;
+    @Autowired
+    private RpkiObjects rpkiObjects;
 
     @Autowired
-    public RoaController(RpkiObjects rpkiObjects) {
-        this.rpkiObjects = rpkiObjects;
+    private TrustAnchors trustAnchors;
+
+    @Autowired
+    private Settings settings;
+
+    @GetMapping(path = "/validated")
+    public ResponseEntity<ApiResponse<ValidatedRoas>> list() {
+        Map<Long, TrustAnchorResource> trustAnchorsById = trustAnchors.findAll().stream().collect(Collectors.toMap(ta -> ta.getId(), TrustAnchorResource::of));
+
+        Stream<RoaPrefix> validatedPrefixes = rpkiObjects
+            .findCurrentlyValidated(RpkiObject.Type.ROA)
+            .flatMap(pair -> {
+                    Link trustAnchorLink = trustAnchorsById.get(pair.getKey().getTrustAnchor().getId()).getLinks().getLink("self");
+                    return pair.getValue().getRoaPrefixes().stream()
+                        .map(prefix -> new RoaPrefix(
+                            String.valueOf(prefix.getAsn()),
+                            prefix.getPrefix(),
+                            prefix.getEffectiveLength(),
+                            new Links(trustAnchorLink.withRel(TrustAnchor.TYPE))
+                        ));
+                }
+            )
+            .distinct();
+
+        return ResponseEntity.ok(ApiResponse.<ValidatedRoas>builder()
+            .data(new ValidatedRoas(settings.isInitialValidationRunCompleted(), trustAnchorsById.values(), validatedPrefixes))
+            .build());
     }
 
-    @GetMapping(path = "/validated-prefixes")
-    public ResponseEntity<ApiResponse<Stream<ValidatedPrefix>>> list() {
-        Stream<ValidatedPrefix> validatedPrefixes = rpkiObjects
-            .findCurrentlyValidated(RpkiObject.Type.ROA)
-            .flatMap(x -> x.getValue().getRoaPrefixes().stream())
-            .map(ValidatedPrefix::of)
-            .distinct();
-        return ResponseEntity.ok(ApiResponse.data(validatedPrefixes));
+    @Value
+    public static class ValidatedRoas {
+        @ApiModelProperty(position = 1)
+        boolean ready;
+        @ApiModelProperty(position = 2)
+        Collection<TrustAnchorResource> trustAnchors;
+        @ApiModelProperty(position = 3)
+        Stream<RoaPrefix> roas;
+    }
+
+    @Value
+    public static class RoaPrefix {
+        private String asn;
+        private String prefix;
+        private int maxLength;
+        private Links links;
     }
 }

@@ -45,6 +45,8 @@ CREATE TABLE trust_anchor (
     version INTEGER NOT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
+    preconfigured BOOLEAN NOT NULL,
+    initial_certificate_tree_validation_run_completed BOOLEAN NOT NULL,
     name VARCHAR_IGNORECASE(1000) NOT NULL,
     subject_public_key_info VARCHAR(2000) NOT NULL,
     rsync_prefetch_uri VARCHAR(2000),

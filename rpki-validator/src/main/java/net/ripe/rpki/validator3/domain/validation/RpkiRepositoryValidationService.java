@@ -142,7 +142,7 @@ public class RpkiRepositoryValidationService {
         }
     }
 
-    @Scheduled(initialDelay = 10_000, fixedDelay = 60_000)
+    @Scheduled(initialDelay = 10_000, fixedDelay = 10_000)
     public void validateRsyncRepositories() {
         entityManager.setFlushMode(FlushModeType.COMMIT);
 

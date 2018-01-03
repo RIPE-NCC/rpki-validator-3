@@ -39,6 +39,7 @@ import net.ripe.rpki.commons.util.RepositoryObjectType;
 import net.ripe.rpki.commons.validation.ValidationLocation;
 import net.ripe.rpki.commons.validation.ValidationOptions;
 import net.ripe.rpki.commons.validation.ValidationResult;
+import net.ripe.rpki.commons.validation.ValidationStatus;
 import net.ripe.rpki.commons.validation.ValidationString;
 import net.ripe.rpki.commons.validation.objectvalidators.CertificateRepositoryObjectValidationContext;
 import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
@@ -46,6 +47,7 @@ import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
+import net.ripe.rpki.validator3.domain.Settings;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchors;
 import net.ripe.rpki.validator3.domain.ValidationRuns;
@@ -67,32 +69,25 @@ import java.util.Map;
 import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
+import static net.ripe.rpki.commons.validation.ValidationString.*;
 
 @Service
 @Slf4j
 public class CertificateTreeValidationService {
     private static final ValidationOptions VALIDATION_OPTIONS = new ValidationOptions();
 
-    private final EntityManager entityManager;
-    private final TrustAnchors trustAnchors;
-    private final RpkiObjects rpkiObjects;
-    private final RpkiRepositories rpkiRepositories;
-    private final ValidationRuns validationRuns;
-
     @Autowired
-    public CertificateTreeValidationService(
-        EntityManager entityManager,
-        TrustAnchors trustAnchors,
-        RpkiObjects rpkiObjects,
-        RpkiRepositories rpkiRepositories,
-        ValidationRuns validationRuns
-    ) {
-        this.entityManager = entityManager;
-        this.trustAnchors = trustAnchors;
-        this.rpkiObjects = rpkiObjects;
-        this.rpkiRepositories = rpkiRepositories;
-        this.validationRuns = validationRuns;
-    }
+    private EntityManager entityManager;
+    @Autowired
+    private RpkiObjects rpkiObjects;
+    @Autowired
+    private TrustAnchors trustAnchors;
+    @Autowired
+    private RpkiRepositories rpkiRepositories;
+    @Autowired
+    private ValidationRuns validationRuns;
+    @Autowired
+    private Settings settings;
 
     @Transactional(Transactional.TxType.REQUIRED)
     public void validate(long trustAnchorId) {
@@ -110,7 +105,7 @@ public class CertificateTreeValidationService {
 
         try {
             X509ResourceCertificate certificate = trustAnchor.getCertificate();
-            validationResult.rejectIfNull(certificate, "trust.anchor.certificate.available");
+            validationResult.rejectIfNull(certificate, VALIDATOR_TRUST_ANCHOR_CERTIFICATE_AVAILABLE);
             if (certificate == null) {
                 return;
             }
@@ -126,7 +121,7 @@ public class CertificateTreeValidationService {
             }
 
             URI locationUri = Objects.firstNonNull(certificate.getRrdpNotifyUri(), certificate.getRepositoryUri());
-            validationResult.warnIfNull(locationUri, "trust.anchor.certificate.rrdp.notify.uri.or.repository.uri.present");
+            validationResult.warnIfNull(locationUri, VALIDATOR_TRUST_ANCHOR_CERTIFICATE_RRDP_NOTIFY_URI_OR_REPOSITORY_URI_PRESENT);
             if (locationUri == null) {
                 return;
             }
@@ -134,10 +129,29 @@ public class CertificateTreeValidationService {
             validationRun.getValidatedObjects().addAll(
                 validateCertificateAuthority(trustAnchor, registeredRepositories, context, validationResult)
             );
+
+            entityManager.setFlushMode(FlushModeType.AUTO);
+
+            if (isValidationRunCompleted(validationResult)) {
+                trustAnchor.markInitialCertificateTreeValidationRunCompleted();
+                if (!settings.isInitialValidationRunCompleted() && trustAnchors.allInitialCertificateTreeValidationRunsCompleted()) {
+                    settings.markInitialValidationRunCompleted();
+                    log.info("All trust anchors have completed their initial certificate tree validation run, validator is now ready");
+                }
+            }
         } finally {
             validationRun.completeWith(validationResult);
             log.info("tree validation {} for {}", validationRun.getStatus(), trustAnchor);
         }
+    }
+
+    private boolean isValidationRunCompleted(ValidationResult validationResult) {
+        for (net.ripe.rpki.commons.validation.ValidationCheck check: validationResult.getWarnings()) {
+            if (check.getStatus() != ValidationStatus.PASSED && VALIDATOR_RPKI_REPOSITORY_PENDING.equals(check.getKey())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private List<RpkiObject> validateCertificateAuthority(TrustAnchor trustAnchor,
@@ -151,7 +165,7 @@ public class CertificateTreeValidationService {
         try {
             RpkiRepository rpkiRepository = registerRepository(trustAnchor, registeredRepositories, context);
 
-            temporary.warnIfTrue(rpkiRepository.isPending(), "rpki.repository.pending", rpkiRepository.getLocationUri());
+            temporary.warnIfTrue(rpkiRepository.isPending(), VALIDATOR_RPKI_REPOSITORY_PENDING, rpkiRepository.getLocationUri());
             if (rpkiRepository.isPending()) {
                 return validatedObjects;
             }
@@ -185,7 +199,7 @@ public class CertificateTreeValidationService {
             List<Map.Entry<String, byte[]>> crlEntries = manifest.getFiles().entrySet().stream()
                 .filter((entry) -> RepositoryObjectType.parse(entry.getKey()) == RepositoryObjectType.Crl)
                 .collect(toList());
-            temporary.rejectIfFalse(crlEntries.size() == 1, "manifest.contains.one.crl.entry", String.valueOf(crlEntries.size()));
+            temporary.rejectIfFalse(crlEntries.size() == 1, VALIDATOR_MANIFEST_CONTAINS_ONE_CRL_ENTRY, String.valueOf(crlEntries.size()));
             if (temporary.hasFailureForCurrentLocation()) {
                 return validatedObjects;
             }
@@ -194,7 +208,7 @@ public class CertificateTreeValidationService {
             URI crlUri = manifestUri.resolve(crlEntry.getKey());
 
             Optional<RpkiObject> crlObject = rpkiObjects.findBySha256(crlEntry.getValue());
-            temporary.rejectIfFalse(crlObject.isPresent(), "rpki.crl.found", crlUri.toASCIIString());
+            temporary.rejectIfFalse(crlObject.isPresent(), VALIDATOR_CRL_FOUND, crlUri.toASCIIString());
             if (temporary.hasFailureForCurrentLocation()) {
                 return validatedObjects;
             }
@@ -221,7 +235,7 @@ public class CertificateTreeValidationService {
 
             manifestEntries.forEach((location, obj) -> {
                 temporary.setLocation(new ValidationLocation(location));
-                temporary.rejectIfFalse(Arrays.equals(Sha256.hash(obj.getEncoded()), obj.getSha256()), "rpki.object.sha256.matches");
+                temporary.rejectIfFalse(Arrays.equals(Sha256.hash(obj.getEncoded()), obj.getSha256()), VALIDATOR_RPKI_OBJECT_HASH_MATCHES);
                 if (temporary.hasFailureForCurrentLocation()) {
                     return;
                 }
@@ -279,11 +293,11 @@ public class CertificateTreeValidationService {
             validationResult.setLocation(new ValidationLocation(location));
 
             Optional<RpkiObject> object = rpkiObjects.findBySha256(entry.getValue());
-            validationResult.rejectIfFalse(object.isPresent(), "manifest.entry.found", manifestUri.toASCIIString());
+            validationResult.rejectIfFalse(object.isPresent(), VALIDATOR_MANIFEST_ENTRY_FOUND, manifestUri.toASCIIString());
 
             object.ifPresent(obj -> {
                 boolean hashMatches = Arrays.equals(obj.getSha256(), entry.getValue());
-                validationResult.rejectIfFalse(hashMatches, "manifest.entry.hash.matches", entry.getKey());
+                validationResult.rejectIfFalse(hashMatches, VALIDATOR_MANIFEST_ENTRY_HASH_MATCHES, entry.getKey());
                 if (!hashMatches) {
                     return;
                 }

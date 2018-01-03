@@ -43,7 +43,7 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @Value(staticConstructor = "of")
 @ApiModel(value = "TrustAnchor")
-class TrustAnchorResource {
+public class TrustAnchorResource {
     @ApiModelProperty(allowableValues = TrustAnchor.TYPE, required = true, position = 1)
     String type;
     @ApiModelProperty(required = true, allowableValues = "range[" + Api.MINIMUM_VALID_ID + ",infinity]", example = "1", position = 2)
@@ -56,12 +56,16 @@ class TrustAnchorResource {
     String subjectPublicKeyInfo;
     @ApiModelProperty(position = 6)
     String rsyncPrefetchUri;
-    @ApiModelProperty(position = 7)
-    byte[] certificate;
+    @ApiModelProperty(required = true, position = 7)
+    boolean preconfigured;
     @ApiModelProperty(required = true, position = 8)
+    boolean initialCertificateTreeValidationRunCompleted;
+    @ApiModelProperty(position = 9)
+    byte[] certificate;
+    @ApiModelProperty(required = true, position = 10)
     Links links;
 
-    static TrustAnchorResource of(TrustAnchor trustAnchor) {
+    public static TrustAnchorResource of(TrustAnchor trustAnchor) {
         return of(
             "trust-anchor",
             trustAnchor.getId(),
@@ -69,6 +73,8 @@ class TrustAnchorResource {
             trustAnchor.getLocations(),
             trustAnchor.getSubjectPublicKeyInfo(),
             trustAnchor.getRsyncPrefetchUri(),
+            trustAnchor.isPreconfigured(),
+            trustAnchor.isInitialCertificateTreeValidationRunCompleted(),
             trustAnchor.getEncodedCertificate() == null ? null : trustAnchor.getEncodedCertificate(),
             new Links(
                 linkTo(methodOn(TrustAnchorController.class).get(trustAnchor.getId())).withSelfRel()

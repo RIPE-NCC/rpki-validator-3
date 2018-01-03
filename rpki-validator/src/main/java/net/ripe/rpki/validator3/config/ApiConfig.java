@@ -35,8 +35,10 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import net.ripe.rpki.validator3.api.Api;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.boot.jackson.JsonObjectDeserializer;
 import org.springframework.boot.jackson.JsonObjectSerializer;
@@ -51,10 +53,17 @@ import org.springframework.web.servlet.config.annotation.ContentNegotiationConfi
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 @Configuration
 public class ApiConfig implements WebMvcConfigurer {
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Bean
     public Jackson2ObjectMapperBuilderCustomizer includeNonNullOnly() {
@@ -91,8 +100,9 @@ public class ApiConfig implements WebMvcConfigurer {
 
     @Override
     public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
-        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
+        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter(objectMapper);
         converter.setSupportedMediaTypes(Arrays.asList(MediaType.valueOf("text/json")));
+        converter.setPrettyPrint(true);
         converters.add(converter);
     }
 
