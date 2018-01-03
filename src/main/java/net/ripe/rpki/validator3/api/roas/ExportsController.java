@@ -33,24 +33,15 @@ import au.com.bytecode.opencsv.CSVWriter;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.api.ApiResponse;
-import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.Settings;
-import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.TrustAnchors;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.hateoas.Link;
-import org.springframework.hateoas.Links;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -64,36 +55,31 @@ import java.util.stream.Stream;
 public class ExportsController {
 
     @Autowired
-    private TrustAnchors trustAnchors;
-
-    @Autowired
     private RpkiObjects rpkiObjects;
 
     @Autowired
     private Settings settings;
 
     @GetMapping(path = "/export.json", produces = "text/json; charset=UTF-8")
-    public ApiResponse<JsonExport> exportJson() {
-        Map<Long, TrustAnchorResource> trustAnchorsById = trustAnchors.findAll().stream().collect(Collectors.toMap(ta -> ta.getId(), TrustAnchorResource::of));
+    public JsonExport exportJson(HttpServletResponse response) {
+        if (!settings.isInitialValidationRunCompleted()) {
+            response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+            return null;
+        }
 
         Stream<JsonRoaPrefix> validatedPrefixes = rpkiObjects
             .findCurrentlyValidated(RpkiObject.Type.ROA)
-            .flatMap(pair -> {
-                Link trustAnchorLink = trustAnchorsById.get(pair.getKey().getTrustAnchor().getId()).getLinks().getLink("self");
-                return pair.getValue().getRoaPrefixes().stream()
-                        .map(prefix -> new JsonRoaPrefix(
-                            String.valueOf(prefix.getAsn()),
-                            prefix.getPrefix(),
-                            prefix.getEffectiveLength(),
-                            new Links(trustAnchorLink.withRel(TrustAnchor.TYPE))
-                        ));
-                }
+            .flatMap(pair -> pair.getValue().getRoaPrefixes().stream()
+                    .map(prefix -> new JsonRoaPrefix(
+                        String.valueOf(prefix.getAsn()),
+                        prefix.getPrefix(),
+                        prefix.getEffectiveLength(),
+                        pair.getKey().getTrustAnchor().getName())
+                    )
             )
             .distinct();
 
-        return ApiResponse.<JsonExport>builder()
-            .data(new JsonExport(settings.isInitialValidationRunCompleted(), trustAnchorsById.values(), validatedPrefixes))
-            .build();
+        return new JsonExport(validatedPrefixes);
     }
 
     @GetMapping(path = "/export.csv", produces = "text/csv; charset=UTF-8")
@@ -138,12 +124,8 @@ public class ExportsController {
 
     @Value
     public static class JsonExport {
-        @ApiModelProperty(position = 1)
-        boolean ready;
-        @ApiModelProperty(position = 2)
-        Collection<TrustAnchorResource> trustAnchors;
         @ApiModelProperty(position = 3)
-        Stream<JsonRoaPrefix> roaPrefixes;
+        Stream<JsonRoaPrefix> roas;
     }
 
     @Value
@@ -151,6 +133,6 @@ public class ExportsController {
         private String asn;
         private String prefix;
         private int maxLength;
-        private Links links;
+        private String ta;
     }
 }
