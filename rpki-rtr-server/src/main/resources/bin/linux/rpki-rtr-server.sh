@@ -33,7 +33,7 @@ EXECUTION_DIR=`dirname "$BASH_SOURCE"`
 cd ${EXECUTION_DIR}
 
 JAVA_CMD="/usr/bin/java"
-APP_NAME="rpki-validator-3"
+APP_NAME="rpki-rtr-server"
 PID_FILE="/var/run/${APP_NAME}.pid"
 CONFIG_FILE="/etc/${APP_NAME}/application.properties"
 JAR="/usr/lib/${APP_NAME}.jar"
