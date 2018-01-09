@@ -1,0 +1,11 @@
+[Unit]
+Description=RPKI RTR Server
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/rpki-rtr-server.sh
+User=rpki
+Group=rpki
+
+[Install]
+WantedBy=multi-user.target
