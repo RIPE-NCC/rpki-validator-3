@@ -4,8 +4,8 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
-import net.ripe.rpki.rtr.domain.RoaPrefix;
 import net.ripe.rpki.rtr.domain.RpkiCache;
+import net.ripe.rpki.rtr.domain.pdus.Pdu;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -48,13 +48,13 @@ public class RefreshCacheController {
         List<ValidatedPrefix> validatedPrefixes = validatedRoas.getRoas();
         log.info("fetched {} validated roa prefixes from {}", validatedPrefixes.size(), validatedRoasUri);
 
-        List<RoaPrefix> roaPrefixes = validatedPrefixes.stream().map(prefix -> RoaPrefix.of(
+        List<Pdu> roaPrefixes = validatedPrefixes.stream().map(prefix -> Pdu.prefix(
             Asn.parse(prefix.getAsn()),
             IpRange.parse(prefix.getPrefix()),
             prefix.getMaxLength()
         )).distinct().collect(toList());
 
-        cache.updateValidatedRoas(roaPrefixes);
+        cache.updateValidatedPdus(roaPrefixes);
     }
 
     @lombok.Value

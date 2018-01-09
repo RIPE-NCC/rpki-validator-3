@@ -1,6 +1,6 @@
-package net.ripe.rpki.rtr.domain;
+package net.ripe.rpki.rtr.domain.pdus;
 
-import lombok.Value;
+import io.netty.buffer.ByteBuf;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.ipresource.Ipv4Address;
@@ -8,25 +8,29 @@ import net.ripe.ipresource.Ipv6Address;
 
 import java.util.Arrays;
 
-@Value(staticConstructor = "of")
-public class RoaPrefix {
-    int asn;
-    byte[] prefix;
-    int prefixLength;
-    int maxLength;
+public interface Pdu {
+    int PROTOCOL_VERSION = 1;
 
-    public static RoaPrefix of(Asn asn, IpRange ipRange, Integer maxLength) {
-        byte[] prefix;
+    void write(Flags flags, ByteBuf out);
+
+    static Pdu prefix(Asn asn, IpRange ipRange, Integer maxLength) {
         if (ipRange.getStart() instanceof Ipv4Address) {
             long address = ((Ipv4Address) ipRange.getStart()).longValue();
-            prefix = new byte[4];
+            byte[] prefix = new byte[4];
             prefix[0] = (byte) ((address >> 24) & 0xff);
             prefix[1] = (byte) ((address >> 16) & 0xff);
             prefix[2] = (byte) ((address >> 8) & 0xff);
             prefix[3] = (byte) ((address >> 0) & 0xff);
+            return IPv4PrefixPdu.of(
+                (byte) ipRange.getPrefixLength(),
+                (byte) (maxLength != null ? maxLength : ipRange.getPrefixLength()),
+                prefix,
+                (int) asn.longValue()
+            );
         } else {
             Ipv6Address address = (Ipv6Address) ipRange.getStart();
             byte[] bytes = address.getValue().toByteArray();
+            byte[] prefix;
             if (bytes.length > 16) {
                 prefix = Arrays.copyOfRange(bytes, bytes.length - 16, bytes.length);
             } else if (bytes.length < 16) {
@@ -37,12 +41,12 @@ public class RoaPrefix {
             } else {
                 prefix = bytes;
             }
+            return IPv6PrefixPdu.of(
+                (byte) ipRange.getPrefixLength(),
+                (byte) (maxLength != null ? maxLength : ipRange.getPrefixLength()),
+                prefix,
+                (int) asn.longValue()
+            );
         }
-        return of(
-            (int) asn.longValue(),
-            prefix,
-            ipRange.getPrefixLength(),
-            maxLength != null ? maxLength : ipRange.getPrefixLength()
-        );
     }
 }
