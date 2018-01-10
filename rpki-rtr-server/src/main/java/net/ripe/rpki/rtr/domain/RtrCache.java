@@ -30,34 +30,37 @@
 package net.ripe.rpki.rtr.domain;
 
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.rtr.domain.pdus.Pdu;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.Optional;
 
 @Component
 @Slf4j
-public class RpkiCache {
+public class RtrCache {
     public static final Long MAX_SERIAL_NUMBER = ((1L << 32) - 1);
 
-    private long serialNumber = 0;
-    private Set<Pdu> roaPrefixes = new LinkedHashSet<>();
+    private final VersionedSet<RtrDataUnit> data = new VersionedSet<>(null);
 
-    public synchronized void updateValidatedPdus(Collection<Pdu> roaPrefixes) {
-        Set<Pdu> updated = new LinkedHashSet<>(roaPrefixes);
-        if (this.roaPrefixes.equals(updated)) {
-            log.info("no updates to validated ROA prefixes");
-            return;
+    public synchronized void updateValidatedPdus(Collection<RtrDataUnit> updatedPdus) {
+        if (data.updateValues(updatedPdus)) {
+            log.info(
+                "{} validated ROAs updated to serial number {} (delta with {} announcements, {} withdrawals)",
+                data.size(),
+                data.getSerialNumber(),
+                data.getDelta(data.getSerialNumber() - 1).map(x -> x.getAdditions().size()).orElse(0),
+                data.getDelta(data.getSerialNumber() - 1).map(x -> x.getRemovals().size()).orElse(0)
+            );
+        } else {
+            log.info("no updates to cached data");
         }
-
-        serialNumber = (serialNumber + 1) & MAX_SERIAL_NUMBER;
-        this.roaPrefixes = new LinkedHashSet<>(roaPrefixes);
-        log.info("{} validated ROAs updated to serial number {}", roaPrefixes.size(), serialNumber);
     }
 
     public synchronized long getSerialNumber() {
-        return serialNumber;
+        return data.getSerialNumber();
+    }
+
+    public synchronized Optional<VersionedSet<RtrDataUnit>.Delta> getDeltaFrom(long serialNumber) {
+        return data.getDelta(serialNumber);
     }
 }

@@ -32,9 +32,8 @@ package net.ripe.rpki.rtr.adapter.validator;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
-import net.ripe.rpki.rtr.domain.RpkiCache;
-import net.ripe.rpki.rtr.domain.pdus.Flags;
-import net.ripe.rpki.rtr.domain.pdus.Pdu;
+import net.ripe.rpki.rtr.domain.RtrCache;
+import net.ripe.rpki.rtr.domain.RtrDataUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -56,7 +55,7 @@ public class RefreshCacheController {
     private URI validatedRoasUri;
 
     @Autowired
-    private RpkiCache cache;
+    private RtrCache cache;
 
     public RefreshCacheController(RestTemplateBuilder restTemplateBuilder) {
         log.info("RefreshCacheController loaded");
@@ -77,8 +76,7 @@ public class RefreshCacheController {
         List<ValidatedPrefix> validatedPrefixes = validatedRoas.getRoas();
         log.info("fetched {} validated roa prefixes from {}", validatedPrefixes.size(), validatedRoasUri);
 
-        List<Pdu> roaPrefixes = validatedPrefixes.stream().map(prefix -> Pdu.prefix(
-            Flags.ANNOUNCEMENT,
+        List<RtrDataUnit> roaPrefixes = validatedPrefixes.stream().map(prefix -> RtrDataUnit.prefix(
             Asn.parse(prefix.getAsn()),
             IpRange.parse(prefix.getPrefix()),
             prefix.getMaxLength()

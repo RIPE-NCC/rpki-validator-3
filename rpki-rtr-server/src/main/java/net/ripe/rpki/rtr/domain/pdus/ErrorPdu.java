@@ -32,7 +32,7 @@ package net.ripe.rpki.rtr.domain.pdus;
 import io.netty.buffer.ByteBuf;
 import lombok.Value;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * @see <a href="https://tools.ietf.org/html/rfc8210#section-5.6">RFC8210 section 5.6 - IPv4 Prefix</a>
@@ -54,22 +54,18 @@ public class ErrorPdu implements Pdu {
     }
 
     private byte[] errorTextBytes() {
-        try {
-            return errorText.getBytes("UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
+        return errorText.getBytes(StandardCharsets.UTF_8);
     }
 
     public void write(ByteBuf out) {
         final byte[] errorTextBytes = errorTextBytes();
         out
-                .writeByte(PROTOCOL_VERSION)
-                .writeByte(PDU_TYPE)
-                .writeShort(0)
-                .writeInt(length())
-                .writeBytes(causingPdu)
-                .writeInt(errorTextBytes.length)
-                .writeBytes(errorTextBytes);
+            .writeByte(PROTOCOL_VERSION)
+            .writeByte(PDU_TYPE)
+            .writeShort(0)
+            .writeInt(length())
+            .writeBytes(causingPdu)
+            .writeInt(errorTextBytes.length)
+            .writeBytes(errorTextBytes);
     }
 }

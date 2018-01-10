@@ -31,6 +31,7 @@ package net.ripe.rpki.rtr.domain.pdus;
 
 import io.netty.buffer.ByteBuf;
 import lombok.Value;
+import net.ripe.rpki.rtr.domain.RtrPrefix;
 
 /**
  * @see <a href="https://tools.ietf.org/html/rfc8210#section-5.6">RFC8210 section 5.6 - IPv4 Prefix</a>
@@ -40,11 +41,9 @@ public class IPv4PrefixPdu implements Pdu {
     public static final int PDU_TYPE = 4;
 
     Flags flags;
-    byte prefixLength;
-    byte maxLength;
-    byte[] prefix;
-    int asn;
+    RtrPrefix prefix;
 
+    @Override
     public void write(ByteBuf out) {
         out
             .writeByte(PROTOCOL_VERSION)
@@ -52,11 +51,11 @@ public class IPv4PrefixPdu implements Pdu {
             .writeShort(0)
             .writeInt(length())
             .writeByte(flags.getFlags())
-            .writeByte(prefixLength)
-            .writeByte(maxLength)
+            .writeByte(prefix.getPrefixLength())
+            .writeByte(prefix.getMaxLength())
             .writeByte(0)
-            .writeBytes(prefix)
-            .writeInt(asn);
+            .writeBytes(prefix.getPrefix())
+            .writeInt(prefix.getAsn());
     }
 
     @Override

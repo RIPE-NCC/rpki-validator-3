@@ -29,25 +29,40 @@
  */
 package net.ripe.rpki.rtr.domain;
 
-import net.ripe.ipresource.Asn;
-import net.ripe.ipresource.IpRange;
-import net.ripe.rpki.rtr.domain.pdus.Flags;
-import net.ripe.rpki.rtr.domain.pdus.Pdu;
-import org.junit.Test;
+import lombok.Value;
+import org.bouncycastle.util.Arrays;
 
-import java.util.Collections;
+@Value(staticConstructor = "of")
+public class RtrPrefix implements RtrDataUnit {
+    byte prefixLength;
+    byte maxLength;
+    byte[] prefix;
+    int asn;
 
-import static org.assertj.core.api.Assertions.assertThat;
+    @Override
+    public int compareTo(RtrDataUnit o) {
+        RtrPrefix that = (RtrPrefix) o;
 
-public class RpkiCacheTest {
+        int rc = Integer.compare(this.prefix.length, that.prefix.length);
+        if (rc != 0) {
+            return rc;
+        }
 
-    private RpkiCache subject = new RpkiCache();
+        rc = Arrays.compareUnsigned(this.prefix, that.prefix);
+        if (rc != 0) {
+            return rc;
+        }
 
-    @Test
-    public void should_increase_serial_when_valid_pdus_change() {
-        assertThat(subject.getSerialNumber()).isEqualTo(0);
-        subject.updateValidatedPdus(Collections.singleton(Pdu.prefix(Flags.ANNOUNCEMENT, Asn.parse("AS3333"), IpRange.parse("127.0.0.0/8"), 14)));
-        assertThat(subject.getSerialNumber()).isEqualTo(1);
+        rc = Integer.compareUnsigned(this.prefixLength, that.prefixLength);
+        if (rc != 0) {
+            return rc;
+        }
+
+        rc = Integer.compareUnsigned(this.maxLength, that.maxLength);
+        if (rc != 0) {
+            return rc;
+        }
+
+        return Integer.compareUnsigned(this.asn, that.asn);
     }
-
 }
