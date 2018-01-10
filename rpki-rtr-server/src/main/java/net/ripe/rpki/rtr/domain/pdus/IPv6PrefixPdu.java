@@ -39,12 +39,13 @@ import lombok.Value;
 public class IPv6PrefixPdu implements Pdu {
     public static final int PDU_TYPE = 6;
 
+    Flags flags;
     byte prefixLength;
     byte maxLength;
     byte[] prefix;
     int asn;
 
-    public void write(Flags flags, ByteBuf out) {
+    public void write(ByteBuf out) {
         out
             .writeByte(PROTOCOL_VERSION)
             .writeByte(PDU_TYPE)

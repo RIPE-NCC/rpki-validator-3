@@ -29,11 +29,11 @@
  */
 package net.ripe.rpki.rtr.adapter.validator;
 
-import io.swagger.annotations.ApiModelProperty;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.rtr.domain.RpkiCache;
+import net.ripe.rpki.rtr.domain.pdus.Flags;
 import net.ripe.rpki.rtr.domain.pdus.Pdu;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -78,6 +78,7 @@ public class RefreshCacheController {
         log.info("fetched {} validated roa prefixes from {}", validatedPrefixes.size(), validatedRoasUri);
 
         List<Pdu> roaPrefixes = validatedPrefixes.stream().map(prefix -> Pdu.prefix(
+            Flags.ANNOUNCEMENT,
             Asn.parse(prefix.getAsn()),
             IpRange.parse(prefix.getPrefix()),
             prefix.getMaxLength()
@@ -94,9 +95,6 @@ public class RefreshCacheController {
     @lombok.Value
     public static class ValidatedRoas {
         boolean ready;
-        //        @ApiModelProperty(position = 2)
-//        Collection<TrustAnchorResource> trustAnchors;
-        @ApiModelProperty(position = 3)
         List<ValidatedPrefix> roas;
     }
 

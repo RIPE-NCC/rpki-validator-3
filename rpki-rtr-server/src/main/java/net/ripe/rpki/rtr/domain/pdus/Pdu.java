@@ -40,9 +40,9 @@ import java.util.Arrays;
 public interface Pdu {
     int PROTOCOL_VERSION = 1;
 
-    void write(Flags flags, ByteBuf out);
+    void write(ByteBuf out);
 
-    static Pdu prefix(Asn asn, IpRange ipRange, Integer maxLength) {
+    static Pdu prefix(Flags flags, Asn asn, IpRange ipRange, Integer maxLength) {
         if (ipRange.getStart() instanceof Ipv4Address) {
             long address = ((Ipv4Address) ipRange.getStart()).longValue();
             byte[] prefix = new byte[4];
@@ -51,6 +51,7 @@ public interface Pdu {
             prefix[2] = (byte) ((address >> 8) & 0xff);
             prefix[3] = (byte) ((address >> 0) & 0xff);
             return IPv4PrefixPdu.of(
+                flags,
                 (byte) ipRange.getPrefixLength(),
                 (byte) (maxLength != null ? maxLength : ipRange.getPrefixLength()),
                 prefix,
@@ -71,6 +72,7 @@ public interface Pdu {
                 prefix = bytes;
             }
             return IPv6PrefixPdu.of(
+                flags,
                 (byte) ipRange.getPrefixLength(),
                 (byte) (maxLength != null ? maxLength : ipRange.getPrefixLength()),
                 prefix,
