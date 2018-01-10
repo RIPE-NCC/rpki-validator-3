@@ -227,7 +227,7 @@
                 <version>1.9.0</version>
                 <configuration>
                     <strictCheck>true</strictCheck>
-                    <header>LICENSE.txt</header>
+                    <header>../LICENSE.txt</header>
                     <excludes>
                         <exclude>**/*.h2.mv.db</exclude>
                         <exclude>**/*.h2.trace.db</exclude>

@@ -35,6 +35,7 @@
 
         <springfox.version>2.7.0</springfox.version>
         <jackson.version>2.9.2</jackson.version>
+        <netty.version>4.1.19.Final</netty.version>
     </properties>
 
     <dependencies>
@@ -163,7 +164,14 @@
             <artifactId>junit-quickcheck-generators</artifactId>
             <version>0.7</version>
         </dependency>
-
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-buffer</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-codec</artifactId>
+        </dependency>
     </dependencies>
 
     <dependencyManagement>
@@ -223,7 +231,7 @@
                 <version>1.9.0</version>
                 <configuration>
                     <strictCheck>true</strictCheck>
-                    <header>LICENSE.txt</header>
+                    <header>../LICENSE.txt</header>
                     <excludes>
                         <exclude>**/*.h2.mv.db</exclude>
                         <exclude>**/*.h2.trace.db</exclude>
