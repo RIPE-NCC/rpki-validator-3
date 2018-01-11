@@ -62,13 +62,14 @@ public class ErrorPdu implements Pdu {
     }
 
     public void write(ByteBuf out) {
+        final byte[] errorTextBytes = errorTextBytes();
         out
                 .writeByte(PROTOCOL_VERSION)
                 .writeByte(PDU_TYPE)
                 .writeShort(0)
                 .writeInt(length())
                 .writeBytes(causingPdu)
-                .writeInt(errorTextBytes().length)
-                .writeBytes(errorTextBytes());
+                .writeInt(errorTextBytes.length)
+                .writeBytes(errorTextBytes);
     }
 }
