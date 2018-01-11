@@ -32,35 +32,43 @@ package net.ripe.rpki.rtr.domain.pdus;
 import io.netty.buffer.ByteBuf;
 import lombok.Value;
 
+import java.io.UnsupportedEncodingException;
+
 /**
- * @see <a href="https://tools.ietf.org/html/rfc8210#section-5.7">RFC8210 section 5.7 - IPv6 Prefix</a>
+ * @see <a href="https://tools.ietf.org/html/rfc8210#section-5.6">RFC8210 section 5.6 - IPv4 Prefix</a>
  */
 @Value(staticConstructor = "of")
-public class IPv6PrefixPdu implements Pdu {
-    public static final int PDU_TYPE = 6;
+public class ErrorPdu implements Pdu {
+    public static final int PDU_TYPE = 10;
 
-    Flags flags;
-    byte prefixLength;
-    byte maxLength;
-    byte[] prefix;
-    int asn;
+    ErrorCode errorCode;
+    byte[] causingPdu;
+    String errorText;
+
+    short headerShort() {
+        return (short) errorCode.code;
+    }
+
+    public int length() {
+        return 8 + 4 + causingPdu.length + 4 + errorTextBytes().length;
+    }
+
+    private byte[] errorTextBytes() {
+        try {
+            return errorText.getBytes("UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public void write(ByteBuf out) {
         out
-            .writeByte(PROTOCOL_VERSION)
-            .writeByte(PDU_TYPE)
-            .writeShort(0)
-            .writeInt(length())
-            .writeByte(flags.getFlags())
-            .writeByte(prefixLength)
-            .writeByte(maxLength)
-            .writeByte(0)
-            .writeBytes(prefix)
-            .writeInt(asn);
-    }
-
-    @Override
-    public int length() {
-        return 32;
+                .writeByte(PROTOCOL_VERSION)
+                .writeByte(PDU_TYPE)
+                .writeShort(0)
+                .writeInt(length())
+                .writeBytes(causingPdu)
+                .writeInt(errorTextBytes().length)
+                .writeBytes(errorTextBytes());
     }
 }

@@ -27,40 +27,18 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.rtr.domain.pdus;
+package net.ripe.rpki.rtr;
 
-import io.netty.buffer.ByteBuf;
-import lombok.Value;
+import org.junit.Ignore;
+import org.junit.Test;
 
-/**
- * @see <a href="https://tools.ietf.org/html/rfc8210#section-5.7">RFC8210 section 5.7 - IPv6 Prefix</a>
- */
-@Value(staticConstructor = "of")
-public class IPv6PrefixPdu implements Pdu {
-    public static final int PDU_TYPE = 6;
+import static org.junit.Assert.*;
 
-    Flags flags;
-    byte prefixLength;
-    byte maxLength;
-    byte[] prefix;
-    int asn;
+@Ignore
+public class RtrServerTest {
 
-    public void write(ByteBuf out) {
-        out
-            .writeByte(PROTOCOL_VERSION)
-            .writeByte(PDU_TYPE)
-            .writeShort(0)
-            .writeInt(length())
-            .writeByte(flags.getFlags())
-            .writeByte(prefixLength)
-            .writeByte(maxLength)
-            .writeByte(0)
-            .writeBytes(prefix)
-            .writeInt(asn);
-    }
-
-    @Override
-    public int length() {
-        return 32;
+    @Test
+    public void run() throws Exception {
+        new RtrServer(10000).run();
     }
 }

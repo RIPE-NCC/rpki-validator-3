@@ -29,38 +29,24 @@
  */
 package net.ripe.rpki.rtr.domain.pdus;
 
-import io.netty.buffer.ByteBuf;
-import lombok.Value;
+public enum ErrorCode {
 
-/**
- * @see <a href="https://tools.ietf.org/html/rfc8210#section-5.7">RFC8210 section 5.7 - IPv6 Prefix</a>
- */
-@Value(staticConstructor = "of")
-public class IPv6PrefixPdu implements Pdu {
-    public static final int PDU_TYPE = 6;
+    CorruptData(0),
+    PduInternalError(1),
+    NoDataAvailable(2),
+    InvalidRequest(3),
+    UnsupportedProtocolVersion(4),
+    UnsupportedPduType(5),
+    WithdrawalOfUnkownRecord(6),
+    DuplicateAnnouncementReceived(7);
 
-    Flags flags;
-    byte prefixLength;
-    byte maxLength;
-    byte[] prefix;
-    int asn;
+    final int code;
 
-    public void write(ByteBuf out) {
-        out
-            .writeByte(PROTOCOL_VERSION)
-            .writeByte(PDU_TYPE)
-            .writeShort(0)
-            .writeInt(length())
-            .writeByte(flags.getFlags())
-            .writeByte(prefixLength)
-            .writeByte(maxLength)
-            .writeByte(0)
-            .writeBytes(prefix)
-            .writeInt(asn);
+    ErrorCode(int i) {
+        this.code = i;
     }
 
-    @Override
-    public int length() {
-        return 32;
+    boolean isFatal() {
+        return code != NoDataAvailable.code;
     }
 }

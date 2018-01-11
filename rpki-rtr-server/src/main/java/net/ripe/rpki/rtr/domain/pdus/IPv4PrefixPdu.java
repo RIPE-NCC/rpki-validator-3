@@ -50,12 +50,17 @@ public class IPv4PrefixPdu implements Pdu {
             .writeByte(PROTOCOL_VERSION)
             .writeByte(PDU_TYPE)
             .writeShort(0)
-            .writeInt(20)
+            .writeInt(length())
             .writeByte(flags.getFlags())
             .writeByte(prefixLength)
             .writeByte(maxLength)
             .writeByte(0)
             .writeBytes(prefix)
             .writeInt(asn);
+    }
+
+    @Override
+    public int length() {
+        return 20;
     }
 }

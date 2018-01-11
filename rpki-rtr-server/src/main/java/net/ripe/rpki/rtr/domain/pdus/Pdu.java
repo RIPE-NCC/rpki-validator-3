@@ -42,6 +42,8 @@ public interface Pdu {
 
     void write(ByteBuf out);
 
+    int length();
+
     static Pdu prefix(Flags flags, Asn asn, IpRange ipRange, Integer maxLength) {
         if (ipRange.getStart() instanceof Ipv4Address) {
             long address = ((Ipv4Address) ipRange.getStart()).longValue();
