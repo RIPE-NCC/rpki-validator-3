@@ -38,6 +38,7 @@ import net.ripe.rpki.rtr.domain.pdus.ErrorPdu;
 import net.ripe.rpki.rtr.domain.pdus.Pdu;
 import net.ripe.rpki.rtr.domain.pdus.PduParseException;
 import net.ripe.rpki.rtr.domain.pdus.ResetQueryPdu;
+import net.ripe.rpki.rtr.domain.pdus.SerialQueryPdu;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -75,6 +76,22 @@ public class PduCodec extends ByteToMessageCodec<Pdu> {
 
         int pduType = in.readUnsignedByte();
         switch (pduType) {
+            case SerialQueryPdu.PDU_TYPE: {
+                short sessionId = in.readShort();
+                long length = in.readUnsignedInt();
+                if (length != SerialQueryPdu.PDU_LENGTH) {
+                    throw new PduParseException(generateError.apply(
+                        ErrorCode.InvalidRequest,
+                        String.format("length of Serial Query PDU must be %d, was %d", SerialQueryPdu.PDU_LENGTH, length)
+                    ));
+                }
+                if (in.readableBytes() + 8 < length) {
+                    return;
+                }
+                int serialNumber = in.readInt();
+                out.add(SerialQueryPdu.of(sessionId, serialNumber));
+                break;
+            }
             case ResetQueryPdu.PDU_TYPE: {
                 @SuppressWarnings("unused") int zero = in.readUnsignedShort();
                 long length = in.readUnsignedInt();

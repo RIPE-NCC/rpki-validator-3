@@ -43,6 +43,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.rtr.adapter.netty.PduCodec;
 import net.ripe.rpki.rtr.domain.RtrCache;
 import net.ripe.rpki.rtr.domain.RtrDataUnit;
+import net.ripe.rpki.rtr.domain.pdus.CacheResetPdu;
 import net.ripe.rpki.rtr.domain.pdus.CacheResponsePdu;
 import net.ripe.rpki.rtr.domain.pdus.EndOfDataPdu;
 import net.ripe.rpki.rtr.domain.pdus.ErrorCode;
@@ -51,6 +52,7 @@ import net.ripe.rpki.rtr.domain.pdus.Flags;
 import net.ripe.rpki.rtr.domain.pdus.Pdu;
 import net.ripe.rpki.rtr.domain.pdus.PduParseException;
 import net.ripe.rpki.rtr.domain.pdus.ResetQueryPdu;
+import net.ripe.rpki.rtr.domain.pdus.SerialQueryPdu;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -135,6 +137,10 @@ public class RtrServer {
     }
 
     public class RtrServerHandler extends ChannelInboundHandlerAdapter {
+        private static final int REFRESH_INTERVAL = 3600;
+        private static final int RETRY_INTERVAL = 600;
+        private static final int EXPIRE_INTERVAL = 7200;
+
         private final RtrCache rtrCache;
 
         public RtrServerHandler(RtrCache rtrCache) {
@@ -145,13 +151,22 @@ public class RtrServer {
         public void channelRead(ChannelHandlerContext ctx, Object msg) {
             Pdu pdu = (Pdu) msg;
             log.info("processing {}", msg);
-            if (pdu instanceof ResetQueryPdu) {
+            if (pdu instanceof SerialQueryPdu) {
+                SerialQueryPdu serialQueryPdu = (SerialQueryPdu) pdu;
+                RtrCache.Content content = rtrCache.getCurrentContent();
+                if (serialQueryPdu.getSessionId() == content.getSessionId() && serialQueryPdu.getSerialNumber() == content.getSerialNumber()) {
+                    ctx.write(CacheResponsePdu.of(content.getSessionId()));
+                    ctx.write(EndOfDataPdu.of(content.getSessionId(), content.getSerialNumber(), REFRESH_INTERVAL, RETRY_INTERVAL, EXPIRE_INTERVAL));
+                } else {
+                    ctx.write(CacheResetPdu.of());
+                }
+            } else if (pdu instanceof ResetQueryPdu) {
                 RtrCache.Content content = rtrCache.getCurrentContent();
                 ctx.write(CacheResponsePdu.of(content.getSessionId()));
                 for (RtrDataUnit dataUnit : content.getAnnouncements()) {
                     ctx.write(dataUnit.toPdu(Flags.ANNOUNCEMENT));
                 }
-                ctx.write(EndOfDataPdu.of(content.getSessionId(), content.getSerialNumber(), 3600, 600, 7200));
+                ctx.write(EndOfDataPdu.of(content.getSessionId(), content.getSerialNumber(), REFRESH_INTERVAL, RETRY_INTERVAL, EXPIRE_INTERVAL));
             } else if (pdu instanceof ErrorPdu) {
                 log.error("error received from router {}", pdu);
                 ctx.close();
