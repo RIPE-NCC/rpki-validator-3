@@ -27,18 +27,32 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.rtr;
+package net.ripe.rpki.rtr.domain.pdus;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import io.netty.buffer.ByteBuf;
+import lombok.Value;
 
-import static org.junit.Assert.*;
+@Value(staticConstructor = "of")
+public class EndOfDataPdu implements Pdu {
 
-@Ignore
-public class RtrServerTest {
+    public static final int PDU_TYPE = 7;
 
-    @Test
-    public void run() throws Exception {
-        new RtrServer().run();
+    short sessionId;
+    int serial;
+
+    @Override
+    public int length() {
+        return 12;
     }
+
+    @Override
+    public void write(ByteBuf out) {
+        out
+                .writeByte(PROTOCOL_VERSION)
+                .writeByte(PDU_TYPE)
+                .writeShort(sessionId)
+                .writeInt(length())
+                .writeInt(serial);
+    }
+
 }
