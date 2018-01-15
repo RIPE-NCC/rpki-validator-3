@@ -32,6 +32,7 @@ package net.ripe.rpki.rtr;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelId;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -42,6 +43,8 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.rtr.adapter.netty.PduCodec;
 import net.ripe.rpki.rtr.domain.RtrCache;
+import net.ripe.rpki.rtr.domain.RtrClient;
+import net.ripe.rpki.rtr.domain.RtrClients;
 import net.ripe.rpki.rtr.domain.RtrDataUnit;
 import net.ripe.rpki.rtr.domain.pdus.CacheResetPdu;
 import net.ripe.rpki.rtr.domain.pdus.CacheResponsePdu;
@@ -49,6 +52,7 @@ import net.ripe.rpki.rtr.domain.pdus.EndOfDataPdu;
 import net.ripe.rpki.rtr.domain.pdus.ErrorCode;
 import net.ripe.rpki.rtr.domain.pdus.ErrorPdu;
 import net.ripe.rpki.rtr.domain.pdus.Flags;
+import net.ripe.rpki.rtr.domain.pdus.NotifyPdu;
 import net.ripe.rpki.rtr.domain.pdus.Pdu;
 import net.ripe.rpki.rtr.domain.pdus.PduParseException;
 import net.ripe.rpki.rtr.domain.pdus.ResetQueryPdu;
@@ -59,7 +63,10 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+
 
 @Slf4j
 @Service
@@ -71,6 +78,8 @@ public class RtrServer {
     private RtrCache rtrCache;
 
     private int port;
+
+    private final RtrClients clients = new RtrClients();
 
     public RtrServer(@Value("${rtr.server.port}") int port) {
         setPort(port);
@@ -151,6 +160,9 @@ public class RtrServer {
         public void channelRead(ChannelHandlerContext ctx, Object msg) {
             Pdu pdu = (Pdu) msg;
             log.info("processing {}", msg);
+
+            clients.register(ctx);
+
             if (pdu instanceof SerialQueryPdu) {
                 SerialQueryPdu serialQueryPdu = (SerialQueryPdu) pdu;
                 RtrCache.Content content = rtrCache.getCurrentContent();
@@ -174,6 +186,9 @@ public class RtrServer {
                 throw new IllegalStateException("unrecognized PDU " + pdu);
             }
             ctx.flush();
+
+//            final int serialNumber = rtrCache.getSerialNumber();
+//            clients.flushNotifications(c -> c.write(new NotifyPdu(serialNumber)));
         }
 
         @Override
