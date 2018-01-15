@@ -39,6 +39,6 @@ public class RtrServerTest {
 
     @Test
     public void run() throws Exception {
-        new RtrServer().run();
+        new RtrServer(8282).run();
     }
 }

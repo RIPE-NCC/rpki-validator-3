@@ -40,24 +40,25 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.rtr.domain.pdus.ErrorCode;
 import net.ripe.rpki.rtr.domain.pdus.ErrorPdu;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import javax.annotation.PostConstruct;
 
 @Slf4j
+@Service
 public class RtrServer {
 
     private int port;
 
-    public RtrServer(int port) {
+    public RtrServer(@Value("${server.port}") int port) {
         this.port = port;
     }
 
-    public RtrServer() {
-        this(8282);
-    }
-
+    @PostConstruct
     public void run() throws Exception {
         final EventLoopGroup bossGroup = new NioEventLoopGroup();
         final EventLoopGroup workerGroup = new NioEventLoopGroup();
