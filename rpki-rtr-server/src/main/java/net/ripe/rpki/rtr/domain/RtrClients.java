@@ -68,6 +68,11 @@ public class RtrClients {
         }
     }
 
+    public synchronized void clear() {
+        clients.clear();
+        clientsToNotify.clear();
+    }
+
     private ChannelId getId(ChannelHandlerContext channel) {
         return channel.channel().id();
     }

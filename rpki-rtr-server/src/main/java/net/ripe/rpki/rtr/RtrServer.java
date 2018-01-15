@@ -137,6 +137,7 @@ public class RtrServer {
     }
 
     private void shutdownWorkers() {
+        clients.clear();
         if (workerGroup != null) {
             workerGroup.shutdownGracefully();
         }
