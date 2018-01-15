@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.rtr.domain;
 
+import fj.data.Either;
 import lombok.Getter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +37,7 @@ import org.springframework.stereotype.Component;
 
 import java.security.SecureRandom;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.SortedSet;
 
@@ -90,11 +92,31 @@ public class RtrCache {
      *
      * @return the delta from the requested <code>serialNumber</code> to the current state
      */
-    public synchronized Optional<VersionedSet<RtrDataUnit>.Delta> getDeltaFrom(int serialNumber) {
-        long version = data.getCurrentVersion();
+    public synchronized Optional<Delta> getDeltaFrom(int serialNumber) {
+        if (serialNumber > getSerialNumber()) {
+            return Optional.empty();
+        } else if (serialNumber == getSerialNumber()) {
+            return Optional.of(Delta.of(sessionId, serialNumber, Collections.emptySortedSet(), Collections.emptySortedSet()));
+        } else {
+            long version = data.getCurrentVersion();
 
-        // FIXME this is not yet working correctly
-        return data.getDelta((long) serialNumber + (version & ~MAX_SERIAL_NUMBER));
+            // FIXME this is not yet working correctly
+            Optional<VersionedSet<RtrDataUnit>.Delta> delta = data.getDelta((long) serialNumber + (version & ~MAX_SERIAL_NUMBER));
+            if (delta.isPresent()) {
+                return Optional.of(Delta.of(sessionId, getSerialNumber(), delta.get().getAdditions(), delta.get().getRemovals()));
+            } else {
+                return Optional.empty();
+            }
+        }
+    }
+
+    public synchronized Either<Delta, Content> getDeltaOrContent(int serialNumber) {
+        Optional<Delta> maybeDelta = getDeltaFrom(serialNumber);
+        if (maybeDelta.isPresent()) {
+            return Either.left(maybeDelta.get());
+        } else {
+            return Either.right(getCurrentContent());
+        }
     }
 
     @Value(staticConstructor = "of")
@@ -102,5 +124,13 @@ public class RtrCache {
         short sessionId;
         int serialNumber;
         SortedSet<RtrDataUnit> announcements;
+    }
+
+    @Value(staticConstructor = "of")
+    public static class Delta {
+        short sessionId;
+        int serialNumber;
+        SortedSet<RtrDataUnit> announcements;
+        SortedSet<RtrDataUnit> withdrawals;
     }
 }

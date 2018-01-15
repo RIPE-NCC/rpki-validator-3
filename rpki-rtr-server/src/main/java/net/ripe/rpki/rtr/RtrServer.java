@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.rtr;
 
+import fj.data.Either;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -164,20 +165,9 @@ public class RtrServer {
 
             if (pdu instanceof SerialQueryPdu) {
                 SerialQueryPdu serialQueryPdu = (SerialQueryPdu) pdu;
-                RtrCache.Content content = rtrCache.getCurrentContent();
-                if (serialQueryPdu.getSessionId() == content.getSessionId() && serialQueryPdu.getSerialNumber() == content.getSerialNumber()) {
-                    ctx.write(CacheResponsePdu.of(content.getSessionId()));
-                    ctx.write(EndOfDataPdu.of(content.getSessionId(), content.getSerialNumber(), REFRESH_INTERVAL, RETRY_INTERVAL, EXPIRE_INTERVAL));
-                } else {
-                    ctx.write(CacheResetPdu.of());
-                }
+                handleSerialQuery(ctx, serialQueryPdu);
             } else if (pdu instanceof ResetQueryPdu) {
-                RtrCache.Content content = rtrCache.getCurrentContent();
-                ctx.write(CacheResponsePdu.of(content.getSessionId()));
-                for (RtrDataUnit dataUnit : content.getAnnouncements()) {
-                    ctx.write(dataUnit.toPdu(Flags.ANNOUNCEMENT));
-                }
-                ctx.write(EndOfDataPdu.of(content.getSessionId(), content.getSerialNumber(), REFRESH_INTERVAL, RETRY_INTERVAL, EXPIRE_INTERVAL));
+                handleResetQuery(ctx);
             } else if (pdu instanceof ErrorPdu) {
                 log.error("error received from router {}", pdu);
                 ctx.close();
@@ -193,6 +183,38 @@ public class RtrServer {
             } else {
 
             }
+        }
+
+        private void handleSerialQuery(ChannelHandlerContext ctx, SerialQueryPdu serialQueryPdu) {
+            Either<RtrCache.Delta, RtrCache.Content> deltaOrContent = rtrCache.getDeltaOrContent(serialQueryPdu.getSerialNumber());
+
+            if (deltaOrContent.isLeft()) {
+                RtrCache.Delta delta = deltaOrContent.left().value();
+                if (delta.getSessionId() != serialQueryPdu.getSessionId()) {
+                    ctx.write(CacheResetPdu.of());
+                    return;
+                }
+
+                ctx.write(CacheResponsePdu.of(delta.getSessionId()));
+                for (RtrDataUnit dataUnit : delta.getAnnouncements()) {
+                    ctx.write(dataUnit.toPdu(Flags.ANNOUNCEMENT));
+                }
+                for (RtrDataUnit dataUnit : delta.getWithdrawals()) {
+                    ctx.write(dataUnit.toPdu(Flags.WITHDRAWAL));
+                }
+                ctx.write(EndOfDataPdu.of(delta.getSessionId(), delta.getSerialNumber(), REFRESH_INTERVAL, RETRY_INTERVAL, EXPIRE_INTERVAL));
+            } else {
+                ctx.write(CacheResetPdu.of());
+            }
+        }
+
+        private void handleResetQuery(ChannelHandlerContext ctx) {
+            RtrCache.Content content = rtrCache.getCurrentContent();
+            ctx.write(CacheResponsePdu.of(content.getSessionId()));
+            for (RtrDataUnit dataUnit : content.getAnnouncements()) {
+                ctx.write(dataUnit.toPdu(Flags.ANNOUNCEMENT));
+            }
+            ctx.write(EndOfDataPdu.of(content.getSessionId(), content.getSerialNumber(), REFRESH_INTERVAL, RETRY_INTERVAL, EXPIRE_INTERVAL));
         }
 
         @Override

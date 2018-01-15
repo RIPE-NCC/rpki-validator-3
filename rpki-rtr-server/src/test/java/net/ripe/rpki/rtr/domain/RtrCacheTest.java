@@ -70,25 +70,25 @@ public class RtrCacheTest {
     public void should_add_delta_when_valid_pdus_change() {
         subject.updateValidatedPdus(SINGLE_ANNOUNCEMENT);
 
-        Optional<VersionedSet<RtrDataUnit>.Delta> maybeDelta0_1 = subject.getDeltaFrom(0);
+        Optional<RtrCache.Delta> maybeDelta0_1 = subject.getDeltaFrom(0);
         assertThat(maybeDelta0_1).isPresent();
-        VersionedSet<RtrDataUnit>.Delta delta0_1 = maybeDelta0_1.get();
-        assertThat(delta0_1.getAdditions()).isEqualTo(SINGLE_ANNOUNCEMENT);
-        assertThat(delta0_1.getRemovals()).isEqualTo(EMPTY_WITHDRAWALS);
+        RtrCache.Delta delta0_1 = maybeDelta0_1.get();
+        assertThat(delta0_1.getAnnouncements()).isEqualTo(SINGLE_ANNOUNCEMENT);
+        assertThat(delta0_1.getWithdrawals()).isEqualTo(EMPTY_WITHDRAWALS);
 
         subject.updateValidatedPdus(EMPTY_ANNOUNCEMENTS);
 
-        Optional<VersionedSet<RtrDataUnit>.Delta> maybeDelta1_2 = subject.getDeltaFrom(1);
+        Optional<RtrCache.Delta> maybeDelta1_2 = subject.getDeltaFrom(1);
         assertThat(maybeDelta1_2).isPresent();
-        VersionedSet<RtrDataUnit>.Delta delta1_2 = maybeDelta1_2.get();
-        assertThat(delta1_2.getAdditions()).isEqualTo(EMPTY_ANNOUNCEMENTS);
-        assertThat(delta1_2.getRemovals()).isEqualTo(SINGLE_WITHDRAWAL);
+        RtrCache.Delta delta1_2 = maybeDelta1_2.get();
+        assertThat(delta1_2.getAnnouncements()).isEqualTo(EMPTY_ANNOUNCEMENTS);
+        assertThat(delta1_2.getWithdrawals()).isEqualTo(SINGLE_WITHDRAWAL);
 
-        Optional<VersionedSet<RtrDataUnit>.Delta> maybeDelta0_2 = subject.getDeltaFrom(0);
+        Optional<RtrCache.Delta> maybeDelta0_2 = subject.getDeltaFrom(0);
         assertThat(maybeDelta0_2).isPresent();
-        VersionedSet<RtrDataUnit>.Delta delta0_2 = maybeDelta0_2.get();
-        assertThat(delta0_2.getAdditions()).isEqualTo(EMPTY_ANNOUNCEMENTS);
-        assertThat(delta0_2.getRemovals()).isEqualTo(EMPTY_WITHDRAWALS);
+        RtrCache.Delta delta0_2 = maybeDelta0_2.get();
+        assertThat(delta0_2.getAnnouncements()).isEqualTo(EMPTY_ANNOUNCEMENTS);
+        assertThat(delta0_2.getWithdrawals()).isEqualTo(EMPTY_WITHDRAWALS);
     }
 
     @Test
