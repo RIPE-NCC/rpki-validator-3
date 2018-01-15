@@ -32,6 +32,7 @@ package net.ripe.rpki.rtr.domain.pdus;
 import io.netty.buffer.ByteBuf;
 
 public interface Pdu {
+    int MAX_LENGTH = 3248; // Taken from RTR lib
     int PROTOCOL_VERSION = 1;
 
     int length();

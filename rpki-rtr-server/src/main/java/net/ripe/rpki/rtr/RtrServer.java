@@ -30,7 +30,6 @@
 package net.ripe.rpki.rtr;
 
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -41,22 +40,37 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.rtr.adapter.netty.PduCodec;
+import net.ripe.rpki.rtr.domain.RtrCache;
+import net.ripe.rpki.rtr.domain.RtrDataUnit;
+import net.ripe.rpki.rtr.domain.pdus.CacheResponsePdu;
+import net.ripe.rpki.rtr.domain.pdus.EndOfDataPdu;
 import net.ripe.rpki.rtr.domain.pdus.ErrorCode;
 import net.ripe.rpki.rtr.domain.pdus.ErrorPdu;
+import net.ripe.rpki.rtr.domain.pdus.Flags;
+import net.ripe.rpki.rtr.domain.pdus.Pdu;
+import net.ripe.rpki.rtr.domain.pdus.PduParseException;
+import net.ripe.rpki.rtr.domain.pdus.ResetQueryPdu;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.util.Objects;
 
 @Slf4j
 @Service
 public class RtrServer {
 
-    public static final int DEFAULT_RTR_PORT = 8282;
+    public static final int DEFAULT_RTR_PORT = 9178;
+
+    @Autowired
+    private RtrCache rtrCache;
+
     private int port;
 
-    public RtrServer(@Value("${server.port}") int port) {
+    public RtrServer(@Value("${rtr.server.port}") int port) {
         setPort(port);
     }
 
@@ -96,11 +110,13 @@ public class RtrServer {
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         public void initChannel(SocketChannel ch) {
-                            ch.pipeline().addLast(new RtrServerHandler());
+                            ch.pipeline().addLast(new PduCodec(), new RtrServerHandler(rtrCache));
                         }
                     })
                     .option(ChannelOption.SO_BACKLOG, 128)
                     .childOption(ChannelOption.SO_KEEPALIVE, true);
+
+            log.info("Running RTR at port {}", port);
 
             ChannelFuture f = b.bind(port).sync();
             f.channel().closeFuture().sync();
@@ -119,21 +135,42 @@ public class RtrServer {
     }
 
     public class RtrServerHandler extends ChannelInboundHandlerAdapter {
+        private final RtrCache rtrCache;
+
+        public RtrServerHandler(RtrCache rtrCache) {
+            this.rtrCache = Objects.requireNonNull(rtrCache, "rtrCache");
+        }
 
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) {
-            final ErrorPdu errorPdu = ErrorPdu.of(ErrorCode.NoDataAvailable, new byte[]{}, "not implemented");
-            final ByteBuf buf = ctx.alloc().buffer(errorPdu.length());
-            errorPdu.write(buf);
-            // TODO Do we need to wait for the future here?
-            ctx.writeAndFlush(buf);
+            Pdu pdu = (Pdu) msg;
+            log.info("processing {}", msg);
+            if (pdu instanceof ResetQueryPdu) {
+                RtrCache.Content content = rtrCache.getCurrentContent();
+                ctx.write(CacheResponsePdu.of(content.getSessionId()));
+                for (RtrDataUnit dataUnit : content.getAnnouncements()) {
+                    ctx.write(dataUnit.toPdu(Flags.ANNOUNCEMENT));
+                }
+                ctx.write(EndOfDataPdu.of(content.getSessionId(), content.getSerialNumber(), 3600, 600, 7200));
+            } else if (pdu instanceof ErrorPdu) {
+                log.error("error received from router {}", pdu);
+                ctx.close();
+            } else {
+                throw new IllegalStateException("unrecognized PDU " + pdu);
+            }
+            ctx.flush();
         }
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            if (cause instanceof PduParseException) {
+                PduParseException e = (PduParseException) cause;
+                ctx.write(e.getErrorPdu());
+            } else {
+                ctx.write(ErrorPdu.of(ErrorCode.PduInternalError, new byte[0], "internal error"));
+            }
             log.error("Something bad happened", cause);
             ctx.close();
         }
     }
-
 }

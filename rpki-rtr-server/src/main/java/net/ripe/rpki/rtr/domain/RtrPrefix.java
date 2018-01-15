@@ -30,6 +30,10 @@
 package net.ripe.rpki.rtr.domain;
 
 import lombok.Value;
+import net.ripe.rpki.rtr.domain.pdus.Flags;
+import net.ripe.rpki.rtr.domain.pdus.IPv4PrefixPdu;
+import net.ripe.rpki.rtr.domain.pdus.IPv6PrefixPdu;
+import net.ripe.rpki.rtr.domain.pdus.Pdu;
 import org.bouncycastle.util.Arrays;
 
 @Value(staticConstructor = "of")
@@ -38,6 +42,17 @@ public class RtrPrefix implements RtrDataUnit {
     byte maxLength;
     byte[] prefix;
     int asn;
+
+    @Override
+    public Pdu toPdu(Flags flags) {
+        if (prefix.length == 4) {
+            return IPv4PrefixPdu.of(flags, this);
+        } else if (prefix.length == 16) {
+            return IPv6PrefixPdu.of(flags, this);
+        } else {
+            throw new IllegalStateException(String.format("invalid RTR prefix length, expected 4 or 16, was %d", prefix.length));
+        }
+    }
 
     @Override
     public int compareTo(RtrDataUnit o) {

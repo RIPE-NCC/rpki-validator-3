@@ -32,27 +32,35 @@ package net.ripe.rpki.rtr.domain.pdus;
 import io.netty.buffer.ByteBuf;
 import lombok.Value;
 
+/**
+ * @see <a href="https://tools.ietf.org/html/rfc8210#section-5.8">RFC8210 - End of Data</a>
+ */
 @Value(staticConstructor = "of")
 public class EndOfDataPdu implements Pdu {
 
     public static final int PDU_TYPE = 7;
 
     short sessionId;
-    int serial;
+    int serialNumber;
+    int refreshInterval;
+    int retryInterval;
+    int expireInterval;
 
     @Override
     public int length() {
-        return 12;
+        return 24;
     }
 
     @Override
     public void write(ByteBuf out) {
         out
-                .writeByte(PROTOCOL_VERSION)
-                .writeByte(PDU_TYPE)
-                .writeShort(sessionId)
-                .writeInt(length())
-                .writeInt(serial);
+            .writeByte(PROTOCOL_VERSION)
+            .writeByte(PDU_TYPE)
+            .writeShort(sessionId)
+            .writeInt(length())
+            .writeInt(serialNumber)
+            .writeInt(refreshInterval)
+            .writeInt(retryInterval)
+            .writeInt(expireInterval);
     }
-
 }

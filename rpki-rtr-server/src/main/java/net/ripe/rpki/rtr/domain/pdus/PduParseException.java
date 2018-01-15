@@ -29,33 +29,13 @@
  */
 package net.ripe.rpki.rtr.domain.pdus;
 
-public enum ErrorCode {
+import lombok.Getter;
 
-    CorruptData(0),
-    PduInternalError(1),
-    NoDataAvailable(2),
-    InvalidRequest(3),
-    UnsupportedProtocolVersion(4),
-    UnsupportedPduType(5),
-    WithdrawalOfUnknownRecord(6),
-    DuplicateAnnouncementReceived(7);
-
-    final int code;
-
-    ErrorCode(int i) {
-        this.code = i;
-    }
-
-    boolean isFatal() {
-        return code != NoDataAvailable.code;
-    }
-
-    public static ErrorCode of(int errorCode) {
-        for (ErrorCode candidate: values()) {
-            if (candidate.code == errorCode) {
-                return candidate;
-            }
-        }
-        return InvalidRequest;
+public class PduParseException extends RuntimeException {
+    @Getter
+    private final ErrorPdu errorPdu;
+    public PduParseException(ErrorPdu errorPdu) {
+        super(errorPdu.getErrorText());
+        this.errorPdu = errorPdu;
     }
 }

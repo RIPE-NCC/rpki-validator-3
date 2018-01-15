@@ -29,11 +29,15 @@
  */
 package net.ripe.rpki.rtr.domain;
 
+import lombok.Getter;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.security.SecureRandom;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.SortedSet;
 
 @Component
 @Slf4j
@@ -41,6 +45,8 @@ public class RtrCache {
     public static final int SERIAL_BITS = 32;
     public static final Long MAX_SERIAL_NUMBER = ((1L << SERIAL_BITS) - 1);
 
+    @Getter
+    private volatile short sessionId;
     private final VersionedSet<RtrDataUnit> data;
 
     public RtrCache() {
@@ -48,6 +54,7 @@ public class RtrCache {
     }
 
     public RtrCache(long initialVersion) {
+        this.sessionId = (short) new SecureRandom().nextInt();
         this.data = new VersionedSet<>(null, initialVersion);
     }
 
@@ -63,6 +70,10 @@ public class RtrCache {
         } else {
             log.info("no updates to cached data");
         }
+    }
+
+    public synchronized Content getCurrentContent() {
+        return Content.of(sessionId, getSerialNumber(), data.getValues());
     }
 
     /**
@@ -84,5 +95,12 @@ public class RtrCache {
 
         // FIXME this is not yet working correctly
         return data.getDelta((long) serialNumber + (version & ~MAX_SERIAL_NUMBER));
+    }
+
+    @Value(staticConstructor = "of")
+    public static class Content {
+        short sessionId;
+        int serialNumber;
+        SortedSet<RtrDataUnit> announcements;
     }
 }

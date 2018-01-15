@@ -29,33 +29,28 @@
  */
 package net.ripe.rpki.rtr.domain.pdus;
 
-public enum ErrorCode {
+import io.netty.buffer.ByteBuf;
+import lombok.Value;
 
-    CorruptData(0),
-    PduInternalError(1),
-    NoDataAvailable(2),
-    InvalidRequest(3),
-    UnsupportedProtocolVersion(4),
-    UnsupportedPduType(5),
-    WithdrawalOfUnknownRecord(6),
-    DuplicateAnnouncementReceived(7);
+/**
+ * @see <a href="https://tools.ietf.org/html/rfc8210#section-5.4">RFC8210 - Reset Query</a>
+ */
+@Value(staticConstructor = "of")
+public class ResetQueryPdu implements Pdu {
+    public static final int PDU_TYPE = 2;
+    public static final int PDU_LENGTH = 8;
 
-    final int code;
-
-    ErrorCode(int i) {
-        this.code = i;
+    @Override
+    public int length() {
+        return PDU_LENGTH;
     }
 
-    boolean isFatal() {
-        return code != NoDataAvailable.code;
-    }
-
-    public static ErrorCode of(int errorCode) {
-        for (ErrorCode candidate: values()) {
-            if (candidate.code == errorCode) {
-                return candidate;
-            }
-        }
-        return InvalidRequest;
+    @Override
+    public void write(ByteBuf out) {
+        out
+            .writeByte(PROTOCOL_VERSION)
+            .writeByte(PDU_TYPE)
+            .writeShort(0)
+            .writeInt(length());
     }
 }

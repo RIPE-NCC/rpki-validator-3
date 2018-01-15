@@ -29,33 +29,29 @@
  */
 package net.ripe.rpki.rtr.domain.pdus;
 
-public enum ErrorCode {
+import io.netty.buffer.ByteBuf;
+import lombok.Value;
 
-    CorruptData(0),
-    PduInternalError(1),
-    NoDataAvailable(2),
-    InvalidRequest(3),
-    UnsupportedProtocolVersion(4),
-    UnsupportedPduType(5),
-    WithdrawalOfUnknownRecord(6),
-    DuplicateAnnouncementReceived(7);
+/**
+ * @see <a href="https://tools.ietf.org/html/rfc8210#section-5.5">RFC8210 - Cache Response</a>
+ */
+@Value(staticConstructor = "of")
+public class CacheResponsePdu implements Pdu {
+    public final static int PDU_TYPE = 3;
 
-    final int code;
+    short sessionId;
 
-    ErrorCode(int i) {
-        this.code = i;
+    @Override
+    public int length() {
+        return 8;
     }
 
-    boolean isFatal() {
-        return code != NoDataAvailable.code;
-    }
-
-    public static ErrorCode of(int errorCode) {
-        for (ErrorCode candidate: values()) {
-            if (candidate.code == errorCode) {
-                return candidate;
-            }
-        }
-        return InvalidRequest;
+    @Override
+    public void write(ByteBuf out) {
+        out
+            .writeByte(PROTOCOL_VERSION)
+            .writeByte(PDU_TYPE)
+            .writeShort(sessionId)
+            .writeInt(length());
     }
 }
