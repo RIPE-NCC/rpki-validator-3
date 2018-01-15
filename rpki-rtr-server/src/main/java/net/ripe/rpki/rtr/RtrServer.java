@@ -47,6 +47,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 
 @Slf4j
 @Service
@@ -66,6 +67,9 @@ public class RtrServer {
         this.port = port;
     }
 
+    private EventLoopGroup bossGroup;
+    private EventLoopGroup workerGroup;
+
     @PostConstruct
     public void run() {
         new Thread(() -> {
@@ -74,12 +78,17 @@ public class RtrServer {
             } catch (InterruptedException e) {
                 log.error("Error running Netty server");
             }
-        });
+        }).start();
+    }
+
+    @PreDestroy
+    public void stop() {
+        shutdownWorkers();
     }
 
     private void runNetty() throws InterruptedException {
-        final EventLoopGroup bossGroup = new NioEventLoopGroup();
-        final EventLoopGroup workerGroup = new NioEventLoopGroup();
+        bossGroup = new NioEventLoopGroup();
+        workerGroup = new NioEventLoopGroup();
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
@@ -96,7 +105,15 @@ public class RtrServer {
             ChannelFuture f = b.bind(port).sync();
             f.channel().closeFuture().sync();
         } finally {
+            shutdownWorkers();
+        }
+    }
+
+    private void shutdownWorkers() {
+        if (workerGroup != null) {
             workerGroup.shutdownGracefully();
+        }
+        if (bossGroup != null) {
             bossGroup.shutdownGracefully();
         }
     }
