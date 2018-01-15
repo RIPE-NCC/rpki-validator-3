@@ -32,8 +32,6 @@ package net.ripe.rpki.rtr.domain;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelId;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -49,28 +47,12 @@ public class RtrClients {
         }
     }
 
-    private final List<ChannelId> clientsToNotify = new ArrayList<>();
-
-    public synchronized void notify(ChannelHandlerContext ctx) {
-        clientsToNotify.add(getId(ctx));
-    }
-
-    public synchronized void flushNotifications(Consumer<ChannelHandlerContext> flush) {
-        try {
-            clientsToNotify.forEach(c -> {
-                final RtrClient client = clients.get(c);
-                if (client != null) {
-                    flush.accept(client.getChannel());
-                }
-            });
-        } finally {
-            clientsToNotify.clear();
-        }
+    public synchronized void notifyAll(Consumer<ChannelHandlerContext> flush) {
+        clients.forEach((k, c) -> flush.accept(c.getChannel()));
     }
 
     public synchronized void clear() {
         clients.clear();
-        clientsToNotify.clear();
     }
 
     private ChannelId getId(ChannelHandlerContext channel) {

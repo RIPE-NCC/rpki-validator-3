@@ -32,7 +32,6 @@ package net.ripe.rpki.rtr;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelId;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -43,7 +42,6 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.rtr.adapter.netty.PduCodec;
 import net.ripe.rpki.rtr.domain.RtrCache;
-import net.ripe.rpki.rtr.domain.RtrClient;
 import net.ripe.rpki.rtr.domain.RtrClients;
 import net.ripe.rpki.rtr.domain.RtrDataUnit;
 import net.ripe.rpki.rtr.domain.pdus.CacheResetPdu;
@@ -63,9 +61,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 
 @Slf4j
@@ -193,7 +189,7 @@ public class RtrServer {
             final int serialNumberAfter = rtrCache.getSerialNumber();
             final short sessionId = rtrCache.getSessionId();
             if (serialNumberAfter != serialNumber) {
-                clients.flushNotifications(c -> c.write(NotifyPdu.of(serialNumber, sessionId)));
+                clients.notifyAll(c -> c.write(NotifyPdu.of(serialNumberAfter, sessionId)));
             } else {
 
             }
