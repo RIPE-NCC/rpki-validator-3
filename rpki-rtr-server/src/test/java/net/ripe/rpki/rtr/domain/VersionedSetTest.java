@@ -38,17 +38,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class VersionedSetTest {
 
-    private final VersionedSet<Integer> subject = new VersionedSet<>(Comparator.<Integer>naturalOrder());
+    private final VersionedSet<Integer> subject = new VersionedSet<>(Comparator.<Integer>naturalOrder(), 0L);
 
     @Test
     public void should_track_serial_number() {
-        assertThat(subject.getSerialNumber()).isEqualTo(0);
+        assertThat(subject.getCurrentVersion()).isEqualTo(0);
 
         subject.updateValues(Arrays.asList(1, 2, 3));
-        assertThat(subject.getSerialNumber()).isEqualTo(1);
+        assertThat(subject.getCurrentVersion()).isEqualTo(1);
 
         subject.updateValues(Arrays.asList(2, 3, 4));
-        assertThat(subject.getSerialNumber()).isEqualTo(2);
+        assertThat(subject.getCurrentVersion()).isEqualTo(2);
     }
 
     @Test

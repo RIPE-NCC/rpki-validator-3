@@ -90,4 +90,12 @@ public class RtrCacheTest {
         assertThat(delta0_2.getAdditions()).isEqualTo(EMPTY_ANNOUNCEMENTS);
         assertThat(delta0_2.getRemovals()).isEqualTo(EMPTY_WITHDRAWALS);
     }
+
+    @Test
+    public void should_use_rfc1982_serial_number_arithmetic() {
+        subject = new RtrCache(RtrCache.MAX_SERIAL_NUMBER + 1 + 17);
+        subject.updateValidatedPdus(SINGLE_ANNOUNCEMENT);
+
+        assertThat(subject.getSerialNumber()).isEqualTo(18);
+    }
 }

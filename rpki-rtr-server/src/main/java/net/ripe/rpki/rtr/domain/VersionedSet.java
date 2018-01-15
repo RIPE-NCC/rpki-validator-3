@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.rtr.domain;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.Sets;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -47,18 +48,25 @@ import java.util.stream.Collectors;
 
 public class VersionedSet<T> {
 
+    private final Delta EMPTY_DELTA = new Delta(Collections.emptySortedSet(), Collections.emptySortedSet());
+
     private final Comparator<T> comparator;
 
     @Getter
-    private long serialNumber = 0L;
+    private long currentVersion;
 
     @Getter
     private SortedSet<T> values = Collections.emptySortedSet();
 
     private SortedMap<Long, Delta> deltas = Collections.emptySortedMap();
 
-    public VersionedSet(Comparator<T> comparator) {
+    public VersionedSet() {
+        this(null, 0L);
+    }
+
+    public VersionedSet(Comparator<T> comparator, long initialVersion) {
         this.comparator = comparator;
+        this.currentVersion = initialVersion;
     }
 
     public boolean updateValues(Collection<T> newValues) {
@@ -69,20 +77,34 @@ public class VersionedSet<T> {
 
         Delta delta = calculateDelta(values, updated);
         SortedMap<Long, Delta> updatedDeltas = updatePreviousDeltas(delta, deltas);
-        updatedDeltas.put(serialNumber, delta);
+        updatedDeltas.put(currentVersion, delta);
 
-        ++serialNumber;
+        ++currentVersion;
         values = updated;
         deltas = Collections.unmodifiableSortedMap(updatedDeltas);
         return true;
+    }
+
+    public long getOldestVersion() {
+        return Objects.firstNonNull(deltas.firstKey(), currentVersion);
     }
 
     public void forgetDeltasBefore(long version) {
         deltas = Collections.unmodifiableSortedMap(new TreeMap<>(deltas.tailMap(version)));
     }
 
-    public Optional<Delta> getDelta(long serialNumber) {
-        return Optional.ofNullable(deltas.get(serialNumber));
+    public Optional<Delta> getDelta(long version) {
+        if (version > currentVersion) {
+            throw new IllegalArgumentException(String.format(
+                "requested version %d must not be greater than current version %d",
+                version,
+                currentVersion
+            ));
+        } else if (version == currentVersion) {
+            return Optional.of(EMPTY_DELTA);
+        } else {
+            return Optional.ofNullable(deltas.get(version));
+        }
     }
 
     public int size() {
