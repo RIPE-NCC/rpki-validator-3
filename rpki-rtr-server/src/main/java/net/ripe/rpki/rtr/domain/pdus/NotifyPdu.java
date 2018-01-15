@@ -30,22 +30,32 @@
 package net.ripe.rpki.rtr.domain.pdus;
 
 import io.netty.buffer.ByteBuf;
+import lombok.Value;
 
+/**
+ * @see <a href="https://tools.ietf.org/html/rfc6810#section-5.2">RFC8210 - Serial Notify</a>
+ */
+@Value(staticConstructor = "of")
 public class NotifyPdu implements Pdu {
 
-    private final int serialNumber;
+    private static final int PDU_TYPE = 0;
 
-    public NotifyPdu(int serialNumber) {
-        this.serialNumber = serialNumber;
-    }
+    int serialNumber;
+
+    short sessionId;
 
     @Override
     public int length() {
-        return 0;
+        return 12;
     }
 
     @Override
     public void write(ByteBuf out) {
-
+        out
+                .writeByte(PROTOCOL_VERSION)
+                .writeByte(PDU_TYPE)
+                .writeShort(sessionId)
+                .writeInt(length())
+                .writeInt(serialNumber);
     }
 }

@@ -164,6 +164,8 @@ public class RtrServer {
 
             clients.register(ctx);
 
+            final int serialNumber = rtrCache.getSerialNumber();
+
             if (pdu instanceof SerialQueryPdu) {
                 SerialQueryPdu serialQueryPdu = (SerialQueryPdu) pdu;
                 RtrCache.Content content = rtrCache.getCurrentContent();
@@ -188,8 +190,13 @@ public class RtrServer {
             }
             ctx.flush();
 
-//            final int serialNumber = rtrCache.getSerialNumber();
-//            clients.flushNotifications(c -> c.write(new NotifyPdu(serialNumber)));
+            final int serialNumberAfter = rtrCache.getSerialNumber();
+            final short sessionId = rtrCache.getSessionId();
+            if (serialNumberAfter != serialNumber) {
+                clients.flushNotifications(c -> c.write(NotifyPdu.of(serialNumber, sessionId)));
+            } else {
+
+            }
         }
 
         @Override
