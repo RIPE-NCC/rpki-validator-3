@@ -52,14 +52,32 @@ import javax.annotation.PostConstruct;
 @Service
 public class RtrServer {
 
+    public static final int DEFAULT_RTR_PORT = 8282;
     private int port;
 
     public RtrServer(@Value("${server.port}") int port) {
+        setPort(port);
+    }
+
+    private void setPort(int port) {
+        if (port == -1) {
+            port = DEFAULT_RTR_PORT;
+        }
         this.port = port;
     }
 
     @PostConstruct
-    public void run() throws Exception {
+    public void run() {
+        new Thread(() -> {
+            try {
+                runNetty();
+            } catch (InterruptedException e) {
+                log.error("Error running Netty server");
+            }
+        });
+    }
+
+    private void runNetty() throws InterruptedException {
         final EventLoopGroup bossGroup = new NioEventLoopGroup();
         final EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
