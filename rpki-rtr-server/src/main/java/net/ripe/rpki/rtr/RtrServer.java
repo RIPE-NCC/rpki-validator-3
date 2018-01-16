@@ -33,13 +33,15 @@ import fj.data.Either;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.rtr.adapter.netty.PduCodec;
 import net.ripe.rpki.rtr.domain.RtrCache;
@@ -62,7 +64,9 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.util.ArrayDeque;
 import java.util.Objects;
+import java.util.Queue;
 
 
 @Slf4j
@@ -143,57 +147,90 @@ public class RtrServer {
         }
     }
 
-    public class RtrServerHandler extends ChannelInboundHandlerAdapter {
+    public class RtrServerHandler extends SimpleChannelInboundHandler<Pdu> {
         private static final int REFRESH_INTERVAL = 3600;
         private static final int RETRY_INTERVAL = 600;
         private static final int EXPIRE_INTERVAL = 7200;
 
+        private volatile boolean busy = false;
+        private Queue<Pdu> pending = new ArrayDeque<>();
         private final RtrCache rtrCache;
+        private int currentSerialNumber = 0;
 
         public RtrServerHandler(RtrCache rtrCache) {
             this.rtrCache = Objects.requireNonNull(rtrCache, "rtrCache");
         }
 
         @Override
-        public void channelRead(ChannelHandlerContext ctx, Object msg) {
-            Pdu pdu = (Pdu) msg;
-            log.info("processing {}", msg);
-
+        public synchronized void channelRead0(ChannelHandlerContext ctx, Pdu msg) {
             clients.register(ctx);
 
-            final int serialNumber = rtrCache.getSerialNumber();
+            pending.add(msg);
+            if (busy) {
+                log.info("queuing request {}", msg);
+                return;
+            }
 
+            busy = true;
+
+            Pdu pdu = pending.remove();
+
+            ChannelFuture responseComplete = handleRouterRequest(ctx, pdu);
+            if (responseComplete != null) {
+                responseComplete.addListener(getFutureGenericFutureListener(ctx, pdu));
+            }
+        }
+
+        private GenericFutureListener<Future<Void>> getFutureGenericFutureListener(ChannelHandlerContext ctx, Pdu pdu) {
+            return (f) -> {
+                synchronized (this) {
+                    Pdu next = pending.poll();
+                    if (next == null) {
+                        log.info("finished processing pending requests for {}", ctx);
+                        busy = false;
+
+                        int cacheSerialNumber = rtrCache.getSerialNumber();
+                        if (cacheSerialNumber != currentSerialNumber) {
+                            ctx.write(NotifyPdu.of(cacheSerialNumber, rtrCache.getSessionId()));
+                        }
+                    } else {
+                        ChannelFuture channelFuture = handleRouterRequest(ctx, pdu);
+                        if (channelFuture != null) {
+                            channelFuture.addListener(getFutureGenericFutureListener(ctx, pdu));
+                        }
+                    }
+                }
+            };
+        }
+
+        private ChannelFuture handleRouterRequest(ChannelHandlerContext ctx, Pdu pdu) {
+            log.info("processing {}", pdu);
+            ChannelFuture responseComplete = null;
             if (pdu instanceof SerialQueryPdu) {
                 SerialQueryPdu serialQueryPdu = (SerialQueryPdu) pdu;
-                handleSerialQuery(ctx, serialQueryPdu);
+                responseComplete = handleSerialQuery(ctx, serialQueryPdu);
             } else if (pdu instanceof ResetQueryPdu) {
-                handleResetQuery(ctx);
+                responseComplete = handleResetQuery(ctx);
             } else if (pdu instanceof ErrorPdu) {
-                log.error("error received from router {}", pdu);
+                log.error("error received from router {}, closing connection", pdu);
                 ctx.close();
             } else {
                 throw new IllegalStateException("unrecognized PDU " + pdu);
             }
             ctx.flush();
-
-            final int serialNumberAfter = rtrCache.getSerialNumber();
-            final short sessionId = rtrCache.getSessionId();
-            if (serialNumberAfter != serialNumber) {
-                clients.notifyAll(c -> c.write(NotifyPdu.of(serialNumberAfter, sessionId)));
-            } else {
-
-            }
+            return responseComplete;
         }
 
-        private void handleSerialQuery(ChannelHandlerContext ctx, SerialQueryPdu serialQueryPdu) {
+        private ChannelFuture handleSerialQuery(ChannelHandlerContext ctx, SerialQueryPdu serialQueryPdu) {
             Either<RtrCache.Delta, RtrCache.Content> deltaOrContent = rtrCache.getDeltaOrContent(serialQueryPdu.getSerialNumber());
 
             if (deltaOrContent.isLeft()) {
                 RtrCache.Delta delta = deltaOrContent.left().value();
                 if (delta.getSessionId() != serialQueryPdu.getSessionId()) {
-                    ctx.write(CacheResetPdu.of());
-                    return;
+                    return ctx.write(CacheResetPdu.of());
                 }
+
+                currentSerialNumber = delta.getSerialNumber();
 
                 ctx.write(CacheResponsePdu.of(delta.getSessionId()));
                 for (RtrDataUnit dataUnit : delta.getAnnouncements()) {
@@ -202,19 +239,22 @@ public class RtrServer {
                 for (RtrDataUnit dataUnit : delta.getWithdrawals()) {
                     ctx.write(dataUnit.toPdu(Flags.WITHDRAWAL));
                 }
-                ctx.write(EndOfDataPdu.of(delta.getSessionId(), delta.getSerialNumber(), REFRESH_INTERVAL, RETRY_INTERVAL, EXPIRE_INTERVAL));
+                return ctx.write(EndOfDataPdu.of(delta.getSessionId(), delta.getSerialNumber(), REFRESH_INTERVAL, RETRY_INTERVAL, EXPIRE_INTERVAL));
             } else {
-                ctx.write(CacheResetPdu.of());
+                return ctx.write(CacheResetPdu.of());
             }
         }
 
-        private void handleResetQuery(ChannelHandlerContext ctx) {
+        private ChannelFuture handleResetQuery(ChannelHandlerContext ctx) {
             RtrCache.Content content = rtrCache.getCurrentContent();
+
+            currentSerialNumber = content.getSerialNumber();
+
             ctx.write(CacheResponsePdu.of(content.getSessionId()));
             for (RtrDataUnit dataUnit : content.getAnnouncements()) {
                 ctx.write(dataUnit.toPdu(Flags.ANNOUNCEMENT));
             }
-            ctx.write(EndOfDataPdu.of(content.getSessionId(), content.getSerialNumber(), REFRESH_INTERVAL, RETRY_INTERVAL, EXPIRE_INTERVAL));
+            return ctx.write(EndOfDataPdu.of(content.getSessionId(), content.getSerialNumber(), REFRESH_INTERVAL, RETRY_INTERVAL, EXPIRE_INTERVAL));
         }
 
         @Override
