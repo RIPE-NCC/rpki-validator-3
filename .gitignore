@@ -26,3 +26,5 @@ nbdist/
 # H2 development database
 /*.mv.db
 /*.trace.db
+
+.DS_Store
