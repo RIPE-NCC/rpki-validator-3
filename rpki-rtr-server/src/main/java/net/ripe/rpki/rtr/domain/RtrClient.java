@@ -36,7 +36,7 @@ public class RtrClient {
     private ChannelHandlerContext channel;
     private DateTime lastActive;
 
-    public RtrClient(ChannelHandlerContext channel) {
+    RtrClient(ChannelHandlerContext channel) {
         this.channel = channel;
         this.lastActive = DateTime.now();
     }
@@ -47,5 +47,9 @@ public class RtrClient {
 
     public DateTime getLastActive() {
         return lastActive;
+    }
+
+    public void updateActivity() {
+        lastActive = DateTime.now();
     }
 }

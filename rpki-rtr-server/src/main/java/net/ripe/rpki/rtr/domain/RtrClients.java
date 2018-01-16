@@ -32,18 +32,21 @@ package net.ripe.rpki.rtr.domain;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelId;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 public class RtrClients {
 
-    private final Map<ChannelId, RtrClient> clients = new ConcurrentHashMap<>();
+    private final Map<ChannelId, RtrClient> clients = new HashMap<>();
 
     public synchronized void register(final ChannelHandlerContext channel) {
         final ChannelId channelId = getId(channel);
-        if (!clients.containsKey(channelId)) {
+        final RtrClient rtrClient = clients.get(channelId);
+        if (rtrClient == null) {
             clients.put(channelId, new RtrClient(channel));
+        } else {
+            rtrClient.updateActivity();
         }
     }
 
