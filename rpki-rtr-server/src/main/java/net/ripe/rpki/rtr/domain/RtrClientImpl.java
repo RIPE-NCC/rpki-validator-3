@@ -27,31 +27,43 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.rtr;
+package net.ripe.rpki.rtr.domain;
 
-import io.netty.channel.embedded.EmbeddedChannel;
-import net.ripe.rpki.rtr.domain.RtrCache;
-import net.ripe.rpki.rtr.domain.RtrClients;
-import net.ripe.rpki.rtr.domain.pdus.CacheResetPdu;
-import net.ripe.rpki.rtr.domain.pdus.SerialQueryPdu;
-import org.junit.Ignore;
-import org.junit.Test;
+import io.netty.channel.ChannelHandlerContext;
+import org.joda.time.DateTime;
 
-import static org.junit.Assert.assertNotNull;
+public class RtrClientImpl implements RtrClient {
+    private ChannelHandlerContext channel;
+    private DateTime lastActive;
+    private volatile boolean busyResponding;
 
-@Ignore
-public class RtrServerTest {
-
-    @Test
-    public void shouldReplyWithCacheResetIsSessionIdIsDifferent() {
-        final RtrCache rtrCache = new RtrCache();
-        final RtrClients clients = new RtrClients();
-        final short sessionId = (short) (rtrCache.getSessionId() + 10);
-        final int serial = 20;
-        EmbeddedChannel channel = new EmbeddedChannel(new RtrServer.RtrClientHandler(rtrCache, clients));
-        channel.writeInbound(SerialQueryPdu.of(sessionId, serial));
-        CacheResetPdu resetPdu = channel.readInbound();
-        assertNotNull(resetPdu);
+    RtrClientImpl(ChannelHandlerContext channel) {
+        this.channel = channel;
+        this.lastActive = DateTime.now();
     }
 
+    @Override
+    public ChannelHandlerContext getChannel() {
+        return channel;
+    }
+
+    @Override
+    public DateTime getLastActive() {
+        return lastActive;
+    }
+
+    @Override
+    public void updateActivity() {
+        lastActive = DateTime.now();
+    }
+
+    @Override
+    public boolean isBusyResponding() {
+        return busyResponding;
+    }
+
+    @Override
+    public void setBusyResponding(boolean busyResponding) {
+        this.busyResponding = busyResponding;
+    }
 }

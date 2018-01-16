@@ -32,24 +32,14 @@ package net.ripe.rpki.rtr.domain;
 import io.netty.channel.ChannelHandlerContext;
 import org.joda.time.DateTime;
 
-public class RtrClient {
-    private ChannelHandlerContext channel;
-    private DateTime lastActive;
+public interface RtrClient {
+    ChannelHandlerContext getChannel();
 
-    RtrClient(ChannelHandlerContext channel) {
-        this.channel = channel;
-        this.lastActive = DateTime.now();
-    }
+    DateTime getLastActive();
 
-    public ChannelHandlerContext getChannel() {
-        return channel;
-    }
+    void updateActivity();
 
-    public DateTime getLastActive() {
-        return lastActive;
-    }
+    boolean isBusyResponding();
 
-    public void updateActivity() {
-        lastActive = DateTime.now();
-    }
+    void setBusyResponding(boolean busyResponding);
 }

@@ -31,38 +31,36 @@ package net.ripe.rpki.rtr.domain;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelId;
+import io.netty.channel.ChannelInboundHandler;
+import net.ripe.rpki.rtr.RtrServer;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 @Service
 public class RtrClients {
 
-    private final Map<ChannelId, RtrClient> clients = new HashMap<>();
+    private final Set<RtrClient> clients = new HashSet<>();
 
-    public synchronized void register(final ChannelHandlerContext channel) {
-        final ChannelId channelId = getId(channel);
-        final RtrClient rtrClient = clients.get(channelId);
-        if (rtrClient == null) {
-            clients.put(channelId, new RtrClient(channel));
-        } else {
-            rtrClient.updateActivity();
-        }
+    public synchronized void register(final RtrClient client) {
+        clients.add(client);
     }
 
     public synchronized void notifyAll(Consumer<ChannelHandlerContext> flush) {
-        // FIXME only notify clients that are not busy
-        clients.forEach((k, c) -> flush.accept(c.getChannel()));
+        clients.stream()
+                .filter(c -> !c.isBusyResponding())
+                .forEach(c -> flush.accept(c.getChannel()));
     }
 
     public synchronized void clear() {
         clients.clear();
     }
 
-    private ChannelId getId(ChannelHandlerContext channel) {
-        return channel.channel().id();
+    public synchronized void deregister(RtrClient client) {
+        clients.remove(client);
     }
-
 }

@@ -45,6 +45,7 @@ import io.netty.util.concurrent.GenericFutureListener;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.rtr.adapter.netty.PduCodec;
 import net.ripe.rpki.rtr.domain.RtrCache;
+import net.ripe.rpki.rtr.domain.RtrClient;
 import net.ripe.rpki.rtr.domain.RtrClients;
 import net.ripe.rpki.rtr.domain.RtrDataUnit;
 import net.ripe.rpki.rtr.domain.pdus.CacheResetPdu;
@@ -58,6 +59,7 @@ import net.ripe.rpki.rtr.domain.pdus.Pdu;
 import net.ripe.rpki.rtr.domain.pdus.PduParseException;
 import net.ripe.rpki.rtr.domain.pdus.ResetQueryPdu;
 import net.ripe.rpki.rtr.domain.pdus.SerialQueryPdu;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -123,7 +125,7 @@ public class RtrServer {
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         public void initChannel(SocketChannel ch) {
-                            ch.pipeline().addLast(new PduCodec(), new RtrServerHandler(rtrCache));
+                            ch.pipeline().addLast(new PduCodec(), new RtrClientHandler(rtrCache, clients));
                         }
                     })
                     .option(ChannelOption.SO_BACKLOG, 128)
@@ -148,33 +150,46 @@ public class RtrServer {
         }
     }
 
-    public class RtrServerHandler extends SimpleChannelInboundHandler<Pdu> {
+
+    public static class RtrClientHandler extends SimpleChannelInboundHandler<Pdu> implements RtrClient {
         private static final int REFRESH_INTERVAL = 3600;
         private static final int RETRY_INTERVAL = 600;
         private static final int EXPIRE_INTERVAL = 7200;
 
-        private volatile boolean busy = false;
         private Queue<Pdu> pending = new ArrayDeque<>();
         private final RtrCache rtrCache;
-        private int currentSerialNumber = 0;
 
-        public RtrServerHandler(RtrCache rtrCache) {
+        private int currentSerialNumber = 0;
+        private int latestNotifySerialNumber = 0;
+
+        private final RtrClients clients;
+
+        public RtrClientHandler(RtrCache rtrCache, RtrClients clients) {
             this.rtrCache = Objects.requireNonNull(rtrCache, "rtrCache");
+            this.clients = clients;
         }
 
         @Override
-        public synchronized void channelRead0(ChannelHandlerContext ctx, Pdu msg) {
-            clients.register(ctx);
+        public void channelActive(ChannelHandlerContext ctx) throws Exception {
+            super.channelActive(ctx);
+            clients.register(this);
+        }
 
-            pending.add(msg);
-            if (busy) {
-                log.info("queuing request {}", msg);
+        @Override
+        public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+            clients.deregister(this);
+            super.channelInactive(ctx);
+        }
+
+        @Override
+        public synchronized void channelRead0(ChannelHandlerContext ctx, Pdu pdu) {
+            if (isBusyResponding()) {
+                pending.add(pdu);
+                log.info("queuing request {}", pdu);
                 return;
             }
 
-            busy = true;
-
-            Pdu pdu = pending.remove();
+            setBusyResponding(true);
 
             ChannelFuture responseComplete = handleRouterRequest(ctx, pdu);
             if (responseComplete != null) {
@@ -188,7 +203,7 @@ public class RtrServer {
                     Pdu next = pending.poll();
                     if (next == null) {
                         log.info("finished processing pending requests for {}", ctx);
-                        busy = false;
+                        setBusyResponding(false);
 
                         int cacheSerialNumber = rtrCache.getSerialNumber();
                         if (cacheSerialNumber != currentSerialNumber) {
@@ -269,6 +284,31 @@ public class RtrServer {
             }
             log.error("Something bad happened", cause);
             ctx.close();
+        }
+
+        @Override
+        public ChannelHandlerContext getChannel() {
+            return null;
+        }
+
+        @Override
+        public DateTime getLastActive() {
+            return null;
+        }
+
+        @Override
+        public void updateActivity() {
+
+        }
+
+        @Override
+        public boolean isBusyResponding() {
+            return false;
+        }
+
+        @Override
+        public void setBusyResponding(boolean busyResponding) {
+
         }
     }
 }
