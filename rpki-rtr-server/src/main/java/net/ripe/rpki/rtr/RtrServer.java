@@ -192,6 +192,7 @@ public class RtrServer {
 
                         int cacheSerialNumber = rtrCache.getSerialNumber();
                         if (cacheSerialNumber != currentSerialNumber) {
+                            log.info("Serial number updated since the last notification from {} to {}", currentSerialNumber, cacheSerialNumber);
                             ctx.write(NotifyPdu.of(cacheSerialNumber, rtrCache.getSessionId()));
                         }
                     } else {
