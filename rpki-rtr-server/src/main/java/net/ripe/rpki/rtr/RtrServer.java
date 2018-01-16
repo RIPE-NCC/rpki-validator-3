@@ -80,7 +80,8 @@ public class RtrServer {
 
     private int port;
 
-    private final RtrClients clients = new RtrClients();
+    @Autowired
+    private RtrClients clients;
 
     public RtrServer(@Value("${rtr.server.port}") int port) {
         setPort(port);

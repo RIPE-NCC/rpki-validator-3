@@ -33,7 +33,9 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.rtr.domain.RtrCache;
+import net.ripe.rpki.rtr.domain.RtrClients;
 import net.ripe.rpki.rtr.domain.RtrDataUnit;
+import net.ripe.rpki.rtr.domain.pdus.NotifyPdu;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -56,6 +58,9 @@ public class RefreshCacheController {
 
     @Autowired
     private RtrCache cache;
+
+    @Autowired
+    private RtrClients clients;
 
     public RefreshCacheController(RestTemplateBuilder restTemplateBuilder) {
         log.info("RefreshCacheController loaded");
@@ -82,7 +87,11 @@ public class RefreshCacheController {
             prefix.getMaxLength()
         )).distinct().collect(toList());
 
-        cache.updateValidatedPdus(roaPrefixes);
+        cache.updateValidatedPdus(roaPrefixes).ifPresent(updatedSerialNumber -> {
+            clients.notifyAll(ctx -> {
+                ctx.write(NotifyPdu.of(updatedSerialNumber, cache.getSessionId()));
+            });
+        });
     }
 
     @lombok.Value

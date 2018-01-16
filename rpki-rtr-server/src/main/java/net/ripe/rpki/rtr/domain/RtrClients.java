@@ -31,11 +31,13 @@ package net.ripe.rpki.rtr.domain;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelId;
+import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
+@Service
 public class RtrClients {
 
     private final Map<ChannelId, RtrClient> clients = new HashMap<>();
@@ -51,6 +53,7 @@ public class RtrClients {
     }
 
     public synchronized void notifyAll(Consumer<ChannelHandlerContext> flush) {
+        // FIXME only notify clients that are not busy
         clients.forEach((k, c) -> flush.accept(c.getChannel()));
     }
 

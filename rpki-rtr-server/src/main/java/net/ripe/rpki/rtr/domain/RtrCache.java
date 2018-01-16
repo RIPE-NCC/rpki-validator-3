@@ -60,7 +60,7 @@ public class RtrCache {
         this.data = new VersionedSet<>(null, initialVersion);
     }
 
-    public synchronized void updateValidatedPdus(Collection<RtrDataUnit> updatedPdus) {
+    public synchronized Optional<Integer> updateValidatedPdus(Collection<RtrDataUnit> updatedPdus) {
         if (data.updateValues(updatedPdus)) {
             log.info(
                 "{} validated ROAs updated to serial number {} (delta with {} announcements, {} withdrawals)",
@@ -69,8 +69,10 @@ public class RtrCache {
                 data.getDelta(data.getCurrentVersion() - 1).map(x -> x.getAdditions().size()).orElse(0),
                 data.getDelta(data.getCurrentVersion() - 1).map(x -> x.getRemovals().size()).orElse(0)
             );
+            return Optional.of(getSerialNumber());
         } else {
             log.info("no updates to cached data");
+            return Optional.empty();
         }
     }
 
