@@ -29,17 +29,10 @@
  */
 package net.ripe.rpki.rtr.domain;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelId;
-import io.netty.channel.ChannelInboundHandler;
-import net.ripe.rpki.rtr.RtrServer;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 
 @Service
 public class RtrClients {
@@ -50,17 +43,15 @@ public class RtrClients {
         clients.add(client);
     }
 
-    public synchronized void notifyAll(Consumer<ChannelHandlerContext> flush) {
-        clients.stream()
-                .filter(c -> !c.isBusyResponding())
-                .forEach(c -> flush.accept(c.getChannel()));
-    }
-
     public synchronized void clear() {
         clients.clear();
     }
 
     public synchronized void deregister(RtrClient client) {
         clients.remove(client);
+    }
+
+    public void cacheUpdated(short sessionId, Integer updatedSerialNumber) {
+        clients.forEach(client -> client.cacheUpdated(sessionId, updatedSerialNumber));
     }
 }

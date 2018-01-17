@@ -40,8 +40,6 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.rtr.adapter.netty.PduCodec;
 import net.ripe.rpki.rtr.domain.RtrCache;
@@ -156,6 +154,8 @@ public class RtrServer {
         private static final int RETRY_INTERVAL = 600;
         private static final int EXPIRE_INTERVAL = 7200;
 
+        private ChannelHandlerContext ctx;
+        private boolean busyHandlingRequest = false;
         private Queue<Pdu> pending = new ArrayDeque<>();
         private final RtrCache rtrCache;
 
@@ -163,6 +163,7 @@ public class RtrServer {
         private int latestNotifySerialNumber = 0;
 
         private final RtrClients clients;
+        private DateTime lastActive = DateTime.now();
 
         public RtrClientHandler(RtrCache rtrCache, RtrClients clients) {
             this.rtrCache = Objects.requireNonNull(rtrCache, "rtrCache");
@@ -172,6 +173,7 @@ public class RtrServer {
         @Override
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
             super.channelActive(ctx);
+            this.ctx = ctx;
             clients.register(this);
         }
 
@@ -183,41 +185,39 @@ public class RtrServer {
 
         @Override
         public synchronized void channelRead0(ChannelHandlerContext ctx, Pdu pdu) {
-            if (isBusyResponding()) {
+            this.lastActive = DateTime.now();
+            if (busyHandlingRequest) {
                 pending.add(pdu);
                 log.info("queuing request {}", pdu);
                 return;
             }
 
-            setBusyResponding(true);
+            busyHandlingRequest = true;
 
             ChannelFuture responseComplete = handleRouterRequest(ctx, pdu);
             if (responseComplete != null) {
-                responseComplete.addListener(getFutureGenericFutureListener(ctx, pdu));
+                responseComplete.addListener((f) -> requestHandlingCompleted());
             }
         }
 
-        private GenericFutureListener<Future<Void>> getFutureGenericFutureListener(ChannelHandlerContext ctx, Pdu pdu) {
-            return (f) -> {
-                synchronized (this) {
-                    Pdu next = pending.poll();
-                    if (next == null) {
-                        log.info("finished processing pending requests for {}", ctx);
-                        setBusyResponding(false);
+        private synchronized void requestHandlingCompleted() {
+            Pdu next = pending.poll();
+            if (next == null) {
+                log.info("finished processing all pending requests for {}", ctx);
+                busyHandlingRequest = false;
 
-                        int cacheSerialNumber = rtrCache.getSerialNumber();
-                        if (cacheSerialNumber != currentSerialNumber) {
-                            log.info("Serial number updated since the last notification from {} to {}", currentSerialNumber, cacheSerialNumber);
-                            ctx.write(NotifyPdu.of(cacheSerialNumber, rtrCache.getSessionId()));
-                        }
-                    } else {
-                        ChannelFuture channelFuture = handleRouterRequest(ctx, pdu);
-                        if (channelFuture != null) {
-                            channelFuture.addListener(getFutureGenericFutureListener(ctx, pdu));
-                        }
-                    }
+                int cacheSerialNumber = rtrCache.getSerialNumber();
+                if (cacheSerialNumber != currentSerialNumber) {
+                    this.latestNotifySerialNumber = cacheSerialNumber;
+                    log.info("Serial number updated since the last notification from {} to {}", currentSerialNumber, cacheSerialNumber);
+                    ctx.write(NotifyPdu.of(cacheSerialNumber, rtrCache.getSessionId()));
                 }
-            };
+            } else {
+                ChannelFuture channelFuture = handleRouterRequest(ctx, next);
+                if (channelFuture != null) {
+                    channelFuture.addListener((f) -> requestHandlingCompleted());
+                }
+            }
         }
 
         private ChannelFuture handleRouterRequest(ChannelHandlerContext ctx, Pdu pdu) {
@@ -287,13 +287,8 @@ public class RtrServer {
         }
 
         @Override
-        public ChannelHandlerContext getChannel() {
-            return null;
-        }
-
-        @Override
-        public DateTime getLastActive() {
-            return null;
+        public synchronized DateTime getLastActive() {
+            return lastActive;
         }
 
         @Override
@@ -302,13 +297,13 @@ public class RtrServer {
         }
 
         @Override
-        public boolean isBusyResponding() {
-            return false;
-        }
-
-        @Override
-        public void setBusyResponding(boolean busyResponding) {
-
+        public synchronized void cacheUpdated(short sessionId, int updatedSerialNumber) {
+            if (updatedSerialNumber != currentSerialNumber && latestNotifySerialNumber != updatedSerialNumber) {
+                this.latestNotifySerialNumber = updatedSerialNumber;
+                if (!busyHandlingRequest) {
+                    ctx.writeAndFlush(NotifyPdu.of(updatedSerialNumber, sessionId));
+                }
+            }
         }
     }
 }

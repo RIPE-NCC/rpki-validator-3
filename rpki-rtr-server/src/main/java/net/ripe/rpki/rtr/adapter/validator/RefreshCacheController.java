@@ -35,7 +35,6 @@ import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.rtr.domain.RtrCache;
 import net.ripe.rpki.rtr.domain.RtrClients;
 import net.ripe.rpki.rtr.domain.RtrDataUnit;
-import net.ripe.rpki.rtr.domain.pdus.NotifyPdu;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -88,9 +87,7 @@ public class RefreshCacheController {
         )).distinct().collect(toList());
 
         cache.updateValidatedPdus(roaPrefixes).ifPresent(updatedSerialNumber -> {
-            clients.notifyAll(ctx -> {
-                ctx.write(NotifyPdu.of(updatedSerialNumber, cache.getSessionId()));
-            });
+            clients.cacheUpdated(cache.getSessionId(), updatedSerialNumber);
         });
     }
 
