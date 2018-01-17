@@ -34,7 +34,5 @@ import org.joda.time.DateTime;
 public interface RtrClient {
     DateTime getLastActive();
 
-    void updateActivity();
-
     void cacheUpdated(short sessionId, int updatedSerialNumber);
 }

@@ -157,7 +157,7 @@ public class RtrServer {
         private static final int EXPIRE_INTERVAL = 7200;
 
         private ChannelHandlerContext ctx;
-        private boolean busyHandlingRequest = false;
+        private Pdu currentRequest = null;
         private Queue<Pdu> pending = new ArrayDeque<>();
 
 
@@ -190,13 +190,13 @@ public class RtrServer {
         @Override
         public synchronized void channelRead0(ChannelHandlerContext ctx, Pdu pdu) {
             this.lastActive = DateTime.now();
-            if (busyHandlingRequest) {
+            if (currentRequest != null) {
                 pending.add(pdu);
-                log.info("currently busy handling previous request, queuing {}", pdu);
+                log.info("currently busy handling request, queuing {}", pdu);
                 return;
             }
 
-            busyHandlingRequest = true;
+            currentRequest = pdu;
 
             ChannelFuture responseComplete = handleClientRequest(ctx, pdu);
             if (responseComplete != null) {
@@ -205,10 +205,9 @@ public class RtrServer {
         }
 
         private synchronized void requestHandlingCompleted() {
-            Pdu next = pending.poll();
-            if (next == null) {
-                log.info("finished processing all pending requests for {}", ctx);
-                busyHandlingRequest = false;
+            currentRequest = pending.poll();
+            if (currentRequest == null) {
+                log.info("finished processing all pending requests for {}", this);
 
                 int cacheSerialNumber = cache.getSerialNumber();
                 if (cacheSerialNumber != clientSerialNumber) {
@@ -217,7 +216,7 @@ public class RtrServer {
                     ctx.write(NotifyPdu.of(cacheSerialNumber, cache.getSessionId()));
                 }
             } else {
-                ChannelFuture channelFuture = handleClientRequest(ctx, next);
+                ChannelFuture channelFuture = handleClientRequest(ctx, currentRequest);
                 if (channelFuture != null) {
                     channelFuture.addListener((f) -> requestHandlingCompleted());
                 }
@@ -296,15 +295,10 @@ public class RtrServer {
         }
 
         @Override
-        public void updateActivity() {
-
-        }
-
-        @Override
         public synchronized void cacheUpdated(short sessionId, int updatedSerialNumber) {
             if (updatedSerialNumber != clientSerialNumber && latestNotifySerialNumber != updatedSerialNumber) {
                 this.latestNotifySerialNumber = updatedSerialNumber;
-                if (!busyHandlingRequest) {
+                if (currentRequest == null) {
                     ctx.writeAndFlush(NotifyPdu.of(updatedSerialNumber, sessionId));
                 }
             }
