@@ -32,7 +32,9 @@ package net.ripe.rpki.rtr.domain;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -59,5 +61,9 @@ public class RtrClients {
 
     public void cacheUpdated(short sessionId, Integer updatedSerialNumber) {
         clients.forEach(client -> client.cacheUpdated(sessionId, updatedSerialNumber));
+    }
+
+    public Optional<Integer> getLowestSerialNumber() {
+        return clients.stream().map(RtrClient::getClientSerialNumber).min(Comparator.naturalOrder());
     }
 }

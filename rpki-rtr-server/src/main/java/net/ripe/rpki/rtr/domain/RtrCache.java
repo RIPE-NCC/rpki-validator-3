@@ -121,6 +121,11 @@ public class RtrCache {
         }
     }
 
+    public synchronized void forgetDeltasBefore(int serialNumber) {
+        // FIXME serial number arithmetic
+        data.forgetDeltasBefore(serialNumber);
+    }
+
     @Value(staticConstructor = "of")
     public static class Content {
         short sessionId;

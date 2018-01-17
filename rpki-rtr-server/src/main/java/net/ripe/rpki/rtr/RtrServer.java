@@ -61,6 +61,7 @@ import net.ripe.rpki.rtr.domain.pdus.SerialQueryPdu;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -112,6 +113,13 @@ public class RtrServer {
     @PreDestroy
     public void stop() {
         shutdownWorkers();
+    }
+
+    @Scheduled(initialDelay = 10_000L, fixedDelay = 60_000L)
+    public void expireOldDeltas() {
+        int lowestSerialNumber = clients.getLowestSerialNumber().orElse(rtrCache.getSerialNumber());
+        log.info("forgetting deltas before {}", lowestSerialNumber);
+        rtrCache.forgetDeltasBefore(lowestSerialNumber);
     }
 
     private void runNetty() throws InterruptedException {
@@ -287,6 +295,11 @@ public class RtrServer {
             }
             log.error("Something bad happened", cause);
             ctx.close();
+        }
+
+        @Override
+        public synchronized int getClientSerialNumber() {
+            return clientSerialNumber;
         }
 
         @Override

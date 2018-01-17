@@ -32,6 +32,8 @@ package net.ripe.rpki.rtr.domain;
 import org.joda.time.DateTime;
 
 public interface RtrClient {
+    int getClientSerialNumber();
+
     DateTime getLastActive();
 
     void cacheUpdated(short sessionId, int updatedSerialNumber);
