@@ -40,6 +40,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.rtr.adapter.netty.PduCodec;
 import net.ripe.rpki.rtr.domain.RtrCache;
@@ -149,6 +150,7 @@ public class RtrServer {
     }
 
 
+    @ToString(exclude = {"cache", "clients"})
     public static class RtrClientHandler extends SimpleChannelInboundHandler<Pdu> implements RtrClient {
         private static final int REFRESH_INTERVAL = 3600;
         private static final int RETRY_INTERVAL = 600;
@@ -157,16 +159,18 @@ public class RtrServer {
         private ChannelHandlerContext ctx;
         private boolean busyHandlingRequest = false;
         private Queue<Pdu> pending = new ArrayDeque<>();
-        private final RtrCache rtrCache;
 
-        private int currentSerialNumber = 0;
+
+        private int clientSerialNumber = 0;
         private int latestNotifySerialNumber = 0;
 
-        private final RtrClients clients;
         private DateTime lastActive = DateTime.now();
 
-        public RtrClientHandler(RtrCache rtrCache, RtrClients clients) {
-            this.rtrCache = Objects.requireNonNull(rtrCache, "rtrCache");
+        private final RtrCache cache;
+        private final RtrClients clients;
+
+        public RtrClientHandler(RtrCache cache, RtrClients clients) {
+            this.cache = Objects.requireNonNull(cache, "cache");
             this.clients = clients;
         }
 
@@ -179,7 +183,7 @@ public class RtrServer {
 
         @Override
         public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-            clients.deregister(this);
+            clients.unregister(this);
             super.channelInactive(ctx);
         }
 
@@ -188,13 +192,13 @@ public class RtrServer {
             this.lastActive = DateTime.now();
             if (busyHandlingRequest) {
                 pending.add(pdu);
-                log.info("queuing request {}", pdu);
+                log.info("currently busy handling previous request, queuing {}", pdu);
                 return;
             }
 
             busyHandlingRequest = true;
 
-            ChannelFuture responseComplete = handleRouterRequest(ctx, pdu);
+            ChannelFuture responseComplete = handleClientRequest(ctx, pdu);
             if (responseComplete != null) {
                 responseComplete.addListener((f) -> requestHandlingCompleted());
             }
@@ -206,22 +210,22 @@ public class RtrServer {
                 log.info("finished processing all pending requests for {}", ctx);
                 busyHandlingRequest = false;
 
-                int cacheSerialNumber = rtrCache.getSerialNumber();
-                if (cacheSerialNumber != currentSerialNumber) {
+                int cacheSerialNumber = cache.getSerialNumber();
+                if (cacheSerialNumber != clientSerialNumber) {
                     this.latestNotifySerialNumber = cacheSerialNumber;
-                    log.info("Serial number updated since the last notification from {} to {}", currentSerialNumber, cacheSerialNumber);
-                    ctx.write(NotifyPdu.of(cacheSerialNumber, rtrCache.getSessionId()));
+                    log.info("Serial number updated since the last notification from {} to {}", clientSerialNumber, cacheSerialNumber);
+                    ctx.write(NotifyPdu.of(cacheSerialNumber, cache.getSessionId()));
                 }
             } else {
-                ChannelFuture channelFuture = handleRouterRequest(ctx, next);
+                ChannelFuture channelFuture = handleClientRequest(ctx, next);
                 if (channelFuture != null) {
                     channelFuture.addListener((f) -> requestHandlingCompleted());
                 }
             }
         }
 
-        private ChannelFuture handleRouterRequest(ChannelHandlerContext ctx, Pdu pdu) {
-            log.info("processing {}", pdu);
+        private ChannelFuture handleClientRequest(ChannelHandlerContext ctx, Pdu pdu) {
+            log.info("handling client request {}", pdu);
             ChannelFuture responseComplete = null;
             if (pdu instanceof SerialQueryPdu) {
                 SerialQueryPdu serialQueryPdu = (SerialQueryPdu) pdu;
@@ -239,7 +243,7 @@ public class RtrServer {
         }
 
         private ChannelFuture handleSerialQuery(ChannelHandlerContext ctx, SerialQueryPdu serialQueryPdu) {
-            Either<RtrCache.Delta, RtrCache.Content> deltaOrContent = rtrCache.getDeltaOrContent(serialQueryPdu.getSerialNumber());
+            Either<RtrCache.Delta, RtrCache.Content> deltaOrContent = cache.getDeltaOrContent(serialQueryPdu.getSerialNumber());
 
             if (deltaOrContent.isLeft()) {
                 RtrCache.Delta delta = deltaOrContent.left().value();
@@ -247,7 +251,7 @@ public class RtrServer {
                     return ctx.write(CacheResetPdu.of());
                 }
 
-                currentSerialNumber = delta.getSerialNumber();
+                clientSerialNumber = delta.getSerialNumber();
 
                 ctx.write(CacheResponsePdu.of(delta.getSessionId()));
                 for (RtrDataUnit dataUnit : delta.getAnnouncements()) {
@@ -263,9 +267,9 @@ public class RtrServer {
         }
 
         private ChannelFuture handleResetQuery(ChannelHandlerContext ctx) {
-            RtrCache.Content content = rtrCache.getCurrentContent();
+            RtrCache.Content content = cache.getCurrentContent();
 
-            currentSerialNumber = content.getSerialNumber();
+            clientSerialNumber = content.getSerialNumber();
 
             ctx.write(CacheResponsePdu.of(content.getSessionId()));
             for (RtrDataUnit dataUnit : content.getAnnouncements()) {
@@ -298,7 +302,7 @@ public class RtrServer {
 
         @Override
         public synchronized void cacheUpdated(short sessionId, int updatedSerialNumber) {
-            if (updatedSerialNumber != currentSerialNumber && latestNotifySerialNumber != updatedSerialNumber) {
+            if (updatedSerialNumber != clientSerialNumber && latestNotifySerialNumber != updatedSerialNumber) {
                 this.latestNotifySerialNumber = updatedSerialNumber;
                 if (!busyHandlingRequest) {
                     ctx.writeAndFlush(NotifyPdu.of(updatedSerialNumber, sessionId));

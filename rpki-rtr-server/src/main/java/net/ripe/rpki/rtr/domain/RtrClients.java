@@ -29,26 +29,32 @@
  */
 package net.ripe.rpki.rtr.domain;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
 import java.util.Set;
 
 @Service
+@Slf4j
 public class RtrClients {
 
     private final Set<RtrClient> clients = new HashSet<>();
 
     public synchronized void register(final RtrClient client) {
-        clients.add(client);
+        if (clients.add(client)) {
+            log.info("registered client {}", client);
+        }
     }
 
     public synchronized void clear() {
         clients.clear();
     }
 
-    public synchronized void deregister(RtrClient client) {
-        clients.remove(client);
+    public synchronized void unregister(RtrClient client) {
+        if (clients.remove(client)) {
+            log.info("unregistered client {}", client);
+        }
     }
 
     public void cacheUpdated(short sessionId, Integer updatedSerialNumber) {
