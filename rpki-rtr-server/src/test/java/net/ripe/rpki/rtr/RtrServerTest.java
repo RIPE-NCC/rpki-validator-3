@@ -33,25 +33,64 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import net.ripe.rpki.rtr.domain.RtrCache;
 import net.ripe.rpki.rtr.domain.RtrClients;
 import net.ripe.rpki.rtr.domain.pdus.CacheResetPdu;
+import net.ripe.rpki.rtr.domain.pdus.CacheResponsePdu;
+import net.ripe.rpki.rtr.domain.pdus.EndOfDataPdu;
+import net.ripe.rpki.rtr.domain.pdus.ResetQueryPdu;
 import net.ripe.rpki.rtr.domain.pdus.SerialQueryPdu;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 @Ignore
 public class RtrServerTest {
 
     @Test
-    public void shouldReplyWithCacheResetIsSessionIdIsDifferent() {
+    public void should_reply_with_cache_reset_is_session_id_is_different() {
         final RtrCache rtrCache = new RtrCache();
         final RtrClients clients = new RtrClients();
         final short sessionId = (short) (rtrCache.getSessionId() + 10);
         final int serial = 20;
         EmbeddedChannel channel = new EmbeddedChannel(new RtrServer.RtrClientHandler(rtrCache, clients));
         channel.writeInbound(SerialQueryPdu.of(sessionId, serial));
-        CacheResetPdu resetPdu = channel.readInbound();
+        CacheResetPdu resetPdu = channel.readOutbound();
         assertNotNull(resetPdu);
+        assertNull(channel.readOutbound());
     }
+
+    @Test
+    public void should_reply_with_cache_reset_if_session_id_the_same() {
+        final RtrCache rtrCache = new RtrCache();
+        final RtrClients clients = new RtrClients();
+        EmbeddedChannel channel = new EmbeddedChannel(new RtrServer.RtrClientHandler(rtrCache, clients));
+        channel.writeInbound(SerialQueryPdu.of(rtrCache.getSessionId(), rtrCache.getSerialNumber()));
+        final CacheResponsePdu responsePdu = channel.readOutbound();
+        assertEquals(rtrCache.getSessionId(), responsePdu.getSessionId());
+        final EndOfDataPdu endOfDataPdu = channel.readOutbound();
+        assertEquals(rtrCache.getSessionId(), endOfDataPdu.getSessionId());
+        assertEquals(rtrCache.getSerialNumber(), endOfDataPdu.getSerialNumber());
+        assertEquals(7200, endOfDataPdu.getExpireInterval());
+        assertEquals(3600, endOfDataPdu.getRefreshInterval());
+        assertEquals(600, endOfDataPdu.getRetryInterval());
+    }
+
+    @Test
+    public void should_reply_with_cache_reset_reset_query_pdu() {
+        final RtrCache rtrCache = new RtrCache();
+        final RtrClients clients = new RtrClients();
+        EmbeddedChannel channel = new EmbeddedChannel(new RtrServer.RtrClientHandler(rtrCache, clients));
+        channel.writeInbound(ResetQueryPdu.of());
+        final CacheResponsePdu responsePdu = channel.readOutbound();
+        assertEquals(rtrCache.getSessionId(), responsePdu.getSessionId());
+        final EndOfDataPdu endOfDataPdu = channel.readOutbound();
+        assertEquals(rtrCache.getSessionId(), endOfDataPdu.getSessionId());
+        assertEquals(rtrCache.getSerialNumber(), endOfDataPdu.getSerialNumber());
+        assertEquals(7200, endOfDataPdu.getExpireInterval());
+        assertEquals(3600, endOfDataPdu.getRefreshInterval());
+        assertEquals(600, endOfDataPdu.getRetryInterval());
+    }
+
 
 }
