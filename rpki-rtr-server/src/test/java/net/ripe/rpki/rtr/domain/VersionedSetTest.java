@@ -32,23 +32,23 @@ package net.ripe.rpki.rtr.domain;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.Comparator;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class VersionedSetTest {
 
-    private final VersionedSet<Integer> subject = new VersionedSet<>(Comparator.<Integer>naturalOrder(), 0L);
+    private final VersionedSet<Integer> subject = new VersionedSet<>(SerialNumber.zero());
 
     @Test
     public void should_track_serial_number() {
-        assertThat(subject.getCurrentVersion()).isEqualTo(0);
+        assertThat(subject.getCurrentVersion()).isEqualTo(SerialNumber.of(0));
 
         subject.updateValues(Arrays.asList(1, 2, 3));
-        assertThat(subject.getCurrentVersion()).isEqualTo(1);
+        assertThat(subject.getCurrentVersion()).isEqualTo(SerialNumber.of(1));
 
         subject.updateValues(Arrays.asList(2, 3, 4));
-        assertThat(subject.getCurrentVersion()).isEqualTo(2);
+        assertThat(subject.getCurrentVersion()).isEqualTo(SerialNumber.of(2));
     }
 
     @Test
@@ -61,46 +61,50 @@ public class VersionedSetTest {
     @Test
     public void should_track_deltas_between_updates() {
         subject.updateValues(Arrays.asList(1, 2, 3));
-        assertThat(subject.getDelta(0).get().getAdditions()).containsExactly(1, 2, 3);
+        assertThat(delta(0).get().getAdditions()).containsExactly(1, 2, 3);
 
         subject.updateValues(Arrays.asList(2, 3, 4));
-        assertThat(subject.getDelta(1).get().getAdditions()).containsExactly(4);
-        assertThat(subject.getDelta(1).get().getRemovals()).containsExactly(1);
+        assertThat(delta(1).get().getAdditions()).containsExactly(4);
+        assertThat(delta(1).get().getRemovals()).containsExactly(1);
 
         subject.updateValues(Arrays.asList(3, 4, 5));
-        assertThat(subject.getDelta(2).get().getAdditions()).containsExactly(5);
-        assertThat(subject.getDelta(2).get().getRemovals()).containsExactly(2);
-        assertThat(subject.getDelta(1).get().getAdditions()).containsExactly(4, 5);
-        assertThat(subject.getDelta(1).get().getRemovals()).containsExactly(1, 2);
+        assertThat(delta(2).get().getAdditions()).containsExactly(5);
+        assertThat(delta(2).get().getRemovals()).containsExactly(2);
+        assertThat(delta(1).get().getAdditions()).containsExactly(4, 5);
+        assertThat(delta(1).get().getRemovals()).containsExactly(1, 2);
 
         subject.updateValues(Arrays.asList(4, 5, 6));
-        assertThat(subject.getDelta(3).get().getAdditions()).containsExactly(6);
-        assertThat(subject.getDelta(3).get().getRemovals()).containsExactly(3);
-        assertThat(subject.getDelta(2).get().getAdditions()).containsExactly(5, 6);
-        assertThat(subject.getDelta(2).get().getRemovals()).containsExactly(2, 3);
-        assertThat(subject.getDelta(1).get().getAdditions()).containsExactly(4, 5, 6);
-        assertThat(subject.getDelta(1).get().getRemovals()).containsExactly(1, 2, 3);
+        assertThat(delta(3).get().getAdditions()).containsExactly(6);
+        assertThat(delta(3).get().getRemovals()).containsExactly(3);
+        assertThat(delta(2).get().getAdditions()).containsExactly(5, 6);
+        assertThat(delta(2).get().getRemovals()).containsExactly(2, 3);
+        assertThat(delta(1).get().getAdditions()).containsExactly(4, 5, 6);
+        assertThat(delta(1).get().getRemovals()).containsExactly(1, 2, 3);
 
         subject.updateValues(Arrays.asList(1, 2, 3));
-        assertThat(subject.getDelta(4).get().getAdditions()).containsExactly(1, 2, 3);
-        assertThat(subject.getDelta(4).get().getRemovals()).containsExactly(4, 5, 6);
-        assertThat(subject.getDelta(3).get().getAdditions()).containsExactly(1, 2);
-        assertThat(subject.getDelta(3).get().getRemovals()).containsExactly(4, 5);
-        assertThat(subject.getDelta(2).get().getAdditions()).containsExactly(1);
-        assertThat(subject.getDelta(2).get().getRemovals()).containsExactly(4);
-        assertThat(subject.getDelta(1).get().getAdditions()).containsExactly();
-        assertThat(subject.getDelta(1).get().getRemovals()).containsExactly();
+        assertThat(delta(4).get().getAdditions()).containsExactly(1, 2, 3);
+        assertThat(delta(4).get().getRemovals()).containsExactly(4, 5, 6);
+        assertThat(delta(3).get().getAdditions()).containsExactly(1, 2);
+        assertThat(delta(3).get().getRemovals()).containsExactly(4, 5);
+        assertThat(delta(2).get().getAdditions()).containsExactly(1);
+        assertThat(delta(2).get().getRemovals()).containsExactly(4);
+        assertThat(delta(1).get().getAdditions()).containsExactly();
+        assertThat(delta(1).get().getRemovals()).containsExactly();
 
         subject.updateValues(Arrays.asList());
-        assertThat(subject.getDelta(5).get().getAdditions()).containsExactly();
-        assertThat(subject.getDelta(5).get().getRemovals()).containsExactly(1, 2, 3);
-        assertThat(subject.getDelta(4).get().getAdditions()).containsExactly();
-        assertThat(subject.getDelta(4).get().getRemovals()).containsExactly(4, 5, 6);
-        assertThat(subject.getDelta(3).get().getAdditions()).containsExactly();
-        assertThat(subject.getDelta(3).get().getRemovals()).containsExactly(3, 4, 5);
-        assertThat(subject.getDelta(2).get().getAdditions()).containsExactly();
-        assertThat(subject.getDelta(2).get().getRemovals()).containsExactly(2, 3, 4);
-        assertThat(subject.getDelta(1).get().getAdditions()).containsExactly();
-        assertThat(subject.getDelta(1).get().getRemovals()).containsExactly(1, 2, 3);
+        assertThat(delta(5).get().getAdditions()).containsExactly();
+        assertThat(delta(5).get().getRemovals()).containsExactly(1, 2, 3);
+        assertThat(delta(4).get().getAdditions()).containsExactly();
+        assertThat(delta(4).get().getRemovals()).containsExactly(4, 5, 6);
+        assertThat(delta(3).get().getAdditions()).containsExactly();
+        assertThat(delta(3).get().getRemovals()).containsExactly(3, 4, 5);
+        assertThat(delta(2).get().getAdditions()).containsExactly();
+        assertThat(delta(2).get().getRemovals()).containsExactly(2, 3, 4);
+        assertThat(delta(1).get().getAdditions()).containsExactly();
+        assertThat(delta(1).get().getRemovals()).containsExactly(1, 2, 3);
+    }
+    
+    private Optional<VersionedSet<Integer>.Delta> delta(int version) {
+        return subject.getDelta(SerialNumber.of(version));
     }
 }

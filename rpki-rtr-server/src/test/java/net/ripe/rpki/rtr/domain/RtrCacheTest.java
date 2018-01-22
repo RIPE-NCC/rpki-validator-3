@@ -50,27 +50,27 @@ public class RtrCacheTest {
 
     @Test
     public void should_increase_serial_when_valid_pdus_change() {
-        assertThat(subject.getSerialNumber()).isEqualTo(0);
+        assertThat(subject.getSerialNumber()).isEqualTo(SerialNumber.of(0));
         subject.updateValidatedPdus(SINGLE_ANNOUNCEMENT);
-        assertThat(subject.getSerialNumber()).isEqualTo(1);
+        assertThat(subject.getSerialNumber()).isEqualTo(SerialNumber.of(1));
         subject.updateValidatedPdus(EMPTY_ANNOUNCEMENTS);
-        assertThat(subject.getSerialNumber()).isEqualTo(2);
+        assertThat(subject.getSerialNumber()).isEqualTo(SerialNumber.of(2));
     }
 
     @Test
     public void should_not_increase_serial_when_there_are_no_valid_pdu_changes() {
-        assertThat(subject.getSerialNumber()).isEqualTo(0);
+        assertThat(subject.getSerialNumber()).isEqualTo(SerialNumber.of(0));
         subject.updateValidatedPdus(SINGLE_ANNOUNCEMENT);
-        assertThat(subject.getSerialNumber()).isEqualTo(1);
+        assertThat(subject.getSerialNumber()).isEqualTo(SerialNumber.of(1));
         subject.updateValidatedPdus(SINGLE_ANNOUNCEMENT);
-        assertThat(subject.getSerialNumber()).isEqualTo(1);
+        assertThat(subject.getSerialNumber()).isEqualTo(SerialNumber.of(1));
     }
 
     @Test
     public void should_add_delta_when_valid_pdus_change() {
         subject.updateValidatedPdus(SINGLE_ANNOUNCEMENT);
 
-        Optional<RtrCache.Delta> maybeDelta0_1 = subject.getDeltaFrom(0);
+        Optional<RtrCache.Delta> maybeDelta0_1 = subject.getDeltaFrom(SerialNumber.of(0));
         assertThat(maybeDelta0_1).isPresent();
         RtrCache.Delta delta0_1 = maybeDelta0_1.get();
         assertThat(delta0_1.getAnnouncements()).isEqualTo(SINGLE_ANNOUNCEMENT);
@@ -78,24 +78,16 @@ public class RtrCacheTest {
 
         subject.updateValidatedPdus(EMPTY_ANNOUNCEMENTS);
 
-        Optional<RtrCache.Delta> maybeDelta1_2 = subject.getDeltaFrom(1);
+        Optional<RtrCache.Delta> maybeDelta1_2 = subject.getDeltaFrom(SerialNumber.of(1));
         assertThat(maybeDelta1_2).isPresent();
         RtrCache.Delta delta1_2 = maybeDelta1_2.get();
         assertThat(delta1_2.getAnnouncements()).isEqualTo(EMPTY_ANNOUNCEMENTS);
         assertThat(delta1_2.getWithdrawals()).isEqualTo(SINGLE_WITHDRAWAL);
 
-        Optional<RtrCache.Delta> maybeDelta0_2 = subject.getDeltaFrom(0);
+        Optional<RtrCache.Delta> maybeDelta0_2 = subject.getDeltaFrom(SerialNumber.of(0));
         assertThat(maybeDelta0_2).isPresent();
         RtrCache.Delta delta0_2 = maybeDelta0_2.get();
         assertThat(delta0_2.getAnnouncements()).isEqualTo(EMPTY_ANNOUNCEMENTS);
         assertThat(delta0_2.getWithdrawals()).isEqualTo(EMPTY_WITHDRAWALS);
-    }
-
-    @Test
-    public void should_use_rfc1982_serial_number_arithmetic() {
-        subject = new RtrCache(RtrCache.MAX_SERIAL_NUMBER + 1 + 17);
-        subject.updateValidatedPdus(SINGLE_ANNOUNCEMENT);
-
-        assertThat(subject.getSerialNumber()).isEqualTo(18);
     }
 }

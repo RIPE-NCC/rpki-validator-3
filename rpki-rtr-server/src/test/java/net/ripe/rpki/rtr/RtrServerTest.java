@@ -32,6 +32,7 @@ package net.ripe.rpki.rtr;
 import io.netty.channel.embedded.EmbeddedChannel;
 import net.ripe.rpki.rtr.domain.RtrCache;
 import net.ripe.rpki.rtr.domain.RtrClients;
+import net.ripe.rpki.rtr.domain.SerialNumber;
 import net.ripe.rpki.rtr.domain.pdus.CacheResetPdu;
 import net.ripe.rpki.rtr.domain.pdus.CacheResponsePdu;
 import net.ripe.rpki.rtr.domain.pdus.EndOfDataPdu;
@@ -52,7 +53,7 @@ public class RtrServerTest {
         final RtrCache rtrCache = new RtrCache();
         final RtrClients clients = new RtrClients();
         final short sessionId = (short) (rtrCache.getSessionId() + 10);
-        final int serial = 20;
+        final SerialNumber serial = SerialNumber.of(20);
         EmbeddedChannel channel = new EmbeddedChannel(new RtrServer.RtrClientHandler(rtrCache, clients));
         channel.writeInbound(SerialQueryPdu.of(sessionId, serial));
         CacheResetPdu resetPdu = channel.readOutbound();

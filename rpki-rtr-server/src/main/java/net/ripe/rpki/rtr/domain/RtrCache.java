@@ -44,30 +44,27 @@ import java.util.SortedSet;
 @Component
 @Slf4j
 public class RtrCache {
-    public static final int SERIAL_BITS = 32;
-    public static final Long MAX_SERIAL_NUMBER = ((1L << SERIAL_BITS) - 1);
-
     @Getter
     private volatile short sessionId;
     private final VersionedSet<RtrDataUnit> data;
 
     public RtrCache() {
-        this(0L);
+        this(SerialNumber.zero());
     }
 
-    public RtrCache(long initialVersion) {
+    public RtrCache(SerialNumber initialVersion) {
         this.sessionId = (short) new SecureRandom().nextInt();
-        this.data = new VersionedSet<>(null, initialVersion);
+        this.data = new VersionedSet<>(initialVersion);
     }
 
-    public synchronized Optional<Integer> updateValidatedPdus(Collection<RtrDataUnit> updatedPdus) {
+    public synchronized Optional<SerialNumber> updateValidatedPdus(Collection<RtrDataUnit> updatedPdus) {
         if (data.updateValues(updatedPdus)) {
             log.info(
                 "{} validated ROAs updated to serial number {} (delta with {} announcements, {} withdrawals)",
                 data.size(),
                 data.getCurrentVersion(),
-                data.getDelta(data.getCurrentVersion() - 1).map(x -> x.getAdditions().size()).orElse(0),
-                data.getDelta(data.getCurrentVersion() - 1).map(x -> x.getRemovals().size()).orElse(0)
+                data.getDelta(data.getCurrentVersion().previous()).map(x -> x.getAdditions().size()).orElse(0),
+                data.getDelta(data.getCurrentVersion().previous()).map(x -> x.getRemovals().size()).orElse(0)
             );
             return Optional.of(getSerialNumber());
         } else {
@@ -85,8 +82,8 @@ public class RtrCache {
      *
      * @return the current serial number of the RTR cache
      */
-    public synchronized int getSerialNumber() {
-        return (int) (data.getCurrentVersion() & MAX_SERIAL_NUMBER);
+    public synchronized SerialNumber getSerialNumber() {
+        return data.getCurrentVersion();
     }
 
     /**
@@ -94,25 +91,18 @@ public class RtrCache {
      *
      * @return the delta from the requested <code>serialNumber</code> to the current state
      */
-    public synchronized Optional<Delta> getDeltaFrom(int serialNumber) {
-        if (serialNumber > getSerialNumber()) {
+    public synchronized Optional<Delta> getDeltaFrom(SerialNumber serialNumber) {
+        if (serialNumber.isAfter(getSerialNumber())) {
             return Optional.empty();
-        } else if (serialNumber == getSerialNumber()) {
+        } else if (serialNumber.equals(getSerialNumber())) {
             return Optional.of(Delta.of(sessionId, serialNumber, Collections.emptySortedSet(), Collections.emptySortedSet()));
         } else {
-            long version = data.getCurrentVersion();
-
-            // FIXME this is not yet working correctly
-            Optional<VersionedSet<RtrDataUnit>.Delta> delta = data.getDelta((long) serialNumber + (version & ~MAX_SERIAL_NUMBER));
-            if (delta.isPresent()) {
-                return Optional.of(Delta.of(sessionId, getSerialNumber(), delta.get().getAdditions(), delta.get().getRemovals()));
-            } else {
-                return Optional.empty();
-            }
+            Optional<VersionedSet<RtrDataUnit>.Delta> delta = data.getDelta(serialNumber);
+            return delta.map(d -> Delta.of(sessionId, getSerialNumber(), d.getAdditions(), d.getRemovals()));
         }
     }
 
-    public synchronized Either<Delta, Content> getDeltaOrContent(int serialNumber) {
+    public synchronized Either<Delta, Content> getDeltaOrContent(SerialNumber serialNumber) {
         Optional<Delta> maybeDelta = getDeltaFrom(serialNumber);
         if (maybeDelta.isPresent()) {
             return Either.left(maybeDelta.get());
@@ -121,7 +111,7 @@ public class RtrCache {
         }
     }
 
-    public synchronized void forgetDeltasBefore(int serialNumber) {
+    public synchronized void forgetDeltasBefore(SerialNumber serialNumber) {
         // FIXME serial number arithmetic
         data.forgetDeltasBefore(serialNumber);
     }
@@ -129,14 +119,14 @@ public class RtrCache {
     @Value(staticConstructor = "of")
     public static class Content {
         short sessionId;
-        int serialNumber;
+        SerialNumber serialNumber;
         SortedSet<RtrDataUnit> announcements;
     }
 
     @Value(staticConstructor = "of")
     public static class Delta {
         short sessionId;
-        int serialNumber;
+        SerialNumber serialNumber;
         SortedSet<RtrDataUnit> announcements;
         SortedSet<RtrDataUnit> withdrawals;
     }

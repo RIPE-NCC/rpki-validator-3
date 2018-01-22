@@ -32,9 +32,9 @@ package net.ripe.rpki.rtr.domain;
 import org.joda.time.DateTime;
 
 public interface RtrClient {
-    int getClientSerialNumber();
+    SerialNumber getClientSerialNumber();
 
     DateTime getLastActive();
 
-    void cacheUpdated(short sessionId, int updatedSerialNumber);
+    void cacheUpdated(short sessionId, SerialNumber updatedSerialNumber);
 }

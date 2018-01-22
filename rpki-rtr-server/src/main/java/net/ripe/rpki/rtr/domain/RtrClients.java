@@ -59,11 +59,11 @@ public class RtrClients {
         }
     }
 
-    public void cacheUpdated(short sessionId, Integer updatedSerialNumber) {
+    public void cacheUpdated(short sessionId, SerialNumber updatedSerialNumber) {
         clients.forEach(client -> client.cacheUpdated(sessionId, updatedSerialNumber));
     }
 
-    public Optional<Integer> getLowestSerialNumber() {
+    public Optional<SerialNumber> getLowestSerialNumber() {
         return clients.stream().map(RtrClient::getClientSerialNumber).min(Comparator.naturalOrder());
     }
 }
