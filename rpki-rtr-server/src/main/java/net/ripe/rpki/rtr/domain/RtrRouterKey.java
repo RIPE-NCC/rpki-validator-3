@@ -31,52 +31,43 @@ package net.ripe.rpki.rtr.domain;
 
 import lombok.Value;
 import net.ripe.rpki.rtr.domain.pdus.Flags;
-import net.ripe.rpki.rtr.domain.pdus.IPv4PrefixPdu;
-import net.ripe.rpki.rtr.domain.pdus.IPv6PrefixPdu;
 import net.ripe.rpki.rtr.domain.pdus.Pdu;
+import net.ripe.rpki.rtr.domain.pdus.RouterKeyPdu;
+import org.bouncycastle.asn1.x509.SubjectKeyIdentifier;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.util.Arrays;
 
+import java.io.IOException;
+
 @Value(staticConstructor = "of")
-public class RtrPrefix implements RtrDataUnit {
-    byte prefixLength;
-    byte maxLength;
-    byte[] prefix;
+public class RtrRouterKey implements RtrDataUnit {
+
+    SubjectKeyIdentifier subjectKeyIdentifier;
+    SubjectPublicKeyInfo subjectPublicKeyInfo;
     int asn;
 
     @Override
     public Pdu toPdu(Flags flags) {
-        if (prefix.length == 4) {
-            return IPv4PrefixPdu.of(flags, this);
-        } else if (prefix.length == 16) {
-            return IPv6PrefixPdu.of(flags, this);
-        } else {
-            throw new IllegalStateException(String.format("invalid RTR prefix length, expected 4 or 16, was %d", prefix.length));
-        }
+        return RouterKeyPdu.of(flags, subjectKeyIdentifier, subjectPublicKeyInfo, asn);
     }
 
     @Override
     public int compareToSameType(RtrDataUnit o) {
-        final RtrPrefix that = (RtrPrefix) o;
-        int rc = Integer.compare(this.prefix.length, that.prefix.length);
+        final RtrRouterKey that = (RtrRouterKey) o;
+        int rc = Integer.compare(this.asn, that.asn);
         if (rc != 0) {
             return rc;
         }
 
-        rc = Arrays.compareUnsigned(this.prefix, that.prefix);
+        rc = Arrays.compareUnsigned(subjectKeyIdentifier.getKeyIdentifier(), that.subjectKeyIdentifier.getKeyIdentifier());
         if (rc != 0) {
             return rc;
         }
 
-        rc = Integer.compareUnsigned(this.prefixLength, that.prefixLength);
-        if (rc != 0) {
-            return rc;
+        try {
+            return Arrays.compareUnsigned(subjectPublicKeyInfo.getEncoded(), that.subjectPublicKeyInfo.getEncoded());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-
-        rc = Integer.compareUnsigned(this.maxLength, that.maxLength);
-        if (rc != 0) {
-            return rc;
-        }
-
-        return Integer.compareUnsigned(this.asn, that.asn);
     }
 }

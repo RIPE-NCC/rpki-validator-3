@@ -31,7 +31,6 @@ package net.ripe.rpki.rtr.domain.pdus;
 
 import io.netty.buffer.ByteBuf;
 import lombok.Value;
-import net.ripe.ipresource.Asn;
 import org.bouncycastle.asn1.x509.SubjectKeyIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 
@@ -44,7 +43,7 @@ public class RouterKeyPdu implements Pdu {
     Flags flags;
     SubjectKeyIdentifier subjectKeyIdentifier;
     SubjectPublicKeyInfo subjectPublicKeyInfo;
-    Asn asn;
+    int asn;
 
     @Override
     public int length() {
@@ -68,7 +67,7 @@ public class RouterKeyPdu implements Pdu {
                 .writeByte(0)
                 .writeInt(length())
                 .writeBytes(subjectKeyIdentifier.getKeyIdentifier())
-                .writeInt(asn.getValue().intValue())
+                .writeInt(asn)
                 .writeBytes(keyInfo());
 
     }

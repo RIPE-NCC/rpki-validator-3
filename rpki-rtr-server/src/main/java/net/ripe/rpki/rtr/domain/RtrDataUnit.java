@@ -78,4 +78,13 @@ public interface RtrDataUnit extends Comparable<RtrDataUnit> {
             );
         }
     }
+
+    default int compareTo(RtrDataUnit o) {
+        if (!this.getClass().equals(o.getClass())) {
+            return this.getClass().getName().compareTo(o.getClass().getName());
+        }
+        return compareToSameType(o);
+    }
+
+    int compareToSameType(RtrDataUnit o);
 }
