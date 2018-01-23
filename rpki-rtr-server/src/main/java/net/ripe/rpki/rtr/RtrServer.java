@@ -47,6 +47,7 @@ import net.ripe.rpki.rtr.domain.RtrCache;
 import net.ripe.rpki.rtr.domain.RtrClient;
 import net.ripe.rpki.rtr.domain.RtrClients;
 import net.ripe.rpki.rtr.domain.RtrDataUnit;
+import net.ripe.rpki.rtr.domain.SerialNumber;
 import net.ripe.rpki.rtr.domain.pdus.CacheResetPdu;
 import net.ripe.rpki.rtr.domain.pdus.CacheResponsePdu;
 import net.ripe.rpki.rtr.domain.pdus.EndOfDataPdu;
@@ -69,6 +70,8 @@ import javax.annotation.PreDestroy;
 import java.util.ArrayDeque;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -117,9 +120,11 @@ public class RtrServer {
 
     @Scheduled(initialDelay = 10_000L, fixedDelay = 60_000L)
     public void expireOldDeltas() {
-        int lowestSerialNumber = clients.getLowestSerialNumber().orElse(rtrCache.getSerialNumber());
-        log.info("forgetting deltas before {}", lowestSerialNumber);
-        rtrCache.forgetDeltasBefore(lowestSerialNumber);
+        SerialNumber lowestSerialNumber = clients.getLowestSerialNumber().orElse(rtrCache.getSerialNumber());
+        Set<SerialNumber> forgottenDeltas = rtrCache.forgetDeltasBefore(lowestSerialNumber);
+        if (!forgottenDeltas.isEmpty()) {
+            log.info("removed deltas for serial numbers {}", forgottenDeltas.stream().map(sn -> String.valueOf(sn.getValue())).sorted().collect(Collectors.joining(", ")));
+        }
     }
 
     private void runNetty() throws InterruptedException {
@@ -169,8 +174,8 @@ public class RtrServer {
         private Queue<Pdu> pending = new ArrayDeque<>();
 
 
-        private int clientSerialNumber = 0;
-        private int latestNotifySerialNumber = 0;
+        private SerialNumber clientSerialNumber = SerialNumber.zero();
+        private SerialNumber latestNotifySerialNumber = SerialNumber.zero();
 
         private DateTime lastActive = DateTime.now();
 
@@ -217,8 +222,8 @@ public class RtrServer {
             if (currentRequest == null) {
                 log.info("finished processing all pending requests for {}", this);
 
-                int cacheSerialNumber = cache.getSerialNumber();
-                if (cacheSerialNumber != clientSerialNumber) {
+                SerialNumber cacheSerialNumber = cache.getSerialNumber();
+                if (!cacheSerialNumber.equals(clientSerialNumber)) {
                     this.latestNotifySerialNumber = cacheSerialNumber;
                     log.info("Serial number updated since the last notification from {} to {}", clientSerialNumber, cacheSerialNumber);
                     ctx.write(NotifyPdu.of(cacheSerialNumber, cache.getSessionId()));
@@ -298,7 +303,7 @@ public class RtrServer {
         }
 
         @Override
-        public synchronized int getClientSerialNumber() {
+        public synchronized SerialNumber getClientSerialNumber() {
             return clientSerialNumber;
         }
 
@@ -308,8 +313,8 @@ public class RtrServer {
         }
 
         @Override
-        public synchronized void cacheUpdated(short sessionId, int updatedSerialNumber) {
-            if (updatedSerialNumber != clientSerialNumber && latestNotifySerialNumber != updatedSerialNumber) {
+        public synchronized void cacheUpdated(short sessionId, SerialNumber updatedSerialNumber) {
+            if (!updatedSerialNumber.equals(clientSerialNumber) && !latestNotifySerialNumber.equals(updatedSerialNumber)) {
                 this.latestNotifySerialNumber = updatedSerialNumber;
                 if (currentRequest == null) {
                     ctx.writeAndFlush(NotifyPdu.of(updatedSerialNumber, sessionId));

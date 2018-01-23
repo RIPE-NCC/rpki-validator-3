@@ -33,6 +33,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.rtr.domain.SerialNumber;
 import net.ripe.rpki.rtr.domain.pdus.ErrorCode;
 import net.ripe.rpki.rtr.domain.pdus.ErrorPdu;
 import net.ripe.rpki.rtr.domain.pdus.Pdu;
@@ -89,7 +90,7 @@ public class PduCodec extends ByteToMessageCodec<Pdu> {
                     return;
                 }
                 int serialNumber = in.readInt();
-                out.add(SerialQueryPdu.of(sessionId, serialNumber));
+                out.add(SerialQueryPdu.of(sessionId, SerialNumber.of(serialNumber)));
                 break;
             }
             case ResetQueryPdu.PDU_TYPE: {

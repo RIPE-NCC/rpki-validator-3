@@ -27,35 +27,62 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.rtr.domain.pdus;
+package net.ripe.rpki.rtr.domain;
 
-import io.netty.buffer.ByteBuf;
+import lombok.ToString;
 import lombok.Value;
-import net.ripe.rpki.rtr.domain.SerialNumber;
 
-/**
- * @see <a href="https://tools.ietf.org/html/rfc8210#section-5.3">RFC8210 - Serial Query</a>
- */
 @Value(staticConstructor = "of")
-public class SerialQueryPdu implements Pdu {
-    public static final int PDU_TYPE = 1;
-    public static final int PDU_LENGTH = 12;
+@ToString(includeFieldNames = false)
+public class SerialNumber implements Comparable<SerialNumber> {
+    public static final int SERIAL_BITS = 32;
+    public static final long HALF_SERIAL_NUMBER_RANGE = (1L << (SERIAL_BITS - 1));
 
-    short sessionId;
-    SerialNumber serialNumber;
+    private static final SerialNumber ZERO = SerialNumber.of((short) 0);
 
-    @Override
-    public int length() {
-        return PDU_LENGTH;
+    private final int value;
+
+    public static SerialNumber zero() {
+        return ZERO;
+    }
+
+    public SerialNumber next() {
+        return SerialNumber.of((short) (this.value + 1));
+    }
+
+    public SerialNumber previous() {
+        return SerialNumber.of((short) (this.value - 1));
+    }
+
+    public boolean isBefore(SerialNumber that) {
+        long i1 = Integer.toUnsignedLong(this.value);
+        long i2 = Integer.toUnsignedLong(that.value);
+        return (this.value != that.value && (
+            i1 < i2 && (i2 - i1) < HALF_SERIAL_NUMBER_RANGE
+                || i1 > i2 && (i1 - i2) > HALF_SERIAL_NUMBER_RANGE
+        ));
+    }
+
+    public boolean isAfter(SerialNumber that) {
+        long i1 = Integer.toUnsignedLong(this.value);
+        long i2 = Integer.toUnsignedLong(that.value);
+        return (this.value != that.value && (
+            i1 < i2 && (i2 - i1) > HALF_SERIAL_NUMBER_RANGE
+                || i1 > i2 && (i1 - i2) < HALF_SERIAL_NUMBER_RANGE
+        ));
     }
 
     @Override
-    public void write(ByteBuf out) {
-        out
-            .writeByte(PROTOCOL_VERSION)
-            .writeByte(PDU_TYPE)
-            .writeShort(sessionId)
-            .writeInt(length())
-            .writeInt(serialNumber.getValue());
+    public int compareTo(SerialNumber that) {
+        if (this.equals(that)) {
+            return 0;
+        } else if (this.isBefore(that)) {
+            return -1;
+        } else if (this.isAfter(that)) {
+            return 1;
+        } else {
+            return 0;
+        }
     }
+
 }

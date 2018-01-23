@@ -29,7 +29,6 @@
  */
 package net.ripe.rpki.rtr.domain;
 
-import com.google.common.base.Objects;
 import com.google.common.collect.Sets;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -37,35 +36,31 @@ import lombok.ToString;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.SortedSet;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-public class VersionedSet<T> {
+public class VersionedSet<T extends Comparable<T>> {
 
-    private final Delta EMPTY_DELTA = new Delta(Collections.emptySortedSet(), Collections.emptySortedSet());
-
-    private final Comparator<T> comparator;
+    private final Delta<T> EMPTY_DELTA = new Delta<T>(Collections.emptySortedSet(), Collections.emptySortedSet());
 
     @Getter
-    private long currentVersion;
+    private SerialNumber currentVersion;
 
     @Getter
     private SortedSet<T> values = Collections.emptySortedSet();
 
-    private SortedMap<Long, Delta> deltas = Collections.emptySortedMap();
+    private Map<SerialNumber, Delta<T>> deltas = new LinkedHashMap<>();
 
     public VersionedSet() {
-        this(null, 0L);
+        this(SerialNumber.zero());
     }
 
-    public VersionedSet(Comparator<T> comparator, long initialVersion) {
-        this.comparator = comparator;
+    public VersionedSet(SerialNumber initialVersion) {
         this.currentVersion = initialVersion;
     }
 
@@ -75,32 +70,30 @@ public class VersionedSet<T> {
             return false;
         }
 
-        Delta delta = calculateDelta(values, updated);
-        SortedMap<Long, Delta> updatedDeltas = updatePreviousDeltas(delta, deltas);
-        updatedDeltas.put(currentVersion, delta);
+        Delta<T> delta = Delta.calculate(values, updated);
+        updateDeltas(delta);
 
-        ++currentVersion;
+        currentVersion = currentVersion.next();
         values = updated;
-        deltas = Collections.unmodifiableSortedMap(updatedDeltas);
         return true;
     }
 
-    public long getOldestVersion() {
-        return Objects.firstNonNull(deltas.firstKey(), currentVersion);
+    public Set<SerialNumber> forgetDeltasBefore(SerialNumber version) {
+        Set<SerialNumber> olderDeltas = deltas.keySet().stream().filter(key -> key.compareTo(version) < 0).collect(Collectors.toSet());
+        if (!olderDeltas.isEmpty()) {
+            olderDeltas.forEach(deltas::remove);
+        }
+        return olderDeltas;
     }
 
-    public void forgetDeltasBefore(long version) {
-        deltas = Collections.unmodifiableSortedMap(new TreeMap<>(deltas.tailMap(version)));
-    }
-
-    public Optional<Delta> getDelta(long version) {
-        if (version > currentVersion) {
+    public Optional<Delta<T>> getDelta(SerialNumber version) {
+        if (version.isAfter(currentVersion)) {
             throw new IllegalArgumentException(String.format(
                 "requested version %d must not be greater than current version %d",
                 version,
                 currentVersion
             ));
-        } else if (version == currentVersion) {
+        } else if (version.equals(currentVersion)) {
             return Optional.of(EMPTY_DELTA);
         } else {
             return Optional.ofNullable(deltas.get(version));
@@ -112,62 +105,52 @@ public class VersionedSet<T> {
     }
 
     @EqualsAndHashCode
+    @Getter
     @ToString
-    public class Delta {
-        @Getter
+    public static class Delta<T>{
         private final SortedSet<T> additions;
-        @Getter
         private final SortedSet<T> removals;
 
-        public Delta(SortedSet<T> additions, SortedSet<T> removals) {
+        private Delta(SortedSet<T> additions, SortedSet<T> removals) {
             this.additions = Collections.unmodifiableSortedSet(additions);
             this.removals = Collections.unmodifiableSortedSet(removals);
         }
 
-        public Delta append(Delta that) {
-            // (this.additions - that.removals) union (that.additions - this.removals)
-            SortedSet<T> additions = newSortedSet(this.additions);
-            additions.removeAll(that.removals);
-            additions.addAll(that.additions);
-            additions.removeAll(this.removals);
+        public static <T> Delta<T> of(SortedSet<T> additions, SortedSet<T> removals) {
+            return new Delta<>(additions, removals);
+        }
 
-            // (this.removals - that.additions) union (that.removals - this.additions)
-            SortedSet<T> removals = newSortedSet(this.removals);
-            removals.removeAll(that.additions);
-            removals.addAll(that.removals);
-            removals.removeAll(this.additions);
+        public static <T> Delta<T> calculate(Set<T> values, Set<T> updated) {
+            return of(
+                newSortedSet(Sets.difference(updated, values)),
+                newSortedSet(Sets.difference(values, updated))
+            );
+        }
 
-            return new Delta(
+        public Delta<T> append(Delta<T> that) {
+            SortedSet<T> additions = newSortedSet(Sets.union(
+                Sets.difference(this.additions, that.removals),
+                Sets.difference(that.additions, this.removals)
+            ));
+
+            SortedSet<T> removals = newSortedSet(Sets.union(
+                Sets.difference(this.removals, that.additions),
+                Sets.difference(that.removals, this.additions)
+            ));
+
+            return new Delta<>(
                 additions,
                 removals
             );
         }
     }
-    private SortedMap<Long, Delta> updatePreviousDeltas(Delta delta, SortedMap<Long, Delta> previousDeltas) {
-        return previousDeltas.entrySet().stream().collect(Collectors.toMap(
-            entry -> entry.getKey(),
-            entry -> entry.getValue().append(delta),
-            // See Collectors#throwingMerger, which is private so we duplicate it here
-            (u, v) -> {
-                throw new IllegalStateException(String.format("Duplicate key %s", u));
-            },
-            TreeMap::new
-        ));
+
+    private void updateDeltas(Delta<T> delta) {
+        deltas.replaceAll((key, value) -> value.append(delta));
+        deltas.put(currentVersion, delta);
     }
 
-
-    private SortedSet<T> newSortedSet(Collection<? extends T> values) {
-        TreeSet<T> result = new TreeSet<>(comparator);
-        result.addAll(values);
-        return result;
-    }
-
-    private Delta calculateDelta(Set<T> values, Set<T> updated) {
-        SortedSet<T> v = new TreeSet<>(comparator);
-        v.addAll(values);
-        return new Delta(
-            newSortedSet(Sets.difference(updated, values)),
-            newSortedSet(Sets.difference(values, updated))
-        );
+    private static <T> SortedSet<T> newSortedSet(Collection<? extends T> values) {
+        return new TreeSet<>(values);
     }
 }
