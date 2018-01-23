@@ -95,8 +95,20 @@ public class RpkiObjectController {
         final List<CertificateTreeValidationRun> vrs = validationRuns.findLatestSuccessful(CertificateTreeValidationRun.class);
 
         final Stream<RpkiObj> rpkiObjStream = vrs.stream().flatMap(vr -> {
-            final Map<String, ValidationCheck> checkMap = vr.getValidationChecks().
-                    stream().collect(Collectors.toMap(ValidationCheck::getLocation, Function.identity()));
+            final Map<String, ValidationCheck> checkMap = vr.getValidationChecks().stream().collect(Collectors.toMap(
+                    ValidationCheck::getLocation,
+                    Function.identity(),
+                    (a, b) -> {
+                        if (a.getStatus() == ValidationCheck.Status.ERROR) {
+                            return a;
+                        }
+                        if (b.getStatus() == ValidationCheck.Status.ERROR) {
+                            return b;
+                        }
+                        // if both of them are warnings, it doesn't matter
+                        return a;
+                    }
+            ));
 
             return vr.getValidatedObjects().stream().map(r -> {
                 Optional<ValidationCheck> check = r.getLocations().stream().map(checkMap::get).filter(Objects::nonNull).findFirst();
