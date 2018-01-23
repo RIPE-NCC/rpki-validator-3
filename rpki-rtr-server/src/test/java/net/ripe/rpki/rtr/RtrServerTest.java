@@ -30,68 +30,163 @@
 package net.ripe.rpki.rtr;
 
 import io.netty.channel.embedded.EmbeddedChannel;
+import net.ripe.ipresource.Asn;
+import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.rtr.domain.RtrCache;
 import net.ripe.rpki.rtr.domain.RtrClients;
+import net.ripe.rpki.rtr.domain.RtrDataUnit;
+import net.ripe.rpki.rtr.domain.RtrPrefix;
 import net.ripe.rpki.rtr.domain.SerialNumber;
 import net.ripe.rpki.rtr.domain.pdus.CacheResetPdu;
 import net.ripe.rpki.rtr.domain.pdus.CacheResponsePdu;
 import net.ripe.rpki.rtr.domain.pdus.EndOfDataPdu;
+import net.ripe.rpki.rtr.domain.pdus.ErrorCode;
+import net.ripe.rpki.rtr.domain.pdus.ErrorPdu;
+import net.ripe.rpki.rtr.domain.pdus.Flags;
+import net.ripe.rpki.rtr.domain.pdus.NotifyPdu;
+import net.ripe.rpki.rtr.domain.pdus.Pdu;
 import net.ripe.rpki.rtr.domain.pdus.ResetQueryPdu;
 import net.ripe.rpki.rtr.domain.pdus.SerialQueryPdu;
-import org.junit.Ignore;
+import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import java.util.Collections;
 
-@Ignore
+import static org.junit.Assert.assertEquals;
+
 public class RtrServerTest {
 
-    @Test
-    public void should_reply_with_cache_reset_is_session_id_is_different() {
-        final RtrCache rtrCache = new RtrCache();
-        final RtrClients clients = new RtrClients();
-        final short sessionId = (short) (rtrCache.getSessionId() + 10);
-        final SerialNumber serial = SerialNumber.of(20);
-        EmbeddedChannel channel = new EmbeddedChannel(new RtrServer.RtrClientHandler(rtrCache, clients));
-        channel.writeInbound(SerialQueryPdu.of(sessionId, serial));
-        CacheResetPdu resetPdu = channel.readOutbound();
-        assertNotNull(resetPdu);
-        assertNull(channel.readOutbound());
+    private static final RtrPrefix AS_3333 = RtrDataUnit.prefix(Asn.parse("AS3333"), IpRange.parse("127.0.0.0/8"), 12);
+    private static final RtrPrefix AS_4444 = RtrDataUnit.prefix(Asn.parse("AS4444"), IpRange.parse("127.0.0.0/8"), 12);
+
+    private final RtrCache rtrCache = new RtrCache();
+    private final RtrClients clients = new RtrClients();
+    private final EmbeddedChannel channel = new EmbeddedChannel(new RtrServer.RtrClientHandler(rtrCache, clients));
+
+    @Before
+    public void setUp() {
+        rtrCache.updateValidatedPdus(Collections.singleton(AS_3333));
     }
 
     @Test
-    public void should_reply_with_cache_reset_if_session_id_the_same() {
-        final RtrCache rtrCache = new RtrCache();
-        final RtrClients clients = new RtrClients();
-        EmbeddedChannel channel = new EmbeddedChannel(new RtrServer.RtrClientHandler(rtrCache, clients));
-        channel.writeInbound(SerialQueryPdu.of(rtrCache.getSessionId(), rtrCache.getSerialNumber()));
-        final CacheResponsePdu responsePdu = channel.readOutbound();
-        assertEquals(rtrCache.getSessionId(), responsePdu.getSessionId());
-        final EndOfDataPdu endOfDataPdu = channel.readOutbound();
-        assertEquals(rtrCache.getSessionId(), endOfDataPdu.getSessionId());
-        assertEquals(rtrCache.getSerialNumber(), endOfDataPdu.getSerialNumber());
-        assertEquals(7200, endOfDataPdu.getExpireInterval());
-        assertEquals(3600, endOfDataPdu.getRefreshInterval());
-        assertEquals(600, endOfDataPdu.getRetryInterval());
+    public void should_reply_with_cache_reset_is_session_id_is_different() {
+        final short sessionId = (short) (rtrCache.getSessionId() + 10);
+        final SerialNumber serial = SerialNumber.of(20);
+
+        clientRequest(SerialQueryPdu.of(sessionId, serial));
+
+        assertResponse(CacheResetPdu.of());
+    }
+
+    @Test
+    public void should_reply_with_cache_response_if_session_id_the_same() {
+        clientRequest(SerialQueryPdu.of(rtrCache.getSessionId(), rtrCache.getSerialNumber()));
+
+        assertResponse(
+            CacheResponsePdu.of(rtrCache.getSessionId()),
+            EndOfDataPdu.of(rtrCache.getSessionId(), rtrCache.getSerialNumber(), 3600, 600, 7200)
+        );
     }
 
     @Test
     public void should_reply_with_cache_reset_reset_query_pdu() {
-        final RtrCache rtrCache = new RtrCache();
-        final RtrClients clients = new RtrClients();
-        EmbeddedChannel channel = new EmbeddedChannel(new RtrServer.RtrClientHandler(rtrCache, clients));
-        channel.writeInbound(ResetQueryPdu.of());
-        final CacheResponsePdu responsePdu = channel.readOutbound();
-        assertEquals(rtrCache.getSessionId(), responsePdu.getSessionId());
-        final EndOfDataPdu endOfDataPdu = channel.readOutbound();
-        assertEquals(rtrCache.getSessionId(), endOfDataPdu.getSessionId());
-        assertEquals(rtrCache.getSerialNumber(), endOfDataPdu.getSerialNumber());
-        assertEquals(7200, endOfDataPdu.getExpireInterval());
-        assertEquals(3600, endOfDataPdu.getRefreshInterval());
-        assertEquals(600, endOfDataPdu.getRetryInterval());
+        clientRequest(ResetQueryPdu.of());
+
+        assertResponse(
+            CacheResponsePdu.of(rtrCache.getSessionId()),
+            AS_3333.toPdu(Flags.ANNOUNCEMENT),
+            EndOfDataPdu.of(rtrCache.getSessionId(), rtrCache.getSerialNumber(), 3600, 600, 7200)
+        );
     }
 
+    /**
+     * <a href="https://tools.ietf.org/html/rfc8210#section-8.3">No incremental update available</a>.
+     */
+    @Test
+    public void should_reply_with_cache_reset_if_delta_not_available() {
+        clientRequest(SerialQueryPdu.of(rtrCache.getSessionId(), rtrCache.getSerialNumber().previous().previous()));
 
+        assertResponse(
+            CacheResetPdu.of()
+        );
+
+        clientRequest(ResetQueryPdu.of());
+
+        assertResponse(
+            CacheResponsePdu.of(rtrCache.getSessionId()),
+            AS_3333.toPdu(Flags.ANNOUNCEMENT),
+            EndOfDataPdu.of(rtrCache.getSessionId(), rtrCache.getSerialNumber(), 3600, 600, 7200)
+        );
+    }
+
+    @Test
+    public void should_reply_with_cache_response_if_delta_is_available() {
+        rtrCache.updateValidatedPdus(Collections.singleton(AS_4444));
+
+        clientRequest(SerialQueryPdu.of(rtrCache.getSessionId(), rtrCache.getSerialNumber().previous()));
+
+        assertResponse(
+            CacheResponsePdu.of(rtrCache.getSessionId()),
+            AS_4444.toPdu(Flags.ANNOUNCEMENT),
+            AS_3333.toPdu(Flags.WITHDRAWAL),
+            EndOfDataPdu.of(rtrCache.getSessionId(), rtrCache.getSerialNumber(), 3600, 600, 7200)
+        );
+    }
+
+    @Test
+    public void should_notify_client_when_cache_is_updated() {
+        clientRequest(ResetQueryPdu.of());
+        assertResponse(
+            CacheResponsePdu.of(rtrCache.getSessionId()),
+            AS_3333.toPdu(Flags.ANNOUNCEMENT),
+            EndOfDataPdu.of(rtrCache.getSessionId(), SerialNumber.of(1), 3600, 600, 7200)
+        );
+
+        rtrCache.updateValidatedPdus(Collections.singleton(AS_4444)).ifPresent(sn -> clients.cacheUpdated(rtrCache.getSessionId(), sn));
+
+        assertResponse(
+            NotifyPdu.of(rtrCache.getSessionId(), SerialNumber.of(2))
+        );
+    }
+
+    /**
+     * <a href="https://tools.ietf.org/html/rfc8210#section-8.4">Cache Has No Data Available</a>.
+     */
+    @Test
+    public void should_send_no_data_available_until_cache_is_ready_on_reset_query() {
+        rtrCache.setReady(false);
+        ResetQueryPdu request = ResetQueryPdu.of();
+
+        clientRequest(request);
+
+        assertResponse(
+            ErrorPdu.of(ErrorCode.NoDataAvailable, request.toByteArray(), "no data available")
+        );
+    }
+
+    /**
+     * <a href="https://tools.ietf.org/html/rfc8210#section-8.4">Cache Has No Data Available</a>.
+     */
+    @Test
+    public void should_send_no_data_available_until_cache_is_ready_on_serial_query() {
+        rtrCache.setReady(false);
+        SerialQueryPdu request = SerialQueryPdu.of(rtrCache.getSessionId(), rtrCache.getSerialNumber());
+
+        clientRequest(request);
+
+        assertResponse(
+            ErrorPdu.of(ErrorCode.NoDataAvailable, request.toByteArray(), "no data available")
+        );
+    }
+
+    private void clientRequest(Pdu pdu) {
+        channel.writeInbound(pdu);
+    }
+
+    private void assertResponse(Pdu... expectedResponses) {
+        for (Pdu expected : expectedResponses) {
+            Pdu response = channel.readOutbound();
+            assertEquals(expected, response);
+        }
+    }
 }

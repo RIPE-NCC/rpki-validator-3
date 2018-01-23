@@ -223,10 +223,10 @@ public class RtrServer {
                 log.info("finished processing all pending requests for {}", this);
 
                 SerialNumber cacheSerialNumber = cache.getSerialNumber();
-                if (!cacheSerialNumber.equals(clientSerialNumber)) {
-                    this.latestNotifySerialNumber = cacheSerialNumber;
-                    log.info("Serial number updated since the last notification from {} to {}", clientSerialNumber, cacheSerialNumber);
-                    ctx.write(NotifyPdu.of(cacheSerialNumber, cache.getSessionId()));
+                if (cacheSerialNumber.isAfter(latestNotifySerialNumber)) {
+                    log.info("Serial number updated since the last notification from {} to {}", latestNotifySerialNumber.getValue(), cacheSerialNumber.getValue());
+                    latestNotifySerialNumber = cacheSerialNumber;
+                    ctx.write(NotifyPdu.of(cache.getSessionId(), cacheSerialNumber));
                 }
             } else {
                 ChannelFuture channelFuture = handleClientRequest(ctx, currentRequest);
@@ -240,10 +240,9 @@ public class RtrServer {
             log.info("handling client request {}", pdu);
             ChannelFuture responseComplete = null;
             if (pdu instanceof SerialQueryPdu) {
-                SerialQueryPdu serialQueryPdu = (SerialQueryPdu) pdu;
-                responseComplete = handleSerialQuery(ctx, serialQueryPdu);
+                responseComplete = handleSerialQuery(ctx, (SerialQueryPdu) pdu);
             } else if (pdu instanceof ResetQueryPdu) {
-                responseComplete = handleResetQuery(ctx);
+                responseComplete = handleResetQuery(ctx, (ResetQueryPdu) pdu);
             } else if (pdu instanceof ErrorPdu) {
                 log.error("error received from router {}, closing connection", pdu);
                 ctx.close();
@@ -255,6 +254,10 @@ public class RtrServer {
         }
 
         private ChannelFuture handleSerialQuery(ChannelHandlerContext ctx, SerialQueryPdu serialQueryPdu) {
+            if (!cache.isReady()) {
+                return ctx.write(ErrorPdu.of(ErrorCode.NoDataAvailable, serialQueryPdu.toByteArray(), "no data available"));
+            }
+
             Either<RtrCache.Delta, RtrCache.Content> deltaOrContent = cache.getDeltaOrContent(serialQueryPdu.getSerialNumber());
 
             if (deltaOrContent.isLeft()) {
@@ -274,14 +277,20 @@ public class RtrServer {
                 }
                 return ctx.write(EndOfDataPdu.of(delta.getSessionId(), delta.getSerialNumber(), REFRESH_INTERVAL, RETRY_INTERVAL, EXPIRE_INTERVAL));
             } else {
+                RtrCache.Content content = deltaOrContent.right().value();
+                latestNotifySerialNumber = content.getSerialNumber();
                 return ctx.write(CacheResetPdu.of());
             }
         }
 
-        private ChannelFuture handleResetQuery(ChannelHandlerContext ctx) {
+        private ChannelFuture handleResetQuery(ChannelHandlerContext ctx, ResetQueryPdu resetQueryPdu) {
             RtrCache.Content content = cache.getCurrentContent();
+            if (!content.isReady()) {
+                return ctx.write(ErrorPdu.of(ErrorCode.NoDataAvailable, resetQueryPdu.toByteArray(), "no data available"));
+            }
 
             clientSerialNumber = content.getSerialNumber();
+            latestNotifySerialNumber = content.getSerialNumber();
 
             ctx.write(CacheResponsePdu.of(content.getSessionId()));
             for (RtrDataUnit dataUnit : content.getAnnouncements()) {
@@ -315,9 +324,9 @@ public class RtrServer {
         @Override
         public synchronized void cacheUpdated(short sessionId, SerialNumber updatedSerialNumber) {
             if (!updatedSerialNumber.equals(clientSerialNumber) && !latestNotifySerialNumber.equals(updatedSerialNumber)) {
-                this.latestNotifySerialNumber = updatedSerialNumber;
                 if (currentRequest == null) {
-                    ctx.writeAndFlush(NotifyPdu.of(updatedSerialNumber, sessionId));
+                    latestNotifySerialNumber = updatedSerialNumber;
+                    ctx.writeAndFlush(NotifyPdu.of(sessionId, updatedSerialNumber));
                 }
             }
         }

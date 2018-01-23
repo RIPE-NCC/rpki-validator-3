@@ -31,6 +31,7 @@ package net.ripe.rpki.rtr.domain;
 
 import fj.data.Either;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -47,6 +48,8 @@ import java.util.SortedSet;
 public class RtrCache {
     @Getter
     private volatile short sessionId;
+    @Getter @Setter
+    private volatile boolean ready;
     private final VersionedSet<RtrDataUnit> data;
 
     public RtrCache() {
@@ -54,11 +57,13 @@ public class RtrCache {
     }
 
     public RtrCache(SerialNumber initialVersion) {
+        this.ready = false;
         this.sessionId = (short) new SecureRandom().nextInt();
         this.data = new VersionedSet<>(initialVersion);
     }
 
     public synchronized Optional<SerialNumber> updateValidatedPdus(Collection<RtrDataUnit> updatedPdus) {
+        ready = true;
         if (data.updateValues(updatedPdus)) {
             log.info(
                 "{} validated ROAs updated to serial number {} (delta with {} announcements, {} withdrawals)",
@@ -75,7 +80,7 @@ public class RtrCache {
     }
 
     public synchronized Content getCurrentContent() {
-        return Content.of(sessionId, getSerialNumber(), data.getValues());
+        return Content.of(sessionId, getSerialNumber(), ready, data.getValues());
     }
 
     /**
@@ -120,6 +125,7 @@ public class RtrCache {
     public static class Content {
         short sessionId;
         SerialNumber serialNumber;
+        boolean ready;
         SortedSet<RtrDataUnit> announcements;
     }
 
