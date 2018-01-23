@@ -70,6 +70,8 @@ import javax.annotation.PreDestroy;
 import java.util.ArrayDeque;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -119,8 +121,10 @@ public class RtrServer {
     @Scheduled(initialDelay = 10_000L, fixedDelay = 60_000L)
     public void expireOldDeltas() {
         SerialNumber lowestSerialNumber = clients.getLowestSerialNumber().orElse(rtrCache.getSerialNumber());
-        log.info("forgetting deltas before {}", lowestSerialNumber);
-        rtrCache.forgetDeltasBefore(lowestSerialNumber);
+        Set<SerialNumber> forgottenDeltas = rtrCache.forgetDeltasBefore(lowestSerialNumber);
+        if (!forgottenDeltas.isEmpty()) {
+            log.info("removed deltas for serial numbers {}", forgottenDeltas.stream().map(sn -> String.valueOf(sn.getValue())).sorted().collect(Collectors.joining(", ")));
+        }
     }
 
     private void runNetty() throws InterruptedException {

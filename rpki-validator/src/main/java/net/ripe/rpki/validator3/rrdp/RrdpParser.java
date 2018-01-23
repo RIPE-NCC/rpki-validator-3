@@ -240,9 +240,9 @@ public class RrdpParser {
     }
 
     private String getAttr(final StartElement startElement, final String attrName) {
-        final Iterator<Attribute> attributes = startElement.getAttributes();
+        final Iterator<?> attributes = startElement.getAttributes();
         while (attributes.hasNext()) {
-            final Attribute next = attributes.next();
+            final Attribute next = (Attribute) attributes.next();
             final String name = next.getName().getLocalPart();
             if (attrName.equals(name)) {
                 return next.getValue();

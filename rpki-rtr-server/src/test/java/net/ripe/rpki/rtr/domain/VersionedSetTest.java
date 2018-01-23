@@ -104,7 +104,7 @@ public class VersionedSetTest {
         assertThat(delta(1).get().getRemovals()).containsExactly(1, 2, 3);
     }
     
-    private Optional<VersionedSet<Integer>.Delta> delta(int version) {
+    private Optional<VersionedSet.Delta<Integer>> delta(int version) {
         return subject.getDelta(SerialNumber.of(version));
     }
 }

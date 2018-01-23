@@ -39,6 +39,7 @@ import java.security.SecureRandom;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SortedSet;
 
 @Component
@@ -62,7 +63,7 @@ public class RtrCache {
             log.info(
                 "{} validated ROAs updated to serial number {} (delta with {} announcements, {} withdrawals)",
                 data.size(),
-                data.getCurrentVersion(),
+                data.getCurrentVersion().getValue(),
                 data.getDelta(data.getCurrentVersion().previous()).map(x -> x.getAdditions().size()).orElse(0),
                 data.getDelta(data.getCurrentVersion().previous()).map(x -> x.getRemovals().size()).orElse(0)
             );
@@ -97,7 +98,7 @@ public class RtrCache {
         } else if (serialNumber.equals(getSerialNumber())) {
             return Optional.of(Delta.of(sessionId, serialNumber, Collections.emptySortedSet(), Collections.emptySortedSet()));
         } else {
-            Optional<VersionedSet<RtrDataUnit>.Delta> delta = data.getDelta(serialNumber);
+            Optional<VersionedSet.Delta<RtrDataUnit>> delta = data.getDelta(serialNumber);
             return delta.map(d -> Delta.of(sessionId, getSerialNumber(), d.getAdditions(), d.getRemovals()));
         }
     }
@@ -111,9 +112,8 @@ public class RtrCache {
         }
     }
 
-    public synchronized void forgetDeltasBefore(SerialNumber serialNumber) {
-        // FIXME serial number arithmetic
-        data.forgetDeltasBefore(serialNumber);
+    public synchronized Set<SerialNumber> forgetDeltasBefore(SerialNumber serialNumber) {
+        return data.forgetDeltasBefore(serialNumber);
     }
 
     @Value(staticConstructor = "of")
