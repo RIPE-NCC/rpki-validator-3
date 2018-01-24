@@ -31,7 +31,6 @@ package net.ripe.rpki.rtr.domain;
 
 import fj.data.Either;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -46,19 +45,33 @@ import java.util.SortedSet;
 @Component
 @Slf4j
 public class RtrCache {
+    private static final SecureRandom RANDOM = new SecureRandom();
+
+    private final SerialNumber initialVersion;
+
     @Getter
     private volatile short sessionId;
-    @Getter @Setter
     private volatile boolean ready;
-    private final VersionedSet<RtrDataUnit> data;
+    private VersionedSet<RtrDataUnit> data;
 
     public RtrCache() {
         this(SerialNumber.zero());
     }
 
     public RtrCache(SerialNumber initialVersion) {
+        this.initialVersion = initialVersion;
+        reset();
+    }
+
+    public synchronized void reset() {
         this.ready = false;
-        this.sessionId = (short) new SecureRandom().nextInt();
+
+        short newSessionId;
+        do {
+            newSessionId = (short) RANDOM.nextInt();
+        } while (this.sessionId == newSessionId);
+        this.sessionId = newSessionId;
+
         this.data = new VersionedSet<>(initialVersion);
     }
 
@@ -98,7 +111,7 @@ public class RtrCache {
      * @return the delta from the requested <code>serialNumber</code> to the current state
      */
     public synchronized Optional<Delta> getDeltaFrom(SerialNumber serialNumber) {
-        if (serialNumber.isAfter(getSerialNumber())) {
+        if (!ready || serialNumber.isAfter(getSerialNumber())) {
             return Optional.empty();
         } else if (serialNumber.equals(getSerialNumber())) {
             return Optional.of(Delta.of(sessionId, serialNumber, Collections.emptySortedSet(), Collections.emptySortedSet()));

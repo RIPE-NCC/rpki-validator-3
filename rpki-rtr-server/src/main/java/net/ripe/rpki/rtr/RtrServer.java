@@ -254,11 +254,11 @@ public class RtrServer {
         }
 
         private ChannelFuture handleSerialQuery(ChannelHandlerContext ctx, SerialQueryPdu serialQueryPdu) {
-            if (!cache.isReady()) {
+            Either<RtrCache.Delta, RtrCache.Content> deltaOrContent = cache.getDeltaOrContent(serialQueryPdu.getSerialNumber());
+            if (deltaOrContent.right().exists(content -> !content.isReady())) {
                 return ctx.write(ErrorPdu.of(ErrorCode.NoDataAvailable, serialQueryPdu.toByteArray(), "no data available"));
             }
 
-            Either<RtrCache.Delta, RtrCache.Content> deltaOrContent = cache.getDeltaOrContent(serialQueryPdu.getSerialNumber());
 
             if (deltaOrContent.isLeft()) {
                 RtrCache.Delta delta = deltaOrContent.left().value();

@@ -154,7 +154,7 @@ public class RtrServerTest {
      */
     @Test
     public void should_send_no_data_available_until_cache_is_ready_on_reset_query() {
-        rtrCache.setReady(false);
+        rtrCache.reset();
         ResetQueryPdu request = ResetQueryPdu.of();
 
         clientRequest(request);
@@ -169,7 +169,7 @@ public class RtrServerTest {
      */
     @Test
     public void should_send_no_data_available_until_cache_is_ready_on_serial_query() {
-        rtrCache.setReady(false);
+        rtrCache.reset();
         SerialQueryPdu request = SerialQueryPdu.of(rtrCache.getSessionId(), rtrCache.getSerialNumber());
 
         clientRequest(request);
