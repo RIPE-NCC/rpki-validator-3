@@ -75,7 +75,7 @@ public class RtrCache {
         this.data = new VersionedSet<>(initialVersion);
     }
 
-    public synchronized Optional<SerialNumber> updateValidatedPdus(Collection<RtrDataUnit> updatedPdus) {
+    public synchronized Optional<SerialNumber> update(Collection<RtrDataUnit> updatedPdus) {
         ready = true;
         if (data.updateValues(updatedPdus)) {
             log.info(

@@ -51,8 +51,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Collections;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class RtrServerTest {
 
@@ -64,8 +66,8 @@ public class RtrServerTest {
     private final EmbeddedChannel channel = new EmbeddedChannel(new RtrServer.RtrClientHandler(rtrCache, clients));
 
     @Before
-    public void setUp() {
-        rtrCache.updateValidatedPdus(Collections.singleton(AS_3333));
+    public void setUp() throws Exception {
+        updateCache(Collections.singleton(AS_3333));
     }
 
     @Test
@@ -121,7 +123,7 @@ public class RtrServerTest {
 
     @Test
     public void should_reply_with_cache_response_if_delta_is_available() {
-        rtrCache.updateValidatedPdus(Collections.singleton(AS_4444));
+        updateCache(Collections.singleton(AS_4444));
 
         clientRequest(SerialQueryPdu.of(rtrCache.getSessionId(), rtrCache.getSerialNumber().previous()));
 
@@ -142,7 +144,8 @@ public class RtrServerTest {
             EndOfDataPdu.of(rtrCache.getSessionId(), SerialNumber.of(1), 3600, 600, 7200)
         );
 
-        rtrCache.updateValidatedPdus(Collections.singleton(AS_4444)).ifPresent(sn -> clients.cacheUpdated(rtrCache.getSessionId(), sn));
+        Set<RtrDataUnit> singleton = Collections.singleton(AS_4444);
+        updateCache(singleton);
 
         assertResponse(
             NotifyPdu.of(rtrCache.getSessionId(), SerialNumber.of(2))
@@ -177,6 +180,17 @@ public class RtrServerTest {
         assertResponse(
             ErrorPdu.of(ErrorCode.NoDataAvailable, request.toByteArray(), "no data available")
         );
+    }
+
+    @Test
+    public void should_not_send_notify_until_after_first_client_request() {
+        updateCache(Collections.singleton(AS_4444));
+
+        assertNull(channel.readOutbound());
+    }
+
+    private void updateCache(Set<RtrDataUnit> dataUnits) {
+        rtrCache.update(dataUnits).ifPresent(sn -> clients.cacheUpdated(rtrCache.getSessionId(), sn));
     }
 
     private void clientRequest(Pdu pdu) {

@@ -86,7 +86,7 @@ public class RefreshCacheController {
             prefix.getMaxLength()
         )).distinct().collect(toList());
 
-        cache.updateValidatedPdus(roaPrefixes).ifPresent(updatedSerialNumber -> {
+        cache.update(roaPrefixes).ifPresent(updatedSerialNumber -> {
             clients.cacheUpdated(cache.getSessionId(), updatedSerialNumber);
         });
     }
