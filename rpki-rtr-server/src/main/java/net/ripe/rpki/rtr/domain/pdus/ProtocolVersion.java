@@ -29,38 +29,35 @@
  */
 package net.ripe.rpki.rtr.domain.pdus;
 
-import io.netty.buffer.ByteBuf;
-import lombok.Value;
-import net.ripe.rpki.rtr.domain.RtrPrefix;
+import lombok.Getter;
 
-/**
- * @see <a href="https://tools.ietf.org/html/rfc8210#section-5.7">RFC8210 section 5.7 - IPv6 Prefix</a>
- */
-@Value(staticConstructor = "of")
-public class IPv6PrefixPdu implements Pdu {
-    public static final int PDU_TYPE = 6;
+public enum ProtocolVersion {
+    /**
+     * <a href="https://tools.ietf.org/rfc/rfc6810">RFC6810 - The Resource Public Key Infrastructure (RPKI) to Router Protocol</a>
+     */
+    V0(0),
 
-    ProtocolVersion protocolVersion;
-    Flags flags;
-    RtrPrefix prefix;
+    /**
+     * <a href="https://tools.ietf.org/rfc/rfc8210">RFC8210 - The Resource Public Key Infrastructure (RPKI) to Router Protocol,
+     * Version 1</a>
+     */
+    V1(1);
 
-    @Override
-    public void write(ByteBuf out) {
-        out
-            .writeByte(protocolVersion.getValue())
-            .writeByte(PDU_TYPE)
-            .writeShort(0)
-            .writeInt(length())
-            .writeByte(flags.getFlags())
-            .writeByte(prefix.getPrefixLength())
-            .writeByte(prefix.getMaxLength())
-            .writeByte(0)
-            .writeBytes(prefix.getPrefix())
-            .writeInt(prefix.getAsn());
+    @Getter
+    private final byte value;
+
+    ProtocolVersion(int value) {
+        this.value = (byte) value;
     }
 
-    @Override
-    public int length() {
-        return 32;
+    public static ProtocolVersion of(byte value) {
+        switch (value) {
+            case 0:
+                return V0;
+            case 1:
+                return V1;
+            default:
+                return null;
+        }
     }
 }

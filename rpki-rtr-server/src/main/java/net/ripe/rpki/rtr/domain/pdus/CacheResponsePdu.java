@@ -39,6 +39,7 @@ import lombok.Value;
 public class CacheResponsePdu implements Pdu {
     public final static int PDU_TYPE = 3;
 
+    ProtocolVersion protocolVersion;
     short sessionId;
 
     @Override
@@ -49,7 +50,7 @@ public class CacheResponsePdu implements Pdu {
     @Override
     public void write(ByteBuf out) {
         out
-            .writeByte(PROTOCOL_VERSION)
+            .writeByte(protocolVersion.getValue())
             .writeByte(PDU_TYPE)
             .writeShort(sessionId)
             .writeInt(length());

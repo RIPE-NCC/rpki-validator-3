@@ -38,12 +38,15 @@ import net.ripe.rpki.rtr.domain.pdus.ErrorCode;
 import net.ripe.rpki.rtr.domain.pdus.ErrorPdu;
 import net.ripe.rpki.rtr.domain.pdus.Pdu;
 import net.ripe.rpki.rtr.domain.pdus.PduParseException;
+import net.ripe.rpki.rtr.domain.pdus.ProtocolVersion;
 import net.ripe.rpki.rtr.domain.pdus.ResetQueryPdu;
 import net.ripe.rpki.rtr.domain.pdus.SerialQueryPdu;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.function.BiFunction;
+
+import static net.ripe.rpki.rtr.domain.pdus.ProtocolVersion.V1;
 
 @Slf4j
 public class PduCodec extends ByteToMessageCodec<Pdu> {
@@ -60,18 +63,20 @@ public class PduCodec extends ByteToMessageCodec<Pdu> {
         }
 
         in.markReaderIndex();
+        byte protocolVersionValue = in.readByte();
+        ProtocolVersion protocolVersion = ProtocolVersion.of(protocolVersionValue);
+
         BiFunction<ErrorCode, String, ErrorPdu> generateError = (code, text) -> {
             in.resetReaderIndex();
             byte[] content = new byte[in.readableBytes()];
             in.readBytes(content);
-            return ErrorPdu.of(code, content, text);
+            return ErrorPdu.of(protocolVersion == null ? V1 : protocolVersion, code, content, text);
         };
 
-        int protocolVersion = in.readUnsignedByte();
-        if (protocolVersion != Pdu.PROTOCOL_VERSION) {
+        if (protocolVersion == null) {
             throw new PduParseException(generateError.apply(
                 ErrorCode.UnsupportedProtocolVersion,
-                String.format("protocol version must be %d, was %d", Pdu.PROTOCOL_VERSION, protocolVersion)
+                String.format("protocol version must be 0 or 1, was %d", Byte.toUnsignedInt(protocolVersionValue))
             ));
         }
 
@@ -90,7 +95,7 @@ public class PduCodec extends ByteToMessageCodec<Pdu> {
                     return;
                 }
                 int serialNumber = in.readInt();
-                out.add(SerialQueryPdu.of(sessionId, SerialNumber.of(serialNumber)));
+                out.add(SerialQueryPdu.of(protocolVersion, sessionId, SerialNumber.of(serialNumber)));
                 break;
             }
             case ResetQueryPdu.PDU_TYPE: {
@@ -102,7 +107,7 @@ public class PduCodec extends ByteToMessageCodec<Pdu> {
                         String.format("length of Reset Query PDU must be %d, was %d", ResetQueryPdu.PDU_LENGTH, length)
                     ));
                 }
-                out.add(ResetQueryPdu.of());
+                out.add(ResetQueryPdu.of(protocolVersion));
                 break;
             }
             case ErrorPdu.PDU_TYPE: {
@@ -137,7 +142,7 @@ public class PduCodec extends ByteToMessageCodec<Pdu> {
                 byte[] errorTextBytes = new byte[(int) errorTextLength];
                 in.readBytes(errorTextBytes);
 
-                out.add(ErrorPdu.of(ErrorCode.of(errorCode), encapsulatedPdu, new String(errorTextBytes, StandardCharsets.UTF_8)));
+                out.add(ErrorPdu.of(protocolVersion, ErrorCode.of(errorCode), encapsulatedPdu, new String(errorTextBytes, StandardCharsets.UTF_8)));
                 break;
             }
             default:

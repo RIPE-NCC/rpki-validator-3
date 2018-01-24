@@ -34,6 +34,7 @@ import net.ripe.rpki.rtr.domain.pdus.Flags;
 import net.ripe.rpki.rtr.domain.pdus.IPv4PrefixPdu;
 import net.ripe.rpki.rtr.domain.pdus.IPv6PrefixPdu;
 import net.ripe.rpki.rtr.domain.pdus.Pdu;
+import net.ripe.rpki.rtr.domain.pdus.ProtocolVersion;
 import org.bouncycastle.util.Arrays;
 
 @Value(staticConstructor = "of")
@@ -44,11 +45,11 @@ public class RtrPrefix implements RtrDataUnit {
     int asn;
 
     @Override
-    public Pdu toPdu(Flags flags) {
+    public Pdu toPdu(ProtocolVersion protocolVersion, Flags flags) {
         if (prefix.length == 4) {
-            return IPv4PrefixPdu.of(flags, this);
+            return IPv4PrefixPdu.of(protocolVersion, flags, this);
         } else if (prefix.length == 16) {
-            return IPv6PrefixPdu.of(flags, this);
+            return IPv6PrefixPdu.of(protocolVersion, flags, this);
         } else {
             throw new IllegalStateException(String.format("invalid RTR prefix length, expected 4 or 16, was %d", prefix.length));
         }

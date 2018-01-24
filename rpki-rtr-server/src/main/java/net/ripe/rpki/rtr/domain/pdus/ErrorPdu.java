@@ -41,6 +41,7 @@ import java.nio.charset.StandardCharsets;
 public class ErrorPdu implements Pdu {
     public static final int PDU_TYPE = 10;
 
+    ProtocolVersion protocolVersion;
     ErrorCode errorCode;
     byte[] causingPdu;
     String errorText;
@@ -60,7 +61,7 @@ public class ErrorPdu implements Pdu {
     public void write(ByteBuf out) {
         final byte[] errorTextBytes = errorTextBytes();
         out
-            .writeByte(PROTOCOL_VERSION)
+            .writeByte(protocolVersion.getValue())
             .writeByte(PDU_TYPE)
             .writeShort(0)
             .writeInt(length())

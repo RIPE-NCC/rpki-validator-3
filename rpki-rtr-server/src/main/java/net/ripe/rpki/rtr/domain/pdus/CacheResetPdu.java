@@ -40,6 +40,8 @@ public class CacheResetPdu implements Pdu {
     public static final int PDU_TYPE = 8;
     public static final int PDU_LENGTH = 8;
 
+    ProtocolVersion protocolVersion;
+
     @Override
     public int length() {
         return PDU_LENGTH;
@@ -48,7 +50,7 @@ public class CacheResetPdu implements Pdu {
     @Override
     public void write(ByteBuf out) {
         out
-            .writeByte(PROTOCOL_VERSION)
+            .writeByte(protocolVersion.getValue())
             .writeByte(PDU_TYPE)
             .writeShort(0)
             .writeInt(length());

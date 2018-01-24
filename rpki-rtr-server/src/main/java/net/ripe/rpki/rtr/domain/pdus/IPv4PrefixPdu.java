@@ -40,13 +40,14 @@ import net.ripe.rpki.rtr.domain.RtrPrefix;
 public class IPv4PrefixPdu implements Pdu {
     public static final int PDU_TYPE = 4;
 
+    ProtocolVersion protocolVersion;
     Flags flags;
     RtrPrefix prefix;
 
     @Override
     public void write(ByteBuf out) {
         out
-            .writeByte(PROTOCOL_VERSION)
+            .writeByte(protocolVersion.getValue())
             .writeByte(PDU_TYPE)
             .writeShort(0)
             .writeInt(length())

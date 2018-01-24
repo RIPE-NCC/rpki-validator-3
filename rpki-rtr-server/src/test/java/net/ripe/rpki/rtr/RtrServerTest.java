@@ -54,6 +54,8 @@ import org.junit.Test;
 import java.util.Collections;
 import java.util.Set;
 
+import static net.ripe.rpki.rtr.domain.pdus.ProtocolVersion.V0;
+import static net.ripe.rpki.rtr.domain.pdus.ProtocolVersion.V1;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
@@ -76,49 +78,59 @@ public class RtrServerTest {
         final short sessionId = (short) (rtrCache.getSessionId() + 10);
         final SerialNumber serial = SerialNumber.of(20);
 
-        clientRequest(SerialQueryPdu.of(sessionId, serial));
+        clientRequest(SerialQueryPdu.of(V1, sessionId, serial));
 
-        assertResponse(CacheResetPdu.of());
+        assertResponse(CacheResetPdu.of(V1));
     }
 
     @Test
     public void should_reply_with_cache_response_if_session_id_the_same() {
-        clientRequest(SerialQueryPdu.of(rtrCache.getSessionId(), rtrCache.getSerialNumber()));
+        clientRequest(SerialQueryPdu.of(V1, rtrCache.getSessionId(), rtrCache.getSerialNumber()));
 
         assertResponse(
-            CacheResponsePdu.of(rtrCache.getSessionId()),
-            EndOfDataPdu.of(rtrCache.getSessionId(), rtrCache.getSerialNumber(), 3600, 600, 7200)
+            CacheResponsePdu.of(V1, rtrCache.getSessionId()),
+            EndOfDataPdu.of(V1, rtrCache.getSessionId(), rtrCache.getSerialNumber(), 3600, 600, 7200)
         );
     }
 
     @Test
     public void should_reply_with_cache_reset_reset_query_pdu() {
-        clientRequest(ResetQueryPdu.of());
+        clientRequest(ResetQueryPdu.of(V1));
 
         assertResponse(
-            CacheResponsePdu.of(rtrCache.getSessionId()),
-            AS_3333.toPdu(Flags.ANNOUNCEMENT),
-            EndOfDataPdu.of(rtrCache.getSessionId(), rtrCache.getSerialNumber(), 3600, 600, 7200)
+            CacheResponsePdu.of(V1, rtrCache.getSessionId()),
+            AS_3333.toPdu(V1, Flags.ANNOUNCEMENT),
+            EndOfDataPdu.of(V1, rtrCache.getSessionId(), rtrCache.getSerialNumber(), 3600, 600, 7200)
         );
     }
 
+    @Test
+    public void should_downgrade_to_protocol_version_0() {
+        clientRequest(ResetQueryPdu.of(V0));
+
+        assertResponse(
+            CacheResponsePdu.of(V0, rtrCache.getSessionId()),
+            AS_3333.toPdu(V0, Flags.ANNOUNCEMENT),
+            EndOfDataPdu.of(V0, rtrCache.getSessionId(), rtrCache.getSerialNumber(), 3600, 600, 7200)
+        );
+    }
     /**
      * <a href="https://tools.ietf.org/html/rfc8210#section-8.3">No incremental update available</a>.
      */
     @Test
     public void should_reply_with_cache_reset_if_delta_not_available() {
-        clientRequest(SerialQueryPdu.of(rtrCache.getSessionId(), rtrCache.getSerialNumber().previous().previous()));
+        clientRequest(SerialQueryPdu.of(V1, rtrCache.getSessionId(), rtrCache.getSerialNumber().previous().previous()));
 
         assertResponse(
-            CacheResetPdu.of()
+            CacheResetPdu.of(V1)
         );
 
-        clientRequest(ResetQueryPdu.of());
+        clientRequest(ResetQueryPdu.of(V1));
 
         assertResponse(
-            CacheResponsePdu.of(rtrCache.getSessionId()),
-            AS_3333.toPdu(Flags.ANNOUNCEMENT),
-            EndOfDataPdu.of(rtrCache.getSessionId(), rtrCache.getSerialNumber(), 3600, 600, 7200)
+            CacheResponsePdu.of(V1, rtrCache.getSessionId()),
+            AS_3333.toPdu(V1, Flags.ANNOUNCEMENT),
+            EndOfDataPdu.of(V1, rtrCache.getSessionId(), rtrCache.getSerialNumber(), 3600, 600, 7200)
         );
     }
 
@@ -126,30 +138,30 @@ public class RtrServerTest {
     public void should_reply_with_cache_response_if_delta_is_available() {
         updateCache(Collections.singleton(AS_4444));
 
-        clientRequest(SerialQueryPdu.of(rtrCache.getSessionId(), rtrCache.getSerialNumber().previous()));
+        clientRequest(SerialQueryPdu.of(V1, rtrCache.getSessionId(), rtrCache.getSerialNumber().previous()));
 
         assertResponse(
-            CacheResponsePdu.of(rtrCache.getSessionId()),
-            AS_4444.toPdu(Flags.ANNOUNCEMENT),
-            AS_3333.toPdu(Flags.WITHDRAWAL),
-            EndOfDataPdu.of(rtrCache.getSessionId(), rtrCache.getSerialNumber(), 3600, 600, 7200)
+            CacheResponsePdu.of(V1, rtrCache.getSessionId()),
+            AS_4444.toPdu(V1, Flags.ANNOUNCEMENT),
+            AS_3333.toPdu(V1, Flags.WITHDRAWAL),
+            EndOfDataPdu.of(V1, rtrCache.getSessionId(), rtrCache.getSerialNumber(), 3600, 600, 7200)
         );
     }
 
     @Test
     public void should_notify_client_when_cache_is_updated() {
-        clientRequest(ResetQueryPdu.of());
+        clientRequest(ResetQueryPdu.of(V1));
         assertResponse(
-            CacheResponsePdu.of(rtrCache.getSessionId()),
-            AS_3333.toPdu(Flags.ANNOUNCEMENT),
-            EndOfDataPdu.of(rtrCache.getSessionId(), SerialNumber.of(1), 3600, 600, 7200)
+            CacheResponsePdu.of(V1, rtrCache.getSessionId()),
+            AS_3333.toPdu(V1, Flags.ANNOUNCEMENT),
+            EndOfDataPdu.of(V1, rtrCache.getSessionId(), SerialNumber.of(1), 3600, 600, 7200)
         );
 
         Set<RtrDataUnit> singleton = Collections.singleton(AS_4444);
         updateCache(singleton);
 
         assertResponse(
-            NotifyPdu.of(rtrCache.getSessionId(), SerialNumber.of(2))
+            NotifyPdu.of(V1, rtrCache.getSessionId(), SerialNumber.of(2))
         );
     }
 
@@ -159,12 +171,12 @@ public class RtrServerTest {
     @Test
     public void should_send_no_data_available_until_cache_is_ready_on_reset_query() {
         rtrCache.reset();
-        ResetQueryPdu request = ResetQueryPdu.of();
+        ResetQueryPdu request = ResetQueryPdu.of(V1);
 
         clientRequest(request);
 
         assertResponse(
-            ErrorPdu.of(ErrorCode.NoDataAvailable, request.toByteArray(), "no data available")
+            ErrorPdu.of(V1, ErrorCode.NoDataAvailable, request.toByteArray(), "no data available")
         );
     }
 
@@ -174,12 +186,12 @@ public class RtrServerTest {
     @Test
     public void should_send_no_data_available_until_cache_is_ready_on_serial_query() {
         rtrCache.reset();
-        SerialQueryPdu request = SerialQueryPdu.of(rtrCache.getSessionId(), rtrCache.getSerialNumber());
+        SerialQueryPdu request = SerialQueryPdu.of(V1, rtrCache.getSessionId(), rtrCache.getSerialNumber());
 
         clientRequest(request);
 
         assertResponse(
-            ErrorPdu.of(ErrorCode.NoDataAvailable, request.toByteArray(), "no data available")
+            ErrorPdu.of(V1, ErrorCode.NoDataAvailable, request.toByteArray(), "no data available")
         );
     }
 

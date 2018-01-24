@@ -41,6 +41,7 @@ public class EndOfDataPdu implements Pdu {
 
     public static final int PDU_TYPE = 7;
 
+    ProtocolVersion protocolVersion;
     short sessionId;
     SerialNumber serialNumber;
     int refreshInterval;
@@ -49,19 +50,33 @@ public class EndOfDataPdu implements Pdu {
 
     @Override
     public int length() {
-        return 24;
+        switch (protocolVersion) {
+            case V0:
+                return 12;
+            case V1:
+                return 24;
+        }
+        throw new IllegalStateException("bad protocol version " + protocolVersion);
     }
 
     @Override
     public void write(ByteBuf out) {
         out
-            .writeByte(PROTOCOL_VERSION)
+            .writeByte(protocolVersion.getValue())
             .writeByte(PDU_TYPE)
             .writeShort(sessionId)
-            .writeInt(length())
-            .writeInt(serialNumber.getValue())
-            .writeInt(refreshInterval)
-            .writeInt(retryInterval)
-            .writeInt(expireInterval);
+            .writeInt(length());
+        switch (protocolVersion) {
+            case V0:
+                return;
+            case V1:
+                out
+                    .writeInt(serialNumber.getValue())
+                    .writeInt(refreshInterval)
+                    .writeInt(retryInterval)
+                    .writeInt(expireInterval);
+                return;
+        }
+        throw new IllegalStateException("bad protocol version " + protocolVersion);
     }
 }

@@ -41,8 +41,8 @@ public class NotifyPdu implements Pdu {
 
     private static final int PDU_TYPE = 0;
 
+    ProtocolVersion protocolVersion;
     short sessionId;
-
     SerialNumber serialNumber;
 
     @Override
@@ -53,7 +53,7 @@ public class NotifyPdu implements Pdu {
     @Override
     public void write(ByteBuf out) {
         out
-                .writeByte(PROTOCOL_VERSION)
+                .writeByte(protocolVersion.getValue())
                 .writeByte(PDU_TYPE)
                 .writeShort(sessionId)
                 .writeInt(length())
