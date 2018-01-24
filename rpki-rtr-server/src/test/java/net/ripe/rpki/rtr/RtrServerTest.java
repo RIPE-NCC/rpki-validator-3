@@ -30,6 +30,7 @@
 package net.ripe.rpki.rtr;
 
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.handler.stream.ChunkedWriteHandler;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.rtr.domain.RtrCache;
@@ -63,7 +64,7 @@ public class RtrServerTest {
 
     private final RtrCache rtrCache = new RtrCache();
     private final RtrClients clients = new RtrClients();
-    private final EmbeddedChannel channel = new EmbeddedChannel(new RtrServer.RtrClientHandler(rtrCache, clients));
+    private final EmbeddedChannel channel = new EmbeddedChannel(new ChunkedWriteHandler(), new RtrServer.RtrClientHandler(rtrCache, clients));
 
     @Before
     public void setUp() throws Exception {

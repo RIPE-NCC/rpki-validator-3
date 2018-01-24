@@ -31,6 +31,7 @@ package net.ripe.rpki.rtr;
 
 import fj.data.Either;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
@@ -40,13 +41,14 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.stream.ChunkedInput;
+import io.netty.handler.stream.ChunkedWriteHandler;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.rtr.adapter.netty.PduCodec;
 import net.ripe.rpki.rtr.domain.RtrCache;
 import net.ripe.rpki.rtr.domain.RtrClient;
 import net.ripe.rpki.rtr.domain.RtrClients;
-import net.ripe.rpki.rtr.domain.RtrDataUnit;
 import net.ripe.rpki.rtr.domain.SerialNumber;
 import net.ripe.rpki.rtr.domain.pdus.CacheResetPdu;
 import net.ripe.rpki.rtr.domain.pdus.CacheResponsePdu;
@@ -68,10 +70,12 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.ArrayDeque;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 @Slf4j
@@ -264,11 +268,11 @@ public class RtrServer {
                 }
 
                 ctx.write(CacheResponsePdu.of(delta.getSessionId()));
-                for (RtrDataUnit dataUnit : delta.getAnnouncements()) {
-                    ctx.write(dataUnit.toPdu(Flags.ANNOUNCEMENT));
+                if (!delta.getAnnouncements().isEmpty()) {
+                    ctx.write(new ChunkedStream<>(delta.getAnnouncements().stream().map(dataUnit -> dataUnit.toPdu(Flags.ANNOUNCEMENT))));
                 }
-                for (RtrDataUnit dataUnit : delta.getWithdrawals()) {
-                    ctx.write(dataUnit.toPdu(Flags.WITHDRAWAL));
+                if (!delta.getWithdrawals().isEmpty()) {
+                    ctx.write(new ChunkedStream<>(delta.getWithdrawals().stream().map(dataUnit -> dataUnit.toPdu(Flags.WITHDRAWAL))));
                 }
                 return ctx.writeAndFlush(EndOfDataPdu.of(delta.getSessionId(), delta.getSerialNumber(), REFRESH_INTERVAL, RETRY_INTERVAL, EXPIRE_INTERVAL));
             } else {
@@ -288,8 +292,8 @@ public class RtrServer {
             latestNotifySerialNumber = content.getSerialNumber();
 
             ctx.write(CacheResponsePdu.of(content.getSessionId()));
-            for (RtrDataUnit dataUnit : content.getAnnouncements()) {
-                ctx.write(dataUnit.toPdu(Flags.ANNOUNCEMENT));
+            if (!content.getAnnouncements().isEmpty()) {
+                ctx.write(new ChunkedStream<>(content.getAnnouncements().stream().map(dataUnit -> dataUnit.toPdu(Flags.ANNOUNCEMENT))));
             }
             return ctx.writeAndFlush(EndOfDataPdu.of(content.getSessionId(), content.getSerialNumber(), REFRESH_INTERVAL, RETRY_INTERVAL, EXPIRE_INTERVAL));
         }
@@ -327,6 +331,49 @@ public class RtrServer {
                 latestNotifySerialNumber = updatedSerialNumber;
                 ctx.writeAndFlush(NotifyPdu.of(sessionId, updatedSerialNumber));
             }
+        }
+    }
+
+    private static class ChunkedStream<T> implements ChunkedInput<T> {
+        private final Iterator<T> items;
+        private int progress = 0;
+
+        public ChunkedStream(Stream<T> items) {
+            this.items = items.iterator();
+        }
+
+        @Override
+        public boolean isEndOfInput() throws Exception {
+            return !items.hasNext();
+        }
+
+        @Override
+        public void close() throws Exception {
+        }
+
+        @Deprecated
+        @Override
+        public T readChunk(ChannelHandlerContext ctx) throws Exception {
+            return readChunk(ctx.alloc());
+        }
+
+        @Override
+        public T readChunk(ByteBufAllocator allocator) throws Exception {
+            if (isEndOfInput()) {
+                return null;
+            }
+            ++progress;
+            return items.next();
+        }
+
+        @Override
+        public long length() {
+            return -1;
+        }
+
+        @Override
+        public long progress() {
+            return progress;
         }
     }
 }
