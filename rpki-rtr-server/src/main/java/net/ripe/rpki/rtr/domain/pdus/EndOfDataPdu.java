@@ -40,6 +40,8 @@ import net.ripe.rpki.rtr.domain.SerialNumber;
 public class EndOfDataPdu implements Pdu {
 
     public static final int PDU_TYPE = 7;
+    public static final int PDU_LENGTH_V0 = 12;
+    public static final int PDU_LENGTH_V1 = 24;
 
     ProtocolVersion protocolVersion;
     short sessionId;
@@ -52,9 +54,9 @@ public class EndOfDataPdu implements Pdu {
     public int length() {
         switch (protocolVersion) {
             case V0:
-                return 12;
+                return PDU_LENGTH_V0;
             case V1:
-                return 24;
+                return PDU_LENGTH_V1;
         }
         throw new IllegalStateException("bad protocol version " + protocolVersion);
     }
@@ -65,13 +67,13 @@ public class EndOfDataPdu implements Pdu {
             .writeByte(protocolVersion.getValue())
             .writeByte(PDU_TYPE)
             .writeShort(sessionId)
-            .writeInt(length());
+            .writeInt(length())
+            .writeInt(serialNumber.getValue());
         switch (protocolVersion) {
             case V0:
                 return;
             case V1:
                 out
-                    .writeInt(serialNumber.getValue())
                     .writeInt(refreshInterval)
                     .writeInt(retryInterval)
                     .writeInt(expireInterval);

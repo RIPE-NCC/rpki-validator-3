@@ -39,7 +39,8 @@ import net.ripe.rpki.rtr.domain.SerialNumber;
 @Value(staticConstructor = "of")
 public class NotifyPdu implements Pdu {
 
-    private static final int PDU_TYPE = 0;
+    public static final int PDU_TYPE = 0;
+    public static final int PDU_LENGTH = 12;
 
     ProtocolVersion protocolVersion;
     short sessionId;
@@ -47,7 +48,7 @@ public class NotifyPdu implements Pdu {
 
     @Override
     public int length() {
-        return 12;
+        return PDU_LENGTH;
     }
 
     @Override

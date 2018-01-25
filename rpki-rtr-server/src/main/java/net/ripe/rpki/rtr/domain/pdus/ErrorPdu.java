@@ -35,7 +35,7 @@ import lombok.Value;
 import java.nio.charset.StandardCharsets;
 
 /**
- * @see <a href="https://tools.ietf.org/html/rfc8210#section-5.6">RFC8210 section 5.6 - IPv4 Prefix</a>
+ * @see <a href="https://tools.ietf.org/html/rfc8210#section-5.11">RFC8210 section 5.11 - Error Report</a>
  */
 @Value(staticConstructor = "of")
 public class ErrorPdu implements Pdu {
@@ -45,10 +45,6 @@ public class ErrorPdu implements Pdu {
     ErrorCode errorCode;
     byte[] causingPdu;
     String errorText;
-
-    short headerShort() {
-        return (short) errorCode.code;
-    }
 
     public int length() {
         return 8 + 4 + causingPdu.length + 4 + errorTextBytes().length;
@@ -63,8 +59,9 @@ public class ErrorPdu implements Pdu {
         out
             .writeByte(protocolVersion.getValue())
             .writeByte(PDU_TYPE)
-            .writeShort(0)
+            .writeShort(errorCode.getCode())
             .writeInt(length())
+            .writeInt(causingPdu.length)
             .writeBytes(causingPdu)
             .writeInt(errorTextBytes.length)
             .writeBytes(errorTextBytes);

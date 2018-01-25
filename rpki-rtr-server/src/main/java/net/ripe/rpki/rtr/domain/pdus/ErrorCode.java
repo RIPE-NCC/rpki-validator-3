@@ -29,6 +29,8 @@
  */
 package net.ripe.rpki.rtr.domain.pdus;
 
+import lombok.Getter;
+
 public enum ErrorCode {
 
     CorruptData(0),
@@ -41,7 +43,8 @@ public enum ErrorCode {
     DuplicateAnnouncementReceived(7),
     UnexpectedProtocolVersion(8);
 
-    final int code;
+    @Getter
+    private final int code;
 
     ErrorCode(int i) {
         this.code = i;

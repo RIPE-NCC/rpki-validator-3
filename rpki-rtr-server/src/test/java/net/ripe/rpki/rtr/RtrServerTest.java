@@ -29,10 +29,12 @@
  */
 package net.ripe.rpki.rtr;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
+import net.ripe.rpki.rtr.adapter.netty.PduCodec;
 import net.ripe.rpki.rtr.domain.RtrCache;
 import net.ripe.rpki.rtr.domain.RtrClients;
 import net.ripe.rpki.rtr.domain.RtrDataUnit;
@@ -66,7 +68,11 @@ public class RtrServerTest {
 
     private final RtrCache rtrCache = new RtrCache();
     private final RtrClients clients = new RtrClients();
-    private final EmbeddedChannel channel = new EmbeddedChannel(new ChunkedWriteHandler(), new RtrServer.RtrClientHandler(rtrCache, clients));
+    private final EmbeddedChannel channel = new EmbeddedChannel(
+        new PduCodec(),
+        new ChunkedWriteHandler(),
+        new RtrServer.RtrClientHandler(rtrCache, clients)
+    );
 
     @Before
     public void setUp() throws Exception {
@@ -261,8 +267,16 @@ public class RtrServerTest {
 
     private void assertResponse(Pdu... expectedResponses) {
         for (Pdu expected : expectedResponses) {
-            Pdu response = channel.readOutbound();
-            assertEquals(expected, response);
+            try {
+                Pdu actual = null;
+                ByteBuf msg = channel.readOutbound();
+                if (msg != null) {
+                    actual = PduCodec.parsePdu(msg).orElse(null);
+                }
+                assertEquals(expected, actual);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }

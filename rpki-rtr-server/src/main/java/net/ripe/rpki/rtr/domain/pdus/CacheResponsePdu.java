@@ -38,13 +38,14 @@ import lombok.Value;
 @Value(staticConstructor = "of")
 public class CacheResponsePdu implements Pdu {
     public final static int PDU_TYPE = 3;
+    public static final int PDU_LENGTH = 8;
 
     ProtocolVersion protocolVersion;
     short sessionId;
 
     @Override
     public int length() {
-        return 8;
+        return PDU_LENGTH;
     }
 
     @Override

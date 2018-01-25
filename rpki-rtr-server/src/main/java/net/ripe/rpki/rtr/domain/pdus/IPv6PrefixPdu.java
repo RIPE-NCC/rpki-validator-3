@@ -39,6 +39,7 @@ import net.ripe.rpki.rtr.domain.RtrPrefix;
 @Value(staticConstructor = "of")
 public class IPv6PrefixPdu implements Pdu {
     public static final int PDU_TYPE = 6;
+    public static final int PDU_LENGTH = 32;
 
     ProtocolVersion protocolVersion;
     Flags flags;
@@ -61,6 +62,6 @@ public class IPv6PrefixPdu implements Pdu {
 
     @Override
     public int length() {
-        return 32;
+        return PDU_LENGTH;
     }
 }
