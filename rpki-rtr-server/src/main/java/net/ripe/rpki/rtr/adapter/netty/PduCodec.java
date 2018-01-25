@@ -37,7 +37,7 @@ import net.ripe.rpki.rtr.domain.SerialNumber;
 import net.ripe.rpki.rtr.domain.pdus.ErrorCode;
 import net.ripe.rpki.rtr.domain.pdus.ErrorPdu;
 import net.ripe.rpki.rtr.domain.pdus.Pdu;
-import net.ripe.rpki.rtr.domain.pdus.PduParseException;
+import net.ripe.rpki.rtr.domain.pdus.RtrProtocolException;
 import net.ripe.rpki.rtr.domain.pdus.ProtocolVersion;
 import net.ripe.rpki.rtr.domain.pdus.ResetQueryPdu;
 import net.ripe.rpki.rtr.domain.pdus.SerialQueryPdu;
@@ -74,7 +74,7 @@ public class PduCodec extends ByteToMessageCodec<Pdu> {
         };
 
         if (protocolVersion == null) {
-            throw new PduParseException(generateError.apply(
+            throw new RtrProtocolException(generateError.apply(
                 ErrorCode.UnsupportedProtocolVersion,
                 String.format("protocol version must be 0 or 1, was %d", Byte.toUnsignedInt(protocolVersionValue))
             ));
@@ -86,7 +86,7 @@ public class PduCodec extends ByteToMessageCodec<Pdu> {
                 short sessionId = in.readShort();
                 long length = in.readUnsignedInt();
                 if (length != SerialQueryPdu.PDU_LENGTH) {
-                    throw new PduParseException(generateError.apply(
+                    throw new RtrProtocolException(generateError.apply(
                         ErrorCode.InvalidRequest,
                         String.format("length of Serial Query PDU must be %d, was %d", SerialQueryPdu.PDU_LENGTH, length)
                     ));
@@ -102,7 +102,7 @@ public class PduCodec extends ByteToMessageCodec<Pdu> {
                 @SuppressWarnings("unused") int zero = in.readUnsignedShort();
                 long length = in.readUnsignedInt();
                 if (length != ResetQueryPdu.PDU_LENGTH) {
-                    throw new PduParseException(generateError.apply(
+                    throw new RtrProtocolException(generateError.apply(
                         ErrorCode.InvalidRequest,
                         String.format("length of Reset Query PDU must be %d, was %d", ResetQueryPdu.PDU_LENGTH, length)
                     ));
@@ -114,7 +114,7 @@ public class PduCodec extends ByteToMessageCodec<Pdu> {
                 int errorCode = in.readUnsignedShort();
                 long length = in.readUnsignedInt();
                 if (length > Pdu.MAX_LENGTH) {
-                    throw new PduParseException(generateError.apply(
+                    throw new RtrProtocolException(generateError.apply(
                        ErrorCode.InvalidRequest,
                        String.format("maximum PDU length is %d, was %d", Pdu.MAX_LENGTH, length)
                     ));
@@ -124,7 +124,7 @@ public class PduCodec extends ByteToMessageCodec<Pdu> {
                 }
                 long encapsulatedPduLength = in.readUnsignedInt();
                 if (encapsulatedPduLength > length - 16) {
-                    throw new PduParseException(generateError.apply(
+                    throw new RtrProtocolException(generateError.apply(
                        ErrorCode.InvalidRequest,
                        String.format("encapsulated PDU length %d exceeds maximum length %d", encapsulatedPduLength, length - 16)
                     ));
@@ -134,7 +134,7 @@ public class PduCodec extends ByteToMessageCodec<Pdu> {
 
                 long errorTextLength = in.readUnsignedInt();
                 if (errorTextLength > length - encapsulatedPduLength - 16) {
-                    throw new PduParseException(generateError.apply(
+                    throw new RtrProtocolException(generateError.apply(
                         ErrorCode.InvalidRequest,
                         String.format("error text length %d exceeds maximum length %d", errorTextLength, length - encapsulatedPduLength - 16)
                     ));
@@ -146,7 +146,7 @@ public class PduCodec extends ByteToMessageCodec<Pdu> {
                 break;
             }
             default:
-                throw new PduParseException(generateError.apply(
+                throw new RtrProtocolException(generateError.apply(
                     ErrorCode.UnsupportedPduType,
                     String.format("unsupported PDU type %d", pduType)
                 ));

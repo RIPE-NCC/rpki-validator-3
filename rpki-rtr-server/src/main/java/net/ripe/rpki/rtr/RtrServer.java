@@ -41,7 +41,6 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.DecoderException;
 import io.netty.handler.stream.ChunkedInput;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import lombok.ToString;
@@ -59,9 +58,9 @@ import net.ripe.rpki.rtr.domain.pdus.ErrorPdu;
 import net.ripe.rpki.rtr.domain.pdus.Flags;
 import net.ripe.rpki.rtr.domain.pdus.NotifyPdu;
 import net.ripe.rpki.rtr.domain.pdus.Pdu;
-import net.ripe.rpki.rtr.domain.pdus.PduParseException;
 import net.ripe.rpki.rtr.domain.pdus.ProtocolVersion;
 import net.ripe.rpki.rtr.domain.pdus.ResetQueryPdu;
+import net.ripe.rpki.rtr.domain.pdus.RtrProtocolException;
 import net.ripe.rpki.rtr.domain.pdus.SerialQueryPdu;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,6 +73,7 @@ import javax.annotation.PreDestroy;
 import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -242,26 +242,34 @@ public class RtrServer {
             log.info("handling client request {}", pdu);
             if (clientProtocolVersion == null) {
                 clientProtocolVersion = pdu.getProtocolVersion();
+            } else if (clientProtocolVersion != pdu.getProtocolVersion()) {
+                throw new RtrProtocolException(ErrorPdu.of(
+                    clientProtocolVersion,
+                    ErrorCode.UnexpectedProtocolVersion,
+                    pdu.toByteArray(),
+                    String.format("unexpected PDU protocol version %d, negotiated version was %d", pdu.getProtocolVersion().getValue(), clientProtocolVersion.getValue())
+                ));
             }
+
             ChannelFuture responseComplete = null;
             if (pdu instanceof SerialQueryPdu) {
                 responseComplete = handleSerialQuery(ctx, (SerialQueryPdu) pdu);
             } else if (pdu instanceof ResetQueryPdu) {
                 responseComplete = handleResetQuery(ctx, (ResetQueryPdu) pdu);
             } else if (pdu instanceof ErrorPdu) {
-                log.error("error received from router {}, closing connection", pdu);
+                log.error("error received from client {}, closing connection", pdu);
                 ctx.close();
             } else {
                 throw new IllegalStateException("unrecognized PDU " + pdu);
             }
-            ctx.flush();
+
             return responseComplete;
         }
 
         private ChannelFuture handleSerialQuery(ChannelHandlerContext ctx, SerialQueryPdu serialQueryPdu) {
             Either<RtrCache.Delta, RtrCache.Content> deltaOrContent = cache.getDeltaOrContent(serialQueryPdu.getSerialNumber());
             if (deltaOrContent.right().exists(content -> !content.isReady())) {
-                return ctx.write(ErrorPdu.of(clientProtocolVersion, ErrorCode.NoDataAvailable, serialQueryPdu.toByteArray(), "no data available"));
+                return ctx.writeAndFlush(ErrorPdu.of(clientProtocolVersion, ErrorCode.NoDataAvailable, serialQueryPdu.toByteArray(), "no data available"));
             }
 
 
@@ -299,7 +307,6 @@ public class RtrServer {
 
             ctx.write(CacheResponsePdu.of(clientProtocolVersion, content.getSessionId()));
             if (!content.getAnnouncements().isEmpty()) {
-                log.info("sending {} announcements", content.getAnnouncements().size());
                 ctx.write(new ChunkedStream<>(content.getAnnouncements().stream().map(dataUnit -> dataUnit.toPdu(clientProtocolVersion, Flags.ANNOUNCEMENT))));
             }
             return ctx.writeAndFlush(EndOfDataPdu.of(clientProtocolVersion, content.getSessionId(), content.getSerialNumber(), REFRESH_INTERVAL, RETRY_INTERVAL, EXPIRE_INTERVAL));
@@ -307,14 +314,26 @@ public class RtrServer {
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            if (cause instanceof DecoderException && cause.getCause() instanceof PduParseException) {
-                PduParseException e = (PduParseException) cause.getCause();
-                ctx.writeAndFlush(e.getErrorPdu());
-            } else {
-                ctx.writeAndFlush(ErrorPdu.of(clientProtocolVersion == null ? ProtocolVersion.V1 : clientProtocolVersion, ErrorCode.PduInternalError, new byte[0], "internal error"));
+            Optional<RtrProtocolException> rtrError = Stream
+                .iterate(cause, Throwable::getCause)
+                .filter(t -> t instanceof RtrProtocolException)
+                .map(t -> (RtrProtocolException) t)
+                .findFirst();
+
+            ErrorPdu errorPdu = rtrError
+                .map(RtrProtocolException::getErrorPdu)
+                .orElseGet(() ->
+                    ErrorPdu.of(
+                        clientProtocolVersion == null ? ProtocolVersion.V1 : clientProtocolVersion,
+                        ErrorCode.PduInternalError,
+                        new byte[0],
+                       "internal error")
+                );
+
+            ctx.writeAndFlush(errorPdu);
+            if (errorPdu.getErrorCode().isFatal()) {
+                ctx.close();
             }
-            log.error("Something bad happened", cause);
-            ctx.close();
         }
 
         @Override

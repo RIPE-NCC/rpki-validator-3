@@ -104,16 +104,6 @@ public class RtrServerTest {
         );
     }
 
-    @Test
-    public void should_downgrade_to_protocol_version_0() {
-        clientRequest(ResetQueryPdu.of(V0));
-
-        assertResponse(
-            CacheResponsePdu.of(V0, rtrCache.getSessionId()),
-            AS_3333.toPdu(V0, Flags.ANNOUNCEMENT),
-            EndOfDataPdu.of(V0, rtrCache.getSessionId(), rtrCache.getSerialNumber(), 3600, 600, 7200)
-        );
-    }
     /**
      * <a href="https://tools.ietf.org/html/rfc8210#section-8.3">No incremental update available</a>.
      */
@@ -195,12 +185,40 @@ public class RtrServerTest {
         );
     }
 
+    /**
+     * <a href="https://tools.ietf.org/html/rfc8210#section-7">Protocol Version Negotiation</a>
+     */
     @Test
-    public void should_not_send_notify_until_after_first_client_request() {
+    public void should_downgrade_to_protocol_version_0() {
+        clientRequest(ResetQueryPdu.of(V0));
+
+        assertResponse(
+            CacheResponsePdu.of(V0, rtrCache.getSessionId()),
+            AS_3333.toPdu(V0, Flags.ANNOUNCEMENT),
+            EndOfDataPdu.of(V0, rtrCache.getSessionId(), rtrCache.getSerialNumber(), 3600, 600, 7200)
+        );
+    }
+
+    @Test
+    public void should_report_unexpected_protocol_version_after_negotation_completed_and_version_change() {
+        clientRequest(ResetQueryPdu.of(V1));
+        assertResponse(
+            CacheResponsePdu.of(V1, rtrCache.getSessionId()),
+            AS_3333.toPdu(V1, Flags.ANNOUNCEMENT),
+            EndOfDataPdu.of(V1, rtrCache.getSessionId(), rtrCache.getSerialNumber(), 3600, 600, 7200)
+        );
+
+        clientRequest(ResetQueryPdu.of(V0));
+        assertResponse(ErrorPdu.of(V1, ErrorCode.UnexpectedProtocolVersion, ResetQueryPdu.of(V0).toByteArray(), "unexpected PDU protocol version 0, negotiated version was 1"));
+    }
+
+    @Test
+    public void should_not_send_notify_until_protocol_version_negotiation_has_completed() {
         updateCache(Collections.singleton(AS_4444));
 
         assertNull(channel.readOutbound());
     }
+
 
     private void updateCache(Set<RtrDataUnit> dataUnits) {
         rtrCache.update(dataUnits).ifPresent(sn -> clients.cacheUpdated(rtrCache.getSessionId(), sn));

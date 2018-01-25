@@ -38,7 +38,8 @@ public enum ErrorCode {
     UnsupportedProtocolVersion(4),
     UnsupportedPduType(5),
     WithdrawalOfUnknownRecord(6),
-    DuplicateAnnouncementReceived(7);
+    DuplicateAnnouncementReceived(7),
+    UnexpectedProtocolVersion(8);
 
     final int code;
 
@@ -46,7 +47,7 @@ public enum ErrorCode {
         this.code = i;
     }
 
-    boolean isFatal() {
+    public boolean isFatal() {
         return code != NoDataAvailable.code;
     }
 
