@@ -36,6 +36,7 @@ import lombok.Value;
 public class RouterKeyPdu implements Pdu {
     public static final int PDU_TYPE = 9;
 
+    ProtocolVersion protocolVersion;
     Flags flags;
     byte[] subjectKeyIdentifier;
     byte[] subjectPublicKeyInfo;
@@ -48,14 +49,21 @@ public class RouterKeyPdu implements Pdu {
 
     @Override
     public void write(ByteBuf out) {
-        out
-                .writeByte(PROTOCOL_VERSION)
-                .writeByte(PDU_TYPE)
-                .writeByte(flags.getFlags())
-                .writeByte(0)
-                .writeInt(length())
-                .writeBytes(subjectKeyIdentifier)
-                .writeInt(asn)
-                .writeBytes(subjectPublicKeyInfo);
+        switch (protocolVersion) {
+            case V0:
+                // Protocol version 0 does not support router keys.
+                break;
+            case V1:
+                out
+                    .writeByte(protocolVersion.getValue())
+                    .writeByte(PDU_TYPE)
+                    .writeByte(flags.getFlags())
+                    .writeByte(0)
+                    .writeInt(length())
+                    .writeBytes(subjectKeyIdentifier)
+                    .writeInt(asn)
+                    .writeBytes(subjectPublicKeyInfo);
+                break;
+        }
     }
 }

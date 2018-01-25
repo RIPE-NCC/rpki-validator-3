@@ -32,12 +32,9 @@ package net.ripe.rpki.rtr.domain;
 import lombok.Value;
 import net.ripe.rpki.rtr.domain.pdus.Flags;
 import net.ripe.rpki.rtr.domain.pdus.Pdu;
+import net.ripe.rpki.rtr.domain.pdus.ProtocolVersion;
 import net.ripe.rpki.rtr.domain.pdus.RouterKeyPdu;
-import org.bouncycastle.asn1.x509.SubjectKeyIdentifier;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.util.Arrays;
-
-import java.io.IOException;
 
 @Value(staticConstructor = "of")
 public class RtrRouterKey implements RtrDataUnit {
@@ -47,8 +44,8 @@ public class RtrRouterKey implements RtrDataUnit {
     int asn;
 
     @Override
-    public Pdu toPdu(Flags flags) {
-        return RouterKeyPdu.of(flags, subjectKeyIdentifier, subjectPublicKeyInfo, asn);
+    public Pdu toPdu(ProtocolVersion protocolVersion, Flags flags) {
+        return RouterKeyPdu.of(protocolVersion, flags, subjectKeyIdentifier, subjectPublicKeyInfo, asn);
     }
 
     @Override
