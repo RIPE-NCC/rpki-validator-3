@@ -31,10 +31,11 @@ package net.ripe.rpki.rtr.domain.pdus;
 
 import lombok.Getter;
 
-public class PduParseException extends RuntimeException {
+public class RtrProtocolException extends RuntimeException {
     @Getter
     private final ErrorPdu errorPdu;
-    public PduParseException(ErrorPdu errorPdu) {
+
+    public RtrProtocolException(ErrorPdu errorPdu) {
         super(errorPdu.getErrorText());
         this.errorPdu = errorPdu;
     }

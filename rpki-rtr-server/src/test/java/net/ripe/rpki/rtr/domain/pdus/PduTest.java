@@ -29,9 +29,7 @@
  */
 package net.ripe.rpki.rtr.domain.pdus;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
-import io.netty.buffer.Unpooled;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.ipresource.Ipv4Address;
@@ -40,6 +38,7 @@ import net.ripe.rpki.rtr.domain.RtrDataUnit;
 import org.assertj.core.util.Strings;
 import org.junit.Test;
 
+import static net.ripe.rpki.rtr.domain.pdus.ProtocolVersion.V1;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class PduTest {
@@ -47,7 +46,7 @@ public class PduTest {
     @Test
     public void should_write_ipv4_prefix_pdu() {
         // https://tools.ietf.org/html/rfc8210#section-5.6
-        assertThat(write(IPv4PrefixPdu.of(Flags.ANNOUNCEMENT, RtrDataUnit.prefix(Asn.parse("3333"), IpRange.prefix(Ipv4Address.parse("127.0.0.0"), 8), 18)))).isEqualToIgnoringWhitespace(Strings.concat(
+        assertThat(write(IPv4PrefixPdu.of(V1, Flags.ANNOUNCEMENT, RtrDataUnit.prefix(Asn.parse("3333"), IpRange.prefix(Ipv4Address.parse("127.0.0.0"), 8), 18)))).isEqualToIgnoringWhitespace(Strings.concat(
             "01 04 00 00",
             "00 00 00 14",
             "01 08 12 00",
@@ -55,7 +54,7 @@ public class PduTest {
             "00 00 0d 05"
         ));
 
-        assertThat(write(IPv4PrefixPdu.of(Flags.WITHDRAWAL, RtrDataUnit.prefix(Asn.parse("" + Asn.ASN32_MAX_VALUE), IpRange.prefix(Ipv4Address.parse("255.255.255.255"), 32), null)))).isEqualToIgnoringWhitespace(Strings.concat(
+        assertThat(write(IPv4PrefixPdu.of(V1, Flags.WITHDRAWAL, RtrDataUnit.prefix(Asn.parse("" + Asn.ASN32_MAX_VALUE), IpRange.prefix(Ipv4Address.parse("255.255.255.255"), 32), null)))).isEqualToIgnoringWhitespace(Strings.concat(
             "01 04 00 00",
             "00 00 00 14",
             "00 20 20 00",
@@ -66,7 +65,7 @@ public class PduTest {
 
     @Test
     public void should_write_ipv6_prefix_pdu() {
-        assertThat(write(IPv6PrefixPdu.of(Flags.ANNOUNCEMENT, RtrDataUnit.prefix(Asn.parse("3333"), IpRange.prefix(Ipv6Address.parse("2001:67c:2e8:110::"), 64), 80)))).isEqualToIgnoringWhitespace(Strings.concat(
+        assertThat(write(IPv6PrefixPdu.of(V1, Flags.ANNOUNCEMENT, RtrDataUnit.prefix(Asn.parse("3333"), IpRange.prefix(Ipv6Address.parse("2001:67c:2e8:110::"), 64), 80)))).isEqualToIgnoringWhitespace(Strings.concat(
             "01 06 00 00",
             "00 00 00 20",
             "01 40 50 00",
@@ -74,7 +73,7 @@ public class PduTest {
             "00 00 0d 05"
         ));
 
-        assertThat(write(IPv6PrefixPdu.of(Flags.WITHDRAWAL, RtrDataUnit.prefix(Asn.parse("" + Asn.ASN32_MAX_VALUE), IpRange.prefix(Ipv6Address.parse("::1"), 128), null)))).isEqualToIgnoringWhitespace(Strings.concat(
+        assertThat(write(IPv6PrefixPdu.of(V1, Flags.WITHDRAWAL, RtrDataUnit.prefix(Asn.parse("" + Asn.ASN32_MAX_VALUE), IpRange.prefix(Ipv6Address.parse("::1"), 128), null)))).isEqualToIgnoringWhitespace(Strings.concat(
             "01 06 00 00",
             "00 00 00 20",
             "00 80 80 00",
@@ -86,10 +85,11 @@ public class PduTest {
     @Test
     public void should_write_error_pdu() {
         final byte[] bytes = new byte[]{1, 2, 3, 4};
-        ErrorPdu errorPdu = ErrorPdu.of(ErrorCode.InvalidRequest, bytes, "error text");
+        ErrorPdu errorPdu = ErrorPdu.of(V1, ErrorCode.InvalidRequest, bytes, "error text");
         assertThat(write(errorPdu)).isEqualToIgnoringWhitespace(Strings.concat(
-                "01 0a 00 00" +
+                "01 0a 00 03" +
                         "00 00 00 1e" +
+                        "00 00 00 04" +
                         "01 02 03 04" +
                         "00 00 00 0a" +
                         "65 72 72 6f 72 20 74 65 78 74"
@@ -97,8 +97,6 @@ public class PduTest {
     }
 
     private String write(Pdu pdu) {
-        ByteBuf buffer = Unpooled.buffer();
-        pdu.write(buffer);
-        return ByteBufUtil.hexDump(buffer);
+        return ByteBufUtil.hexDump(pdu.toByteArray());
     }
 }

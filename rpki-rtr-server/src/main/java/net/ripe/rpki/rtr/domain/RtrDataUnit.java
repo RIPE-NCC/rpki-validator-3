@@ -35,12 +35,13 @@ import net.ripe.ipresource.Ipv4Address;
 import net.ripe.ipresource.Ipv6Address;
 import net.ripe.rpki.rtr.domain.pdus.Flags;
 import net.ripe.rpki.rtr.domain.pdus.Pdu;
+import net.ripe.rpki.rtr.domain.pdus.ProtocolVersion;
 
 import java.util.Arrays;
 
 public interface RtrDataUnit extends Comparable<RtrDataUnit> {
 
-    Pdu toPdu(Flags flags);
+    Pdu toPdu(ProtocolVersion protocolVersion, Flags flags);
 
     static RtrPrefix prefix(Asn asn, IpRange ipRange, Integer maxLength) {
         if (ipRange.getStart() instanceof Ipv4Address) {

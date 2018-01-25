@@ -30,20 +30,34 @@
 package net.ripe.rpki.rtr.adapter.netty;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.rtr.domain.RtrPrefix;
 import net.ripe.rpki.rtr.domain.SerialNumber;
+import net.ripe.rpki.rtr.domain.pdus.CacheResetPdu;
+import net.ripe.rpki.rtr.domain.pdus.CacheResponsePdu;
+import net.ripe.rpki.rtr.domain.pdus.EndOfDataPdu;
 import net.ripe.rpki.rtr.domain.pdus.ErrorCode;
 import net.ripe.rpki.rtr.domain.pdus.ErrorPdu;
+import net.ripe.rpki.rtr.domain.pdus.Flags;
+import net.ripe.rpki.rtr.domain.pdus.IPv4PrefixPdu;
+import net.ripe.rpki.rtr.domain.pdus.IPv6PrefixPdu;
+import net.ripe.rpki.rtr.domain.pdus.NotifyPdu;
 import net.ripe.rpki.rtr.domain.pdus.Pdu;
-import net.ripe.rpki.rtr.domain.pdus.PduParseException;
+import net.ripe.rpki.rtr.domain.pdus.ProtocolVersion;
 import net.ripe.rpki.rtr.domain.pdus.ResetQueryPdu;
+import net.ripe.rpki.rtr.domain.pdus.RtrProtocolException;
 import net.ripe.rpki.rtr.domain.pdus.SerialQueryPdu;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiFunction;
+
+import static net.ripe.rpki.rtr.domain.pdus.ProtocolVersion.V0;
+import static net.ripe.rpki.rtr.domain.pdus.ProtocolVersion.V1;
 
 @Slf4j
 public class PduCodec extends ByteToMessageCodec<Pdu> {
@@ -55,73 +69,137 @@ public class PduCodec extends ByteToMessageCodec<Pdu> {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+        parsePdu(in).ifPresent(out::add);
+    }
+
+    public static Optional<Pdu> parsePdu(ByteBuf in) {
         if (in.readableBytes() < 8) {
-            return;
+            return Optional.empty();
         }
 
         in.markReaderIndex();
+        byte protocolVersionValue = in.readByte();
+        ProtocolVersion protocolVersion = ProtocolVersion.of(protocolVersionValue);
+
         BiFunction<ErrorCode, String, ErrorPdu> generateError = (code, text) -> {
             in.resetReaderIndex();
             byte[] content = new byte[in.readableBytes()];
             in.readBytes(content);
-            return ErrorPdu.of(code, content, text);
+            return ErrorPdu.of(protocolVersion == null ? V1 : protocolVersion, code, content, text);
         };
 
-        int protocolVersion = in.readUnsignedByte();
-        if (protocolVersion != Pdu.PROTOCOL_VERSION) {
-            throw new PduParseException(generateError.apply(
+        if (protocolVersion == null) {
+            throw new RtrProtocolException(generateError.apply(
                 ErrorCode.UnsupportedProtocolVersion,
-                String.format("protocol version must be %d, was %d", Pdu.PROTOCOL_VERSION, protocolVersion)
+                String.format("protocol version must be 0 or 1, was %d", Byte.toUnsignedInt(protocolVersionValue))
             ));
         }
 
         int pduType = in.readUnsignedByte();
         switch (pduType) {
-            case SerialQueryPdu.PDU_TYPE: {
+            case NotifyPdu.PDU_TYPE: {
                 short sessionId = in.readShort();
-                long length = in.readUnsignedInt();
-                if (length != SerialQueryPdu.PDU_LENGTH) {
-                    throw new PduParseException(generateError.apply(
-                        ErrorCode.InvalidRequest,
-                        String.format("length of Serial Query PDU must be %d, was %d", SerialQueryPdu.PDU_LENGTH, length)
-                    ));
-                }
-                if (in.readableBytes() + 8 < length) {
-                    return;
+                if (!checkLength(in, NotifyPdu.PDU_LENGTH, "Serial Notify", generateError)) {
+                    return Optional.empty();
                 }
                 int serialNumber = in.readInt();
-                out.add(SerialQueryPdu.of(sessionId, SerialNumber.of(serialNumber)));
-                break;
+                return Optional.of(NotifyPdu.of(protocolVersion, sessionId, SerialNumber.of(serialNumber)));
+            }
+            case SerialQueryPdu.PDU_TYPE: {
+                short sessionId = in.readShort();
+                if (!checkLength(in, SerialQueryPdu.PDU_LENGTH, "Serial Query", generateError)) {
+                    return Optional.empty();
+                }
+                int serialNumber = in.readInt();
+                return Optional.of(SerialQueryPdu.of(protocolVersion, sessionId, SerialNumber.of(serialNumber)));
             }
             case ResetQueryPdu.PDU_TYPE: {
-                @SuppressWarnings("unused") int zero = in.readUnsignedShort();
-                long length = in.readUnsignedInt();
-                if (length != ResetQueryPdu.PDU_LENGTH) {
-                    throw new PduParseException(generateError.apply(
-                        ErrorCode.InvalidRequest,
-                        String.format("length of Reset Query PDU must be %d, was %d", ResetQueryPdu.PDU_LENGTH, length)
-                    ));
+                in.readUnsignedShort(); /* zero */
+                if (!checkLength(in, ResetQueryPdu.PDU_LENGTH, "Reset Query", generateError)) {
+                    return Optional.empty();
                 }
-                out.add(ResetQueryPdu.of());
-                break;
+                return Optional.of(ResetQueryPdu.of(protocolVersion));
+            }
+            case CacheResponsePdu.PDU_TYPE: {
+                short sessionId = in.readShort();
+                if (!checkLength(in, CacheResponsePdu.PDU_LENGTH, "Cache Response", generateError)) {
+                    return Optional.empty();
+                }
+                return Optional.of(CacheResponsePdu.of(protocolVersion, sessionId));
+            }
+            case IPv4PrefixPdu.PDU_TYPE: {
+                in.readShort(); /* zero */
+                if (!checkLength(in, IPv4PrefixPdu.PDU_LENGTH, "IPv4 Prefix", generateError)) {
+                    return Optional.empty();
+                }
+                Flags flags = (in.readByte() & 0x01) == 0 ? Flags.WITHDRAWAL : Flags.ANNOUNCEMENT;
+                byte prefixLength = in.readByte();
+                byte maxLength = in.readByte();
+                in.readByte(); /* zero */
+                byte[] prefix = ByteBufUtil.getBytes(in.readBytes(4));
+                int asn = in.readInt();
+                return Optional.of(IPv4PrefixPdu.of(protocolVersion, flags, RtrPrefix.of(prefixLength, maxLength, prefix, asn)));
+            }
+            case IPv6PrefixPdu.PDU_TYPE: {
+                in.readShort(); /* zero */
+                if (!checkLength(in, IPv6PrefixPdu.PDU_LENGTH, "IPv6 Prefix", generateError)) {
+                    return Optional.empty();
+                }
+                Flags flags = (in.readByte() & 0x01) == 0 ? Flags.WITHDRAWAL : Flags.ANNOUNCEMENT;
+                byte prefixLength = in.readByte();
+                byte maxLength = in.readByte();
+                in.readByte(); /* zero */
+                byte[] prefix = ByteBufUtil.getBytes(in.readBytes(16));
+                int asn = in.readInt();
+                return Optional.of(IPv4PrefixPdu.of(protocolVersion, flags, RtrPrefix.of(prefixLength, maxLength, prefix, asn)));
+            }
+            case EndOfDataPdu.PDU_TYPE: {
+                short sessionId = in.readShort();
+                switch (protocolVersion) {
+                    case V0: {
+                        if (!checkLength(in, EndOfDataPdu.PDU_LENGTH_V0, "End of Data", generateError)) {
+                            return Optional.empty();
+                        }
+                        int serialNumber = in.readInt();
+                        return Optional.of(EndOfDataPdu.of(V0, sessionId, SerialNumber.of(serialNumber), 3600, 600, 7200));
+                    }
+                    case V1: {
+                        if (!checkLength(in, EndOfDataPdu.PDU_LENGTH_V1, "End of Data", generateError)) {
+                            return Optional.empty();
+                        }
+                        int serialNumber = in.readInt();
+                        int refreshInterval = in.readInt();
+                        int retryInterval = in.readInt();
+                        int expireInterval = in.readInt();
+                        return Optional.of(EndOfDataPdu.of(V1, sessionId, SerialNumber.of(serialNumber), refreshInterval, retryInterval, expireInterval));
+                    }
+                }
+                throw new IllegalStateException("bad protocol version " + protocolVersion);
+            }
+            case CacheResetPdu.PDU_TYPE: {
+                in.readUnsignedShort(); /* zero */
+                if (!checkLength(in, CacheResetPdu.PDU_LENGTH, "Cache Reset", generateError)) {
+                    return Optional.empty();
+                }
+                return Optional.of(CacheResetPdu.of(protocolVersion));
             }
             case ErrorPdu.PDU_TYPE: {
                 int errorCode = in.readUnsignedShort();
                 long length = in.readUnsignedInt();
                 if (length > Pdu.MAX_LENGTH) {
-                    throw new PduParseException(generateError.apply(
-                       ErrorCode.InvalidRequest,
-                       String.format("maximum PDU length is %d, was %d", Pdu.MAX_LENGTH, length)
+                    throw new RtrProtocolException(generateError.apply(
+                        ErrorCode.InvalidRequest,
+                        String.format("maximum PDU length is %d, was %d", Pdu.MAX_LENGTH, length)
                     ));
                 }
                 if (in.readableBytes() + 8 < length) {
-                    return;
+                    return Optional.empty();
                 }
                 long encapsulatedPduLength = in.readUnsignedInt();
                 if (encapsulatedPduLength > length - 16) {
-                    throw new PduParseException(generateError.apply(
-                       ErrorCode.InvalidRequest,
-                       String.format("encapsulated PDU length %d exceeds maximum length %d", encapsulatedPduLength, length - 16)
+                    throw new RtrProtocolException(generateError.apply(
+                        ErrorCode.InvalidRequest,
+                        String.format("encapsulated PDU length %d exceeds maximum length %d", encapsulatedPduLength, length - 16)
                     ));
                 }
                 byte[] encapsulatedPdu = new byte[(int) encapsulatedPduLength];
@@ -129,7 +207,7 @@ public class PduCodec extends ByteToMessageCodec<Pdu> {
 
                 long errorTextLength = in.readUnsignedInt();
                 if (errorTextLength > length - encapsulatedPduLength - 16) {
-                    throw new PduParseException(generateError.apply(
+                    throw new RtrProtocolException(generateError.apply(
                         ErrorCode.InvalidRequest,
                         String.format("error text length %d exceeds maximum length %d", errorTextLength, length - encapsulatedPduLength - 16)
                     ));
@@ -137,14 +215,24 @@ public class PduCodec extends ByteToMessageCodec<Pdu> {
                 byte[] errorTextBytes = new byte[(int) errorTextLength];
                 in.readBytes(errorTextBytes);
 
-                out.add(ErrorPdu.of(ErrorCode.of(errorCode), encapsulatedPdu, new String(errorTextBytes, StandardCharsets.UTF_8)));
-                break;
+                return Optional.of(ErrorPdu.of(protocolVersion, ErrorCode.of(errorCode), encapsulatedPdu, new String(errorTextBytes, StandardCharsets.UTF_8)));
             }
             default:
-                throw new PduParseException(generateError.apply(
+                throw new RtrProtocolException(generateError.apply(
                     ErrorCode.UnsupportedPduType,
                     String.format("unsupported PDU type %d", pduType)
                 ));
         }
+    }
+
+    private static boolean checkLength(ByteBuf in, int expectedLength, String pduType, BiFunction<ErrorCode, String, ErrorPdu> generateError) {
+        long length = in.readUnsignedInt();
+        if (length != expectedLength) {
+            throw new RtrProtocolException(generateError.apply(
+                ErrorCode.InvalidRequest,
+                String.format("length of %s PDU must be %d, was %d", pduType, expectedLength, length)
+            ));
+        }
+        return in.readableBytes() + 8 >= length;
     }
 }

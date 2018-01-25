@@ -41,6 +41,7 @@ public class SerialQueryPdu implements Pdu {
     public static final int PDU_TYPE = 1;
     public static final int PDU_LENGTH = 12;
 
+    ProtocolVersion protocolVersion;
     short sessionId;
     SerialNumber serialNumber;
 
@@ -52,7 +53,7 @@ public class SerialQueryPdu implements Pdu {
     @Override
     public void write(ByteBuf out) {
         out
-            .writeByte(PROTOCOL_VERSION)
+            .writeByte(protocolVersion.getValue())
             .writeByte(PDU_TYPE)
             .writeShort(sessionId)
             .writeInt(length())
