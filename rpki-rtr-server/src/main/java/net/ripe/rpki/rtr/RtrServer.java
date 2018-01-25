@@ -282,12 +282,8 @@ public class RtrServer {
                 }
 
                 ctx.write(CacheResponsePdu.of(clientProtocolVersion, delta.getSessionId()));
-                if (!delta.getAnnouncements().isEmpty()) {
-                    ctx.write(new ChunkedStream<>(delta.getAnnouncements().stream().map(dataUnit -> dataUnit.toPdu(clientProtocolVersion, Flags.ANNOUNCEMENT))));
-                }
-                if (!delta.getWithdrawals().isEmpty()) {
-                    ctx.write(new ChunkedStream<>(delta.getWithdrawals().stream().map(dataUnit -> dataUnit.toPdu(clientProtocolVersion, Flags.WITHDRAWAL))));
-                }
+                ctx.write(new ChunkedStream<>(delta.getAnnouncements().stream().map(dataUnit -> dataUnit.toPdu(clientProtocolVersion, Flags.ANNOUNCEMENT))));
+                ctx.write(new ChunkedStream<>(delta.getWithdrawals().stream().map(dataUnit -> dataUnit.toPdu(clientProtocolVersion, Flags.WITHDRAWAL))));
                 return ctx.writeAndFlush(EndOfDataPdu.of(clientProtocolVersion, delta.getSessionId(), delta.getSerialNumber(), REFRESH_INTERVAL, RETRY_INTERVAL, EXPIRE_INTERVAL));
             } else {
                 RtrCache.Content content = deltaOrContent.right().value();
@@ -306,9 +302,7 @@ public class RtrServer {
             latestNotifySerialNumber = content.getSerialNumber();
 
             ctx.write(CacheResponsePdu.of(clientProtocolVersion, content.getSessionId()));
-            if (!content.getAnnouncements().isEmpty()) {
-                ctx.write(new ChunkedStream<>(content.getAnnouncements().stream().map(dataUnit -> dataUnit.toPdu(clientProtocolVersion, Flags.ANNOUNCEMENT))));
-            }
+            ctx.write(new ChunkedStream<>(content.getAnnouncements().stream().map(dataUnit -> dataUnit.toPdu(clientProtocolVersion, Flags.ANNOUNCEMENT))));
             return ctx.writeAndFlush(EndOfDataPdu.of(clientProtocolVersion, content.getSessionId(), content.getSerialNumber(), REFRESH_INTERVAL, RETRY_INTERVAL, EXPIRE_INTERVAL));
         }
 

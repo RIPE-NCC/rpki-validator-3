@@ -268,12 +268,13 @@ public class RtrServerTest {
     private void assertResponse(Pdu... expectedResponses) {
         for (Pdu expected : expectedResponses) {
             try {
-                Pdu actual = null;
-                ByteBuf msg = channel.readOutbound();
-                if (msg != null) {
-                    actual = PduCodec.parsePdu(msg).orElse(null);
+                for (ByteBuf msg = channel.readOutbound(); msg != null; msg = channel.readOutbound()) {
+                    Pdu actual = PduCodec.parsePdu(msg).orElse(null);
+                    if (actual != null) {
+                        assertEquals(expected, actual);
+                        break;
+                    }
                 }
-                assertEquals(expected, actual);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
