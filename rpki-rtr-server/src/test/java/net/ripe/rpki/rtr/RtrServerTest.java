@@ -219,6 +219,37 @@ public class RtrServerTest {
         assertNull(channel.readOutbound());
     }
 
+    @Test
+    public void should_reply_with_cache_response_if_delta_is_available_v0() {
+        updateCache(Collections.singleton(AS_4444));
+
+        clientRequest(SerialQueryPdu.of(V0, rtrCache.getSessionId(), rtrCache.getSerialNumber().previous()));
+
+        assertResponse(
+            CacheResponsePdu.of(V0, rtrCache.getSessionId()),
+            AS_4444.toPdu(V0, Flags.ANNOUNCEMENT),
+            AS_3333.toPdu(V0, Flags.WITHDRAWAL),
+            EndOfDataPdu.of(V0, rtrCache.getSessionId(), rtrCache.getSerialNumber(), 3600, 600, 7200)
+        );
+    }
+
+    @Test
+    public void should_notify_client_when_cache_is_updated_v0() {
+        clientRequest(ResetQueryPdu.of(V0));
+        assertResponse(
+            CacheResponsePdu.of(V0, rtrCache.getSessionId()),
+            AS_3333.toPdu(V0, Flags.ANNOUNCEMENT),
+            EndOfDataPdu.of(V0, rtrCache.getSessionId(), SerialNumber.of(1), 3600, 600, 7200)
+        );
+
+        Set<RtrDataUnit> singleton = Collections.singleton(AS_4444);
+        updateCache(singleton);
+
+        assertResponse(
+            NotifyPdu.of(V0, rtrCache.getSessionId(), SerialNumber.of(2))
+        );
+    }
+
 
     private void updateCache(Set<RtrDataUnit> dataUnits) {
         rtrCache.update(dataUnits).ifPresent(sn -> clients.cacheUpdated(rtrCache.getSessionId(), sn));
