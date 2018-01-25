@@ -59,5 +59,7 @@ public interface RpkiObjects {
 
     Stream<Pair<CertificateTreeValidationRun, RpkiObject>> findCurrentlyValidated(RpkiObject.Type type);
 
+    Stream<RpkiObject> findRouterCertificates();
+
     long deleteUnreachableObjects(Instant unreachableSince);
 }

@@ -27,56 +27,35 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.rtr.domain;
+package net.ripe.rpki.rtr.domain.pdus;
 
+import io.netty.buffer.ByteBuf;
 import lombok.Value;
-import net.ripe.rpki.rtr.domain.pdus.Flags;
-import net.ripe.rpki.rtr.domain.pdus.IPv4PrefixPdu;
-import net.ripe.rpki.rtr.domain.pdus.IPv6PrefixPdu;
-import net.ripe.rpki.rtr.domain.pdus.Pdu;
-import org.bouncycastle.util.Arrays;
 
 @Value(staticConstructor = "of")
-public class RtrPrefix implements RtrDataUnit {
-    byte prefixLength;
-    byte maxLength;
-    byte[] prefix;
+public class RouterKeyPdu implements Pdu {
+    public static final int PDU_TYPE = 9;
+
+    Flags flags;
+    byte[] subjectKeyIdentifier;
+    byte[] subjectPublicKeyInfo;
     int asn;
 
     @Override
-    public Pdu toPdu(Flags flags) {
-        if (prefix.length == 4) {
-            return IPv4PrefixPdu.of(flags, this);
-        } else if (prefix.length == 16) {
-            return IPv6PrefixPdu.of(flags, this);
-        } else {
-            throw new IllegalStateException(String.format("invalid RTR prefix length, expected 4 or 16, was %d", prefix.length));
-        }
+    public int length() {
+        return 24 + subjectPublicKeyInfo.length;
     }
 
     @Override
-    public int compareToSameType(RtrDataUnit o) {
-        final RtrPrefix that = (RtrPrefix) o;
-        int rc = Integer.compare(this.prefix.length, that.prefix.length);
-        if (rc != 0) {
-            return rc;
-        }
-
-        rc = Arrays.compareUnsigned(this.prefix, that.prefix);
-        if (rc != 0) {
-            return rc;
-        }
-
-        rc = Integer.compareUnsigned(this.prefixLength, that.prefixLength);
-        if (rc != 0) {
-            return rc;
-        }
-
-        rc = Integer.compareUnsigned(this.maxLength, that.maxLength);
-        if (rc != 0) {
-            return rc;
-        }
-
-        return Integer.compareUnsigned(this.asn, that.asn);
+    public void write(ByteBuf out) {
+        out
+                .writeByte(PROTOCOL_VERSION)
+                .writeByte(PDU_TYPE)
+                .writeByte(flags.getFlags())
+                .writeByte(0)
+                .writeInt(length())
+                .writeBytes(subjectKeyIdentifier)
+                .writeInt(asn)
+                .writeBytes(subjectPublicKeyInfo);
     }
 }

@@ -43,8 +43,10 @@ import net.ripe.rpki.commons.crypto.cms.ghostbuster.GhostbustersCms;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.crypto.cms.roa.RoaCms;
 import net.ripe.rpki.commons.crypto.crl.X509Crl;
+import net.ripe.rpki.commons.crypto.rfc8209.RouterExtensionEncoder;
 import net.ripe.rpki.commons.crypto.x509cert.X509CertificateInformationAccessDescriptor;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
+import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificate;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
@@ -127,6 +129,8 @@ public class RpkiObjectController {
         switch (rpkiObject.getType()) {
             case CER:
                 return makeTypedDto(rpkiObject, validationResult, X509ResourceCertificate.class, cert -> makeCertificate(validationResult, cert, rpkiObject));
+            case ROUTER_CER:
+                return makeTypedDto(rpkiObject, validationResult, X509RouterCertificate.class, cert -> makeCertificate(validationResult, cert, rpkiObject));
             case ROA:
                 return makeTypedDto(rpkiObject, validationResult, RoaCms.class, cert -> makeRoa(validationResult, cert, rpkiObject));
             case MFT:
@@ -173,6 +177,25 @@ public class RpkiObjectController {
                 warnings(formatChecks(validationResult.map(ValidationResult::getWarnings).orElse(Collections.emptyList()))).
                 errors(formatChecks(validationResult.map(ValidationResult::getFailuresForAllLocations).orElse(Collections.emptyList()))).
                 resources(formatResources(certificate.getResources())).
+                subjectName(certificate.getSubject().getName()).
+                ski(Hex.format(certificate.getSubjectKeyIdentifier())).
+                aki(Hex.format(certificate.getAuthorityKeyIdentifier())).
+                validityTime(formatValidity(certificate.getValidityPeriod())).
+                sia(formatSia(certificate.getSubjectInformationAccess())).
+                serial(certificate.getSerialNumber()).
+                sha256(Hex.format(rpkiObject.getSha256())).
+                build();
+    }
+
+    private RouterCertificate makeCertificate(final Optional<ValidationResult> validationResult, final X509RouterCertificate certificate, final RpkiObject rpkiObject) {
+        final String location = validationResult.map(vr -> vr.getCurrentLocation().getName()).orElse(location(rpkiObject));
+        final boolean isValid = isValid(validationResult);
+
+        return RouterCertificate.builder().
+                uri(location).
+                valid(isValid).
+                warnings(formatChecks(validationResult.map(ValidationResult::getWarnings).orElse(Collections.emptyList()))).
+                errors(formatChecks(validationResult.map(ValidationResult::getFailuresForAllLocations).orElse(Collections.emptyList()))).
                 subjectName(certificate.getSubject().getName()).
                 ski(Hex.format(certificate.getSubjectKeyIdentifier())).
                 aki(Hex.format(certificate.getAuthorityKeyIdentifier())).
@@ -367,6 +390,24 @@ public class RpkiObjectController {
         private ValidityTime validityTime;
         private Map<String, String> sia;
         // TODO There're three serials in the story
+        private BigInteger serial;
+        private String sha256;
+    }
+
+    @Builder
+    @Getter
+    @ApiModel(value = "Router Certificate", parent = RpkiObj.class)
+    private static class RouterCertificate extends RpkiObj {
+        private String uri;
+        private boolean valid;
+        private List<Issue> warnings;
+        private List<Issue> errors;
+
+        private String subjectName;
+        private String ski;
+        private String aki;
+        private ValidityTime validityTime;
+        private Map<String, String> sia;
         private BigInteger serial;
         private String sha256;
     }
