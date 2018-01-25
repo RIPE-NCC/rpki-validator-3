@@ -31,6 +31,7 @@ package net.ripe.rpki.rtr;
 
 import fj.data.Either;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
@@ -40,13 +41,14 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.stream.ChunkedInput;
+import io.netty.handler.stream.ChunkedWriteHandler;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.rtr.adapter.netty.PduCodec;
 import net.ripe.rpki.rtr.domain.RtrCache;
 import net.ripe.rpki.rtr.domain.RtrClient;
 import net.ripe.rpki.rtr.domain.RtrClients;
-import net.ripe.rpki.rtr.domain.RtrDataUnit;
 import net.ripe.rpki.rtr.domain.SerialNumber;
 import net.ripe.rpki.rtr.domain.pdus.CacheResetPdu;
 import net.ripe.rpki.rtr.domain.pdus.CacheResponsePdu;
@@ -68,10 +70,12 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.ArrayDeque;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 @Slf4j
@@ -133,15 +137,15 @@ public class RtrServer {
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
-                    .channel(NioServerSocketChannel.class)
-                    .childHandler(new ChannelInitializer<SocketChannel>() {
-                        @Override
-                        public void initChannel(SocketChannel ch) {
-                            ch.pipeline().addLast(new PduCodec(), new RtrClientHandler(rtrCache, clients));
-                        }
-                    })
-                    .option(ChannelOption.SO_BACKLOG, 128)
-                    .childOption(ChannelOption.SO_KEEPALIVE, true);
+                .channel(NioServerSocketChannel.class)
+                .childHandler(new ChannelInitializer<SocketChannel>() {
+                    @Override
+                    public void initChannel(SocketChannel ch) {
+                        ch.pipeline().addLast(new PduCodec(), new ChunkedWriteHandler(), new RtrClientHandler(rtrCache, clients));
+                    }
+                })
+                .option(ChannelOption.SO_BACKLOG, 128)
+                .childOption(ChannelOption.SO_KEEPALIVE, true);
 
             log.info("Running RTR at port {}", port);
 
@@ -173,11 +177,11 @@ public class RtrServer {
         private Pdu currentRequest = null;
         private Queue<Pdu> pending = new ArrayDeque<>();
 
-
         private SerialNumber clientSerialNumber = SerialNumber.zero();
         private SerialNumber latestNotifySerialNumber = SerialNumber.zero();
 
-        private DateTime lastActive = DateTime.now();
+        private DateTime clientConnectedAt = DateTime.now();
+        private DateTime lastRequestReceivedAt = null;
 
         private final RtrCache cache;
         private final RtrClients clients;
@@ -202,7 +206,7 @@ public class RtrServer {
 
         @Override
         public synchronized void channelRead0(ChannelHandlerContext ctx, Pdu pdu) {
-            this.lastActive = DateTime.now();
+            this.lastRequestReceivedAt = DateTime.now();
             if (currentRequest != null) {
                 pending.add(pdu);
                 log.info("currently busy handling request, queuing {}", pdu);
@@ -222,12 +226,7 @@ public class RtrServer {
             if (currentRequest == null) {
                 log.info("finished processing all pending requests for {}", this);
 
-                SerialNumber cacheSerialNumber = cache.getSerialNumber();
-                if (!cacheSerialNumber.equals(clientSerialNumber)) {
-                    this.latestNotifySerialNumber = cacheSerialNumber;
-                    log.info("Serial number updated since the last notification from {} to {}", clientSerialNumber, cacheSerialNumber);
-                    ctx.write(NotifyPdu.of(cacheSerialNumber, cache.getSessionId()));
-                }
+                sendNotifyPduIfNeeded(cache.getSessionId(), cache.getSerialNumber());
             } else {
                 ChannelFuture channelFuture = handleClientRequest(ctx, currentRequest);
                 if (channelFuture != null) {
@@ -240,10 +239,9 @@ public class RtrServer {
             log.info("handling client request {}", pdu);
             ChannelFuture responseComplete = null;
             if (pdu instanceof SerialQueryPdu) {
-                SerialQueryPdu serialQueryPdu = (SerialQueryPdu) pdu;
-                responseComplete = handleSerialQuery(ctx, serialQueryPdu);
+                responseComplete = handleSerialQuery(ctx, (SerialQueryPdu) pdu);
             } else if (pdu instanceof ResetQueryPdu) {
-                responseComplete = handleResetQuery(ctx);
+                responseComplete = handleResetQuery(ctx, (ResetQueryPdu) pdu);
             } else if (pdu instanceof ErrorPdu) {
                 log.error("error received from router {}, closing connection", pdu);
                 ctx.close();
@@ -256,47 +254,57 @@ public class RtrServer {
 
         private ChannelFuture handleSerialQuery(ChannelHandlerContext ctx, SerialQueryPdu serialQueryPdu) {
             Either<RtrCache.Delta, RtrCache.Content> deltaOrContent = cache.getDeltaOrContent(serialQueryPdu.getSerialNumber());
+            if (deltaOrContent.right().exists(content -> !content.isReady())) {
+                return ctx.write(ErrorPdu.of(ErrorCode.NoDataAvailable, serialQueryPdu.toByteArray(), "no data available"));
+            }
+
 
             if (deltaOrContent.isLeft()) {
                 RtrCache.Delta delta = deltaOrContent.left().value();
-                if (delta.getSessionId() != serialQueryPdu.getSessionId()) {
-                    return ctx.write(CacheResetPdu.of());
-                }
-
                 clientSerialNumber = delta.getSerialNumber();
 
+                if (delta.getSessionId() != serialQueryPdu.getSessionId()) {
+                    return ctx.writeAndFlush(CacheResetPdu.of());
+                }
+
                 ctx.write(CacheResponsePdu.of(delta.getSessionId()));
-                for (RtrDataUnit dataUnit : delta.getAnnouncements()) {
-                    ctx.write(dataUnit.toPdu(Flags.ANNOUNCEMENT));
+                if (!delta.getAnnouncements().isEmpty()) {
+                    ctx.write(new ChunkedStream<>(delta.getAnnouncements().stream().map(dataUnit -> dataUnit.toPdu(Flags.ANNOUNCEMENT))));
                 }
-                for (RtrDataUnit dataUnit : delta.getWithdrawals()) {
-                    ctx.write(dataUnit.toPdu(Flags.WITHDRAWAL));
+                if (!delta.getWithdrawals().isEmpty()) {
+                    ctx.write(new ChunkedStream<>(delta.getWithdrawals().stream().map(dataUnit -> dataUnit.toPdu(Flags.WITHDRAWAL))));
                 }
-                return ctx.write(EndOfDataPdu.of(delta.getSessionId(), delta.getSerialNumber(), REFRESH_INTERVAL, RETRY_INTERVAL, EXPIRE_INTERVAL));
+                return ctx.writeAndFlush(EndOfDataPdu.of(delta.getSessionId(), delta.getSerialNumber(), REFRESH_INTERVAL, RETRY_INTERVAL, EXPIRE_INTERVAL));
             } else {
-                return ctx.write(CacheResetPdu.of());
+                RtrCache.Content content = deltaOrContent.right().value();
+                clientSerialNumber = content.getSerialNumber();
+                return ctx.writeAndFlush(CacheResetPdu.of());
             }
         }
 
-        private ChannelFuture handleResetQuery(ChannelHandlerContext ctx) {
+        private ChannelFuture handleResetQuery(ChannelHandlerContext ctx, ResetQueryPdu resetQueryPdu) {
             RtrCache.Content content = cache.getCurrentContent();
+            if (!content.isReady()) {
+                return ctx.writeAndFlush(ErrorPdu.of(ErrorCode.NoDataAvailable, resetQueryPdu.toByteArray(), "no data available"));
+            }
 
             clientSerialNumber = content.getSerialNumber();
+            latestNotifySerialNumber = content.getSerialNumber();
 
             ctx.write(CacheResponsePdu.of(content.getSessionId()));
-            for (RtrDataUnit dataUnit : content.getAnnouncements()) {
-                ctx.write(dataUnit.toPdu(Flags.ANNOUNCEMENT));
+            if (!content.getAnnouncements().isEmpty()) {
+                ctx.write(new ChunkedStream<>(content.getAnnouncements().stream().map(dataUnit -> dataUnit.toPdu(Flags.ANNOUNCEMENT))));
             }
-            return ctx.write(EndOfDataPdu.of(content.getSessionId(), content.getSerialNumber(), REFRESH_INTERVAL, RETRY_INTERVAL, EXPIRE_INTERVAL));
+            return ctx.writeAndFlush(EndOfDataPdu.of(content.getSessionId(), content.getSerialNumber(), REFRESH_INTERVAL, RETRY_INTERVAL, EXPIRE_INTERVAL));
         }
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
             if (cause instanceof PduParseException) {
                 PduParseException e = (PduParseException) cause;
-                ctx.write(e.getErrorPdu());
+                ctx.writeAndFlush(e.getErrorPdu());
             } else {
-                ctx.write(ErrorPdu.of(ErrorCode.PduInternalError, new byte[0], "internal error"));
+                ctx.writeAndFlush(ErrorPdu.of(ErrorCode.PduInternalError, new byte[0], "internal error"));
             }
             log.error("Something bad happened", cause);
             ctx.close();
@@ -309,17 +317,63 @@ public class RtrServer {
 
         @Override
         public synchronized DateTime getLastActive() {
-            return lastActive;
+            return lastRequestReceivedAt != null ? lastRequestReceivedAt : clientConnectedAt;
         }
 
         @Override
         public synchronized void cacheUpdated(short sessionId, SerialNumber updatedSerialNumber) {
-            if (!updatedSerialNumber.equals(clientSerialNumber) && !latestNotifySerialNumber.equals(updatedSerialNumber)) {
-                this.latestNotifySerialNumber = updatedSerialNumber;
-                if (currentRequest == null) {
-                    ctx.writeAndFlush(NotifyPdu.of(updatedSerialNumber, sessionId));
-                }
+            sendNotifyPduIfNeeded(sessionId, updatedSerialNumber);
+        }
+
+        private void sendNotifyPduIfNeeded(short sessionId, SerialNumber updatedSerialNumber) {
+            if (currentRequest == null && lastRequestReceivedAt != null && updatedSerialNumber.isAfter(clientSerialNumber) && updatedSerialNumber.isAfter(latestNotifySerialNumber)) {
+                log.info("Sending notify PDU to client for serial number {}", updatedSerialNumber.getValue());
+                latestNotifySerialNumber = updatedSerialNumber;
+                ctx.writeAndFlush(NotifyPdu.of(sessionId, updatedSerialNumber));
             }
+        }
+    }
+
+    private static class ChunkedStream<T> implements ChunkedInput<T> {
+        private final Iterator<T> items;
+        private int progress = 0;
+
+        public ChunkedStream(Stream<T> items) {
+            this.items = items.iterator();
+        }
+
+        @Override
+        public boolean isEndOfInput() throws Exception {
+            return !items.hasNext();
+        }
+
+        @Override
+        public void close() throws Exception {
+        }
+
+        @Deprecated
+        @Override
+        public T readChunk(ChannelHandlerContext ctx) throws Exception {
+            return readChunk(ctx.alloc());
+        }
+
+        @Override
+        public T readChunk(ByteBufAllocator allocator) throws Exception {
+            if (isEndOfInput()) {
+                return null;
+            }
+            ++progress;
+            return items.next();
+        }
+
+        @Override
+        public long length() {
+            return -1;
+        }
+
+        @Override
+        public long progress() {
+            return progress;
         }
     }
 }

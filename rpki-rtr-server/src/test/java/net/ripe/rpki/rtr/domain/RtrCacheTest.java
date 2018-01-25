@@ -51,24 +51,24 @@ public class RtrCacheTest {
     @Test
     public void should_increase_serial_when_valid_pdus_change() {
         assertThat(subject.getSerialNumber()).isEqualTo(SerialNumber.of(0));
-        subject.updateValidatedPdus(SINGLE_ANNOUNCEMENT);
+        subject.update(SINGLE_ANNOUNCEMENT);
         assertThat(subject.getSerialNumber()).isEqualTo(SerialNumber.of(1));
-        subject.updateValidatedPdus(EMPTY_ANNOUNCEMENTS);
+        subject.update(EMPTY_ANNOUNCEMENTS);
         assertThat(subject.getSerialNumber()).isEqualTo(SerialNumber.of(2));
     }
 
     @Test
     public void should_not_increase_serial_when_there_are_no_valid_pdu_changes() {
         assertThat(subject.getSerialNumber()).isEqualTo(SerialNumber.of(0));
-        subject.updateValidatedPdus(SINGLE_ANNOUNCEMENT);
+        subject.update(SINGLE_ANNOUNCEMENT);
         assertThat(subject.getSerialNumber()).isEqualTo(SerialNumber.of(1));
-        subject.updateValidatedPdus(SINGLE_ANNOUNCEMENT);
+        subject.update(SINGLE_ANNOUNCEMENT);
         assertThat(subject.getSerialNumber()).isEqualTo(SerialNumber.of(1));
     }
 
     @Test
     public void should_add_delta_when_valid_pdus_change() {
-        subject.updateValidatedPdus(SINGLE_ANNOUNCEMENT);
+        subject.update(SINGLE_ANNOUNCEMENT);
 
         Optional<RtrCache.Delta> maybeDelta0_1 = subject.getDeltaFrom(SerialNumber.of(0));
         assertThat(maybeDelta0_1).isPresent();
@@ -76,7 +76,7 @@ public class RtrCacheTest {
         assertThat(delta0_1.getAnnouncements()).isEqualTo(SINGLE_ANNOUNCEMENT);
         assertThat(delta0_1.getWithdrawals()).isEqualTo(EMPTY_WITHDRAWALS);
 
-        subject.updateValidatedPdus(EMPTY_ANNOUNCEMENTS);
+        subject.update(EMPTY_ANNOUNCEMENTS);
 
         Optional<RtrCache.Delta> maybeDelta1_2 = subject.getDeltaFrom(SerialNumber.of(1));
         assertThat(maybeDelta1_2).isPresent();

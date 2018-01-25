@@ -30,6 +30,7 @@
 package net.ripe.rpki.rtr.domain.pdus;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 public interface Pdu {
     int MAX_LENGTH = 3248; // Taken from RTR lib
@@ -38,4 +39,10 @@ public interface Pdu {
     int length();
 
     void write(ByteBuf out);
+
+    default byte[] toByteArray() {
+        ByteBuf out = Unpooled.buffer(length());
+        this.write(out);
+        return out.array();
+    }
 }

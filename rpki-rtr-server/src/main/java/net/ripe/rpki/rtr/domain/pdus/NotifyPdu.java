@@ -41,9 +41,9 @@ public class NotifyPdu implements Pdu {
 
     private static final int PDU_TYPE = 0;
 
-    SerialNumber serialNumber;
-
     short sessionId;
+
+    SerialNumber serialNumber;
 
     @Override
     public int length() {

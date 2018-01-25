@@ -45,20 +45,38 @@ import java.util.SortedSet;
 @Component
 @Slf4j
 public class RtrCache {
+    private static final SecureRandom RANDOM = new SecureRandom();
+
+    private final SerialNumber initialVersion;
+
     @Getter
     private volatile short sessionId;
-    private final VersionedSet<RtrDataUnit> data;
+    private volatile boolean ready;
+    private VersionedSet<RtrDataUnit> data;
 
     public RtrCache() {
         this(SerialNumber.zero());
     }
 
     public RtrCache(SerialNumber initialVersion) {
-        this.sessionId = (short) new SecureRandom().nextInt();
+        this.initialVersion = initialVersion;
+        reset();
+    }
+
+    public synchronized void reset() {
+        this.ready = false;
+
+        short newSessionId;
+        do {
+            newSessionId = (short) RANDOM.nextInt();
+        } while (this.sessionId == newSessionId);
+        this.sessionId = newSessionId;
+
         this.data = new VersionedSet<>(initialVersion);
     }
 
-    public synchronized Optional<SerialNumber> updateValidatedPdus(Collection<RtrDataUnit> updatedPdus) {
+    public synchronized Optional<SerialNumber> update(Collection<RtrDataUnit> updatedPdus) {
+        ready = true;
         if (data.updateValues(updatedPdus)) {
             log.info(
                 "{} validated ROAs updated to serial number {} (delta with {} announcements, {} withdrawals)",
@@ -75,7 +93,7 @@ public class RtrCache {
     }
 
     public synchronized Content getCurrentContent() {
-        return Content.of(sessionId, getSerialNumber(), data.getValues());
+        return Content.of(sessionId, getSerialNumber(), ready, data.getValues());
     }
 
     /**
@@ -93,7 +111,7 @@ public class RtrCache {
      * @return the delta from the requested <code>serialNumber</code> to the current state
      */
     public synchronized Optional<Delta> getDeltaFrom(SerialNumber serialNumber) {
-        if (serialNumber.isAfter(getSerialNumber())) {
+        if (!ready || serialNumber.isAfter(getSerialNumber())) {
             return Optional.empty();
         } else if (serialNumber.equals(getSerialNumber())) {
             return Optional.of(Delta.of(sessionId, serialNumber, Collections.emptySortedSet(), Collections.emptySortedSet()));
@@ -120,6 +138,7 @@ public class RtrCache {
     public static class Content {
         short sessionId;
         SerialNumber serialNumber;
+        boolean ready;
         SortedSet<RtrDataUnit> announcements;
     }
 

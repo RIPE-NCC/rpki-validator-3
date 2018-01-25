@@ -97,7 +97,7 @@ public class RefreshCacheController {
                 }));
 
         final List<RtrDataUnit> cacheEntries = Stream.concat(roaPrefixes, routerCertificates).collect(toList());
-        cache.updateValidatedPdus(cacheEntries).ifPresent(updatedSerialNumber -> {
+        cache.update(cacheEntries).ifPresent(updatedSerialNumber -> {
             clients.cacheUpdated(cache.getSessionId(), updatedSerialNumber);
         });
     }
