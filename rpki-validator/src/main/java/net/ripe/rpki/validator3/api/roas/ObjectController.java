@@ -29,12 +29,19 @@
  */
 package net.ripe.rpki.validator3.api.roas;
 
+import com.google.common.io.Files;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.commons.crypto.x509cert.X509CertificateUtil;
+import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
+import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificate;
+import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificateParser;
+import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
+import net.ripe.rpki.validator3.domain.AbstractEntity;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.Settings;
@@ -48,15 +55,23 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Base64;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.junit.Assert.assertFalse;
+
 @RestController
-@RequestMapping(path = "/roas", produces = Api.API_MIME_TYPE)
+@RequestMapping(path = "/objects", produces = Api.API_MIME_TYPE)
 @Slf4j
-public class RoaController {
+public class ObjectController {
     @Autowired
     private RpkiObjects rpkiObjects;
 
@@ -67,37 +82,51 @@ public class RoaController {
     private Settings settings;
 
     @GetMapping(path = "/validated")
-    public ResponseEntity<ApiResponse<ValidatedRoas>> list() {
-        Map<Long, TrustAnchorResource> trustAnchorsById = trustAnchors.findAll().stream().collect(Collectors.toMap(ta -> ta.getId(), TrustAnchorResource::of));
+    public ResponseEntity<ApiResponse<ValidatedObjects>> list() {
+        final Map<Long, TrustAnchorResource> trustAnchorsById = trustAnchors.findAll()
+                .stream().collect(Collectors.toMap(AbstractEntity::getId, TrustAnchorResource::of));
 
-        Stream<RoaPrefix> validatedPrefixes = rpkiObjects
-            .findCurrentlyValidated(RpkiObject.Type.ROA)
-            .flatMap(pair -> {
-                    Link trustAnchorLink = trustAnchorsById.get(pair.getKey().getTrustAnchor().getId()).getLinks().getLink("self");
-                    return pair.getValue().getRoaPrefixes().stream()
-                        .map(prefix -> new RoaPrefix(
-                            String.valueOf(prefix.getAsn()),
-                            prefix.getPrefix(),
-                            prefix.getEffectiveLength(),
-                            new Links(trustAnchorLink.withRel(TrustAnchor.TYPE))
-                        ));
-                }
-            )
-            .distinct();
+        final Stream<RoaPrefix> validatedPrefixes = rpkiObjects
+                .findCurrentlyValidated(RpkiObject.Type.ROA)
+                .flatMap(pair -> {
+                            Link trustAnchorLink = trustAnchorsById.get(pair.getKey().getTrustAnchor().getId()).getLinks().getLink("self");
+                            return pair.getValue().getRoaPrefixes().stream()
+                                    .map(prefix -> new RoaPrefix(
+                                            String.valueOf(prefix.getAsn()),
+                                            prefix.getPrefix(),
+                                            prefix.getEffectiveLength(),
+                                            new Links(trustAnchorLink.withRel(TrustAnchor.TYPE))
+                                    ));
+                        }
+                )
+                .distinct();
 
-        return ResponseEntity.ok(ApiResponse.<ValidatedRoas>builder()
-            .data(new ValidatedRoas(settings.isInitialValidationRunCompleted(), trustAnchorsById.values(), validatedPrefixes))
-            .build());
+
+        final Base64.Encoder encoder = Base64.getEncoder();
+        final Stream<RouterCertificate> routerCertificates = rpkiObjects.findRouterCertificates().map(o ->
+                o.get(X509RouterCertificate.class, "temporary").map(c -> {
+                    final List<String> asns = X509CertificateUtil.getAsns(c.getCertificate());
+                    final String ski = encoder.encodeToString(X509CertificateUtil.getSubjectKeyIdentifier(c.getCertificate()));
+                    final String pkInfo = X509CertificateUtil.getEncodedSubjectPublicKeyInfo(c.getCertificate());
+                    return new RouterCertificate(asns, ski, pkInfo);
+                })
+        ).filter(Optional::isPresent).map(Optional::get);
+
+        return ResponseEntity.ok(ApiResponse.<ValidatedObjects>builder()
+                .data(new ValidatedObjects(settings.isInitialValidationRunCompleted(), trustAnchorsById.values(), validatedPrefixes, routerCertificates))
+                .build());
     }
 
     @Value
-    public static class ValidatedRoas {
+    public static class ValidatedObjects {
         @ApiModelProperty(position = 1)
         boolean ready;
         @ApiModelProperty(position = 2)
         Collection<TrustAnchorResource> trustAnchors;
         @ApiModelProperty(position = 3)
         Stream<RoaPrefix> roas;
+        @ApiModelProperty(position = 4)
+        Stream<RouterCertificate> routerCertificates;
     }
 
     @Value
@@ -106,5 +135,12 @@ public class RoaController {
         private String prefix;
         private int maxLength;
         private Links links;
+    }
+
+    @Value
+    public static class RouterCertificate {
+        private List<String> asn;
+        private String subjectKeyIdentifier;
+        private String subjectPublicKeyInfo;
     }
 }

@@ -42,8 +42,8 @@ import java.io.IOException;
 @Value(staticConstructor = "of")
 public class RtrRouterKey implements RtrDataUnit {
 
-    SubjectKeyIdentifier subjectKeyIdentifier;
-    SubjectPublicKeyInfo subjectPublicKeyInfo;
+    byte[] subjectKeyIdentifier;
+    byte[] subjectPublicKeyInfo;
     int asn;
 
     @Override
@@ -59,15 +59,11 @@ public class RtrRouterKey implements RtrDataUnit {
             return rc;
         }
 
-        rc = Arrays.compareUnsigned(subjectKeyIdentifier.getKeyIdentifier(), that.subjectKeyIdentifier.getKeyIdentifier());
+        rc = Arrays.compareUnsigned(subjectKeyIdentifier, that.subjectKeyIdentifier);
         if (rc != 0) {
             return rc;
         }
-
-        try {
-            return Arrays.compareUnsigned(subjectPublicKeyInfo.getEncoded(), that.subjectPublicKeyInfo.getEncoded());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        
+        return Arrays.compareUnsigned(subjectPublicKeyInfo, that.subjectPublicKeyInfo);
     }
 }

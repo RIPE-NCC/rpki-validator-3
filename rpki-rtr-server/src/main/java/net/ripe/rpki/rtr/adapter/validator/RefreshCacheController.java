@@ -35,6 +35,7 @@ import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.rtr.domain.RtrCache;
 import net.ripe.rpki.rtr.domain.RtrClients;
 import net.ripe.rpki.rtr.domain.RtrDataUnit;
+import net.ripe.rpki.rtr.domain.RtrRouterKey;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -43,7 +44,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import java.util.Base64;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 
@@ -52,8 +55,8 @@ import static java.util.stream.Collectors.toList;
 public class RefreshCacheController {
     private final RestTemplate restTemplate;
 
-    @Value("${rpki.validator.validated.roas.uri}")
-    private URI validatedRoasUri;
+    @Value("${rpki.validator.validated.objects.uri}")
+    private URI validatedObjectsUri;
 
     @Autowired
     private RtrCache cache;
@@ -67,39 +70,48 @@ public class RefreshCacheController {
     }
 
     @Scheduled(initialDelay = 10_000L, fixedDelay = 60_000L)
-    private void refreshCache() {
-        log.info("fetching validated roa prefixes from {}", validatedRoasUri);
-        ValidatedRoasResponse response = restTemplate.getForObject(validatedRoasUri, ValidatedRoasResponse.class);
+    private void refreshObjectCache() {
+        log.info("fetching validated roa prefixes from {}", validatedObjectsUri);
+        ValidatedObjectsResponse response = restTemplate.getForObject(validatedObjectsUri, ValidatedObjectsResponse.class);
 
-        ValidatedRoas validatedRoas = response.getData();
-        if (!validatedRoas.ready) {
-            log.warn("validator {} not ready yet, will retry later", validatedRoasUri);
+        ValidatedObjects validatedObjects = response.getData();
+        if (!validatedObjects.ready) {
+            log.warn("validator {} not ready yet, will retry later", validatedObjectsUri);
             return;
         }
 
-        List<ValidatedPrefix> validatedPrefixes = validatedRoas.getRoas();
-        log.info("fetched {} validated roa prefixes from {}", validatedPrefixes.size(), validatedRoasUri);
+        List<ValidatedPrefix> validatedPrefixes = validatedObjects.getRoas();
+        log.info("fetched {} validated roa prefixes from {}", validatedPrefixes.size(), validatedObjectsUri);
 
-        List<RtrDataUnit> roaPrefixes = validatedPrefixes.stream().map(prefix -> RtrDataUnit.prefix(
-            Asn.parse(prefix.getAsn()),
-            IpRange.parse(prefix.getPrefix()),
-            prefix.getMaxLength()
-        )).distinct().collect(toList());
+        final Stream<? extends RtrDataUnit> roaPrefixes = validatedPrefixes.stream().map(prefix -> RtrDataUnit.prefix(
+                Asn.parse(prefix.getAsn()),
+                IpRange.parse(prefix.getPrefix()),
+                prefix.getMaxLength()
+        )).distinct();
 
-        cache.updateValidatedPdus(roaPrefixes).ifPresent(updatedSerialNumber -> {
+        final Base64.Decoder decoder = Base64.getDecoder();
+        final Stream<? extends RtrDataUnit> routerCertificates = validatedObjects.getRouterCertificates().stream().flatMap(rc ->
+                rc.asn.stream().map(a -> {
+                    final int asn = Math.toIntExact(Asn.parse(a).longValue());
+                    return RtrRouterKey.of(decoder.decode(rc.subjectKeyIdentifier), decoder.decode(rc.subjectPublicKeyInfo), asn);
+                }));
+
+        final List<RtrDataUnit> cacheEntries = Stream.concat(roaPrefixes, routerCertificates).collect(toList());
+        cache.updateValidatedPdus(cacheEntries).ifPresent(updatedSerialNumber -> {
             clients.cacheUpdated(cache.getSessionId(), updatedSerialNumber);
         });
     }
 
     @lombok.Value
-    public static class ValidatedRoasResponse {
-        public ValidatedRoas data;
+    public static class ValidatedObjectsResponse {
+        public ValidatedObjects data;
     }
 
     @lombok.Value
-    public static class ValidatedRoas {
+    public static class ValidatedObjects {
         boolean ready;
         List<ValidatedPrefix> roas;
+        List<RouterCertificate> routerCertificates;
     }
 
     @lombok.Value
@@ -107,5 +119,12 @@ public class RefreshCacheController {
         String asn;
         Integer maxLength;
         String prefix;
+    }
+
+    @lombok.Value
+    public static class RouterCertificate {
+        private List<String> asn;
+        private String subjectKeyIdentifier;
+        private String subjectPublicKeyInfo;
     }
 }

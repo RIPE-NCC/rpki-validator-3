@@ -31,31 +31,19 @@ package net.ripe.rpki.rtr.domain.pdus;
 
 import io.netty.buffer.ByteBuf;
 import lombok.Value;
-import org.bouncycastle.asn1.x509.SubjectKeyIdentifier;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-
-import java.io.IOException;
 
 @Value(staticConstructor = "of")
 public class RouterKeyPdu implements Pdu {
     public static final int PDU_TYPE = 9;
 
     Flags flags;
-    SubjectKeyIdentifier subjectKeyIdentifier;
-    SubjectPublicKeyInfo subjectPublicKeyInfo;
+    byte[] subjectKeyIdentifier;
+    byte[] subjectPublicKeyInfo;
     int asn;
 
     @Override
     public int length() {
-        return 24 + keyInfo().length;
-    }
-
-    private byte[] keyInfo() {
-        try {
-            return subjectPublicKeyInfo.getEncoded();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return 24 + subjectPublicKeyInfo.length;
     }
 
     @Override
@@ -66,9 +54,8 @@ public class RouterKeyPdu implements Pdu {
                 .writeByte(flags.getFlags())
                 .writeByte(0)
                 .writeInt(length())
-                .writeBytes(subjectKeyIdentifier.getKeyIdentifier())
+                .writeBytes(subjectKeyIdentifier)
                 .writeInt(asn)
-                .writeBytes(keyInfo());
-
+                .writeBytes(subjectPublicKeyInfo);
     }
 }

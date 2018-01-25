@@ -39,6 +39,7 @@ import net.ripe.rpki.commons.crypto.cms.roa.RoaCms;
 import net.ripe.rpki.commons.crypto.crl.X509Crl;
 import net.ripe.rpki.commons.crypto.util.CertificateRepositoryObjectFactory;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
+import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificate;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.util.Sha256;
@@ -73,7 +74,7 @@ public class RpkiObject extends AbstractEntity {
     public static final int MAX_SIZE = 1024 * 1024;
 
     public enum Type {
-        CER, MFT, CRL, ROA, GBR, OTHER
+        CER, MFT, CRL, ROA, GBR, ROUTER_CER, OTHER
     }
 
     @Basic(optional = false)
@@ -144,6 +145,11 @@ public class RpkiObject extends AbstractEntity {
             this.signingTime = null; // Use not valid before instead?
             this.authorityKeyIdentifier = ((X509ResourceCertificate) object).getAuthorityKeyIdentifier();
             this.type = Type.CER; // FIXME separate certificate types? CA, EE, Router, ?
+        } else  if (object instanceof X509RouterCertificate) {
+            this.serialNumber = ((X509RouterCertificate) object).getSerialNumber();
+            this.signingTime = null;
+            this.authorityKeyIdentifier = ((X509RouterCertificate) object).getAuthorityKeyIdentifier();
+            this.type = Type.ROUTER_CER;
         } else if (object instanceof X509Crl) {
             this.serialNumber = ((X509Crl) object).getNumber();
             this.signingTime = Instant.ofEpochMilli(((X509Crl) object).getThisUpdateTime().getMillis());
