@@ -8,10 +8,12 @@
   "EXPORT_API": "Export and API",
   "ROUTER_SESSIONS": "Router Sessions",
   "Home": {
-    "TITLE": "Quick Overview of BGP Origin Validation"
+    "TITLE": "Quick Overview of BGP Origin Validation",
+    "ROUTER": "Router",
+    "TRUST-ANCHORS-QUICK-OVERVIEW": "Trust anchors are the entry points used for validation in any Public Key Infrastructure (PKI) system.\n\nThis RPKI Validator is preconfigured with the trust anchors for AFRINIC, APNIC, Lacnic and RIPE NCC. In order to obtain the trust anchor for the ARIN RPKI repository, you will first have to accept their Relying Party Agreement. Please refer to the README.txt for details on how to add trust anchors to this application.",
+    "ROAS-QUICK-OVERVIEW": "Route Origin Attestations (ROAs) are used in the RPKI to authorise specific ASNs to originate prefixes. In addition, a ROA specifies the maximum prefix length that the AS is authorised to originate. Only the legitimate holder of the prefix can create a valid ROA.\nROAs are intended to be positive attestations, but the presence of a ROA for an ASN and prefix combination implies that announcements of this prefix from other origin ASNs, or for more specific prefixes, will be considered invalid.\nMore than one ROA may exist for the same prefix and as long as one of them matches the announcement it is considered valid. The announcement validation rules are defined in RFC 6483 and are explained in more detail in the Router section."
   },
   "Footer": {
     "COPYRIGHT": "Copyright ©2009-2018 the Réseaux IP Européens Network Coordination Centre RIPE NCC. All rights restricted. Version 2.24-SNAPSHOT"
   }
-
 }

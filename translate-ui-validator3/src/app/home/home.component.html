@@ -1,33 +1,39 @@
-<!--<tabset type="pills">-->
-  <!--<tab heading="Pills 1">Pills content 1</tab>-->
-  <!--<tab heading="Pills 2">Pills content 2</tab>-->
-<!--</tabset>-->
-
-<ul class="nav nav-pills">
-  <li role="presentation" class="active"><a href="#">{{'HOME' | translate }}</a></li>
-  <!--<li><a [routerLink]="['/']">{{ 'TRUST_ANCHORS' | translate }}</a></li>-->
-  <!--<li><a [routerLink]="['/']">{{ 'ROAs' | translate }}</a></li>-->
-  <!--<li><a [routerLink]="['/']">{{ 'IGNORE_FILTERS' | translate }}</a></li>-->
-  <!--<li><a [routerLink]="['/']">{{ 'WHITELIST' | translate }}</a></li>-->
-  <!--<li><a [routerLink]="['/']">{{ 'ROUTER_SESSIONS' | translate }}</a></li>-->
-</ul>
-
+<!--FIXME-->
 <div class="row">
   <div class="span2 offset2 stepOverhead"><img src="../../assets/images/arrowTop.png" width="101" height="35" alt="ArrowTop" /></div>
   <div class="span2 offset1 stepOverhead">&nbsp;</div>
   <div class="span2 offset1 stepOverhead"><img src="../../assets/images/arrowTop.png" width="101" height="35" alt="ArrowTop" /></div>
   <div class="span2 offset1 stepOverhead">&nbsp;</div>
 </div>
-<!--<div class="row">-->
-  <!--<div class="span3 stepTitle selected"><a href="#trustAnchors"><h3>Trust Anchors</h3></a></div>-->
-  <!--<div class="span3 stepTitle"><a href="#roas"><h3>ROAs</h3></a></div>-->
-  <!--<div class="span3 stepTitle"><a href="#ignoreFilters"><h3>Ignore Filters</h3></a></div>-->
-  <!--<div class="span3 stepTitle"><a href="#whitelist"><h3>Whitelist</h3></a></div>-->
-  <!--<div class="span3 stepTitle"><a href="#router"><h3>Router</h3></a></div>-->
-<!--</div>-->
+<ul class="nav nav-pills nav-justified" id="pills-tab" role="tablist">
+  <li class="nav-item">
+    <a class="nav-link active" id="pills-trust-anchors-tab" data-toggle="pill" href="#pills-trust-anchors" role="tab" aria-controls="pills-trust-anchors" aria-selected="true">{{ 'TRUST_ANCHORS' | translate }}</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" id="pills-roas-tab" data-toggle="pill" href="#pills-roas" role="tab" aria-controls="pills-roas" aria-selected="false">{{ 'ROAs' | translate }}</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" id="pills-ignore-filter-tab" data-toggle="pill" href="#pills-ignore-filter" role="tab" aria-controls="pills-ignore-filter" aria-selected="false">{{ 'IGNORE_FILTERS' | translate }}</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" id="pills-whitelist-tab" data-toggle="pill" href="#pills-whitelist" role="tab" aria-controls="pills-whitelist" aria-selected="false">{{ 'WHITELIST' | translate }}</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" id="pills-router-tab" data-toggle="pill" href="#pills-router" role="tab" aria-controls="pills-router" aria-selected="false">{{'ROUTER' | translate }}</a>
+  </li>
+</ul>
+<!--FIXME-->
 <div class="row">
   <div class="span2 offset2 stepOverhead">&nbsp;</div>
   <div class="span2 offset1 stepOverhead"><img src="../../assets/images/arrowBottom.png" width="101" height="35" alt="ArrowTop" /></div>
   <div class="span2 offset1 stepOverhead">&nbsp;</div>
   <div class="span2 offset1 stepOverhead"><img src="../../assets/images/arrowBottom.png" width="101" height="35" alt="ArrowTop" /></div>
 </div>
+<div class="tab-content" id="pills-tabContent">
+  <div class="tab-pane fade show active" id="pills-trust-anchors" role="tabpanel" aria-labelledby="pills-trust-anchors-tab">{{'Home.TRUST-ANCHORS-QUICK-OVERVIEW' | translate }}</div>
+  <div class="tab-pane fade" id="pills-roas" role="tabpanel" aria-labelledby="pills-contact-tab">{{'Home.ROAS-QUICK-OVERVIEW' | translate }}</div>
+  <div class="tab-pane fade" id="pills-ignore-filter" role="tabpanel" aria-labelledby="pills-contact-tab">...</div>
+  <div class="tab-pane fade" id="pills-whitelist" role="tabpanel" aria-labelledby="pills-contact-tab">...</div>
+  <div class="tab-pane fade" id="pills-router" role="tabpanel" aria-labelledby="pills-router-tab">...</div>
+</div>
+
