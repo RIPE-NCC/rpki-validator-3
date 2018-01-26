@@ -36,6 +36,9 @@
         <springfox.version>2.7.0</springfox.version>
         <jackson.version>2.9.2</jackson.version>
         <netty.version>4.1.19.Final</netty.version>
+
+        <maven.build.timestamp.format>yyyyMMddHHmmss</maven.build.timestamp.format>
+        <build.number>DEV${maven.build.timestamp}</build.number>
     </properties>
 
     <dependencies>
@@ -294,9 +297,14 @@
                 <configuration>
                     <license>BSD</license>
                     <distribution>CentOS 7</distribution>
+                    <name>rpki-rtr-server</name>
+                    <version>3.0beta</version>
+                    <release>${build.number}</release>
                     <group>Applications/System</group>
                     <packager>RIPE NCC</packager>
                     <changelogFile>Changelog.txt</changelogFile>
+                    <summary>RPKI RTR Server</summary>
+                    <description>https://github.com/RIPE-NCC/rpki-validator-3</description>
                     <needarch>noarch</needarch>
                     <targetOS>linux</targetOS>
                     <defaultUsername>rpki</defaultUsername>
@@ -322,7 +330,7 @@
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
-                                    <location>src/main/resources/bin/linux</location>
+                                    <location>src/main/resources/packaging/centos7/usr/bin/</location>
                                     <includes>
                                         <include>rpki-rtr-server.sh</include>
                                     </includes>
@@ -335,7 +343,7 @@
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
-                                    <location>src/main/resources/etc/rpki-rtr-server/</location>
+                                    <location>src/main/resources/packaging/centos7/etc/rpki-rtr-server/</location>
                                     <includes>
                                         <include>application.properties</include>
                                     </includes>
@@ -350,7 +358,7 @@
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
-                                    <location>src/main/resources/etc/systemd/system/</location>
+                                    <location>src/main/resources/packaging/centos7/etc/systemd/system/</location>
                                     <includes>
                                         <include>rpki-rtr-server.service</include>
                                     </includes>
@@ -366,7 +374,7 @@
                             <recurseDirectories>true</recurseDirectories>
                             <sources>
                                 <source>
-                                    <location>src/main/resources/var/lib/rpki-rtr-server/</location>
+                                    <location>src/main/resources/packaging/centos7/var/lib/rpki-rtr-server/</location>
                                     <excludes>
                                         <exclude>*/.ignore.me</exclude>
                                     </excludes>
@@ -380,6 +388,11 @@
                             /usr/bin/getent passwd rpki > /dev/null || /usr/sbin/useradd -r -d /var/lib/rpki-rtr-server -s /sbin/nologin -g rpki rpki
                         </script>
                     </preinstallScriptlet>
+                    <postinstallScriptlet>
+                        <script>
+                            /bin/systemctl try-restart rpki-rtr-server
+                        </script>
+                    </postinstallScriptlet>
                     <autoRequires>true</autoRequires>
                     <requires>
                         <require>java-1.8.0-openjdk</require>

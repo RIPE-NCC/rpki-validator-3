@@ -35,6 +35,8 @@
 
         <springfox.version>2.7.0</springfox.version>
         <jackson.version>2.9.2</jackson.version>
+        <maven.build.timestamp.format>yyyyMMddHHmmss</maven.build.timestamp.format>
+        <build.number>DEV${maven.build.timestamp}</build.number>
     </properties>
 
     <dependencies>
@@ -286,9 +288,14 @@
                 <configuration>
                     <license>BSD</license>
                     <distribution>CentOS 7</distribution>
+                    <name>rpki-validator</name>
+                    <version>3.0-beta</version>
+                    <release>${build.number}</release>
                     <group>Applications/System</group>
                     <packager>RIPE NCC</packager>
                     <changelogFile>Changelog.txt</changelogFile>
+                    <summary>RIPE NCC RPKI Validator 3</summary>
+                    <description>See: https://github.com/RIPE-NCC/rpki-validator-3</description>
                     <needarch>noarch</needarch>
                     <targetOS>linux</targetOS>
                     <defaultUsername>rpki</defaultUsername>
@@ -314,7 +321,7 @@
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
-                                    <location>src/main/resources/bin/linux</location>
+                                    <location>src/main/resources/packaging/centos7/usr/bin/</location>
                                     <includes>
                                         <include>rpki-validator-3.sh</include>
                                     </includes>
@@ -327,7 +334,7 @@
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
-                                    <location>src/main/resources/etc/rpki-validator-3/</location>
+                                    <location>src/main/resources/packaging/centos7/etc/rpki-validator-3/</location>
                                     <includes>
                                         <include>application.properties</include>
                                     </includes>
@@ -342,7 +349,7 @@
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
-                                    <location>src/main/resources/etc/systemd/system/</location>
+                                    <location>src/main/resources/packaging/centos7/etc/systemd/system/</location>
                                     <includes>
                                         <include>rpki-validator-3.service</include>
                                     </includes>
@@ -358,7 +365,7 @@
                             <recurseDirectories>true</recurseDirectories>
                             <sources>
                                 <source>
-                                    <location>src/main/resources/var/lib/rpki-validator-3/</location>
+                                    <location>src/main/resources/packaging/centos7/var/lib/rpki-validator-3/</location>
                                     <excludes>
                                         <exclude>*/.ignore.me</exclude>
                                     </excludes>
@@ -372,6 +379,12 @@
                             /usr/bin/getent passwd rpki > /dev/null || /usr/sbin/useradd -r -d /var/lib/rpki-validator-3 -s /sbin/nologin -g rpki rpki
                         </script>
                     </preinstallScriptlet>
+
+                    <postinstallScriptlet>
+                        <script>
+                            /bin/systemctl try-restart rpki-validator-3
+                        </script>
+                    </postinstallScriptlet>
                     <autoRequires>true</autoRequires>
                     <requires>
                         <require>java-1.8.0-openjdk</require>
