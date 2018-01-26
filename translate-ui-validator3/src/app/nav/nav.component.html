@@ -1,0 +1,21 @@
+<nav class='navbar navbar-expand-lg navbar-dark bg-dark'>
+  <a class='navbar-brand text-white'>RPKI Validator</a>
+  <button class='navbar-toggler' type='button' data-toggle='collapse' data-target='#myNavbar' aria-controls='myNavbar' aria-expanded='false' aria-label='Toggle navigation'>
+    <span class='navbar-toggler-icon'></span>
+  </button>
+  <div class='collapse navbar-collapse' id='myNavbar'>
+    <div class='navbar-nav'>
+      <a class='nav-link' routerLink='/home' routerLinkActive="active">{{ 'HOME' | translate }}</a>
+      <a class='nav-link' routerLink='/trust-anchors' routerLinkActive="active">{{ 'TRUST_ANCHORS' | translate }}</a>
+      <a class='nav-link' routerLink=''>{{ 'ROAs' | translate }}</a>
+      <a class='nav-link' routerLink=''>{{ 'IGNORE_FILTERS' | translate }}</a>
+      <a class='nav-link' routerLink=''>{{ 'WHITELIST' | translate }}</a>
+      <a class='nav-link' routerLink=''>{{ 'BGP_PREVIEW' | translate }}</a>
+      <a class='nav-link' routerLink=''>{{ 'EXPORT_API' | translate }}</a>
+      <a class='nav-link' routerLink=''>{{ 'ROUTER_SESSIONS' | translate }}</a>
+    </div>
+  </div>
+</nav>
+<div class='page-header'>
+  <h2>{{ pageTitle | translate}}</h2>
+</div>

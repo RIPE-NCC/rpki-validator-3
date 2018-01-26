@@ -1,0 +1,17 @@
+{
+  "HOME": "Home",
+  "TRUST_ANCHORS": "Trust Anchors",
+  "ROAS": "ROAs",
+  "IGNORE_FILTERS": "Ignore Filters",
+  "WHITELIST": "Whitelist",
+  "BGP_PREVIEW": "BGP Preview",
+  "EXPORT_API": "Export and API",
+  "ROUTER_SESSIONS": "Router Sessions",
+  "Home": {
+    "TITLE": "Quick Overview of BGP Origin Validation"
+  },
+  "Footer": {
+    "COPYRIGHT": "Copyright ©2009-2018 the Réseaux IP Européens Network Coordination Centre RIPE NCC. All rights restricted. Version 2.24-SNAPSHOT"
+  }
+
+}
