@@ -289,7 +289,7 @@
                     <license>BSD</license>
                     <distribution>CentOS 7</distribution>
                     <name>rpki-validator</name>
-                    <version>3.0-beta</version>
+                    <version>3.0beta</version>
                     <release>${build.number}</release>
                     <group>Applications/System</group>
                     <packager>RIPE NCC</packager>
