@@ -1,0 +1,18 @@
+<table class="table table-striped table-bordered">
+  <thead>
+  <tr>
+    <th scope="col">{{ 'Roas.ASN' | translate }}</th>
+    <th scope="col">{{ 'Roas.PREFIX' | translate }}</th>
+    <th scope="col">{{ 'Roas.MAX-LENGTH' | translate }}</th>
+    <th scope="col">{{ 'TRUST_ANCHORS' | translate }}</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr *ngFor='let roa of roas'>
+    <td>{{roa.asn}}</td>
+    <td>{{roa.prefix}}</td>
+    <td>{{roa.maxLenght}}</td>
+    <td>{{roa.trustAnchor}}</td>
+  </tr>
+  </tbody>
+</table>

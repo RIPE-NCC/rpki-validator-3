@@ -1,0 +1,187 @@
+{
+  "sEcho": 2,
+  "iTotalRecords": 85502,
+  "iTotalDisplayRecords": 85502,
+  "aaData": [
+    [
+      "42",
+      "2001:678:4c::/48",
+      "48",
+      "RIPE NCC RPKI Root"
+    ],
+    [
+      "42",
+      "194.0.42.0/24",
+      "24",
+      "RIPE NCC RPKI Root"
+    ],
+    [
+      "42",
+      "2001:678:60::/48",
+      "48",
+      "RIPE NCC RPKI Root"
+    ],
+    [
+      "42",
+      "194.0.17.0/24",
+      "24",
+      "RIPE NCC RPKI Root"
+    ],
+    [
+      "42",
+      "2001:678:3::/48",
+      "48",
+      "RIPE NCC RPKI Root"
+    ],
+    [
+      "42",
+      "2001:678:94::/48",
+      "48",
+      "RIPE NCC RPKI Root"
+    ],
+    [
+      "137",
+      "159.149.0.0/16",
+      "16",
+      "RIPE NCC RPKI Root (RRDP prefetch)"
+    ],
+    [
+      "137",
+      "159.149.0.0/16",
+      "16",
+      "RIPE NCC RPKI Root"
+    ],
+    [
+      "158",
+      "194.237.142.0/24",
+      "24",
+      "RIPE NCC RPKI Root (RRDP prefetch)"
+    ],
+    [
+      "158",
+      "194.237.142.0/24",
+      "24",
+      "RIPE NCC RPKI Root"
+    ],
+    [
+      "42",
+      "2001:678:4c::/48",
+      "48",
+      "RIPE NCC RPKI Root"
+    ],
+    [
+      "42",
+      "194.0.42.0/24",
+      "24",
+      "RIPE NCC RPKI Root"
+    ],
+    [
+      "42",
+      "2001:678:60::/48",
+      "48",
+      "RIPE NCC RPKI Root"
+    ],
+    [
+      "42",
+      "194.0.17.0/24",
+      "24",
+      "RIPE NCC RPKI Root"
+    ],
+    [
+      "42",
+      "2001:678:3::/48",
+      "48",
+      "RIPE NCC RPKI Root"
+    ],
+    [
+      "42",
+      "2001:678:94::/48",
+      "48",
+      "RIPE NCC RPKI Root"
+    ],
+    [
+      "137",
+      "159.149.0.0/16",
+      "16",
+      "RIPE NCC RPKI Root (RRDP prefetch)"
+    ],
+    [
+      "137",
+      "159.149.0.0/16",
+      "16",
+      "RIPE NCC RPKI Root"
+    ],
+    [
+      "158",
+      "194.237.142.0/24",
+      "24",
+      "RIPE NCC RPKI Root (RRDP prefetch)"
+    ],
+    [
+      "158",
+      "194.237.142.0/24",
+      "24",
+      "RIPE NCC RPKI Root"
+    ],
+    [
+      "42",
+      "2001:678:4c::/48",
+      "48",
+      "RIPE NCC RPKI Root"
+    ],
+    [
+      "42",
+      "194.0.42.0/24",
+      "24",
+      "RIPE NCC RPKI Root"
+    ],
+    [
+      "42",
+      "2001:678:60::/48",
+      "48",
+      "RIPE NCC RPKI Root"
+    ],
+    [
+      "42",
+      "194.0.17.0/24",
+      "24",
+      "RIPE NCC RPKI Root"
+    ],
+    [
+      "42",
+      "2001:678:3::/48",
+      "48",
+      "RIPE NCC RPKI Root"
+    ],
+    [
+      "42",
+      "2001:678:94::/48",
+      "48",
+      "RIPE NCC RPKI Root"
+    ],
+    [
+      "137",
+      "159.149.0.0/16",
+      "16",
+      "RIPE NCC RPKI Root (RRDP prefetch)"
+    ],
+    [
+      "137",
+      "159.149.0.0/16",
+      "16",
+      "RIPE NCC RPKI Root"
+    ],
+    [
+      "158",
+      "194.237.142.0/24",
+      "24",
+      "RIPE NCC RPKI Root (RRDP prefetch)"
+    ],
+    [
+      "158",
+      "194.237.142.0/24",
+      "24",
+      "RIPE NCC RPKI Root"
+    ]
+  ]
+}

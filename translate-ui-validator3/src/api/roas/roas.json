@@ -1,0 +1,152 @@
+[
+  {
+    "asn": "0",
+    "prefix": "80.128.0.0/11",
+    "maxLenght": 11,
+    "trustAnchor": "RIPE NCC RPKI Root (RRDP prefetch)"
+  },
+  {
+    "asn": "0",
+    "prefix":"80.238.32.0/19",
+    "maxLenght": 19,
+    "trustAnchor": "RIPE NCC RPKI Root (RRDP prefetch)"
+  },
+  {
+    "asn": "0",
+    "prefix":"84.38.32.0/20",
+    "maxLenght": 20,
+    "trustAnchor": "RIPE NCC RPKI Root (RRDP prefetch)"
+  },
+  {
+    "asn": "0",
+    "prefix":"195.189.158.0/23",
+    "maxLenght": 23,
+    "trustAnchor": "RIPE NCC RPKI Root (RRDP prefetch)"
+  },
+  {
+    "asn": "0",
+    "prefix":"185.32.40.0/22",
+    "maxLenght": 22,
+    "trustAnchor": "RIPE NCC RPKI Root (RRDP prefetch)"
+  },
+  {
+    "asn": "0",
+    "prefix":"85.188.192.0/18",
+    "maxLenght": 18,
+    "trustAnchor": "RIPE NCC RPKI Root (RRDP prefetch)"
+  },
+  {
+    "asn": "0",
+    "prefix":"89.200.128.0/21",
+    "maxLenght": 21,
+    "trustAnchor": "RIPE NCC RPKI Root (RRDP prefetch)"
+  },
+  {
+    "asn": "0",
+    "prefix":"194.50.165.0/24",
+    "maxLenght": 24,
+    "trustAnchor": "RIPE NCC RPKI Root (RRDP prefetch)"
+  },
+  {
+    "asn": "0",
+    "prefix":"2001:7fa:7::/48",
+    "maxLenght": 128,
+    "trustAnchor": "APNIC from IANA RPKI Root"
+  },
+  {
+    "asn": "0",
+    "prefix":"2001:7fa:0:3::/64",
+    "maxLenght": 128,
+    "trustAnchor": "APNIC from IANA RPKI Root"
+  },
+  {
+    "asn": "0",
+    "prefix":"80.128.0.0/11",
+    "maxLenght": 11,
+    "trustAnchor": "RIPE NCC RPKI Root"
+  },
+  {
+    "asn": "0",
+    "prefix":"80.238.32.0/19",
+    "maxLenght": 19,
+    "trustAnchor": "RIPE NCC RPKI Root"
+  },
+  {
+    "asn": "0",
+    "prefix":"84.38.32.0/20",
+    "maxLenght": 20,
+    "trustAnchor": "RIPE NCC RPKI Root"
+  },
+  {
+    "asn": "0",
+    "prefix":"195.189.158.0/23",
+    "maxLenght": 23,
+    "trustAnchor": "RIPE NCC RPKI Root"
+  },
+  {
+    "asn": "0",
+    "prefix":"185.32.40.0/22",
+    "maxLenght": 22,
+    "trustAnchor": "RIPE NCC RPKI Root"
+  },
+  {
+    "asn": "0",
+    "prefix":"85.188.192.0/18",
+    "maxLenght": 18,
+    "trustAnchor": "RIPE NCC RPKI Root"
+  },
+  {
+    "asn": "0",
+    "prefix":"89.200.128.0/21",
+    "maxLenght": 21,
+    "trustAnchor": "RIPE NCC RPKI Root"
+  },
+  {
+    "asn": "0",
+    "prefix":"194.50.165.0/24",
+    "maxLenght": 24,
+    "trustAnchor": "RIPE NCC RPKI Root"
+  },
+  {
+    "asn": "1",
+    "prefix":"2801:1f8::/44",
+    "maxLenght": 44,
+    "trustAnchor": "LACNIC RPKI Root"
+  },
+  {
+    "asn": "1",
+    "prefix":"170.238.64.0/23",
+    "maxLenght": 23,
+    "trustAnchor": "LACNIC RPKI Root"
+  },
+  {
+    "asn": "1",
+    "prefix":"152.231.29.0/24",
+    "maxLenght": 24,
+    "trustAnchor": "LACNIC RPKI Root"
+  },
+  {
+    "asn": "1",
+    "prefix":"2803:de80::/32",
+    "maxLenght": 32,
+    "trustAnchor": "LACNIC RPKI Root"
+  },
+  {
+    "asn": "2",
+    "prefix":"120.28.3.0/24",
+    "maxLenght": 24,
+    "trustAnchor": "APNIC from IANA RPKI Root"
+  },
+  {
+    "asn": "2",
+    "prefix":"120.28.7.0/24",
+    "maxLenght": 24,
+    "trustAnchor": "APNIC from IANA RPKI Root"
+  },
+  {
+    "asn": "2",
+    "prefix":"120.28.17.0/24",
+    "maxLenght": 24,
+    "trustAnchor": "APNIC from IANA RPKI Root"
+  }
+]

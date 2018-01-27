@@ -12,6 +12,9 @@ import { FooterComponent } from './footer/footer.component';
 import {HomeModule} from './home/home.module';
 import { NavComponent } from './nav/nav.component';
 import {TrustAnchorsModule} from './trust-anchors/trust-anchors.module';
+import {RoasModule} from "./roas/roas.module";
+import {TrustAnchorsComponent} from "./trust-anchors/trust-anchors.component";
+import {RoasListComponent} from "./roas/roas-list.component";
 
 export function HttpLoaderFactory(http: HttpClient) {
   return new TranslateHttpLoader(http);
@@ -27,6 +30,7 @@ export function HttpLoaderFactory(http: HttpClient) {
     BrowserModule,
     HomeModule,
     TrustAnchorsModule,
+    RoasModule,
     HttpClientModule,
     TranslateModule.forRoot({
       loader: {
@@ -37,7 +41,8 @@ export function HttpLoaderFactory(http: HttpClient) {
     }),
     RouterModule.forRoot([
       { path: 'home', component: HomeComponent},
-      { path: 'trust-anchors', component: TrustAnchorsModule},
+      { path: 'trust-anchors', component: TrustAnchorsComponent},
+      { path: 'roas', component: RoasListComponent},
       { path: '**', redirectTo: 'home', pathMatch: 'full'}
     ])
   ],

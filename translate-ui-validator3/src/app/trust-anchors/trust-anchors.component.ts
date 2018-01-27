@@ -1,5 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import {ActivatedRoute, Router} from '@angular/router';
 
 @Component({
   selector: 'app-trust-anchors',
@@ -8,8 +7,7 @@ import {ActivatedRoute, Router} from '@angular/router';
 })
 export class TrustAnchorsComponent implements OnInit {
 
-  constructor(private _route: ActivatedRoute,
-              private _router: Router) { }
+  constructor() { }
 
   ngOnInit() {
   }
