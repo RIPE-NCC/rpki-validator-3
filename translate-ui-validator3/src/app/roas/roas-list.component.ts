@@ -6,7 +6,7 @@ import {IRoasRespons} from "./roas-respons";
 @Component({
   selector: 'app-roas',
   templateUrl: './roas-list.component.html',
-  styleUrls: ['./roas-list.component.css']
+  styleUrls: ['./roas-list.component.scss']
 })
 export class RoasListComponent implements OnInit {
   errorMessage: string;

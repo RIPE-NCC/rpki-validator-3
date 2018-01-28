@@ -1,0 +1,49 @@
+.overview-diagram {
+  padding-top: 20px;
+  padding-bottom: 20px;
+  height: 150px;
+}
+.nav-pills {
+  display: inline-list-item;
+  //width: 900px;
+  min-width: 900px;
+  .nav-link {
+    //max-width: 160px;
+    margin-right: 20px;
+    font-size: 18px;
+    line-height: 36px;
+    font-weight: bold;
+    color: #404040;
+    text-align: center;
+    padding:10px;
+    cursor: pointer;
+    border: 1px solid #C6EDF9;
+    border-radius: 10px 10px 10px 10px;
+  }
+  .nav-link.active,
+  .show > .nav-link {
+    background-color: #DDF4FB;
+  }
+  .nav-item {
+    position: relative;
+  }
+}
+.top-arrow {
+  position: absolute;
+  top: -35px;
+  right: -50px;
+}
+.bottom-arrow {
+  position: absolute;
+  bottom: -35px;
+  right: -50px;
+}
+
+.tab-content {
+  padding:20px 10px;
+  border: 1px solid #C6EDF9;
+  border-radius: 10px 10px 10px 10px;
+}
+.stepDescription.selected {
+  display:block;
+}

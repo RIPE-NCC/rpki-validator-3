@@ -1,21 +1,26 @@
 <nav class='navbar navbar-expand-lg navbar-dark bg-dark'>
-  <a class='navbar-brand text-white'>RPKI Validator</a>
-  <button class='navbar-toggler' type='button' data-toggle='collapse' data-target='#myNavbar' aria-controls='myNavbar' aria-expanded='false' aria-label='Toggle navigation'>
-    <span class='navbar-toggler-icon'></span>
-  </button>
-  <div class='collapse navbar-collapse' id='myNavbar'>
-    <div class='navbar-nav'>
-      <a class='nav-link' routerLink='/home' routerLinkActive="active">{{ 'HOME' | translate }}</a>
-      <a class='nav-link' routerLink='/trust-anchors' routerLinkActive="active">{{ 'TRUST_ANCHORS' | translate }}</a>
-      <a class='nav-link' routerLink='/roas' routerLinkActive="active">{{ 'ROAs' | translate }}</a>
-      <a class='nav-link' routerLink=''>{{ 'IGNORE_FILTERS' | translate }}</a>
-      <a class='nav-link' routerLink=''>{{ 'WHITELIST' | translate }}</a>
-      <a class='nav-link' routerLink=''>{{ 'BGP_PREVIEW' | translate }}</a>
-      <a class='nav-link' routerLink=''>{{ 'EXPORT_API' | translate }}</a>
-      <a class='nav-link' routerLink=''>{{ 'ROUTER_SESSIONS' | translate }}</a>
+    <div class='container'>
+        <a class='navbar-brand text-white'>RPKI Validator</a>
+        <button class='navbar-toggler' type='button' data-toggle='collapse' data-target='#rpkiNavbar'
+                aria-controls='myNavbar' aria-expanded='false' aria-label='Toggle navigation'>
+            <span class='navbar-toggler-icon'></span>
+        </button>
+        <div class='collapse navbar-collapse' id='rpkiNavbar'>
+            <div class='navbar-nav'>
+                <a class='nav-link' routerLink='/home' routerLinkActive='active' (click)='changeTitle("Nav.TITLE_HOME")'>{{ 'HOME' | translate }}</a>
+                <a class='nav-link' routerLink='/trust-anchors' routerLinkActive='active' (click)='changeTitle("Nav.TITLE_TRUST_ANCHORS")'>{{ 'TRUST_ANCHORS' | translate }}</a>
+                <a class='nav-link' routerLink='/roas' routerLinkActive='active' (click)='changeTitle("Nav.TITLE_ROAS")'>{{ 'ROAS' | translate }}</a>
+                <a class='nav-link' routerLink='' routerLinkActive='active' (click)='changeTitle("Nav.TITLE_IGNORE_FILTERS")'>{{ 'IGNORE_FILTERS' | translate }}</a>
+                <a class='nav-link' routerLink='' routerLinkActive='active' (click)='changeTitle("Nav.TITLE_WHITELIST")'>{{ 'WHITELIST' | translate }}</a>
+                <a class='nav-link' routerLink='' routerLinkActive='active' (click)='changeTitle("Nav.TITLE_BGP_PREVIEW")'>{{ 'BGP_PREVIEW' | translate }}</a>
+                <a class='nav-link' routerLink='' routerLinkActive='active' (click)='changeTitle("Nav.TITLE_EXPORT_API")'>{{ 'EXPORT_API' | translate }}</a>
+                <a class='nav-link' routerLink='' routerLinkActive='active' (click)='changeTitle("Nav.TITLE_ROUTER_SESSIONS")'>{{ 'ROUTER_SESSIONS' | translate }}</a>
+            </div>
+        </div>
     </div>
-  </div>
 </nav>
-<div class='page-header'>
-  <h2>{{ pageTitle | translate}}</h2>
+<div class='container'>
+    <div class='page-header'>
+        <h1><strong>{{ pageTitle | translate}}</strong></h1>
+    </div>
 </div>

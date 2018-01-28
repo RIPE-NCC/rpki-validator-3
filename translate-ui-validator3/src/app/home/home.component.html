@@ -1,37 +1,35 @@
-<!--FIXME-->
-<div class="row">
-  <div class="span2 offset2 stepOverhead"><img src="../../assets/images/arrowTop.png" width="101" height="35" alt="ArrowTop" /></div>
-  <div class="span2 offset1 stepOverhead">&nbsp;</div>
-  <div class="span2 offset1 stepOverhead"><img src="../../assets/images/arrowTop.png" width="101" height="35" alt="ArrowTop" /></div>
-  <div class="span2 offset1 stepOverhead">&nbsp;</div>
-</div>
-<ul class="nav nav-pills nav-justified" id="pills-tab" role="tablist">
-  <li class="nav-item">
-    <a class="nav-link active" id="pills-trust-anchors-tab" data-toggle="pill" href="#pills-trust-anchors" role="tab" aria-controls="pills-trust-anchors" aria-selected="true">{{ 'TRUST_ANCHORS' | translate }}</a>
-  </li>
-  <li class="nav-item">
-    <a class="nav-link" id="pills-roas-tab" data-toggle="pill" href="#pills-roas" role="tab" aria-controls="pills-roas" aria-selected="false">{{ 'ROAs' | translate }}</a>
-  </li>
-  <li class="nav-item">
-    <a class="nav-link" id="pills-ignore-filter-tab" data-toggle="pill" href="#pills-ignore-filter" role="tab" aria-controls="pills-ignore-filter" aria-selected="false">{{ 'IGNORE_FILTERS' | translate }}</a>
-  </li>
-  <li class="nav-item">
-    <a class="nav-link" id="pills-whitelist-tab" data-toggle="pill" href="#pills-whitelist" role="tab" aria-controls="pills-whitelist" aria-selected="false">{{ 'WHITELIST' | translate }}</a>
-  </li>
-  <li class="nav-item">
-    <a class="nav-link" id="pills-router-tab" data-toggle="pill" href="#pills-router" role="tab" aria-controls="pills-router" aria-selected="false">{{'ROUTER' | translate }}</a>
-  </li>
-</ul>
-<!--FIXME-->
-<div class="row">
-  <div class="span2 offset2 stepOverhead">&nbsp;</div>
-  <div class="span2 offset1 stepOverhead"><img src="../../assets/images/arrowBottom.png" width="101" height="35" alt="ArrowTop" /></div>
-  <div class="span2 offset1 stepOverhead">&nbsp;</div>
-  <div class="span2 offset1 stepOverhead"><img src="../../assets/images/arrowBottom.png" width="101" height="35" alt="ArrowTop" /></div>
+<div class="overview-diagram">
+  <ul class="nav nav-pills nav-justified" id="pills-tab" role="tablist">
+    <li class="nav-item">
+      <div class="top-arrow"><img src="../../assets/images/arrowTop.png" width="101" height="35" alt="ArrowTop" /></div>
+      <a class="nav-link active" id="pills-trust-anchors-tab" data-toggle="pill" href="#pills-trust-anchors" role="tab" aria-controls="pills-trust-anchors" aria-selected="true">{{ 'TRUST_ANCHORS' | translate }}</a>
+    </li>
+    <li class="nav-item">
+      <div class="bottom-arrow"><img src="../../assets/images/arrowBottom.png" width="101" height="35" alt="ArrowTop" /></div>
+      <a class="nav-link" id="pills-roas-tab" data-toggle="pill" href="#pills-roas" role="tab" aria-controls="pills-roas" aria-selected="false">{{ 'ROAs' | translate }}</a>
+    </li>
+    <li class="nav-item">
+      <div class="top-arrow"><img src="../../assets/images/arrowTop.png" width="101" height="35" alt="ArrowTop" /></div>
+      <a class="nav-link" id="pills-ignore-filter-tab" data-toggle="pill" href="#pills-ignore-filter" role="tab" aria-controls="pills-ignore-filter" aria-selected="false">{{ 'IGNORE_FILTERS' | translate }}</a>
+    </li>
+    <li class="nav-item">
+      <div class="bottom-arrow"><img src="../../assets/images/arrowBottom.png" width="101" height="35" alt="ArrowTop" /></div>
+      <a class="nav-link" id="pills-whitelist-tab" data-toggle="pill" href="#pills-whitelist" role="tab" aria-controls="pills-whitelist" aria-selected="false">{{ 'WHITELIST' | translate }}</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="pills-router-tab" data-toggle="pill" href="#pills-router" role="tab" aria-controls="pills-router" aria-selected="false">{{'Home.ROUTER' | translate }}</a>
+    </li>
+  </ul>
 </div>
 <div class="tab-content" id="pills-tabContent">
-  <div class="tab-pane fade show active" id="pills-trust-anchors" role="tabpanel" aria-labelledby="pills-trust-anchors-tab">{{'Home.TRUST-ANCHORS-QUICK-OVERVIEW' | translate }}</div>
-  <div class="tab-pane fade" id="pills-roas" role="tabpanel" aria-labelledby="pills-contact-tab">{{'Home.ROAS-QUICK-OVERVIEW' | translate }}</div>
+  <div class="tab-pane fade show active" id="pills-trust-anchors" role="tabpanel" aria-labelledby="pills-trust-anchors-tab">
+    {{'Home.TRUST_ANCHORS_QUICK_OVERVIEW_P1' | translate }}
+    <br/>
+    <a href='https://www.arin.net/public/rpki/tal/index.xhtml'>{{'Home.TRUST_ANCHORS_QUICK_OVERVIEW_LINK_TXT' | translate }}</a>.
+    {{'Home.TRUST_ANCHORS_QUICK_OVERVIEW_P2' | translate }}
+    {{'Home.TRUST_ANCHORS_QUICK_OVERVIEW_P3' | translate }}
+  </div>
+  <div class="tab-pane fade" id="pills-roas" role="tabpanel" aria-labelledby="pills-contact-tab">{{'Home.ROAS_QUICK_OVERVIEW' | translate }}</div>
   <div class="tab-pane fade" id="pills-ignore-filter" role="tabpanel" aria-labelledby="pills-contact-tab">...</div>
   <div class="tab-pane fade" id="pills-whitelist" role="tabpanel" aria-labelledby="pills-contact-tab">...</div>
   <div class="tab-pane fade" id="pills-router" role="tabpanel" aria-labelledby="pills-router-tab">...</div>

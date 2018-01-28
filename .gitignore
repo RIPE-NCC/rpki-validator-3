@@ -27,4 +27,7 @@ nbdist/
 /*.mv.db
 /*.trace.db
 
+#npm
+node_modules/
+
 .DS_Store
