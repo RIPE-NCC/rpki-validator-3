@@ -31,12 +31,14 @@ package net.ripe.rpki.rtr.domain.pdus;
 
 import lombok.Getter;
 
+import java.nio.charset.StandardCharsets;
+
 public class RtrProtocolException extends RuntimeException {
     @Getter
     private final ErrorPdu errorPdu;
 
     public RtrProtocolException(ErrorPdu errorPdu) {
-        super(errorPdu.getErrorText());
+        super(new String(errorPdu.getErrorText(), StandardCharsets.UTF_8));
         this.errorPdu = errorPdu;
     }
 }

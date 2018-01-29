@@ -30,6 +30,8 @@
 package net.ripe.rpki.rtr.domain.pdus;
 
 import io.netty.buffer.ByteBuf;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Value;
 
 import java.nio.charset.StandardCharsets;
@@ -37,25 +39,30 @@ import java.nio.charset.StandardCharsets;
 /**
  * @see <a href="https://tools.ietf.org/html/rfc8210#section-5.11">RFC8210 section 5.11 - Error Report</a>
  */
-@Value(staticConstructor = "of")
+@Value
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class ErrorPdu implements Pdu {
     public static final int PDU_TYPE = 10;
 
     ProtocolVersion protocolVersion;
     ErrorCode errorCode;
     byte[] causingPdu;
-    String errorText;
+    byte[] errorText;
 
-    public int length() {
-        return 8 + 4 + causingPdu.length + 4 + errorTextBytes().length;
+    public static ErrorPdu of(ProtocolVersion protocolVersion, ErrorCode errorCode, byte[] causingPdu, String errorText) {
+        return new ErrorPdu(
+            protocolVersion,
+            errorCode,
+            causingPdu,
+            errorText.getBytes(StandardCharsets.UTF_8)
+        );
     }
 
-    private byte[] errorTextBytes() {
-        return errorText.getBytes(StandardCharsets.UTF_8);
+    public int length() {
+        return 8 + 4 + causingPdu.length + 4 + errorText.length;
     }
 
     public void write(ByteBuf out) {
-        final byte[] errorTextBytes = errorTextBytes();
         out
             .writeByte(protocolVersion.getValue())
             .writeByte(PDU_TYPE)
@@ -63,7 +70,7 @@ public class ErrorPdu implements Pdu {
             .writeInt(length())
             .writeInt(causingPdu.length)
             .writeBytes(causingPdu)
-            .writeInt(errorTextBytes.length)
-            .writeBytes(errorTextBytes);
+            .writeInt(errorText.length)
+            .writeBytes(errorText);
     }
 }

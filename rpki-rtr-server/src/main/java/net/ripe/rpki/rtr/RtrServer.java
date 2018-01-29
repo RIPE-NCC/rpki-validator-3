@@ -290,7 +290,7 @@ public class RtrServer {
         private ChannelFuture handleSerialQuery(ChannelHandlerContext ctx, SerialQueryPdu serialQueryPdu) {
             Either<RtrCache.Delta, RtrCache.Content> deltaOrContent = cache.getDeltaOrContent(serialQueryPdu.getSerialNumber());
             if (deltaOrContent.right().exists(content -> !content.isReady())) {
-                return ctx.writeAndFlush(ErrorPdu.of(clientProtocolVersion, ErrorCode.NoDataAvailable, serialQueryPdu.toByteArray(), "no data available"));
+                return ctx.writeAndFlush(ErrorPdu.of(clientProtocolVersion, ErrorCode.NoDataAvailable, serialQueryPdu.toByteArray(), ""));
             }
 
 
@@ -316,7 +316,7 @@ public class RtrServer {
         private ChannelFuture handleResetQuery(ChannelHandlerContext ctx, ResetQueryPdu resetQueryPdu) {
             RtrCache.Content content = cache.getCurrentContent();
             if (!content.isReady()) {
-                return ctx.writeAndFlush(ErrorPdu.of(clientProtocolVersion, ErrorCode.NoDataAvailable, resetQueryPdu.toByteArray(), "no data available"));
+                return ctx.writeAndFlush(ErrorPdu.of(clientProtocolVersion, ErrorCode.NoDataAvailable, resetQueryPdu.toByteArray(), ""));
             }
 
             clientSerialNumber = content.getSerialNumber();
@@ -342,7 +342,7 @@ public class RtrServer {
                         clientProtocolVersion == null ? ProtocolVersion.V1 : clientProtocolVersion,
                         ErrorCode.PduInternalError,
                         new byte[0],
-                       "internal error")
+                       "")
                 );
 
             ctx.writeAndFlush(errorPdu);
