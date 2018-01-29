@@ -145,6 +145,14 @@ public class RtrServer {
         }
     }
 
+    @Scheduled(initialDelay = 20_000L, fixedDelay = 60_000L)
+    public void disconnectInactiveClients() {
+        int disconnected = clients.disconnectInactive(Instant.now());
+        if (disconnected > 0) {
+            log.info("disconnected {} inactive clients", disconnected);
+        }
+    }
+
     private void runNetty() throws InterruptedException {
         bossGroup = new NioEventLoopGroup();
         workerGroup = new NioEventLoopGroup();
@@ -375,6 +383,16 @@ public class RtrServer {
         @Override
         public synchronized void cacheUpdated(short sessionId, SerialNumber updatedSerialNumber) {
             sendNotifyPduIfNeeded(sessionId, updatedSerialNumber);
+        }
+
+        @Override
+        public boolean disconnectIfInactive(Instant now) {
+            if (getLastActivityAt().isBefore(now.minusSeconds(clientExpireInterval))) {
+                ctx.close();
+                return true;
+            }
+
+            return false;
         }
 
         @Override

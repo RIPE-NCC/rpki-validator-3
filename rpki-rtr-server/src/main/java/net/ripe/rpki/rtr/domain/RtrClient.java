@@ -40,6 +40,8 @@ public interface RtrClient {
 
     void cacheUpdated(short sessionId, SerialNumber updatedSerialNumber);
 
+    boolean disconnectIfInactive(Instant now);
+
     @Value
     class State {
         String localAddress;
