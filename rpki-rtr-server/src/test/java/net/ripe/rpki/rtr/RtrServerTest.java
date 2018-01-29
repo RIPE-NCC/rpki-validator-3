@@ -68,14 +68,19 @@ public class RtrServerTest {
 
     private final RtrCache rtrCache = new RtrCache();
     private final RtrClients clients = new RtrClients();
+    private final RtrServer.RtrClientHandler rtrClientHandler = new RtrServer.RtrClientHandler(rtrCache, clients);
     private final EmbeddedChannel channel = new EmbeddedChannel(
         new PduCodec(),
         new ChunkedWriteHandler(),
-        new RtrServer.RtrClientHandler(rtrCache, clients)
+        rtrClientHandler
     );
 
     @Before
     public void setUp() throws Exception {
+        rtrClientHandler.setClientRefreshInterval(3600);
+        rtrClientHandler.setClientRetryInterval(600);
+        rtrClientHandler.setClientExpireInterval(7200);
+
         updateCache(Collections.singleton(AS_3333));
     }
 
