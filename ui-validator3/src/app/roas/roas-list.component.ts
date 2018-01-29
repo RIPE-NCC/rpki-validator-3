@@ -18,7 +18,6 @@ export class RoasListComponent implements OnInit {
       this._roasService.getRoas()
           .subscribe(roasResponse => {this.roasResponse = roasResponse,
               this.extractData(roasResponse.aaData)},
-                      // this.filteredProducts = this.products;
               error => this.errorMessage = <any>error);
   }
 

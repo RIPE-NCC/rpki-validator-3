@@ -7,10 +7,6 @@ import { TranslateModule } from '@ngx-translate/core';
 @NgModule({
   imports: [
     CommonModule,
-    // RouterModule.forRoot([
-    //   { path: 'home', component: HomeComponent},
-    //   { path: '**', redirectTo: 'home', pathMatch: 'full'}
-    // ]),
     TranslateModule
   ],
   declarations: [
