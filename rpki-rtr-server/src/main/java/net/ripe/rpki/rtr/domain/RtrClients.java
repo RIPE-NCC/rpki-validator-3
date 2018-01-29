@@ -32,6 +32,7 @@ package net.ripe.rpki.rtr.domain;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Optional;
@@ -69,5 +70,11 @@ public class RtrClients {
 
     public Optional<SerialNumber> getLowestSerialNumber() {
         return clients.stream().map(RtrClient::getClientSerialNumber).min(Comparator.naturalOrder());
+    }
+
+    public synchronized int disconnectInactive(Instant now) {
+        int before = clients.size();
+        clients.removeIf(client -> client.disconnectIfInactive(now));
+        return before - clients.size();
     }
 }
