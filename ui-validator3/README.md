@@ -1,6 +1,7 @@
 # UiValidator3
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 1.6.5.
+In package directory rpki-validator-3/ui-validator3> run `npm install`. By default, npm install will install all modules listed as dependencies in package.json.
 
 ## Development server
 
