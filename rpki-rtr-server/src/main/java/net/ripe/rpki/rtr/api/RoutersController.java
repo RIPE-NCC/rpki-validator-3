@@ -38,7 +38,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.Instant;
+import java.util.Comparator;
 import java.util.stream.Stream;
 
 @RestController
@@ -51,26 +51,11 @@ public class RoutersController {
 
     @GetMapping
     public ApiResponse<Clients> list() {
-        return ApiResponse.data(new Clients(clients.list().stream().map(RtrClient::getState).map(client -> new Client(
-            client.getConnectedAt(),
-            client.getLastActivityAt(),
-            client.getSessionId(),
-            client.getSerialNumber().getValue(),
-            client.getProtocolVersion().getValue()
-        ))));
+        return ApiResponse.data(new Clients(clients.list().stream().map(RtrClient::getState).sorted(Comparator.comparing(RtrClient.State::getConnectedAt).reversed())));
     }
 
     @Value
     public static class Clients {
-        Stream<Client> clients;
-    }
-
-    @Value
-    public static class Client {
-        Instant connectedAt;
-        Instant lastActivityAt;
-        int sessionId;
-        long serialNumber;
-        int protocolVersion;
+        Stream<RtrClient.State> clients;
     }
 }

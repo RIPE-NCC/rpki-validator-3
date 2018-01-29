@@ -30,7 +30,6 @@
 package net.ripe.rpki.rtr.domain;
 
 import lombok.Value;
-import net.ripe.rpki.rtr.domain.pdus.ProtocolVersion;
 
 import java.time.Instant;
 
@@ -43,10 +42,14 @@ public interface RtrClient {
 
     @Value
     class State {
-        ProtocolVersion protocolVersion;
-        short sessionId;
-        SerialNumber serialNumber;
+        String localAddress;
+        String remoteAddress;
         Instant connectedAt;
         Instant lastActivityAt;
+        int protocolVersion;
+        short sessionId;
+        int serialNumber;
+        long cumulativeReadBytes;
+        long cumulativeWrittenBytes;
     }
 }

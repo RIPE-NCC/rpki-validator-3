@@ -43,6 +43,8 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.stream.ChunkedInput;
 import io.netty.handler.stream.ChunkedWriteHandler;
+import io.netty.handler.traffic.AbstractTrafficShapingHandler;
+import io.netty.handler.traffic.ChannelTrafficShapingHandler;
 import lombok.AccessLevel;
 import lombok.Setter;
 import lombok.ToString;
@@ -153,7 +155,10 @@ public class RtrServer {
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     public void initChannel(SocketChannel ch) {
-                        ch.pipeline().addLast(new PduCodec(), new ChunkedWriteHandler(), rtrClientHandlerProvider.get());
+                        ChannelTrafficShapingHandler traffic = new ChannelTrafficShapingHandler(0);
+                        RtrClientHandler rtrClientHandler = rtrClientHandlerProvider.get();
+                        rtrClientHandler.setTrafficShapingHandler(traffic);
+                        ch.pipeline().addLast(traffic, new PduCodec(), new ChunkedWriteHandler(), rtrClientHandler);
                     }
                 })
                 .option(ChannelOption.SO_BACKLOG, 128)
@@ -209,6 +214,9 @@ public class RtrServer {
         private ProtocolVersion clientProtocolVersion = null;
         private Instant clientConnectedAt = Instant.now();
         private Instant lastRequestReceivedAt = null;
+
+        @Setter
+        private AbstractTrafficShapingHandler trafficShapingHandler;
 
         @Autowired
         public RtrClientHandler(RtrCache cache, RtrClients clients) {
@@ -372,11 +380,15 @@ public class RtrServer {
         @Override
         public synchronized State getState() {
             return new State(
-                clientProtocolVersion,
-                clientSessionId,
-                clientSerialNumber,
+                ctx.channel().localAddress().toString(),
+                ctx.channel().remoteAddress().toString(),
                 clientConnectedAt,
-                getLastActivityAt()
+                getLastActivityAt(),
+                clientProtocolVersion.getValue(),
+                clientSessionId,
+                clientSerialNumber.getValue(),
+                trafficShapingHandler.trafficCounter().cumulativeReadBytes(),
+                trafficShapingHandler.trafficCounter().cumulativeWrittenBytes()
             );
         }
 
