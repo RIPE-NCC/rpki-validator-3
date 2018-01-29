@@ -43,6 +43,8 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.stream.ChunkedInput;
 import io.netty.handler.stream.ChunkedWriteHandler;
+import lombok.AccessLevel;
+import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.rtr.adapter.netty.PduCodec;
@@ -65,11 +67,14 @@ import net.ripe.rpki.rtr.domain.pdus.SerialQueryPdu;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.inject.Provider;
 import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.Objects;
@@ -78,6 +83,8 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 
 @Slf4j
@@ -93,6 +100,9 @@ public class RtrServer {
 
     @Autowired
     private RtrClients clients;
+
+    @Autowired
+    private Provider<RtrClientHandler> rtrClientHandlerProvider;
 
     public RtrServer(@Value("${rtr.server.port}") int port) {
         setPort(port);
@@ -143,7 +153,7 @@ public class RtrServer {
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     public void initChannel(SocketChannel ch) {
-                        ch.pipeline().addLast(new PduCodec(), new ChunkedWriteHandler(), new RtrClientHandler(rtrCache, clients));
+                        ch.pipeline().addLast(new PduCodec(), new ChunkedWriteHandler(), rtrClientHandlerProvider.get());
                     }
                 })
                 .option(ChannelOption.SO_BACKLOG, 128)
@@ -169,11 +179,24 @@ public class RtrServer {
     }
 
 
+    @Component
+    @Scope(SCOPE_PROTOTYPE)
     @ToString(exclude = {"cache", "clients"})
     public static class RtrClientHandler extends SimpleChannelInboundHandler<Pdu> implements RtrClient {
-        private static final int REFRESH_INTERVAL = 3600;
-        private static final int RETRY_INTERVAL = 600;
-        private static final int EXPIRE_INTERVAL = 7200;
+        private final RtrCache cache;
+        private final RtrClients clients;
+
+        @Setter(AccessLevel.PACKAGE)
+        @Value("${rtr.client.refresh.interval}")
+        private int clientRefreshInterval;
+
+        @Setter(AccessLevel.PACKAGE)
+        @Value("${rtr.client.retry.interval}")
+        private int clientRetryInterval;
+
+        @Setter(AccessLevel.PACKAGE)
+        @Value("${rtr.client.expire.interval}")
+        private int clientExpireInterval;
 
         private ChannelHandlerContext ctx;
         private Pdu currentRequest = null;
@@ -186,9 +209,7 @@ public class RtrServer {
         private DateTime clientConnectedAt = DateTime.now();
         private DateTime lastRequestReceivedAt = null;
 
-        private final RtrCache cache;
-        private final RtrClients clients;
-
+        @Autowired
         public RtrClientHandler(RtrCache cache, RtrClients clients) {
             this.cache = Objects.requireNonNull(cache, "cache");
             this.clients = clients;
@@ -284,7 +305,7 @@ public class RtrServer {
                 ctx.write(CacheResponsePdu.of(clientProtocolVersion, delta.getSessionId()));
                 ctx.write(new ChunkedStream<>(delta.getAnnouncements().stream().map(dataUnit -> dataUnit.toPdu(clientProtocolVersion, Flags.ANNOUNCEMENT))));
                 ctx.write(new ChunkedStream<>(delta.getWithdrawals().stream().map(dataUnit -> dataUnit.toPdu(clientProtocolVersion, Flags.WITHDRAWAL))));
-                return ctx.writeAndFlush(EndOfDataPdu.of(clientProtocolVersion, delta.getSessionId(), delta.getSerialNumber(), REFRESH_INTERVAL, RETRY_INTERVAL, EXPIRE_INTERVAL));
+                return ctx.writeAndFlush(EndOfDataPdu.of(clientProtocolVersion, delta.getSessionId(), delta.getSerialNumber(), clientRefreshInterval, clientRetryInterval, clientExpireInterval));
             } else {
                 RtrCache.Content content = deltaOrContent.right().value();
                 clientSerialNumber = content.getSerialNumber();
@@ -303,7 +324,7 @@ public class RtrServer {
 
             ctx.write(CacheResponsePdu.of(clientProtocolVersion, content.getSessionId()));
             ctx.write(new ChunkedStream<>(content.getAnnouncements().stream().map(dataUnit -> dataUnit.toPdu(clientProtocolVersion, Flags.ANNOUNCEMENT))));
-            return ctx.writeAndFlush(EndOfDataPdu.of(clientProtocolVersion, content.getSessionId(), content.getSerialNumber(), REFRESH_INTERVAL, RETRY_INTERVAL, EXPIRE_INTERVAL));
+            return ctx.writeAndFlush(EndOfDataPdu.of(clientProtocolVersion, content.getSessionId(), content.getSerialNumber(), clientRefreshInterval, clientRetryInterval, clientExpireInterval));
         }
 
         @Override
