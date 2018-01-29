@@ -27,26 +27,50 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.rtr.domain;
+package net.ripe.rpki.rtr.api;
 
 import lombok.Value;
-import net.ripe.rpki.rtr.domain.pdus.ProtocolVersion;
+import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.rtr.domain.RtrClient;
+import net.ripe.rpki.rtr.domain.RtrClients;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
+import java.util.stream.Stream;
 
-public interface RtrClient {
-    State getState();
+@RestController
+@RequestMapping(path = "/routers", produces = Api.API_MIME_TYPE)
+@Slf4j
+public class RoutersController {
 
-    SerialNumber getClientSerialNumber();
+    @Autowired
+    private RtrClients clients;
 
-    void cacheUpdated(short sessionId, SerialNumber updatedSerialNumber);
+    @GetMapping
+    public ApiResponse<Clients> list() {
+        return ApiResponse.data(new Clients(clients.list().stream().map(RtrClient::getState).map(client -> new Client(
+            client.getConnectedAt(),
+            client.getLastActivityAt(),
+            client.getSessionId(),
+            client.getSerialNumber().getValue(),
+            client.getProtocolVersion().getValue()
+        ))));
+    }
 
     @Value
-    class State {
-        ProtocolVersion protocolVersion;
-        short sessionId;
-        SerialNumber serialNumber;
+    public static class Clients {
+        Stream<Client> clients;
+    }
+
+    @Value
+    public static class Client {
         Instant connectedAt;
         Instant lastActivityAt;
+        int sessionId;
+        long serialNumber;
+        int protocolVersion;
     }
 }
