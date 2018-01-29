@@ -177,7 +177,7 @@ public class RtrServerTest {
         clientRequest(request);
 
         assertResponse(
-            ErrorPdu.of(V1, ErrorCode.NoDataAvailable, request.toByteArray(), "no data available")
+            ErrorPdu.of(V1, ErrorCode.NoDataAvailable, request.toByteArray(), "")
         );
     }
 
@@ -192,7 +192,7 @@ public class RtrServerTest {
         clientRequest(request);
 
         assertResponse(
-            ErrorPdu.of(V1, ErrorCode.NoDataAvailable, request.toByteArray(), "no data available")
+            ErrorPdu.of(V1, ErrorCode.NoDataAvailable, request.toByteArray(), "")
         );
     }
 
