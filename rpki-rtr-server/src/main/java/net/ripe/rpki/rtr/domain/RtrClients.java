@@ -59,6 +59,10 @@ public class RtrClients {
         }
     }
 
+    public synchronized Set<RtrClient> list() {
+        return new HashSet<>(clients);
+    }
+
     public void cacheUpdated(short sessionId, SerialNumber updatedSerialNumber) {
         clients.forEach(client -> client.cacheUpdated(sessionId, updatedSerialNumber));
     }

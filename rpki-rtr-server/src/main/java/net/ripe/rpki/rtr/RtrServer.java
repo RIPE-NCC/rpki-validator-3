@@ -64,7 +64,6 @@ import net.ripe.rpki.rtr.domain.pdus.ProtocolVersion;
 import net.ripe.rpki.rtr.domain.pdus.ResetQueryPdu;
 import net.ripe.rpki.rtr.domain.pdus.RtrProtocolException;
 import net.ripe.rpki.rtr.domain.pdus.SerialQueryPdu;
-import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
@@ -75,6 +74,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Provider;
+import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.Objects;
@@ -202,17 +202,19 @@ public class RtrServer {
         private Pdu currentRequest = null;
         private Queue<Pdu> pending = new ArrayDeque<>();
 
+        private short clientSessionId;
         private SerialNumber clientSerialNumber = SerialNumber.zero();
         private SerialNumber latestNotifySerialNumber = SerialNumber.zero();
 
         private ProtocolVersion clientProtocolVersion = null;
-        private DateTime clientConnectedAt = DateTime.now();
-        private DateTime lastRequestReceivedAt = null;
+        private Instant clientConnectedAt = Instant.now();
+        private Instant lastRequestReceivedAt = null;
 
         @Autowired
         public RtrClientHandler(RtrCache cache, RtrClients clients) {
             this.cache = Objects.requireNonNull(cache, "cache");
             this.clients = clients;
+            this.clientSessionId = cache.getSessionId();
         }
 
         @Override
@@ -230,7 +232,7 @@ public class RtrServer {
 
         @Override
         public synchronized void channelRead0(ChannelHandlerContext ctx, Pdu pdu) {
-            this.lastRequestReceivedAt = DateTime.now();
+            this.lastRequestReceivedAt = Instant.now();
             if (currentRequest != null) {
                 pending.add(pdu);
                 log.info("currently busy handling request, queuing {}", pdu);
@@ -293,21 +295,23 @@ public class RtrServer {
                 return ctx.writeAndFlush(ErrorPdu.of(clientProtocolVersion, ErrorCode.NoDataAvailable, serialQueryPdu.toByteArray(), ""));
             }
 
-
             if (deltaOrContent.isLeft()) {
                 RtrCache.Delta delta = deltaOrContent.left().value();
-                clientSerialNumber = delta.getSerialNumber();
 
                 if (delta.getSessionId() != serialQueryPdu.getSessionId()) {
                     return ctx.writeAndFlush(CacheResetPdu.of(clientProtocolVersion));
                 }
 
+                clientSessionId = delta.getSessionId();
+                clientSerialNumber = delta.getSerialNumber();
+
                 ctx.write(CacheResponsePdu.of(clientProtocolVersion, delta.getSessionId()));
                 ctx.write(new ChunkedStream<>(delta.getAnnouncements().stream().map(dataUnit -> dataUnit.toPdu(clientProtocolVersion, Flags.ANNOUNCEMENT))));
                 ctx.write(new ChunkedStream<>(delta.getWithdrawals().stream().map(dataUnit -> dataUnit.toPdu(clientProtocolVersion, Flags.WITHDRAWAL))));
-                return ctx.writeAndFlush(EndOfDataPdu.of(clientProtocolVersion, delta.getSessionId(), delta.getSerialNumber(), clientRefreshInterval, clientRetryInterval, clientExpireInterval));
+                return ctx.writeAndFlush(EndOfDataPdu.of(clientProtocolVersion, clientSessionId, clientSerialNumber, clientRefreshInterval, clientRetryInterval, clientExpireInterval));
             } else {
                 RtrCache.Content content = deltaOrContent.right().value();
+                clientSessionId = content.getSessionId();
                 clientSerialNumber = content.getSerialNumber();
                 return ctx.writeAndFlush(CacheResetPdu.of(clientProtocolVersion));
             }
@@ -319,12 +323,12 @@ public class RtrServer {
                 return ctx.writeAndFlush(ErrorPdu.of(clientProtocolVersion, ErrorCode.NoDataAvailable, resetQueryPdu.toByteArray(), ""));
             }
 
+            clientSessionId = content.getSessionId();
             clientSerialNumber = content.getSerialNumber();
-            latestNotifySerialNumber = content.getSerialNumber();
 
             ctx.write(CacheResponsePdu.of(clientProtocolVersion, content.getSessionId()));
             ctx.write(new ChunkedStream<>(content.getAnnouncements().stream().map(dataUnit -> dataUnit.toPdu(clientProtocolVersion, Flags.ANNOUNCEMENT))));
-            return ctx.writeAndFlush(EndOfDataPdu.of(clientProtocolVersion, content.getSessionId(), content.getSerialNumber(), clientRefreshInterval, clientRetryInterval, clientExpireInterval));
+            return ctx.writeAndFlush(EndOfDataPdu.of(clientProtocolVersion, clientSessionId, clientSerialNumber, clientRefreshInterval, clientRetryInterval, clientExpireInterval));
         }
 
         @Override
@@ -356,14 +360,24 @@ public class RtrServer {
             return clientSerialNumber;
         }
 
-        @Override
-        public synchronized DateTime getLastActive() {
+        private Instant getLastActivityAt() {
             return lastRequestReceivedAt != null ? lastRequestReceivedAt : clientConnectedAt;
         }
 
         @Override
         public synchronized void cacheUpdated(short sessionId, SerialNumber updatedSerialNumber) {
             sendNotifyPduIfNeeded(sessionId, updatedSerialNumber);
+        }
+
+        @Override
+        public synchronized State getState() {
+            return new State(
+                clientProtocolVersion,
+                clientSessionId,
+                clientSerialNumber,
+                clientConnectedAt,
+                getLastActivityAt()
+            );
         }
 
         private void sendNotifyPduIfNeeded(short sessionId, SerialNumber updatedSerialNumber) {
