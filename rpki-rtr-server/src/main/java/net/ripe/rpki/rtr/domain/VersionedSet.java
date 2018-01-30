@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.rtr.domain;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -36,11 +37,11 @@ import lombok.ToString;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
@@ -54,7 +55,8 @@ public class VersionedSet<T extends Comparable<T>> {
     @Getter
     private SortedSet<T> values = Collections.emptySortedSet();
 
-    private Map<SerialNumber, Delta<T>> deltas = new LinkedHashMap<>();
+    @Getter
+    private SortedMap<SerialNumber, Delta<T>> deltas = Collections.emptySortedMap();
 
     public VersionedSet() {
         this(SerialNumber.zero());
@@ -65,23 +67,23 @@ public class VersionedSet<T extends Comparable<T>> {
     }
 
     public boolean updateValues(Collection<T> newValues) {
-        SortedSet<T> updated = Collections.unmodifiableSortedSet(newSortedSet(newValues));
-        if (values.equals(updated)) {
+        SortedSet<T> updatedValues = Collections.unmodifiableSortedSet(newSortedSet(newValues));
+        if (values.equals(updatedValues)) {
             return false;
         }
 
-        Delta<T> delta = Delta.calculate(values, updated);
-        updateDeltas(delta);
+        Delta<T> delta = Delta.calculate(values, updatedValues);
+        deltas = updateDeltas(delta);
 
         currentVersion = currentVersion.next();
-        values = updated;
+        values = updatedValues;
         return true;
     }
 
     public Set<SerialNumber> forgetDeltasBefore(SerialNumber version) {
         Set<SerialNumber> olderDeltas = deltas.keySet().stream().filter(key -> key.compareTo(version) < 0).collect(Collectors.toSet());
         if (!olderDeltas.isEmpty()) {
-            olderDeltas.forEach(deltas::remove);
+            deltas = Collections.unmodifiableSortedMap(new TreeMap<>(Maps.filterEntries(deltas, entry -> !olderDeltas.contains(entry.getKey()))));
         }
         return olderDeltas;
     }
@@ -145,9 +147,11 @@ public class VersionedSet<T extends Comparable<T>> {
         }
     }
 
-    private void updateDeltas(Delta<T> delta) {
-        deltas.replaceAll((key, value) -> value.append(delta));
-        deltas.put(currentVersion, delta);
+    private SortedMap<SerialNumber, Delta<T>> updateDeltas(Delta<T> delta) {
+        TreeMap<SerialNumber, Delta<T>> updatedDeltas = new TreeMap<>(deltas);
+        updatedDeltas.replaceAll((key, value) -> value.append(delta));
+        updatedDeltas.put(currentVersion, delta);
+        return Collections.unmodifiableSortedMap(updatedDeltas);
     }
 
     private static <T> SortedSet<T> newSortedSet(Collection<? extends T> values) {

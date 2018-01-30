@@ -40,7 +40,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -132,6 +136,29 @@ public class RtrCache {
 
     public synchronized Set<SerialNumber> forgetDeltasBefore(SerialNumber serialNumber) {
         return data.forgetDeltasBefore(serialNumber);
+    }
+
+    public synchronized State getState() {
+        Content content = getCurrentContent();
+        SortedMap<SerialNumber, Delta> deltas = data.getDeltas().entrySet().stream().map(entry ->
+            Delta.of(sessionId, entry.getKey(), entry.getValue().getAdditions(), entry.getValue().getRemovals())
+        ).collect(toSortedMap());
+        return new State(content, deltas);
+    }
+
+    private Collector<Delta, ?, SortedMap<SerialNumber, Delta>> toSortedMap() {
+        return Collectors.toMap(
+            delta -> delta.getSerialNumber(),
+            delta -> delta,
+            (u, v) -> { throw new IllegalStateException(String.format("Duplicate key %s", u)); },
+            TreeMap::new
+        );
+    }
+
+    @Value
+    public static class State {
+        Content content;
+        SortedMap<SerialNumber, Delta> deltas;
     }
 
     @Value(staticConstructor = "of")
