@@ -42,9 +42,9 @@ import java.util.Comparator;
 import java.util.stream.Stream;
 
 @RestController
-@RequestMapping(path = "/routers", produces = Api.API_MIME_TYPE)
+@RequestMapping(path = "/clients", produces = Api.API_MIME_TYPE)
 @Slf4j
-public class RoutersController {
+public class ClientsController {
 
     @Autowired
     private RtrClients clients;
