@@ -68,7 +68,7 @@ public class RtrServerTest {
 
     private final RtrCache rtrCache = new RtrCache();
     private final RtrClients clients = new RtrClients();
-    private final RtrServer.RtrClientHandler rtrClientHandler = new RtrServer.RtrClientHandler(rtrCache, clients);
+    private final RtrClientHandler rtrClientHandler = new RtrClientHandler(rtrCache, clients);
     private final EmbeddedChannel channel = new EmbeddedChannel(
         new PduCodec(),
         new ChunkedWriteHandler(),
