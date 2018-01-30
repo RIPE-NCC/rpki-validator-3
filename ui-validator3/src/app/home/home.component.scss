@@ -1,49 +1,43 @@
-.overview-diagram {
-  padding-top: 20px;
-  padding-bottom: 20px;
-  height: 150px;
-}
-.nav-pills {
-  display: inline-list-item;
-  //width: 900px;
-  min-width: 900px;
+/deep/ .nav-pills {
+  min-width: 950px;
+  margin-bottom: 20px;
   .nav-link {
-    //max-width: 160px;
-    margin-right: 20px;
-    font-size: 18px;
-    line-height: 36px;
-    font-weight: bold;
-    color: #404040;
-    text-align: center;
-    padding:10px;
-    cursor: pointer;
+    padding: 15px;
     border: 1px solid #C6EDF9;
     border-radius: 10px 10px 10px 10px;
+    margin-right: 20px;
+    text-align: center;
+    font-size: 17px;
+    font-weight: bold;
+    color: #404040;
+    width: 10em;
   }
   .nav-link.active,
   .show > .nav-link {
     background-color: #DDF4FB;
+    color: #404040;
   }
-  .nav-item {
-    position: relative;
-  }
-}
-.top-arrow {
-  position: absolute;
-  top: -35px;
-  right: -50px;
-}
-.bottom-arrow {
-  position: absolute;
-  bottom: -35px;
-  right: -50px;
 }
 
-.tab-content {
+/deep/ .tab-content > .tab-pane {
+  color: #404040;
   padding:20px 10px;
   border: 1px solid #C6EDF9;
   border-radius: 10px 10px 10px 10px;
+  overflow: visible;
+  display: flow;
 }
-.stepDescription.selected {
-  display:block;
+/deep/ .ngb-popover-window {
+  width: 100%;
+}
+.top-arrow {
+  display: initial;
+  position: relative;
+  top: -50px;
+  right: -80px;
+}
+.bottom-arrow {
+  position: relative;
+  bottom: -35px;
+  right: -50px;
 }

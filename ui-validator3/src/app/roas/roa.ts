@@ -1,6 +1,6 @@
 export interface IRoa {
     asn: string;
     prefix: string;
-    maxLenght: string;
+    maxLength: number;
     trustAnchor: string;
 }

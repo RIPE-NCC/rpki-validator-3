@@ -5,7 +5,6 @@ import {Observable} from "rxjs/Observable";
 import "rxjs/add/operator/do";
 import "rxjs/add/operator/catch";
 import "rxjs/add/observable/throw";
-import {IRoa} from "./roa";
 import {IRoasRespons} from "./roas-respons";
 
 @Injectable()
@@ -18,14 +17,9 @@ export class RoasService {
 
     getRoas(): Observable<IRoasRespons> {
         return this._http.get<IRoasRespons>(this._roasUrl)
-            .do(data => console.log('All: ' + JSON.stringify(data.aaData)))
+            .do(reponse => console.log('All: ' + JSON.stringify(reponse.data)))
             .catch(this.handleError);
     }
-    // getRoas(): Observable<IRoa[]> {
-    //     return this._http.get<IRoa[]>(this._roasUrl)
-    //         .do(data => console.log('All: ' + JSON.stringify(data)))
-    //         .catch(this.handleError);
-    // }
 
     private handleError(err: HttpErrorResponse) {
         console.log(err.message);

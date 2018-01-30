@@ -1,6 +1,5 @@
+import { IRoa } from "./roa";
+
 export interface IRoasRespons {
-    "sEcho": number,
-    "iTotalRecords": number,
-    "iTotalDisplayRecords": number,
-    "aaData": string[]
+    "data": IRoa[]
 }

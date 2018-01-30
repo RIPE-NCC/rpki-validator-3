@@ -5,15 +5,13 @@ import { Component, OnInit } from '@angular/core';
   templateUrl: './nav.component.html',
   styleUrls: ['./nav.component.scss']
 })
-export class NavComponent implements OnInit {
+export class NavComponent {
   pageTitle = 'Nav.TITLE_HOME';
 
   constructor() { }
 
-  ngOnInit() {
-  }
-
   private changeTitle(title: string) {
     this.pageTitle = title;
   }
+
 }

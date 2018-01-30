@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import {RoasService} from "./roas.service";
 import {IRoa} from "./roa";
-import {IRoasRespons} from "./roas-respons";
 
 @Component({
   selector: 'app-roas',
@@ -9,27 +8,49 @@ import {IRoasRespons} from "./roas-respons";
   styleUrls: ['./roas-list.component.scss']
 })
 export class RoasListComponent implements OnInit {
+  alertShown = true;
   errorMessage: string;
-  roasResponse: IRoasRespons;
   roas: IRoa[] = [];
+  // pagination
+  roasPerPage: number;
+  totalRoas: number;
+  page: IRoa[];
+  previousPage: any;
+  showPages: IRoa[] = [];
+
   constructor(private _roasService: RoasService) { }
 
   ngOnInit() {
-      this._roasService.getRoas()
-          .subscribe(roasResponse => {this.roasResponse = roasResponse,
-              this.extractData(roasResponse.aaData)},
-              error => this.errorMessage = <any>error);
+      this.loadData();
   }
 
-    private extractData(dataRoas: string[]) {
-        for (let data of dataRoas) {
-          const roa = {
-                  asn: data[0],
-                  prefix: data[1],
-                  maxLenght: data[2],
-                  trustAnchor: data[3],
-          }
-          this.roas.push(roa);
-        }
+  loadPage(page: number) {
+      if (page !== this.previousPage) {
+          this.previousPage = page;
+          this.loadData();
+      }
+  }
+
+  loadData() {
+    if (this.roas.length > 0) {
+
+    } else {
+      this._roasService.getRoas()
+          .subscribe(response => {
+                  this.roas = response.data,
+                  this.totalRoas = this.roas.length},
+              error => this.errorMessage = <any>error);
     }
+  }
+
+    // loadData() {
+    //     this._roasService.getRoas({
+    //         page: this.page - 1,
+    //         size: this.itemsPerPage
+    //     }).subscribe(
+    //         (res: Response) => {
+    //               this.roas = response.data,
+    //               this.totalRoas = this.roas.length},
+    //         error => this.errorMessage = <any>error);
+    // }
 }
