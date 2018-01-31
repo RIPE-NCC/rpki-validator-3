@@ -7,6 +7,7 @@ import { Component, OnInit } from '@angular/core';
 })
 export class NavComponent {
   pageTitle = 'Nav.TITLE_HOME';
+  navbarCollapsed = true;
 
   constructor() { }
 

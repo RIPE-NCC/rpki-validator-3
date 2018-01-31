@@ -1,17 +1,20 @@
 <ngb-tabset id="ngb-tabset" type="pills">
   <!-- TRUST ANCHORS -->
-  <div class='top-arrow'><img src='../../assets/images/arrowTop.png' width='101' height='35' alt='ArrowTop' />
   <ngb-tab>
     <ng-template ngbTabTitle>
-       {{ 'TRUST_ANCHORS' | translate }}
+      <img class='top-arrow' src='../../assets/images/arrowTop.png' width='101' height='35' alt='ArrowTop' />
+      {{ 'TRUST_ANCHORS' | translate }}
      </ng-template>
     <ng-template ngbTabContent>
       <p [innerHTML]="'Home.TRUST_ANCHORS_QUICK_OVERVIEW' | translate:{value:'info'}"></p>
     </ng-template>
-  </ngb-tab></div>
+  </ngb-tab>
   <!-- ROAs -->
   <ngb-tab>
-    <ng-template ngbTabTitle>{{ 'ROAS' | translate }}</ng-template>
+    <ng-template ngbTabTitle>
+      {{ 'ROAS' | translate }}
+      <img class='bottom-arrow' src='../../assets/images/arrowBottom.png' width='101' height='35' alt='ArrowTop' />
+    </ng-template>
     <ng-template ngbTabContent>
       <p [innerHTML]="'Home.ROAS_QUICK_OVERVIEW' | translate:{value:'info'}"></p>
     </ng-template>
@@ -28,7 +31,10 @@
   </ngb-tab>
   <!-- WHITELIST -->
   <ngb-tab>
-    <ng-template ngbTabTitle>{{ 'WHITELIST' | translate }}</ng-template>
+    <ng-template ngbTabTitle>
+      {{ 'WHITELIST' | translate }}
+      <img class='bottom-arrow' src='../../assets/images/arrowBottom.png' width='101' height='35' alt='ArrowTop' />
+    </ng-template>
     <ng-template ngbTabContent>
         <p [innerHTML]="'Home.WHITELIST_QUICK_OVERVIEW' | translate:{value:'info'}"></p>
     </ng-template>
@@ -77,6 +83,7 @@
           </tr>
           </tbody>
         </table>
+
       <ng-template #popContent>
         <p>{{ 'Home.POPOVER_P1' | translate }}</p>
         <table class="table table-bordered">
@@ -140,9 +147,9 @@
         </table>
       </ng-template>
 
-      <label [ngbPopover]="popContent" triggers="mouseenter:mouseleave" popoverTitle="{{'Home.ROUTER_QUICK_OVERVIEW_EXAMPLE' | translate}}">
-        {{ 'Home.ROUTER_QUICK_OVERVIEW_SEE_EXAMPLE' | translate }}
-      </label>
+      <a href="" [ngbPopover]="popContent" placement="right" triggers="mouseenter:mouseleave" popoverTitle="{{'Home.ROUTER_QUICK_OVERVIEW_EXAMPLE' | translate}}">
+          {{ 'Home.ROUTER_QUICK_OVERVIEW_SEE_EXAMPLE' | translate }}
+      </a>
       <p>{{ 'Home.ROUTER_QUICK_OVERVIEW_P2_LAST' | translate}}</p>
       <p><strong>{{ 'Home.ROUTER_QUICK_OVERVIEW_TITLE_BGP' | translate }}</strong></p>
       <p [innerHTML]="'Home.ROUTER_QUICK_OVERVIEW_P3' | translate:{value:'info'}"></p>

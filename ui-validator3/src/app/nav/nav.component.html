@@ -1,11 +1,11 @@
 <nav class='navbar navbar-expand-lg navbar-dark bg-dark'>
     <div class='container'>
         <a class='navbar-brand text-white'>RPKI Validator</a>
-        <button class='navbar-toggler' type='button' data-toggle='collapse' data-target='#rpkiNavbar'
-                aria-controls='myNavbar' aria-expanded='false' aria-label='Toggle navigation'>
+        <button class='navbar-toggler' type='button' (click)='navbarCollapsed = !navbarCollapsed'
+                    [attr.aria-expanded]='!navbarCollapsed' aria-controls='rpkiNavbar' aria-expanded='false' aria-label='Toggle navigation'>
             <span class='navbar-toggler-icon'></span>
         </button>
-        <div class='collapse navbar-collapse' id='rpkiNavbar'>
+        <div class='collapse navbar-collapse' [ngbCollapse]='navbarCollapsed' id='rpkiNavbar'>
             <div class='navbar-nav'>
                 <a class='nav-link' routerLink='/home' routerLinkActive='active' (click)='changeTitle("Nav.TITLE_HOME")'>{{ 'HOME' | translate }}</a>
                 <a class='nav-link' routerLink='/trust-anchors' routerLinkActive='active' (click)='changeTitle("Nav.TITLE_TRUST_ANCHORS")'>{{ 'TRUST_ANCHORS' | translate }}</a>

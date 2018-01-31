@@ -1,16 +1,24 @@
 /deep/ .nav-pills {
   min-width: 950px;
-  margin-bottom: 20px;
-  .nav-link {
-    padding: 15px;
-    border: 1px solid #C6EDF9;
-    border-radius: 10px 10px 10px 10px;
-    margin-right: 20px;
-    text-align: center;
-    font-size: 17px;
-    font-weight: bold;
-    color: #404040;
-    width: 10em;
+  margin-top: 30px;
+  margin-bottom: 80px;
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: space-around;
+  .nav-item {
+    flex: 1;
+    .nav-link {
+      position: relative;
+      padding: 15px;
+      border: 1px solid #C6EDF9;
+      border-radius: 10px 10px 10px 10px;
+      margin-right: 20px;
+      text-align: center;
+      font-size: 17px;
+      font-weight: bold;
+      color: #404040;
+      //width: 10em;
+    }
   }
   .nav-link.active,
   .show > .nav-link {
@@ -21,23 +29,26 @@
 
 /deep/ .tab-content > .tab-pane {
   color: #404040;
-  padding:20px 10px;
+  padding: 20px 10px;
   border: 1px solid #C6EDF9;
   border-radius: 10px 10px 10px 10px;
   overflow: visible;
   display: flow;
 }
-/deep/ .ngb-popover-window {
-  width: 100%;
+
+/deep/ .popover {
+  max-width: inherit;
+  width: 800px;
 }
+
 .top-arrow {
-  display: initial;
-  position: relative;
-  top: -50px;
-  right: -80px;
+  position: absolute;
+  top: -40px;
+  right: -55px;
 }
+
 .bottom-arrow {
-  position: relative;
-  bottom: -35px;
+  position: absolute;
+  bottom: -40px;
   right: -50px;
 }
