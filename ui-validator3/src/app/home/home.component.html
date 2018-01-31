@@ -146,10 +146,11 @@
           </tr>
         </table>
       </ng-template>
-
-      <a href="" [ngbPopover]="popContent" placement="right" triggers="mouseenter:mouseleave" popoverTitle="{{'Home.ROUTER_QUICK_OVERVIEW_EXAMPLE' | translate}}">
-          {{ 'Home.ROUTER_QUICK_OVERVIEW_SEE_EXAMPLE' | translate }}
-      </a>
+      <p>
+        <a href="" [ngbPopover]="popContent" placement="right" triggers="mouseenter:mouseleave" popoverTitle="{{'Home.ROUTER_QUICK_OVERVIEW_EXAMPLE' | translate}}">
+            {{ 'Home.ROUTER_QUICK_OVERVIEW_SEE_EXAMPLE' | translate }}
+        </a>
+      </p>
       <p>{{ 'Home.ROUTER_QUICK_OVERVIEW_P2_LAST' | translate}}</p>
       <p><strong>{{ 'Home.ROUTER_QUICK_OVERVIEW_TITLE_BGP' | translate }}</strong></p>
       <p [innerHTML]="'Home.ROUTER_QUICK_OVERVIEW_P3' | translate:{value:'info'}"></p>
