@@ -52,6 +52,10 @@
   "Footer": {
     "COPYRIGHT": "Copyright ©2009-2018 the Réseaux IP Européens Network Coordination Centre RIPE NCC. All rights restricted. Version 2.24-SNAPSHOT"
   },
+  "TrustAnchors": {
+    "PROCESSED_ITEMS": "Processed Items",
+    "LAST_UPDATED": "Last Updated"
+  },
   "Roas": {
     "ASN": "ASN",
     "PREFIX": "Prefix",

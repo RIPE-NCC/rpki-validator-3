@@ -1,22 +1,18 @@
-import {Injectable} from "@angular/core";
-
 import {HttpClient, HttpErrorResponse} from "@angular/common/http";
 import {Observable} from "rxjs/Observable";
-import "rxjs/add/operator/do";
-import "rxjs/add/operator/catch";
-import "rxjs/add/observable/throw";
-import {IRoasResponse} from "./roas-response";
+import {Injectable} from "@angular/core";
+import {ITrustAnchorsRespons} from "./trust-anchors-respons";
 
 @Injectable()
-export class RoasService {
+export class TrustAnchorsService {
 
-    private _roasUrl = './api/roas/roas-response.json';
+    private _trustAnchorsUrl = './api/trust-anchors/trust-anchors.json';
 
     constructor(private _http: HttpClient) {
     }
 
-    getRoas(): Observable<IRoasResponse> {
-        return this._http.get<IRoasResponse>(this._roasUrl)
+    getTrustAnchors(): Observable<ITrustAnchorsRespons> {
+        return this._http.get<ITrustAnchorsRespons>(this._trustAnchorsUrl)
             .do(reponse => console.log('All: ' + JSON.stringify(reponse.data)))
             .catch(this.handleError);
     }
