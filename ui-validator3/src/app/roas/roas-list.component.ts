@@ -14,9 +14,10 @@ export class RoasListComponent implements OnInit {
   // pagination
   roasPerPage: number;
   totalRoas: number;
-  page: IRoa[];
+  page: number;
   previousPage: any;
-  showPages: IRoa[] = [];
+  firstRoaInTable: number;
+  lastRoaInTable: number;
 
   constructor(private _roasService: RoasService) { }
 
@@ -38,7 +39,7 @@ export class RoasListComponent implements OnInit {
       this._roasService.getRoas()
           .subscribe(response => {
                   this.roas = response.data,
-                  this.totalRoas = this.roas.length},
+                  this.setPaginationParameters()},
               error => this.errorMessage = <any>error);
     }
   }
@@ -53,4 +54,18 @@ export class RoasListComponent implements OnInit {
     //               this.totalRoas = this.roas.length},
     //         error => this.errorMessage = <any>error);
     // }
+
+    setPaginationParameters() {
+        this.totalRoas = this.roas.length
+        this.setNumberOfFirstRoaInTable();
+        this.setNumberOfLastRoaInTable();
+    }
+
+    setNumberOfFirstRoaInTable() {
+        this.firstRoaInTable = this.page * this.roasPerPage;
+    }
+
+    setNumberOfLastRoaInTable() {
+        this.lastRoaInTable = (this.page * this.roasPerPage) + this.roasPerPage;
+    }
 }

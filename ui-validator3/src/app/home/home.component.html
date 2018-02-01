@@ -83,69 +83,6 @@
           </tr>
           </tbody>
         </table>
-
-      <ng-template #popContent>
-        <p>{{ 'Home.POPOVER_P1' | translate }}</p>
-        <table class="table table-bordered">
-          <tr>
-            <td></td>
-            <td>{{ 'Roas.ASN' | translate}}</td>
-            <td>{{ 'Roas.PREFIX' | translate}}</td>
-            <td>{{ 'Roas.MAX_LENGTH' | translate}}</td>
-          </tr>
-          <tr>
-            <td>A</td>
-            <td>65001</td>
-            <td>10.0.0.0/16</td>
-            <td>20</td>
-          </tr>
-          <tr>
-            <td>B</td>
-            <td>65002</td>
-            <td>10.0.1.0/24</td>
-            <td>24</td>
-          </tr>
-        </table>
-        <p>{{ 'Home.POPOVER_P2' | translate }}</p>
-        <table class="table table-bordered">
-          <tr>
-            <td>{{ 'Roas.ASN' | translate}}</td>
-            <td>{{ 'Roas.PREFIX' | translate}}</td>
-            <td>{{ 'Home.POPOVER_STATUS' | translate }}</td>
-            <td>{{ 'Home.POPOVER_REASON' | translate }}</td>
-          </tr>
-          <tr>
-            <td>65001</td>
-            <td>10.0.0.0/16</td>
-            <td>{{ 'VALID' | translate }}</td>
-            <td>Matches A</td>
-          </tr>
-          <tr>
-            <td>65001</td>
-            <td>10.0.0.0/24</td>
-            <td>{{ 'INVALID' | translate }}</td>
-            <td>No valid matches, and is more specific than A</td>
-          </tr>
-          <tr>
-            <td>65002</td>
-            <td>10.0.1.0/24</td>
-            <td>{{ 'VALID' | translate }}</td>
-            <td>Matches B (A invalidates, B wins)</td>
-          </tr>
-          <tr>
-            <td>65004</td>
-            <td>10.0.2.0/20</td>
-            <td>{{ 'INVALID' | translate }}</td>
-            <td>No valid matches, and is different AS from A</td>
-          </tr>
-          <tr>
-            <td>65004</td>
-            <td>192.168.0.0/24</td>
-            <td>{{ 'UNKNOWN' | translate}}</td>
-            <td>No matches</td>
-          </tr>
-        </table>
-      </ng-template>
       <p>
         <a href="" [ngbPopover]="popContent" placement="right" triggers="mouseenter:mouseleave" popoverTitle="{{'Home.ROUTER_QUICK_OVERVIEW_EXAMPLE' | translate}}">
             {{ 'Home.ROUTER_QUICK_OVERVIEW_SEE_EXAMPLE' | translate }}
@@ -157,3 +94,67 @@
     </ng-template>
   </ngb-tab>
 </ngb-tabset>
+
+<!-- POPOVER -->
+<ng-template #popContent>
+  <p>{{ 'Home.POPOVER_P1' | translate }}</p>
+  <table class="table table-bordered">
+    <tr>
+      <td></td>
+      <td>{{ 'Roas.ASN' | translate}}</td>
+      <td>{{ 'Roas.PREFIX' | translate}}</td>
+      <td>{{ 'Roas.MAX_LENGTH' | translate}}</td>
+    </tr>
+    <tr>
+      <td>A</td>
+      <td>65001</td>
+      <td>10.0.0.0/16</td>
+      <td>20</td>
+    </tr>
+    <tr>
+      <td>B</td>
+      <td>65002</td>
+      <td>10.0.1.0/24</td>
+      <td>24</td>
+    </tr>
+  </table>
+  <p>{{ 'Home.POPOVER_P2' | translate }}</p>
+  <table class="table table-bordered">
+    <tr>
+      <td>{{ 'Roas.ASN' | translate}}</td>
+      <td>{{ 'Roas.PREFIX' | translate}}</td>
+      <td>{{ 'Home.POPOVER_STATUS' | translate }}</td>
+      <td>{{ 'Home.POPOVER_REASON' | translate }}</td>
+    </tr>
+    <tr>
+      <td>65001</td>
+      <td>10.0.0.0/16</td>
+      <td>{{ 'VALID' | translate }}</td>
+      <td>Matches A</td>
+    </tr>
+    <tr>
+      <td>65001</td>
+      <td>10.0.0.0/24</td>
+      <td>{{ 'INVALID' | translate }}</td>
+      <td>No valid matches, and is more specific than A</td>
+    </tr>
+    <tr>
+      <td>65002</td>
+      <td>10.0.1.0/24</td>
+      <td>{{ 'VALID' | translate }}</td>
+      <td>Matches B (A invalidates, B wins)</td>
+    </tr>
+    <tr>
+      <td>65004</td>
+      <td>10.0.2.0/20</td>
+      <td>{{ 'INVALID' | translate }}</td>
+      <td>No valid matches, and is different AS from A</td>
+    </tr>
+    <tr>
+      <td>65004</td>
+      <td>192.168.0.0/24</td>
+      <td>{{ 'UNKNOWN' | translate}}</td>
+      <td>No matches</td>
+    </tr>
+  </table>
+</ng-template>
