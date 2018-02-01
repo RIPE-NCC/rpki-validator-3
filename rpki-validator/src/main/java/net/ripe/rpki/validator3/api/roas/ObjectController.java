@@ -83,24 +83,19 @@ public class ObjectController {
 
     @GetMapping(path = "/validated")
     public ResponseEntity<ApiResponse<ValidatedObjects>> list() {
-        final Map<Long, TrustAnchorResource> trustAnchorsById = trustAnchors.findAll()
-                .stream().collect(Collectors.toMap(AbstractEntity::getId, TrustAnchorResource::of));
+        final Map<String, TrustAnchorResource> trustAnchorsById = trustAnchors.findAll()
+                .stream().collect(Collectors.toMap(TrustAnchor::getName, TrustAnchorResource::of));
 
         final Stream<RoaPrefix> validatedPrefixes = rpkiObjects
-                .findCurrentlyValidated(RpkiObject.Type.ROA)
-                .flatMap(pair -> {
-                            Link trustAnchorLink = trustAnchorsById.get(pair.getKey().getTrustAnchor().getId()).getLinks().getLink("self");
-                            return pair.getValue().getRoaPrefixes().stream()
-                                    .map(prefix -> new RoaPrefix(
-                                            String.valueOf(prefix.getAsn()),
-                                            prefix.getPrefix(),
-                                            prefix.getEffectiveLength(),
-                                            new Links(trustAnchorLink.withRel(TrustAnchor.TYPE))
-                                    ));
-                        }
-                )
-                .distinct();
-
+                .findCurrentlyValidatedRoaPrefixes()
+                .map(r -> {
+                    final Link trustAnchorLink = trustAnchorsById.get(r.getTrustAnchor()).getLinks().getLink("self");
+                    return new RoaPrefix(
+                            r.getAsn(),
+                            r.getPrefix(),
+                            r.getLength(),
+                            new Links(trustAnchorLink.withRel(TrustAnchor.TYPE)));
+                });
 
         final Base64.Encoder encoder = Base64.getEncoder();
         final Stream<RouterCertificate> routerCertificates = rpkiObjects.findRouterCertificates().map(o ->

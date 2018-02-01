@@ -27,45 +27,32 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.domain;
+package net.ripe.rpki.validator3.api;
 
-import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
-import net.ripe.rpki.validator3.adapter.jpa.JPARpkiObjects;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
+import org.springframework.hateoas.Link;
+import org.springframework.hateoas.Links;
 
-import javax.persistence.LockModeType;
-import java.time.Instant;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Stream;
+import java.util.function.BiFunction;
 
-public interface RpkiObjects {
-    void add(RpkiObject rpkiObject);
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 
-    void remove(RpkiObject o);
+public class Paging {
 
-    Stream<Pair<CertificateTreeValidationRun, RpkiObject>> findCurrentlyValidated(RpkiObject.Type type);
-
-    void merge(RpkiObject object);
-    
-    RpkiObject get(long id);
-
-    Optional<RpkiObject> findBySha256(byte[] sha256);
-
-    Map<String, RpkiObject> findObjectsInManifest(ManifestCms manifestCms, LockModeType lockMode);
-
-    Stream<RpkiObject> all();
-
-    Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type type, byte[] authorityKeyIdentifier);
-
-    Stream<JPARpkiObjects.RoaPrefix> findCurrentlyValidatedRoaPrefixes(Integer startFrom, Integer pageSize);
-
-    default Stream<JPARpkiObjects.RoaPrefix> findCurrentlyValidatedRoaPrefixes() {
-        return findCurrentlyValidatedRoaPrefixes(null, null);
+    public static <T> Links links(int startFrom, int pageSize, int totalSize, BiFunction<Integer, Integer, T> linkConstructor) {
+        int previous = startFrom - pageSize;
+        if (previous < 0) {
+            previous = 0;
+        }
+        int next = startFrom + pageSize;
+        if (next > totalSize - pageSize) {
+            next = totalSize - pageSize;
+        }
+        return new Links(
+                linkTo(linkConstructor.apply(0, pageSize)).withRel(Link.REL_FIRST),
+                linkTo(linkConstructor.apply(previous, pageSize)).withRel(Link.REL_PREVIOUS),
+                linkTo(linkConstructor.apply(next, pageSize)).withRel(Link.REL_NEXT),
+                linkTo(linkConstructor.apply(totalSize - pageSize, pageSize)).withRel(Link.REL_LAST)
+        );
     }
 
-    Stream<RpkiObject> findRouterCertificates();
-
-    long deleteUnreachableObjects(Instant unreachableSince);
 }

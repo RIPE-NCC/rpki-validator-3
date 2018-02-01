@@ -32,11 +32,13 @@ package net.ripe.rpki.validator3.adapter.jpa;
 import com.google.common.primitives.UnsignedBytes;
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQuery;
+import lombok.Value;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.springframework.stereotype.Repository;
 
 import javax.persistence.LockModeType;
@@ -84,26 +86,81 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
     @Override
     public Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type type, byte[] authorityKeyIdentifier) {
         return Optional.ofNullable(select()
-            .where(rpkiObject.type.eq(type).and(rpkiObject.authorityKeyIdentifier.eq(authorityKeyIdentifier)))
-            .orderBy(rpkiObject.serialNumber.desc(), rpkiObject.signingTime.desc(), rpkiObject.id.desc())
-            .fetchFirst()
+                .where(rpkiObject.type.eq(type).and(rpkiObject.authorityKeyIdentifier.eq(authorityKeyIdentifier)))
+                .orderBy(rpkiObject.serialNumber.desc(), rpkiObject.signingTime.desc(), rpkiObject.id.desc())
+                .fetchFirst()
         );
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public Stream<RoaPrefix> findCurrentlyValidatedRoaPrefixes(Integer startFrom, Integer pageSize) {
+        String sql = "SELECT DISTINCT \n" +
+                "      p.asn AS asn, \n" +
+                "      p.prefix AS prefix, \n" +
+                "      COALESCE(p.effective_length, p.maximum_length) AS length, \n" +
+                "      ta.name AS trust_anchor \n" +
+                "  FROM rpki_object ro \n" +
+                "  INNER JOIN rpki_object_roa_prefixes p ON p.rpki_object_id = ro.id \n" +
+                "  INNER JOIN validation_run_validated_objects vrvo ON vrvo.rpki_object_id = ro.id \n" +
+                "  INNER JOIN validation_run vr ON vr.id = vrvo.validation_run_id \n" +
+                "  INNER JOIN trust_anchor ta ON vr.trust_anchor_id = ta.id \n" +
+                "  WHERE vr.type = 'CT' \n" +
+                "  AND vr.id in (\n" +
+                "    SELECT MAX(id)\n" +
+                "    FROM validation_run vr1\n" +
+                "    WHERE vr1.type = vr.type \n" +
+                "    GROUP BY vr1.trust_anchor_id, vr1.rpki_repository_id \n" +
+                "  )" +
+                "  ORDER BY ta.name, p.asn, p.prefix ";
+
+        int sf = startFrom == null ? 0 : startFrom;
+        if (pageSize != null) {
+            sql = sql + " LIMIT " + pageSize;
+        }
+        if (startFrom != null) {
+            sql = sql + " OFFSET " + startFrom;
+        }
+
+        return sql(sql).getResultList().stream().map(o -> {
+            final Object[] fields = (Object[]) o;
+            return new RoaPrefix(
+                    asString(fields[0]),
+                    asString(fields[1]),
+                    asInt(fields[2]),
+                    asString(fields[3]));
+        });
+    }
+
+    private String asString(Object o) {
+        return o == null ? null : o.toString();
+    }
+
+    private int asInt(Object o) {
+        return o == null ? null : Integer.parseInt(o.toString());
+    }
+
+
+    @Value
+    public static class RoaPrefix {
+        private String asn;
+        private String prefix;
+        private int length;
+        private String trustAnchor;
     }
 
     @Override
     public Stream<Pair<CertificateTreeValidationRun, RpkiObject>> findCurrentlyValidated(RpkiObject.Type type) {
         JPAQuery<Tuple> query = queryFactory
-            .from(certificateTreeValidationRun)
-            .join(certificateTreeValidationRun.validatedObjects, rpkiObject)
-            .where(
-                rpkiObject.type.eq(type)
-                    .and(certificateTreeValidationRun.id.in(
-                        JPAValidationRuns.latestSuccessfulValidationRuns())
-                    )
-            )
-            .select(certificateTreeValidationRun, rpkiObject);
-        return stream(query)
-            .map(x -> Pair.of(x.get(0, CertificateTreeValidationRun.class), x.get(1, RpkiObject.class)));
+                .from(certificateTreeValidationRun)
+                .join(certificateTreeValidationRun.validatedObjects, rpkiObject)
+                .where(
+                        rpkiObject.type.eq(type)
+                                .and(certificateTreeValidationRun.id.in(
+                                        JPAValidationRuns.latestSuccessfulValidationRuns())
+                                )
+                ).select(certificateTreeValidationRun, rpkiObject);
+        return stream(query).map(x -> Pair.of(x.get(0, CertificateTreeValidationRun.class), x.get(1, RpkiObject.class)));
     }
 
     @Override
@@ -114,17 +171,6 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
     @Override
     public long deleteUnreachableObjects(Instant unreachableSince) {
         return queryFactory.delete(rpkiObject).where(rpkiObject.lastMarkedReachableAt.before(unreachableSince)).execute();
-    }
-
-    @Override
-    public Stream<Pair<CertificateTreeValidationRun, RpkiObject>> findCurrentlyValidated() {
-        JPAQuery<Tuple> query = queryFactory
-                .from(certificateTreeValidationRun)
-                .join(certificateTreeValidationRun.validatedObjects, rpkiObject)
-                .where(certificateTreeValidationRun.id.in(JPAValidationRuns.latestSuccessfulValidationRuns()))
-                .select(certificateTreeValidationRun, rpkiObject);
-        return stream(query)
-                .map(x -> Pair.of(x.get(0, CertificateTreeValidationRun.class), x.get(1, RpkiObject.class)));
     }
 
     @Override

@@ -33,10 +33,13 @@ import com.mysema.commons.lang.CloseableIterator;
 import com.querydsl.core.types.EntityPath;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import net.ripe.rpki.validator3.domain.RpkiObject;
+import org.apache.commons.lang3.tuple.Pair;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.persistence.EntityManager;
+import javax.persistence.Query;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -79,5 +82,9 @@ abstract class JPARepository<T> {
 
     protected JPAQuery<T> select() {
         return queryFactory.selectFrom(entityPath);
+    }
+
+    protected Query sql(String sql) {
+        return entityManager.createNativeQuery(sql);
     }
 }

@@ -31,20 +31,29 @@ package net.ripe.rpki.validator3.api.roas;
 
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.adapter.jpa.JPARpkiObjects;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
+import net.ripe.rpki.validator3.api.Paging;
+import net.ripe.rpki.validator3.api.rpkirepositories.RpkiRepositoriesController;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.Link;
+import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.util.stream.Stream;
+
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping(path = "/roas", produces = Api.API_MIME_TYPE)
@@ -54,32 +63,18 @@ public class ValidatedRoasController {
     private RpkiObjects rpkiObjects;
 
     @GetMapping(path = "/")
-    public ResponseEntity<ApiResponse<Stream<RoaPrefix>>> list() {
-        final Stream<RoaPrefix> validatedPrefixes = rpkiObjects
-                .findCurrentlyValidated(RpkiObject.Type.ROA)
-                .flatMap(pair -> {
-                            @NotNull @Valid TrustAnchor trustAnchor = pair.getKey().getTrustAnchor();
-                            return pair.getValue().getRoaPrefixes().stream()
-                                    .map(prefix -> new RoaPrefix(
-                                            String.valueOf(prefix.getAsn()),
-                                            prefix.getPrefix(),
-                                            prefix.getEffectiveLength(),
-                                            trustAnchor.getName()
-                                    ));
-                        }
-                )
-                .distinct();
+    public ResponseEntity<ApiResponse<Stream<JPARpkiObjects.RoaPrefix>>> list(
+            @RequestParam(name = "start-from", defaultValue = "0") int startFrom,
+            @RequestParam(name = "page-size", defaultValue = "20") int pageSize) {
 
-        return ResponseEntity.ok(ApiResponse.<Stream<RoaPrefix>>builder()
-                .data(validatedPrefixes)
-                .build());
+        final Stream<JPARpkiObjects.RoaPrefix> roas = rpkiObjects
+                .findCurrentlyValidatedRoaPrefixes(startFrom, pageSize);
+
+        int totalSize = 100;
+        final Links links = Paging.links(
+                startFrom, pageSize, totalSize,
+                (sf, ps) -> methodOn(ValidatedRoasController.class).list(sf, ps));
+        return ResponseEntity.ok(ApiResponse.<Stream<JPARpkiObjects.RoaPrefix>>builder().links(links).data(roas).build());
     }
 
-    @Value
-    public static class RoaPrefix {
-        private String asn;
-        private String prefix;
-        private int maxLength;
-        private String trustAnchor;
-    }
 }
