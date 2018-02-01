@@ -170,6 +170,12 @@
             <version>0.7</version>
         </dependency>
 
+        <dependency>
+            <groupId>net.ripe.rpki</groupId>
+            <artifactId>ui-validator</artifactId>
+            <version>3.0.0-SNAPSHOT</version>
+        </dependency>
+
     </dependencies>
 
     <dependencyManagement>

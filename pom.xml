@@ -12,5 +12,6 @@
     <modules>
         <module>rpki-validator</module>
         <module>rpki-rtr-server</module>
+        <module>ui-validator</module>
     </modules>
 </project>

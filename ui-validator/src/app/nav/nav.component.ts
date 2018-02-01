@@ -11,7 +11,7 @@ export class NavComponent {
 
   constructor() { }
 
-  private changeTitle(title: string) {
+  changeTitle(title: string) {
     this.pageTitle = title;
   }
 

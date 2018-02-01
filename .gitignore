@@ -29,5 +29,6 @@ nbdist/
 
 #npm
 node_modules/
+ui-validator/node
 
 .DS_Store

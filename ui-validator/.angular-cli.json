@@ -6,7 +6,7 @@
   "apps": [
     {
       "root": "src",
-      "outDir": "dist",
+      "outDir":  "./target/ui-validator",
       "assets": [
         "assets",
         "api",
