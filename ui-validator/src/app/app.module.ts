@@ -42,7 +42,7 @@ export function HttpLoaderFactory(http: HttpClient) {
     RouterModule.forRoot([
       { path: 'home', component: HomeComponent},
       { path: 'trust-anchors', component: TrustAnchorsComponent},
-      { path: 'roas', component: RoasListComponent},
+      { path: 'list-roas', component: RoasListComponent},
       { path: '', redirectTo: 'home', pathMatch: 'full'},
       { path: '**', redirectTo: 'home', pathMatch: 'full'}
     ]),
