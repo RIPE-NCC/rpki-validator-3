@@ -1,6 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import {RoasService} from "./roas.service";
-import {IRoa} from "./roa";
+import {IRoa} from "./roas-response";
 
 @Component({
   selector: 'app-roas',
@@ -8,64 +8,66 @@ import {IRoa} from "./roa";
   styleUrls: ['./roas-list.component.scss']
 })
 export class RoasListComponent implements OnInit {
+
   alertShown = true;
   errorMessage: string;
   roas: IRoa[] = [];
+  pageSizes: number[] = [ 10, 25, 50, 100];
+  // search
+  searchBy: string;
   // pagination
-  roasPerPage: number;
+  roasPerPage: number = 10;
   totalRoas: number;
-  page: number;
-  previousPage: any;
-  firstRoaInTable: number;
-  lastRoaInTable: number;
+  page: number = 1;
+  previousPage: number;
+  firstRoaInTable: number = 1;
+  lastRoaInTable: number = 10;
 
-  constructor(private _roasService: RoasService) { }
-
-  ngOnInit() {
-      this.loadData();
+  constructor(private _roasService: RoasService) {
   }
 
-  loadPage(page: number) {
-      if (page !== this.previousPage) {
-          this.previousPage = page;
-          this.loadData();
-      }
+  ngOnInit() {
+    this.loadData();
   }
 
   loadData() {
-    if (this.roas.length > 0) {
+    this._roasService.getRoas(this.firstRoaInTable.toString(), this.roasPerPage.toString()).subscribe(
+      response => {
+        this.roas = response.data,
+        this.setPaginationParameters()
+      },
+      error => this.errorMessage = <any>error);
+  }
 
-    } else {
-      this._roasService.getRoas()
-          .subscribe(response => {
-                  this.roas = response.data,
-                  this.setPaginationParameters()},
-              error => this.errorMessage = <any>error);
+  setPaginationParameters() {
+    this.setNumberOfFirstRoaInTable();
+    this.setNumberOfLastRoaInTable();
+  }
+
+  setNumberOfFirstRoaInTable() {
+    this.firstRoaInTable = (this.page - 1) * this.roasPerPage + 1;
+  }
+
+  setNumberOfLastRoaInTable() {
+    this.lastRoaInTable = this.firstRoaInTable + this.roasPerPage - 1;
+  }
+
+  onChangePageSize(pageSize: number): void {
+    this.page = Math.floor(this.firstRoaInTable/pageSize) + 1;
+    this.roasPerPage = +pageSize;
+    this.loadData();
+  }
+
+  onChangePage(page: number): void {
+    if (page !== this.previousPage) {
+      this.previousPage = page;
+      this.loadData();
     }
   }
 
-    // loadData() {
-    //     this._roasService.getRoas({
-    //         page: this.page - 1,
-    //         size: this.itemsPerPage
-    //     }).subscribe(
-    //         (res: Response) => {
-    //               this.roas = response.data,
-    //               this.totalRoas = this.roas.length},
-    //         error => this.errorMessage = <any>error);
-    // }
+  onSearchByClick(searchBy: string): void {
+    this.searchBy = searchBy;
+    // TODO call backend for roas and set rsponse into this.roas
+  }
 
-    setPaginationParameters() {
-        this.totalRoas = this.roas.length
-        this.setNumberOfFirstRoaInTable();
-        this.setNumberOfLastRoaInTable();
-    }
-
-    setNumberOfFirstRoaInTable() {
-        this.firstRoaInTable = this.page * this.roasPerPage;
-    }
-
-    setNumberOfLastRoaInTable() {
-        this.lastRoaInTable = (this.page * this.roasPerPage) + this.roasPerPage;
-    }
 }

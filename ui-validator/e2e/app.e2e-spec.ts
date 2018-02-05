@@ -1,6 +1,6 @@
 import { AppPage } from './app.po';
 
-describe('ui-validator3 App', () => {
+describe('ui-validator App', () => {
   let page: AppPage;
 
   beforeEach(() => {

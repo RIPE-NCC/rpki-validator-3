@@ -15,6 +15,7 @@ import { RoasModule } from "./roas/roas.module";
 import { TrustAnchorsComponent } from "./trust-anchors/trust-anchors.component";
 import { RoasListComponent } from "./roas/roas-list.component";
 import { NgbModule } from "@ng-bootstrap/ng-bootstrap";
+import {SharedModule} from "./shared/shared.module";
 
 export function HttpLoaderFactory(http: HttpClient) {
   return new TranslateHttpLoader(http);
@@ -46,7 +47,8 @@ export function HttpLoaderFactory(http: HttpClient) {
       { path: '', redirectTo: 'home', pathMatch: 'full'},
       { path: '**', redirectTo: 'home', pathMatch: 'full'}
     ]),
-    NgbModule.forRoot()
+    NgbModule.forRoot(),
+    SharedModule
   ],
   providers: [],
   bootstrap: [AppComponent]

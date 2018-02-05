@@ -10,6 +10,7 @@
   "VALID": "VALID",
   "INVALID": "INVALID",
   "UNKNOWN": "UNKNOWN",
+  "SEARCH": "Search",
   "Nav": {
     "TITLE_HOME": "Quick Overview of BGP Origin Validation",
     "TITLE_TRUST_ANCHORS": "Configured Trust Anchors",
@@ -62,7 +63,6 @@
     "MAX_LENGTH": "Maximum Length",
     "ALERT_MSG_P1": "Validated ROAs from",
     "ALERT_MSG_P2": "APNIC from AFRINIC RPKI Root, APNIC from ARIN RPKI Root, APNIC from IANA RPKI Root, APNIC from LACNIC RPKI Root, APNIC from RIPE RPKI Root, ARIN RPKI Root, AfriNIC RPKI Root, LACNIC RPKI Root, RIPE NCC Pilot, RIPE NCC Pilot (RRDP prefetch), RIPE NCC RPKI Root, RIPE NCC RPKI Root (RRDP prefetch), RIPE NCC prepdev, RIPE NCC prepdev (RRDP prefetch), altca, apnic-testbed.",
-    "SEARCH": "Search",
     "SHOW": "Show",
     "ENTRIES": "entries"
   }

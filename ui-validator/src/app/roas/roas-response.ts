@@ -1,5 +1,16 @@
-import { IRoa } from "./roa";
+export interface IRoa {
+  asn: string,
+  prefix: string,
+  length: number,
+  trustAnchor: string
+}
 
 export interface IRoasResponse {
-    "data": IRoa[]
+  links: {
+    first: string,
+    prev: string,
+    next: string,
+    last: string,
+  },
+  data: IRoa[]
 }

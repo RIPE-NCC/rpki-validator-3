@@ -1,0 +1,8 @@
+<div class='d-inline-flex ml-auto'>
+  <label class='col-form-label mr-1'>{{ 'SEARCH' | translate }}:</label>
+  <input type='text'
+         class='form-control'
+         placeholder='{{ "SEARCH" | translate }}'
+         [(ngModel)]='searchBy'
+         (keyup)='onEnteredLetter()'/>
+</div>

@@ -1,41 +1,37 @@
-<ngb-alert type='info' *ngIf="alertShown" (close)="alertShown=false">
-    {{ 'Roas.ALERT_MSG_P1' | translate }} <strong>{{ 'Roas.ALERT_MSG_P2' | translate }}</strong>
+<ngb-alert type='info' *ngIf='alertShown' (close)='alertShown=false'>
+  {{ 'Roas.ALERT_MSG_P1' | translate }} <strong>{{ 'Roas.ALERT_MSG_P2' | translate }}</strong>
 </ngb-alert>
-<div class="form-group d-flex justify-content-between mb-3">
-    <div class="d-inline-flex">
-        <label class="col-form-label mr-1">{{ 'Roas.SHOW' | translate }} </label>
-        <select class="custom-select">
-            <option value="10">10</option>
-            <option value="25">25</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-        </select>
-        <label class="col-form-label ml-1">{{ 'Roas.ENTRIES' | translate}}</label>
-    </div>
-    <div class="d-inline-flex ml-auto">
-      <label class="col-form-label mr-1">{{ 'Roas.SEARCH' | translate }}:</label>
-      <input type='text' class="form-control" placeholder="{{ 'Roas.SEARCH' | translate }}"/>
-    </div>
+<div class='form-group d-flex justify-content-between mb-3'>
+  <div class='d-inline-flex'>
+    <label class='col-form-label mr-1'>{{ 'Roas.SHOW' | translate }} </label>
+    <select #selectPageSize (change)='onChangePageSize(selectPageSize.value)'  class='custom-select'>
+      <option *ngFor='let size of pageSizes' [value]='size'>{{size}}</option>
+    </select>
+    <label class='col-form-label ml-1'>{{ 'Roas.ENTRIES' | translate}}</label>
+  </div>
+  <search-by [(searchBy)]="searchBy"
+             (searchByChanged)='onSearchByClick($event)'></search-by>
 </div>
-<table class="table table-striped table-bordered">
+<table class='table table-striped table-bordered'>
   <thead>
-    <tr>
-      <th scope="col">{{ 'Roas.ASN' | translate }}</th>
-      <th scope="col">{{ 'Roas.PREFIX' | translate }}</th>
-      <th scope="col">{{ 'Roas.MAX_LENGTH' | translate }}</th>
-      <th scope="col">{{ 'TRUST_ANCHORS' | translate }}</th>
-    </tr>
+  <tr>
+    <th scope='col'>{{ 'Roas.ASN' | translate }}</th>
+    <th scope='col'>{{ 'Roas.PREFIX' | translate }}</th>
+    <th scope='col'>{{ 'Roas.MAX_LENGTH' | translate }}</th>
+    <th scope='col'>{{ 'TRUST_ANCHORS' | translate }}</th>
+  </tr>
   </thead>
   <tbody>
-    <tr *ngFor='let roa of roas'>
-      <td>{{ roa.asn }}</td>
-      <td>{{ roa.prefix }}</td>
-      <td>{{ roa.maxLength }}</td>
-      <td>{{ roa.trustAnchor }}</td>
-    </tr>
+  <tr *ngFor='let roa of roas'>
+    <td>{{ roa.asn }}</td>
+    <td>{{ roa.prefix }}</td>
+    <td>{{ roa.length }}</td>
+    <td>{{ roa.trustAnchor }}</td>
+  </tr>
   </tbody>
 </table>
-<div class="d-flex justify-content-between">
-    <ngb-pagination [collectionSize]="totalRoas" [pageSize]="roasPerPage" [(page)]="page" [maxSize]="7" [rotate]="true" (pageChange)="loadPage($event)"></ngb-pagination>
-    <label class="col-form-label">Showing {{firstRoaInTable}} to {{lastRoaInTable}} of {{totalRoas}}</label>
+<div class='d-flex justify-content-between'>
+  <ngb-pagination [collectionSize]='250' [pageSize]='roasPerPage' [(page)]='page' [maxSize]='5' [boundaryLinks]='true'
+                  [rotate]='true' [ellipses]='false' size='lg' (pageChange)='onChangePage($event)'></ngb-pagination>
+  <label class='col-form-label'>Showing {{firstRoaInTable}} to {{lastRoaInTable}} of {{totalRoas}}</label>
 </div>
