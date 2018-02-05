@@ -251,6 +251,7 @@
                         <exclude>.gitignore</exclude>
                         <exclude>suppressions.xml</exclude>
                         <exclude>README.md</exclude>
+                        <exclude>src/main/resources/static/**</exclude>
                     </excludes>
                 </configuration>
                 <executions>
@@ -279,6 +280,26 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.0.1</version>
+                <configuration>
+                    <addDefaultExcludes>true</addDefaultExcludes>
+                    <resources>
+                        <resource>
+                            <directory>${basedir}/src/main/resources</directory>
+                        </resource>
+                        <resource>
+                            <directory>${basedir}/src/test/resources</directory>
+                        </resource>
+                        <resource>
+                            <directory>${basedir}/../ui-validator/target/ui-validator</directory>
+                        </resource>
+                    </resources>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>rpm-maven-plugin</artifactId>

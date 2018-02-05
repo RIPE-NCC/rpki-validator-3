@@ -30,5 +30,6 @@ nbdist/
 #npm
 node_modules/
 ui-validator/node
+ui-validator/npm-debug.log
 
 .DS_Store
