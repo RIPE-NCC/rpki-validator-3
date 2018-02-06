@@ -9,7 +9,7 @@
     </select>
     <label class='col-form-label ml-1'>{{ 'Roas.ENTRIES' | translate}}</label>
   </div>
-  <search-by [(searchBy)]="searchBy"
+  <search-by [(searchBy)]='searchBy'
              (searchByChanged)='onSearchByClick($event)'></search-by>
 </div>
 <table class='table table-striped table-bordered'>

@@ -17,7 +17,7 @@
     "validationChecks" : {
       "success": 251,
       "warning": 0,
-      "danger": 12345
+      "danger": 1234567
     }
   }, {
     "type" : "trust-anchor",

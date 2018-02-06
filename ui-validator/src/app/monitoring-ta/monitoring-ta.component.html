@@ -1,0 +1,11 @@
+<!--<div class='alert alert-success' role='alert' *ngIf='ta.validationChecks.success > 0; else failedSuccessColor'>-->
+  <!--{{ta.validationChecks.success}}-->
+<!--</div>-->
+<div class="center">
+  <div class='alert alert-success' role='alert'>
+  Somet  text really long text
+  </div>
+  <ng-template #failedSuccessColor>
+    <div class='alert alert-danger' role='alert'>{{ta.validationChecks.success}}</div>
+  </ng-template>
+</div>

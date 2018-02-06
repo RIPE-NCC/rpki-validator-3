@@ -19,7 +19,8 @@
     "TITLE_WHITELIST": "Whitelist",
     "TITLE_BGP_PREVIEW": "BGP Preview",
     "TITLE_EXPORT_API": "Export and API",
-    "TITLE_ROUTER_SESSIONS": "Router Sessions"
+    "TITLE_ROUTER_SESSIONS": "Router Sessions",
+    "TITLE_MONITORING_TA": "Monitor for"
   },
   "Home": {
     "ROUTER": "Router",

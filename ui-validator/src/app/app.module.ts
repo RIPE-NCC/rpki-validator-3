@@ -16,6 +16,7 @@ import { TrustAnchorsComponent } from "./trust-anchors/trust-anchors.component";
 import { RoasListComponent } from "./roas/roas-list.component";
 import { NgbModule } from "@ng-bootstrap/ng-bootstrap";
 import {SharedModule} from "./shared/shared.module";
+import { MonitoringTaComponent } from './monitoring-ta/monitoring-ta.component';
 
 export function HttpLoaderFactory(http: HttpClient) {
   return new TranslateHttpLoader(http);
@@ -25,7 +26,8 @@ export function HttpLoaderFactory(http: HttpClient) {
   declarations: [
     AppComponent,
     NavComponent,
-    FooterComponent
+    FooterComponent,
+    MonitoringTaComponent
   ],
   imports: [
     BrowserModule,
@@ -44,6 +46,7 @@ export function HttpLoaderFactory(http: HttpClient) {
       { path: 'home', component: HomeComponent},
       { path: 'trust-anchors', component: TrustAnchorsComponent},
       { path: 'list-roas', component: RoasListComponent},
+      { path: 'trust-anchor-monitor/:id', component: MonitoringTaComponent},
       { path: '', redirectTo: 'home', pathMatch: 'full'},
       { path: '**', redirectTo: 'home', pathMatch: 'full'}
     ]),

@@ -7,25 +7,32 @@
   </tr>
   </thead>
   <tbody>
-  <tr *ngFor='let ta of trustAnchors'>
-    <td>{{ta.name}}</td>
+  <tr *ngFor='let ta of trustAnchors' (click)='openTADetails(ta.id)'>
+    <td>{{ta.name}}
+    </td>
     <td>
       <div class='d-flex justify-content-between'>
-        <div class='alert alert-success' role='alert' *ngIf='ta.validationChecks.success > 0; else mutedSuccessColor'>{{ta.validationChecks.success}}</div>
+        <div class='alert alert-success' role='alert' *ngIf='ta.validationChecks.success > 0; else mutedSuccessColor'>
+          {{ta.validationChecks.success}}
+        </div>
         <ng-template #mutedSuccessColor>
           <div class='alert alert-success-muted' role='alert'>{{ta.validationChecks.success}}</div>
         </ng-template>
-        <div class='alert alert-warning' role='alert' *ngIf='ta.validationChecks.warning > 0; else mutedWarningColor'>{{ta.validationChecks.warning}}</div>
+        <div class='alert alert-warning' role='alert' *ngIf='ta.validationChecks.warning > 0; else mutedWarningColor'>
+          {{ta.validationChecks.warning}}
+        </div>
         <ng-template #mutedWarningColor>
           <div class='alert alert-warning-muted' role='alert'>{{ta.validationChecks.warning}}</div>
         </ng-template>
-        <div class='alert alert-danger' role='alert' *ngIf='ta.validationChecks.danger > 0; else mutedDangerColor'>{{ta.validationChecks.danger}}</div>
+        <div class='alert alert-danger' role='alert' *ngIf='ta.validationChecks.danger > 0; else mutedDangerColor'>
+          {{ta.validationChecks.danger}}
+        </div>
         <ng-template #mutedDangerColor>
           <div class='alert alert-danger-muted' role='alert'>{{ta.validationChecks.danger}}</div>
         </ng-template>
       </div>
     </td>
-    <td>last</td>
+    <td>Missing date</td>
   </tr>
   </tbody>
 </table>
