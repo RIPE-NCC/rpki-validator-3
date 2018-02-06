@@ -7,6 +7,8 @@ import { Component, OnInit } from '@angular/core';
 })
 export class MonitoringTaComponent implements OnInit {
 
+  pageTitle:string = 'Nav.TITLE_MONITORING_TA';
+
   constructor() { }
 
   ngOnInit() {

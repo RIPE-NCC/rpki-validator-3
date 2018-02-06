@@ -4,6 +4,7 @@ import {SearchComponent} from "./search.component";
 import {TranslateModule} from "@ngx-translate/core";
 import {FormsModule} from "@angular/forms";
 import {NgbModule} from "@ng-bootstrap/ng-bootstrap";
+import {PageTitleComponent} from "./page-title.component";
 
 @NgModule({
   imports: [
@@ -12,10 +13,17 @@ import {NgbModule} from "@ng-bootstrap/ng-bootstrap";
     TranslateModule,
     FormsModule],
   declarations: [
-    SearchComponent
+    SearchComponent,
+    PageTitleComponent
   ],
   providers: [],
-  exports: [CommonModule, NgbModule, TranslateModule, SearchComponent]
+  exports: [
+    CommonModule,
+    NgbModule,
+    TranslateModule,
+    SearchComponent,
+    PageTitleComponent
+  ]
 })
 export class SharedModule {
 }

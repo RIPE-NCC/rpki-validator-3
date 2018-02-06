@@ -10,6 +10,7 @@ import {Router} from "@angular/router";
 })
 export class TrustAnchorsComponent implements OnInit {
 
+  pageTitle: string = 'Nav.TITLE_TRUST_ANCHORS';
   trustAnchors: ITrustAnchor[] = [];
   errorMessage: string;
 

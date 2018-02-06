@@ -9,6 +9,7 @@ import {IRoa} from "./roas-response";
 })
 export class RoasListComponent implements OnInit {
 
+  pageTitle: string = 'Nav.TITLE_ROAS';
   alertShown = true;
   errorMessage: string;
   roas: IRoa[] = [];
