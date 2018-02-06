@@ -33,3 +33,7 @@ ui-validator/node
 ui-validator/npm-debug.log
 
 .DS_Store
+
+# generated content
+rpki-validator/src/main/resources/static/
+

@@ -11,7 +11,6 @@
     <name>ui-validator</name>
     <description>Frontend for rpki-validator</description>
 
-
     <build>
         <plugins>
             <plugin>
@@ -53,13 +52,6 @@
                 </executions>
             </plugin>
         </plugins>
-
-        <resources>
-            <resource>
-                <directory>target/ui-validator</directory>
-                <targetPath>static</targetPath>
-            </resource>
-        </resources>
 
     </build>
 </project>

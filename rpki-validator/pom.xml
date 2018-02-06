@@ -170,12 +170,6 @@
             <version>0.7</version>
         </dependency>
 
-        <dependency>
-            <groupId>net.ripe.rpki</groupId>
-            <artifactId>ui-validator</artifactId>
-            <version>3.0.0-SNAPSHOT</version>
-        </dependency>
-
     </dependencies>
 
     <dependencyManagement>
@@ -279,25 +273,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-
-            <plugin>
-                <artifactId>maven-resources-plugin</artifactId>
-                <version>3.0.1</version>
-                <configuration>
-                    <addDefaultExcludes>true</addDefaultExcludes>
-                    <resources>
-                        <resource>
-                            <directory>${basedir}/src/main/resources</directory>
-                        </resource>
-                        <resource>
-                            <directory>${basedir}/src/test/resources</directory>
-                        </resource>
-                        <resource>
-                            <directory>${basedir}/../ui-validator/target/ui-validator</directory>
-                        </resource>
-                    </resources>
-                </configuration>
             </plugin>
 
             <plugin>
