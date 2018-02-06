@@ -1,22 +1,17 @@
-import { BrowserModule } from '@angular/platform-browser';
-import { NgModule } from '@angular/core';
-import { RouterModule } from '@angular/router';
-import { AppComponent } from './app.component';
-import { HomeComponent } from './home/home.component';
+import {BrowserModule} from '@angular/platform-browser';
+import {NgModule} from '@angular/core';
+import {RouterModule} from '@angular/router';
+import {HttpClient, HttpClientModule} from '@angular/common/http';
 
-import { HttpClientModule, HttpClient } from '@angular/common/http';
-import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
-import { TranslateHttpLoader } from '@ngx-translate/http-loader';
-import { FooterComponent } from './footer/footer.component';
-import { HomeModule} from './home/home.module';
-import { NavComponent } from './nav/nav.component';
-import { TrustAnchorsModule } from './trust-anchors/trust-anchors.module';
-import { RoasModule } from "./roas/roas.module";
-import { TrustAnchorsComponent } from "./trust-anchors/trust-anchors.component";
-import { RoasListComponent } from "./roas/roas-list.component";
-import { NgbModule } from "@ng-bootstrap/ng-bootstrap";
+import {AppComponent} from './app.component';
+import {appRoutes} from './routes'
+import {CoreModule} from "./core/core.module";
 import {SharedModule} from "./shared/shared.module";
-import { MonitoringTaComponent } from './monitoring-ta/monitoring-ta.component';
+import {HomeModule} from './home/home.module';
+import {TrustAnchorsModule} from './trust-anchors/trust-anchors.module';
+import {RoasModule} from "./roas/roas.module";
+import {TranslateLoader, TranslateModule} from "@ngx-translate/core";
+import {TranslateHttpLoader} from "@ngx-translate/http-loader";
 
 export function HttpLoaderFactory(http: HttpClient) {
   return new TranslateHttpLoader(http);
@@ -24,36 +19,27 @@ export function HttpLoaderFactory(http: HttpClient) {
 
 @NgModule({
   declarations: [
-    AppComponent,
-    NavComponent,
-    FooterComponent,
-    MonitoringTaComponent
+    AppComponent
   ],
   imports: [
     BrowserModule,
+    CoreModule,
     HomeModule,
     TrustAnchorsModule,
     RoasModule,
     HttpClientModule,
+    RouterModule.forRoot(appRoutes),
+    SharedModule,
     TranslateModule.forRoot({
       loader: {
         provide: TranslateLoader,
         useFactory: HttpLoaderFactory,
         deps: [HttpClient]
       }
-    }),
-    RouterModule.forRoot([
-      { path: 'home', component: HomeComponent},
-      { path: 'trust-anchors', component: TrustAnchorsComponent},
-      { path: 'list-roas', component: RoasListComponent},
-      { path: 'trust-anchor-monitor/:id', component: MonitoringTaComponent},
-      { path: '', redirectTo: 'home', pathMatch: 'full'},
-      { path: '**', redirectTo: 'home', pathMatch: 'full'}
-    ]),
-    NgbModule.forRoot(),
-    SharedModule
+    })
   ],
   providers: [],
   bootstrap: [AppComponent]
 })
-export class AppModule { }
+export class AppModule {
+}

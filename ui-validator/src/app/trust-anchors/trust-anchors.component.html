@@ -7,7 +7,7 @@
   </tr>
   </thead>
   <tbody>
-  <tr *ngFor='let ta of trustAnchors' (click)='openTADetails(ta.id)'>
+  <tr *ngFor='let ta of trustAnchors' (click)='openTADetails(ta.id)' [ngbTooltip]="'TrustAnchors.TOOLTIP_CLICK' | translate:{value:'info'}">
     <td>{{ta.name}}
     </td>
     <td>

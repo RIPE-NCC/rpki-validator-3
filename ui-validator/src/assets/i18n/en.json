@@ -56,7 +56,15 @@
   },
   "TrustAnchors": {
     "PROCESSED_ITEMS": "Processed Items",
-    "LAST_UPDATED": "Last Updated"
+    "LAST_UPDATED": "Last Updated",
+    "TOOLTIP_CLICK": "Click to view monitor page"
+  },
+  "Monitoring": {
+    "VALIDATED_USING_TA_LOCATOR": "Trust anchor could be validated using trust anchor locator",
+    "DROPPED_MORE_THEN_10_PERC": "Object count has not dropped more than 10% since the last validation",
+    "FEWER_THEN_10_ERRORS": "Fewer than 10 validation errors",
+    "LESS_THEN_10_PERC_VAL_ERROR": "Less than 10% of objects have a validation error",
+    "ALL_OBJECT_FETCHED_SUCCESS": "All objects fetched successfully"
   },
   "Roas": {
     "ASN": "ASN",

@@ -1,17 +1,16 @@
-import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { TrustAnchorsComponent } from './trust-anchors.component';
-import { TranslateModule } from '@ngx-translate/core';
+import {NgModule} from '@angular/core';
+
+import {TrustAnchorsComponent} from './trust-anchors.component';
 import {TrustAnchorsService} from "./trust-anchors.service";
-import {NgbModule} from "@ng-bootstrap/ng-bootstrap";
+import {MonitoringTaComponent} from "../monitoring-ta/monitoring-ta.component";
+import {SharedModule} from "../shared/shared.module";
 
 @NgModule({
   imports: [
-    CommonModule,
-    TranslateModule,
-    NgbModule
+    SharedModule
   ],
-  declarations: [TrustAnchorsComponent],
+  declarations: [TrustAnchorsComponent, MonitoringTaComponent],
   providers: [TrustAnchorsService]
 })
-export class TrustAnchorsModule { }
+export class TrustAnchorsModule {
+}
