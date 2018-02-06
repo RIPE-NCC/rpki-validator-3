@@ -337,6 +337,7 @@
                                     <location>src/main/resources/packaging/centos7/etc/rpki-validator-3/</location>
                                     <includes>
                                         <include>application.properties</include>
+                                        <include>application-defaults.properties</include>
                                     </includes>
                                 </source>
                             </sources>

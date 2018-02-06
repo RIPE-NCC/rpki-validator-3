@@ -34,12 +34,13 @@ cd ${EXECUTION_DIR}
 
 JAVA_CMD="/usr/bin/java"
 APP_NAME="rpki-rtr-server"
-CONFIG_FILE="/etc/${APP_NAME}/application.properties"
+CONFIG_DIR="/etc/${APP_NAME}"
+CONFIG_FILE="${CONFIG_DIR}/application.properties"
 JAR="/usr/lib/${APP_NAME}.jar"
 
 function parse_config_line {
     local CONFIG_KEY=$1
-    local VALUE=`grep "^$CONFIG_KEY" $CONFIG_FILE | sed 's/#.*//g' | awk -F "=" '{ print $2 }'`
+    local VALUE=`grep "^$CONFIG_KEY" "$CONFIG_FILE" | sed 's/#.*//g' | awk -F "=" '{ print $2 }'`
 
     if [ -z $VALUE ]; then
         error_exit "Cannot find value for: $CONFIG_KEY in config-file: $CONFIG_FILE"
@@ -52,4 +53,4 @@ parse_config_line "jvm.memory.maximum" JVM_XMX
 
 MEM_OPTIONS="-Xms$JVM_XMS -Xmx$JVM_XMX"
 
-${JAVA_CMD} ${MEM_OPTIONS} -Dapp.name="${APP_NAME}" -Dspring.config.location="file:${CONFIG_FILE}" -jar "${JAR}"
+exec ${JAVA_CMD} ${MEM_OPTIONS} -Dapp.name="${APP_NAME}" -Dspring.config.location="classpath:/application.properties,file:${CONFIG_DIR}/application-defaults.properties,file:${CONFIG_FILE}" -jar "${JAR}"

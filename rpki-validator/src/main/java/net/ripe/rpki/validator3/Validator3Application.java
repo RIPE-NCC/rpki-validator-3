@@ -38,6 +38,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class Validator3Application {
 
 	public static void main(String[] args) {
-		SpringApplication.run(Validator3Application.class, args);
+	    SpringApplication.run(Validator3Application.class, args);
 	}
 }

@@ -346,6 +346,7 @@
                                     <location>src/main/resources/packaging/centos7/etc/rpki-rtr-server/</location>
                                     <includes>
                                         <include>application.properties</include>
+                                        <include>application-defaults.properties</include>
                                     </includes>
                                 </source>
                             </sources>
