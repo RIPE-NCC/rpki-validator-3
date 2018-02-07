@@ -1,10 +1,11 @@
 import {CommonModule} from "@angular/common";
 import {NgModule} from "@angular/core";
-import {SearchComponent} from "./search.component";
 import {TranslateModule} from "@ngx-translate/core";
 import {FormsModule} from "@angular/forms";
 import {NgbModule} from "@ng-bootstrap/ng-bootstrap";
+import {SearchComponent} from "./search.component";
 import {PageTitleComponent} from "./page-title.component";
+import {FlagComponent} from './flag/flag.component';
 
 @NgModule({
   imports: [
@@ -14,7 +15,8 @@ import {PageTitleComponent} from "./page-title.component";
     FormsModule],
   declarations: [
     SearchComponent,
-    PageTitleComponent
+    PageTitleComponent,
+    FlagComponent
   ],
   providers: [],
   exports: [
@@ -22,7 +24,8 @@ import {PageTitleComponent} from "./page-title.component";
     NgbModule,
     TranslateModule,
     SearchComponent,
-    PageTitleComponent
+    PageTitleComponent,
+    FlagComponent
   ]
 })
 export class SharedModule {

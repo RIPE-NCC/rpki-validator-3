@@ -64,8 +64,8 @@ public class ValidatedRoasController {
 
     @GetMapping(path = "/")
     public ResponseEntity<ApiResponse<Stream<JPARpkiObjects.RoaPrefix>>> list(
-            @RequestParam(name = "start-from", defaultValue = "0") int startFrom,
-            @RequestParam(name = "page-size", defaultValue = "20") int pageSize) {
+            @RequestParam(name = "startFrom", defaultValue = "0") int startFrom,
+            @RequestParam(name = "pageSize", defaultValue = "20") int pageSize) {
 
         final Stream<JPARpkiObjects.RoaPrefix> roas = rpkiObjects
                 .findCurrentlyValidatedRoaPrefixes(startFrom, pageSize);
