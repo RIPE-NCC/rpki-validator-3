@@ -38,7 +38,6 @@ import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 import org.springframework.stereotype.Repository;
 
 import javax.persistence.LockModeType;
@@ -99,7 +98,12 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
                 "      p.asn AS asn, \n" +
                 "      p.prefix AS prefix, \n" +
                 "      COALESCE(p.effective_length, p.maximum_length) AS length, \n" +
-                "      ta.name AS trust_anchor \n" +
+                "      ta.name AS trust_anchor, \n" +
+                "      (SELECT locations \n" +
+                "       FROM rpki_object_locations \n" +
+                "       WHERE rpki_object_id = ro.id \n" +
+                "       LIMIT 1 \n" +
+                "  ) AS location  \n" +
                 "  FROM rpki_object ro \n" +
                 "  INNER JOIN rpki_object_roa_prefixes p ON p.rpki_object_id = ro.id \n" +
                 "  INNER JOIN validation_run_validated_objects vrvo ON vrvo.rpki_object_id = ro.id \n" +
@@ -128,7 +132,8 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
                     asString(fields[0]),
                     asString(fields[1]),
                     asInt(fields[2]),
-                    asString(fields[3]));
+                    asString(fields[3]),
+                    asString(fields[4]));
         });
     }
 
@@ -147,6 +152,7 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
         private String prefix;
         private int length;
         private String trustAnchor;
+        private String uri;
     }
 
     @Override
