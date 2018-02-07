@@ -2,7 +2,8 @@ export interface IRoa {
   asn: string,
   prefix: string,
   length: number,
-  trustAnchor: string
+  trustAnchor: string,
+  link: string
 }
 
 export interface IRoasResponse {
@@ -10,7 +11,7 @@ export interface IRoasResponse {
     first: string,
     prev: string,
     next: string,
-    last: string,
+    last: string
   },
   data: IRoa[]
 }
