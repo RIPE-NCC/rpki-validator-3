@@ -44,7 +44,7 @@
   </tbody>
 </table>
 <div class='d-flex justify-content-between'>
-  <ngb-pagination [collectionSize]='250' [pageSize]='roasPerPage' [(page)]='page' [maxSize]='5' [boundaryLinks]='true'
+  <ngb-pagination [collectionSize]='totalRoas' [pageSize]='roasPerPage' [(page)]='page' [maxSize]='5' [boundaryLinks]='true'
                   [rotate]='true' [ellipses]='false' size='lg' (pageChange)='onChangePage($event)'></ngb-pagination>
   <label class='col-form-label'>Showing {{firstRoaInTable}} to {{lastRoaInTable}} of {{totalRoas}}</label>
 </div>

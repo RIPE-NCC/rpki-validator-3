@@ -1,6 +1,6 @@
 import {Component, OnInit} from '@angular/core';
 import {RoasService} from "./roas.service";
-import {IRoa} from "./roas-response";
+import {IRoa, IRoasResponse} from "./roas-response";
 
 @Component({
   selector: 'app-roas',
@@ -12,6 +12,7 @@ export class RoasListComponent implements OnInit {
   pageTitle: string = 'Nav.TITLE_ROAS';
   alertShown = true;
   errorMessage: string;
+  response: IRoasResponse;
   roas: IRoa[] = [];
   pageSizes: number[] = [ 10, 25, 50, 100];
   // search
@@ -34,13 +35,33 @@ export class RoasListComponent implements OnInit {
   loadData() {
     this._roasService.getRoas(this.firstRoaInTable.toString(), this.roasPerPage.toString()).subscribe(
       response => {
+        this.response = response;
         this.roas = response.data,
         this.setPaginationParameters()
       },
       error => this.errorMessage = <any>error);
   }
 
+  // FIXME getQueryString should be REMOVED AS SOON AS totalRoas become available from backend
+  getTotalNumberOfRoas() {
+    const linkToLastPage: string = this.response.links.last;
+    const firstRoaOnLastPage = RoasListComponent.getQueryString('startFrom', linkToLastPage);
+    this._roasService.getRoas(firstRoaOnLastPage, this.roasPerPage.toString()).subscribe(
+      response => {
+        this.totalRoas = +firstRoaOnLastPage + response.data.length;
+      },
+      error => this.errorMessage = <any>error);
+  }
+
+  // FIXME getQueryString should be REMOVED AS SOON AS totalRoas become available from backend
+  static getQueryString(field: string, url: string): string {
+    const reg = new RegExp('[?&]' + field + '=([^&#]*)', 'i');
+    const string = reg.exec(url);
+    return string ? string[1] : null;
+  };
+
   setPaginationParameters() {
+    this.getTotalNumberOfRoas();
     this.setNumberOfFirstRoaInTable();
     this.setNumberOfLastRoaInTable();
   }
