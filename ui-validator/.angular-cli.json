@@ -9,8 +9,7 @@
       "outDir":  "../rpki-validator/src/main/resources/static/",
       "assets": [
         "assets",
-        "api",
-        "favicon.ico"
+        "api"
       ],
       "index": "index.html",
       "main": "main.ts",
