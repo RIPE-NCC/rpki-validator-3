@@ -57,8 +57,8 @@ export class RoasListComponent implements OnInit {
   // FIXME getQueryString should be REMOVED AS SOON AS totalRoas become available from backend
   getQueryString(field: string, url: string): string {
     const reg = new RegExp('[?&]' + field + '=([^&#]*)', 'i');
-    const string = reg.exec(url);
-    return string ? string[1] : null;
+    const value = reg.exec(url);
+    return value ? value[1] : null;
   };
 
   setPaginationParameters() {
