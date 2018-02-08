@@ -1,6 +1,9 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import {async, ComponentFixture, TestBed} from '@angular/core/testing';
 
-import { NavComponent } from './nav.component';
+import {NavComponent} from './nav.component';
+import {TranslateModule} from "@ngx-translate/core";
+import {NgbModule} from "@ng-bootstrap/ng-bootstrap";
+import {RouterTestingModule} from "@angular/router/testing";
 
 describe('NavComponent', () => {
   let component: NavComponent;
@@ -8,9 +11,13 @@ describe('NavComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ NavComponent ]
+      imports: [
+        RouterTestingModule,
+        NgbModule.forRoot(),
+        TranslateModule.forRoot()],
+      declarations: [NavComponent]
     })
-    .compileComponents();
+      .compileComponents();
   }));
 
   beforeEach(() => {

@@ -9,7 +9,6 @@ import 'rxjs/add/operator/filter';
 })
 export class NavComponent implements OnInit {
 
-  pageTitle = 'Nav.TITLE_HOME';
   navbarCollapsed = true;
 
   constructor(private router: Router) {

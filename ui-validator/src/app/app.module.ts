@@ -23,13 +23,13 @@ export function HttpLoaderFactory(http: HttpClient) {
   ],
   imports: [
     BrowserModule,
+    HttpClientModule,
     CoreModule,
+    SharedModule,
     HomeModule,
     TrustAnchorsModule,
     RoasModule,
-    HttpClientModule,
     RouterModule.forRoot(appRoutes),
-    SharedModule,
     TranslateModule.forRoot({
       loader: {
         provide: TranslateLoader,

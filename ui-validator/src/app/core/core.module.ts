@@ -1,10 +1,12 @@
 import {NgModule} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {RouterModule} from '@angular/router';
-import {NavComponent} from "./nav/nav.component";
 import {NgbModule} from "@ng-bootstrap/ng-bootstrap";
+
+import {NavComponent} from "./nav/nav.component";
 import {TranslateModule} from "@ngx-translate/core";
 import {FooterComponent} from "./footer/footer.component";
+import {HttpClientModule} from "@angular/common/http";
 
 @NgModule({
   imports: [
@@ -16,7 +18,6 @@ import {FooterComponent} from "./footer/footer.component";
   declarations: [NavComponent, FooterComponent],
   exports: [NavComponent, FooterComponent],
   providers: []
-  // providers: [ UserRepositoryService ]
 })
 export class CoreModule {
 };

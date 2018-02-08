@@ -1,6 +1,11 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import {async, ComponentFixture, TestBed} from '@angular/core/testing';
+import {TranslateModule} from "@ngx-translate/core";
+import {NgbModule} from "@ng-bootstrap/ng-bootstrap";
 
-import { RoasListComponent } from './roas-list.component';
+import {RoasListComponent} from './roas-list.component';
+import {SharedModule} from "../shared/shared.module";
+import {RoasService} from "./roas.service";
+import {HttpClientModule} from "@angular/common/http";
 
 describe('RoasListComponent', () => {
   let component: RoasListComponent;
@@ -8,9 +13,16 @@ describe('RoasListComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ RoasListComponent ]
+      imports: [
+        SharedModule,
+        NgbModule.forRoot(),
+        TranslateModule.forRoot(),
+        HttpClientModule
+      ],
+      providers: [RoasService],
+      declarations: [RoasListComponent]
     })
-    .compileComponents();
+      .compileComponents();
   }));
 
   beforeEach(() => {
