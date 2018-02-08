@@ -5,7 +5,7 @@
 <div class='form-group d-flex justify-content-between mb-3'>
   <div class='d-inline-flex'>
     <label class='col-form-label mr-1'>{{ 'Roas.SHOW' | translate }} </label>
-    <select #selectPageSize (change)='onChangePageSize(selectPageSize.value)'  class='custom-select'>
+    <select #selectPageSize (change)='onChangePageSize(selectPageSize.value)' class='custom-select'>
       <option *ngFor='let size of pageSizes' [value]='size'>{{size}}</option>
     </select>
     <label class='col-form-label ml-1'>{{ 'Roas.ENTRIES' | translate}}</label>
@@ -29,14 +29,14 @@
     <td>{{ roa.prefix }}</td>
     <td>{{ roa.length }}</td>
     <td>{{ roa.trustAnchor }}</td>
-    <td (mouseleave)="p.close()">
+    <td (mouseleave)='p.close()'>
       <img src='../../assets/images/uri-icon.png'
            [style.width.px]='20'
            [style.margin.px]='0'
-           #p="ngbPopover"
-           ngbPopover='here will go URI'
-           placement="bottom"
-           triggers="mouseover"
+           #p='ngbPopover'
+           ngbPopover='{{ roa.link }}'
+           placement='bottom'
+           triggers='mouseover'
            popoverTitle="{{'Roas.URI_OF_ROA' | translate}}"
       />
     </td>
@@ -44,7 +44,8 @@
   </tbody>
 </table>
 <div class='d-flex justify-content-between'>
-  <ngb-pagination [collectionSize]='totalRoas' [pageSize]='roasPerPage' [(page)]='page' [maxSize]='5' [boundaryLinks]='true'
+  <ngb-pagination [collectionSize]='totalRoas' [pageSize]='roasPerPage' [(page)]='page' [maxSize]='5'
+                  [boundaryLinks]='true'
                   [rotate]='true' [ellipses]='false' size='lg' (pageChange)='onChangePage($event)'></ngb-pagination>
   <label class='col-form-label'>Showing {{firstRoaInTable}} to {{lastRoaInTable}} of {{totalRoas}}</label>
 </div>

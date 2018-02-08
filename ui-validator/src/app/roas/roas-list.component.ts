@@ -1,4 +1,5 @@
 import {Component, OnInit} from '@angular/core';
+
 import {RoasService} from "./roas.service";
 import {IRoa, IRoasResponse} from "./roas-response";
 
@@ -45,7 +46,7 @@ export class RoasListComponent implements OnInit {
   // FIXME getQueryString should be REMOVED AS SOON AS totalRoas become available from backend
   getTotalNumberOfRoas() {
     const linkToLastPage: string = this.response.links.last;
-    const firstRoaOnLastPage = RoasListComponent.getQueryString('startFrom', linkToLastPage);
+    const firstRoaOnLastPage = this.getQueryString('startFrom', linkToLastPage);
     this._roasService.getRoas(firstRoaOnLastPage, this.roasPerPage.toString()).subscribe(
       response => {
         this.totalRoas = +firstRoaOnLastPage + response.data.length;
@@ -54,7 +55,7 @@ export class RoasListComponent implements OnInit {
   }
 
   // FIXME getQueryString should be REMOVED AS SOON AS totalRoas become available from backend
-  static getQueryString(field: string, url: string): string {
+  getQueryString(field: string, url: string): string {
     const reg = new RegExp('[?&]' + field + '=([^&#]*)', 'i');
     const string = reg.exec(url);
     return string ? string[1] : null;
