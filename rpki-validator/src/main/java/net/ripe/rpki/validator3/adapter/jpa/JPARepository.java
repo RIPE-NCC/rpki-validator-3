@@ -87,4 +87,12 @@ abstract class JPARepository<T> {
     protected Query sql(String sql) {
         return entityManager.createNativeQuery(sql);
     }
+
+    protected String asString(Object o) {
+        return o == null ? null : o.toString();
+    }
+
+    protected int asInt(Object o) {
+        return o == null ? null : Integer.parseInt(o.toString());
+    }
 }

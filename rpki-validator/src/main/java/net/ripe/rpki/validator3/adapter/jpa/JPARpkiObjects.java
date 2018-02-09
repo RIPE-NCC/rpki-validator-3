@@ -137,14 +137,6 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
         });
     }
 
-    private String asString(Object o) {
-        return o == null ? null : o.toString();
-    }
-
-    private int asInt(Object o) {
-        return o == null ? null : Integer.parseInt(o.toString());
-    }
-
 
     @Value
     public static class RoaPrefix {

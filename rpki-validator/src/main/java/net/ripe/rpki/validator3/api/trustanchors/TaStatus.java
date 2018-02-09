@@ -27,28 +27,17 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.domain;
+package net.ripe.rpki.validator3.api.trustanchors;
 
-import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
+import lombok.Data;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.Date;
 
-public interface TrustAnchors {
-    void add(TrustAnchor trustAnchor);
-
-    void remove(TrustAnchor trustAnchor);
-
-    TrustAnchor get(long id);
-
-    List<TrustAnchor> findAll();
-
-    List<TrustAnchor> findByName(String name);
-
-    Optional<TrustAnchor> findBySubjectPublicKeyInfo(String subjectPublicKeyInfo);
-
-    boolean allInitialCertificateTreeValidationRunsCompleted();
-
-    List<TaStatus> getStatuses();
+@Data(staticConstructor = "of")
+public class TaStatus {
+    final String taName;
+    final int successful;
+    final int warnings;
+    final int errors;
+    final Date lastUpdated;
 }

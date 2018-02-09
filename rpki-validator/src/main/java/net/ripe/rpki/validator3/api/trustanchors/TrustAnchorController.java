@@ -54,6 +54,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -96,7 +97,7 @@ public class TrustAnchorController {
     }
 
     @PostMapping(path = "/upload", consumes = "multipart/form-data")
-    public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@RequestParam("file") MultipartFile trustAnchorLocator) throws IOException {
+    public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@RequestParam("file") MultipartFile trustAnchorLocator) {
         try {
             TrustAnchorLocator locator = TrustAnchorLocator.fromMultipartFile(trustAnchorLocator);
             AddTrustAnchor command = AddTrustAnchor.builder()
@@ -135,6 +136,11 @@ public class TrustAnchorController {
             .orElseThrow(() -> new EmptyResultDataAccessException("latest validation run for trust anchor " + id, 1));
         response.sendRedirect(linkTo(methodOn(ValidationRunController.class).get(validationRun.getId())).toString());
         return null;
+    }
+
+    @GetMapping(path = "/statuses")
+    public ApiResponse<List<TaStatus>> statuses(HttpServletResponse response) throws IOException {
+        return ApiResponse.<List<TaStatus>>builder().data(trustAnchorRepository.getStatuses()).build();
     }
 
     @DeleteMapping(path = "/{id}")
