@@ -1,4 +1,5 @@
 export interface ITrustAnchorOverview {
+  id: string;
   taName: string;
   successful: number;
   warnings: string;

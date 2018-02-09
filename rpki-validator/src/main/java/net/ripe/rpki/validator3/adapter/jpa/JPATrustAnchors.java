@@ -97,8 +97,9 @@ public class JPATrustAnchors extends JPARepository<TrustAnchor> implements Trust
     @SuppressWarnings("unchecked")
     public List<TaStatus> getStatuses() {
         String sql = "SELECT " +
-                "     ta, SUM(errors), SUM(warnings), SUM(successful) FROM (\n" +
+                "     id, ta, SUM(errors), SUM(warnings), SUM(successful) FROM (\n" +
                 "     SELECT DISTINCT \n" +
+                "       ta.id as id, \n" +
                 "       ta.name as ta, \n" +
                 "       ro.id as obj, \n" +
                 "        CASE WHEN vc.status = 'ERROR'   THEN 1 ELSE 0 END AS errors,\n" +
@@ -122,9 +123,10 @@ public class JPATrustAnchors extends JPARepository<TrustAnchor> implements Trust
             final Object[] fields = (Object[]) o;
             return TaStatus.of(
                     asString(fields[0]),
-                    asInt(fields[1]),
+                    asString(fields[1]),
                     asInt(fields[2]),
                     asInt(fields[3]),
+                    asInt(fields[4]),
                     // TODO Use the real one
                     new Date());
         });

@@ -35,6 +35,7 @@ import java.util.Date;
 
 @Data(staticConstructor = "of")
 public class TaStatus {
+    final String id;
     final String taName;
     final int successful;
     final int warnings;
