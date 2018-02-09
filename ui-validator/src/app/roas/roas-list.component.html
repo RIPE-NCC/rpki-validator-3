@@ -1,6 +1,6 @@
 <page-title [pageTitle]='pageTitle'></page-title>
 <ngb-alert type='info' *ngIf='alertShown' (close)='alertShown=false'>
-  {{ 'Roas.ALERT_MSG_P1' | translate }} <strong>{{ 'Roas.ALERT_MSG_P2' | translate }}</strong>
+  {{ 'Roas.ALERT_MSG_P1' | translate }} <strong>{{ alertListValidatedTA }}</strong>
 </ngb-alert>
 <div class='form-group d-flex justify-content-between mb-3'>
   <div class='d-inline-flex'>

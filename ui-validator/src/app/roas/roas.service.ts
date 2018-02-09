@@ -5,7 +5,7 @@ import 'rxjs/add/operator/do';
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/observable/throw';
 
-import {IRoasResponse} from './roas-response';
+import {IRoasResponse} from './roas';
 
 @Injectable()
 export class RoasService {

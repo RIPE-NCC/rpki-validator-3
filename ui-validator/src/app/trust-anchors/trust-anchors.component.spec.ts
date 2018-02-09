@@ -5,8 +5,8 @@ import {HttpClientModule} from "@angular/common/http";
 
 import {TrustAnchorsComponent} from './trust-anchors.component';
 import {SharedModule} from "../shared/shared.module";
-import {TrustAnchorsService} from "./trust-anchors.service";
 import {RouterTestingModule} from "@angular/router/testing";
+import {CoreModule} from "../core/core.module";
 
 describe('TrustAnchorsComponent', () => {
   let component: TrustAnchorsComponent;
@@ -19,9 +19,10 @@ describe('TrustAnchorsComponent', () => {
         NgbModule.forRoot(),
         TranslateModule.forRoot(),
         HttpClientModule,
-        RouterTestingModule
+        RouterTestingModule,
+        CoreModule
       ],
-      providers: [TrustAnchorsService],
+      providers: [],
       declarations: [TrustAnchorsComponent]
     })
       .compileComponents();

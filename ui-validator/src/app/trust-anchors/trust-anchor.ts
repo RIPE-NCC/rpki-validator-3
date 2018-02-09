@@ -1,18 +1,25 @@
 export interface ITrustAnchor {
-    type: string;
-    id: number;
-    name: string;
-    locations: string[];
-    subjectPublicKeyInfo: string;
-    preconfigured: boolean;
-    initialCertificateTreeValidationRunCompleted: boolean,
-    certificate: string;
-    links: {
+  type: string;
+  id: number;
+  name: string;
+  locations: string[];
+  subjectPublicKeyInfo: string;
+  preconfigured: boolean;
+  initialCertificateTreeValidationRunCompleted: boolean,
+  certificate: string;
+  links: {
+    self: string;
+  }
+  validationChecks : {
+    success: number,
+    warning: number,
+    danger: number
+  }
+}
+
+export interface ITrustAnchorResponse {
+    links : {
         self: string;
     }
-    validationChecks : {
-        success: number,
-        warning: number,
-        danger: number
-    }
+    data: ITrustAnchor[];
 }

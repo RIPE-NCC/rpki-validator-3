@@ -9,7 +9,7 @@ export const appRoutes : Routes = [
   { path: 'home', component: HomeComponent},
     { path: 'trust-anchors', component: TrustAnchorsComponent},
     { path: 'list-roas', component: RoasListComponent},
-    { path: 'trust-anchor-monitor/:id', component: MonitoringTaComponent},
+    { path: 'trust-anchors/monitor/:id', component: MonitoringTaComponent},
     { path: '', redirectTo: 'home', pathMatch: 'full'},
     { path: '**', redirectTo: 'home', pathMatch: 'full'}
   ]

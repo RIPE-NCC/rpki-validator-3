@@ -1,7 +1,9 @@
 import {Component, OnInit} from '@angular/core';
 
 import {RoasService} from "./roas.service";
-import {IRoa, IRoasResponse} from "./roas-response";
+import {IRoa, IRoasResponse} from "./roas";
+import {TrustAnchorsService} from "../core/trust-anchors.service";
+import {ITrustAnchorResponse} from "../trust-anchors/trust-anchor";
 
 @Component({
   selector: 'app-roas',
@@ -12,6 +14,7 @@ export class RoasListComponent implements OnInit {
 
   pageTitle: string = 'Nav.TITLE_ROAS';
   alertShown = true;
+  alertListValidatedTA: string;
   errorMessage: string;
   response: IRoasResponse;
   roas: IRoa[] = [];
@@ -26,11 +29,12 @@ export class RoasListComponent implements OnInit {
   firstRoaInTable: number = 1;
   lastRoaInTable: number = 10;
 
-  constructor(private _roasService: RoasService) {
+  constructor(private _roasService: RoasService, private _trustAnchorsService: TrustAnchorsService) {
   }
 
   ngOnInit() {
     this.loadData();
+    this.getValidatedTAForAlert();
   }
 
   loadData() {
@@ -60,6 +64,21 @@ export class RoasListComponent implements OnInit {
     const value = reg.exec(url);
     return value ? value[1] : null;
   };
+
+  getValidatedTAForAlert() {
+    let listTa: string[] = [];
+    this._trustAnchorsService.getTrustAnchors().subscribe(
+      response => {
+        const taResponse = response as ITrustAnchorResponse;
+        taResponse.data.forEach( ta => {
+          if (ta.initialCertificateTreeValidationRunCompleted)
+            listTa.push(ta.name);
+        });
+        this.alertListValidatedTA = listTa.join(', ');
+        console.log(this.alertListValidatedTA)
+      }
+    );
+  }
 
   setPaginationParameters() {
     this.getTotalNumberOfRoas();

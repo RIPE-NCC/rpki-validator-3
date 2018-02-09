@@ -6,6 +6,7 @@ import {RoasListComponent} from './roas-list.component';
 import {SharedModule} from "../shared/shared.module";
 import {RoasService} from "./roas.service";
 import {HttpClientModule} from "@angular/common/http";
+import {CoreModule} from "../core/core.module";
 
 describe('RoasListComponent', () => {
   let component: RoasListComponent;
@@ -17,7 +18,8 @@ describe('RoasListComponent', () => {
         SharedModule,
         NgbModule.forRoot(),
         TranslateModule.forRoot(),
-        HttpClientModule
+        HttpClientModule,
+        CoreModule
       ],
       providers: [RoasService],
       declarations: [RoasListComponent]

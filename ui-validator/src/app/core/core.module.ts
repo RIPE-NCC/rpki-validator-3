@@ -6,7 +6,8 @@ import {NgbModule} from "@ng-bootstrap/ng-bootstrap";
 import {NavComponent} from "./nav/nav.component";
 import {TranslateModule} from "@ngx-translate/core";
 import {FooterComponent} from "./footer/footer.component";
-import {HttpClientModule} from "@angular/common/http";
+import {TrustAnchorsService} from "./trust-anchors.service";
+
 
 @NgModule({
   imports: [
@@ -17,7 +18,7 @@ import {HttpClientModule} from "@angular/common/http";
   ],
   declarations: [NavComponent, FooterComponent],
   exports: [NavComponent, FooterComponent],
-  providers: []
+  providers: [TrustAnchorsService]
 })
 export class CoreModule {
 };
