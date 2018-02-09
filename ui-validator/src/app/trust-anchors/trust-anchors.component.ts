@@ -1,7 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 
 import {Router} from "@angular/router";
-import {ITrustAnchor} from "./trust-anchor";
+import {ITrustAnchor, ITrustAnchorOverview} from "./trust-anchor";
 import {TrustAnchorsService} from "../core/trust-anchors.service";
 
 @Component({
@@ -12,15 +12,15 @@ import {TrustAnchorsService} from "../core/trust-anchors.service";
 export class TrustAnchorsComponent implements OnInit {
 
   pageTitle: string = 'Nav.TITLE_TRUST_ANCHORS';
-  trustAnchors: ITrustAnchor[] = [];
+  trustAnchorsOverview: ITrustAnchorOverview[] = [];
   errorMessage: string;
 
   constructor(private _trustAnchorsService: TrustAnchorsService, private router: Router) {
   }
 
   ngOnInit() {
-    this._trustAnchorsService.getTrustAnchors()
-      .subscribe(response => this.trustAnchors = response.data,
+    this._trustAnchorsService.getTrustAnchorsOverview()
+      .subscribe(response => this.trustAnchorsOverview = response.data,
         error => this.errorMessage = <any>error);
   }
 

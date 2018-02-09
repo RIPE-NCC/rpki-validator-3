@@ -1,3 +1,15 @@
+export interface ITrustAnchorOverview {
+  taName: string;
+  successful: number;
+  warnings: string;
+  errors: string[];
+  lastUpdated: string[];
+}
+
+export interface ITrustAnchorOverviewResponse {
+    data: ITrustAnchorOverview[];
+}
+
 export interface ITrustAnchor {
   type: string;
   id: number;
@@ -10,16 +22,11 @@ export interface ITrustAnchor {
   links: {
     self: string;
   }
-  validationChecks : {
-    success: number,
-    warning: number,
-    danger: number
-  }
 }
 
 export interface ITrustAnchorResponse {
-    links : {
-        self: string;
-    }
-    data: ITrustAnchor[];
+  links : {
+    self: string;
+  }
+  data: ITrustAnchor[];
 }
