@@ -12,7 +12,7 @@ import {FlagComponent} from './flag/flag.component';
   imports: [
     CommonModule,
     NgbModule.forRoot(),
-    TranslateModule.forRoot(),
+    TranslateModule,
     FormsModule
   ],
   declarations: [
