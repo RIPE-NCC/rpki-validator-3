@@ -1,12 +1,13 @@
-import {HttpClient, HttpErrorResponse} from "@angular/common/http";
+import {HttpClient, HttpErrorResponse, HttpParams} from "@angular/common/http";
 import {Observable} from "rxjs/Observable";
 import {Injectable} from "@angular/core";
 
 @Injectable()
 export class TrustAnchorsService {
 
-    //private _trustAnchorsUrl = './api/trust-anchors/trust-anchors.json';
-    private _trustAnchorsUrl = 'trust-anchors/statuses';
+    private _trustAnchorsUrl = 'trust-anchors';
+    private _trustAnchorsStatusesUrl = 'trust-anchors/statuses';
+    private _trustAnchorByIdUrl = 'trust-anchors/';
 
     constructor(private _http: HttpClient) {
     }
@@ -18,9 +19,15 @@ export class TrustAnchorsService {
     }
 
     getTrustAnchorsOverview(): Observable<any> {
-        return this._http.get<any>(this._trustAnchorsUrl)
+        return this._http.get<any>(this._trustAnchorsStatusesUrl)
             .do(reponse => console.log('All: ' + JSON.stringify(reponse.data)))
             .catch(this.handleError);
+    }
+
+    getTrustAnchor(id: string): Observable<any> {
+      return this._http.get<any>(this._trustAnchorByIdUrl + id)
+          .do(reponse => console.log('ID RESPONSE: ' + JSON.stringify(reponse.data)))
+          .catch(this.handleError);
     }
 
     private handleError(err: HttpErrorResponse) {

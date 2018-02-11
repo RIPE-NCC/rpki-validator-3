@@ -1,7 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 
 import {Router} from "@angular/router";
-import {ITrustAnchor, ITrustAnchorOverview} from "./trust-anchor";
+import {ITrustAnchorOverview} from "./trust-anchor";
 import {TrustAnchorsService} from "../core/trust-anchors.service";
 
 @Component({
@@ -15,17 +15,19 @@ export class TrustAnchorsComponent implements OnInit {
   trustAnchorsOverview: ITrustAnchorOverview[] = [];
   errorMessage: string;
 
-  constructor(private _trustAnchorsService: TrustAnchorsService, private router: Router) {
+  constructor(private _trustAnchorsService: TrustAnchorsService, private _router: Router) {
   }
 
   ngOnInit() {
     this._trustAnchorsService.getTrustAnchorsOverview()
-      .subscribe(response => this.trustAnchorsOverview = response.data,
-        error => this.errorMessage = <any>error);
+      .subscribe(response => {
+            this.trustAnchorsOverview = response.data
+          },
+          error => this.errorMessage = <any>error);
   }
 
   openTADetails(taId: string) {
     console.log("row clicked "+taId);
-    this.router.navigate(['/trust-anchors/monitor', taId]);
+    this._router.navigate(['/trust-anchors/monitor', taId]);
   }
 }

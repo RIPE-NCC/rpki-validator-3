@@ -13,7 +13,6 @@ describe('HomeComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         SharedModule,
-        NgbModule.forRoot(),
         TranslateModule.forRoot()
       ],
       declarations: [HomeComponent]

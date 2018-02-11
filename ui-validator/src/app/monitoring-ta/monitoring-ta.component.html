@@ -1,4 +1,4 @@
-<page-title [pageTitle]='pageTitle'></page-title>
+<page-title [pageTitle]='pageTitle' [specificValue]='monitoringTrustAnchor?.name'></page-title>
 <!--<div class='alert alert-success' role='alert' *ngIf='ta.validationChecks.success > 0; else failedSuccessColor'>-->
   <!--{{ta.validationChecks.success}}-->
 <!--</div>-->
@@ -20,7 +20,8 @@
       {{'Monitoring.VALIDATED_USING_TA_LOCATOR' | translate}}
     </td>
     <td>
-      <flag [value]='"YES"'></flag>
+      <!--<flag [value]='YES'></flag>-->
+      <flag [value]='monitoringTrustAnchor?.initialCertificateTreeValidationRunCompleted'></flag>
     </td>
   </tr>
   </tbody>
@@ -38,13 +39,6 @@
 
     </td>
   </tr>
-  <tr>
-    <td>
-      {{'Monitoring.VALIDATED_USING_TA_LOCATOR' | translate}}
-    </td>
-    <td>
 
-    </td>
-  </tr>
   </tbody>
 </table>

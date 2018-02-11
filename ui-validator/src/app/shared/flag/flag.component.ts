@@ -46,7 +46,7 @@ export class FlagComponent implements OnInit {
 
   setTextualFlag(): void {
     switch(this.value) {
-      case 'YES': {
+      case 'true': {
         this.green = true;
         break;
       }

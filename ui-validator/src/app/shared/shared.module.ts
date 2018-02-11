@@ -10,7 +10,7 @@ import {FlagComponent} from './flag/flag.component';
 @NgModule({
   imports: [
     CommonModule,
-    NgbModule,
+    NgbModule.forRoot(),
     TranslateModule,
     FormsModule],
   declarations: [

@@ -17,6 +17,7 @@ export interface ITrustAnchor {
   name: string;
   locations: string[];
   subjectPublicKeyInfo: string;
+  rsyncPrefetchUri: string,
   preconfigured: boolean;
   initialCertificateTreeValidationRunCompleted: boolean,
   certificate: string;
@@ -26,8 +27,13 @@ export interface ITrustAnchor {
 }
 
 export interface ITrustAnchorResponse {
-  links : {
-    self: string;
-  }
   data: ITrustAnchor[];
+  includes: [
+    {
+      type: string,
+      startedAt: string,
+      completedAt: string,
+      status: string,
+    }]
 }
+

@@ -8,7 +8,6 @@ import {TranslateModule} from "@ngx-translate/core";
 import {FooterComponent} from "./footer/footer.component";
 import {TrustAnchorsService} from "./trust-anchors.service";
 
-
 @NgModule({
   imports: [
     CommonModule,

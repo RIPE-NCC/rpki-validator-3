@@ -11,7 +11,7 @@ export class NavComponent implements OnInit {
 
   navbarCollapsed = true;
 
-  constructor(private router: Router) {
+  constructor() {
   }
 
   ngOnInit(): void {}

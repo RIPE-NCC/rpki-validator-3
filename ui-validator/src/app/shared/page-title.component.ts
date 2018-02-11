@@ -7,6 +7,7 @@ import {Component, Input} from "@angular/core";
 })
 export class PageTitleComponent {
   @Input() pageTitle: string;
+  @Input() specificValue?: string;
 
   constructor(){
   }
