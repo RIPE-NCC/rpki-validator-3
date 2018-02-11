@@ -1,6 +1,6 @@
 import {Component, OnInit} from '@angular/core';
-
 import {Router} from "@angular/router";
+
 import {ITrustAnchorOverview} from "./trust-anchor";
 import {TrustAnchorsService} from "../core/trust-anchors.service";
 
@@ -27,7 +27,6 @@ export class TrustAnchorsComponent implements OnInit {
   }
 
   openTADetails(taId: string) {
-    console.log("row clicked "+taId);
     this._router.navigate(['/trust-anchors/monitor', taId]);
   }
 }

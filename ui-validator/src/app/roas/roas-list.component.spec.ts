@@ -1,8 +1,5 @@
 import {async, ComponentFixture, TestBed} from '@angular/core/testing';
 import {TranslateModule} from '@ngx-translate/core';
-import {NgbModule} from '@ng-bootstrap/ng-bootstrap';
-import {HttpClientModule} from '@angular/common/http';
-import {CoreModule} from '../core/core.module';
 import {Observable} from 'rxjs/Observable';
 import 'rxjs/add/observable/of';
 
@@ -133,10 +130,7 @@ describe('RoasListComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         SharedModule,
-        NgbModule.forRoot(),
-        TranslateModule.forRoot(),
-        HttpClientModule,
-        CoreModule
+        TranslateModule.forRoot()
       ],
       providers: [
         {provide: RoasService, useClass: RoasServiceStub},

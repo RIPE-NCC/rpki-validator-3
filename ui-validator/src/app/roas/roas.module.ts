@@ -8,10 +8,11 @@ import {SharedModule} from "../shared/shared.module";
   imports: [
     SharedModule
   ],
-  declarations: [RoasListComponent],
+  declarations: [
+    RoasListComponent
+  ],
   providers: [
     RoasService
   ]
 })
-export class RoasModule {
-}
+export class RoasModule {}

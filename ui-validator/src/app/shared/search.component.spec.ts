@@ -1,8 +1,8 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-
-import { SearchComponent } from './search.component';
-import {SharedModule} from "./shared.module";
+import {async, ComponentFixture, TestBed} from '@angular/core/testing';
 import {TranslateModule} from "@ngx-translate/core";
+
+import {SearchComponent} from './search.component';
+import {SharedModule} from "./shared.module";
 
 describe('SearchComponent', () => {
   let component: SearchComponent;
@@ -16,7 +16,7 @@ describe('SearchComponent', () => {
       ],
       declarations: []
     })
-    .compileComponents();
+      .compileComponents();
   }));
 
   beforeEach(() => {

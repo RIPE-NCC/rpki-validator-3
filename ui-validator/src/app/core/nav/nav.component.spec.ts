@@ -1,8 +1,8 @@
 import {async, ComponentFixture, TestBed} from '@angular/core/testing';
-
-import {NavComponent} from './nav.component';
 import {TranslateModule} from "@ngx-translate/core";
 import {NgbModule} from "@ng-bootstrap/ng-bootstrap";
+
+import {NavComponent} from './nav.component';
 
 describe('NavComponent', () => {
   let component: NavComponent;

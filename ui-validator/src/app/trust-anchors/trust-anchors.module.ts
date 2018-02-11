@@ -8,7 +8,10 @@ import {SharedModule} from "../shared/shared.module";
   imports: [
     SharedModule
   ],
-  declarations: [TrustAnchorsComponent, MonitoringTaComponent],
+  declarations: [
+    TrustAnchorsComponent,
+    MonitoringTaComponent
+  ],
   providers: []
 })
 export class TrustAnchorsModule {
