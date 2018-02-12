@@ -190,7 +190,7 @@ public class PduCodec extends ByteToMessageCodec<Pdu> {
                     throw new RtrProtocolException(generateError.apply(
                         ErrorCode.InvalidRequest,
                         String.format("maximum PDU length is %d, was %d", Pdu.MAX_LENGTH, length)
-                    ));
+                    ), false);
                 }
                 if (in.readableBytes() + 8 < length) {
                     return Optional.empty();
@@ -200,7 +200,7 @@ public class PduCodec extends ByteToMessageCodec<Pdu> {
                     throw new RtrProtocolException(generateError.apply(
                         ErrorCode.InvalidRequest,
                         String.format("encapsulated PDU length %d exceeds maximum length %d", encapsulatedPduLength, length - 16)
-                    ));
+                    ), false);
                 }
                 byte[] encapsulatedPdu = new byte[(int) encapsulatedPduLength];
                 in.readBytes(encapsulatedPdu);
@@ -210,7 +210,7 @@ public class PduCodec extends ByteToMessageCodec<Pdu> {
                     throw new RtrProtocolException(generateError.apply(
                         ErrorCode.InvalidRequest,
                         String.format("error text length %d exceeds maximum length %d", errorTextLength, length - encapsulatedPduLength - 16)
-                    ));
+                    ), false);
                 }
                 byte[] errorTextBytes = new byte[(int) errorTextLength];
                 in.readBytes(errorTextBytes);

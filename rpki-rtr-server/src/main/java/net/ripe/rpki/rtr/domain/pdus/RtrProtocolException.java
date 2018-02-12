@@ -36,9 +36,16 @@ import java.nio.charset.StandardCharsets;
 public class RtrProtocolException extends RuntimeException {
     @Getter
     private final ErrorPdu errorPdu;
+    @Getter
+    private final boolean sendToClient;
 
     public RtrProtocolException(ErrorPdu errorPdu) {
+        this(errorPdu, true);
+    }
+
+    public RtrProtocolException(ErrorPdu errorPdu, boolean sendToClient) {
         super(new String(errorPdu.getErrorText(), StandardCharsets.UTF_8));
         this.errorPdu = errorPdu;
+        this.sendToClient = sendToClient;
     }
 }

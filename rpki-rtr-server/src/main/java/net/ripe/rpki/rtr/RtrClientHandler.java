@@ -232,6 +232,11 @@ public class RtrClientHandler extends SimpleChannelInboundHandler<Pdu> implement
             .filter(t -> t instanceof RtrProtocolException)
             .map(t -> (RtrProtocolException) t)
             .findFirst();
+        if (rtrError.filter(x -> !x.isSendToClient()).isPresent()) {
+            log.warn("do not send error in response to client error PDU", rtrError.get());
+            ctx.close();
+            return;
+        }
 
         ErrorPdu errorPdu = rtrError
             .map(RtrProtocolException::getErrorPdu)
