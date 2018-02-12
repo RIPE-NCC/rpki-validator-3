@@ -125,7 +125,8 @@ class TrustAnchorsServiceStub {
 describe('RoasListComponent', () => {
   let component: RoasListComponent;
   let fixture: ComponentFixture<RoasListComponent>;
-  let roasService: TrustAnchorsService;
+  let roasService: RoasService;
+  let roasSpy;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
@@ -143,6 +144,7 @@ describe('RoasListComponent', () => {
     fixture = TestBed.createComponent(RoasListComponent);
     component = fixture.componentInstance;
     roasService = TestBed.get(RoasService);
+    roasSpy = spyOn(roasService, 'getRoas').and.callThrough();
     fixture.detectChanges();
   }));
 
@@ -172,7 +174,7 @@ describe('RoasListComponent', () => {
 
   it('should call roasService for changed page', () => {
     component.onChangePage(5);
-    // spyOn(roasService, 'getRoas()').and.returnValue('');
+    expect(roasSpy).toHaveBeenCalled();
     fixture.detectChanges();
     expect(component.response).not.toBeNull();
     expect(component.roas).toEqual(component.response.data);
