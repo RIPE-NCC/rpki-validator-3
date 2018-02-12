@@ -303,8 +303,6 @@
                     <mappings>
                         <mapping>
                             <directory>/usr/lib/</directory>
-                            <username>rpki</username>
-                            <groupname>rpki</groupname>
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
@@ -316,8 +314,6 @@
                         <mapping>
                             <directory>/usr/bin/</directory>
                             <filemode>755</filemode>
-                            <username>rpki</username>
-                            <groupname>rpki</groupname>
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
@@ -342,10 +338,22 @@
                             </sources>
                         </mapping>
                         <mapping>
+                            <directory>/etc/rpki-validator-3/</directory>
+                            <configuration>false</configuration>
+                            <filemode>444</filemode>
+                            <directoryIncluded>false</directoryIncluded>
+                            <sources>
+                                <source>
+                                    <location>src/main/resources/packaging/centos7/etc/rpki-validator-3/</location>
+                                    <includes>
+                                        <include>application-defaults.properties</include>
+                                    </includes>
+                                </source>
+                            </sources>
+                        </mapping>
+                        <mapping>
                             <directory>/etc/systemd/system/</directory>
                             <configuration>true</configuration>
-                            <username>rpki</username>
-                            <groupname>rpki</groupname>
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
@@ -359,8 +367,6 @@
                         <mapping>
                             <directory>/var/lib/rpki-validator-3/</directory>
                             <configuration>true</configuration>
-                            <username>rpki</username>
-                            <groupname>rpki</groupname>
                             <directoryIncluded>true</directoryIncluded>
                             <recurseDirectories>true</recurseDirectories>
                             <sources>
