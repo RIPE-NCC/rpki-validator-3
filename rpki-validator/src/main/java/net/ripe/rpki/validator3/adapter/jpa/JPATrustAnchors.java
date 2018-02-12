@@ -113,9 +113,26 @@ public class JPATrustAnchors extends JPARepository<TrustAnchor> implements Trust
                 "     WHERE vr.id in (\n" +
                 "       SELECT MAX(id)\n" +
                 "       FROM validation_run vr1\n" +
-                "       WHERE vr1.type = 'CT'\n" +
                 "       GROUP BY vr1.trust_anchor_id, vr1.rpki_repository_id\n" +
                 "     )\n" +
+                "     UNION\n" +
+                "     SELECT DISTINCT \n" +
+                "       ta.id as id, \n" +
+                "       ta.name as ta, \n" +
+                "       rp.id as obj,\n" +
+                "        CASE WHEN vc.status = 'ERROR'   THEN 1 ELSE 0 END AS errors,\n" +
+                "        CASE WHEN vc.status = 'WARNING' THEN 1 ELSE 0 END AS warnings,\n" +
+                "        0 AS successful\n" +
+                "     FROM trust_anchor ta\n" +
+                "     INNER JOIN validation_run vr ON vr.trust_anchor_id = ta.id\n" +
+                "     INNER JOIN rpki_repository rp ON rp.id = rpta.RPKI_REPOSITORY_ID \n" +
+                "     INNER JOIN rpki_repository_trust_anchors rpta ON rpta.trust_anchor_id = ta.id\n" +
+                "     INNER JOIN validation_check vc ON vc.validation_run_id = vr.id\n" +
+                "     WHERE vr.id in (\n" +
+                "       SELECT MAX(id)\n" +
+                "       FROM validation_run vr1\n" +
+                "       GROUP BY vr1.trust_anchor_id, vr1.rpki_repository_id\n" +
+                "     )  " +
                 "  )\n" +
                 "GROUP BY ta";
 
