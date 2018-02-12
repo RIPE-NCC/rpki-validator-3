@@ -25,7 +25,6 @@ export class RoasListComponent implements OnInit {
   roasPerPage: number = 10;
   totalRoas: number;
   page: number = 1;
-  previousPage: number;
   firstRoaInTable: number = 1;
   lastRoaInTable: number = 10;
 
@@ -38,13 +37,19 @@ export class RoasListComponent implements OnInit {
   }
 
   loadData() {
+    this.setPaginationParameters();
     this._roasService.getRoas(this.firstRoaInTable.toString(), this.roasPerPage.toString()).subscribe(
       response => {
         this.response = response;
         this.roas = response.data,
-        this.setPaginationParameters()
+        this.getTotalNumberOfRoas()
       },
       error => this.errorMessage = <any>error);
+  }
+
+  setPaginationParameters() {
+    this.setNumberOfFirstRoaInTable();
+    this.setNumberOfLastRoaInTable();
   }
 
   // FIXME getQueryString should be REMOVED AS SOON AS totalRoas become available from backend
@@ -65,6 +70,14 @@ export class RoasListComponent implements OnInit {
     return value ? value[1] : null;
   };
 
+  setNumberOfFirstRoaInTable() {
+    this.firstRoaInTable = (this.page - 1) * this.roasPerPage + 1;
+  }
+
+  setNumberOfLastRoaInTable() {
+    this.lastRoaInTable = this.firstRoaInTable + this.roasPerPage - 1;
+  }
+
   getValidatedTAForAlert() {
     let listTa: string[] = [];
     this._trustAnchorsService.getTrustAnchors().subscribe(
@@ -80,20 +93,6 @@ export class RoasListComponent implements OnInit {
     );
   }
 
-  setPaginationParameters() {
-    this.getTotalNumberOfRoas();
-    this.setNumberOfFirstRoaInTable();
-    this.setNumberOfLastRoaInTable();
-  }
-
-  setNumberOfFirstRoaInTable() {
-    this.firstRoaInTable = (this.page - 1) * this.roasPerPage + 1;
-  }
-
-  setNumberOfLastRoaInTable() {
-    this.lastRoaInTable = this.firstRoaInTable + this.roasPerPage - 1;
-  }
-
   onChangePageSize(pageSize: number): void {
     this.page = Math.floor(this.firstRoaInTable/pageSize) + 1;
     this.roasPerPage = +pageSize;
@@ -101,8 +100,8 @@ export class RoasListComponent implements OnInit {
   }
 
   onChangePage(page: number): void {
-    if (page !== this.previousPage) {
-      this.previousPage = page;
+    if (page !== this.page) {
+      this.page = page;
       this.loadData();
     }
   }

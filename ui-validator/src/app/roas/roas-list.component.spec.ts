@@ -125,6 +125,7 @@ class TrustAnchorsServiceStub {
 describe('RoasListComponent', () => {
   let component: RoasListComponent;
   let fixture: ComponentFixture<RoasListComponent>;
+  let roasService: TrustAnchorsService;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
@@ -138,13 +139,49 @@ describe('RoasListComponent', () => {
       ],
       declarations: [RoasListComponent]
     })
-      .compileComponents();
+    .compileComponents();
     fixture = TestBed.createComponent(RoasListComponent);
     component = fixture.componentInstance;
+    roasService = TestBed.get(RoasService);
     fixture.detectChanges();
   }));
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should load data', () => {
+    component.loadData();
+    fixture.detectChanges();
+    expect(component.response).not.toBeNull();
+    expect(component.roas).toEqual(component.response.data);
+    expect(component.page).toEqual(1);
+    expect(component.firstRoaInTable).toEqual(1);
+    expect(component.lastRoaInTable).toEqual(10);
+  });
+
+  it('should change page size', () => {
+    component.onChangePageSize(50);
+    fixture.detectChanges();
+    expect(component.response).not.toBeNull();
+    expect(component.roas).toEqual(component.response.data);
+    expect(component.page).toEqual(1);
+    expect(component.firstRoaInTable).toEqual(1);
+    expect(component.lastRoaInTable).toEqual(50);
+  });
+
+  it('should call roasService for changed page', () => {
+    component.onChangePage(5);
+    // spyOn(roasService, 'getRoas()').and.returnValue('');
+    fixture.detectChanges();
+    expect(component.response).not.toBeNull();
+    expect(component.roas).toEqual(component.response.data);
+    expect(component.page).toEqual(5);
+    expect(component.firstRoaInTable).toEqual(41);
+    expect(component.lastRoaInTable).toEqual(50);
+  });
+
+  it('should return startFrom param from uri', () => {
+    expect(component.getQueryString('startFrom', 'http://localhost:4200/roas/?startFrom=90&pageSize=10')).toEqual('90');
   });
 });
