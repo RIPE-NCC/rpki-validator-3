@@ -118,6 +118,8 @@ CREATE TABLE rpki_object_roa_prefixes (
     rpki_object_id BIGINT NOT NULL,
     roa_prefixes_order INTEGER NOT NULL,
     prefix VARCHAR NOT NULL,
+    prefix_begin DECIMAL(39,0),
+    prefix_end DECIMAL(39,0),
     maximum_length INTEGER,
     effective_length INTEGER NOT NULL,
     asn BIGINT NOT NULL,

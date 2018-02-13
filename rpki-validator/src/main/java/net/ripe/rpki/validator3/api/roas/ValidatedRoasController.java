@@ -29,18 +29,14 @@
  */
 package net.ripe.rpki.validator3.api.roas;
 
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.adapter.jpa.JPARpkiObjects;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.Paging;
-import net.ripe.rpki.validator3.api.rpkirepositories.RpkiRepositoriesController;
-import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
-import net.ripe.rpki.validator3.domain.TrustAnchor;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -48,11 +44,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
 import java.util.stream.Stream;
 
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @RestController
@@ -65,15 +58,21 @@ public class ValidatedRoasController {
     @GetMapping(path = "/")
     public ResponseEntity<ApiResponse<Stream<JPARpkiObjects.RoaPrefix>>> list(
             @RequestParam(name = "startFrom", defaultValue = "0") int startFrom,
-            @RequestParam(name = "pageSize", defaultValue = "20") int pageSize) {
+            @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
+            @RequestParam(name = "search", defaultValue = "") String searchString) {
 
-        final Stream<JPARpkiObjects.RoaPrefix> roas = rpkiObjects
-                .findCurrentlyValidatedRoaPrefixes(startFrom, pageSize);
+        final Stream<JPARpkiObjects.RoaPrefix> roas;
+        if (StringUtils.isNotBlank(searchString)) {
+            final SearchTerm searchTerm = new SearchTerm(searchString);
+            roas = rpkiObjects.findCurrentlyValidatedRoaPrefixes(startFrom, pageSize, searchTerm);
+        } else {
+            roas = rpkiObjects.findCurrentlyValidatedRoaPrefixes(startFrom, pageSize);
+        }
 
         int totalSize = 100;
         final Links links = Paging.links(
                 startFrom, pageSize, totalSize,
-                (sf, ps) -> methodOn(ValidatedRoasController.class).list(sf, ps));
+                (sf, ps) -> methodOn(ValidatedRoasController.class).list(sf, ps, searchString));
         return ResponseEntity.ok(ApiResponse.<Stream<JPARpkiObjects.RoaPrefix>>builder().links(links).data(roas).build());
     }
 

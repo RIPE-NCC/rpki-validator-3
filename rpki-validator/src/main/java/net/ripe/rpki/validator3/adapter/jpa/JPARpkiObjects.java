@@ -34,6 +34,7 @@ import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQuery;
 import lombok.Value;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
+import net.ripe.rpki.validator3.api.roas.SearchTerm;
 import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
@@ -93,7 +94,7 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
 
     @Override
     @SuppressWarnings("unchecked")
-    public Stream<RoaPrefix> findCurrentlyValidatedRoaPrefixes(Integer startFrom, Integer pageSize) {
+    public Stream<RoaPrefix> findCurrentlyValidatedRoaPrefixes(Integer startFrom, Integer pageSize, SearchTerm searchTerm) {
         String sql = "SELECT DISTINCT \n" +
                 "      p.asn AS asn, \n" +
                 "      p.prefix AS prefix, \n" +
@@ -115,7 +116,7 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
                 "    FROM validation_run vr1\n" +
                 "    WHERE vr1.type = vr.type \n" +
                 "    GROUP BY vr1.trust_anchor_id, vr1.rpki_repository_id \n" +
-                "  )" +
+                "  ) \n" +
                 "  ORDER BY ta.name, p.asn, p.prefix ";
 
         int sf = startFrom == null ? 0 : startFrom;

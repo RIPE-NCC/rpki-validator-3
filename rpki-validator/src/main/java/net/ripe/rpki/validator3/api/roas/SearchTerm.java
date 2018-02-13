@@ -27,51 +27,36 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.domain;
+package net.ripe.rpki.validator3.api.roas;
 
-import lombok.Data;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 
-import javax.persistence.Basic;
-import javax.persistence.Embeddable;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-import java.math.BigDecimal;
+public class SearchTerm {
+    private final String term;
 
-@Data
-@Embeddable
-public class RoaPrefix {
-    @Basic
-    @NotNull
-    @NotEmpty
-    String prefix;
-
-    @Basic
-    @NotNull
-    BigDecimal prefixBegin;
-
-    @Basic
-    @NotNull
-    BigDecimal prefixEnd;
-
-    @Basic
-    Integer maximumLength;
-
-    @Basic
-    int effectiveLength;
-
-    @Basic
-    long asn;
-
-    public static RoaPrefix of(IpRange prefix, Integer maximumLength, Asn asn) {
-        RoaPrefix result = new RoaPrefix();
-        result.setPrefix(prefix.toString());
-        result.setPrefixBegin(new BigDecimal(prefix.getStart().getValue()));
-        result.setPrefixEnd(new BigDecimal(prefix.getEnd().getValue()));
-        result.setMaximumLength(maximumLength);
-        result.setEffectiveLength(maximumLength != null ? maximumLength : prefix.getPrefixLength());
-        result.setAsn(asn.longValue());
-        return result;
+    SearchTerm(String term) {
+        this.term = term;
     }
+
+    public IpRange asIpRange() {
+        try {
+            return IpRange.parse(term);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public Asn asAsn() {
+        try {
+            return Asn.parse(term);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public String asString() {
+        return term;
+    }
+
 }

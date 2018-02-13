@@ -31,6 +31,7 @@ package net.ripe.rpki.validator3.domain;
 
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.validator3.adapter.jpa.JPARpkiObjects;
+import net.ripe.rpki.validator3.api.roas.SearchTerm;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
@@ -59,7 +60,11 @@ public interface RpkiObjects {
 
     Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type type, byte[] authorityKeyIdentifier);
 
-    Stream<JPARpkiObjects.RoaPrefix> findCurrentlyValidatedRoaPrefixes(Integer startFrom, Integer pageSize);
+    Stream<JPARpkiObjects.RoaPrefix> findCurrentlyValidatedRoaPrefixes(Integer startFrom, Integer pageSize, SearchTerm searchTerm);
+
+    default Stream<JPARpkiObjects.RoaPrefix> findCurrentlyValidatedRoaPrefixes(Integer startFrom, Integer pageSize) {
+        return findCurrentlyValidatedRoaPrefixes(startFrom, pageSize, null);
+    }
 
     default Stream<JPARpkiObjects.RoaPrefix> findCurrentlyValidatedRoaPrefixes() {
         return findCurrentlyValidatedRoaPrefixes(null, null);
