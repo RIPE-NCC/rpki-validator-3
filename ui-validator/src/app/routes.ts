@@ -8,7 +8,7 @@ import {MonitoringTaComponent} from "./monitoring-ta/monitoring-ta.component";
 export const appRoutes : Routes = [
   { path: 'home', component: HomeComponent},
     { path: 'trust-anchors', component: TrustAnchorsComponent},
-    { path: 'list-roas', component: RoasListComponent},
+    { path: 'roas', component: RoasListComponent},
     { path: 'trust-anchors/monitor/:id', component: MonitoringTaComponent},
     { path: '', redirectTo: 'home', pathMatch: 'full'},
     { path: '**', redirectTo: 'home', pathMatch: 'full'}
