@@ -121,7 +121,6 @@ class TrustAnchorsServiceStub {
   }
 }
 
-
 describe('RoasListComponent', () => {
   let component: RoasListComponent;
   let fixture: ComponentFixture<RoasListComponent>;
