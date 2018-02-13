@@ -25,6 +25,7 @@ export class RoasListComponent implements OnInit {
   roasPerPage: number = 10;
   totalRoas: number;
   page: number = 1;
+  previousPage: number = 1;
   firstRoaInTable: number = 1;
   lastRoaInTable: number = 10;
 
@@ -100,8 +101,8 @@ export class RoasListComponent implements OnInit {
   }
 
   onChangePage(page: number): void {
-    if (page !== this.page) {
-      this.page = page;
+    if (this.previousPage !== page) {
+      this.previousPage = page;
       this.loadData();
     }
   }
