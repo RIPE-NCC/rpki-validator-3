@@ -5,9 +5,9 @@ import {Injectable} from "@angular/core";
 @Injectable()
 export class TrustAnchorsService {
 
-    private _trustAnchorsUrl = 'trust-anchors';
-    private _trustAnchorsStatusesUrl = 'trust-anchors/statuses';
-    private _trustAnchorByIdUrl = 'trust-anchors/';
+    private _trustAnchorsUrl = 'api/trust-anchors';
+    private _trustAnchorsStatusesUrl = 'api/trust-anchors/statuses';
+    private _trustAnchorByIdUrl = 'api/trust-anchors/';
 
     constructor(private _http: HttpClient) {
     }

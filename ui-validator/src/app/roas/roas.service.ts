@@ -10,7 +10,7 @@ import {IRoasResponse} from './roas';
 @Injectable()
 export class RoasService {
 
-  private _roasUrl = 'roas/';
+  private _roasUrl = 'api/roas/';
 
   constructor(private _http: HttpClient) {
   }
