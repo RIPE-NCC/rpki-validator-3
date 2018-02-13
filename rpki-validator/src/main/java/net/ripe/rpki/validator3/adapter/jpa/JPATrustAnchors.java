@@ -37,6 +37,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import javax.transaction.Transactional;
+import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -97,10 +98,13 @@ public class JPATrustAnchors extends JPARepository<TrustAnchor> implements Trust
     @SuppressWarnings("unchecked")
     public List<TaStatus> getStatuses() {
         String sql = "SELECT " +
-                "     id, ta, SUM(errors), SUM(warnings), SUM(successful) FROM (\n" +
+                "       taId, taName, \n" +
+                "       SUM(errors), SUM(warnings), SUM(successful), \n" +
+                "       (SELECT MAX(completed_at) FROM validation_run WHERE trust_anchor_id = taId) AS lastUpdated \n" +
+                "     FROM (\n" +
                 "     SELECT DISTINCT \n" +
-                "       ta.id as id, \n" +
-                "       ta.name as ta, \n" +
+                "       ta.id as taId, \n" +
+                "       ta.name as taName, \n" +
                 "       ro.id as obj, \n" +
                 "        CASE WHEN vc.status = 'ERROR'   THEN 1 ELSE 0 END AS errors,\n" +
                 "        CASE WHEN vc.status = 'WARNING' THEN 1 ELSE 0 END AS warnings,\n" +
@@ -134,7 +138,7 @@ public class JPATrustAnchors extends JPARepository<TrustAnchor> implements Trust
                 "       GROUP BY vr1.trust_anchor_id, vr1.rpki_repository_id\n" +
                 "     )  " +
                 "  )\n" +
-                "GROUP BY ta";
+                "GROUP BY taid";
 
         final Stream<TaStatus> stream = sql(sql).getResultList().stream().map(o -> {
             final Object[] fields = (Object[]) o;
@@ -144,10 +148,10 @@ public class JPATrustAnchors extends JPARepository<TrustAnchor> implements Trust
                     asInt(fields[2]),
                     asInt(fields[3]),
                     asInt(fields[4]),
-                    // TODO Use the real one
-                    new Date());
+                    asDate(fields[5]));
         });
         return stream.collect(Collectors.toList());
 
     }
+
 }

@@ -40,6 +40,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
+import java.sql.Timestamp;
+import java.util.Date;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -94,5 +96,9 @@ abstract class JPARepository<T> {
 
     protected int asInt(Object o) {
         return o == null ? null : Integer.parseInt(o.toString());
+    }
+
+    protected Date asDate(Object d) {
+        return d == null ? null : new Date(((Timestamp) d).getTime());
     }
 }
