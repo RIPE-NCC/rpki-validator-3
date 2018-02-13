@@ -7,6 +7,8 @@ import {FormsModule} from "@angular/forms";
 import {SearchComponent} from "./search.component";
 import {PageTitleComponent} from "./page-title.component";
 import {FlagComponent} from './flag/flag.component';
+import {SortableColumnComponent} from "./sortable-column/sortable-column.component";
+import {SortService} from "./sortable-column/sort.service";
 
 @NgModule({
   imports: [
@@ -18,16 +20,18 @@ import {FlagComponent} from './flag/flag.component';
   declarations: [
     SearchComponent,
     PageTitleComponent,
-    FlagComponent
+    FlagComponent,
+    SortableColumnComponent
   ],
-  providers: [],
+  providers: [SortService],
   exports: [
     CommonModule,
     NgbModule,
     TranslateModule,
     SearchComponent,
     PageTitleComponent,
-    FlagComponent
+    FlagComponent,
+    SortableColumnComponent
   ]
 })
 export class SharedModule {
