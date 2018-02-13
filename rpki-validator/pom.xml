@@ -370,7 +370,7 @@
                             <recurseDirectories>true</recurseDirectories>
                             <sources>
                                 <source>
-                                    <location>src/main/resources/packaging/centos7/var/lib/rpki-validator-3/</location>
+                                    <location>src/main/resources/packaging/generic/data/</location>
                                     <excludes>
                                         <exclude>*/.ignore.me</exclude>
                                     </excludes>
@@ -397,6 +397,25 @@
                     </requires>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <descriptors>
+                        <descriptor>src/main/resources/packaging/generic/assembly/distribution.xml</descriptor>
+                    </descriptors>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 
