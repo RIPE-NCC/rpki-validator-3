@@ -7,8 +7,9 @@ import {FormsModule} from "@angular/forms";
 import {SearchComponent} from "./search.component";
 import {PageTitleComponent} from "./page-title.component";
 import {FlagComponent} from './flag/flag.component';
-import {SortableColumnComponent} from "./sortable-column/sortable-column.component";
-import {SortService} from "./sortable-column/sort.service";
+import {SortableColumnComponent} from "./sortable-table/sortable-column.component";
+import {SortService} from "./sortable-table/sort.service";
+import {SortableTableDirective} from "./sortable-table/sortable-table.directive";
 
 @NgModule({
   imports: [
@@ -21,7 +22,8 @@ import {SortService} from "./sortable-column/sort.service";
     SearchComponent,
     PageTitleComponent,
     FlagComponent,
-    SortableColumnComponent
+    SortableColumnComponent,
+    SortableTableDirective
   ],
   providers: [SortService],
   exports: [
@@ -31,7 +33,8 @@ import {SortService} from "./sortable-column/sort.service";
     SearchComponent,
     PageTitleComponent,
     FlagComponent,
-    SortableColumnComponent
+    SortableColumnComponent,
+    SortableTableDirective
   ]
 })
 export class SharedModule {

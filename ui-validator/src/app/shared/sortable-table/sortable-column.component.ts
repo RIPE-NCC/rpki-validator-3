@@ -21,11 +21,11 @@ export class SortableColumnComponent implements OnInit {
   @HostListener('click')
   sort() {
     this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
-    this.sortService.columnSorted({ sortColumn: this.columnName, sortDirection: this.sortDirection });
+    this.sortService.sortColumn({ sortColumn: this.columnName, sortDirection: this.sortDirection });
   }
 
   ngOnInit() {
-    this.columnSortedSubscription = this.sortService.columnSorted$.subscribe(event => {
+    this.columnSortedSubscription = this.sortService.columnSorted.subscribe(event => {
       if (this.columnName != event.sortColumn) {
         this.sortDirection = '';
       }

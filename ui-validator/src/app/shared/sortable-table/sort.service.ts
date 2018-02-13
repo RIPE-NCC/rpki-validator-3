@@ -8,9 +8,9 @@ export class SortService {
 
   private columnSortedSource = new Subject<ColumnSortedEvent>();
 
-  columnSorted$ = this.columnSortedSource.asObservable();
+  columnSorted = this.columnSortedSource.asObservable();
 
-  columnSorted(event: ColumnSortedEvent) {
+  sortColumn(event: ColumnSortedEvent) {
     this.columnSortedSource.next(event);
   }
 

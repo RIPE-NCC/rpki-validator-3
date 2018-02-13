@@ -47,11 +47,6 @@ export class RoasListComponent implements OnInit {
       error => this.errorMessage = <any>error);
   }
 
-  setPaginationParameters() {
-    this.setNumberOfFirstRoaInTable();
-    this.setNumberOfLastRoaInTable();
-  }
-
   // FIXME getQueryString should be REMOVED AS SOON AS totalRoas become available from backend
   getTotalNumberOfRoas() {
     const linkToLastPage: string = this.response.links.last;
@@ -69,6 +64,11 @@ export class RoasListComponent implements OnInit {
     const value = reg.exec(url);
     return value ? value[1] : null;
   };
+
+  setPaginationParameters() {
+    this.setNumberOfFirstRoaInTable();
+    this.setNumberOfLastRoaInTable();
+  }
 
   setNumberOfFirstRoaInTable() {
     this.firstRoaInTable = (this.page - 1) * this.roasPerPage + 1;
@@ -111,4 +111,10 @@ export class RoasListComponent implements OnInit {
     // TODO call backend for roas and set rsponse into this.roas
   }
 
+  onSorted($event): void {
+    const sortColumn = $event.sortColumn;
+    const asc_desc = $event.sortDirection;
+    console.log('sorting ' + $event);
+    // probably clean and set roas
+  }
 }
