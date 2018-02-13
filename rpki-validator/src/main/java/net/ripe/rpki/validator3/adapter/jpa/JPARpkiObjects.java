@@ -33,6 +33,8 @@ import com.google.common.primitives.UnsignedBytes;
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQuery;
 import lombok.Value;
+import net.ripe.ipresource.Asn;
+import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.validator3.api.roas.SearchTerm;
 import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
@@ -43,6 +45,7 @@ import org.springframework.stereotype.Repository;
 
 import javax.persistence.LockModeType;
 import javax.transaction.Transactional;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -95,6 +98,9 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
     @Override
     @SuppressWarnings("unchecked")
     public Stream<RoaPrefix> findCurrentlyValidatedRoaPrefixes(Integer startFrom, Integer pageSize, SearchTerm searchTerm) {
+
+        final String searchCondition = getSearchCondition(searchTerm);
+
         String sql = "SELECT DISTINCT \n" +
                 "      p.asn AS asn, \n" +
                 "      p.prefix AS prefix, \n" +
@@ -117,6 +123,7 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
                 "    WHERE vr1.type = vr.type \n" +
                 "    GROUP BY vr1.trust_anchor_id, vr1.rpki_repository_id \n" +
                 "  ) \n" +
+                (searchCondition != null ? (" AND (" + searchCondition + ")") : "") + "\n" +
                 "  ORDER BY ta.name, p.asn, p.prefix ";
 
         int sf = startFrom == null ? 0 : startFrom;
@@ -136,6 +143,36 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
                     asString(fields[3]),
                     asString(fields[4]));
         });
+    }
+
+    private String getSearchCondition(SearchTerm searchTerm) {
+        final String searchCondition;
+        if (searchTerm == null) {
+            searchCondition = null;
+        } else {
+            IpRange ipRange = searchTerm.asIpRange();
+            if (ipRange != null) {
+                final BigInteger begin = ipRange.getStart().getValue();
+                final BigInteger end = ipRange.getEnd().getValue();
+                searchCondition = " (" +
+                        "(p.prefix_begin > " + begin + " AND p.prefix_begin < " + end + ") OR " +
+                        "(p.prefix_end > " + begin + " AND p.prefix_end < " + end + ")" +
+                        ")";
+            } else {
+                Asn asAsn = searchTerm.asAsn();
+                if (asAsn != null) {
+                    final long asn = asAsn.getValue().longValue();
+                    searchCondition = " (to_char(asn) like '%" + asn + "%')";
+                } else {
+                    String s = searchTerm.asString();
+                    searchCondition = "(\n" +
+                            " (to_char(p.asn) like '%" + s + "%') OR \n" +
+                            " (p.prefix       like '%" + s + "%') \n" +
+                            ")\n";
+                }
+            }
+        }
+        return searchCondition;
     }
 
 
