@@ -7,8 +7,8 @@ describe('ui-validator App', () => {
     page = new AppPage();
   });
 
-  it('should display welcome message', () => {
-    page.navigateTo();
-    expect(page.getParagraphText()).toEqual('Quick Overview of BGP Origin Validation');
+  it('should display Validated ROAs page title', () => {
+    page.navigateTo("roas");
+    expect(page.getParagraphText()).toEqual('Validated ROAs');
   });
 });
