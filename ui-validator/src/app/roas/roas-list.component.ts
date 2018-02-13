@@ -18,9 +18,9 @@ export class RoasListComponent implements OnInit {
   errorMessage: string;
   response: IRoasResponse;
   roas: IRoa[] = [];
-  pageSizes: number[] = [ 10, 25, 50, 100];
+  pageSizes: number[] = [10, 25, 50, 100];
   // search
-  searchBy: string;
+  searchBy: string = '';
   // pagination
   roasPerPage: number = 10;
   totalRoas: number;
@@ -39,32 +39,39 @@ export class RoasListComponent implements OnInit {
 
   loadData() {
     this.setPaginationParameters();
-    this._roasService.getRoas(this.firstRoaInTable.toString(), this.roasPerPage.toString()).subscribe(
-      response => {
-        this.response = response;
-        this.roas = response.data,
-        this.getTotalNumberOfRoas()
-      },
-      error => this.errorMessage = <any>error);
+    this._roasService.getRoas(this.firstRoaInTable.toString(), this.roasPerPage.toString(), this.searchBy)
+      .subscribe(
+        response => {
+          this.roas = response.data;
+          // TODO following 2 lines should be deleted with getTotalNumberOfRoas
+          this.response = response;
+          this.getTotalNumberOfRoas();
+        },
+        error => this.errorMessage = <any>error);
   }
 
   // FIXME getQueryString should be REMOVED AS SOON AS totalRoas become available from backend
   getTotalNumberOfRoas() {
     const linkToLastPage: string = this.response.links.last;
     const firstRoaOnLastPage = this.getQueryString('startFrom', linkToLastPage);
-    this._roasService.getRoas(firstRoaOnLastPage, this.roasPerPage.toString()).subscribe(
-      response => {
-        this.totalRoas = +firstRoaOnLastPage + response.data.length;
-      },
-      error => this.errorMessage = <any>error);
+    this._roasService.getRoas(firstRoaOnLastPage, this.roasPerPage.toString(), this.searchBy)
+      .subscribe(
+        response => {
+          this.totalRoas = +firstRoaOnLastPage + response.data.length;
+        },
+        error => this.errorMessage = <any>error);
   }
 
-  // FIXME getQueryString should be REMOVED AS SOON AS totalRoas become available from backend
+  // TODO getQueryString should be REMOVED AS SOON AS totalRoas become available from backend
   getQueryString(field: string, url: string): string {
     const reg = new RegExp('[?&]' + field + '=([^&#]*)', 'i');
     const value = reg.exec(url);
     return value ? value[1] : null;
   };
+
+  resetInitialValuesPagination(): void {
+    this.page = this.previousPage = this.firstRoaInTable = this.lastRoaInTable = 1;
+  }
 
   setPaginationParameters() {
     this.setNumberOfFirstRoaInTable();
@@ -81,35 +88,36 @@ export class RoasListComponent implements OnInit {
 
   getValidatedTAForAlert() {
     let listTa: string[] = [];
-    this._trustAnchorsService.getTrustAnchors().subscribe(
-      response => {
-        const taResponse = response as ITrustAnchorResponse;
-        taResponse.data.forEach( ta => {
-          if (ta.initialCertificateTreeValidationRunCompleted)
-            listTa.push(ta.name);
-        });
-        this.alertListValidatedTA = listTa.join(', ');
-        console.log(this.alertListValidatedTA)
-      }
-    );
+    this._trustAnchorsService.getTrustAnchors()
+      .subscribe(
+        response => {
+          const taResponse = response as ITrustAnchorResponse;
+          taResponse.data.forEach(ta => {
+            if (ta.initialCertificateTreeValidationRunCompleted)
+              listTa.push(ta.name);
+          });
+          this.alertListValidatedTA = listTa.join(', ');
+        }
+      );
   }
 
   onChangePageSize(pageSize: number): void {
-    this.page = Math.floor(this.firstRoaInTable/pageSize) + 1;
+    this.page = Math.floor(this.firstRoaInTable / pageSize) + 1;
     this.roasPerPage = +pageSize;
     this.loadData();
   }
 
   onChangePage(page: number): void {
     if (this.previousPage !== page) {
-      this.previousPage = page;
+      this.previousPage = this.page = page;
       this.loadData();
     }
   }
 
   onSearchByClick(searchBy: string): void {
+    this.resetInitialValuesPagination();
     this.searchBy = searchBy;
-    // TODO call backend for roas and set rsponse into this.roas
+    this.loadData();
   }
 
   onSorted($event): void {
