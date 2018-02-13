@@ -46,7 +46,7 @@ import java.util.stream.Stream;
 /**
  * Controller to export validated ROA prefix information.
  * <p>
- * The data format is backwards compatible with the RPKI validator 2.x (see
+ * The API and data format is backwards compatible with the RPKI validator 2.x (see
  * https://github.com/RIPE-NCC/rpki-validator/blob/350d939d5e18858ee6cefc0c9a99e0c70b609b6d/rpki-validator-app/src/main/scala/net/ripe/rpki/validator/controllers/ExportController.scala#L41).
  */
 @RestController

@@ -54,7 +54,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -62,7 +61,7 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @RestController
-@RequestMapping(path = "/trust-anchors", produces = Api.API_MIME_TYPE)
+@RequestMapping(path = "/api/trust-anchors", produces = { Api.API_MIME_TYPE, "application/json" })
 @Slf4j
 public class TrustAnchorController {
 
@@ -88,7 +87,7 @@ public class TrustAnchorController {
         ));
     }
 
-    @PostMapping(consumes = Api.API_MIME_TYPE)
+    @PostMapping(consumes = { Api.API_MIME_TYPE, "application/json" })
     public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@RequestBody @Valid ApiCommand<AddTrustAnchor> command) {
         long id = trustAnchorService.execute(command.getData());
         TrustAnchor trustAnchor = trustAnchorRepository.get(id);

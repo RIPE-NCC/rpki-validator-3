@@ -49,7 +49,7 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @RestController
-@RequestMapping(path = "/validation-runs", produces = Api.API_MIME_TYPE)
+@RequestMapping(path = "/api/validation-runs", produces = Api.API_MIME_TYPE)
 @Slf4j
 public class ValidationRunController {
 

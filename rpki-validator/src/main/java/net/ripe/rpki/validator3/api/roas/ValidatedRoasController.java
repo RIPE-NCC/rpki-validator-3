@@ -49,7 +49,7 @@ import java.util.stream.Stream;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @RestController
-@RequestMapping(path = "/roas", produces = Api.API_MIME_TYPE)
+@RequestMapping(path = "/api/roas", produces = { Api.API_MIME_TYPE, "application/json" })
 @Slf4j
 public class ValidatedRoasController {
     @Autowired

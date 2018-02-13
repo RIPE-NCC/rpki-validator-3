@@ -29,20 +29,14 @@
  */
 package net.ripe.rpki.validator3.api.roas;
 
-import com.google.common.io.Files;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.crypto.x509cert.X509CertificateUtil;
-import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificate;
-import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificateParser;
-import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
-import net.ripe.rpki.validator3.domain.AbstractEntity;
-import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.Settings;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
@@ -55,21 +49,16 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.junit.Assert.assertFalse;
-
 @RestController
-@RequestMapping(path = "/objects", produces = Api.API_MIME_TYPE)
+@RequestMapping(path = "/api/objects", produces = { Api.API_MIME_TYPE, "application/json" })
 @Slf4j
 public class ObjectController {
     @Autowired

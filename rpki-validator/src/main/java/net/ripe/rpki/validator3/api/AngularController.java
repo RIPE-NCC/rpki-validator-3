@@ -27,37 +27,20 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.api.bgp;
+package net.ripe.rpki.validator3.api;
 
-import lombok.Value;
-import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.api.Api;
-import net.ripe.rpki.validator3.api.ApiResponse;
-import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
-import java.util.stream.Stream;
+@Controller
+public class AngularController {
 
-@RestController
-@RequestMapping(path = "/api/bgp", produces = { Api.API_MIME_TYPE, "application/json" })
-@Slf4j
-public class BgpPreviewController {
-
-    @GetMapping(path = "/")
-    public ResponseEntity<ApiResponse<Stream<BgpPreview>>> list() {
-        // TODO This functionality is not implemented yet
-        final Stream<BgpPreview> bgps = Stream.empty();
-        return ResponseEntity.ok(ApiResponse.<Stream<BgpPreview>>builder()
-                .data(bgps)
-                .build());
-    }
-
-    @Value
-    public static class BgpPreview {
-        private String asn;
-        private String prefix;
-        private String validity;
+    /**
+     * @see <a href="https://stackoverflow.com/a/44850886">https://stackoverflow.com/a/44850886</a>
+     */
+    @GetMapping(value = "/**/{[path:[^\\.]*}", produces = "text/html")
+    public String redirect() {
+        // Forward to home page so that route is preserved.
+        return "forward:/";
     }
 }
