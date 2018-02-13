@@ -3,7 +3,7 @@ export interface IRoa {
   prefix: string,
   length: number,
   trustAnchor: string,
-  link: string
+  uri: string
 }
 
 export interface IRoasResponse {
