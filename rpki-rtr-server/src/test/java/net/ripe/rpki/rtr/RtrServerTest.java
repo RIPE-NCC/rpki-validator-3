@@ -30,6 +30,7 @@
 package net.ripe.rpki.rtr;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import net.ripe.ipresource.Asn;
@@ -48,6 +49,7 @@ import net.ripe.rpki.rtr.domain.pdus.ErrorPdu;
 import net.ripe.rpki.rtr.domain.pdus.Flags;
 import net.ripe.rpki.rtr.domain.pdus.NotifyPdu;
 import net.ripe.rpki.rtr.domain.pdus.Pdu;
+import net.ripe.rpki.rtr.domain.pdus.ProtocolVersion;
 import net.ripe.rpki.rtr.domain.pdus.ResetQueryPdu;
 import net.ripe.rpki.rtr.domain.pdus.SerialQueryPdu;
 import org.junit.Before;
@@ -58,6 +60,7 @@ import java.util.Set;
 
 import static net.ripe.rpki.rtr.domain.pdus.ProtocolVersion.V0;
 import static net.ripe.rpki.rtr.domain.pdus.ProtocolVersion.V1;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
@@ -259,6 +262,13 @@ public class RtrServerTest {
         assertResponse(
             NotifyPdu.of(V0, rtrCache.getSessionId(), SerialNumber.of(2))
         );
+    }
+
+    @Test
+    public void should_not_report_error_on_broken_client_error_pdu() {
+        channel.writeInbound(Unpooled.copiedBuffer(new byte[] {ProtocolVersion.V1.getValue(), ErrorPdu.PDU_TYPE, 0, 0, 0, 0, 0, 12, 0, 0, 0, 3}));
+        assertThat((ByteBuf) channel.readOutbound()).isNull();
+        assertThat(channel.isActive()).isFalse();
     }
 
 
