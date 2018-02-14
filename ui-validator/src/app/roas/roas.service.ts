@@ -14,11 +14,13 @@ export class RoasService {
 
   constructor(private _http: HttpClient) {}
 
-  getRoas(startFrom: string, pageSize: string, search: string): Observable<IRoasResponse> {
+  getRoas(startFrom: string, pageSize: string, search: string, sortBy: string, sortDirection: string ): Observable<IRoasResponse> {
     const params = new HttpParams()
       .set('startFrom', startFrom)
       .set('pageSize', pageSize)
-      .set('search', search);
+      .set('search', search)
+      .set('sortBy', sortBy)
+      .set('sortDirection', sortDirection);
 
     return this._http.get<IRoasResponse>(this._roasUrl, {params: params})
       .do(reponse => console.log('All: ' + JSON.stringify(reponse)))

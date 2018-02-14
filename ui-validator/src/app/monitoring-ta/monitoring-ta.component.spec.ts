@@ -6,7 +6,6 @@ import {ActivatedRoute} from '@angular/router';
 import {MonitoringTaComponent} from './monitoring-ta.component';
 import {SharedModule} from '../shared/shared.module';
 import {TrustAnchorsService} from '../core/trust-anchors.service';
-import {RoasService} from "../roas/roas.service";
 
 class TrustAnchorsServiceStub {
   getTrustAnchor(id: string) {

@@ -21,6 +21,9 @@ export class RoasListComponent implements OnInit {
   pageSizes: number[] = [10, 25, 50, 100];
   // search
   searchBy: string = '';
+  // sort
+  sortBy: string = 'prefix';
+  sortDirection: string = 'asc';
   // pagination
   roasPerPage: number = 10;
   totalRoas: number;
@@ -39,7 +42,11 @@ export class RoasListComponent implements OnInit {
 
   loadData() {
     this.setPaginationParameters();
-    this._roasService.getRoas(this.firstRoaInTable.toString(), this.roasPerPage.toString(), this.searchBy)
+    this._roasService.getRoas(this.firstRoaInTable.toString(),
+                              this.roasPerPage.toString(),
+                              this.searchBy,
+                              this.sortBy,
+                              this.sortDirection)
       .subscribe(
         response => {
           this.roas = response.data;
@@ -54,7 +61,11 @@ export class RoasListComponent implements OnInit {
   getTotalNumberOfRoas() {
     const linkToLastPage: string = this.response.links.last;
     const firstRoaOnLastPage = this.getQueryString('startFrom', linkToLastPage);
-    this._roasService.getRoas(firstRoaOnLastPage, this.roasPerPage.toString(), this.searchBy)
+    this._roasService.getRoas(firstRoaOnLastPage,
+                              this.roasPerPage.toString(),
+                              this.searchBy,
+                              this.sortBy,
+                              this.sortDirection)
       .subscribe(
         response => {
           this.totalRoas = +firstRoaOnLastPage + response.data.length;
@@ -121,9 +132,8 @@ export class RoasListComponent implements OnInit {
   }
 
   onSorted($event): void {
-    const sortColumn = $event.sortColumn;
-    const asc_desc = $event.sortDirection;
-    console.log('sorting ' + $event);
-    // probably clean and set roas
+    this.sortBy = $event.sortColumn;
+    this.sortDirection = $event.sortDirection;
+    this.loadData();
   }
 }
