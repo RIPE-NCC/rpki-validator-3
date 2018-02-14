@@ -105,26 +105,19 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
                                                                SearchTerm searchTerm,
                                                                Sorting sorting) {
 
-        final Pair<String, Function<Query, Query>> searchCondition = getSearchCondition(searchTerm);
+        final Pair<String, Function<Query, Query>> search = getSearchCondition(searchTerm);
         final String orderBy = getOrderBy(sorting);
-        String roaSql = getRoaSql();
+        final String roaSql = getRoaSql();
+        final Pair<String, Function<Query, Query>> limit = getPaging(startFrom, pageSize);
 
         String sql = roaSql +
-                (searchCondition != null ? (" AND (" + searchCondition.getKey() + ")") : "") + "\n" +
-                orderBy;
-
-        int sf = startFrom == null ? 0 : startFrom;
-        if (pageSize != null) {
-            sql = sql + " LIMIT " + pageSize;
-        }
-        if (startFrom != null) {
-            sql = sql + " OFFSET " + startFrom;
-        }
+                " AND (" + search.getKey() + ")\n" +
+                orderBy + "\n" +
+                limit.getKey();
 
         Query preparedQuery = sql(sql);
-        if (searchCondition != null) {
-            preparedQuery = searchCondition.getRight().apply(preparedQuery);
-        }
+        preparedQuery = search.getRight().apply(preparedQuery);
+        preparedQuery = limit.getRight().apply(preparedQuery);
         return preparedQuery.getResultList().stream().map(o -> {
             final Object[] fields = (Object[]) o;
             return new RoaPrefix(
@@ -182,19 +175,17 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
 
     private Pair<String, Function<Query, Query>> getSearchCondition(SearchTerm searchTerm) {
         if (searchTerm == null) {
-            return null;
+            return Pair.of(" TRUE ", q -> q);
         } else {
             final IpRange ipRange = searchTerm.asIpRange();
             if (ipRange != null) {
                 final String sql = " (" +
-                        "(p.prefix_begin > ? AND p.prefix_begin < ?) OR " +
-                        "(p.prefix_end   > ? AND p.prefix_end   < ?)" +
+                        "(p.prefix_begin >= :pbegin AND p.prefix_begin <  :pend) OR " +
+                        "(p.prefix_end   >  :pbegin AND p.prefix_end   <= :pend)" +
                         ")";
                 return Pair.of(sql, q -> {
-                    q.setParameter(1, ipRange.getStart().getValue());
-                    q.setParameter(2, ipRange.getEnd().getValue());
-                    q.setParameter(3, ipRange.getStart().getValue());
-                    q.setParameter(4, ipRange.getEnd().getValue());
+                    q.setParameter("pbegin", ipRange.getStart().getValue());
+                    q.setParameter("pend", ipRange.getEnd().getValue());
                     return q;
                 });
             } else {
@@ -216,21 +207,41 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
         }
     }
 
+    private Pair<String, Function<Query, Query>> getPaging(Integer startFrom,
+                                                           Integer pageSize) {
+        String limit = "";
+        int sf = startFrom == null ? 0 : startFrom;
+        if (pageSize != null) {
+            limit += " LIMIT :pageSize ";
+        }
+        if (startFrom != null) {
+            limit += " OFFSET :startFrom";
+        }
+        return Pair.of(limit, q -> {
+            if (pageSize != null) {
+                q.setParameter("pageSize", pageSize);
+            }
+            if (startFrom != null) {
+                q.setParameter("startFrom", startFrom);
+            }
+            return q;
+        });
+    }
+
     @Override
     public int countCurrentlyValidatedRoaPrefixes(SearchTerm searchTerm) {
         final Pair<String, Function<Query, Query>> searchCondition = getSearchCondition(searchTerm);
 
-        String roaSql = getRoaSql();
+        final String roaSql = getRoaSql();
 
-        String sql = roaSql +
-                (searchCondition != null ? (" AND (" + searchCondition.getKey() + ")") : "");
+        final String sql = "SELECT COUNT(*) FROM (" +
+                roaSql + " " +
+                "AND (" + searchCondition.getKey() + ")" +
+                ")";
 
-        Query preparedQuery = sql(sql);
-        if (searchCondition != null) {
-            preparedQuery = searchCondition.getRight().apply(preparedQuery);
-        }
-        Object singleResult = preparedQuery.getSingleResult();
-        return 0;
+        final Query preparedQuery = searchCondition.getRight().apply(sql(sql));
+        final Object singleResult = preparedQuery.getSingleResult();
+        return ((BigInteger)singleResult).intValue();
     }
 
     @Value
