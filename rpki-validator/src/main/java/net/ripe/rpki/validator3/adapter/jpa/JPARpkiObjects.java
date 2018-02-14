@@ -35,6 +35,7 @@ import com.querydsl.jpa.impl.JPAQuery;
 import lombok.Value;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
+import net.ripe.ipresource.IpResourceType;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.validator3.api.roas.SearchTerm;
 import net.ripe.rpki.validator3.api.roas.Sorting;
@@ -58,6 +59,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static net.ripe.rpki.validator3.domain.RoaPrefix.FAMILY_IPV4;
+import static net.ripe.rpki.validator3.domain.RoaPrefix.FAMILY_IPV6;
 import static net.ripe.rpki.validator3.domain.querydsl.QCertificateTreeValidationRun.certificateTreeValidationRun;
 import static net.ripe.rpki.validator3.domain.querydsl.QRpkiObject.rpkiObject;
 
@@ -180,10 +183,13 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
             final IpRange ipRange = searchTerm.asIpRange();
             if (ipRange != null) {
                 final String sql = " (" +
+                        "(p.prefix_family = :pfamily) AND (" +
                         "(p.prefix_begin >= :pbegin AND p.prefix_begin <  :pend) OR " +
                         "(p.prefix_end   >  :pbegin AND p.prefix_end   <= :pend)" +
+                        ")" +
                         ")";
                 return Pair.of(sql, q -> {
+                    q.setParameter("pfamily", ipRange.getType() == IpResourceType.IPv4 ? FAMILY_IPV4 : FAMILY_IPV6);
                     q.setParameter("pbegin", ipRange.getStart().getValue());
                     q.setParameter("pend", ipRange.getEnd().getValue());
                     return q;
