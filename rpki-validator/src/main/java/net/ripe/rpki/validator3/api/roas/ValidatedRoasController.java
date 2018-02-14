@@ -44,12 +44,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Locale;
 import java.util.stream.Stream;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @RestController
-@RequestMapping(path = "/api/roas", produces = { Api.API_MIME_TYPE, "application/json" })
+@RequestMapping(path = "/api/roas", produces = {Api.API_MIME_TYPE, "application/json"})
 @Slf4j
 public class ValidatedRoasController {
     @Autowired
@@ -59,21 +60,30 @@ public class ValidatedRoasController {
     public ResponseEntity<ApiResponse<Stream<JPARpkiObjects.RoaPrefix>>> list(
             @RequestParam(name = "startFrom", defaultValue = "0") int startFrom,
             @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
-            @RequestParam(name = "search", defaultValue = "") String searchString) {
+            @RequestParam(name = "search", defaultValue = "") String searchString,
+            @RequestParam(name = "sortBy", defaultValue = "prefix") String sortBy,
+            @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection) {
 
         final Stream<JPARpkiObjects.RoaPrefix> roas;
-        if (StringUtils.isNotBlank(searchString)) {
-            final SearchTerm searchTerm = new SearchTerm(searchString);
-            roas = rpkiObjects.findCurrentlyValidatedRoaPrefixes(startFrom, pageSize, searchTerm);
-        } else {
-            roas = rpkiObjects.findCurrentlyValidatedRoaPrefixes(startFrom, pageSize);
-        }
+        final SearchTerm searchTerm = StringUtils.isNotBlank(searchString) ? new SearchTerm(searchString) : null;
+        final Sorting sorting = parseSorting(sortBy, sortDirection);
+        roas = rpkiObjects.findCurrentlyValidatedRoaPrefixes(startFrom, pageSize, searchTerm, sorting);
 
         int totalSize = 100;
         final Links links = Paging.links(
                 startFrom, pageSize, totalSize,
-                (sf, ps) -> methodOn(ValidatedRoasController.class).list(sf, ps, searchString));
+                (sf, ps) -> methodOn(ValidatedRoasController.class).list(sf, ps, searchString, sortBy, sortDirection));
         return ResponseEntity.ok(ApiResponse.<Stream<JPARpkiObjects.RoaPrefix>>builder().links(links).data(roas).build());
+    }
+
+    private static Sorting parseSorting(String sortBy, String sortDirection) {
+        try {
+            Sorting.By by = Sorting.By.valueOf(sortBy.toUpperCase(Locale.ROOT));
+            Sorting.Direction direction = Sorting.Direction.valueOf(sortDirection.toUpperCase(Locale.ROOT));
+            return Sorting.of(by, direction);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
 }

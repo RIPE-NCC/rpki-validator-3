@@ -37,6 +37,7 @@ import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.validator3.api.roas.SearchTerm;
+import net.ripe.rpki.validator3.api.roas.Sorting;
 import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
@@ -44,6 +45,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Repository;
 
 import javax.persistence.LockModeType;
+import javax.persistence.Query;
 import javax.transaction.Transactional;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -52,6 +54,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -97,9 +100,13 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
 
     @Override
     @SuppressWarnings("unchecked")
-    public Stream<RoaPrefix> findCurrentlyValidatedRoaPrefixes(Integer startFrom, Integer pageSize, SearchTerm searchTerm) {
+    public Stream<RoaPrefix> findCurrentlyValidatedRoaPrefixes(Integer startFrom,
+                                                               Integer pageSize,
+                                                               SearchTerm searchTerm,
+                                                               Sorting sorting) {
 
-        final String searchCondition = getSearchCondition(searchTerm);
+        final Pair<String, Function<Query, Query>> searchCondition = getSearchCondition(searchTerm);
+        final String orderBy = getOrderBy(sorting);
 
         String sql = "SELECT DISTINCT \n" +
                 "      p.asn AS asn, \n" +
@@ -110,7 +117,9 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
                 "       FROM rpki_object_locations \n" +
                 "       WHERE rpki_object_id = ro.id \n" +
                 "       LIMIT 1 \n" +
-                "  ) AS location  \n" +
+                "      ) AS location,  \n" +
+                "      p.prefix_begin, \n" +
+                "      p.prefix_end \n" +
                 "  FROM rpki_object ro \n" +
                 "  INNER JOIN rpki_object_roa_prefixes p ON p.rpki_object_id = ro.id \n" +
                 "  INNER JOIN validation_run_validated_objects vrvo ON vrvo.rpki_object_id = ro.id \n" +
@@ -123,8 +132,8 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
                 "    WHERE vr1.type = vr.type \n" +
                 "    GROUP BY vr1.trust_anchor_id, vr1.rpki_repository_id \n" +
                 "  ) \n" +
-                (searchCondition != null ? (" AND (" + searchCondition + ")") : "") + "\n" +
-                "  ORDER BY ta.name, p.asn, p.prefix ";
+                (searchCondition != null ? (" AND (" + searchCondition.getKey() + ")") : "") + "\n" +
+                orderBy;
 
         int sf = startFrom == null ? 0 : startFrom;
         if (pageSize != null) {
@@ -134,7 +143,11 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
             sql = sql + " OFFSET " + startFrom;
         }
 
-        return sql(sql).getResultList().stream().map(o -> {
+        Query preparedQuery = sql(sql);
+        if (searchCondition != null) {
+            preparedQuery = searchCondition.getRight().apply(preparedQuery);
+        }
+        return preparedQuery.getResultList().stream().map(o -> {
             final Object[] fields = (Object[]) o;
             return new RoaPrefix(
                     asString(fields[0]),
@@ -145,34 +158,57 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
         });
     }
 
-    private String getSearchCondition(SearchTerm searchTerm) {
-        final String searchCondition;
+    private String getOrderBy(final Sorting sorting) {
+        final String defaultOrder = " ORDER BY ta.name, p.asn, p.prefix ";
+        if (sorting == null) {
+            return defaultOrder;
+        }
+        switch (sorting.getBy()) {
+            case ASN:
+                return " ORDER BY p.asn " + sorting.getDirection().name() + ", p.prefix, ta.name ";
+            case PREFIX:
+                return " ORDER BY p.prefix_begin " + sorting.getDirection().name() + ", p.prefix_end " + sorting.getDirection().name() + ", p.asn, ta.name ";
+            case TA:
+                return " ORDER BY ta.name " + sorting.getDirection().name() + ", p.prefix, p.asn ";
+            default:
+                return defaultOrder;
+        }
+    }
+
+    private Pair<String, Function<Query, Query>> getSearchCondition(SearchTerm searchTerm) {
         if (searchTerm == null) {
-            searchCondition = null;
+            return null;
         } else {
-            IpRange ipRange = searchTerm.asIpRange();
+            final IpRange ipRange = searchTerm.asIpRange();
             if (ipRange != null) {
-                final BigInteger begin = ipRange.getStart().getValue();
-                final BigInteger end = ipRange.getEnd().getValue();
-                searchCondition = " (" +
-                        "(p.prefix_begin > " + begin + " AND p.prefix_begin < " + end + ") OR " +
-                        "(p.prefix_end > " + begin + " AND p.prefix_end < " + end + ")" +
+                final String sql = " (" +
+                        "(p.prefix_begin > ? AND p.prefix_begin < ?) OR " +
+                        "(p.prefix_end   > ? AND p.prefix_end   < ?)" +
                         ")";
+                return Pair.of(sql, q -> {
+                    q.setParameter(1, ipRange.getStart().getValue());
+                    q.setParameter(2, ipRange.getEnd().getValue());
+                    q.setParameter(3, ipRange.getStart().getValue());
+                    q.setParameter(4, ipRange.getEnd().getValue());
+                    return q;
+                });
             } else {
-                Asn asAsn = searchTerm.asAsn();
+                final Asn asAsn = searchTerm.asAsn();
                 if (asAsn != null) {
                     final long asn = asAsn.getValue().longValue();
-                    searchCondition = " (to_char(asn) like '%" + asn + "%')";
+                    final String sql = " (to_char(p.asn) like '%" + asn + "%')";
+                    return Pair.of(sql, q -> q);
                 } else {
-                    String s = searchTerm.asString();
-                    searchCondition = "(\n" +
-                            " (to_char(p.asn) like '%" + s + "%') OR \n" +
-                            " (p.prefix       like '%" + s + "%') \n" +
+                    final String s = searchTerm.asString();
+                    final String sql = "(\n" +
+                            " (to_char(p.asn) ilike '%" + s + "%') OR \n" +
+                            " (p.prefix       ilike '%" + s + "%') OR \n" +
+                            " (ta.name        ilike '%" + s + "%') \n" +
                             ")\n";
+                    return Pair.of(sql, q -> q);
                 }
             }
         }
-        return searchCondition;
     }
 
 
