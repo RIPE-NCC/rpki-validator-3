@@ -56,11 +56,11 @@ public class ValidatedRoasController {
     @Autowired
     private RpkiObjects rpkiObjects;
 
-    @GetMapping(path = "/")
+    @GetMapping
     public ResponseEntity<ApiResponse<Stream<JPARpkiObjects.RoaPrefix>>> list(
             @RequestParam(name = "startFrom", defaultValue = "0") int startFrom,
             @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
-            @RequestParam(name = "search", defaultValue = "") String searchString,
+            @RequestParam(name = "search", defaultValue = "", required = false) String searchString,
             @RequestParam(name = "sortBy", defaultValue = "prefix") String sortBy,
             @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection) {
 
