@@ -64,12 +64,11 @@ public class ValidatedRoasController {
             @RequestParam(name = "sortBy", defaultValue = "prefix") String sortBy,
             @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection) {
 
-        final Stream<JPARpkiObjects.RoaPrefix> roas;
         final SearchTerm searchTerm = StringUtils.isNotBlank(searchString) ? new SearchTerm(searchString) : null;
         final Sorting sorting = parseSorting(sortBy, sortDirection);
-        roas = rpkiObjects.findCurrentlyValidatedRoaPrefixes(startFrom, pageSize, searchTerm, sorting);
+        final Stream<JPARpkiObjects.RoaPrefix> roas = rpkiObjects.findCurrentlyValidatedRoaPrefixes(startFrom, pageSize, searchTerm, sorting);
 
-        int totalSize = 100;
+        int totalSize = rpkiObjects.countCurrentlyValidatedRoaPrefixes(searchTerm);
         final Links links = Paging.links(
                 startFrom, pageSize, totalSize,
                 (sf, ps) -> methodOn(ValidatedRoasController.class).list(sf, ps, searchString, sortBy, sortDirection));

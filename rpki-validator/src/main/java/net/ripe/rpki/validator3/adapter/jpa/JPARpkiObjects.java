@@ -107,31 +107,9 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
 
         final Pair<String, Function<Query, Query>> searchCondition = getSearchCondition(searchTerm);
         final String orderBy = getOrderBy(sorting);
+        String roaSql = getRoaSql();
 
-        String sql = "SELECT DISTINCT \n" +
-                "      p.asn AS asn, \n" +
-                "      p.prefix AS prefix, \n" +
-                "      COALESCE(p.effective_length, p.maximum_length) AS length, \n" +
-                "      ta.name AS trust_anchor, \n" +
-                "      (SELECT locations \n" +
-                "       FROM rpki_object_locations \n" +
-                "       WHERE rpki_object_id = ro.id \n" +
-                "       LIMIT 1 \n" +
-                "      ) AS location,  \n" +
-                "      p.prefix_begin, \n" +
-                "      p.prefix_end \n" +
-                "  FROM rpki_object ro \n" +
-                "  INNER JOIN rpki_object_roa_prefixes p ON p.rpki_object_id = ro.id \n" +
-                "  INNER JOIN validation_run_validated_objects vrvo ON vrvo.rpki_object_id = ro.id \n" +
-                "  INNER JOIN validation_run vr ON vr.id = vrvo.validation_run_id \n" +
-                "  INNER JOIN trust_anchor ta ON vr.trust_anchor_id = ta.id \n" +
-                "  WHERE vr.type = 'CT' \n" +
-                "  AND vr.id in (\n" +
-                "    SELECT MAX(id)\n" +
-                "    FROM validation_run vr1\n" +
-                "    WHERE vr1.type = vr.type \n" +
-                "    GROUP BY vr1.trust_anchor_id, vr1.rpki_repository_id \n" +
-                "  ) \n" +
+        String sql = roaSql +
                 (searchCondition != null ? (" AND (" + searchCondition.getKey() + ")") : "") + "\n" +
                 orderBy;
 
@@ -156,6 +134,33 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
                     asString(fields[3]),
                     asString(fields[4]));
         });
+    }
+
+    private String getRoaSql() {
+        return "SELECT DISTINCT \n" +
+                "      p.asn AS asn, \n" +
+                "      p.prefix AS prefix, \n" +
+                "      COALESCE(p.effective_length, p.maximum_length) AS length, \n" +
+                "      ta.name AS trust_anchor, \n" +
+                "      (SELECT locations \n" +
+                "       FROM rpki_object_locations \n" +
+                "       WHERE rpki_object_id = ro.id \n" +
+                "       LIMIT 1 \n" +
+                "      ) AS location,  \n" +
+                "      p.prefix_begin, \n" +
+                "      p.prefix_end \n" +
+                "  FROM rpki_object ro \n" +
+                "  INNER JOIN rpki_object_roa_prefixes p ON p.rpki_object_id = ro.id \n" +
+                "  INNER JOIN validation_run_validated_objects vrvo ON vrvo.rpki_object_id = ro.id \n" +
+                "  INNER JOIN validation_run vr ON vr.id = vrvo.validation_run_id \n" +
+                "  INNER JOIN trust_anchor ta ON vr.trust_anchor_id = ta.id \n" +
+                "  WHERE vr.type = 'CT' \n" +
+                "  AND vr.id in (\n" +
+                "    SELECT MAX(id)\n" +
+                "    FROM validation_run vr1\n" +
+                "    WHERE vr1.type = vr.type \n" +
+                "    GROUP BY vr1.trust_anchor_id, vr1.rpki_repository_id \n" +
+                "  ) \n";
     }
 
     private String getOrderBy(final Sorting sorting) {
@@ -211,6 +216,22 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
         }
     }
 
+    @Override
+    public int countCurrentlyValidatedRoaPrefixes(SearchTerm searchTerm) {
+        final Pair<String, Function<Query, Query>> searchCondition = getSearchCondition(searchTerm);
+
+        String roaSql = getRoaSql();
+
+        String sql = roaSql +
+                (searchCondition != null ? (" AND (" + searchCondition.getKey() + ")") : "");
+
+        Query preparedQuery = sql(sql);
+        if (searchCondition != null) {
+            preparedQuery = searchCondition.getRight().apply(preparedQuery);
+        }
+        Object singleResult = preparedQuery.getSingleResult();
+        return 0;
+    }
 
     @Value
     public static class RoaPrefix {

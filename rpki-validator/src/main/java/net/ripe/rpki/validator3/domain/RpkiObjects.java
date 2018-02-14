@@ -74,4 +74,6 @@ public interface RpkiObjects {
     Stream<RpkiObject> findRouterCertificates();
 
     long deleteUnreachableObjects(Instant unreachableSince);
+
+    int countCurrentlyValidatedRoaPrefixes(SearchTerm searchTerm);
 }
