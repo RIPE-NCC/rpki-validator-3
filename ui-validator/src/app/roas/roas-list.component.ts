@@ -31,6 +31,8 @@ export class RoasListComponent implements OnInit {
   previousPage: number = 1;
   firstRoaInTable: number = 1;
   lastRoaInTable: number = 10;
+  //loading
+  loading: boolean = true;
 
   constructor(private _roasService: RoasService, private _trustAnchorsService: TrustAnchorsService) {
   }
@@ -41,6 +43,7 @@ export class RoasListComponent implements OnInit {
   }
 
   loadData() {
+    this.loading = true;
     this.setPaginationParameters();
     this._roasService.getRoas(this.firstRoaInTable.toString(),
                               this.roasPerPage.toString(),
@@ -49,6 +52,7 @@ export class RoasListComponent implements OnInit {
                               this.sortDirection)
       .subscribe(
         response => {
+          this.loading = false;
           this.roas = response.data;
           // TODO following 2 lines should be deleted with getTotalNumberOfRoas
           this.response = response;

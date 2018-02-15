@@ -5,11 +5,12 @@ import {TranslateModule} from "@ngx-translate/core";
 import {FormsModule} from "@angular/forms";
 
 import {SearchComponent} from "./search/search.component";
-import {PageTitleComponent} from "./page-title.component";
+import {PageTitleComponent} from "./page-title/page-title.component";
 import {FlagComponent} from './flag/flag.component';
 import {SortableColumnComponent} from "./sortable-table/sortable-column.component";
 import {SortService} from "./sortable-table/sort.service";
 import {SortableTableDirective} from "./sortable-table/sortable-table.directive";
+import {LoadingSpinnerComponent} from "./loading-spinner.component";
 
 @NgModule({
   imports: [
@@ -23,7 +24,8 @@ import {SortableTableDirective} from "./sortable-table/sortable-table.directive"
     PageTitleComponent,
     FlagComponent,
     SortableColumnComponent,
-    SortableTableDirective
+    SortableTableDirective,
+    LoadingSpinnerComponent
   ],
   providers: [SortService],
   exports: [
@@ -34,7 +36,8 @@ import {SortableTableDirective} from "./sortable-table/sortable-table.directive"
     PageTitleComponent,
     FlagComponent,
     SortableColumnComponent,
-    SortableTableDirective
+    SortableTableDirective,
+    LoadingSpinnerComponent
   ]
 })
 export class SharedModule {

@@ -9,6 +9,7 @@
       <option *ngFor='let size of pageSizes' [value]='size'>{{size}}</option>
     </select>
     <label class='col-form-label ml-1'>{{ 'Roas.ENTRIES' | translate}}</label>
+    <loading-spinner class='ml-2' [loading]="this.loading"></loading-spinner>
   </div>
   <search-by [(searchBy)]='searchBy'
              (searchByChanged)='onSearchByClick($event)'></search-by>
