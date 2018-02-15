@@ -43,7 +43,7 @@
     </files>
     <fileSets>
         <fileSet>
-            <directory>src/main/resources/packaging/generic/data</directory>
+            <directory>src/main/resources/packaging/generic/workdirs</directory>
             <outputDirectory/>
             <excludes>
                 <exclude>*/.ignore.me</exclude>
@@ -52,13 +52,6 @@
         <fileSet>
             <directory>src/main/resources/packaging/generic/conf</directory>
             <outputDirectory>conf</outputDirectory>
-            <excludes>
-                <exclude>.ignore.me</exclude>
-            </excludes>
-        </fileSet>
-        <fileSet>
-            <directory>src/main/resources/packaging/generic/log</directory>
-            <outputDirectory>log</outputDirectory>
             <excludes>
                 <exclude>.ignore.me</exclude>
             </excludes>
