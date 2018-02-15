@@ -9,7 +9,6 @@ import {TranslateHttpLoader} from "@ngx-translate/http-loader";
 
 import {CoreModule} from "./core/core.module";
 import {SharedModule} from "./shared/shared.module";
-import {HomeModule} from './home/home.module';
 import {TrustAnchorsModule} from './trust-anchors/trust-anchors.module';
 import {RoasModule} from "./roas/roas.module";
 
@@ -26,7 +25,6 @@ export function HttpLoaderFactory(http: HttpClient) {
     HttpClientModule,
     CoreModule,
     SharedModule,
-    HomeModule,
     TrustAnchorsModule,
     RoasModule,
     RouterModule.forRoot(appRoutes),

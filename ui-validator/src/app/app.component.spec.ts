@@ -7,7 +7,6 @@ import {AppComponent} from './app.component';
 import {CoreModule} from "./core/core.module";
 import {RoasModule} from "./roas/roas.module";
 import {appRoutes} from "./routes";
-import {HomeModule} from "./home/home.module";
 import {TrustAnchorsModule} from "./trust-anchors/trust-anchors.module";
 
 describe('AppComponent', () => {
@@ -15,7 +14,6 @@ describe('AppComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         CoreModule,
-        HomeModule,
         TrustAnchorsModule,
         RoasModule,
         RouterModule.forRoot(appRoutes),
