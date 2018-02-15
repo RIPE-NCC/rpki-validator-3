@@ -33,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.adapter.jpa.JPARpkiObjects;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
+import net.ripe.rpki.validator3.api.Metadata;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import org.apache.commons.lang.StringUtils;
@@ -72,7 +73,12 @@ public class ValidatedRoasController {
         final Links links = Paging.links(
                 startFrom, pageSize, totalSize,
                 (sf, ps) -> methodOn(ValidatedRoasController.class).list(sf, ps, searchString, sortBy, sortDirection));
-        return ResponseEntity.ok(ApiResponse.<Stream<JPARpkiObjects.RoaPrefix>>builder().links(links).data(roas).build());
+        return ResponseEntity.ok(
+                ApiResponse.<Stream<JPARpkiObjects.RoaPrefix>>builder()
+                        .links(links)
+                        .metadata(Metadata.of(totalSize))
+                        .data(roas).build()
+        );
     }
 
     private static Sorting parseSorting(String sortBy, String sortDirection) {
