@@ -44,14 +44,18 @@ public class Paging {
             previous = 0;
         }
         int next = startFrom + pageSize;
-        if (next > totalSize - pageSize) {
-            next = totalSize - pageSize;
+        int realTotal = totalSize - pageSize;
+        if (realTotal < 0) {
+            realTotal = 0;
+        }
+        if (next > realTotal) {
+            next = realTotal;
         }
         return new Links(
                 linkTo(linkConstructor.apply(0, pageSize)).withRel(Link.REL_FIRST),
                 linkTo(linkConstructor.apply(previous, pageSize)).withRel(Link.REL_PREVIOUS),
                 linkTo(linkConstructor.apply(next, pageSize)).withRel(Link.REL_NEXT),
-                linkTo(linkConstructor.apply(totalSize - pageSize, pageSize)).withRel(Link.REL_LAST)
+                linkTo(linkConstructor.apply(realTotal, pageSize)).withRel(Link.REL_LAST)
         );
     }
 
