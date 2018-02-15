@@ -1,0 +1,22 @@
+.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.alert {
+  text-align: center;
+  border-radius: 0.5rem;
+  border: 0px;
+  display: inline-block;
+  margin: 0 auto;
+}
+.alert-success {
+  color: white;
+  background-color: #46a546;
+  border-color: #46a546;
+}
+.alert-danger {
+  color: white;
+  background-color: #c43c35;
+  border-color: #c43c35;
+}

@@ -27,4 +27,13 @@ nbdist/
 /*.mv.db
 /*.trace.db
 
+#npm
+node_modules/
+ui-validator/node
+ui-validator/npm-debug.log
+
 .DS_Store
+
+# generated content
+rpki-validator/src/main/resources/static/
+

@@ -10,7 +10,8 @@
     <packaging>pom</packaging>
     <name>Multi Chapter Parent Project</name>
     <modules>
-        <module>rpki-validator</module>
+        <module>ui-validator</module>
         <module>rpki-rtr-server</module>
+        <module>rpki-validator</module>
     </modules>
 </project>

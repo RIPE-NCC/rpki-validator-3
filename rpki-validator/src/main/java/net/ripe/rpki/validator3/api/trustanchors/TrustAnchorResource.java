@@ -75,7 +75,7 @@ public class TrustAnchorResource {
             trustAnchor.getRsyncPrefetchUri(),
             trustAnchor.isPreconfigured(),
             trustAnchor.isInitialCertificateTreeValidationRunCompleted(),
-            trustAnchor.getEncodedCertificate() == null ? null : trustAnchor.getEncodedCertificate(),
+            trustAnchor.getEncodedCertificate(),
             new Links(
                 linkTo(methodOn(TrustAnchorController.class).get(trustAnchor.getId())).withSelfRel()
             )

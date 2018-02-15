@@ -1,0 +1,39 @@
+.alert {
+  min-width: 4rem;
+  text-align: center;
+  border-radius: 1rem;
+  padding: 1px 9px 2px;
+}
+
+.alert-success {
+  color: white;
+  background-color: #46a546;
+  border-color: #46a546;
+}
+
+.alert-success-muted {
+  @extend .alert-success;
+  opacity: 0.25;
+}
+
+.alert-warning {
+  color: white;
+  background-color: #f89406;
+  border-color: #f89406;
+}
+
+.alert-warning-muted {
+  @extend .alert-warning;
+  opacity: 0.25;
+}
+
+.alert-danger {
+  color: white;
+  background-color: #c43c35;
+  border-color: #c43c35;
+}
+
+.alert-danger-muted {
+  @extend .alert-danger;
+  opacity: 0.25;
+}

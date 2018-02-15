@@ -1,0 +1,80 @@
+{
+  "HOME": "Home",
+  "TRUST_ANCHORS": "Trust Anchors",
+  "TRUST_ANCHOR": "Trust Anchor",
+  "ROAS": "ROAs",
+  "IGNORE_FILTERS": "Ignore Filters",
+  "WHITELIST": "Whitelist",
+  "BGP_PREVIEW": "BGP Preview",
+  "EXPORT_API": "Export and API",
+  "ROUTER_SESSIONS": "Router Sessions",
+  "VALID": "VALID",
+  "INVALID": "INVALID",
+  "UNKNOWN": "UNKNOWN",
+  "SEARCH": "Search",
+  "Nav": {
+    "TITLE_HOME": "Quick Overview of BGP Origin Validation",
+    "TITLE_TRUST_ANCHORS": "Configured Trust Anchors",
+    "TITLE_ROAS": "Validated ROAs",
+    "TITLE_IGNORE_FILTERS": "Ignore Filters",
+    "TITLE_WHITELIST": "Whitelist",
+    "TITLE_BGP_PREVIEW": "BGP Preview",
+    "TITLE_EXPORT_API": "Export and API",
+    "TITLE_ROUTER_SESSIONS": "Router Sessions",
+    "TITLE_MONITORING_TA": "Monitor for"
+  },
+  "Home": {
+    "ROUTER": "Router",
+    "TRUST_ANCHORS_QUICK_OVERVIEW": "<p>Trust anchors are the entry points used for validation in any Public Key Infrastructure (PKI) system.</p><p>This RPKI Validator is preconfigured with the trust anchors for AFRINIC, APNIC, Lacnic and RIPE NCC. In order to obtain the trust anchor for the ARIN RPKI repository, you will first have to accept their <a href='https://www.arin.net/public/rpki/tal/index.xhtml'>Relying Party Agreement</a>. Please refer to the README.txt for details on how to add trust anchors to this application.</p>",
+    "ROAS_QUICK_OVERVIEW": "<p>Route Origin Attestations (ROAs) are used in the RPKI to authorise specific ASNs to originate prefixes. In addition, a ROA specifies the maximum prefix length that the AS is authorised to originate. Only the legitimate holder of the prefix can create a valid ROA.</p><p>ROAs are intended to be positive attestations, but the presence of a ROA for an ASN and prefix combination implies that announcements of this prefix from other origin ASNs, or for more specific prefixes, will be considered invalid.</p><p>More than one ROA may exist for the same prefix and as long as one of them matches the announcement it is considered valid. The announcement validation rules are defined in <a href='http://tools.ietf.org/html/rfc6483'>RFC 6483</a> and are explained in more detail in the Router section.</p>",
+    "IGNORE_FILTERS_QUICK_OVERVIEW": "<p>ROAs may invalidate certain announcements and you as an operator may want to override that. This RPKI Validator allows you to <strong>ignore</strong> all ROAs that would otherwise affect certain prefixes.</p><p>If you use this option, it will be as though no ROAs exist for this prefix.</p>",
+    "WHITELIST_QUICK_OVERVIEW": "<p>You may actually want to add your own whitelist entries for announcements that don't have a corresponding ROA but that you think should have. </p><p>If you use this option, it will be as though a ROAs exist for this announcement.</p>",
+    "ROUTER_QUICK_OVERVIEW_TITLE_RPKI": "RPKI/Router",
+    "ROUTER_QUICK_OVERVIEW_P1": "<p>You can configure your router to connect to this validator so that it can receive a full set of <strong>Route Origin Attestations</strong> (ROAs) based on all the ROAs that were validated, minus your ignore list entries, plus your own whitelist entries.</p><p>The RPKI to Router Protocol is standardised in <a href='http://tools.ietf.org/html/rfc6810'>RFC 6810</a> and several vendors have <a href='http://www.ripe.net/lir-services/resource-management/certification/router-configuration'>implemented support</a> for this in their router Operating Systems.</p>",
+    "ROUTER_QUICK_OVERVIEW_TITLE_ANNOUNCEMENT": "Announcement Validation in the Router",
+    "ROUTER_QUICK_OVERVIEW_P2": "Once your router receives the ROAs, it can use this information to determine the validity outcome of the origin AS in BGP announcements. To do this, your router will match an announcement to each attestation in this way:",
+    "ROUTER_QUICK_OVERVIEW_TABLE1_00": "Annoucement has",
+    "ROUTER_QUICK_OVERVIEW_TABLE1_01": "an origin AS matching the attestation",
+    "ROUTER_QUICK_OVERVIEW_TABLE1_02": "an origin AS that differs from the attestation",
+    "ROUTER_QUICK_OVERVIEW_TABLE1_10": "a prefix matching the attestation",
+    "ROUTER_QUICK_OVERVIEW_TABLE1_20": "a prefix that is more specific than the attestation",
+    "ROUTER_QUICK_OVERVIEW_P_BETWEEN": "<p>In all other cases, no conclusive decision can be made and the resulting status is 'UNKNOWN'</p><br /><p>The final judgement on whether an announcement should be considered valid, invalid or unknown depends on <strong>all</strong> relevant attestations using the following reasoning:</p>",
+    "ROUTER_QUICK_OVERVIEW_TABLE2_00": "At least one VALID",
+    "ROUTER_QUICK_OVERVIEW_TABLE2_10": "No VALIDS, at least one INVALID",
+    "ROUTER_QUICK_OVERVIEW_TABLE2_20": "None of the above",
+    "ROUTER_QUICK_OVERVIEW_SEE_EXAMPLE": "See an example ...",
+    "ROUTER_QUICK_OVERVIEW_EXAMPLE": "Example",
+    "POPOVER_STATUS": "Status",
+    "POPOVER_REASON": "Reason",
+    "POPOVER_P1": "Consider the following attestations",
+    "POPOVER_P2": "Then the following announcements would get validation statuses:",
+    "ROUTER_QUICK_OVERVIEW_P2_LAST": "This information is now available to your router and can be used to automatically change the preference of route announcements. The way this is configured differs between vendors, of course. The advice in the IETF standards is to prefer valid over unknown, and valid and unknown over invalid. But it's up to you as an operator to decide if and how you want to use this information.",
+    "ROUTER_QUICK_OVERVIEW_TITLE_BGP": "BGP Preview",
+    "ROUTER_QUICK_OVERVIEW_P3": "<p>The decision process described above takes place in your <strong>router</strong>. Only the router gets to see the actual BGP announcements, so only the router can make this assessment.</p><p>However, to help you analyse what your router will most likely see, we have created the <a href='/bgp-preview'>BGP Preview</a> page. On this page, we mimic the announcement validation process described above using a dump of announcements that are widely (&gt;5 peers) <a href='http://www.ris.ripe.net/dumps/'>seen</a> by the RIPE NCC RIS Route Collectors.</p><p>This page is mainly provided for two reasons:<ul><li>To help you set up your own ignore filters and whitelist entries</li><li>To help you analyse BGP announcement validity outside of your router. This is useful if you prefer a more manual approach and don't want your router to make automated decisions.</li></ul></p>"
+  },
+  "Footer": {
+    "COPYRIGHT": "Copyright ©2009-2018 the Réseaux IP Européens Network Coordination Centre RIPE NCC. All rights restricted. Version 2.24-SNAPSHOT"
+  },
+  "TrustAnchors": {
+    "PROCESSED_ITEMS": "Processed Items",
+    "LAST_UPDATED": "Last Updated",
+    "TOOLTIP_CLICK": "Click to view monitor page"
+  },
+  "Monitoring": {
+    "VALIDATED_USING_TA_LOCATOR": "Trust anchor could be validated using trust anchor locator",
+    "DROPPED_MORE_THEN_10_PERC": "Object count has not dropped more than 10% since the last validation",
+    "FEWER_THEN_10_ERRORS": "Fewer than 10 validation errors",
+    "LESS_THEN_10_PERC_VAL_ERROR": "Less than 10% of objects have a validation error",
+    "ALL_OBJECT_FETCHED_SUCCESS": "All objects fetched successfully",
+    "STATISTICS": "Statistics for the last validation run"
+  },
+  "Roas": {
+    "ASN": "ASN",
+    "PREFIX": "Prefix",
+    "MAX_LENGTH": "Maximum Length",
+    "URI_OF_ROA": "URI of ROA",
+    "ALERT_MSG_P1": "Validated ROAs from",
+    "SHOW": "Show",
+    "ENTRIES": "entries"
+  }
+}

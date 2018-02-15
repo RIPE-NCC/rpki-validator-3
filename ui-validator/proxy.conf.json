@@ -1,0 +1,12 @@
+{
+  "/api/roas": {
+    "target": "http://localhost:9176",
+    "secure": false,
+    "logLevel": "debug"
+  },
+  "/api/trust-anchors": {
+    "target": "http://localhost:9176",
+    "secure": false,
+    "logLevel": "debug"
+  }
+}

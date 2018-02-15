@@ -1,0 +1,52 @@
+/deep/ .nav-pills {
+  min-width: 950px;
+  margin: 80px 0;
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: space-around;
+  .nav-item {
+    flex: 1;
+    .nav-link {
+      position: relative;
+      padding: 15px;
+      border: 1px solid #C6EDF9;
+      border-radius: 10px 10px 10px 10px;
+      margin-right: 20px;
+      text-align: center;
+      font-size: 17px;
+      font-weight: bold;
+      color: #404040;
+    }
+  }
+  .nav-link.active,
+  .show > .nav-link {
+    background-color: #DDF4FB;
+    color: #404040;
+  }
+}
+
+/deep/ .tab-content > .tab-pane {
+  color: #404040;
+  padding: 20px 10px;
+  border: 1px solid #C6EDF9;
+  border-radius: 10px 10px 10px 10px;
+  overflow: visible;
+  display: flow;
+}
+
+/deep/ .popover {
+  max-width: inherit;
+  width: 600px;
+}
+
+.top-arrow {
+  position: absolute;
+  top: -40px;
+  right: -55px;
+}
+
+.bottom-arrow {
+  position: absolute;
+  bottom: -40px;
+  right: -50px;
+}

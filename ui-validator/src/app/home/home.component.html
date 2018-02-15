@@ -1,0 +1,161 @@
+<page-title [pageTitle]='pageTitle'></page-title>
+<ngb-tabset id="ngb-tabset" type="pills">
+  <!-- TRUST ANCHORS -->
+  <ngb-tab>
+    <ng-template ngbTabTitle>
+      <img class='top-arrow' src='../../assets/images/arrowTop.png' width='101' height='35' alt='ArrowTop' />
+      {{ 'TRUST_ANCHORS' | translate }}
+     </ng-template>
+    <ng-template ngbTabContent>
+      <p [innerHTML]="'Home.TRUST_ANCHORS_QUICK_OVERVIEW' | translate:{value:'info'}"></p>
+    </ng-template>
+  </ngb-tab>
+  <!-- ROAs -->
+  <ngb-tab>
+    <ng-template ngbTabTitle>
+      {{ 'ROAS' | translate }}
+      <img class='bottom-arrow' src='../../assets/images/arrowBottom.png' width='101' height='35' alt='ArrowTop' />
+    </ng-template>
+    <ng-template ngbTabContent>
+      <p [innerHTML]="'Home.ROAS_QUICK_OVERVIEW' | translate:{value:'info'}"></p>
+    </ng-template>
+  </ngb-tab>
+  <!-- IGNORE FILTERS -->
+  <ngb-tab>
+    <ng-template ngbTabTitle>
+      <img class='top-arrow' src='../../assets/images/arrowTop.png' width='101' height='35' alt='ArrowTop' />
+      {{ 'IGNORE_FILTERS' | translate }}
+    </ng-template>
+    <ng-template ngbTabContent>
+      <p [innerHTML]="'Home.IGNORE_FILTERS_QUICK_OVERVIEW' | translate:{value:'info'}"></p>
+    </ng-template>
+  </ngb-tab>
+  <!-- WHITELIST -->
+  <ngb-tab>
+    <ng-template ngbTabTitle>
+      {{ 'WHITELIST' | translate }}
+      <img class='bottom-arrow' src='../../assets/images/arrowBottom.png' width='101' height='35' alt='ArrowTop' />
+    </ng-template>
+    <ng-template ngbTabContent>
+        <p [innerHTML]="'Home.WHITELIST_QUICK_OVERVIEW' | translate:{value:'info'}"></p>
+    </ng-template>
+  </ngb-tab>
+  <!-- ROUTER -->
+  <ngb-tab>
+    <ng-template ngbTabTitle>{{ 'Home.ROUTER' | translate }}</ng-template>
+    <ng-template ngbTabContent>
+        <p><strong>{{ 'Home.ROUTER_QUICK_OVERVIEW_TITLE_RPKI' | translate }}</strong></p>
+        <p [innerHTML]="'Home.ROUTER_QUICK_OVERVIEW_P1' | translate:{value:'info'}"></p>
+        <p><strong>{{ 'Home.ROUTER_QUICK_OVERVIEW_TITLE_ANNOUNCEMENT' | translate }}</strong></p>
+        <p [innerHTML]="'Home.ROUTER_QUICK_OVERVIEW_P2' | translate:{value:'info'}"></p>
+        <table class="table table-bordered">
+          <tbody>
+          <tr>
+            <td>{{ 'Home.ROUTER_QUICK_OVERVIEW_TABLE1_00' | translate }}</td>
+            <td>{{ 'Home.ROUTER_QUICK_OVERVIEW_TABLE1_01' | translate }}</td>
+            <td>{{ 'Home.ROUTER_QUICK_OVERVIEW_TABLE1_02' | translate }}</td>
+          </tr>
+          <tr>
+            <td>{{ 'Home.ROUTER_QUICK_OVERVIEW_TABLE1_10' | translate }}</td>
+            <td>{{ 'VALID' | translate }}</td>
+            <td>{{ 'INVALID' | translate }}</td>
+          </tr>
+          <tr>
+            <td>{{ 'Home.ROUTER_QUICK_OVERVIEW_TABLE1_20' | translate }}</td>
+            <td>{{ 'INVALID' | translate }}</td>
+            <td>{{ 'INVALID' | translate }}</td>
+          </tr>
+          </tbody>
+        </table>
+        <p [innerHTML]="'Home.ROUTER_QUICK_OVERVIEW_P_BETWEEN' | translate:{value:'info'}"></p>
+        <table class="table table-bordered">
+          <tbody>
+          <tr>
+            <td>{{ 'Home.ROUTER_QUICK_OVERVIEW_TABLE2_00' | translate }}</td>
+            <td>{{ 'VALID' | translate }}</td>
+          </tr>
+          <tr>
+            <td>{{ 'Home.ROUTER_QUICK_OVERVIEW_TABLE2_10' | translate }}</td>
+            <td>{{ 'INVALID' | translate }}</td>
+          </tr>
+          <tr>
+            <td>{{ 'Home.ROUTER_QUICK_OVERVIEW_TABLE2_20' | translate }}</td>
+            <td>{{ 'UNKNOWN' | translate }}</td>
+          </tr>
+          </tbody>
+        </table>
+      <p>
+        <a href="" [ngbPopover]="popContent" placement="right" triggers="mouseenter:mouseleave" popoverTitle="{{'Home.ROUTER_QUICK_OVERVIEW_EXAMPLE' | translate}}">
+            {{ 'Home.ROUTER_QUICK_OVERVIEW_SEE_EXAMPLE' | translate }}
+        </a>
+      </p>
+      <p>{{ 'Home.ROUTER_QUICK_OVERVIEW_P2_LAST' | translate}}</p>
+      <p><strong>{{ 'Home.ROUTER_QUICK_OVERVIEW_TITLE_BGP' | translate }}</strong></p>
+      <p [innerHTML]="'Home.ROUTER_QUICK_OVERVIEW_P3' | translate:{value:'info'}"></p>
+    </ng-template>
+  </ngb-tab>
+</ngb-tabset>
+
+<!-- POPOVER -->
+<ng-template #popContent>
+  <p>{{ 'Home.POPOVER_P1' | translate }}</p>
+  <table class="table table-bordered">
+    <tr>
+      <td></td>
+      <td>{{ 'Roas.ASN' | translate}}</td>
+      <td>{{ 'Roas.PREFIX' | translate}}</td>
+      <td>{{ 'Roas.MAX_LENGTH' | translate}}</td>
+    </tr>
+    <tr>
+      <td>A</td>
+      <td>65001</td>
+      <td>10.0.0.0/16</td>
+      <td>20</td>
+    </tr>
+    <tr>
+      <td>B</td>
+      <td>65002</td>
+      <td>10.0.1.0/24</td>
+      <td>24</td>
+    </tr>
+  </table>
+  <p>{{ 'Home.POPOVER_P2' | translate }}</p>
+  <table class="table table-bordered">
+    <tr>
+      <td>{{ 'Roas.ASN' | translate}}</td>
+      <td>{{ 'Roas.PREFIX' | translate}}</td>
+      <td>{{ 'Home.POPOVER_STATUS' | translate }}</td>
+      <td>{{ 'Home.POPOVER_REASON' | translate }}</td>
+    </tr>
+    <tr>
+      <td>65001</td>
+      <td>10.0.0.0/16</td>
+      <td>{{ 'VALID' | translate }}</td>
+      <td>Matches A</td>
+    </tr>
+    <tr>
+      <td>65001</td>
+      <td>10.0.0.0/24</td>
+      <td>{{ 'INVALID' | translate }}</td>
+      <td>No valid matches, and is more specific than A</td>
+    </tr>
+    <tr>
+      <td>65002</td>
+      <td>10.0.1.0/24</td>
+      <td>{{ 'VALID' | translate }}</td>
+      <td>Matches B (A invalidates, B wins)</td>
+    </tr>
+    <tr>
+      <td>65004</td>
+      <td>10.0.2.0/20</td>
+      <td>{{ 'INVALID' | translate }}</td>
+      <td>No valid matches, and is different AS from A</td>
+    </tr>
+    <tr>
+      <td>65004</td>
+      <td>192.168.0.0/24</td>
+      <td>{{ 'UNKNOWN' | translate}}</td>
+      <td>No matches</td>
+    </tr>
+  </table>
+</ng-template>

@@ -80,7 +80,7 @@ public class TrustAnchorControllerTest {
     @Test
     public void should_add_trust_anchor() throws Exception {
         ResultActions result = mvc.perform(
-            post("/trust-anchors")
+            post("/api/trust-anchors")
                 .accept(Api.API_MIME_TYPE)
                 .contentType(Api.API_MIME_TYPE)
                 .content(objectMapper.writeValueAsString(ApiCommand.of(AddTrustAnchor.builder()
@@ -114,7 +114,7 @@ public class TrustAnchorControllerTest {
     @Test
     public void should_fail_on_invalid_request() throws Exception {
         ResultActions result = mvc.perform(
-            post("/trust-anchors")
+            post("/api/trust-anchors")
                 .accept(Api.API_MIME_TYPE)
                 .contentType(Api.API_MIME_TYPE)
                 .content(objectMapper.writeValueAsString(ApiCommand.of(AddTrustAnchor.builder()

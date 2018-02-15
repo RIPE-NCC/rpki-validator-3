@@ -50,7 +50,7 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @RestController
-@RequestMapping(path = "/rpki-repositories", produces = Api.API_MIME_TYPE)
+@RequestMapping(path = "/api/rpki-repositories", produces = { Api.API_MIME_TYPE, "application/json" })
 @Slf4j
 public class RpkiRepositoriesController {
 
