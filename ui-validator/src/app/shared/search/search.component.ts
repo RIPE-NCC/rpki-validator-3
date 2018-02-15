@@ -14,8 +14,10 @@ export class SearchComponent implements OnInit {
 
   ngOnInit() {
   }
+  timer: any;
 
-  onEnteredLetter(): void {
-    this.searchByChanged.emit(this.searchBy);
+  onFilter() {
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => {this.searchByChanged.emit(this.searchBy) },300)
   }
 }
