@@ -37,8 +37,9 @@ import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.ipresource.IpResourceType;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
+import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.roas.SearchTerm;
-import net.ripe.rpki.validator3.api.roas.Sorting;
+import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
@@ -103,15 +104,14 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
 
     @Override
     @SuppressWarnings("unchecked")
-    public Stream<RoaPrefix> findCurrentlyValidatedRoaPrefixes(Integer startFrom,
-                                                               Integer pageSize,
+    public Stream<RoaPrefix> findCurrentlyValidatedRoaPrefixes(Paging paging,
                                                                SearchTerm searchTerm,
                                                                Sorting sorting) {
 
         final Pair<String, Function<Query, Query>> search = getSearchCondition(searchTerm);
         final String orderBy = getOrderBy(sorting);
         final String roaSql = getRoaSql();
-        final Pair<String, Function<Query, Query>> limit = getPaging(startFrom, pageSize);
+        final Pair<String, Function<Query, Query>> limit = getPaging(paging);
 
         String sql = roaSql +
                 " AND (" + search.getKey() + ")\n" +
@@ -219,22 +219,24 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
         }
     }
 
-    private Pair<String, Function<Query, Query>> getPaging(Integer startFrom,
-                                                           Integer pageSize) {
+    private Pair<String, Function<Query, Query>> getPaging(Paging paging) {
+        if (paging == null) {
+            return Pair.of("", q -> q);
+        }
         String limit = "";
-        int sf = startFrom == null ? 0 : startFrom;
-        if (pageSize != null) {
+        int sf = paging.getStartFrom() == null ? 0 : paging.getStartFrom();
+        if (paging.getPageSize() != null) {
             limit += " LIMIT :pageSize ";
         }
-        if (startFrom != null) {
+        if (paging.getPageSize() != null) {
             limit += " OFFSET :startFrom";
         }
         return Pair.of(limit, q -> {
-            if (pageSize != null) {
-                q.setParameter("pageSize", pageSize);
+            if (paging.getPageSize() != null) {
+                q.setParameter("pageSize", paging.getPageSize());
             }
-            if (startFrom != null) {
-                q.setParameter("startFrom", startFrom);
+            if (paging.getStartFrom() != null) {
+                q.setParameter("startFrom", paging.getStartFrom());
             }
             return q;
         });

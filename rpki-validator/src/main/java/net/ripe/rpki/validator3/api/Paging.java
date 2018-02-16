@@ -29,14 +29,20 @@
  */
 package net.ripe.rpki.validator3.api;
 
+import lombok.Value;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.function.BiFunction;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 
+@Value(staticConstructor = "of")
 public class Paging {
+
+    final Integer startFrom;
+    final Integer pageSize;;
 
     public static <T> Links links(int startFrom, int pageSize, int totalSize, BiFunction<Integer, Integer, T> linkConstructor) {
         int previous = startFrom - pageSize;

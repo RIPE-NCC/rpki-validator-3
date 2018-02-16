@@ -35,6 +35,7 @@ import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.Metadata;
 import net.ripe.rpki.validator3.api.Paging;
+import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,7 +68,9 @@ public class ValidatedRoasController {
 
         final SearchTerm searchTerm = StringUtils.isNotBlank(searchString) ? new SearchTerm(searchString) : null;
         final Sorting sorting = parseSorting(sortBy, sortDirection);
-        final Stream<JPARpkiObjects.RoaPrefix> roas = rpkiObjects.findCurrentlyValidatedRoaPrefixes(startFrom, pageSize, searchTerm, sorting);
+        final Paging paging = Paging.of(startFrom, pageSize);
+
+        final Stream<JPARpkiObjects.RoaPrefix> roas = rpkiObjects.findCurrentlyValidatedRoaPrefixes(paging, searchTerm, sorting);
 
         int totalSize = rpkiObjects.countCurrentlyValidatedRoaPrefixes(searchTerm);
         final Links links = Paging.links(

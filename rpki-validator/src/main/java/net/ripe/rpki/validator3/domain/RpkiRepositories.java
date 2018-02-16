@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.domain;
 
+import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 
 import javax.validation.Valid;
@@ -44,7 +45,11 @@ public interface RpkiRepositories {
 
     RpkiRepository get(long id);
 
-    List<RpkiRepository> findAll(RpkiRepository.Status optionalStatus);
+    List<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Integer taId, Paging paging);
+
+    default List<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Integer taId) {
+        return findAll(optionalStatus, taId, null);
+    }
 
     Stream<RpkiRepository> findRsyncRepositories();
 

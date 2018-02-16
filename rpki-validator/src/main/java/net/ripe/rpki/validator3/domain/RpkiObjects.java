@@ -31,10 +31,10 @@ package net.ripe.rpki.validator3.domain;
 
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.validator3.adapter.jpa.JPARpkiObjects;
+import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.roas.SearchTerm;
-import net.ripe.rpki.validator3.api.roas.Sorting;
+import net.ripe.rpki.validator3.api.Sorting;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 
 import javax.persistence.LockModeType;
 import java.time.Instant;
@@ -61,14 +61,14 @@ public interface RpkiObjects {
 
     Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type type, byte[] authorityKeyIdentifier);
 
-    Stream<JPARpkiObjects.RoaPrefix> findCurrentlyValidatedRoaPrefixes(Integer startFrom, Integer pageSize, SearchTerm searchTerm, Sorting sorting);
-
-    default Stream<JPARpkiObjects.RoaPrefix> findCurrentlyValidatedRoaPrefixes(Integer startFrom, Integer pageSize) {
-        return findCurrentlyValidatedRoaPrefixes(startFrom, pageSize, null, null);
+    default Stream<JPARpkiObjects.RoaPrefix> findCurrentlyValidatedRoaPrefixes() {
+        return findCurrentlyValidatedRoaPrefixes(null, null, null);
     }
 
-    default Stream<JPARpkiObjects.RoaPrefix> findCurrentlyValidatedRoaPrefixes() {
-        return findCurrentlyValidatedRoaPrefixes(null, null);
+    Stream<JPARpkiObjects.RoaPrefix> findCurrentlyValidatedRoaPrefixes(Paging paging, SearchTerm searchTerm, Sorting sorting);
+
+    default Stream<JPARpkiObjects.RoaPrefix> findCurrentlyValidatedRoaPrefixes(Paging paging) {
+        return findCurrentlyValidatedRoaPrefixes(paging, null, null);
     }
 
     Stream<RpkiObject> findRouterCertificates();
