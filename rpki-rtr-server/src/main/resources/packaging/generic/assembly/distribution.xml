@@ -50,13 +50,6 @@
             </excludes>
         </fileSet>
         <fileSet>
-            <directory>src/main/resources/packaging/generic/log</directory>
-            <outputDirectory>log</outputDirectory>
-            <excludes>
-                <exclude>.ignore.me</exclude>
-            </excludes>
-        </fileSet>
-        <fileSet>
             <directory>${project.basedir}/..</directory>
             <outputDirectory/>
             <includes>

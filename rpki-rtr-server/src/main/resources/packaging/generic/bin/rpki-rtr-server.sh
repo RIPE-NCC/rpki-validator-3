@@ -31,79 +31,16 @@
 
 EXECUTION_DIR=`dirname "$BASH_SOURCE"`
 cd ${EXECUTION_DIR}
-CONFIG_FILE="conf/application.properties"
-JAR="lib/rpki-rtr-server.jar"
-LOG_FILE="log/rpki-rtr-server.log"
 
-APP_NAME="rpki-rtr-server"
-PID_FILE=${APP_NAME}.pid
+JAVA_CMD=${JAVA_CMD:-"/usr/bin/java"}
+JAR=${JAR:-"./lib/rpki-rtr-server.jar"}
+CONFIG_DIR=${CONFIG_DIR:-"./conf"}
 
-function error_exit {
-    echo -e "[ error ] $1"
-    exit 1
-}
-
-function info {
-    echo -e "[ info ] $1"
-}
-
-function warn {
-    echo -e "[ warn ] $1"
-}
-
-function usage {
-cat << EOF
-Usage: $0 start
-   or  $0 stop
-   or  $0 restart
-   or  $0 status
-EOF
-}
-
-
-function check_java_version {
-  JAVA_VERSION=`${JAVA_CMD} -version 2>&1 | grep version | sed 's/.* version //g'`
-  MAJOR_VERSION=`echo ${JAVA_VERSION} | sed 's/"\([[:digit:]]\)\.\([[:digit:]]\).*"/\1\2/g'`
-  if (( ${MAJOR_VERSION} < 18 )) ; then
-    error_exit "RPKI RTR Server requires Java 1.8 or greater, your version of java is ${JAVA_VERSION}";
-  fi
-}
-
-#
-# Specify the location of the Java home directory. If set then $JAVA_CMD will
-# be defined to $JAVA_HOME/bin/java
-#
-if [ -d "${JAVA_HOME}"  ] ; then
-    JAVA_CMD="${JAVA_HOME}/bin/java"
-else
-    warn "JAVA_HOME is not set, will try to find java on path."
-    JAVA_CMD=`which java`
-fi
-
-if [ -z $JAVA_CMD ]; then
-    error_exit "Cannot find java on path. Make sure Java 8 or higher is installed and/or set JAVA_HOME"
-fi
-
-check_java_version
-
-# See how we're called
-FIRST_ARG="$1"
-shift
-if [[ -n $MODE ]]; then
-   usage
-   exit
-fi
-
-#Validate that rsync is available in the path and is executable
-if ! [ -x "$(command -v rsync)" ]; then
-  echo 'rsync not found. It is necessary to sync repositories.' >&2
-  exit 1
-fi
-
+CONFIG_FILE="${CONFIG_DIR}/application.properties"
 
 function parse_config_line {
     local CONFIG_KEY=$1
-    local VALUE=`grep "^$CONFIG_KEY" $CONFIG_FILE | sed 's/#.*//g' | awk -F "=" '{ print $2 }'`
+    local VALUE=`grep "^$CONFIG_KEY" "$CONFIG_FILE" | sed 's/#.*//g' | awk -F "=" '{ print $2 }'`
 
     if [ -z $VALUE ]; then
         error_exit "Cannot find value for: $CONFIG_KEY in config-file: $CONFIG_FILE"
@@ -116,82 +53,4 @@ parse_config_line "jvm.memory.maximum" JVM_XMX
 
 MEM_OPTIONS="-Xms$JVM_XMS -Xmx$JVM_XMX"
 
-#
-# Determine if the application is already running
-#
-function is_running {
-    if [ -e ${PID_FILE} ]; then
-        if [ x`cat ${PID_FILE}` == x`pgrep -f -- -Dapp.name=${APP_NAME}` ]; then
-            echo "true";
-            exit;
-        fi
-    fi
-    echo "false";
-}
-
-function start_rtr_server {
-    RUNNING=$(is_running)
-    if [ ${RUNNING} == "true" ]; then
-        error_exit "${APP_NAME} is already running"
-    fi
-
-    info "Starting ${APP_NAME}..."
-    info "writing logs under log directory"
-    ${JAVA_CMD} ${MEM_OPTIONS} -Dapp.name="${APP_NAME}" -Dspring.config.location="file:${CONFIG_FILE}" -jar "${JAR}" >> ${LOG_FILE} &
-
-    PID=$!
-    echo $PID > $PID_FILE
-    info "Writing PID ${PID} to ${PID_FILE}"
-}
-
-function stop_rtr_server {
-    info "Stopping ${APP_NAME}..."
-    RUNNING=$(is_running)
-    if [ ${RUNNING} == "true" ]; then
-        kill `cat ${PID_FILE}` && rm ${PID_FILE}
-    else
-        info "${APP_NAME} is not running"
-    fi
-}
-
-function check_status {
-    RUNNING=$(is_running)
-    if [ ${RUNNING} == "true" ]; then
-        info "${APP_NAME} is running"
-    else
-        info "${APP_NAME} is not running"
-    fi
-    exit 0
-}
-
-function restart_rtr_server {
-    stop_rtr_server
-    RUNNING=$(is_running)
-    while [ $RUNNING == "true" ]; do
-        sleep 1
-        echo "Waiting for validator to stop..."
-        RUNNING=$(is_running)
-    done
-    start_rtr_server
-}
-
-case ${FIRST_ARG} in
-    start)
-        start_rtr_server
-        ;;
-    stop)
-        stop_rtr_server
-        ;;
-    restart)
-        restart_rtr_server
-        ;;
-    status)
-        check_status
-        ;;
-    *)
-        usage
-        exit
-        ;;
-esac
-
-exit $?
+exec ${JAVA_CMD} ${MEM_OPTIONS} -Dspring.config.location="classpath:/application.properties,file:${CONFIG_DIR}/application-defaults.properties,file:${CONFIG_FILE}" -jar "${JAR}"
