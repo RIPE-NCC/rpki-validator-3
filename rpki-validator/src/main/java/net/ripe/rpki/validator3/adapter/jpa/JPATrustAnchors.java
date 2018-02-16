@@ -30,14 +30,20 @@
 package net.ripe.rpki.validator3.adapter.jpa;
 
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import javax.transaction.Transactional;
+import java.sql.Timestamp;
+import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static net.ripe.rpki.validator3.domain.querydsl.QTrustAnchor.trustAnchor;
 
@@ -87,4 +93,65 @@ public class JPATrustAnchors extends JPARepository<TrustAnchor> implements Trust
         log.debug("still {} trust anchors need to complete initial validation run", l);
         return l == 0;
     }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<TaStatus> getStatuses() {
+        String sql = "SELECT " +
+                "       taId, taName, \n" +
+                "       SUM(errors), SUM(warnings), SUM(successful), \n" +
+                "       (SELECT MAX(completed_at) FROM validation_run WHERE trust_anchor_id = taId) AS lastUpdated \n" +
+                "     FROM (\n" +
+                "     SELECT DISTINCT \n" +
+                "       ta.id as taId, \n" +
+                "       ta.name as taName, \n" +
+                "       ro.id as obj, \n" +
+                "        CASE WHEN vc.status = 'ERROR'   THEN 1 ELSE 0 END AS errors,\n" +
+                "        CASE WHEN vc.status = 'WARNING' THEN 1 ELSE 0 END AS warnings,\n" +
+                "        CASE WHEN vc.status IS NULL     THEN 1 ELSE 0 END AS successful\n" +
+                "     FROM trust_anchor ta\n" +
+                "     INNER JOIN validation_run vr ON vr.trust_anchor_id = ta.id\n" +
+                "     INNER JOIN validation_run_validated_objects vrvo ON vrvo.validation_run_id = vr.id\n" +
+                "     INNER JOIN rpki_object ro ON vrvo.rpki_object_id = ro.id\n" +
+                "     LEFT JOIN validation_check vc ON vc.validation_run_id = vr.id\n" +
+                "     WHERE vr.id in (\n" +
+                "       SELECT MAX(id)\n" +
+                "       FROM validation_run vr1\n" +
+                "       GROUP BY vr1.trust_anchor_id, vr1.rpki_repository_id\n" +
+                "     )\n" +
+                "     UNION\n" +
+                "     SELECT DISTINCT \n" +
+                "       ta.id as id, \n" +
+                "       ta.name as ta, \n" +
+                "       rp.id as obj,\n" +
+                "        CASE WHEN vc.status = 'ERROR'   THEN 1 ELSE 0 END AS errors,\n" +
+                "        CASE WHEN vc.status = 'WARNING' THEN 1 ELSE 0 END AS warnings,\n" +
+                "        0 AS successful\n" +
+                "     FROM trust_anchor ta\n" +
+                "     INNER JOIN validation_run vr ON vr.trust_anchor_id = ta.id\n" +
+                "     INNER JOIN rpki_repository rp ON rp.id = rpta.RPKI_REPOSITORY_ID \n" +
+                "     INNER JOIN rpki_repository_trust_anchors rpta ON rpta.trust_anchor_id = ta.id\n" +
+                "     INNER JOIN validation_check vc ON vc.validation_run_id = vr.id\n" +
+                "     WHERE vr.id in (\n" +
+                "       SELECT MAX(id)\n" +
+                "       FROM validation_run vr1\n" +
+                "       GROUP BY vr1.trust_anchor_id, vr1.rpki_repository_id\n" +
+                "     )  " +
+                "  )\n" +
+                "GROUP BY taid";
+
+        final Stream<TaStatus> stream = sql(sql).getResultList().stream().map(o -> {
+            final Object[] fields = (Object[]) o;
+            return TaStatus.of(
+                    asString(fields[0]),
+                    asString(fields[1]),
+                    asInt(fields[2]),
+                    asInt(fields[3]),
+                    asInt(fields[4]),
+                    asDate(fields[5]));
+        });
+        return stream.collect(Collectors.toList());
+
+    }
+
 }

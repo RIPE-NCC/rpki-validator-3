@@ -1,0 +1,20 @@
+<nav class='navbar navbar-expand-lg navbar-dark bg-dark'>
+    <div class='container'>
+        <a class='navbar-brand text-white'>RPKI Validator</a>
+        <button class='navbar-toggler' type='button' (click)='navbarCollapsed = !navbarCollapsed'
+                    [attr.aria-expanded]='!navbarCollapsed' aria-controls='rpkiNavbar' aria-expanded='false' aria-label='Toggle navigation'>
+            <span class='navbar-toggler-icon'></span>
+        </button>
+        <div class='collapse navbar-collapse' [ngbCollapse]='navbarCollapsed' id='rpkiNavbar'>
+            <div class='navbar-nav'>
+                <a class='nav-link' routerLink='/trust-anchors' routerLinkActive='active'>{{ 'TRUST_ANCHORS' | translate }}</a>
+                <a class='nav-link' routerLink='/roas' routerLinkActive='active'>{{ 'ROAS' | translate }}</a>
+                <!--<a class='nav-link' routerLink=''>{{ 'IGNORE_FILTERS' | translate }}</a>-->
+                <!--<a class='nav-link' routerLink=''>{{ 'WHITELIST' | translate }}</a>-->
+                <!--<a class='nav-link' routerLink=''>{{ 'BGP_PREVIEW' | translate }}</a>-->
+                <!--<a class='nav-link' routerLink=''>{{ 'EXPORT_API' | translate }}</a>-->
+                <!--<a class='nav-link' routerLink=''>{{ 'ROUTER_SESSIONS' | translate }}</a>-->
+            </div>
+        </div>
+    </div>
+</nav>

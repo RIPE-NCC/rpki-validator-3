@@ -244,6 +244,7 @@
                         <exclude>.gitignore</exclude>
                         <exclude>suppressions.xml</exclude>
                         <exclude>README.md</exclude>
+                        <exclude>src/main/resources/static/**</exclude>
                     </excludes>
                 </configuration>
                 <executions>
@@ -272,6 +273,7 @@
                     </execution>
                 </executions>
             </plugin>
+
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>rpm-maven-plugin</artifactId>

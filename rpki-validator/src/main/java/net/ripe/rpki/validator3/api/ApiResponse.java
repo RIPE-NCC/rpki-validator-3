@@ -56,6 +56,9 @@ public class ApiResponse<T> {
     @ApiModelProperty(required = false, position = 4)
     Collection<ApiError> errors;
 
+    @ApiModelProperty(required = false, position = 5)
+    Metadata metadata;
+
     public static <T> ApiResponse<T> data(T data) {
         return ApiResponse.<T>builder().data(data).build();
     }

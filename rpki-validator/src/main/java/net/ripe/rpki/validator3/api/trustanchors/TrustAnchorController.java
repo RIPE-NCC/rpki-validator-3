@@ -61,7 +61,7 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @RestController
-@RequestMapping(path = "/trust-anchors", produces = Api.API_MIME_TYPE)
+@RequestMapping(path = "/api/trust-anchors", produces = { Api.API_MIME_TYPE, "application/json" })
 @Slf4j
 public class TrustAnchorController {
 
@@ -87,7 +87,7 @@ public class TrustAnchorController {
         ));
     }
 
-    @PostMapping(consumes = Api.API_MIME_TYPE)
+    @PostMapping(consumes = { Api.API_MIME_TYPE, "application/json" })
     public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@RequestBody @Valid ApiCommand<AddTrustAnchor> command) {
         long id = trustAnchorService.execute(command.getData());
         TrustAnchor trustAnchor = trustAnchorRepository.get(id);
@@ -96,7 +96,7 @@ public class TrustAnchorController {
     }
 
     @PostMapping(path = "/upload", consumes = "multipart/form-data")
-    public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@RequestParam("file") MultipartFile trustAnchorLocator) throws IOException {
+    public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@RequestParam("file") MultipartFile trustAnchorLocator) {
         try {
             TrustAnchorLocator locator = TrustAnchorLocator.fromMultipartFile(trustAnchorLocator);
             AddTrustAnchor command = AddTrustAnchor.builder()
@@ -135,6 +135,11 @@ public class TrustAnchorController {
             .orElseThrow(() -> new EmptyResultDataAccessException("latest validation run for trust anchor " + id, 1));
         response.sendRedirect(linkTo(methodOn(ValidationRunController.class).get(validationRun.getId())).toString());
         return null;
+    }
+
+    @GetMapping(path = "/statuses")
+    public ApiResponse<List<TaStatus>> statuses(HttpServletResponse response) throws IOException {
+        return ApiResponse.<List<TaStatus>>builder().data(trustAnchorRepository.getStatuses()).build();
     }
 
     @DeleteMapping(path = "/{id}")

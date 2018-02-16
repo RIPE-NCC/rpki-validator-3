@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.api.rpkirepositories;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
+import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,7 +51,7 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @RestController
-@RequestMapping(path = "/rpki-repositories", produces = Api.API_MIME_TYPE)
+@RequestMapping(path = "/api/rpki-repositories", produces = { Api.API_MIME_TYPE, "application/json" })
 @Slf4j
 public class RpkiRepositoriesController {
 
@@ -63,11 +64,19 @@ public class RpkiRepositoriesController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<RpkiRepositoryResource>>> list(
-        @RequestParam(name = "status", required = false) RpkiRepository.Status status
+            @RequestParam(name = "startFrom", defaultValue = "0") int startFrom,
+            @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
+            @RequestParam(name = "status", required = false) RpkiRepository.Status status,
+            @RequestParam(name = "ta", required = false) Integer taId
     ) {
-        return ResponseEntity.ok(ApiResponse.data(
-            new Links(linkTo(methodOn(RpkiRepositoriesController.class).list(status)).withSelfRel()),
-            rpkiRepositories.findAll(status)
+        final Paging paging = Paging.of(startFrom, pageSize);
+        final List<RpkiRepository> repositories = rpkiRepositories.findAll(status, taId, paging);
+
+        final Links links = Paging.links(
+                startFrom, pageSize, repositories.size(),
+                (sf, ps) -> methodOn(RpkiRepositoriesController.class).list(sf, ps, status, taId));
+
+        return ResponseEntity.ok(ApiResponse.data(links, repositories
                 .stream()
                 .map(RpkiRepositoryResource::of)
                 .collect(Collectors.toList())

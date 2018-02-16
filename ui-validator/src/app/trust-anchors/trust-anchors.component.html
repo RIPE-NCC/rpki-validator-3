@@ -1,0 +1,24 @@
+<page-title [pageTitle]='pageTitle'></page-title>
+<table class='table table-striped table-bordered'>
+  <thead>
+  <tr>
+    <th scope='col'>{{ 'TRUST_ANCHORS' | translate }}</th>
+    <th scope='col'>{{ 'TrustAnchors.PROCESSED_ITEMS' | translate }}</th>
+    <th scope='col'>{{ 'TrustAnchors.LAST_UPDATED' | translate }}</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr *ngFor='let ta of trustAnchorsOverview' (click)='openTADetails(ta.id)' [ngbTooltip]="'TrustAnchors.TOOLTIP_CLICK' | translate:{value:'info'}">
+    <td>{{ta.taName}}
+    </td>
+    <td>
+      <div class='d-flex justify-content-between'>
+        <flag [value]='ta.successful' [color]='"green"'></flag>
+        <flag [value]='ta.warnings' [color]='"orange"'></flag>
+        <flag [value]='ta.errors' [color]='"red"'></flag>
+      </div>
+    </td>
+    <td>{{ta.lastUpdated}}</td>
+  </tr>
+  </tbody>
+</table>

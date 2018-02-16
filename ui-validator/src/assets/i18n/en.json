@@ -1,0 +1,54 @@
+{
+  "TRUST_ANCHORS": "Trust Anchors",
+  "TRUST_ANCHOR": "Trust Anchor",
+  "ROAS": "ROAs",
+  "IGNORE_FILTERS": "Ignore Filters",
+  "WHITELIST": "Whitelist",
+  "BGP_PREVIEW": "BGP Preview",
+  "EXPORT_API": "Export and API",
+  "ROUTER_SESSIONS": "Router Sessions",
+  "VALID": "VALID",
+  "INVALID": "INVALID",
+  "UNKNOWN": "UNKNOWN",
+  "SEARCH": "Search",
+  "LOADING": "Loading...",
+  "NO_RECORDS": "No matching records found",
+  "SHOWING": "Showing",
+  "TO": "to",
+  "OF": "of",
+  "SHOW": "Show",
+  "ENTRIES": "entries",
+  "Nav": {
+    "TITLE_TRUST_ANCHORS": "Configured Trust Anchors",
+    "TITLE_ROAS": "Validated ROAs",
+    "TITLE_IGNORE_FILTERS": "Ignore Filters",
+    "TITLE_WHITELIST": "Whitelist",
+    "TITLE_BGP_PREVIEW": "BGP Preview",
+    "TITLE_EXPORT_API": "Export and API",
+    "TITLE_ROUTER_SESSIONS": "Router Sessions",
+    "TITLE_MONITORING_TA": "Monitor for"
+  },
+  "Footer": {
+    "COPYRIGHT": "Copyright ©2009-2018 the Réseaux IP Européens Network Coordination Centre RIPE NCC. All rights restricted. Version 2.24-SNAPSHOT"
+  },
+  "TrustAnchors": {
+    "PROCESSED_ITEMS": "Processed Items",
+    "LAST_UPDATED": "Last Updated",
+    "TOOLTIP_CLICK": "Click to view monitor page"
+  },
+  "Monitoring": {
+    "VALIDATED_USING_TA_LOCATOR": "Trust anchor could be validated using trust anchor locator",
+    "DROPPED_MORE_THEN_10_PERC": "Object count has not dropped more than 10% since the last validation",
+    "FEWER_THEN_10_ERRORS": "Fewer than 10 validation errors",
+    "LESS_THEN_10_PERC_VAL_ERROR": "Less than 10% of objects have a validation error",
+    "ALL_OBJECT_FETCHED_SUCCESS": "All objects fetched successfully",
+    "STATISTICS": "Statistics for the last validation run"
+  },
+  "Roas": {
+    "ASN": "ASN",
+    "PREFIX": "Prefix",
+    "MAX_LENGTH": "Maximum Length",
+    "URI_OF_ROA": "URI of ROA",
+    "ALERT_MSG_P1": "Validated ROAs from"
+  }
+}

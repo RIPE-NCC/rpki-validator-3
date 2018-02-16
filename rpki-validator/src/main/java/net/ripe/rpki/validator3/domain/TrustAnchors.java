@@ -29,7 +29,10 @@
  */
 package net.ripe.rpki.validator3.domain;
 
+import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
+
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface TrustAnchors {
@@ -46,4 +49,6 @@ public interface TrustAnchors {
     Optional<TrustAnchor> findBySubjectPublicKeyInfo(String subjectPublicKeyInfo);
 
     boolean allInitialCertificateTreeValidationRunsCompleted();
+
+    List<TaStatus> getStatuses();
 }
