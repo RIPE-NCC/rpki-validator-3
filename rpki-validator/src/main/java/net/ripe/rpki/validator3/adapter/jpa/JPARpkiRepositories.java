@@ -30,9 +30,12 @@
 package net.ripe.rpki.validator3.adapter.jpa;
 
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.jpa.impl.JPAQuery;
+import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
+import net.ripe.rpki.validator3.domain.TrustAnchors;
 import net.ripe.rpki.validator3.domain.ValidationRuns;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,12 +55,14 @@ import static net.ripe.rpki.validator3.domain.querydsl.QRpkiRepository.rpkiRepos
 public class JPARpkiRepositories extends JPARepository<RpkiRepository> implements RpkiRepositories {
     private final QuartzValidationScheduler quartzValidationScheduler;
     private final ValidationRuns validationRuns;
+    private final TrustAnchors trustAnchors;
 
     @Autowired
-    public JPARpkiRepositories(QuartzValidationScheduler quartzValidationScheduler, ValidationRuns validationRuns) {
+    public JPARpkiRepositories(QuartzValidationScheduler quartzValidationScheduler, ValidationRuns validationRuns, TrustAnchors trustAnchors) {
         super(rpkiRepository);
         this.quartzValidationScheduler = quartzValidationScheduler;
         this.validationRuns = validationRuns;
+        this.trustAnchors = trustAnchors;
     }
 
     @Override
@@ -86,12 +91,23 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
     }
 
     @Override
-    public List<RpkiRepository> findAll(RpkiRepository.Status optionalStatus) {
+    public List<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Integer taId, Paging paging) {
         BooleanBuilder builder = new BooleanBuilder();
         if (optionalStatus != null) {
             builder.and(rpkiRepository.status.eq(optionalStatus));
         }
-        return select().where(builder).fetch();
+        if (taId != null) {
+            TrustAnchor ta = trustAnchors.get(taId);
+            if (ta != null) {
+                builder.and(rpkiRepository.trustAnchors.contains(ta));
+            }
+        }
+        JPAQuery<RpkiRepository> query = select().where(builder);
+        if (paging != null) {
+            query.limit(paging.getPageSize());
+            query.offset(paging.getStartFrom());
+        }
+        return query.fetch();
     }
 
     @Override
