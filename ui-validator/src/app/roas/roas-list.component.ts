@@ -19,19 +19,23 @@ export class RoasListComponent implements OnInit {
   response: IRoasResponse;
   roas: IRoa[] = [];
   pageSizes: number[] = [10, 25, 50, 100];
-  // search
+  // SEARCH
   searchBy: string = '';
-  // sort
-  sortBy: string = 'prefix';
+  noFilteredRoas: boolean;
+  // SORTING
+  sortBy: string = 'asn';
   sortDirection: string = 'asc';
-  // pagination
+  // PAGINATION
   roasPerPage: number = 10;
+  // total number of roas before filter
+  absolutRoasNumber: number;
+  // total number of roas in response (can be filtered)
   totalRoas: number;
   page: number = 1;
   previousPage: number = 1;
-  firstRoaInTable: number = 1;
-  lastRoaInTable: number = 10;
-  //loading
+  firstRoaInTable: number = 0;
+  lastRoaInTable: number;
+  //LOADING
   loading: boolean = true;
 
   constructor(private _roasService: RoasService, private _trustAnchorsService: TrustAnchorsService) {
@@ -44,7 +48,7 @@ export class RoasListComponent implements OnInit {
 
   loadData() {
     this.loading = true;
-    this.setPaginationParameters();
+    this.setNumberOfFirstRoaInTable();
     this._roasService.getRoas(this.firstRoaInTable.toString(),
                               this.roasPerPage.toString(),
                               this.searchBy,
@@ -54,51 +58,25 @@ export class RoasListComponent implements OnInit {
         response => {
           this.loading = false;
           this.roas = response.data;
-          // TODO following 2 lines should be deleted with getTotalNumberOfRoas
-          this.response = response;
-          this.getTotalNumberOfRoas();
+          this.noFilteredRoas = this.roas.length === 0;
+          this.totalRoas = response.metadata.totalCount;
+          this.setNumberOfLastRoaInTable();
+          if (!this.absolutRoasNumber)
+            this.absolutRoasNumber = this.totalRoas;
         },
         error => this.errorMessage = <any>error);
   }
-
-  // FIXME getQueryString should be REMOVED AS SOON AS totalRoas become available from backend
-  getTotalNumberOfRoas() {
-    const linkToLastPage: string = this.response.links.last;
-    const firstRoaOnLastPage = this.getQueryString('startFrom', linkToLastPage);
-    this._roasService.getRoas(firstRoaOnLastPage,
-                              this.roasPerPage.toString(),
-                              this.searchBy,
-                              this.sortBy,
-                              this.sortDirection)
-      .subscribe(
-        response => {
-          this.totalRoas = +firstRoaOnLastPage + response.data.length;
-        },
-        error => this.errorMessage = <any>error);
-  }
-
-  // TODO getQueryString should be REMOVED AS SOON AS totalRoas become available from backend
-  getQueryString(field: string, url: string): string {
-    const reg = new RegExp('[?&]' + field + '=([^&#]*)', 'i');
-    const value = reg.exec(url);
-    return value ? value[1] : null;
-  };
 
   resetInitialValuesPagination(): void {
-    this.page = this.previousPage = this.firstRoaInTable = this.lastRoaInTable = 1;
-  }
-
-  setPaginationParameters() {
-    this.setNumberOfFirstRoaInTable();
-    this.setNumberOfLastRoaInTable();
+    this.page = this.previousPage = this.firstRoaInTable = this.lastRoaInTable = 0;
   }
 
   setNumberOfFirstRoaInTable() {
-    this.firstRoaInTable = (this.page - 1) * this.roasPerPage + 1;
+    this.firstRoaInTable = (this.page - 1) * this.roasPerPage;
   }
 
   setNumberOfLastRoaInTable() {
-    this.lastRoaInTable = this.firstRoaInTable + this.roasPerPage - 1;
+    this.lastRoaInTable = this.firstRoaInTable + this.roas.length;
   }
 
   getValidatedTAForAlert() {

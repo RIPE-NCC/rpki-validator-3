@@ -16,16 +16,4 @@ export class AppPage {
   getElementByCss(byCss: string) {
     return element(by.css(byCss));
   }
-
-  getQuickOverviewPanel() {
-    return element(by.css('#ngb-tab-0-panel')).getText();
-  }
-
-  getTrustAnchorsTabElement() {
-    return element(by.css('#ngb-tab-0'));
-  }
-
-  getRoasTabElement() {
-    return element(by.css('#ngb-tab-1'));
-  }
 }

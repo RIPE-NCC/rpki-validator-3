@@ -13,5 +13,8 @@ export interface IRoasResponse {
     next: string,
     last: string
   },
-  data: IRoa[]
+  data: IRoa[],
+  metadata: {
+    totalCount: number
+  }
 }

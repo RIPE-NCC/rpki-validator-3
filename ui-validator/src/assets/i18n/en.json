@@ -11,6 +11,13 @@
   "INVALID": "INVALID",
   "UNKNOWN": "UNKNOWN",
   "SEARCH": "Search",
+  "LOADING": "Loading...",
+  "NO_RECORDS": "No matching records found",
+  "SHOWING": "Showing",
+  "TO": "to",
+  "OF": "of",
+  "SHOW": "Show",
+  "ENTRIES": "entries",
   "Nav": {
     "TITLE_TRUST_ANCHORS": "Configured Trust Anchors",
     "TITLE_ROAS": "Validated ROAs",
@@ -42,8 +49,6 @@
     "PREFIX": "Prefix",
     "MAX_LENGTH": "Maximum Length",
     "URI_OF_ROA": "URI of ROA",
-    "ALERT_MSG_P1": "Validated ROAs from",
-    "SHOW": "Show",
-    "ENTRIES": "entries"
+    "ALERT_MSG_P1": "Validated ROAs from"
   }
 }
