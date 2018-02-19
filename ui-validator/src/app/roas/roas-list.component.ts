@@ -107,7 +107,7 @@ export class RoasListComponent implements OnInit {
     }
   }
 
-  onSearchByClick(searchBy: string): void {
+  onChangedFilterBy(searchBy: string): void {
     this.resetInitialValuesPagination();
     this.searchBy = searchBy;
     this.loadData();
