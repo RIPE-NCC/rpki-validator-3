@@ -140,21 +140,19 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
                 "      ta.name AS trust_anchor, \n" +
                 "      (SELECT locations \n" +
                 "       FROM rpki_object_locations \n" +
-                "       WHERE rpki_object_id = ro.id \n" +
+                "       WHERE rpki_object_id = vrvo.rpki_object_id \n" +
                 "       LIMIT 1 \n" +
                 "      ) AS location,  \n" +
                 "      p.prefix_begin, \n" +
                 "      p.prefix_end \n" +
-                "  FROM rpki_object ro \n" +
-                "  INNER JOIN rpki_object_roa_prefixes p ON p.rpki_object_id = ro.id \n" +
-                "  INNER JOIN validation_run_validated_objects vrvo ON vrvo.rpki_object_id = ro.id \n" +
+                "  FROM rpki_object_roa_prefixes p \n" +
+                "  INNER JOIN validation_run_validated_objects vrvo ON p.rpki_object_id = vrvo.rpki_object_id \n" +
                 "  INNER JOIN validation_run vr ON vr.id = vrvo.validation_run_id \n" +
                 "  INNER JOIN trust_anchor ta ON vr.trust_anchor_id = ta.id \n" +
-                "  WHERE vr.type = 'CT' \n" +
-                "  AND vr.id in (\n" +
+                "  WHERE vr.id in (\n" +
                 "    SELECT MAX(id)\n" +
                 "    FROM validation_run vr1\n" +
-                "    WHERE vr1.type = vr.type \n" +
+                "    WHERE vr1.type = 'CT' \n" +
                 "    GROUP BY vr1.trust_anchor_id, vr1.rpki_repository_id \n" +
                 "  ) \n";
     }
