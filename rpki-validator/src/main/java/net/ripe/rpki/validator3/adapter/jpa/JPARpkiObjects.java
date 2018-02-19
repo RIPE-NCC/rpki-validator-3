@@ -142,7 +142,8 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
                 "       FROM rpki_object_locations \n" +
                 "       WHERE rpki_object_id = vrvo.rpki_object_id \n" +
                 "       LIMIT 1 \n" +
-                "      ) AS location,  \n" +
+                "      ) AS location, \n" +
+                "      p.prefix_family, \n" +
                 "      p.prefix_begin, \n" +
                 "      p.prefix_end \n" +
                 "  FROM rpki_object_roa_prefixes p \n" +
