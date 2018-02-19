@@ -4,13 +4,14 @@ import {NgbModule} from "@ng-bootstrap/ng-bootstrap";
 import {TranslateModule} from "@ngx-translate/core";
 import {FormsModule} from "@angular/forms";
 
-import {SearchComponent} from "./search/search.component";
+import {SearchComponent} from "./search.component";
 import {PageTitleComponent} from "./page-title/page-title.component";
 import {FlagComponent} from './flag/flag.component';
 import {SortableColumnComponent} from "./sortable-table/sortable-column.component";
 import {SortService} from "./sortable-table/sort.service";
 import {SortableTableDirective} from "./sortable-table/sortable-table.directive";
 import {LoadingSpinnerComponent} from "./loading-spinner.component";
+import {PageSizeSelectComponent} from "./page-size-select";
 
 @NgModule({
   imports: [
@@ -25,7 +26,8 @@ import {LoadingSpinnerComponent} from "./loading-spinner.component";
     FlagComponent,
     SortableColumnComponent,
     SortableTableDirective,
-    LoadingSpinnerComponent
+    LoadingSpinnerComponent,
+    PageSizeSelectComponent
   ],
   providers: [SortService],
   exports: [
@@ -37,7 +39,8 @@ import {LoadingSpinnerComponent} from "./loading-spinner.component";
     FlagComponent,
     SortableColumnComponent,
     SortableTableDirective,
-    LoadingSpinnerComponent
+    LoadingSpinnerComponent,
+    PageSizeSelectComponent
   ]
 })
 export class SharedModule {

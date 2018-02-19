@@ -18,6 +18,7 @@
   "OF": "of",
   "SHOW": "Show",
   "ENTRIES": "entries",
+  "URI": "URI",
   "Nav": {
     "TITLE_TRUST_ANCHORS": "Configured Trust Anchors",
     "TITLE_ROAS": "Validated ROAs",
@@ -43,6 +44,12 @@
     "LESS_THEN_10_PERC_VAL_ERROR": "Less than 10% of objects have a validation error",
     "ALL_OBJECT_FETCHED_SUCCESS": "All objects fetched successfully",
     "STATISTICS": "Statistics for the last validation run"
+  },
+  "ValidationDetails": {
+    "TITLE": "Validation Details",
+    "OBJECT_VALID": "Object Valid",
+    "CHECK_MSG": "Check Msg",
+    "CHECK_VALID": "Check Valid"
   },
   "Roas": {
     "ASN": "ASN",

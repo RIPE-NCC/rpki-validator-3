@@ -12,10 +12,10 @@
     <td>{{ta.taName}}
     </td>
     <td>
-      <div class='d-flex justify-content-between'>
-        <flag [value]='ta.successful' [color]='"green"'></flag>
-        <flag [value]='ta.warnings' [color]='"orange"'></flag>
-        <flag [value]='ta.errors' [color]='"red"'></flag>
+      <div class='d-inline-flex  justify-content-between'>
+        <flag [value]='ta.successful' [color]='"green"' class='mr-2'></flag>
+        <flag [value]='ta.warnings' [color]='"orange"' class='mr-2'></flag>
+        <flag [value]='ta.errors' [color]='"red"' class='mr-2'></flag>
       </div>
     </td>
     <td>{{ta.lastUpdated}}</td>
