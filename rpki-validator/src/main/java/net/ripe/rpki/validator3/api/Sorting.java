@@ -31,16 +31,28 @@ package net.ripe.rpki.validator3.api;
 
 import lombok.Data;
 
+import java.util.Locale;
+
 @Data(staticConstructor = "of")
 public class Sorting {
     final By by;
     final Direction direction;
+
+    public static Sorting parse(String sortBy, String sortDirection) {
+        try {
+            By by = By.valueOf(sortBy.toUpperCase(Locale.ROOT));
+            Direction direction = Direction.valueOf(sortDirection.toUpperCase(Locale.ROOT));
+            return of(by, direction);
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
     public enum Direction {
         ASC, DESC
     }
 
     public enum By {
-        PREFIX, ASN, TA,
+        PREFIX, ASN, TA, KEY, LOCATION, STATUS
     }
 }
