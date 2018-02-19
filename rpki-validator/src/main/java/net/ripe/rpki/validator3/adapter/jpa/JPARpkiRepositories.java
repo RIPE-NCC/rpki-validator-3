@@ -104,8 +104,14 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
         }
         JPAQuery<RpkiRepository> query = select().where(builder);
         if (paging != null) {
-            query.limit(paging.getPageSize());
-            query.offset(paging.getStartFrom());
+            final Integer startFrom = paging.getStartFrom();
+            if (startFrom != null) {
+                query.offset(startFrom);
+            }
+            final Integer pageSize = paging.getPageSize();
+            if (pageSize != null) {
+                query.limit(pageSize);
+            }
         }
         return query.fetch();
     }
