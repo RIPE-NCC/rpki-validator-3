@@ -168,7 +168,7 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
             case ASN:
                 return " ORDER BY p.asn " + sorting.getDirection().name() + ", p.prefix, ta.name ";
             case PREFIX:
-                return " ORDER BY p.prefix_begin " + sorting.getDirection().name() + ", p.prefix_end " + sorting.getDirection().name() + ", p.asn, ta.name ";
+                return " ORDER BY p.prefix_family " + sorting.getDirection().name() + ", p.prefix_begin " + sorting.getDirection().name() + ", p.prefix_end " + sorting.getDirection().name() + ", p.asn, ta.name ";
             case TA:
                 return " ORDER BY ta.name " + sorting.getDirection().name() + ", p.prefix, p.asn ";
             default:
@@ -184,8 +184,9 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
             if (ipRange != null) {
                 final String sql = " (" +
                         "(p.prefix_family = :pfamily) AND (" +
-                        "(p.prefix_begin >= :pbegin AND p.prefix_begin <  :pend) OR " +
-                        "(p.prefix_end   >  :pbegin AND p.prefix_end   <= :pend)" +
+                        "(p.prefix_begin BETWEEN :pbegin AND :pend) OR " +
+                        "(p.prefix_end BETWEEN :pbegin AND :pend) OR " +
+                        "(:pbegin BETWEEN p.prefix_begin AND p.prefix_end)" +
                         ")" +
                         ")";
                 return Pair.of(sql, q -> {
