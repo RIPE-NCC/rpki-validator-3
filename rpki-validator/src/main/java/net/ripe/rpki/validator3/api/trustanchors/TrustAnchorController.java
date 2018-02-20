@@ -34,18 +34,35 @@ import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiCommand;
 import net.ripe.rpki.validator3.api.ApiError;
 import net.ripe.rpki.validator3.api.ApiResponse;
+import net.ripe.rpki.validator3.api.Metadata;
+import net.ripe.rpki.validator3.api.Paging;
+import net.ripe.rpki.validator3.api.SearchTerm;
+import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.api.validationruns.ValidationCheckResource;
 import net.ripe.rpki.validator3.api.validationruns.ValidationRunController;
 import net.ripe.rpki.validator3.api.validationruns.ValidationRunResource;
-import net.ripe.rpki.validator3.domain.*;
+import net.ripe.rpki.validator3.domain.TrustAnchor;
+import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
+import net.ripe.rpki.validator3.domain.TrustAnchors;
+import net.ripe.rpki.validator3.domain.ValidationRun;
+import net.ripe.rpki.validator3.domain.ValidationRuns;
 import net.ripe.rpki.validator3.util.TrustAnchorExtractorException;
 import net.ripe.rpki.validator3.util.TrustAnchorLocator;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
@@ -56,6 +73,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
@@ -135,6 +153,34 @@ public class TrustAnchorController {
             .orElseThrow(() -> new EmptyResultDataAccessException("latest validation run for trust anchor " + id, 1));
         response.sendRedirect(linkTo(methodOn(ValidationRunController.class).get(validationRun.getId())).toString());
         return null;
+    }
+
+    @GetMapping(path = "/{id}/validation-checks")
+    public ResponseEntity<ApiResponse<TrustAnchorValidationChecksResource>> validationChecks(
+        @PathVariable long id,
+        @RequestParam(name = "startFrom", defaultValue = "0") int startFrom,
+        @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
+        @RequestParam(name = "search", required = false) String searchString,
+        @RequestParam(name = "sortBy", defaultValue = "location") String sortBy,
+        @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection
+    ) {
+        final SearchTerm searchTerm = StringUtils.isNotBlank(searchString) ? new SearchTerm(searchString) : null;
+        final Sorting sorting = Sorting.parse(sortBy, sortDirection);
+        final Paging paging = Paging.of(startFrom, pageSize);
+
+        int totalCount = validationRunRepository.countValidationChecksForValidationRun(id, searchTerm);
+
+        Stream<ValidationCheckResource> checks = validationRunRepository.findValidationChecksForValidationRun(id, paging, searchTerm, sorting)
+            .map(ValidationCheckResource::of);
+
+        Links links = Paging.links(startFrom, pageSize, totalCount, (sf, ps) -> methodOn(TrustAnchorController.class).validationChecks(id, sf, ps, searchString, sortBy, sortDirection));
+
+        return ResponseEntity.ok(ApiResponse.<TrustAnchorValidationChecksResource>builder()
+            .links(links)
+            .data(TrustAnchorValidationChecksResource.of(checks))
+            .metadata(Metadata.of(totalCount))
+            .build()
+        );
     }
 
     @GetMapping(path = "/statuses")

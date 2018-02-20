@@ -27,37 +27,36 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.domain;
+package net.ripe.rpki.validator3.api;
 
-import net.ripe.rpki.validator3.api.Paging;
-import net.ripe.rpki.validator3.api.Sorting;
-import net.ripe.rpki.validator3.api.SearchTerm;
+import net.ripe.ipresource.Asn;
+import net.ripe.ipresource.IpRange;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Stream;
+public class SearchTerm {
+    private final String term;
 
-public interface ValidationRuns {
-    void add(ValidationRun validationRun);
+    public SearchTerm(String term) {
+        this.term = term;
+    }
 
-    void removeAllForTrustAnchor(TrustAnchor trustAnchor);
+    public IpRange asIpRange() {
+        try {
+            return IpRange.parse(term);
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
-    <T extends ValidationRun> T get(Class<T> type, long id);
+    public Asn asAsn() {
+        try {
+            return Asn.parse(term);
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
-    <T extends ValidationRun> List<T> findAll(Class<T> type);
+    public String asString() {
+        return term;
+    }
 
-    <T extends ValidationRun> List<T> findLatestSuccessful(Class<T> type);
-
-    Optional<TrustAnchorValidationRun> findLatestCompletedForTrustAnchor(TrustAnchor trustAnchor);
-
-    void runCertificateTreeValidation(TrustAnchor trustAnchor);
-
-    void removeAllForRpkiRepository(RpkiRepository repository);
-
-    long removeOldValidationRuns(Instant completedBefore);
-
-    Stream<ValidationCheck> findValidationChecksForValidationRun(long validationRunId, Paging paging, SearchTerm searchTerm, Sorting sorting);
-
-    int countValidationChecksForValidationRun(long validationRunId, SearchTerm searchTerm);
 }

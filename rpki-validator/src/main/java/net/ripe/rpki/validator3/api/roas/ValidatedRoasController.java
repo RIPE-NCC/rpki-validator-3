@@ -35,6 +35,7 @@ import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.Metadata;
 import net.ripe.rpki.validator3.api.Paging;
+import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import org.apache.commons.lang.StringUtils;
@@ -46,7 +47,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Locale;
 import java.util.stream.Stream;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
@@ -67,7 +67,7 @@ public class ValidatedRoasController {
             @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection) {
 
         final SearchTerm searchTerm = StringUtils.isNotBlank(searchString) ? new SearchTerm(searchString) : null;
-        final Sorting sorting = parseSorting(sortBy, sortDirection);
+        final Sorting sorting = Sorting.parse(sortBy, sortDirection);
         final Paging paging = Paging.of(startFrom, pageSize);
 
         final Stream<JPARpkiObjects.RoaPrefix> roas = rpkiObjects.findCurrentlyValidatedRoaPrefixes(paging, searchTerm, sorting);
@@ -82,16 +82,6 @@ public class ValidatedRoasController {
                         .metadata(Metadata.of(totalSize))
                         .data(roas).build()
         );
-    }
-
-    private static Sorting parseSorting(String sortBy, String sortDirection) {
-        try {
-            Sorting.By by = Sorting.By.valueOf(sortBy.toUpperCase(Locale.ROOT));
-            Sorting.Direction direction = Sorting.Direction.valueOf(sortDirection.toUpperCase(Locale.ROOT));
-            return Sorting.of(by, direction);
-        } catch (Exception e) {
-            return null;
-        }
     }
 
 }

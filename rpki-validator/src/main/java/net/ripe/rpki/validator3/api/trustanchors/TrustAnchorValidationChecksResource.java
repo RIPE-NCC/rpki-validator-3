@@ -27,36 +27,14 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.api.roas;
+package net.ripe.rpki.validator3.api.trustanchors;
 
-import net.ripe.ipresource.Asn;
-import net.ripe.ipresource.IpRange;
+import lombok.Value;
+import net.ripe.rpki.validator3.api.validationruns.ValidationCheckResource;
 
-public class SearchTerm {
-    private final String term;
+import java.util.stream.Stream;
 
-    SearchTerm(String term) {
-        this.term = term;
-    }
-
-    public IpRange asIpRange() {
-        try {
-            return IpRange.parse(term);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    public Asn asAsn() {
-        try {
-            return Asn.parse(term);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    public String asString() {
-        return term;
-    }
-
+@Value(staticConstructor = "of")
+public class TrustAnchorValidationChecksResource {
+    Stream<ValidationCheckResource> validationChecks;
 }
