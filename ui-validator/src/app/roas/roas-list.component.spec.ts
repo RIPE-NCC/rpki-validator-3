@@ -7,6 +7,7 @@ import {RoasListComponent} from './roas-list.component';
 import {SharedModule} from '../shared/shared.module';
 import {RoasService} from './roas.service';
 import {TrustAnchorsService} from '../core/trust-anchors.service';
+import {ExportComponent} from "./export/export.component";
 
 class RoasServiceStub {
   getRoas(firstRoa: string, page: number) {
@@ -140,7 +141,7 @@ describe('RoasListComponent', () => {
         {provide: RoasService, useClass: RoasServiceStub},
         {provide: TrustAnchorsService, useClass: TrustAnchorsServiceStub}
       ],
-      declarations: [RoasListComponent]
+      declarations: [RoasListComponent, ExportComponent]
     })
     .compileComponents();
     fixture = TestBed.createComponent(RoasListComponent);
