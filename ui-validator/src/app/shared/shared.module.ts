@@ -11,7 +11,9 @@ import {SortableColumnComponent} from "./sortable-table/sortable-column.componen
 import {SortService} from "./sortable-table/sort.service";
 import {SortableTableDirective} from "./sortable-table/sortable-table.directive";
 import {LoadingSpinnerComponent} from "./loading-spinner.component";
-import {PageSizeSelectComponent} from "./page-size-select";
+import {PageSizeSelectComponent} from "./page-size-select.component";
+import {PageTextuallyStatusComponent} from "./page-textually-status.component";
+import {ManagingTable} from "./managing-table";
 
 @NgModule({
   imports: [
@@ -27,7 +29,8 @@ import {PageSizeSelectComponent} from "./page-size-select";
     SortableColumnComponent,
     SortableTableDirective,
     LoadingSpinnerComponent,
-    PageSizeSelectComponent
+    PageSizeSelectComponent,
+    PageTextuallyStatusComponent
   ],
   providers: [SortService],
   exports: [
@@ -40,7 +43,8 @@ import {PageSizeSelectComponent} from "./page-size-select";
     SortableColumnComponent,
     SortableTableDirective,
     LoadingSpinnerComponent,
-    PageSizeSelectComponent
+    PageSizeSelectComponent,
+    PageTextuallyStatusComponent
   ]
 })
 export class SharedModule {

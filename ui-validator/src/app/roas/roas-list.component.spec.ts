@@ -159,17 +159,17 @@ describe('RoasListComponent', () => {
     fixture.detectChanges();
     expect(component.roas).not.toBeNull();
     expect(component.page).toEqual(1);
-    expect(component.firstRoaInTable).toEqual(0);
-    expect(component.lastRoaInTable).toEqual(10);
+    expect(component.firstItemInTable).toEqual(0);
+    expect(component.lastItemInTable).toEqual(10);
   });
 
   //FIXME
   it('should change page size', () => {
-    component.onChangePageSize(50);
+    component.onChangedPageSize(50);
     fixture.detectChanges();
     expect(component.roas).not.toBeNull();
     expect(component.page).toEqual(1);
-    expect(component.firstRoaInTable).toEqual(0);
+    expect(component.firstItemInTable).toEqual(0);
   });
 
   it('should call roasService for changed page', () => {
@@ -178,7 +178,7 @@ describe('RoasListComponent', () => {
     fixture.detectChanges();
     expect(component.roas).not.toBeNull();
     expect(component.page).toEqual(5);
-    expect(component.firstRoaInTable).toEqual(40);
-    expect(component.lastRoaInTable).toEqual(50);
+    expect(component.firstItemInTable).toEqual(40);
+    expect(component.lastItemInTable).toEqual(50);
   });
 });

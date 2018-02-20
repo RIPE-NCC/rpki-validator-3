@@ -16,7 +16,6 @@ export class PageSizeSelectComponent implements OnInit {
 
   pageSizes: number[] = [10, 25, 50, 100];
 
-  // @Input() searchBy: string;
   @Output() changedPageSize: EventEmitter<number> = new EventEmitter<number>();
 
   constructor() { }

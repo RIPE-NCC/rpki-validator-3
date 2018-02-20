@@ -1,0 +1,24 @@
+import {Paging} from "./paginig";
+
+export abstract class ManagingTable extends Paging {
+  // SEARCH
+  searchBy: string = '';
+  noFilteredItems: boolean;
+  // SORTING
+  sortBy: string = 'asn';
+  sortDirection: string = 'asc';
+  //LOADING
+  loading: boolean = true;
+
+  onChangedFilterBy(searchBy: string): void {
+    this.resetInitialValuesPagination();
+    this.searchBy = searchBy;
+    this.loadData();
+  }
+
+  onSorted($event): void {
+    this.sortBy = $event.sortColumn;
+    this.sortDirection = $event.sortDirection;
+    this.loadData();
+  }
+}

@@ -31,14 +31,12 @@
   </tbody>
 </table>
 <div class='d-flex justify-content-between'>
-  <ngb-pagination [collectionSize]='totalRoas' [pageSize]='roasPerPage' [(page)]='page' [maxSize]='5'
+  <ngb-pagination [collectionSize]="totalItems" [pageSize]="rowsPerPage" [(page)]='page' [maxSize]='5'
                   [boundaryLinks]='true'
                   [rotate]='true' [ellipses]='false' (pageChange)='onChangePage($event)'></ngb-pagination>
-  <label *ngIf='!loading' class='col-form-label'>
-    {{'SHOWING' | translate}}
-    <span *ngIf='noFiltered'> 0 </span>
-    <span *ngIf='!noFiltered'> {{firstItemInTable + 1}} {{'TO' | translate}} {{lastItemInTable}} {{'OF' | translate}} {{totalRoas}}</span>
-    {{'ENTRIES' | translate}}
-    <span *ngIf='searchBy'> (filtered from {{absolutItemsNumber}} total entries)</span>
-  </label>
+  <page-textually-status [loading]='loading'
+                         [firstItem]='firstItemInTable'
+                         [lastItem]='lastItemInTable'
+                         [totalItems]='totalItems'
+                         [absolutItems]='absolutItemsNumber'></page-textually-status>
 </div>

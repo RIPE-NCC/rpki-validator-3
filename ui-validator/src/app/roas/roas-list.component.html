@@ -1,14 +1,10 @@
 <page-title [pageTitle]='pageTitle'></page-title>
-<ngb-alert type='info' *ngIf='alertShown && !noFilteredRoas' (close)='alertShown=false'>
+<ngb-alert type='info' *ngIf="alertShown && !noFilteredItems" (close)='alertShown=false'>
   {{ 'Roas.ALERT_MSG_P1' | translate }} <strong>{{ alertListValidatedTA }}</strong>
 </ngb-alert>
 <div class='form-group d-flex justify-content-between mb-3'>
   <div class='d-inline-flex'>
-    <label class='col-form-label mr-1'>{{ 'SHOW' | translate }} </label>
-    <select #selectPageSize (change)='onChangePageSize(selectPageSize.value)' class='custom-select'>
-      <option *ngFor='let size of pageSizes' [value]='size'>{{size}}</option>
-    </select>
-    <label class='col-form-label ml-1'>{{ 'ENTRIES' | translate}}</label>
+    <page-size-select (changedPageSize)='onChangedPageSize($event)'></page-size-select>
     <loading-spinner class='ml-2' [loading]="this.loading"></loading-spinner>
   </div>
   <search-by [(searchBy)]='searchBy'
@@ -44,20 +40,18 @@
   </tr><tr *ngIf='loading'>
     <td colspan="5">{{'LOADING' | translate}}</td>
   </tr>
-  <tr *ngIf='!loading && noFilteredRoas'>
+  <tr *ngIf='!loading && noFilteredItems'>
     <td colspan="5">{{'NO_RECORDS' | translate}}</td>
   </tr>
   </tbody>
 </table>
 <div class='d-flex justify-content-between'>
-  <ngb-pagination [collectionSize]='totalRoas' [pageSize]='roasPerPage' [(page)]='page' [maxSize]='5'
+  <ngb-pagination [collectionSize]="totalItems" [pageSize]="rowsPerPage" [(page)]='page' [maxSize]='5'
                   [boundaryLinks]='true'
                   [rotate]='true' [ellipses]='false' (pageChange)='onChangePage($event)'></ngb-pagination>
-  <label *ngIf='!loading' class='col-form-label'>
-    {{'SHOWING' | translate}}
-    <span *ngIf='noFilteredRoas'> 0 </span>
-    <span *ngIf='!noFilteredRoas'> {{firstRoaInTable + 1}} {{'TO' | translate}} {{lastRoaInTable}} {{'OF' | translate}} {{totalRoas}}</span>
-    {{'ENTRIES' | translate}}
-    <span *ngIf='searchBy'> (filtered from {{absolutRoasNumber}} total entries)</span>
-  </label>
+  <page-textually-status [loading]='loading'
+                         [firstItem]='firstItemInTable'
+                         [lastItem]='lastItemInTable'
+                         [totalItems]='totalItems'
+                         [absolutItems]='absolutItemsNumber'></page-textually-status>
 </div>
