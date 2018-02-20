@@ -8,7 +8,7 @@ import {Component, Input, OnInit} from '@angular/core';
       <span *ngIf='noItems'> 0 </span>
       <span *ngIf='!noItems'> {{firstItem + 1}} {{'TO' | translate}} {{lastItem}} {{'OF' | translate}} {{totalItems}}</span>
       {{'ENTRIES' | translate}}
-      <span *ngIf='totalItems != absolutItems'> (filtered from {{absolutItems}} total entries)</span>
+      <span *ngIf='totalItems != absolutItems'> {{'Roas.FILTERED_FROM' | translate}} {{absolutItems}} {{'Roas.TOTAL_ENTRIES' | translate}}</span>
     </label>
   `
 })

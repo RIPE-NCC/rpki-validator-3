@@ -19,6 +19,7 @@
   "SHOW": "Show",
   "ENTRIES": "entries",
   "URI": "URI",
+  "EXPORT": "Export",
   "Nav": {
     "TITLE_TRUST_ANCHORS": "Configured Trust Anchors",
     "TITLE_ROAS": "Validated ROAs",
@@ -56,6 +57,11 @@
     "PREFIX": "Prefix",
     "MAX_LENGTH": "Maximum Length",
     "URI_OF_ROA": "URI of ROA",
-    "ALERT_MSG_P1": "Validated ROAs from"
+    "ALERT_MSG_P1": "Validated ROAs from",
+    "FILTERED_FROM": "(filtered from",
+    "TOTAL_ENTRIES": "total entries)"
+  },
+  "Export": {
+    "DESCRIPTION": "Here you are able to export the complete ROA data set for use in an existing BGP decision making workflow. The output will be in CSV or JSON format and consist of all validated ROAs, minus your ignore filter entries, plus your whitelist additions."
   }
 }

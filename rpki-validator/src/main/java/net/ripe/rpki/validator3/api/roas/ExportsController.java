@@ -59,7 +59,7 @@ public class ExportsController {
     @Autowired
     private Settings settings;
 
-    @GetMapping(path = "/export.json", produces = "text/json; charset=UTF-8")
+    @GetMapping(path = "/api/export.json", produces = "text/json; charset=UTF-8")
     public JsonExport exportJson(HttpServletResponse response) {
         if (!settings.isInitialValidationRunCompleted()) {
             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
@@ -77,7 +77,7 @@ public class ExportsController {
         return new JsonExport(validatedPrefixes);
     }
 
-    @GetMapping(path = "/export.csv", produces = "text/csv; charset=UTF-8")
+    @GetMapping(path = "/api/export.csv", produces = "text/csv; charset=UTF-8")
     public void exportCsv(HttpServletResponse response) throws IOException {
         if (!settings.isInitialValidationRunCompleted()) {
             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
