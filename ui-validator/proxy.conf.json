@@ -8,5 +8,15 @@
     "target": "http://localhost:9176",
     "secure": false,
     "logLevel": "debug"
+  },
+  "/api/export.csv": {
+    "target": "http://localhost:9176",
+    "secure": false,
+    "logLevel": "debug"
+  },
+  "/api/export.json": {
+    "target": "http://localhost:9176",
+    "secure": false,
+    "logLevel": "debug"
   }
 }

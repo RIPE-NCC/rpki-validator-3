@@ -58,6 +58,7 @@
     <span *ngIf='noFilteredRoas'> 0 </span>
     <span *ngIf='!noFilteredRoas'> {{firstRoaInTable + 1}} {{'TO' | translate}} {{lastRoaInTable}} {{'OF' | translate}} {{totalRoas}}</span>
     {{'ENTRIES' | translate}}
-    <span *ngIf='searchBy'> (filtered from {{absolutRoasNumber}} total entries)</span>
+    <span *ngIf='searchBy'> {{'Roas.FILTERED_FROM' | translate}} {{absolutRoasNumber}} {{'Roas.TOTAL_ENTRIES' | translate}}</span>
   </label>
 </div>
+<export></export>
