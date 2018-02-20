@@ -41,7 +41,6 @@ export class RoasListComponent extends ManagingTable implements OnInit {
           this.loading = false;
           this.roas = response.data;
           this.numberOfItemsOnCurrentPage = this.roas.length;
-          this.noFilteredItems = this.roas.length === 0;
           this.totalItems = response.metadata.totalCount;
           this.setNumberOfLastItemInTable();
           if (!this.absolutItemsNumber)

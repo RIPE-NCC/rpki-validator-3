@@ -5,8 +5,8 @@ import {Component, Input, OnInit} from '@angular/core';
   template: `
     <label [hidden]='loading' class='col-form-label'>
       {{'SHOWING' | translate}}
-      <span *ngIf='noItems'> 0 </span>
-      <span *ngIf='!noItems'> {{firstItem + 1}} {{'TO' | translate}} {{lastItem}} {{'OF' | translate}} {{totalItems}}</span>
+      <span *ngIf='totalItems === 0'> 0 </span>
+      <span *ngIf='totalItems > 0'> {{firstItem + 1}} {{'TO' | translate}} {{lastItem}} {{'OF' | translate}} {{totalItems}}</span>
       {{'ENTRIES' | translate}}
       <span *ngIf='totalItems != absolutItems'> {{'Roas.FILTERED_FROM' | translate}} {{absolutItems}} {{'Roas.TOTAL_ENTRIES' | translate}}</span>
     </label>
@@ -20,11 +20,7 @@ export class PageTextuallyStatusComponent implements OnInit {
   @Input() totalItems: number;
   @Input() absolutItems: number;
 
-  noItems: boolean;
-
   constructor() { }
 
-  ngOnInit() {
-    this.noItems = this.totalItems === 0;
-  }
+  ngOnInit() {}
 }

@@ -1,5 +1,5 @@
 <page-title [pageTitle]='pageTitle'></page-title>
-<ngb-alert type='info' *ngIf="alertShown && !noFilteredItems" (close)='alertShown=false'>
+<ngb-alert type='info' *ngIf="alertShown" (close)='alertShown=false'>
   {{ 'Roas.ALERT_MSG_P1' | translate }} <strong>{{ alertListValidatedTA }}</strong>
 </ngb-alert>
 <div class='form-group d-flex justify-content-between mb-3'>
@@ -40,7 +40,7 @@
   </tr><tr *ngIf='loading'>
     <td colspan="5">{{'LOADING' | translate}}</td>
   </tr>
-  <tr *ngIf='!loading && noFilteredItems'>
+  <tr *ngIf='!loading && roas.length === 0'>
     <td colspan="5">{{'NO_RECORDS' | translate}}</td>
   </tr>
   </tbody>

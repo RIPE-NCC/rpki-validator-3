@@ -3,7 +3,6 @@ import {Paging} from "./paginig";
 export abstract class ManagingTable extends Paging {
   // SEARCH
   searchBy: string = '';
-  noFilteredItems: boolean;
   // SORTING
   sortBy: string = 'asn';
   sortDirection: string = 'asc';

@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import {IValidationDetails} from "./validation-details";
+import {IValidationDetail} from "./validation-detail";
 import {ManagingTable} from "../../shared/managing-table";
 
 @Component({
@@ -9,7 +9,7 @@ import {ManagingTable} from "../../shared/managing-table";
 })
 export class ValidationDetailsComponent extends ManagingTable implements OnInit {
 
-  validationDetails: IValidationDetails;
+  validationDetails: IValidationDetail[] = [];
 
   constructor() {
     super();
