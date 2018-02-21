@@ -1,9 +1,9 @@
 export interface IValidationCheck {
-  location: string;
-  status: boolean;
-  key: string;
-  checkMsg: string;
-  parameters: string[];
+  location: string,
+  status: boolean,
+  key: string,
+  parameters: string[],
+  formattedMessage: string
 }
 
 export interface IValidationChecksResponse {

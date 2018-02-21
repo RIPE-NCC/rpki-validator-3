@@ -12,27 +12,26 @@
   <tr>
     <th sortable-column='location'>{{'URI' | translate}}</th>
     <th sortable-column='key'>{{'ValidationDetails.CHECK_KEY' | translate}}</th>
-    <th sortable-column='checkMsg'>{{'ValidationDetails.CHECK_MSG' | translate}}</th>
+    <th sortable-column='formattedMessage'>{{'ValidationDetails.CHECK_MSG' | translate}}</th>
     <th sortable-column='status'>{{'ValidationDetails.CHECK_VALID' | translate}}</th>
   </tr>
   </thead>
   <tbody>
   <tr *ngFor='let validationCheck of validationChecks'>
-    <!--<td (mouseleave)='p.close()'>-->
-      <!--<img src='../../../assets/images/uri-icon.png'-->
-           <!--[style.width.px]='20'-->
-           <!--[style.margin.px]='0'-->
-           <!--#p='ngbPopover'-->
-           <!--ngbPopover='{{validationCheck.location}}'-->
-           <!--placement='right'-->
-           <!--triggers='mouseover'-->
-           <!--popoverTitle="{{'URI' | translate}}"-->
-      <!--/>-->
-    <!--</td>-->
-    <td>{{validationCheck.location}}</td>
+    <td (mouseleave)='p.close()'>
+      <img src='../../../assets/images/uri-icon.png'
+           [style.width.px]='20'
+           [style.margin.px]='0'
+           #p='ngbPopover'
+           ngbPopover='{{validationCheck.location}}'
+           placement='right'
+           triggers='mouseover'
+           popoverTitle="{{'URI' | translate}}"
+      />
+    </td>
+    <!--<td>{{validationCheck.location}}</td>-->
     <td>{{validationCheck.key}}</td>
-    <td>{{validationCheck.checkMsg}}</td>
-    <!--<td>{{validationCheck.status}}</td>-->
+    <td>{{validationCheck.formattedMessage}}</td>
     <td> <flag [value]='validationCheck.status'></flag></td>
   </tr>
   <tr *ngIf='loading'>
