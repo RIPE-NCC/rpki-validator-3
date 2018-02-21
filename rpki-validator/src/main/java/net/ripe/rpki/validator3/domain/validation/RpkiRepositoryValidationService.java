@@ -35,6 +35,7 @@ import net.ripe.rpki.commons.crypto.util.CertificateRepositoryObjectFactory;
 import net.ripe.rpki.commons.rsync.Rsync;
 import net.ripe.rpki.commons.validation.ValidationLocation;
 import net.ripe.rpki.commons.validation.ValidationResult;
+import net.ripe.rpki.validator3.domain.ErrorCodes;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.RpkiRepositories;
@@ -201,7 +202,7 @@ public class RpkiRepositoryValidationService {
             }
         } catch (IOException e) {
             repository.setFailed();
-            validationResult.error("rsync.repository.io.error", e.toString(), ExceptionUtils.getStackTrace(e));
+            validationResult.error(ErrorCodes.RSYNC_REPOSITORY_IO, e.toString(), ExceptionUtils.getStackTrace(e));
         }
 
         affectedTrustAnchors.addAll(repository.getTrustAnchors());
@@ -310,8 +311,8 @@ public class RpkiRepositoryValidationService {
         Rsync rsync = new Rsync(rpkiRepository.getLocationUri(), targetDirectory.getPath());
         rsync.addOptions("--update", "--times", "--copy-links", "--recursive", "--delete");
         int exitStatus = rsync.execute();
-        if (exitStatus != 0) {
-            validationResult.error("rsync.repository.rsync.error", String.valueOf(exitStatus), ArrayUtils.toString(rsync.getErrorLines()));
+        validationResult.rejectIfTrue(exitStatus != 0, ErrorCodes.RSYNC_FETCH, String.valueOf(exitStatus), ArrayUtils.toString(rsync.getErrorLines()));
+        if (validationResult.hasFailureForCurrentLocation()) {
             rpkiRepository.setFailed();
         } else {
             log.info("Downloaded repository {} to {}", rpkiRepository.getRsyncRepositoryUri(), targetDirectory);

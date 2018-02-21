@@ -31,6 +31,7 @@ package net.ripe.rpki.validator3.domain.validation;
 
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.validator3.IntegrationTest;
+import net.ripe.rpki.validator3.domain.ErrorCodes;
 import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
@@ -103,7 +104,7 @@ public class TrustAnchorValidationServiceTest {
 
         List<ValidationCheck> validationChecks = validationRun.get().getValidationChecks();
         assertThat(validationChecks).hasSize(1);
-        assertThat(validationChecks.get(0).getKey()).isEqualTo("rsync.error");
+        assertThat(validationChecks.get(0).getKey()).isEqualTo(ErrorCodes.RSYNC_FETCH);
     }
 
     @Test
@@ -122,7 +123,7 @@ public class TrustAnchorValidationServiceTest {
 
         List<ValidationCheck> validationChecks = validationRun.get().getValidationChecks();
         assertThat(validationChecks).hasSize(1);
-        assertThat(validationChecks.get(0).getKey()).isEqualTo("repository.object.empty");
+        assertThat(validationChecks.get(0).getKey()).isEqualTo(ErrorCodes.REPOSITORY_OBJECT_MINIMUM_SIZE);
     }
 
     @Test
