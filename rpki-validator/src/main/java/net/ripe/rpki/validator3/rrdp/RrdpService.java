@@ -34,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.util.CertificateRepositoryObjectFactory;
 import net.ripe.rpki.commons.validation.ValidationResult;
+import net.ripe.rpki.validator3.domain.ErrorCodes;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
@@ -77,7 +78,7 @@ public class RrdpService {
         } catch (RrdpException e) {
             log.warn("error retrieving RRDP repository: " + e, e);
             ValidationCheck validationCheck = new ValidationCheck(validationRun, rpkiRepository.getRrdpNotifyUri(),
-                    ValidationCheck.Status.ERROR, "rrdp.error", e.getMessage());
+                    ValidationCheck.Status.ERROR, ErrorCodes.RRDP_FETCH, e.getMessage());
             validationRun.addCheck(validationCheck);
             validationRun.setFailed();
         }
@@ -107,7 +108,7 @@ public class RrdpService {
                 } catch (RrdpException e) {
                     log.info("Processing deltas failed {}, falling back to snapshot processing.", e.getMessage());
                     ValidationCheck validationCheck = new ValidationCheck(validationRun, rpkiRepository.getRrdpNotifyUri(),
-                            ValidationCheck.Status.WARNING, "rrdp.deltas.failure", e.getMessage());
+                            ValidationCheck.Status.WARNING, ErrorCodes.RRDP_FETCH_DELTAS, e.getMessage());
                     validationRun.addCheck(validationCheck);
                     readSnapshot(rpkiRepository, validationRun, notification);
                 }
@@ -213,7 +214,7 @@ public class RrdpService {
             maybeObject.get().removeLocation(uri);
         } else {
             ValidationCheck validationCheck = new ValidationCheck(validationRun, uri,
-                    ValidationCheck.Status.ERROR, "rrdp.withdraw.nonexistent.object", Hex.format(deltaWithdraw.getHash()));
+                    ValidationCheck.Status.ERROR, ErrorCodes.RRDP_WITHDRAW_NONEXISTENT_OBJECT, Hex.format(deltaWithdraw.getHash()));
             validationRun.addCheck(validationCheck);
         }
     }
@@ -226,7 +227,7 @@ public class RrdpService {
                 addRpkiObject(validationRun, uri, deltaPublish, sha256);
             } else {
                 ValidationCheck validationCheck = new ValidationCheck(validationRun, uri,
-                        ValidationCheck.Status.ERROR, "rrdp.replace.nonexistent.object", Hex.format(sha256));
+                        ValidationCheck.Status.ERROR, ErrorCodes.RRDP_REPLACE_NONEXISTENT_OBJECT, Hex.format(sha256));
                 validationRun.addCheck(validationCheck);
             }
         } else {

@@ -29,13 +29,21 @@
  */
 package net.ripe.rpki.validator3.adapter.jpa;
 
+import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.Predicate;
+import com.querydsl.core.types.dsl.ComparableExpression;
 import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
+import net.ripe.rpki.validator3.api.Paging;
+import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
+import net.ripe.rpki.validator3.domain.ValidationCheck;
 import net.ripe.rpki.validator3.domain.ValidationRun;
 import net.ripe.rpki.validator3.domain.ValidationRuns;
 import net.ripe.rpki.validator3.domain.querydsl.QCertificateTreeValidationRun;
@@ -50,11 +58,13 @@ import javax.transaction.Transactional;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static net.ripe.rpki.validator3.domain.querydsl.QCertificateTreeValidationRun.certificateTreeValidationRun;
 import static net.ripe.rpki.validator3.domain.querydsl.QRrdpRepositoryValidationRun.rrdpRepositoryValidationRun;
 import static net.ripe.rpki.validator3.domain.querydsl.QRsyncRepositoryValidationRun.rsyncRepositoryValidationRun;
 import static net.ripe.rpki.validator3.domain.querydsl.QTrustAnchorValidationRun.trustAnchorValidationRun;
+import static net.ripe.rpki.validator3.domain.querydsl.QValidationCheck.validationCheck;
 import static net.ripe.rpki.validator3.domain.querydsl.QValidationRun.validationRun;
 
 @Repository
@@ -138,6 +148,68 @@ public class JPAValidationRuns extends JPARepository<ValidationRun> implements V
         removedCount += removeOldCertificateTreeValidationRuns(completedBefore);
         removedCount += removeOldTrustAnchorValidationRuns(completedBefore);
         return removedCount;
+    }
+
+    @Override
+    public Stream<ValidationCheck> findValidationChecksForValidationRun(long validationRunId, Paging paging, SearchTerm searchTerm, Sorting sorting) {
+        return stream(
+            validationChecksQuery(validationRunId, searchTerm)
+                .orderBy(toOrderSpecifier(sorting))
+                .offset(paging.getStartFrom())
+                .limit(paging.getPageSize())
+        );
+    }
+
+    @Override
+    public int countValidationChecksForValidationRun(long validationRunId, SearchTerm searchTerm) {
+        return (int) validationChecksQuery(validationRunId, searchTerm).fetchCount();
+    }
+
+    private JPAQuery<ValidationCheck> validationChecksQuery(long validationRunId, SearchTerm searchTerm) {
+        QValidationRun latest = new QValidationRun("latest");
+        JPQLQuery<Long> validationRunIds = JPAExpressions
+            .select(latest.id.max())
+            .where(latest.status.eq(ValidationRun.Status.SUCCEEDED).and(latest.as(QCertificateTreeValidationRun.class).trustAnchor.id.eq(validationRunId)))
+            .groupBy(
+                JPAExpressions.type(latest),
+                latest.as(QTrustAnchorValidationRun.class).trustAnchor,
+                latest.as(QCertificateTreeValidationRun.class).trustAnchor
+            )
+            .from(latest);
+        return queryFactory
+            .selectFrom(validationCheck)
+            .where(validationCheck.validationRun.id.in(validationRunIds).and(toPredicate(searchTerm)));
+    }
+
+    private Predicate toPredicate(SearchTerm searchTerm) {
+        if (searchTerm == null) {
+            return null;
+        } else {
+            return ExpressionUtils.anyOf(
+                validationCheck.key.likeIgnoreCase("%" + searchTerm.asString() + "%"),
+                validationCheck.status.stringValue().likeIgnoreCase("%" + searchTerm.asString() + "%"),
+                validationCheck.parameters.any().likeIgnoreCase("%" + searchTerm.asString() + "%")
+            );
+        }
+    }
+
+    private OrderSpecifier<?> toOrderSpecifier(Sorting sorting) {
+        ComparableExpression<?> column;
+        switch (sorting.getBy()) {
+            case KEY:
+                column = validationCheck.key;
+                break;
+            case STATUS:
+                column = validationCheck.status;
+                break;
+            case LOCATION:
+                column = validationCheck.location;
+                break;
+            default:
+                column = validationCheck.createdAt;
+                break;
+        }
+        return sorting.getDirection() == Sorting.Direction.ASC ? column.asc() : column.desc();
     }
 
     private long removeOldRsyncRepositoryValidationRuns(Instant completedBefore) {

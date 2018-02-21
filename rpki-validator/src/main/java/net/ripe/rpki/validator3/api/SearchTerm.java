@@ -27,31 +27,36 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.api.validationruns;
+package net.ripe.rpki.validator3.api;
 
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
-import lombok.Data;
-import net.ripe.rpki.commons.validation.ValidationStatus;
-import net.ripe.rpki.validator3.domain.ValidationCheck;
+import net.ripe.ipresource.Asn;
+import net.ripe.ipresource.IpRange;
 
-import java.util.List;
+public class SearchTerm {
+    private final String term;
 
-@Data(staticConstructor = "of")
-@ApiModel(value = "ValidationCheck")
-public class ValidationCheckResource {
-    @ApiModelProperty(required = true, position = 1)
-    final String location;
-    @ApiModelProperty(required = true, position = 2)
-    final ValidationCheck.Status status;
-    @ApiModelProperty(required = true, position = 4)
-    final String key;
-    @ApiModelProperty(required = true, position = 3)
-    final List<String> parameters;
-    @ApiModelProperty(required = false, position = 5)
-    final String formattedMessage;
-
-    public static ValidationCheckResource of(ValidationCheck check, String formattedMessage) {
-        return of(check.getLocation(), check.getStatus(), check.getKey(), check.getParameters(), formattedMessage);
+    public SearchTerm(String term) {
+        this.term = term;
     }
+
+    public IpRange asIpRange() {
+        try {
+            return IpRange.parse(term);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public Asn asAsn() {
+        try {
+            return Asn.parse(term);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public String asString() {
+        return term;
+    }
+
 }

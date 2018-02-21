@@ -52,6 +52,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -71,9 +72,9 @@ public class ObjectController {
     private Settings settings;
 
     @GetMapping(path = "/validated")
-    public ResponseEntity<ApiResponse<ValidatedObjects>> list() {
+    public ResponseEntity<ApiResponse<ValidatedObjects>> list(Locale locale) {
         final Map<String, TrustAnchorResource> trustAnchorsById = trustAnchors.findAll()
-                .stream().collect(Collectors.toMap(TrustAnchor::getName, TrustAnchorResource::of));
+                .stream().collect(Collectors.toMap(TrustAnchor::getName, ta -> TrustAnchorResource.of(ta, locale)));
 
         final Stream<RoaPrefix> validatedPrefixes = rpkiObjects
                 .findCurrentlyValidatedRoaPrefixes()

@@ -6,6 +6,7 @@ import {ActivatedRoute} from '@angular/router';
 import {MonitoringTaComponent} from './monitoring-ta.component';
 import {SharedModule} from '../shared/shared.module';
 import {TrustAnchorsService} from '../core/trust-anchors.service';
+import {ValidationDetailsComponent} from "./validation-details/validation-details.component";
 
 class TrustAnchorsServiceStub {
   getTrustAnchor(id: string) {
@@ -62,7 +63,7 @@ describe('MonitoringTaComponent', () => {
         {provide: ActivatedRoute, useValue: mockActivatedRoute},
         {provide: TrustAnchorsService, useClass: TrustAnchorsServiceStub}
       ],
-      declarations: [MonitoringTaComponent]
+      declarations: [MonitoringTaComponent, ValidationDetailsComponent]
     }).compileComponents();
     fixture = TestBed.createComponent(MonitoringTaComponent);
     component = fixture.componentInstance;

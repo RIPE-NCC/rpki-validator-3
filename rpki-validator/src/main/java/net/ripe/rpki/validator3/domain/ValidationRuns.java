@@ -29,9 +29,14 @@
  */
 package net.ripe.rpki.validator3.domain;
 
+import net.ripe.rpki.validator3.api.Paging;
+import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.api.SearchTerm;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public interface ValidationRuns {
     void add(ValidationRun validationRun);
@@ -51,4 +56,8 @@ public interface ValidationRuns {
     void removeAllForRpkiRepository(RpkiRepository repository);
 
     long removeOldValidationRuns(Instant completedBefore);
+
+    Stream<ValidationCheck> findValidationChecksForValidationRun(long validationRunId, Paging paging, SearchTerm searchTerm, Sorting sorting);
+
+    int countValidationChecksForValidationRun(long validationRunId, SearchTerm searchTerm);
 }

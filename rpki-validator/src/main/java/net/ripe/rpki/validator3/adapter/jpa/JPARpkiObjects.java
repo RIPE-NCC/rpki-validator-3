@@ -38,7 +38,7 @@ import net.ripe.ipresource.IpRange;
 import net.ripe.ipresource.IpResourceType;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.validator3.api.Paging;
-import net.ripe.rpki.validator3.api.roas.SearchTerm;
+import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.domain.RpkiObject;

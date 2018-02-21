@@ -1,14 +1,15 @@
-import {Component, Input, OnInit} from '@angular/core';
-import {isNumber} from "util";
+import {Component, Input, OnChanges, OnInit} from '@angular/core';
+import {isBoolean, isNumber} from "util";
+import {isString} from "@ng-bootstrap/ng-bootstrap/util/util";
 
 @Component({
   selector: 'flag',
   templateUrl: './flag.component.html',
   styleUrls: ['./flag.component.scss']
 })
-export class FlagComponent implements OnInit {
+export class FlagComponent implements OnChanges {
 
-  @Input() value: string | number;
+  @Input() value: string | number | boolean;
   @Input() color?: string;
   green: boolean = false;
   orange: boolean = false;
@@ -18,14 +19,15 @@ export class FlagComponent implements OnInit {
 
   constructor() { }
 
-  ngOnInit() {
+  ngOnChanges() {
     if (isNumber(this.value)) {
       this.setNumericFlag();
     } else {
       this.setTextualFlag();
     }
   }
-//FIXME switch have to be changes in both methods - depend of response from backend
+
+  //FIXME switch have to be changes in both methods - depend of response from backend
   setNumericFlag(): void {
     this.mutedColor = this.value <= 0;
     switch(this.color) {
@@ -37,7 +39,7 @@ export class FlagComponent implements OnInit {
         this.orange = true;
         break;
       }
-      default: {
+      case 'red': {
         this.red = true;
         break;
       }
@@ -45,8 +47,9 @@ export class FlagComponent implements OnInit {
   }
 
   setTextualFlag(): void {
-    switch(this.value) {
-      case 'true': {
+    const value = isString(this.value) ? this.value.toUpperCase() : this.value;
+    switch(value) {
+      case true: {
         this.green = true;
         break;
       }
@@ -54,7 +57,7 @@ export class FlagComponent implements OnInit {
         this.orange = true;
         break;
       }
-      default: {
+      case 'ERROR': {
         this.red = true;
         break;
       }

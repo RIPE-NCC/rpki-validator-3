@@ -37,6 +37,7 @@ import net.ripe.rpki.validator3.domain.TrustAnchor;
 import org.springframework.hateoas.Links;
 
 import java.util.List;
+import java.util.Locale;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
@@ -65,7 +66,7 @@ public class TrustAnchorResource {
     @ApiModelProperty(required = true, position = 10)
     Links links;
 
-    public static TrustAnchorResource of(TrustAnchor trustAnchor) {
+    public static TrustAnchorResource of(TrustAnchor trustAnchor, Locale locale) {
         return of(
             "trust-anchor",
             trustAnchor.getId(),
@@ -77,7 +78,7 @@ public class TrustAnchorResource {
             trustAnchor.isInitialCertificateTreeValidationRunCompleted(),
             trustAnchor.getEncodedCertificate(),
             new Links(
-                linkTo(methodOn(TrustAnchorController.class).get(trustAnchor.getId())).withSelfRel()
+                linkTo(methodOn(TrustAnchorController.class).get(trustAnchor.getId(), locale)).withSelfRel()
             )
         );
     }

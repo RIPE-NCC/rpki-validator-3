@@ -100,10 +100,10 @@ public class TrustAnchorValidationService {
             if (!validationResult.hasFailureForCurrentLocation()) {
                 long trustAnchorCertificateSize = targetFile.length();
 
-                if (trustAnchorCertificateSize == 0L) {
-                    validationResult.error("repository.object.empty");
+                if (trustAnchorCertificateSize < RpkiObject.MIN_SIZE) {
+                    validationResult.error(ErrorCodes.REPOSITORY_OBJECT_MINIMUM_SIZE, trustAnchorCertificateURI.toASCIIString(), String.valueOf(trustAnchorCertificateSize), String.valueOf(RpkiObject.MIN_SIZE));
                 } else if (trustAnchorCertificateSize > RpkiObject.MAX_SIZE) {
-                    validationResult.error("repository.object.too.large", String.valueOf(trustAnchorCertificateSize), String.valueOf(RpkiObject.MAX_SIZE));
+                    validationResult.error(ErrorCodes.REPOSITORY_OBJECT_MAXIMUM_SIZE, trustAnchorCertificateURI.toASCIIString(), String.valueOf(trustAnchorCertificateSize), String.valueOf(RpkiObject.MAX_SIZE));
                 } else {
                     X509ResourceCertificate certificate = parseCertificate(trustAnchor, targetFile, validationResult);
 
@@ -125,7 +125,7 @@ public class TrustAnchorValidationService {
             }
         } catch (CommandExecutionException | IOException e) {
             log.error("validation run for trust anchor {} failed", trustAnchor, e);
-            validationRun.addCheck(new ValidationCheck(validationRun, validationRun.getTrustAnchorCertificateURI(), ValidationCheck.Status.ERROR, "unhandled.exception", e.toString()));
+            validationRun.addCheck(new ValidationCheck(validationRun, validationRun.getTrustAnchorCertificateURI(), ValidationCheck.Status.ERROR, ErrorCodes.UNHANDLED_EXCEPTION, e.toString()));
             validationRun.setFailed();
         }
 
@@ -133,8 +133,8 @@ public class TrustAnchorValidationService {
 
     private X509ResourceCertificate parseCertificate(TrustAnchor trustAnchor, File certificateFile, ValidationResult validationResult) throws IOException {
         CertificateRepositoryObject trustAnchorCertificate = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(Files.toByteArray(certificateFile), validationResult);
-        if (!(trustAnchorCertificate instanceof X509ResourceCertificate)) {
-            validationResult.error("repository.object.is.not.a.trust.anchor.certificate");
+        validationResult.rejectIfFalse(trustAnchorCertificate instanceof X509ResourceCertificate, ErrorCodes.REPOSITORY_OBJECT_IS_TRUST_ANCHOR_CERTIFICATE, trustAnchor.getRsyncPrefetchUri());
+        if (validationResult.hasFailureForCurrentLocation()) {
             return null;
         }
 
@@ -151,7 +151,7 @@ public class TrustAnchorValidationService {
             signatureValid = false;
         }
 
-        validationResult.rejectIfFalse(signatureValid, "trust.anchor.signature.valid");
+        validationResult.rejectIfFalse(signatureValid, ErrorCodes.TRUST_ANCHOR_SIGNATURE, trustAnchor.getRsyncPrefetchUri(), trustAnchor.getSubjectPublicKeyInfo());
 
         return certificate;
     }
@@ -166,7 +166,7 @@ public class TrustAnchorValidationService {
         rsync.addOptions("--update", "--times", "--copy-links");
         int exitStatus = rsync.execute();
         if (exitStatus != 0) {
-            validationResult.error("rsync.error", String.valueOf(exitStatus), ArrayUtils.toString(rsync.getErrorLines()));
+            validationResult.error(ErrorCodes.RSYNC_FETCH, String.valueOf(exitStatus), ArrayUtils.toString(rsync.getErrorLines()));
             return null;
         } else {
             log.info("Downloaded certificate {} to {}", trustAnchorCertificateURI, targetFile);

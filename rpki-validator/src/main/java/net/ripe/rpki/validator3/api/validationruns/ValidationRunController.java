@@ -35,6 +35,7 @@ import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.domain.ValidationRun;
 import net.ripe.rpki.validator3.domain.ValidationRuns;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -43,6 +44,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
@@ -53,38 +55,36 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 @Slf4j
 public class ValidationRunController {
 
-    private final ValidationRuns validationRunRepository;
-
     @Autowired
-    public ValidationRunController(ValidationRuns validationRunRepository) {
-        this.validationRunRepository = validationRunRepository;
-    }
+    private ValidationRuns validationRunRepository;
+    @Autowired
+    private MessageSource messageSource;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ValidationRunResource>>> list() {
+    public ResponseEntity<ApiResponse<List<ValidationRunResource>>> list(Locale locale) {
         return ResponseEntity.ok(ApiResponse.data(
-            new Links(linkTo(methodOn(ValidationRunController.class).list()).withSelfRel()),
+            new Links(linkTo(methodOn(ValidationRunController.class).list(locale)).withSelfRel()),
             validationRunRepository.findAll(ValidationRun.class)
                 .stream()
-                .map(ValidationRunResource::of)
+                .map(check -> ValidationRunResource.of(check, messageSource, locale))
                 .collect(Collectors.toList())
         ));
     }
 
     @GetMapping(path = "/latest")
-    public ResponseEntity<ApiResponse<List<ValidationRunResource>>> listLatestSuccessful() {
+    public ResponseEntity<ApiResponse<List<ValidationRunResource>>> listLatestSuccessful(Locale locale) {
         return ResponseEntity.ok(ApiResponse.data(
-            new Links(linkTo(methodOn(ValidationRunController.class).listLatestSuccessful()).withSelfRel()),
+            new Links(linkTo(methodOn(ValidationRunController.class).listLatestSuccessful(locale)).withSelfRel()),
             validationRunRepository.findLatestSuccessful(ValidationRun.class)
                 .stream()
-                .map(ValidationRunResource::of)
+                .map(vr -> ValidationRunResource.of(vr, messageSource, locale))
                 .collect(Collectors.toList())
         ));
     }
 
     @GetMapping(path = "/{id}")
-    public ResponseEntity<ApiResponse<ValidationRunResource>> get(@PathVariable long id) {
+    public ResponseEntity<ApiResponse<ValidationRunResource>> get(@PathVariable long id, Locale locale) {
         ValidationRun validationRun = validationRunRepository.get(ValidationRun.class, id);
-        return ResponseEntity.ok(ApiResponse.data(ValidationRunResource.of(validationRun)));
+        return ResponseEntity.ok(ApiResponse.data(ValidationRunResource.of(validationRun, messageSource, locale)));
     }
 }
