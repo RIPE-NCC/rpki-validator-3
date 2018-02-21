@@ -4,7 +4,7 @@ import {Component, OnInit} from '@angular/core';
   selector: 'export',
   template: `
     <div class="pt-3 pb-4">
-      <h2>{{'EXPORT' | translate}}</h2>
+      <h3><strong>{{'EXPORT' | translate}}</strong></h3>
       <p>{{'Export.DESCRIPTION' | translate}}</p>
       <a href="api/export.csv" class="btn-primary">Get CSV</a>
       <a href="api/export.json" class="btn-primary" target="_blank">Get JSON</a>

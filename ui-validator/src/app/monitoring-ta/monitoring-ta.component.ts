@@ -23,9 +23,7 @@ export class MonitoringTaComponent implements OnInit {
     this.taId = this._activatedRoute.snapshot.url[2].path;
     if (this.taId) {
       this._trustAnchorsService.getTrustAnchor(this.taId)
-        .subscribe(response => {
-          this.monitoringTrustAnchor = response.data;
-          console.log(response)},
+        .subscribe(response => this.monitoringTrustAnchor = response.data,
             error => this.errorMessage = <any>error
         );
     }
