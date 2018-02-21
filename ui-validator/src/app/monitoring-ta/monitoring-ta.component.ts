@@ -25,7 +25,8 @@ export class MonitoringTaComponent implements OnInit {
     if (this.taId) {
       this._trustAnchorsService.getTrustAnchor(this.taId)
         .subscribe(response => this.monitoringTrustAnchor = response.data,
-            error => this.errorMessage = <any>error
+          error => this.errorMessage = <any>error
+        );
 
       this._trustAnchorsService.getRepositories(this.taId)
         .subscribe(
