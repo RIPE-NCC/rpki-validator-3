@@ -76,7 +76,7 @@ public class RrdpService {
         try {
             doStoreRepository(rpkiRepository, validationRun);
         } catch (RrdpException e) {
-            log.warn("error retrieving RRDP repository: " + e, e);
+            log.warn("Error retrieving RRDP repository: " + e);
             ValidationCheck validationCheck = new ValidationCheck(validationRun, rpkiRepository.getRrdpNotifyUri(),
                     ValidationCheck.Status.ERROR, ErrorCodes.RRDP_FETCH, e.getMessage());
             validationRun.addCheck(validationCheck);
