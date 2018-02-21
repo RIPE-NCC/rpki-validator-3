@@ -29,8 +29,8 @@
  */
 package net.ripe.rpki.validator3.domain;
 
+import lombok.Value;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
-import net.ripe.rpki.validator3.adapter.jpa.JPARpkiObjects;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
@@ -61,19 +61,24 @@ public interface RpkiObjects {
 
     Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type type, byte[] authorityKeyIdentifier);
 
-    default Stream<JPARpkiObjects.RoaPrefix> findCurrentlyValidatedRoaPrefixes() {
+    default Stream<RoaPrefix> findCurrentlyValidatedRoaPrefixes() {
         return findCurrentlyValidatedRoaPrefixes(null, null, null);
     }
 
-    Stream<JPARpkiObjects.RoaPrefix> findCurrentlyValidatedRoaPrefixes(Paging paging, SearchTerm searchTerm, Sorting sorting);
-
-    default Stream<JPARpkiObjects.RoaPrefix> findCurrentlyValidatedRoaPrefixes(Paging paging) {
-        return findCurrentlyValidatedRoaPrefixes(paging, null, null);
-    }
+    Stream<RoaPrefix> findCurrentlyValidatedRoaPrefixes(Paging paging, SearchTerm searchTerm, Sorting sorting);
 
     Stream<RpkiObject> findRouterCertificates();
 
     long deleteUnreachableObjects(Instant unreachableSince);
 
     int countCurrentlyValidatedRoaPrefixes(SearchTerm searchTerm);
+
+    @Value
+    class RoaPrefix {
+        private String asn;
+        private String prefix;
+        private int length;
+        private String trustAnchor;
+        private String uri;
+    }
 }

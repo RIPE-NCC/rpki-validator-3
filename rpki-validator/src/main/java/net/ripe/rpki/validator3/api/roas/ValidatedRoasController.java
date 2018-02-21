@@ -70,14 +70,14 @@ public class ValidatedRoasController {
         final Sorting sorting = Sorting.parse(sortBy, sortDirection);
         final Paging paging = Paging.of(startFrom, pageSize);
 
-        final Stream<JPARpkiObjects.RoaPrefix> roas = rpkiObjects.findCurrentlyValidatedRoaPrefixes(paging, searchTerm, sorting);
+        final Stream<RpkiObjects.RoaPrefix> roas = rpkiObjects.findCurrentlyValidatedRoaPrefixes(paging, searchTerm, sorting);
 
         int totalSize = rpkiObjects.countCurrentlyValidatedRoaPrefixes(searchTerm);
         final Links links = Paging.links(
                 startFrom, pageSize, totalSize,
                 (sf, ps) -> methodOn(ValidatedRoasController.class).list(sf, ps, searchString, sortBy, sortDirection));
         return ResponseEntity.ok(
-                ApiResponse.<Stream<JPARpkiObjects.RoaPrefix>>builder()
+                ApiResponse.<Stream<RpkiObjects.RoaPrefix>>builder()
                         .links(links)
                         .metadata(Metadata.of(totalSize))
                         .data(roas).build()

@@ -32,7 +32,6 @@ package net.ripe.rpki.validator3.adapter.jpa;
 import com.google.common.primitives.UnsignedBytes;
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQuery;
-import lombok.Value;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.ipresource.IpResourceType;
@@ -256,15 +255,6 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
         final Query preparedQuery = searchCondition.getRight().apply(sql(sql));
         final Object singleResult = preparedQuery.getSingleResult();
         return ((BigInteger)singleResult).intValue();
-    }
-
-    @Value
-    public static class RoaPrefix {
-        private String asn;
-        private String prefix;
-        private int length;
-        private String trustAnchor;
-        private String uri;
     }
 
     @Override
