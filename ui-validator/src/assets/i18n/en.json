@@ -47,6 +47,12 @@
     "STATISTICS": "Statistics for the last validation run",
     "REPOSITORIES": "Repositories"
   },
+  "Repositories": {
+    "URI": "URI",
+    "REPO_TYPE": "Type",
+    "REPO_STATUS": "Status",
+    "REPO_LAST_CHECKED": "Last checked"
+  },
   "ValidationDetails": {
     "TITLE": "Validation Details",
     "CHECK_KEY": "Check Key",

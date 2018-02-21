@@ -30,8 +30,10 @@
 package net.ripe.rpki.validator3.api.rpkirepositories;
 
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.adapter.jpa.JPARpkiObjects;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
+import net.ripe.rpki.validator3.api.Metadata;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
@@ -46,6 +48,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
@@ -72,15 +75,21 @@ public class RpkiRepositoriesController {
         final Paging paging = Paging.of(startFrom, pageSize);
         final List<RpkiRepository> repositories = rpkiRepositories.findAll(status, taId, paging);
 
+        final int totalSize = repositories.size();
         final Links links = Paging.links(
-                startFrom, pageSize, repositories.size(),
+                startFrom, pageSize, totalSize,
                 (sf, ps) -> methodOn(RpkiRepositoriesController.class).list(sf, ps, status, taId));
 
-        return ResponseEntity.ok(ApiResponse.data(links, repositories
+        final List<RpkiRepositoryResource> data = repositories
                 .stream()
                 .map(RpkiRepositoryResource::of)
-                .collect(Collectors.toList())
-        ));
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(ApiResponse.<List<RpkiRepositoryResource>>builder()
+                .data(data)
+                .links(links)
+                .metadata(Metadata.of(totalSize))
+                .build());
     }
 
     @GetMapping(path = "/{id}")

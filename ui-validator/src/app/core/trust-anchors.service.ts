@@ -52,9 +52,23 @@ export class TrustAnchorsService {
         {params: params})
     }
 
-    getRepositories(trustAnchorId: string): Observable<any> {
-      return this._http.get<any>(this._repositoriesByTaId, { params: { "ta" : trustAnchorId } })
-        .do(reponse => console.log('Repositories: ' + JSON.stringify(reponse.data)))
+    getRepositories(trustAnchorId: string,
+                    startFrom: string,
+                    pageSize: string,
+                    search: string,
+                    sortBy: string,
+                    sortDirection: string): Observable<any> {
+
+      const params = new HttpParams()
+        .set('ta', trustAnchorId)
+        .set('startFrom', startFrom)
+        .set('pageSize', pageSize)
+        .set('search', search)
+        .set('sortBy', sortBy)
+        .set('sortDirection', sortDirection);
+
+      return this._http.get<any>(this._repositoriesByTaId, { params: params })
+        .do(response => console.log('Repositories: ' + JSON.stringify(response.data)))
         .catch(this.handleError);
     }
 

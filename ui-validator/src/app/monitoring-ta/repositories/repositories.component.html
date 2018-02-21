@@ -1,0 +1,28 @@
+<h3><strong>{{'Monitoring.REPOSITORIES' | translate}}</strong></h3>
+<table sortable-table (sorted)="onSorted($event)" class='table table-striped table-bordered'>
+  <thead>
+  <tr>
+    <th sortable-column='location'>{{'URI' | translate}}</th>
+    <th sortable-column='type'>{{'Repositories.REPO_TYPE' | translate}}</th>
+    <th sortable-column='status'>{{'Repositories.REPO_STATUS' | translate}}</th>
+    <th sortable-column='lastChecked'>{{'Repositories.REPO_LAST_CHECKED' | translate}}</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr *ngFor='let repo of repositories'>
+    <td nowrap="">{{ repo.locationURI }}</td>
+    <td>{{ repo.type }}</td>
+    <td>{{ repo.status }}</td>
+    <td>{{ repo.lastDownloadedAt }}</td>
+  </tr>
+  </tbody>
+</table>
+<div class='d-flex justify-content-between'>
+  <ngb-pagination [collectionSize]="totalItems" [pageSize]="rowsPerPage" [(page)]='page' [maxSize]='5'
+                  [boundaryLinks]='true'
+                  [rotate]='true' [ellipses]='false' (pageChange)='onChangePage($event)'></ngb-pagination>
+  <page-textually-status [loading]='loading'
+                         [firstItem]='firstItemInTable'
+                         [lastItem]='lastItemInTable'
+                         [totalItems]='totalItems'
+                         [absolutItems]='absolutItemsNumber'></page-textually-status>
