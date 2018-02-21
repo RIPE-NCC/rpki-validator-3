@@ -31,16 +31,29 @@ package net.ripe.rpki.validator3.domain;
 
 import lombok.Getter;
 import net.ripe.rpki.commons.validation.ValidationStatus;
+import org.springframework.context.MessageSource;
+import org.springframework.context.MessageSourceResolvable;
 
-import javax.persistence.*;
+import javax.annotation.Nullable;
+import javax.persistence.Basic;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.ElementCollection;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
+import javax.persistence.ManyToOne;
+import javax.persistence.OrderColumn;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 @Entity
-public class ValidationCheck extends AbstractEntity {
+public class ValidationCheck extends AbstractEntity implements MessageSourceResolvable {
 
     public enum Status {
         WARNING, ERROR
@@ -94,6 +107,21 @@ public class ValidationCheck extends AbstractEntity {
         this.parameters.addAll(Arrays.asList(parameters));
     }
 
+    @Override
+    public String[] getCodes() {
+        return new String[] { key + "." + status.name().toLowerCase() };
+    }
+
+    @Override
+    public Object[] getArguments() {
+        return parameters.toArray(new String[parameters.size()]);
+    }
+
+    @Nullable
+    public String formattedMessage(MessageSource messageSource, Locale locale) {
+        return messageSource.getMessage(this, locale);
+    }
+
     static Status mapStatus(ValidationStatus status) {
         switch (status) {
             case PASSED:
@@ -104,11 +132,6 @@ public class ValidationCheck extends AbstractEntity {
                 return Status.ERROR;
         }
         throw new IllegalArgumentException("Unknown status: " + status);
-    }
-
-    public static ValidationCheck of(net.ripe.rpki.commons.validation.ValidationResult result) {
-
-        return null;
     }
 
     @Override

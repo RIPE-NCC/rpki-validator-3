@@ -71,6 +71,7 @@ import java.util.stream.Collectors;
 @Entity
 public class RpkiObject extends AbstractEntity {
 
+    public static final int MIN_SIZE = 1;
     public static final int MAX_SIZE = 1024 * 1024;
 
     public enum Type {

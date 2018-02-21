@@ -41,12 +41,14 @@ import net.ripe.rpki.validator3.domain.RsyncRepositoryValidationRun;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.domain.ValidationRun;
+import org.springframework.context.MessageSource;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
@@ -73,9 +75,9 @@ public class ValidationRunResource {
 
     Links links;
 
-    public static ValidationRunResource of(ValidationRun validationRun) {
+    public static ValidationRunResource of(ValidationRun validationRun, MessageSource messageSource, Locale locale) {
         List<Link> links = new ArrayList<>();
-        links.add(linkTo(methodOn(ValidationRunController.class).get(validationRun.getId())).withSelfRel());
+        links.add(linkTo(methodOn(ValidationRunController.class).get(validationRun.getId(), locale)).withSelfRel());
 
         ValidationRunResourceBuilder builder = ValidationRunResource.builder()
             .type(validationRun.getType())
@@ -85,7 +87,7 @@ public class ValidationRunResource {
             .validationChecks(
                 validationRun.getValidationChecks()
                     .stream()
-                    .map(ValidationCheckResource::of)
+                    .map(check -> ValidationCheckResource.of(check, check.formattedMessage(messageSource, locale)))
                     .collect(Collectors.toList())
             );
 
@@ -93,7 +95,7 @@ public class ValidationRunResource {
             @Override
             public void accept(CertificateTreeValidationRun validationRun) {
                 builder.validatedObjectCount(validationRun.getValidatedObjects().size());
-                links.add(linkTo(methodOn(TrustAnchorController.class).get(validationRun.getTrustAnchor().getId())).withRel(TrustAnchor.TYPE));
+                links.add(linkTo(methodOn(TrustAnchorController.class).get(validationRun.getTrustAnchor().getId(), locale)).withRel(TrustAnchor.TYPE));
             }
 
             @Override
@@ -108,7 +110,7 @@ public class ValidationRunResource {
 
             @Override
             public void accept(TrustAnchorValidationRun validationRun) {
-                links.add(linkTo(methodOn(TrustAnchorController.class).get(validationRun.getTrustAnchor().getId())).withRel(TrustAnchor.TYPE));
+                links.add(linkTo(methodOn(TrustAnchorController.class).get(validationRun.getTrustAnchor().getId(), locale)).withRel(TrustAnchor.TYPE));
             }
         });
 

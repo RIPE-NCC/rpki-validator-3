@@ -27,31 +27,25 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.api.validationruns;
+package net.ripe.rpki.validator3.domain;
 
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
-import lombok.Data;
-import net.ripe.rpki.commons.validation.ValidationStatus;
-import net.ripe.rpki.validator3.domain.ValidationCheck;
+public class ErrorCodes {
+    public static final String RRDP_FETCH = "rrdp.fetch";
+    public static final String RRDP_FETCH_DELTAS = "rrdp.fetch.deltas";
+    public static final String RRDP_REPLACE_NONEXISTENT_OBJECT = "rrdp.replace.nonexistent.object";
+    public static final String RRDP_WITHDRAW_NONEXISTENT_OBJECT = "rrdp.withdraw.nonexistent.object";
 
-import java.util.List;
+    public static final String RSYNC_FETCH = "rsync.fetch";
+    public static final String RSYNC_REPOSITORY_IO = "rsync.repository.io";
 
-@Data(staticConstructor = "of")
-@ApiModel(value = "ValidationCheck")
-public class ValidationCheckResource {
-    @ApiModelProperty(required = true, position = 1)
-    final String location;
-    @ApiModelProperty(required = true, position = 2)
-    final ValidationCheck.Status status;
-    @ApiModelProperty(required = true, position = 4)
-    final String key;
-    @ApiModelProperty(required = true, position = 3)
-    final List<String> parameters;
-    @ApiModelProperty(required = false, position = 5)
-    final String formattedMessage;
+    public static final String TRUST_ANCHOR_SIGNATURE = "trust.anchor.signature";
 
-    public static ValidationCheckResource of(ValidationCheck check, String formattedMessage) {
-        return of(check.getLocation(), check.getStatus(), check.getKey(), check.getParameters(), formattedMessage);
+    public static final String REPOSITORY_OBJECT_MINIMUM_SIZE = "repository.object.minimum.size";
+    public static final String REPOSITORY_OBJECT_MAXIMUM_SIZE = "repository.object.maximum.size";
+    public static final String REPOSITORY_OBJECT_IS_TRUST_ANCHOR_CERTIFICATE = "repository.object.is.trust.anchor.certificate";
+
+    public static final String UNHANDLED_EXCEPTION = "unhandled.exception";
+
+    private ErrorCodes() {
     }
 }

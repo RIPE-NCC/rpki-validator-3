@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.rrdp;
 import com.google.common.collect.Sets;
 import net.ripe.rpki.validator3.IntegrationTest;
 import net.ripe.rpki.validator3.TestObjects;
+import net.ripe.rpki.validator3.domain.ErrorCodes;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
@@ -172,7 +173,7 @@ public class RrdpServiceTest {
 
         assertEquals(1, validationRun.getValidationChecks().size());
         final ValidationCheck validationCheck = validationRun.getValidationChecks().get(0);
-        assertEquals("rrdp.error", validationCheck.getKey());
+        assertEquals(ErrorCodes.RRDP_FETCH, validationCheck.getKey());
         assertEquals(ValidationCheck.Status.ERROR, validationCheck.getStatus());
         assertEquals("Hash of the snapshot file " + snapshotUri + " is " + Hex.format(Sha256.hash(snapshotXml)) +
                 ", but notification file says FFFFFF", validationCheck.getParameters().get(0));
@@ -254,7 +255,7 @@ public class RrdpServiceTest {
 
         assertEquals(1, validationRun.getValidationChecks().size());
         final ValidationCheck validationCheck = validationRun.getValidationChecks().get(0);
-        assertEquals("rrdp.deltas.failure", validationCheck.getKey());
+        assertEquals(ErrorCodes.RRDP_FETCH_DELTAS, validationCheck.getKey());
         assertEquals(ValidationCheck.Status.WARNING, validationCheck.getStatus());
         assertEquals(rpkiRepository.getRrdpNotifyUri(), validationCheck.getLocation());
         assertTrue(validationCheck.getParameters().get(0).contains("Session id of the delta"));
@@ -345,7 +346,7 @@ public class RrdpServiceTest {
         assertEquals(1, validationRun.getValidationChecks().size());
 
         final ValidationCheck validationCheck = validationRun.getValidationChecks().get(0);
-        assertEquals("rrdp.deltas.failure", validationCheck.getKey());
+        assertEquals(ErrorCodes.RRDP_FETCH_DELTAS, validationCheck.getKey());
         assertEquals(ValidationCheck.Status.WARNING, validationCheck.getStatus());
         assertEquals(rpkiRepository.getRrdpNotifyUri(), validationCheck.getLocation());
         assertEquals("Serials of the deltas are not contiguous: found 2 and 4 after it", validationCheck.getParameters().get(0));
@@ -396,7 +397,7 @@ public class RrdpServiceTest {
         assertEquals(1, validationRun.getValidationChecks().size());
 
         final ValidationCheck validationCheck = validationRun.getValidationChecks().get(0);
-        assertEquals("rrdp.deltas.failure", validationCheck.getKey());
+        assertEquals(ErrorCodes.RRDP_FETCH_DELTAS, validationCheck.getKey());
         assertEquals(ValidationCheck.Status.WARNING, validationCheck.getStatus());
         assertEquals(rpkiRepository.getRrdpNotifyUri(), validationCheck.getLocation());
         assertEquals("The last delta serial is 3, notification file serial is 4", validationCheck.getParameters().get(0));
@@ -441,7 +442,7 @@ public class RrdpServiceTest {
         subject.storeRepository(rpkiRepository, validationRun);
         assertEquals(1, validationRun.getValidationChecks().size());
         final ValidationCheck validationCheck = validationRun.getValidationChecks().get(0);
-        assertEquals("rrdp.deltas.failure", validationCheck.getKey());
+        assertEquals(ErrorCodes.RRDP_FETCH_DELTAS, validationCheck.getKey());
         assertEquals(ValidationCheck.Status.WARNING, validationCheck.getStatus());
         assertEquals(rpkiRepository.getRrdpNotifyUri(), validationCheck.getLocation());
 
