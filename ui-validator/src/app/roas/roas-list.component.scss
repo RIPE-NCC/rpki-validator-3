@@ -1,0 +1,12 @@
+thead > tr {
+  th:nth-child(3) {
+    width: 15%;
+  }
+  th:nth-child(5) {
+    width: 100px;
+  }
+}
+tbody > tr > td:nth-child(5) {
+  text-align: center;
+}
+
