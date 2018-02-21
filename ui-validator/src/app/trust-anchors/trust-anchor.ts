@@ -8,7 +8,7 @@ export interface ITrustAnchorOverview {
 }
 
 export interface ITrustAnchorOverviewResponse {
-    data: ITrustAnchorOverview[];
+  data: ITrustAnchorOverview[];
 }
 
 export interface ITrustAnchor {
@@ -48,5 +48,12 @@ export interface ITrustAnchorsResponse {
       status: string,
       validationChecks: string[];
     }]
+}
+
+export interface IRepository {
+  url: string,
+  type: string,
+  status: string,
+  lastChecked: string
 }
 

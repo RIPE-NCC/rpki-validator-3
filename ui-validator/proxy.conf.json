@@ -18,5 +18,10 @@
     "target": "http://localhost:9176",
     "secure": false,
     "logLevel": "debug"
+  },
+  "/api/rpki-repositories": {
+    "target": "http://localhost:9176",
+    "secure": false,
+    "logLevel": "debug"
   }
 }

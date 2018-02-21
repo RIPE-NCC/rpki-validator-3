@@ -68,7 +68,7 @@ public class RpkiRepositoryResource {
 
     public static RpkiRepositoryResource of(RpkiRepository rpkiRepository) {
         return of(
-            RpkiRepository.TYPE,
+            repositoryType(rpkiRepository),
             rpkiRepository.getId(),
             rpkiRepository.getLocationUri(),
             rpkiRepository.getStatus(),
@@ -79,5 +79,9 @@ public class RpkiRepositoryResource {
                 linkTo(methodOn(RpkiRepositoriesController.class).get(rpkiRepository.getId())).withSelfRel()
             )
         );
+    }
+
+    private static String repositoryType(RpkiRepository rpkiRepository) {
+        return rpkiRepository.getType() == RpkiRepository.Type.RRDP ? "RRDP" : "RSYNC";
     }
 }

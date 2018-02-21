@@ -44,7 +44,8 @@
     "FEWER_THEN_10_ERRORS": "Fewer than 10 validation errors",
     "LESS_THEN_10_PERC_VAL_ERROR": "Less than 10% of objects have a validation error",
     "ALL_OBJECT_FETCHED_SUCCESS": "All objects fetched successfully",
-    "STATISTICS": "Statistics for the last validation run"
+    "STATISTICS": "Statistics for the last validation run",
+    "REPOSITORIES": "Repositories"
   },
   "ValidationDetails": {
     "TITLE": "Validation Details",

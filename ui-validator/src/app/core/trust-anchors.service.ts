@@ -10,8 +10,11 @@ export class TrustAnchorsService {
 
     private _trustAnchorsUrl = 'api/trust-anchors';
     private _trustAnchorsStatusesUrl = 'api/trust-anchors/statuses';
+
     private _trustAnchorByIdUrl = 'api/trust-anchors/{id}';
     private _trustAnchorByIdValidationChecksUrl = 'api/trust-anchors/{id}/validation-checks';
+    private _repositoriesByTaId = 'api/rpki-repositories/';
+
 
     constructor(private _http: HttpClient) {
     }
@@ -37,16 +40,21 @@ export class TrustAnchorsService {
                                    search: string,
                                    sortBy: string,
                                    sortDirection: string): Observable<IValidationChecksResponse> {
-    const params = new HttpParams()
-      .set('id', id)
-      .set('startFrom', startFrom)
-      .set('pageSize', pageSize)
-      .set('search', search)
-      .set('sortBy', sortBy)
-      .set('sortDirection', sortDirection);
+      const params = new HttpParams()
+        .set('id', id)
+        .set('startFrom', startFrom)
+        .set('pageSize', pageSize)
+        .set('search', search)
+        .set('sortBy', sortBy)
+        .set('sortDirection', sortDirection);
 
       return this._http.get<any>(this._trustAnchorByIdValidationChecksUrl.replace('{id}', id),
-                        {params: params})
+        {params: params})
+    }
+
+    getRepositories(trustAnchorId: string): Observable<any> {
+      return this._http.get<any>(this._repositoriesByTaId, { params: { "ta" : trustAnchorId } })
+        .do(reponse => console.log('Repositories: ' + JSON.stringify(reponse.data)))
         .catch(this.handleError);
     }
 

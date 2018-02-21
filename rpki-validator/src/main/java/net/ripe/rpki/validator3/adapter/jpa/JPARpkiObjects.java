@@ -198,7 +198,7 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
                 final Asn asAsn = searchTerm.asAsn();
                 if (asAsn != null) {
                     final long asn = asAsn.getValue().longValue();
-                    final String sql = " (to_char(p.asn) ilike :term)";
+                    final String sql = " (to_char(p.asn) = :term)";
                     return Pair.of(sql, q -> {
                         q.setParameter("term", "%" + asn + "%");
                         return q;
