@@ -318,7 +318,7 @@
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
-                                    <location>src/main/resources/packaging/centos7/usr/bin/</location>
+                                    <location>src/main/resources/packaging/generic/bin/</location>
                                     <includes>
                                         <include>rpki-validator-3.sh</include>
                                     </includes>
@@ -345,7 +345,7 @@
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
-                                    <location>src/main/resources/packaging/centos7/etc/rpki-validator-3/</location>
+                                    <location>src/main/resources/packaging/generic/conf/</location>
                                     <includes>
                                         <include>application-defaults.properties</include>
                                     </includes>
@@ -372,7 +372,7 @@
                             <recurseDirectories>true</recurseDirectories>
                             <sources>
                                 <source>
-                                    <location>src/main/resources/packaging/centos7/var/lib/rpki-validator-3/</location>
+                                    <location>src/main/resources/packaging/generic/workdirs/</location>
                                     <excludes>
                                         <exclude>*/.ignore.me</exclude>
                                     </excludes>
@@ -399,6 +399,25 @@
                     </requires>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <descriptors>
+                        <descriptor>src/main/resources/packaging/generic/assembly/distribution.xml</descriptor>
+                    </descriptors>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 

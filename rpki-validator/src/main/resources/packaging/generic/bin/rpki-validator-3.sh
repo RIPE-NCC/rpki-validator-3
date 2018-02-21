@@ -32,11 +32,12 @@
 EXECUTION_DIR=`dirname "$BASH_SOURCE"`
 cd ${EXECUTION_DIR}
 
-JAVA_CMD="/usr/bin/java"
-APP_NAME="rpki-validator-3"
-CONFIG_DIR="/etc/${APP_NAME}"
+JAVA_CMD=${JAVA_CMD:-"/usr/bin/java"}
+JAR=${JAR:-"./lib/rpki-validator-3.jar"}
+CONFIG_DIR=${CONFIG_DIR:-"./conf"}
+
 CONFIG_FILE="${CONFIG_DIR}/application.properties"
-JAR="/usr/lib/${APP_NAME}.jar"
+
 
 function parse_config_line {
     local CONFIG_KEY="$1"
