@@ -1,0 +1,9 @@
+table {
+  table-layout: fixed;
+}
+thead > tr > th:nth-child(4) {
+  width: 10%;
+}
+tbody > tr > td:nth-child(1) {
+    word-wrap:break-word;
+}

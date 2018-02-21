@@ -3,6 +3,7 @@ import {Observable} from "rxjs/Observable";
 import {Injectable} from "@angular/core";
 
 import {IValidationChecksResponse} from "../monitoring-ta/validation-details/validation-detail";
+import {ITrustAnchorResponse} from "../trust-anchors/trust-anchor";
 
 @Injectable()
 export class TrustAnchorsService {
@@ -25,8 +26,8 @@ export class TrustAnchorsService {
             .catch(this.handleError);
     }
 
-    getTrustAnchor(id: string): Observable<any> {
-      return this._http.get<any>(this._trustAnchorByIdUrl.replace('{id}', id))
+    getTrustAnchor(id: string): Observable<ITrustAnchorResponse> {
+      return this._http.get<ITrustAnchorResponse>(this._trustAnchorByIdUrl.replace('{id}', id))
           .catch(this.handleError);
     }
 
@@ -50,7 +51,6 @@ export class TrustAnchorsService {
     }
 
     private handleError(err: HttpErrorResponse) {
-        console.log(err.message);
         return Observable.throw(err.message);
     }
 }

@@ -3,7 +3,7 @@ import {Component, OnInit} from '@angular/core';
 import {RoasService} from "./roas.service";
 import {IRoa} from "./roas";
 import {TrustAnchorsService} from "../core/trust-anchors.service";
-import {ITrustAnchorResponse} from "../trust-anchors/trust-anchor";
+import {ITrustAnchorsResponse} from "../trust-anchors/trust-anchor";
 import {ManagingTable} from "../shared/managing-table";
 
 @Component({
@@ -54,7 +54,7 @@ export class RoasListComponent extends ManagingTable implements OnInit {
     this._trustAnchorsService.getTrustAnchors()
       .subscribe(
         response => {
-          const taResponse = response as ITrustAnchorResponse;
+          const taResponse = response as ITrustAnchorsResponse;
           taResponse.data.forEach(ta => {
             if (ta.initialCertificateTreeValidationRunCompleted)
               listTa.push(ta.name);
