@@ -12,6 +12,7 @@ import {ITrustAnchor} from "../trust-anchors/trust-anchor";
 export class MonitoringTaComponent implements OnInit {
 
   pageTitle: string = 'Nav.TITLE_MONITORING_TA';
+  taId: string;
   monitoringTrustAnchor: ITrustAnchor;
   errorMessage: string;
 
@@ -19,9 +20,9 @@ export class MonitoringTaComponent implements OnInit {
   }
 
   ngOnInit() {
-    let id = this._activatedRoute.snapshot.url[2].path;
-    if (id) {
-      this._trustAnchorsService.getTrustAnchor(id)
+    this.taId = this._activatedRoute.snapshot.url[2].path;
+    if (this.taId) {
+      this._trustAnchorsService.getTrustAnchor(this.taId)
         .subscribe(response => this.monitoringTrustAnchor = response.data,
           error => this.errorMessage = <any>error);
     }

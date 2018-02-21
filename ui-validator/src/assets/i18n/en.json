@@ -48,7 +48,7 @@
   },
   "ValidationDetails": {
     "TITLE": "Validation Details",
-    "OBJECT_VALID": "Object Valid",
+    "CHECK_KEY": "Check Key",
     "CHECK_MSG": "Check Msg",
     "CHECK_VALID": "Check Valid"
   },

@@ -1,5 +1,6 @@
+// PAGINATION
 export abstract class Paging {
-  // PAGINATION
+
   rowsPerPage: number = 10;
   // total number of items before filter
   absolutItemsNumber: number;

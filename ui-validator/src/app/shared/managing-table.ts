@@ -4,7 +4,7 @@ export abstract class ManagingTable extends Paging {
   // SEARCH
   searchBy: string = '';
   // SORTING
-  sortBy: string = 'asn';
+  sortBy: string = '';
   sortDirection: string = 'asc';
   //LOADING
   loading: boolean = true;

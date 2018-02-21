@@ -1,6 +1,8 @@
-import { Component, OnInit } from '@angular/core';
-import {IValidationDetail} from "./validation-detail";
+import {Component, Input, OnInit} from '@angular/core';
+
+import {IValidationCheck} from "./validation-detail";
 import {ManagingTable} from "../../shared/managing-table";
+import {TrustAnchorsService} from "../../core/trust-anchors.service";
 
 @Component({
   selector: 'validation-details',
@@ -9,15 +11,36 @@ import {ManagingTable} from "../../shared/managing-table";
 })
 export class ValidationDetailsComponent extends ManagingTable implements OnInit {
 
-  validationDetails: IValidationDetail[] = [];
+  @Input() trustAnchorId: string;
 
-  constructor() {
+  validationChecks: IValidationCheck[] = [];
+
+  constructor(private _trustAnchorsService: TrustAnchorsService) {
     super();
   }
 
   ngOnInit() {
+    this.loadData();
   }
 
   loadData() {
+    this.loading = true;
+    this.setNumberOfFirstItemInTable();
+    this._trustAnchorsService.getTrustAnchorValidationChecks(this.trustAnchorId,
+                                                              this.firstItemInTable.toLocaleString(),
+                                                              this.rowsPerPage.toString(),
+                                                              this.searchBy,
+                                                              this.sortBy,
+                                                              this.sortDirection)
+      .subscribe(
+        response => {
+          this.loading = false;
+          this.validationChecks = response.data.validationChecks;
+          this.numberOfItemsOnCurrentPage = this.validationChecks.length;
+          this.totalItems = response.metadata.totalCount;
+          this.setNumberOfLastItemInTable();
+          if (!this.absolutItemsNumber)
+            this.absolutItemsNumber = this.totalItems;
+        });
   }
 }
