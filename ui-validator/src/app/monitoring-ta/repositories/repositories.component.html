@@ -10,7 +10,17 @@
   </thead>
   <tbody>
   <tr *ngFor='let repo of repositories'>
-    <td nowrap="">{{ repo.locationURI }}</td>
+    <td (mouseleave)='p.close()'>
+      <img src='../../../assets/images/uri-icon.png'
+           [style.width.px]='20'
+           [style.margin.px]='0'
+           #p='ngbPopover'
+           ngbPopover='{{repo.locationURI}}'
+           placement='right'
+           triggers='mouseover'
+           popoverTitle="{{'URI' | translate}}"
+      />
+    </td>
     <td>{{ repo.type }}</td>
     <td>{{ repo.status }}</td>
     <td>{{ repo.lastDownloadedAt }}</td>

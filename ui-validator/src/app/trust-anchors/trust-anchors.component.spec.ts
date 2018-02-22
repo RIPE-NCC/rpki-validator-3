@@ -9,31 +9,7 @@ import {SharedModule} from '../shared/shared.module';
 import {TrustAnchorsService} from '../core/trust-anchors.service';
 import {Router} from "@angular/router";
 import createSpy = jasmine.createSpy;
-
-class TrustAnchorsServiceStub {
-  getTrustAnchorsOverview() {
-    return Observable.of({
-      data: [
-        {
-          id: '21586',
-          taName: 'AfriNIC RPKI Root',
-          successful: 0,
-          warnings: 7,
-          errors: 0,
-          lastUpdated: '2018-02-12 02:13:50'
-        },
-        {
-          id: '3',
-          taName: 'RIPE NCC RPKI Root',
-          successful: 20685,
-          warnings: 0,
-          errors: 0,
-          lastUpdated: '2018-02-12 02:13:50'
-        }
-      ]
-    })
-  }
-}
+import {TrustAnchorsServiceStub} from "../core/trust-anchors.service.stub";
 
 describe('TrustAnchorsComponent', () => {
   let component: TrustAnchorsComponent;

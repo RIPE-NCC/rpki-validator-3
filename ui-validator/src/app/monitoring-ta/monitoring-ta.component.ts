@@ -20,6 +20,7 @@ export class MonitoringTaComponent implements OnInit {
   }
 
   ngOnInit() {
+    //this.taId = this._activatedRoute.snapshot.params['id']
     this.taId = this._activatedRoute.snapshot.url[2].path;
     if (this.taId) {
       this._trustAnchorsService.getTrustAnchor(this.taId)
