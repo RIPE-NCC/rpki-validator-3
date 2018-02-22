@@ -20,6 +20,11 @@
   "ENTRIES": "entries",
   "URI": "URI",
   "EXPORT": "Export",
+  "YES": "Yes",
+  "NO": "No",
+  "SUCCESS": "SUCCESS",
+  "WARNING": "WARNING",
+  "ERROR": "ERROR",
   "Nav": {
     "TITLE_TRUST_ANCHORS": "Configured Trust Anchors",
     "TITLE_ROAS": "Validated ROAs",
@@ -40,11 +45,8 @@
   },
   "Monitoring": {
     "VALIDATED_USING_TA_LOCATOR": "Trust anchor could be validated using trust anchor locator",
-    "DROPPED_MORE_THEN_10_PERC": "Object count has not dropped more than 10% since the last validation",
-    "FEWER_THEN_10_ERRORS": "Fewer than 10 validation errors",
-    "LESS_THEN_10_PERC_VAL_ERROR": "Less than 10% of objects have a validation error",
-    "ALL_OBJECT_FETCHED_SUCCESS": "All objects fetched successfully",
-    "STATISTICS": "Statistics for the last validation run",
+    "LAST_VALIDATION": "Last Validation Run",
+    "TA_HAVE_PENDING_REPOSITORIES": "Trust Anchor still has pending repositories",
     "REPOSITORIES": "Repositories"
   },
   "Repositories": {

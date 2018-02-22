@@ -1,7 +1,7 @@
 <!-- GREEN FLAG -->
 <div *ngIf='green'>
   <div class='alert alert-success' role='alert' *ngIf='!mutedColor; else mutedSuccessColor'>
-    {{value}}
+    {{numericValue ? value : (value | translate)}}
   </div>
   <ng-template #mutedSuccessColor>
     <div class='alert alert-success-muted' role='alert'>{{value}}</div>
@@ -10,7 +10,7 @@
 <!-- ORANGE FLAG -->
 <div *ngIf='orange'>
   <div class='alert alert-warning' role='alert' *ngIf='!mutedColor; else mutedWarningColor'>
-    {{value}}
+    {{numericValue ? value : (value | translate)}}
   </div>
   <ng-template #mutedWarningColor>
     <div class='alert alert-warning-muted' role='alert'>{{value}}</div>
@@ -19,7 +19,7 @@
 <!-- RED FLAG -->
 <div *ngIf='red'>
   <div class='alert alert-danger' role='alert' *ngIf='!mutedColor; else mutedDangerColor'>
-    {{value}}
+    {{numericValue ? value : (value | translate)}}
   </div>
   <ng-template #mutedDangerColor>
     <div class='alert alert-danger-muted' role='alert'>{{value}}</div>

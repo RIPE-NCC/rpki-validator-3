@@ -1,15 +1,12 @@
 <page-title [pageTitle]='pageTitle' [specificValue]='monitoringTrustAnchor?.name'></page-title>
-<!--<div class='alert alert-success' role='alert' *ngIf='ta.validationChecks.success > 0; else failedSuccessColor'>-->
-<!--{{ta.validationChecks.success}}-->
+<!--<div class="center">-->
+  <!--<div class='alert alert-success' role='alert'>-->
+    <!--Somet text really long text-->
+  <!--</div>-->
+  <!--<ng-template #failedSuccessColor>-->
+    <!--<div class='alert alert-danger' role='alert'>{{ta.validationChecks.success}}</div>-->
+  <!--</ng-template>-->
 <!--</div>-->
-<div class="center">
-  <div class='alert alert-success' role='alert'>
-    Somet text really long text
-  </div>
-  <ng-template #failedSuccessColor>
-    <div class='alert alert-danger' role='alert'>{{ta.validationChecks.success}}</div>
-  </ng-template>
-</div>
 
 <!-- CHECKS table -->
 <h3><strong>{{'TRUST_ANCHOR' | translate}}</strong></h3>
@@ -20,7 +17,6 @@
       {{'Monitoring.VALIDATED_USING_TA_LOCATOR' | translate}}
     </td>
     <td>
-      <!--<flag [value]='YES'></flag>-->
       <flag [value]='monitoringTrustAnchor?.initialCertificateTreeValidationRunCompleted'></flag>
     </td>
   </tr>
@@ -28,12 +24,12 @@
 </table>
 
 <!-- STATISTICS for the last validation run -->
-<h3><strong>{{'Monitoring.STATISTICS' | translate}}</strong></h3>
+<h3><strong>{{'Monitoring.LAST_VALIDATION' | translate}}</strong></h3>
 <table class='table table-striped table-bordered'>
   <tbody>
   <tr>
     <td>
-      {{'Monitoring.VALIDATED_USING_TA_LOCATOR' | translate}}
+      {{'Monitoring.TA_HAVE_PENDING_REPOSITORIES' | translate}}
     </td>
     <td>
 

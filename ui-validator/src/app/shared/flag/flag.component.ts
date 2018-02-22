@@ -15,15 +15,19 @@ export class FlagComponent implements OnChanges {
   orange: boolean = false;
   red: boolean = false;
   mutedColor: boolean = false;
-
+  numericValue: boolean = true;
 
   constructor() { }
 
   ngOnChanges() {
+    this.removeAllFlags();
     if (isNumber(this.value)) {
+      this.numericValue = true;
       this.setNumericFlag();
-    } else {
+    } else if (isString(this.value)){
       this.setTextualFlag();
+    } else {
+      this.setYesNoFlag();
     }
   }
 
@@ -49,7 +53,7 @@ export class FlagComponent implements OnChanges {
   setTextualFlag(): void {
     const value = isString(this.value) ? this.value.toUpperCase() : this.value;
     switch(value) {
-      case true: {
+      case 'SUCCESS': {
         this.green = true;
         break;
       }
@@ -62,5 +66,21 @@ export class FlagComponent implements OnChanges {
         break;
       }
     }
+  }
+
+  setYesNoFlag(): void {
+    const value = isString(this.value) ? this.value.toUpperCase() : this.value;
+    if (value) {
+      this.green = true;
+      this.value = 'YES';
+
+    } else {
+      this.red = true;
+      this.value = 'NO';
+    }
+  }
+
+  removeAllFlags(): void {
+    this.green = this.orange = this.red = this.numericValue = false;
   }
 }
