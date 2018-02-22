@@ -25,7 +25,7 @@ export class RoasListComponent extends ManagingTable implements OnInit {
 
   ngOnInit() {
     this.loadData();
-    this.getValidatedTAForAlert();
+    this.getNotValidatedTAForAlert();
   }
 
   loadData() {
@@ -49,17 +49,19 @@ export class RoasListComponent extends ManagingTable implements OnInit {
         error => this.errorMessage = <any>error);
   }
 
-  getValidatedTAForAlert() {
+  getNotValidatedTAForAlert() {
     let listTa: string[] = [];
     this._trustAnchorsService.getTrustAnchors()
       .subscribe(
         response => {
           const taResponse = response as ITrustAnchorsResponse;
           taResponse.data.forEach(ta => {
-            if (ta.initialCertificateTreeValidationRunCompleted)
+            if (!ta.initialCertificateTreeValidationRunCompleted)
               listTa.push(ta.name);
           });
           this.alertListValidatedTA = listTa.join(', ');
+          // don't show alert if all ta are validated
+          this.alertShown = this.alertListValidatedTA.length > 0;
         }
       );
   }
