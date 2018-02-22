@@ -381,6 +381,7 @@
                     </preinstallScriptlet>
                     <postinstallScriptlet>
                         <script>
+                            /bin/systemctl daemon-reload
                             /bin/systemctl try-restart rpki-rtr-server
                         </script>
                     </postinstallScriptlet>

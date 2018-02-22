@@ -389,6 +389,7 @@
 
                     <postinstallScriptlet>
                         <script>
+                            /bin/systemctl daemon-reload
                             /bin/systemctl try-restart rpki-validator-3
                         </script>
                     </postinstallScriptlet>

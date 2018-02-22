@@ -38,6 +38,11 @@ CONFIG_DIR=${CONFIG_DIR:-"./conf"}
 
 CONFIG_FILE="${CONFIG_DIR}/application.properties"
 
+function error_exit {
+    echo -e "[ error ] $1"
+    exit 1
+}
+
 function parse_config_line {
     local CONFIG_KEY=$1
     local VALUE=`grep "^$CONFIG_KEY" "$CONFIG_FILE" | sed 's/#.*//g' | awk -F "=" '{ print $2 }'`

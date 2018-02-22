@@ -40,6 +40,11 @@
             <outputDirectory>lib</outputDirectory>
             <destName>rpki-rtr-server.jar</destName>
         </file>
+        <file>
+            <source>src/main/resources/packaging/generic/README.txt</source>
+            <outputDirectory />
+            <destName>README.txt</destName>
+        </file>
     </files>
     <fileSets>
         <fileSet>

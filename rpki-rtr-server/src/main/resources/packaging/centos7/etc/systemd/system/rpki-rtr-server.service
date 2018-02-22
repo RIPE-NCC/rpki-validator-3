@@ -3,9 +3,9 @@ Description=RPKI RTR Server
 After=network.target
 
 [Service]
-Environment=JAVA_CMD="/usr/bin/java"
-Environment=CONFIG_DIR="/etc/rpki-rtr-server"
-Environment=JAR="/usr/lib/rpki-rtr-server.jar"
+Environment=JAVA_CMD=/usr/bin/java
+Environment=CONFIG_DIR=/etc/rpki-rtr-server
+Environment=JAR=/usr/lib/rpki-rtr-server.jar
 ExecStart=/usr/bin/rpki-rtr-server.sh
 User=rpki
 Group=rpki
