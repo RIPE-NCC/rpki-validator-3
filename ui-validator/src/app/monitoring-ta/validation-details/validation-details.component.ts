@@ -1,6 +1,6 @@
 import {Component, Input, OnInit} from '@angular/core';
 
-import {IValidationCheck} from "./validation-detail";
+import {IValidationCheck} from "./validation-detail.model";
 import {ManagingTable} from "../../shared/managing-table";
 import {TrustAnchorsService} from "../../core/trust-anchors.service";
 

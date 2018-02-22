@@ -2,7 +2,7 @@ import {Component, OnInit} from '@angular/core';
 import {ActivatedRoute} from "@angular/router";
 
 import {TrustAnchorsService} from "../core/trust-anchors.service";
-import {ITrustAnchor} from "../trust-anchors/trust-anchor";
+import {ITrustAnchor} from "../trust-anchors/trust-anchor.model";
 
 @Component({
   selector: 'app-monitoring-ta',

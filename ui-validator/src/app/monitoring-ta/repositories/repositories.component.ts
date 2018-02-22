@@ -1,6 +1,6 @@
 import {Component, Input, OnInit} from '@angular/core';
 
-import {IRepository} from "./repositories";
+import {IRepository} from "./repositories.model";
 import {ManagingTable} from "../../shared/managing-table";
 import {TrustAnchorsService} from "../../core/trust-anchors.service";
 

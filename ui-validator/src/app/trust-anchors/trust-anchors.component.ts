@@ -1,7 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import {Router} from "@angular/router";
 
-import {ITrustAnchorOverview} from "./trust-anchor";
+import {ITrustAnchorOverview} from "./trust-anchor.model";
 import {TrustAnchorsService} from "../core/trust-anchors.service";
 
 @Component({

@@ -1,9 +1,9 @@
 import {Component, OnInit} from '@angular/core';
 
 import {RoasService} from "./roas.service";
-import {IRoa} from "./roas";
+import {IRoa} from "./roas.model";
 import {TrustAnchorsService} from "../core/trust-anchors.service";
-import {ITrustAnchorsResponse} from "../trust-anchors/trust-anchor";
+import {ITrustAnchorsResponse} from "../trust-anchors/trust-anchor.model";
 import {ManagingTable} from "../shared/managing-table";
 
 @Component({
