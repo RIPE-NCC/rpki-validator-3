@@ -1,9 +1,8 @@
 import {Component, OnInit} from '@angular/core';
-import {ActivatedRoute, Router} from "@angular/router";
+import {ActivatedRoute} from "@angular/router";
 
 import {TrustAnchorsService} from "../core/trust-anchors.service";
 import {ITrustAnchor} from "../trust-anchors/trust-anchor.model";
-import {ApplicationErrorHandler} from "../core/app-error-handler.service";
 
 @Component({
   selector: 'app-monitoring-ta',
@@ -15,7 +14,6 @@ export class MonitoringTaComponent implements OnInit {
   pageTitle: string = 'Nav.TITLE_MONITORING_TA';
   taId: string;
   monitoringTrustAnchor: ITrustAnchor;
-  errorMessage: string;
 
   constructor(private _activatedRoute: ActivatedRoute, private _trustAnchorsService: TrustAnchorsService) {
   }
@@ -25,9 +23,8 @@ export class MonitoringTaComponent implements OnInit {
     if (this.taId) {
       this._trustAnchorsService.getTrustAnchor(this.taId)
         .subscribe(
-          response => this.monitoringTrustAnchor = response.data,
-          error => {this.errorMessage = <any>error;}
-        );
+          response => this.monitoringTrustAnchor = response.data
+        )
     }
   }
 }

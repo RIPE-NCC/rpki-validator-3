@@ -3,7 +3,7 @@ import {TranslateModule} from '@ngx-translate/core';
 import {Observable} from 'rxjs/Observable';
 import 'rxjs/add/observable/of';
 
-import {RoasListComponent} from './roas-list.component';
+import {RoasComponent} from './roas.component';
 import {SharedModule} from '../shared/shared.module';
 import {RoasService} from './roas.service';
 import {TrustAnchorsService} from '../core/trust-anchors.service';
@@ -89,9 +89,9 @@ class RoasServiceStub {
   }
 }
 
-describe('RoasListComponent', () => {
-  let component: RoasListComponent;
-  let fixture: ComponentFixture<RoasListComponent>;
+describe('RoasComponent', () => {
+  let component: RoasComponent;
+  let fixture: ComponentFixture<RoasComponent>;
   let roasService: RoasService;
   let roasSpy;
 
@@ -105,10 +105,10 @@ describe('RoasListComponent', () => {
         {provide: RoasService, useClass: RoasServiceStub},
         {provide: TrustAnchorsService, useClass: TrustAnchorsServiceStub}
       ],
-      declarations: [RoasListComponent, ExportComponent]
+      declarations: [RoasComponent, ExportComponent]
     })
     .compileComponents();
-    fixture = TestBed.createComponent(RoasListComponent);
+    fixture = TestBed.createComponent(RoasComponent);
     component = fixture.componentInstance;
     roasService = TestBed.get(RoasService);
     roasSpy = spyOn(roasService, 'getRoas').and.callThrough();

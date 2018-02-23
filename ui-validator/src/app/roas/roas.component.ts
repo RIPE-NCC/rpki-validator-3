@@ -8,15 +8,14 @@ import {ManagingTable} from "../shared/managing-table";
 
 @Component({
   selector: 'app-roas',
-  templateUrl: './roas-list.component.html',
-  styleUrls: ['./roas-list.component.scss']
+  templateUrl: './roas.component.html',
+  styleUrls: ['./roas.component.scss']
 })
-export class RoasListComponent extends ManagingTable implements OnInit {
+export class RoasComponent extends ManagingTable implements OnInit {
 
   pageTitle: string = 'Nav.TITLE_ROAS';
   alertShown = true;
   alertListValidatedTA: string;
-  errorMessage: string;
   roas: IRoa[] = [];
 
   constructor(private _roasService: RoasService, private _trustAnchorsService: TrustAnchorsService) {
@@ -45,8 +44,7 @@ export class RoasListComponent extends ManagingTable implements OnInit {
           this.setNumberOfLastItemInTable();
           if (!this.absolutItemsNumber)
             this.absolutItemsNumber = this.totalItems;
-        },
-        error => this.errorMessage = <any>error);
+        });
   }
 
   getNotValidatedTAForAlert() {

@@ -1,6 +1,6 @@
 import {NgModule} from '@angular/core';
 
-import {RoasListComponent} from './roas-list.component';
+import {RoasComponent} from './roas.component';
 import {RoasService} from "./roas.service";
 import {SharedModule} from "../shared/shared.module";
 import {ExportComponent} from "./export/export.component";
@@ -10,7 +10,7 @@ import {ExportComponent} from "./export/export.component";
     SharedModule
   ],
   declarations: [
-    RoasListComponent,
+    RoasComponent,
     ExportComponent
   ],
   providers: [

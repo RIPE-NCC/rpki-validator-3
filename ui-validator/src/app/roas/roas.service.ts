@@ -10,7 +10,7 @@ import {IRoasResponse} from './roas.model';
 @Injectable()
 export class RoasService {
 
-  private _roasUrl = 'api/roas/';
+  private _roasUrl = 'api/roas';
 
   constructor(private _http: HttpClient) {}
 
@@ -23,11 +23,5 @@ export class RoasService {
       .set('sortDirection', sortDirection);
 
     return this._http.get<IRoasResponse>(this._roasUrl, {params: params})
-      .catch(this.handleError);
-  }
-
-  private handleError(err: HttpErrorResponse) {
-    console.log(err.message);
-    return Observable.throw(err.message);
   }
 }

@@ -1,4 +1,4 @@
-import {HttpClient, HttpParams} from "@angular/common/http";
+import {HttpClient, HttpErrorResponse, HttpParams} from "@angular/common/http";
 import {Observable} from "rxjs/Observable";
 import {Injectable} from "@angular/core";
 
@@ -21,6 +21,7 @@ export class TrustAnchorsService {
 
     getTrustAnchors(): Observable<any> {
         return this._http.get<any>(this._trustAnchorsUrl)
+            // .catch(this.handleError);
     }
 
     getTrustAnchorsOverview(): Observable<any> {
