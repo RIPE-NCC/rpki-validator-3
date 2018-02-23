@@ -1,4 +1,4 @@
-import {NgModule} from '@angular/core';
+import {ErrorHandler, NgModule} from '@angular/core';
 import {RouterModule} from '@angular/router';
 import {NgbModule} from "@ng-bootstrap/ng-bootstrap";
 import {TranslateModule} from "@ngx-translate/core";
@@ -6,6 +6,8 @@ import {TranslateModule} from "@ngx-translate/core";
 import {NavComponent} from "./nav/nav.component";
 import {FooterComponent} from "./footer/footer.component";
 import {TrustAnchorsService} from "./trust-anchors.service";
+import {ErrorComponent} from "./error.component";
+import {ApplicationErrorHandler} from "./app-error-handler.service";
 
 @NgModule({
   imports: [
@@ -15,15 +17,18 @@ import {TrustAnchorsService} from "./trust-anchors.service";
   ],
   declarations: [
     NavComponent,
-    FooterComponent
+    FooterComponent,
+    ErrorComponent
   ],
   providers: [
-    TrustAnchorsService
+    TrustAnchorsService,
+    {provide: ErrorHandler, useClass: ApplicationErrorHandler}
   ],
   exports: [
     NavComponent,
-    FooterComponent
+    FooterComponent,
+    ErrorComponent
   ]
 })
 export class CoreModule {
-};
+}

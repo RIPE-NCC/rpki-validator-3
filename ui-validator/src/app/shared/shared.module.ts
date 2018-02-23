@@ -13,7 +13,6 @@ import {SortableTableDirective} from "./sortable-table/sortable-table.directive"
 import {LoadingSpinnerComponent} from "./loading-spinner.component";
 import {PageSizeSelectComponent} from "./page-size-select.component";
 import {PageTextuallyStatusComponent} from "./page-textually-status.component";
-import {ManagingTable} from "./managing-table";
 
 @NgModule({
   imports: [

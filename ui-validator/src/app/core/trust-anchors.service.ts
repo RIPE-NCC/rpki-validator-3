@@ -1,4 +1,4 @@
-import {HttpClient, HttpErrorResponse, HttpParams} from "@angular/common/http";
+import {HttpClient, HttpParams} from "@angular/common/http";
 import {Observable} from "rxjs/Observable";
 import {Injectable} from "@angular/core";
 
@@ -21,17 +21,14 @@ export class TrustAnchorsService {
 
     getTrustAnchors(): Observable<any> {
         return this._http.get<any>(this._trustAnchorsUrl)
-            .catch(this.handleError);
     }
 
     getTrustAnchorsOverview(): Observable<any> {
-        return this._http.get<any>(this._trustAnchorsStatusesUrl)
-            .catch(this.handleError);
+        return this._http.get<any>(this._trustAnchorsStatusesUrl);
     }
 
     getTrustAnchor(id: string): Observable<ITrustAnchorResponse> {
-      return this._http.get<ITrustAnchorResponse>(this._trustAnchorByIdUrl.replace('{id}', id))
-          .catch(this.handleError);
+      return this._http.get<ITrustAnchorResponse>(this._trustAnchorByIdUrl.replace('{id}', id));
     }
 
     getTrustAnchorValidationChecks(id: string,
@@ -68,11 +65,5 @@ export class TrustAnchorsService {
         .set('sortDirection', sortDirection);
 
       return this._http.get<any>(this._repositoriesByTaId, { params: params })
-        .do(response => console.log('Repositories: ' + JSON.stringify(response.data)))
-        .catch(this.handleError);
-    }
-
-    private handleError(err: HttpErrorResponse) {
-        return Observable.throw(err.message);
     }
 }

@@ -35,6 +35,10 @@
     "TITLE_ROUTER_SESSIONS": "Router Sessions",
     "TITLE_MONITORING_TA": "Monitor for"
   },
+  "Error": {
+    "Page not found": "Page not found",
+    "Bad request": "Bad request"
+  },
   "Footer": {
     "COPYRIGHT": "Copyright ©2009-2018 the Réseaux IP Européens Network Coordination Centre RIPE NCC. All rights restricted. Version 2.24-SNAPSHOT"
   },

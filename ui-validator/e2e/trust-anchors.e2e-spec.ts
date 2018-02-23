@@ -8,7 +8,7 @@ describe('ui-validator App', () => {
   });
 
   it('should display Configured Trust Anchors page title', () => {
-    page.navigateTo("trust-anchors");
+    page.navigateTo('trust-anchors');
     expect(page.getParagraphText()).toEqual('Configured Trust Anchors');
   });
 });
