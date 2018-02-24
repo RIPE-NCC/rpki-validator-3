@@ -74,6 +74,16 @@
     "FILTERED_FROM": "(filtered from",
     "TOTAL_ENTRIES": "total entries)"
   },
+  "Bgp": {
+    "VALIDITY": "Validity",
+    "ALERT_MSG_P1": "This page provides a <strong>preview</strong> of the likely RPKI validity states your routers will associate with BGP announcements. This preview is based on:",
+    "ALERT_MSG_LI1": "The <a href='http://www.ris.ripe.net/dumps/'>RIPE NCC Route Collector information</a> that was last updated 4 hours and 40 minutes ago.",
+    "ALERT_MSG_LI2": "BGP announcements that are seen by 5 or more peers.",
+    "ALERT_MSG_LI3": "The validation rules defined in <a href='https://tools.ietf.org/html/rfc6483#section-2'>RFC 6483</a>.",
+    "ALERT_MSG_LI4": "The validated ROAs found by this RPKI Validator after applying your filters and additional whitelist entries.",
+    "ALERT_MSG_P2": "Please note that the BGP announcements your routers see may differ from the ones listed here."
+
+  },
   "Export": {
     "DESCRIPTION": "Here you are able to export the complete ROA data set for use in an existing BGP decision making workflow. The output will be in CSV or JSON format and consist of all validated ROAs, minus your ignore filter entries, plus your whitelist additions."
   }

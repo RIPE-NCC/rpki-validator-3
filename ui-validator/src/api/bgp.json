@@ -1,0 +1,28 @@
+{
+  "links": {},
+  "data": [
+    {
+      "asn": "1",
+      "prefix": "91.200.92.0/22",
+      "validity": "UNKNOWN"
+    },
+    {
+      "asn": "22",
+      "prefix": "91.210.36.0/24",
+      "validity": "VALID"
+    },
+    {
+      "asn": "333",
+      "prefix": "91.210.37.0/24",
+      "validity": "INVALID ASN"
+    },
+    {
+      "asn": "4444",
+      "prefix": "176.52.166.0/24",
+      "validity": "UNKNOWN"
+    }
+  ],
+  "metadata": {
+    "totalCount": 0
+  }
+}

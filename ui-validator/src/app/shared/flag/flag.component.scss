@@ -38,3 +38,9 @@
   @extend .alert-danger;
   opacity: 0.25;
 }
+
+.alert-unknown {
+  color: white;
+  background-color: lightgray;
+  border-color: lightgray;
+}

@@ -9,11 +9,17 @@ import {isString} from "@ng-bootstrap/ng-bootstrap/util/util";
 })
 export class FlagComponent implements OnChanges {
 
+  greenFlags: string[] = ['SUCCESS', 'VALID'];
+  orangeFlags: string[] = ['WARNING', 'INVALID ASN'];
+  redFlags: string[] = ['NOT VALID'];
+  grayFlags: string[] = ['UNKNOWN'];
+
   @Input() value: string | number | boolean;
   @Input() color?: string;
   green: boolean = false;
   orange: boolean = false;
   red: boolean = false;
+  gray: boolean = false;
   mutedColor: boolean = false;
   numericValue: boolean = true;
 
@@ -51,19 +57,17 @@ export class FlagComponent implements OnChanges {
   }
 
   setTextualFlag(): void {
-    const value = isString(this.value) ? this.value.toUpperCase() : this.value;
-    switch(value) {
-      case 'SUCCESS': {
+    if (isString(this.value)) {
+      const value: string = this.value.toUpperCase();
+
+      if (this.greenFlags.indexOf(value) > -1) {
         this.green = true;
-        break;
-      }
-      case 'WARNING': {
+      } else if (this.orangeFlags.indexOf(value) > -1) {
         this.orange = true;
-        break;
-      }
-      case 'ERROR': {
+      } else if (this.redFlags.indexOf(value) > -1) {
         this.red = true;
-        break;
+      } else {
+        this.gray = true;
       }
     }
   }
@@ -81,6 +85,6 @@ export class FlagComponent implements OnChanges {
   }
 
   removeAllFlags(): void {
-    this.green = this.orange = this.red = this.numericValue = false;
+    this.green = this.orange = this.red = this.gray = this.numericValue = false;
   }
 }

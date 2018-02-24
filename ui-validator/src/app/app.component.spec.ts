@@ -6,6 +6,7 @@ import {TranslateModule, TranslateService} from "@ngx-translate/core";
 import {AppComponent} from './app.component';
 import {CoreModule} from "./core/core.module";
 import {RoasModule} from "./roas/roas.module";
+import {BgpPreviewModule} from "./bgp-preview/bgp-preview.module";
 import {appRoutes} from "./routes";
 import {TrustAnchorsModule} from "./trust-anchors/trust-anchors.module";
 
@@ -16,6 +17,7 @@ describe('AppComponent', () => {
         CoreModule,
         TrustAnchorsModule,
         RoasModule,
+        BgpPreviewModule,
         RouterModule.forRoot(appRoutes),
         TranslateModule.forRoot()
       ],
