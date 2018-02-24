@@ -14,7 +14,21 @@
     {
       "asn": "333",
       "prefix": "91.210.37.0/24",
-      "validity": "INVALID ASN"
+      "validity": "INVALID ASN",
+      "details": [
+        {
+          "asn": "333",
+          "prefix": "91.210.37.0/24",
+          "length": "1",
+          "validity": "INVALID ASN"
+        },
+        {
+          "asn": "3331",
+          "prefix": "91.210.37.0/24",
+          "length": "1",
+          "validity": "INVALID ASN"
+        }
+      ]
     },
     {
       "asn": "4444",

@@ -1,7 +1,13 @@
 export interface IBgp {
   asn: string,
   prefix: string,
-  validity: string
+  validity: string,
+  details?: [{
+    asn: string,
+    prefix: string,
+    length: string,
+    validity: string
+  }]
 }
 
 export interface IBgpResponse {

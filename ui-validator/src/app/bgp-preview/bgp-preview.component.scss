@@ -8,3 +8,7 @@ thead > tr {
     width: 15%;
   }
 }
+/deep/ .popover {
+  max-width: inherit;
+  width: 600px;
+}
