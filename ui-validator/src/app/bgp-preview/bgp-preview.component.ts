@@ -3,6 +3,7 @@ import {Component, OnInit} from '@angular/core';
 import {BgpService} from "./bgp.service";
 import {IBgp} from "./bgp.model";
 import {ManagingTable} from "../shared/managing-table";
+import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
 
 @Component({
   selector: 'app-bgp-preview',
@@ -15,7 +16,7 @@ export class BgpPreviewComponent extends ManagingTable implements OnInit {
   alertShown: boolean = true;
   bgps: IBgp[] = [];
 
-  constructor(private _bgpService: BgpService) {
+  constructor(private _bgpService: BgpService, private modalService: NgbModal) {
     super();
   }
 
@@ -38,5 +39,11 @@ export class BgpPreviewComponent extends ManagingTable implements OnInit {
         },
         error => console.log(error)
         );
+  }
+
+  openModal(content) {
+    if (content) {
+      this.modalService.open(content);
+    }
   }
 }

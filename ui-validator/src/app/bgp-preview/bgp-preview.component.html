@@ -60,6 +60,33 @@
               popoverTitle="{{'Bgp.DETAILS_TITLE' | translate}}">
         </flag>
       </ng-template>
+      <!-- MODAL -->
+      <!--<ng-template #modalContent let-d="dismiss">-->
+        <!--<div class="modal-header">-->
+          <!--<h4 class="modal-title">{{'Bgp.DETAILS_TITLE' | translate}}</h4>-->
+        <!--</div>-->
+        <!--<div class="modal-body">-->
+          <!--<table class="table table-bordered">-->
+            <!--<thead>-->
+            <!--<tr>-->
+              <!--<th>{{'Roas.ASN' | translate}}</th>-->
+              <!--<th>{{'Roas.PREFIX' | translate}}</th>-->
+              <!--<th>{{'Bgp.LENGTH' | translate}}</th>-->
+              <!--<th>{{'Bgp.VALIDITY' | translate}}</th>-->
+            <!--</tr>-->
+            <!--</thead>-->
+            <!--<tbody>-->
+            <!--<tr *ngFor='let detail of bgp.details'>-->
+              <!--<td>{{detail.asn}}</td>-->
+              <!--<td>{{detail.prefix}}</td>-->
+              <!--<td>{{detail.length}}</td>-->
+              <!--<td>{{detail.validity}}</td>-->
+            <!--</tr>-->
+            <!--</tbody>-->
+          <!--</table>-->
+        <!--</div>-->
+      <!--</ng-template>-->
+      <!--<flag [value]='bgp.validity' (click)='!bgp.details || openModal(modalContent)'></flag>-->
     </td>
   </tr>
   <tr *ngIf='loading'>
