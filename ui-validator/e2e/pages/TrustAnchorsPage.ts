@@ -56,6 +56,21 @@ export class TrustAnchorsPage {
     return this;
   }
 
+  moveMouseOverRow(row: number) {
+    browser.actions().mouseMove(element(by.css(`table tbody tr:nth-child(${row+1})`))).perform();
+    return this;
+  }
+
+  expectTooltipOnRowHover(row: number) {
+    expect(element(by.css(`table tbody tr:nth-child(${row+1})[ng-reflect-ngb-tooltip]`)).isDisplayed()).toBe(true);
+    return this;
+  }
+
+  expectTooltipTextToBe(row: number, tooltipText: string) {
+    expect(element(by.css(`table tbody tr:nth-child(${row+1})`)).getAttribute('ng-reflect-ngb-tooltip')).toBe(tooltipText);
+    return this;
+  }
+
   clickOnRow(row: number) {
     element(by.css(`table tbody tr:nth-child(${row+1})`)).click();
     return this;
