@@ -23,6 +23,9 @@ describe('ui-validator App', () => {
 
   it('should open monitoring page on click on row', () => {
     taPage
+      .moveMouseOverRow(0)
+      .expectTooltipOnRowHover(0)
+      .expectTooltipTextToBe(0, 'Click to view monitor page')
       .clickOnRow(0)
       .expectToOpenMonitoringPage(3268);
   });
