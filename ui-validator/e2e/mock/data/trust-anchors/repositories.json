@@ -1,0 +1,34 @@
+{
+  "links" : {
+    "first" : "http://localhost:4200/api/rpki-repositories?startFrom=0&pageSize=10&ta=3268{&status}",
+    "prev" : "http://localhost:4200/api/rpki-repositories?startFrom=0&pageSize=10&ta=3268{&status}",
+    "next" : "http://localhost:4200/api/rpki-repositories?startFrom=0&pageSize=10&ta=3268{&status}",
+    "last" : "http://localhost:4200/api/rpki-repositories?startFrom=0&pageSize=10&ta=3268{&status}"
+  },
+  "data" : [ {
+    "type" : "RRDP",
+    "id" : 3271,
+    "locationURI" : "https://rrdp.ripe.net/notification.xml",
+    "status" : "DOWNLOADED",
+    "lastDownloadedAt" : "2018-02-25T19:18:02.680Z",
+    "rrdpSessionId" : "0f6348f6-8ec6-4018-877a-4389afe14e94",
+    "rrdpSerial" : 5767,
+    "links" : {
+      "self" : "http://localhost:4200/api/rpki-repositories/3271"
+    }
+  }, {
+    "type" : "RRDP",
+    "id" : 24145,
+    "locationURI" : "https://ca.rg.net/rrdp/notify.xml",
+    "status" : "DOWNLOADED",
+    "lastDownloadedAt" : "2018-02-25T19:17:59.098Z",
+    "rrdpSessionId" : "d978426b-8775-4bd1-b78c-ee579e57be52",
+    "rrdpSerial" : 32674,
+    "links" : {
+      "self" : "http://localhost:4200/api/rpki-repositories/24145"
+    }
+  } ],
+  "metadata" : {
+    "totalCount" : 2
+  }
+}
