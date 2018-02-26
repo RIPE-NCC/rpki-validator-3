@@ -33,9 +33,6 @@ import lombok.Value;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
-import net.ripe.rpki.validator3.api.Paging;
-import net.ripe.rpki.validator3.api.SearchTerm;
-import net.ripe.rpki.validator3.api.Sorting;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.persistence.LockModeType;
@@ -63,17 +60,9 @@ public interface RpkiObjects {
 
     Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type type, byte[] authorityKeyIdentifier);
 
-    default Stream<RoaPrefix> findCurrentlyValidatedRoaPrefixes() {
-        return findCurrentlyValidatedRoaPrefixes(null, null, null);
-    }
-
-    Stream<RoaPrefix> findCurrentlyValidatedRoaPrefixes(Paging paging, SearchTerm searchTerm, Sorting sorting);
-
     Stream<RpkiObject> findRouterCertificates();
 
     long deleteUnreachableObjects(Instant unreachableSince);
-
-    int countCurrentlyValidatedRoaPrefixes(SearchTerm searchTerm);
 
     @Value
     class RoaPrefix {

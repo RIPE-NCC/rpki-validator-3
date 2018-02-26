@@ -37,6 +37,7 @@ import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificate;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
+import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.Settings;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
@@ -77,15 +78,19 @@ public class ObjectController {
                 .stream().collect(Collectors.toMap(TrustAnchor::getName, ta -> TrustAnchorResource.of(ta, locale)));
 
         final Stream<RoaPrefix> validatedPrefixes = rpkiObjects
-                .findCurrentlyValidatedRoaPrefixes()
-                .map(r -> {
-                    final Link trustAnchorLink = trustAnchorsById.get(r.getTrustAnchor()).getLinks().getLink("self");
-                    return new RoaPrefix(
-                            r.getAsn().toString(),
-                            r.getPrefix().toString(),
-                            r.getLength(),
-                            new Links(trustAnchorLink.withRel(TrustAnchor.TYPE)));
-                });
+            .findCurrentlyValidated(RpkiObject.Type.ROA)
+            .flatMap(pair -> {
+                    Link trustAnchorLink = trustAnchorsById.get(pair.getKey().getTrustAnchor().getId()).getLinks().getLink("self");
+                    return pair.getValue().getRoaPrefixes().stream()
+                        .map(prefix -> new RoaPrefix(
+                            String.valueOf(prefix.getAsn()),
+                            prefix.getPrefix(),
+                            prefix.getEffectiveLength(),
+                            new Links(trustAnchorLink.withRel(TrustAnchor.TYPE))
+                        ));
+                }
+            )
+            .distinct();
 
         final Base64.Encoder encoder = Base64.getEncoder();
         final Stream<RouterCertificate> routerCertificates = rpkiObjects.findRouterCertificates().map(o ->

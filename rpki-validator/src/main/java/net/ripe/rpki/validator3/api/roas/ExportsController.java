@@ -33,6 +33,7 @@ import au.com.bytecode.opencsv.CSVWriter;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.Settings;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,12 +68,16 @@ public class ExportsController {
         }
 
         Stream<JsonRoaPrefix> validatedPrefixes = rpkiObjects
-                .findCurrentlyValidatedRoaPrefixes()
+            .findCurrentlyValidated(RpkiObject.Type.ROA)
+            .flatMap(pair -> pair.getValue().getRoaPrefixes().stream()
                 .map(r -> new JsonRoaPrefix(
-                        r.getAsn().toString(),
-                        r.getPrefix().toString(),
-                        r.getLength(),
-                        r.getTrustAnchor()));
+                    String.valueOf(r.getAsn()),
+                    r.getPrefix(),
+                    r.getEffectiveLength(),
+                    pair.getKey().getTrustAnchor().getName()
+                ))
+            )
+            .distinct();
 
         return new JsonExport(validatedPrefixes);
     }
@@ -88,12 +93,16 @@ public class ExportsController {
         try (CSVWriter writer = new CSVWriter(response.getWriter())) {
             writer.writeNext(new String[]{"ASN", "IP Prefix", "Max Length", "Trust Anchor"});
             Stream<CsvRoaPrefix> validatedPrefixes = rpkiObjects
-                    .findCurrentlyValidatedRoaPrefixes()
+                .findCurrentlyValidated(RpkiObject.Type.ROA)
+                .flatMap(pair -> pair.getValue().getRoaPrefixes().stream()
                     .map(r -> new CsvRoaPrefix(
-                            r.getAsn().toString(),
-                            r.getPrefix().toString(),
-                            r.getLength(),
-                            r.getTrustAnchor()));
+                        String.valueOf(r.getAsn()),
+                        r.getPrefix(),
+                        r.getEffectiveLength(),
+                        pair.getKey().getTrustAnchor().getName())
+                    )
+                )
+                .distinct();
             validatedPrefixes.forEach(prefix -> {
                 writer.writeNext(new String[]{
                         prefix.getAsn(),
