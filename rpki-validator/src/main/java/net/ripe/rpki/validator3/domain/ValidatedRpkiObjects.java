@@ -39,20 +39,46 @@ import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
+import javax.annotation.PostConstruct;
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
 @Slf4j
 public class ValidatedRpkiObjects {
 
+    @Autowired
+    private RpkiObjects rpkiObjects;
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+
     private Map<TrustAnchor, RoaPrefixesAndRouterCertificates> validatedObjectsByTrustAnchor = new HashMap<>();
 
-    public synchronized void update(TrustAnchor trustAnchor, Set<RpkiObject> rpkiObjects) {
+    @PostConstruct
+    private synchronized void initialize() {
+        new TransactionTemplate(transactionManager).execute((status) -> {
+            Map<@NotNull @Valid TrustAnchor, List<RpkiObject>> grouped = rpkiObjects.findCurrentlyValidated(RpkiObject.Type.ROA)
+                .collect(Collectors.groupingBy(
+                    pair -> pair.getKey().getTrustAnchor(),
+                    Collectors.mapping(pair -> pair.getValue(), Collectors.toList())
+                ));
+            grouped.forEach(this::update);
+            return null;
+        });
+    }
+
+    public synchronized void update(TrustAnchor trustAnchor, Collection<RpkiObject> rpkiObjects) {
         log.info("updating validation objects cache for trust anchor {} with {} objects", trustAnchor, rpkiObjects.size());
 
         ImmutableSet.Builder<RpkiObjects.RoaPrefix> builder = ImmutableSet.builder();
@@ -83,28 +109,16 @@ public class ValidatedRpkiObjects {
         return ImmutableMap.copyOf(validatedObjectsByTrustAnchor);
     }
 
-    public int countCurrentlyValidatedRoaPrefixes() {
-        int result = 0;
-        for (RoaPrefixesAndRouterCertificates x : validatedObjects().values()) {
-            result += x.getRoaPrefixes().size();
-        }
-        return result;
-    }
-
     public int countCurrentlyValidatedRoaPrefixes(SearchTerm searchTerm) {
         int result = 0;
         for (RoaPrefixesAndRouterCertificates x : validatedObjects().values()) {
-            for (RpkiObjects.RoaPrefix prefix: x.getRoaPrefixes()) {
+            for (RpkiObjects.RoaPrefix prefix : x.getRoaPrefixes()) {
                 if (searchTerm == null || searchTerm.match(prefix)) {
                     ++result;
                 }
             }
         }
         return result;
-    }
-
-    public Stream<RpkiObjects.RoaPrefix> findCurrentlyValidatedRoaPrefixes() {
-        return findCurrentlyValidatedRoaPrefixes(null, null, null);
     }
 
     public Stream<RpkiObjects.RoaPrefix> findCurrentlyValidatedRoaPrefixes(SearchTerm searchTerm, Sorting sorting, Paging paging) {
