@@ -1,0 +1,24 @@
+{
+  "links" : {
+    "first" : "http://localhost:4200/api/roas?startFrom=0&pageSize=10&search=&sortBy=prefix&sortDirection=asc",
+    "prev" : "http://localhost:4200/api/roas?startFrom=0&pageSize=10&search=&sortBy=prefix&sortDirection=asc",
+    "next" : "http://localhost:4200/api/roas?startFrom=10&pageSize=10&search=&sortBy=prefix&sortDirection=asc",
+    "last" : "http://localhost:4200/api/roas?startFrom=230&pageSize=10&search=&sortBy=prefix&sortDirection=asc"
+  },
+  "data" : [ {
+    "asn" : "37146",
+    "prefix" : "41.60.0.0/20",
+    "length" : 24,
+    "trustAnchor" : "Bobo",
+    "uri" : "rsync://rpki.afrinic.net/repository/member_repository/F3668037/2AB390E26DC711E68265362DF8AEA228/D8AEDD8E734C11E6B48F723BF8AEA228.roa"
+  }, {
+    "asn" : "30844",
+    "prefix" : "41.60.0.0/16",
+    "length" : 24,
+    "trustAnchor" : "Bobo",
+    "uri" : "rsync://rpki.afrinic.net/repository/member_repository/F3668037/2AB390E26DC711E68265362DF8AEA228/8C0753E66EBD11E68E776770F8AEA228.roa"
+  }],
+  "metadata" : {
+    "totalCount" : 2
+  }
+}

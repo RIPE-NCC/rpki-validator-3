@@ -5,10 +5,13 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve --proxy-config proxy.conf.json",
+    "startWithMock": "ng serve --proxy-config proxy-mock.conf.json",
     "build": "ng build --prod",
     "test": "ng test",
     "lint": "ng lint",
-    "e2e": "ng e2e"
+    "e2e": "ng e2e --proxy-config proxy.conf.json",
+    "e2eWithMock": "concurrently --kill-others --success first \"node e2e/mock/server.js\" \"ng e2e --proxy-config proxy-mock.conf.json\"",
+    "e2eNoTest": "concurrently \"node e2e/mock/server.js\" \"npm run startWithMock\""
   },
   "private": true,
   "dependencies": {
@@ -38,8 +41,10 @@
     "@types/jasminewd2": "~2.0.2",
     "@types/node": "~6.0.60",
     "codelyzer": "^4.0.1",
+    "concurrently": "^3.5.1",
     "jasmine-core": "~2.8.0",
     "jasmine-spec-reporter": "~4.2.1",
+    "json-server": "^0.12.1",
     "karma": "~2.0.0",
     "karma-chrome-launcher": "~2.2.0",
     "karma-cli": "~1.0.1",

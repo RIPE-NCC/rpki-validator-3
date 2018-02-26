@@ -1,0 +1,102 @@
+{
+  "links" : {
+    "first" : "http://localhost:4200/api/roas?startFrom=0&pageSize=25&search=&sortBy=prefix&sortDirection=asc",
+    "prev" : "http://localhost:4200/api/roas?startFrom=0&pageSize=25&search=&sortBy=prefix&sortDirection=asc",
+    "next" : "http://localhost:4200/api/roas?startFrom=50&pageSize=25&search=&sortBy=prefix&sortDirection=asc",
+    "last" : "http://localhost:4200/api/roas?startFrom=215&pageSize=25&search=&sortBy=prefix&sortDirection=asc"
+  },
+  "data" : [ {
+    "asn" : "30969",
+    "prefix" : "41.79.132.0/22",
+    "length" : 24,
+    "trustAnchor" : "AfriNIC RPKI Root",
+    "uri" : "rsync://rpki.afrinic.net/repository/member_repository/F3668037/2AB390E26DC711E68265362DF8AEA228/518722947F0411E6BF878637F8AEA228.roa"
+  }, {
+    "asn" : "37403",
+    "prefix" : "41.79.148.0/22",
+    "length" : 22,
+    "trustAnchor" : "AfriNIC RPKI Root",
+    "uri" : "rsync://rpki.afrinic.net/repository/member_repository/F36429BB/5F4E1BC878AA11E5AB4EDE28F8AEA228/9335B4A4822E11E5BC19482BF8AEA228.roa"
+  }, {
+    "asn" : "30844",
+    "prefix" : "41.84.128.0/19",
+    "length" : 24,
+    "trustAnchor" : "AfriNIC RPKI Root",
+    "uri" : "rsync://rpki.afrinic.net/repository/member_repository/F3668037/2AB390E26DC711E68265362DF8AEA228/2A3EB25071A411E6959BCD43F8AEA228.roa"
+  }, {
+    "asn" : "19676",
+    "prefix" : "41.84.133.0/24",
+    "length" : 24,
+    "trustAnchor" : "AfriNIC RPKI Root",
+    "uri" : "rsync://rpki.afrinic.net/repository/member_repository/F3668037/2AB390E26DC711E68265362DF8AEA228/2FD2E28E734F11E69819C83DF8AEA228.roa"
+  }, {
+    "asn" : "36958",
+    "prefix" : "41.86.32.0/19",
+    "length" : 24,
+    "trustAnchor" : "AfriNIC RPKI Root",
+    "uri" : "rsync://rpki.afrinic.net/repository/member_repository/F36FFD1E/1AAE260C316511E5AE666067F8AEA228/36DF01DC39AA11E59B5A3D32F8AEA228.roa"
+  }, {
+    "asn" : "10474",
+    "prefix" : "41.86.96.0/19",
+    "length" : 24,
+    "trustAnchor" : "AfriNIC RPKI Root",
+    "uri" : "rsync://rpki.afrinic.net/repository/member_repository/F36C55B7/3BC8126E973411E599B42B1BF8AEA228/00C708A2A4B111E5B6F08578F8AEA228.roa"
+  }, {
+    "asn" : "12258",
+    "prefix" : "41.86.96.0/19",
+    "length" : 24,
+    "trustAnchor" : "AfriNIC RPKI Root",
+    "uri" : "rsync://rpki.afrinic.net/repository/member_repository/F36C55B7/3BC8126E973411E599B42B1BF8AEA228/D64694BEA56711E588949E84F8AEA228.roa"
+  }, {
+    "asn" : "37100",
+    "prefix" : "41.87.96.0/19",
+    "length" : 24,
+    "trustAnchor" : "AfriNIC RPKI Root",
+    "uri" : "rsync://rpki.afrinic.net/repository/member_repository/F365C741/BE173EB406BD11E588824D08F8AEA228/86AA770223D711E5AB708E2AF8AEA228.roa"
+  }, {
+    "asn" : "10474",
+    "prefix" : "41.132.0.0/14",
+    "length" : 24,
+    "trustAnchor" : "AfriNIC RPKI Root",
+    "uri" : "rsync://rpki.afrinic.net/repository/member_repository/F36C55B7/3BC8126E973411E599B42B1BF8AEA228/33ACE480A4B111E5B9C19878F8AEA228.roa"
+  }, {
+    "asn" : "36958",
+    "prefix" : "41.191.120.0/22",
+    "length" : 24,
+    "trustAnchor" : "AfriNIC RPKI Root",
+    "uri" : "rsync://rpki.afrinic.net/repository/member_repository/F36FFD1E/1AAE260C316511E5AE666067F8AEA228/36DF01DC39AA11E59B5A3D32F8AEA228.roa"
+  }, {
+    "asn" : "30844",
+    "prefix" : "41.191.224.0/21",
+    "length" : 24,
+    "trustAnchor" : "AfriNIC RPKI Root",
+    "uri" : "rsync://rpki.afrinic.net/repository/member_repository/F3668037/2AB390E26DC711E68265362DF8AEA228/DCB73AF071A511E6ABA3C845F8AEA228.roa"
+  }, {
+    "asn" : "37100",
+    "prefix" : "41.206.96.0/19",
+    "length" : 24,
+    "trustAnchor" : "AfriNIC RPKI Root",
+    "uri" : "rsync://rpki.afrinic.net/repository/member_repository/F365C741/BE173EB406BD11E588824D08F8AEA228/51193AEC23D711E5AFB1712AF8AEA228.roa"
+  }, {
+    "asn" : "37100",
+    "prefix" : "41.207.232.0/22",
+    "length" : 24,
+    "trustAnchor" : "AfriNIC RPKI Root",
+    "uri" : "rsync://rpki.afrinic.net/repository/member_repository/F36DB4B4/CEEEADECB46111E5B4A90854F8AEA228/F0D40794B46211E5A330CA55F8AEA228.roa"
+  }, {
+    "asn" : "36941",
+    "prefix" : "41.216.224.0/24",
+    "length" : 24,
+    "trustAnchor" : "AfriNIC RPKI Root",
+    "uri" : "rsync://rpki.afrinic.net/repository/member_repository/F36C5814/CFBB0A84A75111E6B023E037F8AEA228/18BDFD86F4FF11E69B2DC374F8AEA228.roa"
+  }, {
+    "asn" : "36941",
+    "prefix" : "41.216.225.0/24",
+    "length" : 24,
+    "trustAnchor" : "AfriNIC RPKI Root",
+    "uri" : "rsync://rpki.afrinic.net/repository/member_repository/F36C5814/CFBB0A84A75111E6B023E037F8AEA228/18BDFD86F4FF11E69B2DC374F8AEA228.roa"
+  } ],
+  "metadata" : {
+    "totalCount" : 40
+  }
+}
