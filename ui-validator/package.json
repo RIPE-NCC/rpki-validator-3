@@ -10,7 +10,8 @@
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e --proxy-config proxy.conf.json",
-    "e2eWithMock": "concurrently --kill-others --success first \"node e2e/mock/server.js\" \"ng e2e --proxy-config proxy-mock.conf.json\""
+    "e2eWithMock": "concurrently --kill-others --success first \"node e2e/mock/server.js\" \"ng e2e --proxy-config proxy-mock.conf.json\"",
+    "e2eNoTest": "concurrently \"node e2e/mock/server.js\" \"npm run startWithMock\""
   },
   "private": true,
   "dependencies": {
