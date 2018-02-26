@@ -174,7 +174,8 @@ public class TrustAnchorController {
         Stream<ValidationCheckResource> checks = validationRunRepository.findValidationChecksForValidationRun(id, paging, searchTerm, sorting)
             .map(check -> ValidationCheckResource.of(check, messageSource.getMessage(check, locale)));
 
-        Links links = Paging.links(startFrom, pageSize, totalCount, (sf, ps) -> methodOn(TrustAnchorController.class).validationChecks(id, sf, ps, searchString, sortBy, sortDirection, locale));
+        Links links = Paging.links(startFrom, pageSize, totalCount,
+                (sf, ps) -> methodOn(TrustAnchorController.class).validationChecks(id, sf, ps, searchString, sortBy, sortDirection, locale));
 
         return ResponseEntity.ok(ApiResponse.<TrustAnchorValidationChecksResource>builder()
             .links(links)
@@ -185,7 +186,7 @@ public class TrustAnchorController {
     }
 
     @GetMapping(path = "/statuses")
-    public ApiResponse<List<TaStatus>> statuses(HttpServletResponse response) throws IOException {
+    public ApiResponse<List<TaStatus>> statuses(HttpServletResponse response) {
         return ApiResponse.<List<TaStatus>>builder().data(trustAnchorRepository.getStatuses()).build();
     }
 
