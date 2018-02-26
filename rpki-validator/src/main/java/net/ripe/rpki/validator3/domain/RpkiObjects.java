@@ -30,6 +30,8 @@
 package net.ripe.rpki.validator3.domain;
 
 import lombok.Value;
+import net.ripe.ipresource.Asn;
+import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
@@ -75,8 +77,8 @@ public interface RpkiObjects {
 
     @Value
     class RoaPrefix {
-        private String asn;
-        private String prefix;
+        private Asn asn;
+        private IpRange prefix;
         private int length;
         private String trustAnchor;
         private String uri;

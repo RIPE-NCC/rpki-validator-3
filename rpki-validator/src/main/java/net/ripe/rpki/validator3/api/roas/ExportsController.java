@@ -69,8 +69,8 @@ public class ExportsController {
         Stream<JsonRoaPrefix> validatedPrefixes = rpkiObjects
                 .findCurrentlyValidatedRoaPrefixes()
                 .map(r -> new JsonRoaPrefix(
-                        r.getAsn(),
-                        r.getPrefix(),
+                        r.getAsn().toString(),
+                        r.getPrefix().toString(),
                         r.getLength(),
                         r.getTrustAnchor()));
 
@@ -90,8 +90,8 @@ public class ExportsController {
             Stream<CsvRoaPrefix> validatedPrefixes = rpkiObjects
                     .findCurrentlyValidatedRoaPrefixes()
                     .map(r -> new CsvRoaPrefix(
-                            r.getAsn(),
-                            r.getPrefix(),
+                            r.getAsn().toString(),
+                            r.getPrefix().toString(),
                             r.getLength(),
                             r.getTrustAnchor()));
             validatedPrefixes.forEach(prefix -> {

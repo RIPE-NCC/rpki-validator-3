@@ -30,7 +30,9 @@
 package net.ripe.rpki.validator3.api;
 
 import lombok.Data;
+import net.ripe.rpki.validator3.domain.RpkiObjects;
 
+import java.util.Comparator;
 import java.util.Locale;
 
 @Data(staticConstructor = "of")
@@ -43,9 +45,37 @@ public class Sorting {
             By by = By.valueOf(sortBy.toUpperCase(Locale.ROOT));
             Direction direction = Direction.valueOf(sortDirection.toUpperCase(Locale.ROOT));
             return of(by, direction);
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             return null;
         }
+    }
+
+    public Comparator<? super RpkiObjects.RoaPrefix> comparator() {
+        Comparator<RpkiObjects.RoaPrefix> columns;
+        switch (by) {
+            case PREFIX:
+                columns = Comparator.comparing(RpkiObjects.RoaPrefix::getPrefix)
+                    .thenComparingInt(RpkiObjects.RoaPrefix::getLength)
+                    .thenComparing(RpkiObjects.RoaPrefix::getAsn)
+                    .thenComparing(RpkiObjects.RoaPrefix::getTrustAnchor);
+                break;
+            case ASN:
+                columns = Comparator.comparing(RpkiObjects.RoaPrefix::getAsn)
+                    .thenComparing(RpkiObjects.RoaPrefix::getPrefix)
+                    .thenComparing(RpkiObjects.RoaPrefix::getTrustAnchor);
+                break;
+            case LOCATION:
+                columns = Comparator.comparing(RpkiObjects.RoaPrefix::getUri)
+                    .thenComparing(RpkiObjects.RoaPrefix::getTrustAnchor);
+                break;
+            case TA:
+            default:
+                columns = Comparator.comparing(RpkiObjects.RoaPrefix::getTrustAnchor)
+                    .thenComparing(RpkiObjects.RoaPrefix::getAsn)
+                    .thenComparing(RpkiObjects.RoaPrefix::getPrefix);
+                break;
+        }
+        return direction == Direction.DESC ? columns.reversed() : columns;
     }
 
     public enum Direction {

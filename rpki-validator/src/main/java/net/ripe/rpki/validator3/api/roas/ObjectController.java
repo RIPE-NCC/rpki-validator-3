@@ -81,8 +81,8 @@ public class ObjectController {
                 .map(r -> {
                     final Link trustAnchorLink = trustAnchorsById.get(r.getTrustAnchor()).getLinks().getLink("self");
                     return new RoaPrefix(
-                            r.getAsn(),
-                            r.getPrefix(),
+                            r.getAsn().toString(),
+                            r.getPrefix().toString(),
                             r.getLength(),
                             new Links(trustAnchorLink.withRel(TrustAnchor.TYPE)));
                 });

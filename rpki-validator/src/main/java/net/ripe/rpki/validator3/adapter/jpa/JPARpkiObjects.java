@@ -123,8 +123,8 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
         return preparedQuery.getResultList().stream().map(o -> {
             final Object[] fields = (Object[]) o;
             return new RoaPrefix(
-                    asString(fields[0]),
-                    asString(fields[1]),
+                    Asn.parse(asString(fields[0])),
+                    IpRange.parse(asString(fields[1])),
                     asInt(fields[2]),
                     asString(fields[3]),
                     asString(fields[4]));

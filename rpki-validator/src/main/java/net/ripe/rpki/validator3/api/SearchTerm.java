@@ -31,23 +31,42 @@ package net.ripe.rpki.validator3.api;
 
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
+import net.ripe.rpki.validator3.domain.RpkiObjects;
 
 public class SearchTerm {
     private final String term;
+    private final IpRange range ;
+    private final Asn asn;
 
     public SearchTerm(String term) {
         this.term = term;
-    }
-
-    public IpRange asIpRange() {
-        try {
-            return IpRange.parse(term);
-        } catch (Exception e) {
-            return null;
-        }
+        this.range = convertIpRange();
+        this.asn = convertAsn();
     }
 
     public Asn asAsn() {
+        return asn;
+    }
+
+    public IpRange asIpRange() {
+        return range;
+    }
+
+    public String asString() {
+        return term;
+    }
+
+    public boolean match(RpkiObjects.RoaPrefix prefix) {
+        if (asn != null && asn.equals(prefix.getAsn())) {
+            return true;
+        }
+        if (range != null && range.overlaps(prefix.getPrefix())) {
+            return true;
+        }
+        return prefix.getTrustAnchor().contains(term) || prefix.getUri().contains(term);
+    }
+
+    private Asn convertAsn() {
         try {
             return Asn.parse(term);
         } catch (Exception e) {
@@ -55,8 +74,11 @@ public class SearchTerm {
         }
     }
 
-    public String asString() {
-        return term;
+    private IpRange convertIpRange() {
+        try {
+            return IpRange.parse(term);
+        } catch (Exception e) {
+            return null;
+        }
     }
-
 }
