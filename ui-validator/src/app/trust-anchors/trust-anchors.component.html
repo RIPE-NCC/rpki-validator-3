@@ -18,7 +18,7 @@
         <flag [value]='ta.errors' [color]='"red"' class='mr-2'></flag>
       </div>
     </td>
-    <td>{{ta.lastUpdated}}</td>
+    <td>{{ta.lastUpdated | date:'yyyy-MM-dd HH:mm a'}}</td>
   </tr>
   </tbody>
 </table>
