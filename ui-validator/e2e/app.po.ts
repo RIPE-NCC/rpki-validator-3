@@ -1,15 +1,9 @@
-import { browser, by, element } from 'protractor';
+import {by, element} from 'protractor';
 import {RoasPage} from "./pages/RoasPage";
 import {TrustAnchorsPage} from "./pages/TrustAnchorsPage";
+import {MonitorTaPage} from "./pages/MonitorTaPage";
 
 export class AppPage {
-  navigateTo() {
-    return browser.get('/');
-  }
-
-  navigateTo(page: string) {
-    return browser.get('/' + page);
-  }
 
   navigateToRoas() {
     return new RoasPage();
@@ -17,6 +11,10 @@ export class AppPage {
 
   navigateToTrustAnchors() {
     return new TrustAnchorsPage();
+  }
+
+  navigateToMonitorTa() {
+    return new MonitorTaPage();
   }
 
   getParagraphText() {

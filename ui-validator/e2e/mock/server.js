@@ -57,12 +57,14 @@ server.get('/api/trust-anchors/3268', (req, res) => {
   res.jsonp(require('./data/monitor/monitoring.json'));
 });
 
-//3268/validation-checks?id=3268&startFrom=0&pageSize=10&search=&sortBy=&sortDirection
+server.get('/api/trust-anchors/monitor/3268', (req, res) => {
+  res.jsonp(require('./data/monitor/monitoring.json'));
+});
+
 server.get('/api/trust-anchors/3268/validation-checks', (req, res) => {
   res.jsonp(require('./data/monitor/validation-details'));
 });
 
-//http://localhost:4200/api/rpki-repositories/?ta=3268&startFrom=0&pageSize=10&search=&sortBy=&sortDirection=asc
 server.get('/api/rpki-repositories', (req, res) => {
   res.jsonp(require('./data/monitor/repositories'));
 });
