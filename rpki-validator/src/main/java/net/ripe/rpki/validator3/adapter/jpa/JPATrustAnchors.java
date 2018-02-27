@@ -105,7 +105,11 @@ public class JPATrustAnchors extends JPARepository<TrustAnchor> implements Trust
                 "        FROM validation_run_validated_objects vrvo \n" +
                 "        WHERE vrvo.validation_run_id = vrid        \n" +
                 "       ) AS successful, \n" +
-                "       (SELECT MAX(completed_at) FROM validation_run WHERE trust_anchor_id = taId AND type = 'CT') AS lastUpdated \n" +
+                "       (SELECT MAX(completed_at) \n" +
+                "        FROM validation_run \n" +
+                "        WHERE trust_anchor_id = taId \n" +
+                "        AND type = 'CT' \n" +
+                "       ) AS lastUpdated \n" +
                 "     FROM (\n" +
                 "     SELECT DISTINCT \n" +
                 "       ta.id as taId, \n" +
