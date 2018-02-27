@@ -12,9 +12,9 @@ server.get('/api/roas', (req, res) => {
     res.jsonp(require('./data/roas/roas-response-sortByPREFIX-asc.json'));
   } else if (req.query.sortBy === 'prefix' && req.query.sortDirection === 'desc') {
     res.jsonp(require('./data/roas/roas-response-sortByPREFIX-desc.json'));
-  } else if (req.query.sortBy === 'trustAnchor' && req.query.sortDirection === 'asc') {
+  } else if (req.query.sortBy === 'ta' && req.query.sortDirection === 'asc') {
     res.jsonp(require('./data/roas/roas-response-sortByTRUSTANCHOR-asc.json'));
-  } else if (req.query.sortBy === 'trustAnchor' && req.query.sortDirection === 'desc') {
+  } else if (req.query.sortBy === 'ta' && req.query.sortDirection === 'desc') {
     res.jsonp(require('./data/roas/roas-response-sortByTRUSTANCHOR-desc.json'));
   }
 
