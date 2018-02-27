@@ -130,7 +130,7 @@ public class JPATrustAnchors extends JPARepository<TrustAnchor> implements Trust
                 "  )\n" +
                 "GROUP BY taid";
 
-        final Stream<TaStatus> stream = sql(sql).getResultList().stream().map(o -> {
+        return ((Stream<TaStatus>) sql(sql).getResultList().stream().map(o -> {
             final Object[] fields = (Object[]) o;
             return TaStatus.of(
                     asString(fields[0]),
@@ -139,9 +139,7 @@ public class JPATrustAnchors extends JPARepository<TrustAnchor> implements Trust
                     asInt(fields[3]),
                     asInt(fields[4]),
                     asDate(fields[5]));
-        });
-        return stream.collect(Collectors.toList());
-
+        })).collect(Collectors.toList());
     }
 
 }
