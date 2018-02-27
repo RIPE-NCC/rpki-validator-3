@@ -116,7 +116,7 @@ public class ValidatedRpkiObjects {
         });
     }
 
-    public synchronized ValidatedObjects<RoaPrefix> findCurrentlyValidatedRoaPrefixes(SearchTerm searchTerm, Sorting sorting, Paging paging) {
+    public ValidatedObjects<RoaPrefix> findCurrentlyValidatedRoaPrefixes(SearchTerm searchTerm, Sorting sorting, Paging paging) {
         if (paging == null) {
             paging = Paging.of(0, Integer.MAX_VALUE);
         }
@@ -130,7 +130,7 @@ public class ValidatedRpkiObjects {
         );
     }
 
-    public synchronized ValidatedObjects<RouterCertificate> findCurrentlyValidatedRouterCertificates() {
+    public ValidatedObjects<RouterCertificate> findCurrentlyValidatedRouterCertificates() {
         return ValidatedObjects.of(
             countRouterCertificates(),
             findRouterCertificates()
@@ -225,23 +225,27 @@ public class ValidatedRpkiObjects {
         return builder.build();
     }
 
+    private synchronized ImmutableList<RoaPrefixesAndRouterCertificates> validatedObjects() {
+        return ImmutableList.copyOf(validatedObjectsByTrustAnchor.values());
+    }
+
     private int countRouterCertificates() {
         int result = 0;
-        for (RoaPrefixesAndRouterCertificates x : validatedObjectsByTrustAnchor.values()) {
+        for (RoaPrefixesAndRouterCertificates x : validatedObjects()) {
             result += x.getRouterCertificates().size();
         }
         return result;
     }
 
     private Stream<RouterCertificate> findRouterCertificates() {
-        return validatedObjectsByTrustAnchor.values()
+        return validatedObjects()
             .stream()
             .flatMap(x -> x.getRouterCertificates().stream());
     }
 
     private int countRoaPrefixes(SearchTerm searchTerm) {
         int result = 0;
-        for (RoaPrefixesAndRouterCertificates x : validatedObjectsByTrustAnchor.values()) {
+        for (RoaPrefixesAndRouterCertificates x : validatedObjects()) {
             for (RoaPrefix prefix : x.getRoaPrefixes()) {
                 if (searchTerm == null || searchTerm.test(prefix)) {
                     ++result;
@@ -252,8 +256,7 @@ public class ValidatedRpkiObjects {
     }
 
     private Stream<RoaPrefix> findRoaPrefixes(SearchTerm searchTerm, Sorting sorting, Paging paging) {
-        return validatedObjectsByTrustAnchor
-            .values()
+        return validatedObjects()
             .parallelStream()
             .flatMap(x -> x.getRoaPrefixes().stream())
             .filter(prefix -> searchTerm == null || searchTerm.test(prefix))
