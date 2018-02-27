@@ -27,35 +27,15 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.domain;
+package net.ripe.rpki.validator3.api.rpkirepositories;
 
-import net.ripe.rpki.validator3.api.Paging;
-import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
+import lombok.Data;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Stream;
+import java.util.Date;
 
-public interface RpkiRepositories {
-    RpkiRepository register(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String uri, @NotNull RpkiRepository.Type type);
-
-    Optional<RpkiRepository> findByURI(@NotNull @ValidLocationURI String uri);
-
-    RpkiRepository get(long id);
-
-    List<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Long taId, Paging paging);
-
-    default List<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Long taId) {
-        return findAll(optionalStatus, taId, null);
-    }
-
-    default List<RpkiRepository> findAll(Long taId) {
-        return findAll(null, taId, null);
-    }
-
-    Stream<RpkiRepository> findRsyncRepositories();
-
-    void removeAllForTrustAnchor(TrustAnchor trustAnchor);
+@Data(staticConstructor = "of")
+public class RepositoriesStatus {
+    final int downloaded;
+    final int pending;
+    final int failed;
 }

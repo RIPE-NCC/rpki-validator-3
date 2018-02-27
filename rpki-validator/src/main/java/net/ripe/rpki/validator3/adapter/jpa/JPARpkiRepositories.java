@@ -91,7 +91,7 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
     }
 
     @Override
-    public List<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Integer taId, Paging paging) {
+    public List<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Long taId, Paging paging) {
         BooleanBuilder builder = new BooleanBuilder();
         if (optionalStatus != null) {
             builder.and(rpkiRepository.status.eq(optionalStatus));

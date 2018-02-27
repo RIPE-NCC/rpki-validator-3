@@ -35,8 +35,10 @@ import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.Metadata;
 import net.ripe.rpki.validator3.api.Paging;
+import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
 import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
+import net.ripe.rpki.validator3.domain.TrustAnchor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
@@ -70,7 +72,7 @@ public class RpkiRepositoriesController {
             @RequestParam(name = "startFrom", defaultValue = "0") int startFrom,
             @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
             @RequestParam(name = "status", required = false) RpkiRepository.Status status,
-            @RequestParam(name = "ta", required = false) Integer taId
+            @RequestParam(name = "ta", required = false) Long taId
     ) {
         final Paging paging = Paging.of(startFrom, pageSize);
         final List<RpkiRepository> repositories = rpkiRepositories.findAll(status, taId, paging);
@@ -96,5 +98,15 @@ public class RpkiRepositoriesController {
     public ResponseEntity<ApiResponse<RpkiRepositoryResource>> get(@PathVariable long id) {
         RpkiRepository rpkiRepository = rpkiRepositories.get(id);
         return ResponseEntity.ok(ApiResponse.data(RpkiRepositoryResource.of(rpkiRepository)));
+    }
+
+    @GetMapping(path = "/statuses/{taId}")
+    public ApiResponse<RepositoriesStatus> repositories(@PathVariable long taId) {
+        final List<RpkiRepository> repositories = rpkiRepositories.findAll(taId);
+        return ApiResponse.<RepositoriesStatus>builder().data(RepositoriesStatus.of(
+                (int) repositories.stream().filter(RpkiRepository::isDownloaded).count(),
+                (int) repositories.stream().filter(RpkiRepository::isPending).count(),
+                (int) repositories.stream().filter(RpkiRepository::isFailed).count())
+        ).build();
     }
 }
