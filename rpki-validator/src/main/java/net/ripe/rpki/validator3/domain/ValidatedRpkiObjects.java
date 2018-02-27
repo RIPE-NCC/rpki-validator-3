@@ -29,7 +29,6 @@
  */
 package net.ripe.rpki.validator3.domain;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -63,7 +62,7 @@ public class ValidatedRpkiObjects {
     @Autowired
     private PlatformTransactionManager transactionManager;
 
-    private Map<TrustAnchor, RoaPrefixesAndRouterCertificates> validatedObjectsByTrustAnchor = new HashMap<>();
+    private Map<Long, RoaPrefixesAndRouterCertificates> validatedObjectsByTrustAnchor = new HashMap<>();
 
     @PostConstruct
     private synchronized void initialize() {
@@ -84,7 +83,6 @@ public class ValidatedRpkiObjects {
         ImmutableSet.Builder<RpkiObjects.RoaPrefix> builder = ImmutableSet.builder();
         rpkiObjects
             .stream()
-            .sequential()
             .filter(
                 object -> object.getType() == RpkiObject.Type.ROA || object.getType() == RpkiObject.Type.ROUTER_CER
             )
@@ -102,26 +100,10 @@ public class ValidatedRpkiObjects {
                 ));
             });
 
-        validatedObjectsByTrustAnchor.put(trustAnchor, RoaPrefixesAndRouterCertificates.of(builder.build()));
+        validatedObjectsByTrustAnchor.put(trustAnchor.getId(), RoaPrefixesAndRouterCertificates.of(builder.build()));
     }
 
-    public synchronized ImmutableMap<TrustAnchor, RoaPrefixesAndRouterCertificates> validatedObjects() {
-        return ImmutableMap.copyOf(validatedObjectsByTrustAnchor);
-    }
-
-    public int countCurrentlyValidatedRoaPrefixes(SearchTerm searchTerm) {
-        int result = 0;
-        for (RoaPrefixesAndRouterCertificates x : validatedObjects().values()) {
-            for (RpkiObjects.RoaPrefix prefix : x.getRoaPrefixes()) {
-                if (searchTerm == null || searchTerm.match(prefix)) {
-                    ++result;
-                }
-            }
-        }
-        return result;
-    }
-
-    public Stream<RpkiObjects.RoaPrefix> findCurrentlyValidatedRoaPrefixes(SearchTerm searchTerm, Sorting sorting, Paging paging) {
+    public synchronized ValidatedObjects<RpkiObjects.RoaPrefix> findCurrentlyValidatedRoaPrefixes(SearchTerm searchTerm, Sorting sorting, Paging paging) {
         if (paging == null) {
             paging = Paging.of(0, Integer.MAX_VALUE);
         }
@@ -129,12 +111,44 @@ public class ValidatedRpkiObjects {
             sorting = Sorting.of(Sorting.By.TA, Sorting.Direction.ASC);
         }
 
-        return validatedObjects().values().stream().flatMap(x -> x.getRoaPrefixes().stream())
-            .parallel()
-            .filter(prefix -> searchTerm == null || searchTerm.match(prefix))
+        return ValidatedObjects.of(
+            searchTerm, sorting, paging,
+            countRoaPrefixes(searchTerm),
+            findRoaPrefixes(searchTerm, sorting, paging)
+        );
+    }
+
+    private int countRoaPrefixes(SearchTerm searchTerm) {
+        int result = 0;
+        for (RoaPrefixesAndRouterCertificates x : validatedObjectsByTrustAnchor.values()) {
+            for (RpkiObjects.RoaPrefix prefix : x.getRoaPrefixes()) {
+                if (searchTerm == null || searchTerm.test(prefix)) {
+                    ++result;
+                }
+            }
+        }
+        return result;
+    }
+
+    private Stream<RpkiObjects.RoaPrefix> findRoaPrefixes(SearchTerm searchTerm, Sorting sorting, Paging paging) {
+        return validatedObjectsByTrustAnchor
+            .values()
+            .parallelStream()
+            .flatMap(x -> x.getRoaPrefixes().stream())
+            .filter(prefix -> searchTerm == null || searchTerm.test(prefix))
             .sorted(sorting.comparator())
             .skip(Math.max(0, paging.getStartFrom()))
             .limit(Math.max(1, paging.getPageSize()));
+    }
+
+    @Value(staticConstructor = "of")
+    public static class ValidatedObjects<T> {
+        SearchTerm searchTerm;
+        @NotNull Sorting sorting;
+        @NotNull Paging paging;
+
+        int totalCount;
+        Stream<T> objects;
     }
 
     @Value(staticConstructor = "of")

@@ -68,39 +68,6 @@ public abstract class AbstractEntity {
         this.updatedAt = Instant.now();
     }
 
-    /**
-     * Implement equals and hashCode since entity are shared between sessions due to the use of the ValidatedRpkiObjects
-     * component. Be careful about accessing data, since the actual entity might be proxied by Hibernate.
-     */
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (!(obj instanceof AbstractEntity)) {
-            return false;
-        }
-
-        AbstractEntity that = (AbstractEntity) obj;
-        if (!that.canEqual(this.getProxied())) {
-            return false;
-        }
-        return this.getId() == that.getId();
-    }
-
-    protected boolean canEqual(AbstractEntity that) {
-        return getClass().equals(that.getClass());
-    }
-
-    private AbstractEntity getProxied() {
-        return this;
-    }
-
-    @Override
-    public int hashCode() {
-        return this.getClass().hashCode() + (Long.hashCode(this.getId()) * 37);
-    }
-
     @Override
     public String toString() {
         return toStringBuilder().toString();

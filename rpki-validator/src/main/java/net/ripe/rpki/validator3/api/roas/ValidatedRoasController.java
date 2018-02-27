@@ -73,7 +73,8 @@ public class ValidatedRoasController {
         final Sorting sorting = Sorting.parse(sortBy, sortDirection);
         final Paging paging = Paging.of(startFrom, pageSize);
 
-        final Stream<RoaPrefix> roas = validatedRpkiObjects.findCurrentlyValidatedRoaPrefixes(searchTerm, sorting, paging)
+        ValidatedRpkiObjects.ValidatedObjects<RpkiObjects.RoaPrefix> currentlyValidatedRoaPrefixes = validatedRpkiObjects.findCurrentlyValidatedRoaPrefixes(searchTerm, sorting, paging);
+        final Stream<RoaPrefix> roas = currentlyValidatedRoaPrefixes.getObjects()
             .map(prefix -> new RoaPrefix(
                 prefix.getAsn().toString(),
                 prefix.getPrefix().toString(),
@@ -82,7 +83,7 @@ public class ValidatedRoasController {
                 prefix.getUri()
             ));
 
-        int totalSize = validatedRpkiObjects.countCurrentlyValidatedRoaPrefixes(searchTerm);
+        int totalSize = currentlyValidatedRoaPrefixes.getTotalCount();
         final Links links = Paging.links(
                 startFrom, pageSize, totalSize,
                 (sf, ps) -> methodOn(ValidatedRoasController.class).list(sf, ps, searchString, sortBy, sortDirection));

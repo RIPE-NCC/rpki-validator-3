@@ -33,15 +33,17 @@ import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 
-public class SearchTerm {
+import java.util.function.Predicate;
+
+public class SearchTerm implements Predicate<RpkiObjects.RoaPrefix> {
     private final String term;
-    private final IpRange range ;
+    private final IpRange range;
     private final Asn asn;
 
     public SearchTerm(String term) {
-        this.term = term;
-        this.range = convertIpRange();
-        this.asn = convertAsn();
+        this.term = term == null ? "" : term.trim();
+        this.range = convertRange(term);
+        this.asn = convertAsn(term);
     }
 
     public Asn asAsn() {
@@ -56,7 +58,7 @@ public class SearchTerm {
         return term;
     }
 
-    public boolean match(RpkiObjects.RoaPrefix prefix) {
+    public boolean test(RpkiObjects.RoaPrefix prefix) {
         if (asn != null && asn.equals(prefix.getAsn())) {
             return true;
         }
@@ -66,17 +68,17 @@ public class SearchTerm {
         return prefix.getTrustAnchor().contains(term) || prefix.getUri().contains(term);
     }
 
-    private Asn convertAsn() {
+    private Asn convertAsn(String value) {
         try {
-            return Asn.parse(term);
+            return Asn.parse(value);
         } catch (Exception e) {
             return null;
         }
     }
 
-    private IpRange convertIpRange() {
+    private IpRange convertRange(String value) {
         try {
-            return IpRange.parse(term);
+            return IpRange.parse(value);
         } catch (Exception e) {
             return null;
         }
