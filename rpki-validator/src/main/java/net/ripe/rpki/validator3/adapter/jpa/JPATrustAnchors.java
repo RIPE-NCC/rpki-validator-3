@@ -101,10 +101,9 @@ public class JPATrustAnchors extends JPARepository<TrustAnchor> implements Trust
                 "       taId, taName, \n" +
                 "       SUM(errors), \n" +
                 "       SUM(warnings), " +
-                "       (SELECT COUNT(ro.id) FROM " +
-                "        rpki_object ro, validation_run_validated_objects vrvo \n" +
-                "        WHERE vrvo.validation_run_id = vrid \n" +
-                "        AND vrvo.rpki_object_id = ro.id" +
+                "       (SELECT COUNT(DISTINCT vrvo.rpki_object_id) \n" +
+                "        FROM validation_run_validated_objects vrvo \n" +
+                "        WHERE vrvo.validation_run_id = vrid        \n" +
                 "       ) AS successful, \n" +
                 "       (SELECT MAX(completed_at) FROM validation_run WHERE trust_anchor_id = taId AND type = 'CT') AS lastUpdated \n" +
                 "     FROM (\n" +
@@ -113,7 +112,8 @@ public class JPATrustAnchors extends JPARepository<TrustAnchor> implements Trust
                 "       ta.name as taName, \n" +
                 "        CASE WHEN vc.status = 'ERROR'   THEN 1 ELSE 0 END AS errors,\n" +
                 "        CASE WHEN vc.status = 'WARNING' THEN 1 ELSE 0 END AS warnings,\n" +
-                "        vr.id as vrid\n" +
+                "        vr.id as vrid,\n" +
+                "        vc.location\n" +
                 "     FROM trust_anchor ta\n" +
                 "     INNER JOIN validation_run vr ON vr.trust_anchor_id = ta.id\n" +
                 "     LEFT JOIN validation_check vc ON vc.validation_run_id = vr.id\n" +
