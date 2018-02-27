@@ -1,6 +1,6 @@
-import {Component, Input, OnInit} from '@angular/core';
+import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
 
-import {IRepository} from "./repositories.model";
+import {IRepositoriesStatuses, IRepository} from "./repositories.model";
 import {ManagingTable} from "../../shared/managing-table";
 import {TrustAnchorsService} from "../../core/trust-anchors.service";
 
@@ -12,6 +12,7 @@ import {TrustAnchorsService} from "../../core/trust-anchors.service";
 export class RepositoriesComponent extends ManagingTable implements OnInit {
 
   @Input() trustAnchorId: string;
+  @Output() notify: EventEmitter<IRepositoriesStatuses> = new EventEmitter<IRepositoriesStatuses>();
 
   repositories: IRepository[] = [];
 
@@ -36,6 +37,18 @@ export class RepositoriesComponent extends ManagingTable implements OnInit {
         response => {
           this.loading = false;
           this.repositories = response.data;
+          let pending: number = 0;
+          let failed: number = 0;
+          let downloaded: number = 0;
+          this.repositories.forEach(repository => {
+            if (repository.status === 'PENDING')
+              pending++;
+            else if (repository.status === 'FAILED')
+              failed++;
+            else if (repository.status === 'DOWNLOADED')
+              downloaded++;
+          });
+          this.notify.emit({valid: downloaded, warning: pending, invalid: failed});
           this.numberOfItemsOnCurrentPage = this.repositories.length;
           this.totalItems = response.metadata.totalCount;
           this.setNumberOfLastItemInTable();

@@ -4,3 +4,9 @@ export interface IRepository {
   status: string,
   lastChecked: string
 }
+
+export interface IRepositoriesStatuses {
+  valid: number,
+  warning: number,
+  invalid: number,
+}

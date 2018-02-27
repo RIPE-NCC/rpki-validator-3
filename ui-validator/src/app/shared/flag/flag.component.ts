@@ -31,7 +31,6 @@ export class FlagComponent implements OnChanges {
     }
   }
 
-  //FIXME switch have to be changes in both methods - depend of response from backend
   setNumericFlag(): void {
     this.mutedColor = this.value <= 0;
     switch(this.color) {
@@ -69,14 +68,14 @@ export class FlagComponent implements OnChanges {
   }
 
   setYesNoFlag(): void {
-    const value = isString(this.value) ? this.value.toUpperCase() : this.value;
-    if (value) {
-      this.green = true;
-      this.value = 'YES';
-
-    } else {
-      this.red = true;
-      this.value = 'NO';
+    if (isBoolean(this.value)){
+      if (this.value) {
+        this.value = 'YES';
+        this.green = true;
+      } else {
+        this.value = 'NO';
+        this.red = true;
+      }
     }
   }
 

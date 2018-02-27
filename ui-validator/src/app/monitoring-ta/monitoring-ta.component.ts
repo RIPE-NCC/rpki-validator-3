@@ -3,6 +3,7 @@ import {ActivatedRoute} from "@angular/router";
 
 import {TrustAnchorsService} from "../core/trust-anchors.service";
 import {ITrustAnchor} from "../trust-anchors/trust-anchor.model";
+import {IRepositoriesStatuses} from "./repositories/repositories.model";
 
 @Component({
   selector: 'app-monitoring-ta',
@@ -14,8 +15,10 @@ export class MonitoringTaComponent implements OnInit {
   pageTitle: string = 'Nav.TITLE_MONITORING_TA';
   taId: string;
   monitoringTrustAnchor: ITrustAnchor;
+  repositoriesStatuses: IRepositoriesStatuses;
 
-  constructor(private _activatedRoute: ActivatedRoute, private _trustAnchorsService: TrustAnchorsService) {
+  constructor(private _activatedRoute: ActivatedRoute,
+              private _trustAnchorsService: TrustAnchorsService) {
   }
 
   ngOnInit() {
@@ -26,5 +29,9 @@ export class MonitoringTaComponent implements OnInit {
           response => this.monitoringTrustAnchor = response.data
         )
     }
+  }
+
+  updateStatusesFromChild(repositoriesStatuses: IRepositoriesStatuses) {
+    this.repositoriesStatuses = repositoriesStatuses;
   }
 }
