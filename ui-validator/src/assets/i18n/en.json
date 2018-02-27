@@ -54,13 +54,15 @@
     "REPOSITORIES": "Repositories"
   },
   "Repositories": {
+    "NO_RECORDS": "No repositories problems found",
     "URI": "URI",
     "REPO_TYPE": "Type",
     "REPO_STATUS": "Status",
     "REPO_LAST_CHECKED": "Last checked"
   },
   "ValidationDetails": {
-    "TITLE": "Validation Details",
+    "TITLE": "Validation Issues",
+    "NO_RECORDS": "No validation problems found",
     "CHECK_KEY": "Check Key",
     "CHECK_MSG": "Check Msg",
     "CHECK_VALID": "Check Valid"
