@@ -105,11 +105,6 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
     }
 
     @Override
-    public Stream<RpkiObject> findRouterCertificates() {
-        return stream(select().where(rpkiObject.type.eq(RpkiObject.Type.ROUTER_CER)));
-    }
-
-    @Override
     public long deleteUnreachableObjects(Instant unreachableSince) {
         return queryFactory.delete(rpkiObject).where(rpkiObject.lastMarkedReachableAt.before(unreachableSince)).execute();
     }

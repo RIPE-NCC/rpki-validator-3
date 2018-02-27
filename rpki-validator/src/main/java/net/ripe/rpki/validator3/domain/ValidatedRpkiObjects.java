@@ -29,11 +29,15 @@
  */
 package net.ripe.rpki.validator3.domain;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedSet;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
+import net.ripe.rpki.commons.crypto.x509cert.X509CertificateUtil;
+import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificate;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
@@ -41,15 +45,20 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.annotation.PostConstruct;
+import javax.transaction.Transactional;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -67,43 +76,47 @@ public class ValidatedRpkiObjects {
     @PostConstruct
     private synchronized void initialize() {
         new TransactionTemplate(transactionManager).execute((status) -> {
-            Map<@NotNull @Valid TrustAnchor, List<RpkiObject>> grouped = rpkiObjects.findCurrentlyValidated(RpkiObject.Type.ROA)
+            Map<@NotNull @Valid TrustAnchor, List<RpkiObject>> grouped = Stream.concat(
+                rpkiObjects.findCurrentlyValidated(RpkiObject.Type.ROA),
+                rpkiObjects.findCurrentlyValidated(RpkiObject.Type.ROUTER_CER)
+                )
                 .collect(Collectors.groupingBy(
-                    pair -> pair.getKey().getTrustAnchor(),
-                    Collectors.mapping(pair -> pair.getValue(), Collectors.toList())
+                    pair -> pair.getLeft().getTrustAnchor(),
+                    Collectors.mapping(pair -> pair.getRight(), Collectors.toList())
                 ));
             grouped.forEach(this::update);
             return null;
         });
     }
 
-    public synchronized void update(TrustAnchor trustAnchor, Collection<RpkiObject> rpkiObjects) {
-        log.info("updating validation objects cache for trust anchor {} with {} objects", trustAnchor, rpkiObjects.size());
+    @Transactional
+    public void update(TrustAnchor trustAnchor, Collection<RpkiObject> rpkiObjects) {
+        TrustAnchorData trustAnchorData = TrustAnchorData.of(trustAnchor.getId(), trustAnchor.getName());
+        RoaPrefixesAndRouterCertificates roaPrefixesAndRouterCertificates = RoaPrefixesAndRouterCertificates.of(
+            extractRoaPrefixes(trustAnchorData, rpkiObjects),
+            extractRouterCertificates(trustAnchorData, rpkiObjects)
+        );
 
-        ImmutableSet.Builder<RpkiObjects.RoaPrefix> builder = ImmutableSet.builder();
-        rpkiObjects
-            .stream()
-            .filter(
-                object -> object.getType() == RpkiObject.Type.ROA || object.getType() == RpkiObject.Type.ROUTER_CER
-            )
-            .flatMap(
-                object -> object.getRoaPrefixes().stream().map(prefix -> Pair.of(object.getLocations().first(), prefix))
-            )
-            .forEach(data -> {
-                RoaPrefix prefix = data.getRight();
-                builder.add(new RpkiObjects.RoaPrefix(
-                    new Asn(prefix.getAsn()),
-                    IpRange.parse(prefix.getPrefix()),
-                    prefix.getEffectiveLength(),
-                    trustAnchor.getName(),
-                    data.getLeft()
-                ));
-            });
+        afterCommit(() -> {
+            log.info("updating validation objects cache for trust anchor {} with {} ROA prefixes and {} router certificates",
+                trustAnchor,
+                roaPrefixesAndRouterCertificates.getRoaPrefixes().size(),
+                roaPrefixesAndRouterCertificates.getRouterCertificates().size()
+            );
 
-        validatedObjectsByTrustAnchor.put(trustAnchor.getId(), RoaPrefixesAndRouterCertificates.of(builder.build()));
+            validatedObjectsByTrustAnchor.put(trustAnchor.getId(), roaPrefixesAndRouterCertificates);
+        });
     }
 
-    public synchronized ValidatedObjects<RpkiObjects.RoaPrefix> findCurrentlyValidatedRoaPrefixes(SearchTerm searchTerm, Sorting sorting, Paging paging) {
+    @Transactional
+    public void remove(TrustAnchor trustAnchor) {
+        long trustAnchorId = trustAnchor.getId();
+        afterCommit(() -> {
+            validatedObjectsByTrustAnchor.remove(trustAnchorId);
+        });
+    }
+
+    public synchronized ValidatedObjects<RoaPrefix> findCurrentlyValidatedRoaPrefixes(SearchTerm searchTerm, Sorting sorting, Paging paging) {
         if (paging == null) {
             paging = Paging.of(0, Integer.MAX_VALUE);
         }
@@ -112,16 +125,124 @@ public class ValidatedRpkiObjects {
         }
 
         return ValidatedObjects.of(
-            searchTerm, sorting, paging,
             countRoaPrefixes(searchTerm),
             findRoaPrefixes(searchTerm, sorting, paging)
         );
     }
 
+    public synchronized ValidatedObjects<RouterCertificate> findCurrentlyValidatedRouterCertificates() {
+        return ValidatedObjects.of(
+            countRouterCertificates(),
+            findRouterCertificates()
+        );
+    }
+
+    @Value(staticConstructor = "of")
+    public static class ValidatedObjects<T> {
+        int totalCount;
+        Stream<T> objects;
+    }
+
+    @Value(staticConstructor = "of")
+    public static class RoaPrefixesAndRouterCertificates {
+        ImmutableSet<RoaPrefix> roaPrefixes;
+        ImmutableSet<RouterCertificate> routerCertificates;
+    }
+
+    @Value(staticConstructor = "of")
+    public static class TrustAnchorData {
+        long id;
+        String name;
+    }
+
+    @Value(staticConstructor = "of")
+    public static class RoaPrefix {
+        TrustAnchorData trustAnchor;
+        Asn asn;
+        IpRange prefix;
+        Integer maximumLength;
+        int effectiveLength;
+        ImmutableSortedSet<String> locations;
+    }
+
+    @Value(staticConstructor = "of")
+    public static class RouterCertificate {
+        TrustAnchorData trustAnchor;
+        ImmutableList<String> asn;
+        String subjectKeyIdentifier;
+        String subjectPublicKeyInfo;
+    }
+
+    private ImmutableSet<RouterCertificate> extractRouterCertificates(TrustAnchorData trustAnchor, Collection<RpkiObject> rpkiObjects) {
+        final Base64.Encoder encoder = Base64.getEncoder();
+        ImmutableSet.Builder<RouterCertificate> builder = ImmutableSet.builder();
+        rpkiObjects
+            .stream()
+            .filter(object -> object.getType() == RpkiObject.Type.ROUTER_CER)
+            .map(object -> object.get(X509RouterCertificate.class, "temporary"))
+            .filter(Optional::isPresent).map(Optional::get)
+            .forEach(certificate -> {
+                    final ImmutableList<String> asns = ImmutableList.copyOf(X509CertificateUtil.getAsns(certificate.getCertificate()));
+                    final String ski = encoder.encodeToString(X509CertificateUtil.getSubjectKeyIdentifier(certificate.getCertificate()));
+                    final String pkInfo = X509CertificateUtil.getEncodedSubjectPublicKeyInfo(certificate.getCertificate());
+                    builder.add(RouterCertificate.of(
+                        trustAnchor,
+                        asns,
+                        ski,
+                        pkInfo
+                    ));
+                }
+            );
+
+        return builder.build();
+    }
+
+    private ImmutableSet<RoaPrefix> extractRoaPrefixes(TrustAnchorData trustAnchor, Collection<RpkiObject> rpkiObjects) {
+        ImmutableSet.Builder<RoaPrefix> builder = ImmutableSet.builder();
+        rpkiObjects
+            .stream()
+            .filter(
+                object -> object.getType() == RpkiObject.Type.ROA
+            )
+            .flatMap(
+                object -> {
+                    ImmutableSortedSet<String> locations = ImmutableSortedSet.copyOf(object.getLocations());
+                    return object.getRoaPrefixes().stream().map(prefix -> Pair.of(locations, prefix));
+                }
+            )
+            .forEach(data -> {
+                net.ripe.rpki.validator3.domain.RoaPrefix prefix = data.getRight();
+                builder.add(RoaPrefix.of(
+                    trustAnchor,
+                    new Asn(prefix.getAsn()),
+                    IpRange.parse(prefix.getPrefix()),
+                    prefix.getMaximumLength(),
+                    prefix.getEffectiveLength(),
+                    data.getLeft()
+                ));
+            });
+
+        return builder.build();
+    }
+
+    private int countRouterCertificates() {
+        int result = 0;
+        for (RoaPrefixesAndRouterCertificates x : validatedObjectsByTrustAnchor.values()) {
+            result += x.getRouterCertificates().size();
+        }
+        return result;
+    }
+
+    private Stream<RouterCertificate> findRouterCertificates() {
+        return validatedObjectsByTrustAnchor.values()
+            .stream()
+            .flatMap(x -> x.getRouterCertificates().stream());
+    }
+
     private int countRoaPrefixes(SearchTerm searchTerm) {
         int result = 0;
         for (RoaPrefixesAndRouterCertificates x : validatedObjectsByTrustAnchor.values()) {
-            for (RpkiObjects.RoaPrefix prefix : x.getRoaPrefixes()) {
+            for (RoaPrefix prefix : x.getRoaPrefixes()) {
                 if (searchTerm == null || searchTerm.test(prefix)) {
                     ++result;
                 }
@@ -130,7 +251,7 @@ public class ValidatedRpkiObjects {
         return result;
     }
 
-    private Stream<RpkiObjects.RoaPrefix> findRoaPrefixes(SearchTerm searchTerm, Sorting sorting, Paging paging) {
+    private Stream<RoaPrefix> findRoaPrefixes(SearchTerm searchTerm, Sorting sorting, Paging paging) {
         return validatedObjectsByTrustAnchor
             .values()
             .parallelStream()
@@ -141,18 +262,15 @@ public class ValidatedRpkiObjects {
             .limit(Math.max(1, paging.getPageSize()));
     }
 
-    @Value(staticConstructor = "of")
-    public static class ValidatedObjects<T> {
-        SearchTerm searchTerm;
-        @NotNull Sorting sorting;
-        @NotNull Paging paging;
-
-        int totalCount;
-        Stream<T> objects;
-    }
-
-    @Value(staticConstructor = "of")
-    public static class RoaPrefixesAndRouterCertificates {
-        ImmutableSet<RpkiObjects.RoaPrefix> roaPrefixes;
+    private void afterCommit(Runnable runnable) {
+        // Only update the cache after the current transaction successfully commits.
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                synchronized (ValidatedRpkiObjects.this) {
+                    runnable.run();
+                }
+            }
+        });
     }
 }

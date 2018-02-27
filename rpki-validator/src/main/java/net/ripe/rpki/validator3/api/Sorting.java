@@ -30,7 +30,7 @@
 package net.ripe.rpki.validator3.api;
 
 import lombok.Data;
-import net.ripe.rpki.validator3.domain.RpkiObjects;
+import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
 
 import java.util.Comparator;
 import java.util.Locale;
@@ -50,29 +50,29 @@ public class Sorting {
         }
     }
 
-    public Comparator<? super RpkiObjects.RoaPrefix> comparator() {
-        Comparator<RpkiObjects.RoaPrefix> columns;
+    public Comparator<? super ValidatedRpkiObjects.RoaPrefix> comparator() {
+        Comparator<ValidatedRpkiObjects.RoaPrefix> columns;
         switch (by) {
             case PREFIX:
-                columns = Comparator.comparing(RpkiObjects.RoaPrefix::getPrefix)
-                    .thenComparingInt(RpkiObjects.RoaPrefix::getLength)
-                    .thenComparing(RpkiObjects.RoaPrefix::getAsn)
-                    .thenComparing(RpkiObjects.RoaPrefix::getTrustAnchor);
+                columns = Comparator.comparing(ValidatedRpkiObjects.RoaPrefix::getPrefix)
+                    .thenComparingInt(ValidatedRpkiObjects.RoaPrefix::getEffectiveLength)
+                    .thenComparing(ValidatedRpkiObjects.RoaPrefix::getAsn)
+                    .thenComparing(p -> p.getTrustAnchor().getName());
                 break;
             case ASN:
-                columns = Comparator.comparing(RpkiObjects.RoaPrefix::getAsn)
-                    .thenComparing(RpkiObjects.RoaPrefix::getPrefix)
-                    .thenComparing(RpkiObjects.RoaPrefix::getTrustAnchor);
+                columns = Comparator.comparing(ValidatedRpkiObjects.RoaPrefix::getAsn)
+                    .thenComparing(ValidatedRpkiObjects.RoaPrefix::getPrefix)
+                    .thenComparing(p -> p.getTrustAnchor().getName());
                 break;
             case LOCATION:
-                columns = Comparator.comparing(RpkiObjects.RoaPrefix::getUri)
-                    .thenComparing(RpkiObjects.RoaPrefix::getTrustAnchor);
+                columns = Comparator.comparing((ValidatedRpkiObjects.RoaPrefix p) -> p.getLocations().first())
+                    .thenComparing((ValidatedRpkiObjects.RoaPrefix p) -> p.getTrustAnchor().getName());
                 break;
             case TA:
             default:
-                columns = Comparator.comparing(RpkiObjects.RoaPrefix::getTrustAnchor)
-                    .thenComparing(RpkiObjects.RoaPrefix::getAsn)
-                    .thenComparing(RpkiObjects.RoaPrefix::getPrefix);
+                columns = Comparator.comparing((ValidatedRpkiObjects.RoaPrefix p) -> p.getTrustAnchor().getName())
+                    .thenComparing(ValidatedRpkiObjects.RoaPrefix::getAsn)
+                    .thenComparing(ValidatedRpkiObjects.RoaPrefix::getPrefix);
                 break;
         }
         return direction == Direction.DESC ? columns.reversed() : columns;

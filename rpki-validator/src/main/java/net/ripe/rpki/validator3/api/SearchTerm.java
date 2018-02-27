@@ -31,11 +31,11 @@ package net.ripe.rpki.validator3.api;
 
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
-import net.ripe.rpki.validator3.domain.RpkiObjects;
+import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
 
 import java.util.function.Predicate;
 
-public class SearchTerm implements Predicate<RpkiObjects.RoaPrefix> {
+public class SearchTerm implements Predicate<ValidatedRpkiObjects.RoaPrefix> {
     private final String term;
     private final IpRange range;
     private final Asn asn;
@@ -58,14 +58,14 @@ public class SearchTerm implements Predicate<RpkiObjects.RoaPrefix> {
         return term;
     }
 
-    public boolean test(RpkiObjects.RoaPrefix prefix) {
+    public boolean test(ValidatedRpkiObjects.RoaPrefix prefix) {
         if (asn != null && asn.equals(prefix.getAsn())) {
             return true;
         }
         if (range != null && range.overlaps(prefix.getPrefix())) {
             return true;
         }
-        return prefix.getTrustAnchor().contains(term) || prefix.getUri().contains(term);
+        return prefix.getTrustAnchor().getName().contains(term) || prefix.getLocations().stream().anyMatch(uri -> uri.contains(term));
     }
 
     private Asn convertAsn(String value) {

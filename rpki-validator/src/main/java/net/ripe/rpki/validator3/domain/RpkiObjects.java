@@ -29,9 +29,6 @@
  */
 package net.ripe.rpki.validator3.domain;
 
-import lombok.Value;
-import net.ripe.ipresource.Asn;
-import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -60,16 +57,5 @@ public interface RpkiObjects {
 
     Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type type, byte[] authorityKeyIdentifier);
 
-    Stream<RpkiObject> findRouterCertificates();
-
     long deleteUnreachableObjects(Instant unreachableSince);
-
-    @Value
-    class RoaPrefix {
-        private Asn asn;
-        private IpRange prefix;
-        private int length;
-        private String trustAnchor;
-        private String uri;
-    }
 }
