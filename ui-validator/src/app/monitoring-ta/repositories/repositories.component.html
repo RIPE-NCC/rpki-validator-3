@@ -24,7 +24,7 @@
     <tr *ngFor='let repo of repositories'>
       <td>{{repo.locationURI}}</td>
       <td>{{repo.type}}</td>
-      <td>{{repo.status}}</td>
+      <td><flag [value]='repo.status'></flag></td>
       <td>{{repo.lastDownloadedAt}}</td>
     </tr>
     <tr *ngIf='loading'>

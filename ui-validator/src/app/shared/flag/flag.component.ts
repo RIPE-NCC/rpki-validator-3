@@ -51,16 +51,19 @@ export class FlagComponent implements OnChanges {
 
   setTextualFlag(): void {
     const value = isString(this.value) ? this.value.toUpperCase() : this.value;
-    switch(value) {
-      case 'SUCCESS': {
+    switch (value) {
+      case 'SUCCESS':
+      case 'DOWNLOADED': {
         this.green = true;
         break;
       }
-      case 'WARNING': {
+      case 'WARNING':
+      case 'PENDING': {
         this.orange = true;
         break;
       }
-      case 'ERROR': {
+      case 'ERROR':
+      case 'FAILED': {
         this.red = true;
         break;
       }

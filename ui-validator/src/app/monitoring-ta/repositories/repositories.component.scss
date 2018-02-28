@@ -9,13 +9,15 @@ table {
 
   thead > tr {
     th:nth-child(1) {
-      width: 45%;
+      width: 50%;
     }
     th:nth-child(2) {
       width: 15%;
+    }    th:nth-child(3) {
+      width: 9em;
     }
     th:nth-child(4) {
-      width: 160px;
+      width: 10em;
     }
   }
 
