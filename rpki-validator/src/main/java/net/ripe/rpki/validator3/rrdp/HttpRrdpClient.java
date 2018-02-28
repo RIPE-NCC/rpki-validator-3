@@ -61,7 +61,6 @@ public class HttpRrdpClient implements RrdpClient {
     public void postConstruct() throws Exception {
         final SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setTrustAll(trustAllTlsCertificates);
-        // TODO @mpuzanov find out why using HttpClientTransportOverHTTP2 makes GET request hang
         httpClient = new HttpClient(sslContextFactory);
         httpClient.start();
     }

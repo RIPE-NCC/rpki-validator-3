@@ -20,7 +20,7 @@
     "type" : "RRDP",
     "id" : 24145,
     "locationURI" : "https://ca.rg.net/rrdp/notify.xml",
-    "status" : "DOWNLOADED",
+    "status" : "FAILED",
     "lastDownloadedAt" : "2018-02-25T19:17:59.098Z",
     "rrdpSessionId" : "d978426b-8775-4bd1-b78c-ee579e57be52",
     "rrdpSerial" : 32674,

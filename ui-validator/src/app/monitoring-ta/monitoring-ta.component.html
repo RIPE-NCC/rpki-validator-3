@@ -1,14 +1,4 @@
 <page-title [pageTitle]='pageTitle' [specificValue]='monitoringTrustAnchor?.name'></page-title>
-<!--<div class="center">-->
-  <!--<div class='alert alert-success' role='alert'>-->
-    <!--Somet text really long text-->
-  <!--</div>-->
-  <!--<ng-template #failedSuccessColor>-->
-    <!--<div class='alert alert-danger' role='alert'>{{ta.validationChecks.success}}</div>-->
-  <!--</ng-template>-->
-<!--</div>-->
-
-<!-- CHECKS table -->
 <h3><strong>{{'TRUST_ANCHOR' | translate}}</strong></h3>
 <table class='table table-striped table-bordered'>
   <tbody>
@@ -22,8 +12,6 @@
   </tr>
   </tbody>
 </table>
-
-<!-- STATISTICS for the last validation run -->
 <h3><strong>{{'Monitoring.LAST_VALIDATION' | translate}}</strong></h3>
 <table class='table table-striped table-bordered'>
   <tbody>
@@ -32,16 +20,20 @@
       {{'Monitoring.TA_HAVE_PENDING_REPOSITORIES' | translate}}
     </td>
     <td>
-
+      <div class='d-inline-flex  justify-content-between'>
+        <flag [value]='repositoriesStatuses?.downloaded' [color]='"green"' class='mr-2'
+              [ngbTooltip]="'Monitoring.TOOLTIP_NUMBER_DOWNLOADED' | translate:{value:'info'}"></flag>
+        <flag [value]='repositoriesStatuses?.pending' [color]='"orange"' class='mr-2'
+              [ngbTooltip]="'Monitoring.TOOLTIP_NUMBER_PENDING' | translate:{value:'info'}"></flag>
+        <flag [value]='repositoriesStatuses?.failed' [color]='"red"' class='mr-2'
+              [ngbTooltip]="'Monitoring.TOOLTIP_NUMBER_FAILED' | translate:{value:'info'}"></flag>
+      </div>
     </td>
   </tr>
-
   </tbody>
 </table>
-
 <hr/>
 <validation-details [trustAnchorId]='taId'></validation-details>
-
 <!-- Repositories -->
 <hr/>
-<repositories [trustAnchorId]='taId'></repositories>
+<repositories [trustAnchorId]='taId' (notify)='getRepositoriesStatuses()'></repositories>

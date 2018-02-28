@@ -14,7 +14,7 @@ import {ManagingTable} from "../shared/managing-table";
 export class RoasComponent extends ManagingTable implements OnInit {
 
   pageTitle: string = 'Nav.TITLE_ROAS';
-  alertShown = true;
+  alertShown = false;
   alertListValidatedTA: string;
   roas: IRoa[] = [];
 

@@ -45,10 +45,14 @@ public interface RpkiRepositories {
 
     RpkiRepository get(long id);
 
-    List<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Integer taId, Paging paging);
+    List<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Long taId, Paging paging);
 
-    default List<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Integer taId) {
+    default List<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Long taId) {
         return findAll(optionalStatus, taId, null);
+    }
+
+    default List<RpkiRepository> findAll(Long taId) {
+        return findAll(null, taId, null);
     }
 
     Stream<RpkiRepository> findRsyncRepositories();

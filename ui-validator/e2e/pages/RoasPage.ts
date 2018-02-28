@@ -37,12 +37,12 @@ export class RoasPage {
     return this;
   }
 
-  sortTableOn(col: String) {
+  sortTableOn(col: string) {
     element(by.cssContainingText('table thead th', col)).click();
     return this;
   }
 
-  search(text: String) {
+  search(text: string) {
     element(by.css('search-by input')).sendKeys(text);
     return this;
   }
@@ -58,7 +58,7 @@ export class RoasPage {
   }
 
 
-  expectRowColumnToBe(row: number, col: String, content: String) {
+  expectRowColumnToBe(row: number, col: string, content: string) {
     element.all(by.css('table thead th')).each((el, i) => {
       el.getText().then(text => {
         if (text === col) {
@@ -69,7 +69,7 @@ export class RoasPage {
     return this;
   }
 
-  expectShowingEntriesToBe(text: String) {
+  expectShowingEntriesToBe(text: string) {
     expect(element(by.css('page-textually-status label')).getText()).toEqual(text);
     return this;
   }
@@ -96,7 +96,7 @@ export class RoasPage {
     return this;
   }
 
-  expectTitleHeaderToBe(title: String) {
+  expectTitleHeaderToBe(title: string) {
     expect(element(by.css('app-root .page-header h1')).getText()).toEqual(title);
     return this;
   }

@@ -1,3 +1,9 @@
+p {
+  background-color: #f2f2f2;
+  padding: 0.75rem;
+  border: 1px solid #dee2e6;
+}
+
 table {
   table-layout: fixed;
 
@@ -6,10 +12,10 @@ table {
       width: 4%;
     }
     th:nth-child(2) {
-      width: 15%;
+      width: 20%;
     }
     th:nth-child(4) {
-      width: 10%;
+      width: 8em;
     }
   }
 

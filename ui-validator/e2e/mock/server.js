@@ -12,9 +12,9 @@ server.get('/api/roas', (req, res) => {
     res.jsonp(require('./data/roas/roas-response-sortByPREFIX-asc.json'));
   } else if (req.query.sortBy === 'prefix' && req.query.sortDirection === 'desc') {
     res.jsonp(require('./data/roas/roas-response-sortByPREFIX-desc.json'));
-  } else if (req.query.sortBy === 'trustAnchor' && req.query.sortDirection === 'asc') {
+  } else if (req.query.sortBy === 'ta' && req.query.sortDirection === 'asc') {
     res.jsonp(require('./data/roas/roas-response-sortByTRUSTANCHOR-asc.json'));
-  } else if (req.query.sortBy === 'trustAnchor' && req.query.sortDirection === 'desc') {
+  } else if (req.query.sortBy === 'ta' && req.query.sortDirection === 'desc') {
     res.jsonp(require('./data/roas/roas-response-sortByTRUSTANCHOR-desc.json'));
   }
 
@@ -57,14 +57,20 @@ server.get('/api/trust-anchors/3268', (req, res) => {
   res.jsonp(require('./data/monitor/monitoring.json'));
 });
 
-//3268/validation-checks?id=3268&startFrom=0&pageSize=10&search=&sortBy=&sortDirection
-server.get('/api/trust-anchors/3268/validation-checks', (req, res) => {
-  res.jsonp(require('./data/monitor/validation-details'));
+server.get('/api/trust-anchors/monitor/3268', (req, res) => {
+  res.jsonp(require('./data/monitor/monitoring.json'));
 });
 
-//http://localhost:4200/api/rpki-repositories/?ta=3268&startFrom=0&pageSize=10&search=&sortBy=&sortDirection=asc
+server.get('/api/trust-anchors/3268/validation-checks', (req, res) => {
+  res.jsonp(require('./data/monitor/validation-details.json'));
+});
+
 server.get('/api/rpki-repositories', (req, res) => {
-  res.jsonp(require('./data/monitor/repositories'));
+  res.jsonp(require('./data/monitor/repositories.json'));
+});
+
+server.get('/api/rpki-repositories/statuses/3268', (req, res) => {
+  res.jsonp(require('./data/monitor/repositories-statuses.json'));
 });
 
 server.listen(3000, () => {

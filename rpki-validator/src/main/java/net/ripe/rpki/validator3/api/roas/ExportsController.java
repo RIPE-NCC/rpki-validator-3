@@ -33,8 +33,8 @@ import au.com.bytecode.opencsv.CSVWriter;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.Settings;
+import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -54,7 +54,7 @@ import java.util.stream.Stream;
 public class ExportsController {
 
     @Autowired
-    private RpkiObjects rpkiObjects;
+    private ValidatedRpkiObjects validatedRpkiObjects;
 
     @Autowired
     private Settings settings;
@@ -66,13 +66,16 @@ public class ExportsController {
             return null;
         }
 
-        Stream<JsonRoaPrefix> validatedPrefixes = rpkiObjects
-                .findCurrentlyValidatedRoaPrefixes()
-                .map(r -> new JsonRoaPrefix(
-                        r.getAsn(),
-                        r.getPrefix(),
-                        r.getLength(),
-                        r.getTrustAnchor()));
+        Stream<JsonRoaPrefix> validatedPrefixes = validatedRpkiObjects
+            .findCurrentlyValidatedRoaPrefixes(null, null, null)
+            .getObjects()
+            .map(r -> new JsonRoaPrefix(
+                String.valueOf(r.getAsn()),
+                r.getPrefix().toString(),
+                r.getEffectiveLength(),
+                r.getTrustAnchor().getName()
+            ))
+            .distinct();
 
         return new JsonExport(validatedPrefixes);
     }
@@ -87,13 +90,16 @@ public class ExportsController {
         response.setContentType("text/csv; charset=UTF-8");
         try (CSVWriter writer = new CSVWriter(response.getWriter())) {
             writer.writeNext(new String[]{"ASN", "IP Prefix", "Max Length", "Trust Anchor"});
-            Stream<CsvRoaPrefix> validatedPrefixes = rpkiObjects
-                    .findCurrentlyValidatedRoaPrefixes()
-                    .map(r -> new CsvRoaPrefix(
-                            r.getAsn(),
-                            r.getPrefix(),
-                            r.getLength(),
-                            r.getTrustAnchor()));
+            Stream<CsvRoaPrefix> validatedPrefixes = validatedRpkiObjects
+                .findCurrentlyValidatedRoaPrefixes(null, null, null)
+                .getObjects()
+                .map(r -> new CsvRoaPrefix(
+                    String.valueOf(r.getAsn()),
+                    r.getPrefix().toString(),
+                    r.getEffectiveLength(),
+                    r.getTrustAnchor().getName())
+                )
+                .distinct();
             validatedPrefixes.forEach(prefix -> {
                 writer.writeNext(new String[]{
                         prefix.getAsn(),

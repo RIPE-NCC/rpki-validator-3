@@ -51,6 +51,7 @@ import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.Settings;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchors;
+import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.domain.ValidationRuns;
 import net.ripe.rpki.validator3.util.Sha256;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -89,6 +90,8 @@ public class CertificateTreeValidationService {
     private ValidationRuns validationRuns;
     @Autowired
     private Settings settings;
+    @Autowired
+    private ValidatedRpkiObjects validatedRpkiObjects;
 
     @Transactional(Transactional.TxType.REQUIRED)
     public void validate(long trustAnchorId) {
@@ -140,6 +143,8 @@ public class CertificateTreeValidationService {
                     log.info("All trust anchors have completed their initial certificate tree validation run, validator is now ready");
                 }
             }
+
+            validatedRpkiObjects.update(trustAnchor, validationRun.getValidatedObjects());
         } finally {
             validationRun.completeWith(validationResult);
             log.info("tree validation {} for {}", validationRun.getStatus(), trustAnchor);

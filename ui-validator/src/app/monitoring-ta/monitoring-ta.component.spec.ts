@@ -14,7 +14,6 @@ describe('MonitoringTaComponent', () => {
   let fixture: ComponentFixture<MonitoringTaComponent>;
   let trustAnchorsService: TrustAnchorsService;
   let trustAnchorsSpy;
-  let trustAnchorsSpy2;
   let mockActivatedRoute = {
     snapshot: {
       url: [{path: 'trust-anchors'}, {path: 'monitor'}, {path: 8}]

@@ -1,18 +1,24 @@
+p {
+  background-color: #f2f2f2;
+  padding: 0.75rem;
+  border: 1px solid #dee2e6;
+}
+
 table {
   table-layout: fixed;
-}
-thead > tr > th:nth-child(4) {
-  width: 10%;
-}
-thead > tr {
-  th:nth-child(1) {
-    width: 45%;
-  }
-  th:nth-child(2) {
-    width: 15%;
-  }
-  th:nth-child(4) {
-    width: 10%;
+
+  thead > tr {
+    th:nth-child(1) {
+      width: 50%;
+    }
+    th:nth-child(2) {
+      width: 15%;
+    }    th:nth-child(3) {
+      width: 9em;
+    }
+    th:nth-child(4) {
+      width: 10em;
+    }
   }
 
   tbody > tr > td {

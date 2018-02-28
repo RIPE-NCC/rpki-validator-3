@@ -51,16 +51,21 @@
     "VALIDATED_USING_TA_LOCATOR": "Trust anchor could be validated using trust anchor locator",
     "LAST_VALIDATION": "Last Validation Run",
     "TA_HAVE_PENDING_REPOSITORIES": "Trust Anchor still has pending repositories",
+    "TOOLTIP_NUMBER_DOWNLOADED": "Number of downloaded",
+    "TOOLTIP_NUMBER_PENDING": "Number of pending",
+    "TOOLTIP_NUMBER_FAILED": "Number of failed",
     "REPOSITORIES": "Repositories"
   },
   "Repositories": {
+    "NO_RECORDS": "No repositories problems found",
     "URI": "URI",
     "REPO_TYPE": "Type",
     "REPO_STATUS": "Status",
     "REPO_LAST_CHECKED": "Last checked"
   },
   "ValidationDetails": {
-    "TITLE": "Validation Details",
+    "TITLE": "Validation Issues",
+    "NO_RECORDS": "No validation problems found",
     "CHECK_KEY": "Check Key",
     "CHECK_MSG": "Check Msg",
     "CHECK_VALID": "Check Valid"

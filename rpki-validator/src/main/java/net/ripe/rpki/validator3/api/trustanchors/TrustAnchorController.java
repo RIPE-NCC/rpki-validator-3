@@ -41,6 +41,8 @@ import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.api.validationruns.ValidationCheckResource;
 import net.ripe.rpki.validator3.api.validationruns.ValidationRunController;
 import net.ripe.rpki.validator3.api.validationruns.ValidationRunResource;
+import net.ripe.rpki.validator3.domain.RpkiRepositories;
+import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.domain.TrustAnchors;
@@ -91,6 +93,8 @@ public class TrustAnchorController {
     private TrustAnchorService trustAnchorService;
     @Autowired
     private ValidationRuns validationRunRepository;
+    @Autowired
+    private RpkiRepositories rpkiRepositories;
     @Autowired
     private MessageSource messageSource;
 
@@ -174,7 +178,8 @@ public class TrustAnchorController {
         Stream<ValidationCheckResource> checks = validationRunRepository.findValidationChecksForValidationRun(id, paging, searchTerm, sorting)
             .map(check -> ValidationCheckResource.of(check, messageSource.getMessage(check, locale)));
 
-        Links links = Paging.links(startFrom, pageSize, totalCount, (sf, ps) -> methodOn(TrustAnchorController.class).validationChecks(id, sf, ps, searchString, sortBy, sortDirection, locale));
+        Links links = Paging.links(startFrom, pageSize, totalCount,
+                (sf, ps) -> methodOn(TrustAnchorController.class).validationChecks(id, sf, ps, searchString, sortBy, sortDirection, locale));
 
         return ResponseEntity.ok(ApiResponse.<TrustAnchorValidationChecksResource>builder()
             .links(links)
@@ -185,7 +190,7 @@ public class TrustAnchorController {
     }
 
     @GetMapping(path = "/statuses")
-    public ApiResponse<List<TaStatus>> statuses(HttpServletResponse response) throws IOException {
+    public ApiResponse<List<TaStatus>> statuses(HttpServletResponse response) {
         return ApiResponse.<List<TaStatus>>builder().data(trustAnchorRepository.getStatuses()).build();
     }
 

@@ -9,11 +9,6 @@ import {isString} from "@ng-bootstrap/ng-bootstrap/util/util";
 })
 export class FlagComponent implements OnChanges {
 
-  greenFlags: string[] = ['SUCCESS', 'VALID'];
-  orangeFlags: string[] = ['WARNING', 'INVALID ASN'];
-  redFlags: string[] = ['NOT VALID'];
-  grayFlags: string[] = ['UNKNOWN'];
-
   @Input() value: string | number | boolean;
   @Input() color?: string;
   green: boolean = false;
@@ -37,7 +32,6 @@ export class FlagComponent implements OnChanges {
     }
   }
 
-  //FIXME switch have to be changes in both methods - depend of response from backend
   setNumericFlag(): void {
     this.mutedColor = this.value <= 0;
     switch(this.color) {
@@ -57,30 +51,41 @@ export class FlagComponent implements OnChanges {
   }
 
   setTextualFlag(): void {
-    if (isString(this.value)) {
-      const value: string = this.value.toUpperCase();
-
-      if (this.greenFlags.indexOf(value) > -1) {
+    const value = isString(this.value) ? this.value.toUpperCase() : this.value;
+    switch (value) {
+      case 'SUCCESS':
+      case 'VALID':
+      case 'DOWNLOADED': {
         this.green = true;
-      } else if (this.orangeFlags.indexOf(value) > -1) {
+        break;
+      }
+      case 'WARNING':
+      case 'INVALID ASN':
+      case 'PENDING': {
         this.orange = true;
-      } else if (this.redFlags.indexOf(value) > -1) {
+        break;
+      }
+      case 'ERROR':
+      case 'NOT VALID':
+      case 'FAILED': {
         this.red = true;
-      } else {
+        break;
+      }
+      case 'UNKNOWN': {
         this.gray = true;
       }
     }
   }
 
   setYesNoFlag(): void {
-    const value = isString(this.value) ? this.value.toUpperCase() : this.value;
-    if (value) {
-      this.green = true;
-      this.value = 'YES';
-
-    } else {
-      this.red = true;
-      this.value = 'NO';
+    if (isBoolean(this.value)){
+      if (this.value) {
+        this.value = 'YES';
+        this.green = true;
+      } else {
+        this.value = 'NO';
+        this.red = true;
+      }
     }
   }
 

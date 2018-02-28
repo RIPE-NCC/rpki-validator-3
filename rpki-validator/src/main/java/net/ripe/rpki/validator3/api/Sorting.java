@@ -30,7 +30,9 @@
 package net.ripe.rpki.validator3.api;
 
 import lombok.Data;
+import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
 
+import java.util.Comparator;
 import java.util.Locale;
 
 @Data(staticConstructor = "of")
@@ -43,9 +45,37 @@ public class Sorting {
             By by = By.valueOf(sortBy.toUpperCase(Locale.ROOT));
             Direction direction = Direction.valueOf(sortDirection.toUpperCase(Locale.ROOT));
             return of(by, direction);
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             return null;
         }
+    }
+
+    public Comparator<? super ValidatedRpkiObjects.RoaPrefix> comparator() {
+        Comparator<ValidatedRpkiObjects.RoaPrefix> columns;
+        switch (by) {
+            case PREFIX:
+                columns = Comparator.comparing(ValidatedRpkiObjects.RoaPrefix::getPrefix)
+                    .thenComparingInt(ValidatedRpkiObjects.RoaPrefix::getEffectiveLength)
+                    .thenComparing(ValidatedRpkiObjects.RoaPrefix::getAsn)
+                    .thenComparing(p -> p.getTrustAnchor().getName());
+                break;
+            case ASN:
+                columns = Comparator.comparing(ValidatedRpkiObjects.RoaPrefix::getAsn)
+                    .thenComparing(ValidatedRpkiObjects.RoaPrefix::getPrefix)
+                    .thenComparing(p -> p.getTrustAnchor().getName());
+                break;
+            case LOCATION:
+                columns = Comparator.comparing((ValidatedRpkiObjects.RoaPrefix p) -> p.getLocations().first())
+                    .thenComparing((ValidatedRpkiObjects.RoaPrefix p) -> p.getTrustAnchor().getName());
+                break;
+            case TA:
+            default:
+                columns = Comparator.comparing((ValidatedRpkiObjects.RoaPrefix p) -> p.getTrustAnchor().getName())
+                    .thenComparing(ValidatedRpkiObjects.RoaPrefix::getAsn)
+                    .thenComparing(ValidatedRpkiObjects.RoaPrefix::getPrefix);
+                break;
+        }
+        return direction == Direction.DESC ? columns.reversed() : columns;
     }
 
     public enum Direction {

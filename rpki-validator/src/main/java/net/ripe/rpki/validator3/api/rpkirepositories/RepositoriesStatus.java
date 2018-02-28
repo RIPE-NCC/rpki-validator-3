@@ -27,60 +27,15 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.api;
+package net.ripe.rpki.validator3.api.rpkirepositories;
 
-import net.ripe.ipresource.Asn;
-import net.ripe.ipresource.IpRange;
-import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
+import lombok.Data;
 
-import java.util.function.Predicate;
+import java.util.Date;
 
-public class SearchTerm implements Predicate<ValidatedRpkiObjects.RoaPrefix> {
-    private final String term;
-    private final IpRange range;
-    private final Asn asn;
-
-    public SearchTerm(String term) {
-        this.term = term == null ? "" : term.trim();
-        this.range = convertRange(term);
-        this.asn = convertAsn(term);
-    }
-
-    public Asn asAsn() {
-        return asn;
-    }
-
-    public IpRange asIpRange() {
-        return range;
-    }
-
-    public String asString() {
-        return term;
-    }
-
-    public boolean test(ValidatedRpkiObjects.RoaPrefix prefix) {
-        if (asn != null && asn.equals(prefix.getAsn())) {
-            return true;
-        }
-        if (range != null && range.overlaps(prefix.getPrefix())) {
-            return true;
-        }
-        return prefix.getTrustAnchor().getName().contains(term) || prefix.getLocations().stream().anyMatch(uri -> uri.contains(term));
-    }
-
-    private Asn convertAsn(String value) {
-        try {
-            return Asn.parse(value);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private IpRange convertRange(String value) {
-        try {
-            return IpRange.parse(value);
-        } catch (Exception e) {
-            return null;
-        }
-    }
+@Data(staticConstructor = "of")
+public class RepositoriesStatus {
+    final int downloaded;
+    final int pending;
+    final int failed;
 }
