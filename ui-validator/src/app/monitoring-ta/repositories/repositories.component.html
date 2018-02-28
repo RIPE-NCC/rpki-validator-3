@@ -25,7 +25,7 @@
       <td>{{repo.locationURI}}</td>
       <td>{{repo.type}}</td>
       <td>{{repo.status}}</td>
-      <td>{{repo.lastDownloadedAt | date:'yyyy-MM-dd HH:mm a'}}</td>
+      <td>{{repo.lastDownloadedAt}}</td>
     </tr>
     <tr *ngIf='loading'>
       <td colspan="4">{{'LOADING' | translate}}</td>
