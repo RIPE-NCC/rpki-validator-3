@@ -62,11 +62,15 @@ server.get('/api/trust-anchors/monitor/3268', (req, res) => {
 });
 
 server.get('/api/trust-anchors/3268/validation-checks', (req, res) => {
-  res.jsonp(require('./data/monitor/validation-details'));
+  res.jsonp(require('./data/monitor/validation-details.json'));
 });
 
 server.get('/api/rpki-repositories', (req, res) => {
-  res.jsonp(require('./data/monitor/repositories'));
+  res.jsonp(require('./data/monitor/repositories.json'));
+});
+
+server.get('/api/rpki-repositories/statuses/3268', (req, res) => {
+  res.jsonp(require('./data/monitor/repositories-statuses.json'));
 });
 
 server.listen(3000, () => {

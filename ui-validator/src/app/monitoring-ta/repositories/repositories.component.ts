@@ -37,18 +37,7 @@ export class RepositoriesComponent extends ManagingTable implements OnInit {
         response => {
           this.loading = false;
           this.repositories = response.data;
-          let pending: number = 0;
-          let failed: number = 0;
-          let downloaded: number = 0;
-          this.repositories.forEach(repository => {
-            if (repository.status === 'PENDING')
-              pending++;
-            else if (repository.status === 'FAILED')
-              failed++;
-            else if (repository.status === 'DOWNLOADED')
-              downloaded++;
-          });
-          this.notify.emit({valid: downloaded, warning: pending, invalid: failed});
+          this.notify.emit();
           this.numberOfItemsOnCurrentPage = this.repositories.length;
           this.totalItems = response.metadata.totalCount;
           this.setNumberOfLastItemInTable();

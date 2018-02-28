@@ -24,14 +24,21 @@ export class MonitoringTaComponent implements OnInit {
   ngOnInit() {
     this.taId = this._activatedRoute.snapshot.url[2].path;
     if (this.taId) {
-      this._trustAnchorsService.getTrustAnchor(this.taId)
-        .subscribe(
-          response => this.monitoringTrustAnchor = response.data
-        )
+      this.getTrustAnchors();
     }
   }
 
-  updateStatusesFromChild(repositoriesStatuses: IRepositoriesStatuses) {
-    this.repositoriesStatuses = repositoriesStatuses;
+  getTrustAnchors() {
+    this._trustAnchorsService.getTrustAnchor(this.taId)
+      .subscribe(
+        response => this.monitoringTrustAnchor = response.data
+      )
+  }
+
+  getRepositoriesStatuses() {
+    this._trustAnchorsService.getRepositoriesStatuses(this.taId)
+      .subscribe(
+        response => this.repositoriesStatuses = response.data
+      )
   }
 }

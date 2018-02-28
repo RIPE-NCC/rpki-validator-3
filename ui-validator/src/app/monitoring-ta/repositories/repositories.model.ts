@@ -6,7 +6,7 @@ export interface IRepository {
 }
 
 export interface IRepositoriesStatuses {
-  valid: number,
-  warning: number,
-  invalid: number,
+  downloaded: number,
+  pending: number,
+  failed: number,
 }

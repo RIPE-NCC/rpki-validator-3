@@ -14,6 +14,7 @@ export class TrustAnchorsService {
     private _trustAnchorByIdUrl = 'api/trust-anchors/{id}';
     private _trustAnchorByIdValidationChecksUrl = 'api/trust-anchors/{id}/validation-checks';
     private _repositoriesByTaId = 'api/rpki-repositories/';
+    private _repositoriesStatusesByTaId = 'api/rpki-repositories/statuses/{taId}';
 
 
     constructor(private _http: HttpClient) {
@@ -66,5 +67,9 @@ export class TrustAnchorsService {
         .set('sortDirection', sortDirection);
 
       return this._http.get<any>(this._repositoriesByTaId, { params: params })
+    }
+
+    getRepositoriesStatuses(trustAnchorId: string) {
+      return this._http.get<any>(this._repositoriesStatusesByTaId.replace('{taId}', trustAnchorId))
     }
 }

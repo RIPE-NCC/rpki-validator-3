@@ -21,11 +21,11 @@
     </td>
     <td>
       <div class='d-inline-flex  justify-content-between'>
-        <flag [value]='repositoriesStatuses?.valid' [color]='"green"' class='mr-2'
+        <flag [value]='repositoriesStatuses?.downloaded' [color]='"green"' class='mr-2'
               [ngbTooltip]="'Monitoring.TOOLTIP_NUMBER_DOWNLOADED' | translate:{value:'info'}"></flag>
-        <flag [value]='repositoriesStatuses?.warning' [color]='"orange"' class='mr-2'
+        <flag [value]='repositoriesStatuses?.pending' [color]='"orange"' class='mr-2'
               [ngbTooltip]="'Monitoring.TOOLTIP_NUMBER_PENDING' | translate:{value:'info'}"></flag>
-        <flag [value]='repositoriesStatuses?.invalid' [color]='"red"' class='mr-2'
+        <flag [value]='repositoriesStatuses?.failed' [color]='"red"' class='mr-2'
               [ngbTooltip]="'Monitoring.TOOLTIP_NUMBER_FAILED' | translate:{value:'info'}"></flag>
       </div>
     </td>
@@ -36,4 +36,4 @@
 <validation-details [trustAnchorId]='taId'></validation-details>
 <!-- Repositories -->
 <hr/>
-<repositories [trustAnchorId]='taId' (notify)='updateStatusesFromChild($event)'></repositories>
+<repositories [trustAnchorId]='taId' (notify)='getRepositoriesStatuses()'></repositories>
