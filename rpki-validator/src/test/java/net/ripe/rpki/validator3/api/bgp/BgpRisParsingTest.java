@@ -43,8 +43,20 @@ import static org.junit.Assert.assertEquals;
 public class BgpRisParsingTest {
     @Test
     public void parse1() throws UnsupportedEncodingException {
-        String line = "4200003018	47.88.45.0/24	3";
+        final String line = "4200003018	47.88.45.0/24	3";
         List<BgpRisEntry> parsed = parse(line);
+        assertEquals(1, parsed.size());
+        assertEquals(new Asn(4200003018L), parsed.get(0).origin);
+        assertEquals(IpRange.parse("47.88.45.0/24"), parsed.get(0).prefix);
+        assertEquals(3, parsed.get(0).visibility);
+    }
+
+    @Test
+    public void parse2() throws UnsupportedEncodingException {
+        final String content =
+                "blabla	65.88.145.0/24	344\n" +
+                "4200003018	47.88.45.0/24	3";
+        List<BgpRisEntry> parsed = parse(content);
         assertEquals(1, parsed.size());
         assertEquals(new Asn(4200003018L), parsed.get(0).origin);
         assertEquals(IpRange.parse("47.88.45.0/24"), parsed.get(0).prefix);

@@ -92,19 +92,21 @@ public class BgpRisDownloader {
         String line = null;
         final List<BgpRisEntry> entries = new ArrayList<>();
         final IdentityMap id = new IdentityMap();
-        do {
+        while (true) {
             try {
                 line = reader.readLine();
+                if (line == null) {
+                    return entries;
+                }
                 final BgpRisEntry e = parseLine(line, id::unique);
                 if (e != null) {
                     entries.add(e);
                 }
             } catch (Exception e) {
                 log.error("Unparseable line: " + line);
+                return entries;
             }
-        } while (line != null);
-
-        return entries;
+        }
     }
 
     private static Pattern regexp = Pattern.compile("^\\s*([0-9]+)\\s+([0-9a-fA-F.:/]+)\\s+([0-9]+)\\s*$");
