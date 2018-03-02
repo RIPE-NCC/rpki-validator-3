@@ -27,55 +27,48 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.rrdp;
+package net.ripe.rpki.validator3.util;
 
-import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.util.Http;
+import net.ripe.rpki.validator3.rrdp.RrdpException;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.util.InputStreamResponseListener;
 
-import javax.annotation.PostConstruct;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
-import static org.springframework.util.StreamUtils.copy;
+public class Http {
 
-@Component
-@Slf4j
-public class HttpRrdpClient implements RrdpClient {
+    public static <T> T readStream(final Supplier<Request> requestF, Function<InputStream, T> reader) {
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        Request request = requestF.get();
+        request.send(listener);
 
-    @Value("${rpki.validator.rrdp.trust.all.tls.certificates}")
-    private boolean trustAllTlsCertificates;
+        Response response = null;
+        try {
+            response = listener.get(30, TimeUnit.SECONDS);
 
-    private HttpClient httpClient;
-
-    @PostConstruct
-    public void postConstruct() throws Exception {
-        final SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setTrustAll(trustAllTlsCertificates);
-        httpClient = new HttpClient(sslContextFactory);
-        httpClient.start();
-    }
-
-    @Override
-    public <T> T readStream(final String uri, Function<InputStream, T> reader) {
-        return Http.readStream(() -> httpClient.newRequest(uri), reader);
-    }
-
-    @Override
-    public byte[] getBody(String uri) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        readStream(uri, s -> {
-            try {
-                return copy(s, baos);
-            } catch (IOException e) {
-                throw new RrdpException("error reading response body for " + uri + ": " + e, e);
+            if (response.getStatus() != 200) {
+                RrdpException error = new RrdpException("unexpected response status " + response.getStatus() + " for " + request.getURI());
+                response.abort(error);
+                throw error;
             }
-        });
-        return baos.toByteArray();
+
+            try (InputStream inputStream = listener.getInputStream()) {
+                return reader.apply(inputStream);
+            }
+        } catch (IOException | InterruptedException | TimeoutException | ExecutionException e) {
+            RrdpException error = new RrdpException("failed reading response stream for " + request.getURI() + ": " + e, e);
+            if (response != null) {
+                response.abort(error);
+            }
+            throw error;
+        }
     }
 }

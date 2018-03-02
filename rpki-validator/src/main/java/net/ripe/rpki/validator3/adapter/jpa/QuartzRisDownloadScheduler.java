@@ -27,55 +27,38 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.rrdp;
+package net.ripe.rpki.validator3.adapter.jpa;
 
-import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.util.Http;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.springframework.beans.factory.annotation.Value;
+import com.google.common.base.Preconditions;
+import net.ripe.rpki.validator3.api.Api;
+import net.ripe.rpki.validator3.domain.RpkiRepository;
+import net.ripe.rpki.validator3.domain.TrustAnchor;
+import org.quartz.Scheduler;
+import org.quartz.SchedulerException;
+import org.quartz.SimpleScheduleBuilder;
+import org.quartz.TriggerBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.function.Function;
-
-import static org.springframework.util.StreamUtils.copy;
+import javax.transaction.Transactional;
 
 @Component
-@Slf4j
-public class HttpRrdpClient implements RrdpClient {
+@Transactional(Transactional.TxType.MANDATORY)
+public class QuartzRisDownloadScheduler {
 
-    @Value("${rpki.validator.rrdp.trust.all.tls.certificates}")
-    private boolean trustAllTlsCertificates;
+    private final Scheduler scheduler;
 
-    private HttpClient httpClient;
-
-    @PostConstruct
-    public void postConstruct() throws Exception {
-        final SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setTrustAll(trustAllTlsCertificates);
-        httpClient = new HttpClient(sslContextFactory);
-        httpClient.start();
+    @Autowired
+    public QuartzRisDownloadScheduler(Scheduler scheduler) {
+        this.scheduler = scheduler;
     }
 
-    @Override
-    public <T> T readStream(final String uri, Function<InputStream, T> reader) {
-        return Http.readStream(() -> httpClient.newRequest(uri), reader);
-    }
-
-    @Override
-    public byte[] getBody(String uri) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        readStream(uri, s -> {
-            try {
-                return copy(s, baos);
-            } catch (IOException e) {
-                throw new RrdpException("error reading response body for " + uri + ": " + e, e);
-            }
-        });
-        return baos.toByteArray();
+    public void triggerCertificateTreeValidation(TrustAnchor trustAnchor) {
+        try {
+            scheduler.triggerJob(QuartzCertificateTreeValidationJob.getJobKey(trustAnchor));
+        } catch (SchedulerException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 }
