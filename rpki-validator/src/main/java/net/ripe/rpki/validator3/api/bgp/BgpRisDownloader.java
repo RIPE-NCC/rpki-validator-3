@@ -61,10 +61,6 @@ import java.util.zip.GZIPInputStream;
 @Slf4j
 public class BgpRisDownloader {
 
-//    private static List<String> DEFAULT_URLS = Arrays.asList(
-//            "http://www.ris.ripe.net/dumps/riswhoisdump.IPv4.gz",
-//            "http://www.ris.ripe.net/dumps/riswhoisdump.IPv6.gz");
-
     private HttpClient httpClient;
 
     @PostConstruct

@@ -52,7 +52,7 @@ public class BgpRisDownloaderTest {
         BgpRisDump dump = bgpRisDownloader.fetch(
                 BgpRisDump.of("http://www.ris.ripe.net/dumps/riswhoisdump.IPv4.gz",
                         DateTime.now(), Collections.emptyList()));
-        assertTrue(dump.entries.size() > 500_000);
+        assertTrue(dump.entries.size() > 850_000);
     }
 
     @Test
