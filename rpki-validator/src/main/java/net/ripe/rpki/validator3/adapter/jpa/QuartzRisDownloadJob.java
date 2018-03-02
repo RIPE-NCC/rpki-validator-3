@@ -27,55 +27,47 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.rrdp;
+package net.ripe.rpki.validator3.adapter.jpa;
 
-import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.util.Http;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import lombok.Getter;
+import lombok.Setter;
+import net.ripe.rpki.validator3.domain.RpkiRepository;
+import net.ripe.rpki.validator3.domain.RpkiRepositoryValidationRun;
+import net.ripe.rpki.validator3.domain.validation.RpkiRepositoryValidationService;
+import org.quartz.DisallowConcurrentExecution;
+import org.quartz.Job;
+import org.quartz.JobBuilder;
+import org.quartz.JobDetail;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+import org.quartz.JobKey;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.PostConstruct;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.function.Function;
+@DisallowConcurrentExecution
+public class QuartzRisDownloadJob implements Job {
 
-import static org.springframework.util.StreamUtils.copy;
+    public static final String RPKI_REPOSITORY_ID = "rpkiRepositoryId";
 
-@Component
-@Slf4j
-public class HttpRrdpClient implements RrdpClient {
+    @Autowired
+    private RpkiRepositoryValidationService validationService;
 
-    @Value("${rpki.validator.rrdp.trust.all.tls.certificates}")
-    private boolean trustAllTlsCertificates;
-
-    private HttpClient httpClient;
-
-    @PostConstruct
-    public void postConstruct() throws Exception {
-        final SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setTrustAll(trustAllTlsCertificates);
-        httpClient = new HttpClient(sslContextFactory);
-        httpClient.start();
-    }
+    @Getter
+    @Setter
+    private long rpkiRepositoryId;
 
     @Override
-    public <T> T readStream(final String uri, Function<InputStream, T> reader) {
-        return Http.readStream(httpClient, uri, reader);
+    public void execute(JobExecutionContext context) throws JobExecutionException {
+        validationService.validateRpkiRepository(rpkiRepositoryId);
     }
 
-    @Override
-    public byte[] getBody(String uri) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        readStream(uri, s -> {
-            try {
-                return copy(s, baos);
-            } catch (IOException e) {
-                throw new RrdpException("error reading response body for " + uri + ": " + e, e);
-            }
-        });
-        return baos.toByteArray();
+    static JobDetail buildJob(RpkiRepository rpkiRepository) {
+        return JobBuilder.newJob(QuartzRisDownloadJob.class)
+            .withIdentity(getJobKey(rpkiRepository))
+            .usingJobData(RPKI_REPOSITORY_ID, rpkiRepository.getId())
+            .build();
+    }
+
+    static JobKey getJobKey(RpkiRepository rpkiRepository) {
+        return new JobKey(String.format("%s#%d", RpkiRepositoryValidationRun.TYPE, rpkiRepository.getId()));
     }
 }

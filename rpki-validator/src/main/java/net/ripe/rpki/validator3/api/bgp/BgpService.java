@@ -27,55 +27,36 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.rrdp;
+package net.ripe.rpki.validator3.api.bgp;
 
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.util.Http;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import net.ripe.ipresource.Asn;
+import net.ripe.ipresource.IpRange;
+import net.ripe.ipresource.UniqueIpResource;
 
-import javax.annotation.PostConstruct;
-import java.io.ByteArrayOutputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import static org.springframework.util.StreamUtils.copy;
-
-@Component
 @Slf4j
-public class HttpRrdpClient implements RrdpClient {
+public class BgpService {
 
-    @Value("${rpki.validator.rrdp.trust.all.tls.certificates}")
-    private boolean trustAllTlsCertificates;
-
-    private HttpClient httpClient;
-
-    @PostConstruct
-    public void postConstruct() throws Exception {
-        final SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setTrustAll(trustAllTlsCertificates);
-        httpClient = new HttpClient(sslContextFactory);
-        httpClient.start();
+    public void store(BgpRisDump risDump) {
+        // TODO Implement
     }
 
-    @Override
-    public <T> T readStream(final String uri, Function<InputStream, T> reader) {
-        return Http.readStream(httpClient, uri, reader);
+    public List<BgpRisEntry> findAll() {
+        // TODO Implement
+        return Collections.emptyList();
     }
 
-    @Override
-    public byte[] getBody(String uri) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        readStream(uri, s -> {
-            try {
-                return copy(s, baos);
-            } catch (IOException e) {
-                throw new RrdpException("error reading response body for " + uri + ": " + e, e);
-            }
-        });
-        return baos.toByteArray();
-    }
 }
