@@ -73,11 +73,11 @@ public class BgpRisDownloader {
         httpClient.start();
     }
 
-    public BgpRisDump download(String uri, DateTime lastUpdated) {
+    public BgpRisDump fetch(BgpRisDump dump) {
         final Supplier<Request> requestSupplier = () -> {
-            Request request = httpClient.newRequest(uri);
-            if (lastUpdated != null) {
-                request.header("If-Modified-Since", formatAsRFC2616(lastUpdated));
+            Request request = httpClient.newRequest(dump.url);
+            if (dump.lastModified != null) {
+                request.header("If-Modified-Since", formatAsRFC2616(dump.lastModified));
             }
             return request;
         };
@@ -85,16 +85,16 @@ public class BgpRisDownloader {
             try {
                 return parse(new GZIPInputStream(s));
             } catch (Exception e) {
-                log.error("Error downloading RIS dump: " + uri);
+                log.error("Error downloading RIS dump: " + dump.url);
                 return Collections.emptyList();
             }
         };
-        final List<BgpRisEntry> entries = Http.readStream(requestSupplier, streamReader);
-        return BgpRisDump.of(uri, DateTime.now(), entries);
-    }
-
-    public BgpRisDump download(String uri) {
-        return download(uri, null);
+        try {
+            final List<BgpRisEntry> entries = Http.readStream(requestSupplier, streamReader);
+            return BgpRisDump.of(dump.url, DateTime.now(), entries);
+        } catch (Http.NotModified n) {
+            return dump;
+        }
     }
 
     public List<BgpRisEntry> parse(final InputStream is) {

@@ -63,17 +63,21 @@ public class HttpRrdpClient implements RrdpClient {
 
     @Override
     public <T> T readStream(final String uri, Function<InputStream, T> reader) {
-        return Http.readStream(() -> httpClient.newRequest(uri), reader);
+        try {
+            return Http.readStream(() -> httpClient.newRequest(uri), reader);
+        } catch (Exception e) {
+            throw new RrdpException("Error downloading '" + uri + "'", e);
+        }
     }
 
     @Override
     public byte[] getBody(String uri) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         readStream(uri, s -> {
             try {
                 return copy(s, baos);
             } catch (IOException e) {
-                throw new RrdpException("error reading response body for " + uri + ": " + e, e);
+                throw new RuntimeException(e);
             }
         });
         return baos.toByteArray();
