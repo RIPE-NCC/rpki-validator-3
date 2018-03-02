@@ -63,7 +63,7 @@ public class HttpRrdpClient implements RrdpClient {
 
     @Override
     public <T> T readStream(final String uri, Function<InputStream, T> reader) {
-        return Http.readStream(httpClient, uri, reader);
+        return Http.readStream(() -> httpClient.newRequest(uri), reader);
     }
 
     @Override

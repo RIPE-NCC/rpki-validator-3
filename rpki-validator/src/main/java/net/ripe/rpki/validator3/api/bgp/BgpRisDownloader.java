@@ -35,24 +35,26 @@ import net.ripe.ipresource.IpRange;
 import net.ripe.ipresource.UniqueIpResource;
 import net.ripe.rpki.validator3.util.Http;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.Request;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
 @Component
@@ -71,42 +73,42 @@ public class BgpRisDownloader {
         httpClient.start();
     }
 
-    public BgpRisDump download(String uri) {
-        final List<BgpRisEntry> entries = Http.readStream(httpClient, uri, s -> {
+    public BgpRisDump download(String uri, DateTime lastUpdated) {
+        final Supplier<Request> requestSupplier = () -> {
+            Request request = httpClient.newRequest(uri);
+            if (lastUpdated != null) {
+                request.header("If-Modified-Since", formatAsRFC2616(lastUpdated));
+            }
+            return request;
+        };
+        final Function<InputStream, List<BgpRisEntry>> streamReader = s -> {
             try {
                 return parse(new GZIPInputStream(s));
             } catch (Exception e) {
                 log.error("Error downloading RIS dump: " + uri);
                 return Collections.emptyList();
             }
-        });
+        };
+        final List<BgpRisEntry> entries = Http.readStream(requestSupplier, streamReader);
         return BgpRisDump.of(uri, DateTime.now(), entries);
     }
 
-    /*
-        TODO Make it return Stream<BgpRisEntry> and don't allocate the whole list for that.
-     */
+    public BgpRisDump download(String uri) {
+        return download(uri, null);
+    }
+
     public List<BgpRisEntry> parse(final InputStream is) {
         final BufferedReader reader = new BufferedReader(new InputStreamReader(is));
 
-        String line = null;
-        final List<BgpRisEntry> entries = new ArrayList<>();
         final IdentityMap id = new IdentityMap();
-        while (true) {
+        return reader.lines().map(s -> {
             try {
-                line = reader.readLine();
-                if (line == null) {
-                    return entries;
-                }
-                final BgpRisEntry e = parseLine(line, id::unique);
-                if (e != null) {
-                    entries.add(e);
-                }
+                return parseLine(s, id::unique);
             } catch (Exception e) {
-                log.error("Unparseable line: " + line);
-                return entries;
+                log.error("Unparseable line: " + s);
+                return null;
             }
-        }
+        }).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
     private static Pattern regexp = Pattern.compile("^\\s*([0-9]+)\\s+([0-9a-fA-F.:/]+)\\s+([0-9]+)\\s*$");
