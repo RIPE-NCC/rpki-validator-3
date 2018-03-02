@@ -19,12 +19,17 @@
   "SHOW": "Show",
   "ENTRIES": "entries",
   "URI": "URI",
+  "PREFIX": "Prefix",
+  "ASN": "ASN",
   "EXPORT": "Export",
   "YES": "Yes",
   "NO": "No",
   "SUCCESS": "SUCCESS",
   "WARNING": "WARNING",
   "ERROR": "ERROR",
+  "ADD": "Add",
+  "COMMENT": "Comment",
+  "REQUIRED": "Required",
   "Nav": {
     "TITLE_TRUST_ANCHORS": "Configured Trust Anchors",
     "TITLE_ROAS": "Validated ROAs",
@@ -71,13 +76,18 @@
     "CHECK_VALID": "Check Valid"
   },
   "Roas": {
-    "ASN": "ASN",
-    "PREFIX": "Prefix",
     "MAX_LENGTH": "Maximum Length",
     "URI_OF_ROA": "URI of ROA",
     "ALERT_MSG_P1": "Not validated TA ",
     "FILTERED_FROM": "(filtered from",
     "TOTAL_ENTRIES": "total entries)"
+  },
+  "IgnoreFilters": {
+    "ALERT_MSG": "By adding a filter the validator will ignore any RPKI prefixes that overlap with the filter's prefix.",
+    "ADD_FILTER": "Add filter",
+    "CURRENT_FILTERS": "Current filters",
+    "PREFIX_PLACEHOLDER": "IPv4 or IPv6 prefix",
+    "REQUIRED_PREFIX_OR_ASN": "Prefix and/or ASN are required"
   },
   "Export": {
     "DESCRIPTION": "Here you are able to export the complete ROA data set for use in an existing BGP decision making workflow. The output will be in CSV or JSON format and consist of all validated ROAs, minus your ignore filter entries, plus your whitelist additions."

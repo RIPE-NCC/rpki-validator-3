@@ -1,0 +1,107 @@
+<page-title [pageTitle]='pageTitle'></page-title>
+<ngb-alert type='info' *ngIf='alertShown' (close)='alertShown=false'>
+  {{ 'IgnoreFilters.ALERT_MSG' | translate }}
+</ngb-alert>
+<h3><strong>{{'IgnoreFilters.ADD_FILTER' | translate}}</strong></h3>
+<form #filterForm='ngForm'
+      (ngSubmit)='onFilterSubmit(filterForm)'
+      class='panel'>
+  <div class='form-group row'>
+    <!-- prefix -->
+    <div class='col-3'>
+      <label for='prefix' class='col-form-label mr-1'><strong>{{'PREFIX' | translate}}</strong></label>
+      <input type='text'
+             id='prefix'
+             name='prefix'
+             required
+             placeholder='{{"IgnoreFilters.PREFIX_PLACEHOLDER" | translate}}'
+             [(ngModel)]='filter.prefix'
+             class='form-control'/>
+    </div>
+    <!-- asn -->
+    <div class='col-3 pl-0'>
+      <label for='asn' class='col-form-label mr-1'><strong>{{'ASN' | translate}}</strong></label>
+      <input type='text'
+             id='asn'
+             name='asn'
+             required
+             placeholder='{{"ASN" | translate}}'
+             [(ngModel)]='filter.asn'
+             class='form-control'/>
+    </div>
+    <!-- add button -->
+    <div class='align-self-end'>
+    <span (mouseenter)="mouseoverAdd=true" (mouseleave)="mouseoverAdd=false">
+      <button type='submit'
+              [disabled]="filterForm.controls.prefix?.invalid && filterForm.controls.asn?.invalid"
+              class='btn btn-primary'>{{'ADD' | translate}}</button>
+    </span>
+      <em *ngIf='(filterForm.controls.prefix?.invalid && filterForm.controls.asn?.invalid)
+                  && (filterForm.controls.prefix?.touched || filterForm.controls.asn?.touched || mouseoverAdd)'>
+        {{'IgnoreFilters.REQUIRED_PREFIX_OR_ASN' | translate}}
+      </em>
+    </div>
+  </div>
+  <!-- comment -->
+  <div class="form-group row col-12">
+    <label for="comment" class='col-form-label mr-1'><strong>{{'COMMENT' | translate}}</strong></label>
+    <textarea id="comment"
+              name="comment"
+              [(ngModel)]='filter.comment'
+              class="form-control">
+    </textarea>
+  </div>
+</form>
+<h3><strong>{{'IgnoreFilters.CURRENT_FILTERS' | translate}}</strong></h3>
+<ng-template #table>
+  <div class='form-group d-flex justify-content-between mb-3'>
+    <div class='d-inline-flex'>
+      <page-size-select (changedPageSize)='onChangedPageSize($event)'></page-size-select>
+      <loading-spinner class='ml-2' [loading]="this.loading"></loading-spinner>
+    </div>
+    <search-by [(searchBy)]='searchBy'
+               (searchByChanged)='onChangedFilterBy($event)'></search-by>
+  </div>
+  <table sortable-table (sorted)="onSorted($event)" class='table table-striped table-bordered'>
+    <thead>
+    <tr>
+      <th sortable-column='location'>{{'URI' | translate}}</th>
+      <th sortable-column='key'>{{'ValidationDetails.CHECK_KEY' | translate}}</th>
+      <th sortable-column='formattedMessage'>{{'ValidationDetails.CHECK_MSG' | translate}}</th>
+      <th sortable-column='status'>{{'ValidationDetails.CHECK_VALID' | translate}}</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr *ngFor='let validationCheck of validationChecks'>
+      <td (mouseleave)='p.close()'>
+        <img src='../../../assets/images/uri-icon.png'
+             [style.width.px]='20'
+             [style.margin.px]='0'
+             #p='ngbPopover'
+             ngbPopover='{{validationCheck.location}}'
+             placement='right'
+             triggers='mouseover'
+             popoverTitle="{{'URI' | translate}}"
+        />
+      </td>
+      <td>{{validationCheck.key}}</td>
+      <td>{{validationCheck.formattedMessage}}</td>
+      <td> <flag [value]='validationCheck.status'></flag></td>
+    </tr>
+    <tr *ngIf='loading'>
+      <td colspan="4">{{'LOADING' | translate}}</td>
+    </tr>
+    </tbody>
+  </table>
+  <div class='d-flex justify-content-between'>
+    <ngb-pagination [collectionSize]="totalItems" [pageSize]="rowsPerPage" [(page)]='page' [maxSize]='5'
+                    [boundaryLinks]='true'
+                    [rotate]='true' [ellipses]='false' (pageChange)='onChangePage($event)'></ngb-pagination>
+    <page-textually-status [loading]='loading'
+                           [firstItem]='firstItemInTable'
+                           [lastItem]='lastItemInTable'
+                           [totalItems]='totalItems'
+                           [absolutItems]='absolutItemsNumber'>
+    </page-textually-status>
+  </div>
+</ng-template>
