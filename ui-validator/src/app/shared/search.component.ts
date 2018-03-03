@@ -17,12 +17,12 @@ export class SearchComponent implements OnInit {
 
   @Input() searchBy: string;
   @Output() searchByChanged: EventEmitter<string> = new EventEmitter<string>();
+  timer: any;
 
   constructor() { }
 
   ngOnInit() {
   }
-  timer: any;
 
   onFilter() {
     clearTimeout(this.timer);

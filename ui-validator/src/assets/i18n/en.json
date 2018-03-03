@@ -83,11 +83,13 @@
     "TOTAL_ENTRIES": "total entries)"
   },
   "IgnoreFilters": {
-    "ALERT_MSG": "By adding a filter the validator will ignore any RPKI prefixes that overlap with the filter's prefix.",
+    "ALERT_MSG_INTRO": "By adding a filter the validator will ignore any RPKI prefixes that overlap with the filter's prefix.",
+    "ALERT_MSG_NO_FILTERS": "No filters defined.",
     "ADD_FILTER": "Add filter",
     "CURRENT_FILTERS": "Current filters",
     "PREFIX_PLACEHOLDER": "IPv4 or IPv6 prefix",
-    "REQUIRED_PREFIX_OR_ASN": "Prefix and/or ASN are required"
+    "REQUIRED_PREFIX_OR_ASN": "Prefix and/or ASN are required",
+    "FILTERED_ROA_PREFIXES":"Filtered ROA prefixes"
   },
   "Export": {
     "DESCRIPTION": "Here you are able to export the complete ROA data set for use in an existing BGP decision making workflow. The output will be in CSV or JSON format and consist of all validated ROAs, minus your ignore filter entries, plus your whitelist additions."

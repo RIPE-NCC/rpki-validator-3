@@ -1,19 +1,21 @@
 <page-title [pageTitle]='pageTitle'></page-title>
 <ngb-alert type='info' *ngIf='alertShown' (close)='alertShown=false'>
-  {{ 'IgnoreFilters.ALERT_MSG' | translate }}
+  {{ 'IgnoreFilters.ALERT_MSG_INTRO' | translate }}
 </ngb-alert>
 <h3><strong>{{'IgnoreFilters.ADD_FILTER' | translate}}</strong></h3>
 <form #filterForm='ngForm'
-      (ngSubmit)='onFilterSubmit(filterForm)'
+      (ngSubmit)='onFilterSubmit(filterForm.value)'
       class='panel'>
   <div class='form-group row'>
     <!-- prefix -->
     <div class='col-3'>
       <label for='prefix' class='col-form-label mr-1'><strong>{{'PREFIX' | translate}}</strong></label>
+      <em *ngIf='filterForm.controls.prefix?.invalid && filterForm.controls.prefix?.touched'>Not valid ipv4</em>
       <input type='text'
              id='prefix'
              name='prefix'
              required
+             pattern='^(?=\d+\.\d+\.\d+\.\d+($|\/))(([1-9]?\d|1\d\d|2[0-4]\d|25[0-5])\.?){4}(\/([0-9]|[1-2][0-9]|3[0-2]))?$'
              placeholder='{{"IgnoreFilters.PREFIX_PLACEHOLDER" | translate}}'
              [(ngModel)]='filter.prefix'
              class='form-control'/>
@@ -31,14 +33,14 @@
     </div>
     <!-- add button -->
     <div class='align-self-end'>
-    <span (mouseenter)="mouseoverAdd=true" (mouseleave)="mouseoverAdd=false">
-      <button type='submit'
-              [disabled]="filterForm.controls.prefix?.invalid && filterForm.controls.asn?.invalid"
-              class='btn btn-primary'>{{'ADD' | translate}}</button>
-    </span>
+      <span (mouseenter)="mouseoverAdd=true" (mouseleave)="mouseoverAdd=false">
+        <button type='submit'
+                [disabled]="filterForm.controls.prefix?.invalid && filterForm.controls.asn?.invalid"
+                class='btn btn-primary'>{{'ADD' | translate}}</button>
+      </span>
       <em *ngIf='(filterForm.controls.prefix?.invalid && filterForm.controls.asn?.invalid)
                   && (filterForm.controls.prefix?.touched || filterForm.controls.asn?.touched || mouseoverAdd)'>
-        {{'IgnoreFilters.REQUIRED_PREFIX_OR_ASN' | translate}}
+        <strong>{{'IgnoreFilters.REQUIRED_PREFIX_OR_ASN' | translate}}</strong>
       </em>
     </div>
   </div>
@@ -52,7 +54,11 @@
     </textarea>
   </div>
 </form>
+<!-- current filters -->
 <h3><strong>{{'IgnoreFilters.CURRENT_FILTERS' | translate}}</strong></h3>
+<ngb-alert type='warning' *ngIf='alertShown' [dismissible]="false">
+  {{ 'IgnoreFilters.ALERT_MSG_NO_FILTERS' | translate }}
+</ngb-alert>
 <ng-template #table>
   <div class='form-group d-flex justify-content-between mb-3'>
     <div class='d-inline-flex'>
@@ -65,31 +71,19 @@
   <table sortable-table (sorted)="onSorted($event)" class='table table-striped table-bordered'>
     <thead>
     <tr>
-      <th sortable-column='location'>{{'URI' | translate}}</th>
-      <th sortable-column='key'>{{'ValidationDetails.CHECK_KEY' | translate}}</th>
-      <th sortable-column='formattedMessage'>{{'ValidationDetails.CHECK_MSG' | translate}}</th>
-      <th sortable-column='status'>{{'ValidationDetails.CHECK_VALID' | translate}}</th>
+      <th sortable-column='prefix'>{{'PREFIX' | translate}}</th>
+      <th sortable-column='filteredPrefixes'>{{'IgnoreFilters.FILTERED_ROA_PREFIXES' | translate}}</th>
+      <th></th>
     </tr>
     </thead>
     <tbody>
-    <tr *ngFor='let validationCheck of validationChecks'>
-      <td (mouseleave)='p.close()'>
-        <img src='../../../assets/images/uri-icon.png'
-             [style.width.px]='20'
-             [style.margin.px]='0'
-             #p='ngbPopover'
-             ngbPopover='{{validationCheck.location}}'
-             placement='right'
-             triggers='mouseover'
-             popoverTitle="{{'URI' | translate}}"
-        />
-      </td>
-      <td>{{validationCheck.key}}</td>
-      <td>{{validationCheck.formattedMessage}}</td>
-      <td> <flag [value]='validationCheck.status'></flag></td>
-    </tr>
+    <!--<tr *ngFor='let validationCheck of validationChecks'>-->
+      <!--<td>{{validationCheck.key}}</td>-->
+      <!--<td>{{validationCheck.formattedMessage}}</td>-->
+      <!--<td></td>-->
+    <!--</tr>-->
     <tr *ngIf='loading'>
-      <td colspan="4">{{'LOADING' | translate}}</td>
+      <td colspan="3">{{'LOADING' | translate}}</td>
     </tr>
     </tbody>
   </table>

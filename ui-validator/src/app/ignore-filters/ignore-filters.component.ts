@@ -9,16 +9,16 @@ import {ManagingTable} from "../shared/managing-table";
 })
 export class IgnoreFiltersComponent extends ManagingTable implements OnInit {
 
-  @Output() filter: Filter;
+  filter: Filter;
   pageTitle: string = 'Nav.TITLE_IGNORE_FILTERS';
   alertShown = true;
 
   constructor() {
     super();
-    this.filter = new Filter();
   }
 
   ngOnInit() {
+    this.filter = new Filter();
     this.loadData();
   }
 
