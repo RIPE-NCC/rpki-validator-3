@@ -1,4 +1,10 @@
 <page-title [pageTitle]='pageTitle'></page-title>
+<ngb-alert type='success' *ngIf='alertSuccessAdded' (close)='alertSuccessAdded=false'>
+  {{ 'IgnoreFilters.ALERT_MSG_ADDED' | translate }}
+</ngb-alert>
+<ngb-alert type='success' *ngIf='alertSuccessDeleted' (close)='alertSuccessDeleted=false'>
+  {{ 'IgnoreFilters.ALERT_MSG_DELETED' | translate }}
+</ngb-alert>
 <ngb-alert type='info' *ngIf='alertShown' (close)='alertShown=false'>
   {{ 'IgnoreFilters.ALERT_MSG_INTRO' | translate }}
 </ngb-alert>
@@ -7,58 +13,61 @@
       (ngSubmit)='onFilterSubmit(filterForm.value)'
       class='panel'>
   <div class='form-group row'>
-    <!-- prefix -->
+    <!-- PREFIX -->
     <div class='col-3'>
       <label for='prefix' class='col-form-label mr-1'><strong>{{'PREFIX' | translate}}</strong></label>
-      <em *ngIf='filterForm.controls.prefix?.invalid && filterForm.controls.prefix?.touched'>Not valid ipv4</em>
+      <em *ngIf='!validPrefix'>Not valid prefix</em>
       <input type='text'
              id='prefix'
              name='prefix'
              required
-             pattern='^(?=\d+\.\d+\.\d+\.\d+($|\/))(([1-9]?\d|1\d\d|2[0-4]\d|25[0-5])\.?){4}(\/([0-9]|[1-2][0-9]|3[0-2]))?$'
              placeholder='{{"IgnoreFilters.PREFIX_PLACEHOLDER" | translate}}'
-             [(ngModel)]='filter.prefix'
+             (ngModel)='filter.prefix'
+             (keyup)='validPrefix=true'
              class='form-control'/>
     </div>
-    <!-- asn -->
+    <!-- ASN -->
     <div class='col-3 pl-0'>
       <label for='asn' class='col-form-label mr-1'><strong>{{'ASN' | translate}}</strong></label>
+      <em *ngIf='!validAsn'>Not valid asn</em>
       <input type='text'
              id='asn'
              name='asn'
              required
              placeholder='{{"ASN" | translate}}'
-             [(ngModel)]='filter.asn'
+             (ngModel)='filter.asn'
+             (keyup)='validAsn=true'
              class='form-control'/>
     </div>
-    <!-- add button -->
+    <!-- ADD BUTTON -->
     <div class='align-self-end'>
       <span (mouseenter)="mouseoverAdd=true" (mouseleave)="mouseoverAdd=false">
         <button type='submit'
                 [disabled]="filterForm.controls.prefix?.invalid && filterForm.controls.asn?.invalid"
                 class='btn btn-primary'>{{'ADD' | translate}}</button>
       </span>
-      <em *ngIf='(filterForm.controls.prefix?.invalid && filterForm.controls.asn?.invalid)
-                  && (filterForm.controls.prefix?.touched || filterForm.controls.asn?.touched || mouseoverAdd)'>
+      <em *ngIf='filterForm.controls.prefix?.invalid && filterForm.controls.asn?.invalid && mouseoverAdd'>
         <strong>{{'IgnoreFilters.REQUIRED_PREFIX_OR_ASN' | translate}}</strong>
       </em>
     </div>
   </div>
-  <!-- comment -->
+  <!-- COMMENT -->
   <div class="form-group row col-12">
     <label for="comment" class='col-form-label mr-1'><strong>{{'COMMENT' | translate}}</strong></label>
     <textarea id="comment"
               name="comment"
-              [(ngModel)]='filter.comment'
+              (ngModel)='filter.comment'
               class="form-control">
     </textarea>
   </div>
 </form>
-<!-- current filters -->
+<!-- CURRENT FILTERS -->
 <h3><strong>{{'IgnoreFilters.CURRENT_FILTERS' | translate}}</strong></h3>
-<ngb-alert type='warning' *ngIf='alertShown' [dismissible]="false">
-  {{ 'IgnoreFilters.ALERT_MSG_NO_FILTERS' | translate }}
-</ngb-alert>
+<div *ngIf='ignoreFilters.length === 0; else table'>
+  <ngb-alert type='warning' [dismissible]="false">
+    {{ 'IgnoreFilters.ALERT_MSG_NO_FILTERS' | translate }}
+  </ngb-alert>
+</div>
 <ng-template #table>
   <div class='form-group d-flex justify-content-between mb-3'>
     <div class='d-inline-flex'>
@@ -72,16 +81,22 @@
     <thead>
     <tr>
       <th sortable-column='prefix'>{{'PREFIX' | translate}}</th>
-      <th sortable-column='filteredPrefixes'>{{'IgnoreFilters.FILTERED_ROA_PREFIXES' | translate}}</th>
+      <th sortable-column='asn'>{{'ASN' | translate}}</th>
+      <th sortable-column='comment'>{{'COMMENT' | translate}}</th>
       <th></th>
     </tr>
     </thead>
     <tbody>
-    <!--<tr *ngFor='let validationCheck of validationChecks'>-->
-      <!--<td>{{validationCheck.key}}</td>-->
-      <!--<td>{{validationCheck.formattedMessage}}</td>-->
-      <!--<td></td>-->
-    <!--</tr>-->
+    <tr *ngFor='let ignoreFilter of ignoreFilters'>
+      <td>{{ignoreFilter.prefix}}</td>
+      <td>{{ignoreFilter.asn}}</td>
+      <td>{{ignoreFilter.comment}}</td>
+      <td>
+        <span class='fa fa-ban ban-icon'
+              [ngbTooltip]="'IgnoreFilters.DELETE' | translate:{value:'info'}"
+              (click)='deleteFilter(ignoreFilter)'></span>
+      </td>
+    </tr>
     <tr *ngIf='loading'>
       <td colspan="3">{{'LOADING' | translate}}</td>
     </tr>

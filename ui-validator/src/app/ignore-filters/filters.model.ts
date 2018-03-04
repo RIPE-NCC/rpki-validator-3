@@ -1,4 +1,4 @@
-export interface IIgnoreFilters {
+export interface IIgnoreFilter {
   prefix?: string,
   asn?: string,
   comment?: string
@@ -12,7 +12,7 @@ export interface IIgnoreFiltersResponse {
     last: string
   },
   data: {
-    ignoreFilters: IIgnoreFilters[]
+    ignoreFilters: IIgnoreFilter[]
   },
   metadata: {
     totalCount: number

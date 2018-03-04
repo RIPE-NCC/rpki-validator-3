@@ -1,3 +1,5 @@
+@import "../../../styles";
+
 .alert {
   min-width: 4rem;
   text-align: center;
@@ -8,8 +10,8 @@
 
 .alert-success {
   color: white;
-  background-color: #46a546;
-  border-color: #46a546;
+  background-color: $green-rpki;
+  border-color: $green-rpki;
 }
 
 .alert-success-muted {
@@ -19,8 +21,8 @@
 
 .alert-warning {
   color: white;
-  background-color: #f89406;
-  border-color: #f89406;
+  background-color: $orange-rpki;
+  border-color: $orange-rpki;
 }
 
 .alert-warning-muted {
@@ -30,8 +32,8 @@
 
 .alert-danger {
   color: white;
-  background-color: #c43c35;
-  border-color: #c43c35;
+  background-color: $red-rpki;
+  border-color: $red-rpki;
 }
 
 .alert-danger-muted {

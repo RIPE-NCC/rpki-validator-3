@@ -89,7 +89,10 @@
     "CURRENT_FILTERS": "Current filters",
     "PREFIX_PLACEHOLDER": "IPv4 or IPv6 prefix",
     "REQUIRED_PREFIX_OR_ASN": "Prefix and/or ASN are required",
-    "FILTERED_ROA_PREFIXES":"Filtered ROA prefixes"
+    "FILTERED_ROA_PREFIXES":"Filtered ROA prefixes",
+    "DELETE": "Delete",
+    "ALERT_MSG_ADDED": "The filter has been added.",
+    "ALERT_MSG_DELETED": "The filter has been removed."
   },
   "Export": {
     "DESCRIPTION": "Here you are able to export the complete ROA data set for use in an existing BGP decision making workflow. The output will be in CSV or JSON format and consist of all validated ROAs, minus your ignore filter entries, plus your whitelist additions."
