@@ -47,6 +47,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.stream.Stream;
 
 @RestController
@@ -78,14 +79,14 @@ public class BgpPreviewController {
     }
 
     @GetMapping(path = "/validity")
-    public ResponseEntity<ApiResponse<BgpPreview>> validity(
+    public ResponseEntity<ApiResponse<List<BgpPreviewService.ValidatingRoa>>> validity(
             @RequestParam(name = "asn") String asn,
             @RequestParam(name = "prefix") String prefix) {
 
-        BgpPreviewController.BgpPreview preview = bgpPreviewService.validity(Asn.parse(asn), IpRange.parse(prefix));
+        List<BgpPreviewService.ValidatingRoa> roas = bgpPreviewService.validity(Asn.parse(asn), IpRange.parse(prefix));
 
-        return ResponseEntity.ok(ApiResponse.<BgpPreview>builder()
-                .data(preview)
+        return ResponseEntity.ok(ApiResponse.<List<BgpPreviewService.ValidatingRoa>>builder()
+                .data(roas)
                 .metadata(Metadata.of(1))
                 .build());
     }

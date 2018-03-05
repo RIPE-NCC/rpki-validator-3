@@ -43,6 +43,7 @@ import org.springframework.stereotype.Service;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -127,7 +128,7 @@ public class BgpPreviewService {
         data = builder.build();
     }
 
-    public BgpPreviewController.BgpPreview validity(Asn asn, IpRange prefix) {
+    public List<ValidatingRoa> validity(Asn asn, IpRange prefix) {
         return null;
     }
 
@@ -135,6 +136,14 @@ public class BgpPreviewService {
     public static class BgpPreviewResult {
         int totalCount;
         Stream<BgpPreviewController.BgpPreview> data;
+    }
+
+    @Value(staticConstructor = "of")
+    public static class ValidatingRoa {
+        Asn origin;
+        IpRange prefix;
+        String validity;
+        String uri;
     }
 
     @Value
