@@ -27,7 +27,7 @@ export class ValidationDetailsComponent extends ManagingTable implements OnInit 
     this.loading = true;
     this.setNumberOfFirstItemInTable();
     this._trustAnchorsService.getTrustAnchorValidationChecks(this.trustAnchorId,
-                                                              this.firstItemInTable.toLocaleString(),
+                                                              this.firstItemInTable.toString(),
                                                               this.rowsPerPage.toString(),
                                                               this.searchBy,
                                                               this.sortBy,

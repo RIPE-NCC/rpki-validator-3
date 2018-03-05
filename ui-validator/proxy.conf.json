@@ -1,25 +1,5 @@
 {
-  "/api/roas": {
-    "target": "http://localhost:9176",
-    "secure": false,
-    "logLevel": "debug"
-  },
-  "/api/trust-anchors": {
-    "target": "http://localhost:9176",
-    "secure": false,
-    "logLevel": "debug"
-  },
-  "/api/export.csv": {
-    "target": "http://localhost:9176",
-    "secure": false,
-    "logLevel": "debug"
-  },
-  "/api/export.json": {
-    "target": "http://localhost:9176",
-    "secure": false,
-    "logLevel": "debug"
-  },
-  "/api/rpki-repositories": {
+  "/api": {
     "target": "http://localhost:9176",
     "secure": false,
     "logLevel": "debug"
