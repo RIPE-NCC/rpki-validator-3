@@ -40,7 +40,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
@@ -49,9 +52,20 @@ public class BgpPreviewService {
     @Autowired
     private BgpRisDownloader bgpRisDownloader;
 
-    private BgpRisDump bgpRisDump = null;
+    private ImmutableList<BgpRisDump> bgpRisDumps = ImmutableList.of(
+        BgpRisDump.of(
+            "http://www.ris.ripe.net/dumps/riswhoisdump.IPv4.gz",
+            null,
+            Collections.emptyList()
+        ),
+        BgpRisDump.of(
+            "http://www.ris.ripe.net/dumps/riswhoisdump.IPv6.gz",
+            null,
+            Collections.emptyList()
+        )
+    );
 
-    private ImmutableList<BgpPreviewEntry> data = ImmutableList.<BgpPreviewEntry>builder().build();
+    private ImmutableList<BgpPreviewEntry> data = ImmutableList.of();
 
     public synchronized BgpPreviewResult find(SearchTerm searchTerm, Sorting sorting, Paging paging) {
         if (paging == null) {
@@ -96,21 +110,21 @@ public class BgpPreviewService {
         return sorting.getDirection() == Sorting.Direction.DESC ? columns.reversed() : columns;
     }
 
-    public synchronized void updateBgpRisDump(BgpRisDump updated) {
-        if (bgpRisDump == null || bgpRisDump.getLastModified().isAfter(updated.getLastModified())) {
-            // TODO implement actual validity checking logic
-            ImmutableList.Builder<BgpPreviewEntry> builder = ImmutableList.builder();
-            for (BgpRisEntry entry : updated.getEntries()) {
+    public synchronized void updateBgpRisDump(Collection<BgpRisDump> updated) {
+        // TODO implement actual validity checking logic
+        ImmutableList.Builder<BgpPreviewEntry> builder = ImmutableList.builder();
+        for (BgpRisDump dump : updated) {
+            for (BgpRisEntry entry : dump.getEntries()) {
                 builder.add(new BgpPreviewEntry(
                     entry.getOrigin(),
                     entry.getPrefix(),
                     "UNKNOWN"
                 ));
             }
-
-            bgpRisDump = updated;
-            data = builder.build();
         }
+
+        bgpRisDumps = ImmutableList.copyOf(updated);
+        data = builder.build();
     }
 
     @Value(staticConstructor = "of")
@@ -142,6 +156,6 @@ public class BgpPreviewService {
 
     @Scheduled(initialDelay = 10_000L, fixedDelay = 600_0000L)
     private void downloadRisPreview() {
-        updateBgpRisDump(bgpRisDownloader.fetch(bgpRisDump));
+        updateBgpRisDump(bgpRisDumps.stream().map(bgpRisDownloader::fetch).collect(Collectors.toList()));
     }
 }

@@ -41,10 +41,10 @@ import org.joda.time.DateTimeZone;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.validation.constraints.NotNull;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -69,7 +69,8 @@ public class BgpRisDownloader {
         httpClient.start();
     }
 
-    public BgpRisDump fetch(BgpRisDump dump) {
+    public BgpRisDump fetch(@NotNull BgpRisDump dump) {
+        log.debug("attempting to download new BGP RIS preview dump from {}", dump.url);
         final Supplier<Request> requestSupplier = () -> {
             Request request = httpClient.newRequest(dump.url);
             if (dump.lastModified != null) {
