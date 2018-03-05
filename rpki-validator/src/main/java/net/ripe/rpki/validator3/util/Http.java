@@ -29,8 +29,7 @@
  */
 package net.ripe.rpki.validator3.util;
 
-import net.ripe.rpki.validator3.rrdp.RrdpException;
-import org.eclipse.jetty.client.HttpClient;
+import fj.data.Either;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
@@ -45,6 +44,19 @@ import java.util.function.Supplier;
 
 public class Http {
 
+    public static class NotModified extends RuntimeException {
+    }
+
+    public static class Failure extends RuntimeException {
+        public Failure(String s) {
+            super(s);
+        }
+
+        public Failure(String s, Exception e) {
+            super(s, e);
+        }
+    }
+
     public static <T> T readStream(final Supplier<Request> requestF, Function<InputStream, T> reader) {
         InputStreamResponseListener listener = new InputStreamResponseListener();
         Request request = requestF.get();
@@ -55,16 +67,22 @@ public class Http {
             response = listener.get(30, TimeUnit.SECONDS);
 
             if (response.getStatus() != 200) {
-                RrdpException error = new RrdpException("unexpected response status " + response.getStatus() + " for " + request.getURI());
-                response.abort(error);
-                throw error;
+                if (response.getStatus() == 304) {
+                    final NotModified error = new NotModified();
+                    response.abort(error);
+                    throw error;
+                } else {
+                    final Failure error = new Failure("unexpected response status " + response.getStatus() + " for " + request.getURI());
+                    response.abort(error);
+                    throw error;
+                }
             }
 
             try (InputStream inputStream = listener.getInputStream()) {
                 return reader.apply(inputStream);
             }
         } catch (IOException | InterruptedException | TimeoutException | ExecutionException e) {
-            RrdpException error = new RrdpException("failed reading response stream for " + request.getURI() + ": " + e, e);
+            final Failure error = new Failure("failed reading response stream for " + request.getURI() + ": " + e, e);
             if (response != null) {
                 response.abort(error);
             }

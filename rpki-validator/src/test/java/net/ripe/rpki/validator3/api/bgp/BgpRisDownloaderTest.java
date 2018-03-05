@@ -30,14 +30,13 @@
 package net.ripe.rpki.validator3.api.bgp;
 
 import net.ripe.rpki.validator3.IntegrationTest;
+import org.joda.time.DateTime;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.io.ByteArrayInputStream;
-import java.io.UnsupportedEncodingException;
-import java.util.List;
+import java.util.Collections;
 
 import static org.junit.Assert.*;
 
@@ -50,13 +49,17 @@ public class BgpRisDownloaderTest {
 
     @Test
     public void download_ipv4() {
-        BgpRisDump dump = bgpRisDownloader.download("http://www.ris.ripe.net/dumps/riswhoisdump.IPv4.gz");
-        assertTrue(dump.entries.size() > 500_000);
+        BgpRisDump dump = bgpRisDownloader.fetch(
+                BgpRisDump.of("http://www.ris.ripe.net/dumps/riswhoisdump.IPv4.gz",
+                        DateTime.now(), Collections.emptyList()));
+        assertTrue(dump.entries.size() > 850_000);
     }
 
     @Test
     public void download_ipv6() {
-        BgpRisDump dump = bgpRisDownloader.download("http://www.ris.ripe.net/dumps/riswhoisdump.IPv6.gz");
+        BgpRisDump dump = bgpRisDownloader.fetch(
+                BgpRisDump.of("http://www.ris.ripe.net/dumps/riswhoisdump.IPv6.gz",
+                DateTime.now(), Collections.emptyList()));
         assertTrue(dump.entries.size() > 70_000);
     }
 
