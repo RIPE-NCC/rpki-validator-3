@@ -33,25 +33,47 @@ import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
+import net.ripe.rpki.validator3.api.Metadata;
+import net.ripe.rpki.validator3.api.Paging;
+import net.ripe.rpki.validator3.api.SearchTerm;
+import net.ripe.rpki.validator3.api.Sorting;
+import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.stream.Stream;
 
 @RestController
-@RequestMapping(path = "/api/bgp", produces = { Api.API_MIME_TYPE, "application/json" })
+@RequestMapping(path = "/api/bgp", produces = {Api.API_MIME_TYPE, "application/json"})
 @Slf4j
 public class BgpPreviewController {
 
+    @Autowired
+    private BgpPreviewService bgpPreviewService;
+
     @GetMapping(path = "/")
-    public ResponseEntity<ApiResponse<Stream<BgpPreview>>> list() {
-        // TODO This functionality is not implemented yet
+    public ResponseEntity<ApiResponse<Stream<BgpPreview>>> list(
+        @RequestParam(name = "startFrom", defaultValue = "0") int startFrom,
+        @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
+        @RequestParam(name = "search", defaultValue = "", required = false) String searchString,
+        @RequestParam(name = "sortBy", defaultValue = "prefix") String sortBy,
+        @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection
+    ) {
+        final SearchTerm searchTerm = StringUtils.isNotBlank(searchString) ? new SearchTerm(searchString) : null;
+        final Sorting sorting = Sorting.parse(sortBy, sortDirection);
+        final Paging paging = Paging.of(startFrom, pageSize);
+
+        BgpPreviewService.BgpPreviewResult bgpPreviewResult = bgpPreviewService.find(searchTerm, sorting, paging);
+
         final Stream<BgpPreview> bgps = Stream.empty();
         return ResponseEntity.ok(ApiResponse.<Stream<BgpPreview>>builder()
-                .data(bgps)
-                .build());
+            .data(bgpPreviewResult.getData())
+            .metadata(Metadata.of(bgpPreviewResult.getTotalCount()))
+            .build());
     }
 
     @Value
