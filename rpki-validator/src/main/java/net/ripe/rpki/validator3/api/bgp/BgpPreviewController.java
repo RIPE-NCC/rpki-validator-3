@@ -73,7 +73,11 @@ public class BgpPreviewController {
         BgpPreviewService.BgpPreviewResult bgpPreviewResult = bgpPreviewService.find(searchTerm, sorting, paging);
 
         return ResponseEntity.ok(ApiResponse.<Stream<BgpPreview>>builder()
-            .data(bgpPreviewResult.getData())
+            .data(bgpPreviewResult.getData().map(entry -> new BgpPreviewController.BgpPreview(
+                entry.getOrigin().toString(),
+                entry.getPrefix().toString(),
+                entry.getValidity().name()
+            )))
             .metadata(Metadata.of(bgpPreviewResult.getTotalCount()))
             .build());
     }
