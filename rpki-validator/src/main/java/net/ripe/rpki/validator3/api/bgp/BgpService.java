@@ -29,24 +29,15 @@
  */
 package net.ripe.rpki.validator3.api.bgp;
 
-        import lombok.extern.slf4j.Slf4j;
-        import net.ripe.ipresource.Asn;
-        import net.ripe.ipresource.IpRange;
-        import net.ripe.ipresource.UniqueIpResource;
+import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.api.Paging;
+import net.ripe.rpki.validator3.api.SearchTerm;
+import org.springframework.stereotype.Component;
 
-        import java.io.BufferedReader;
-        import java.io.IOException;
-        import java.io.InputStream;
-        import java.io.InputStreamReader;
-        import java.util.ArrayList;
-        import java.util.Collections;
-        import java.util.HashMap;
-        import java.util.List;
-        import java.util.Map;
-        import java.util.function.Function;
-        import java.util.regex.Matcher;
-        import java.util.regex.Pattern;
+import java.util.Collections;
+import java.util.List;
 
+@Component
 @Slf4j
 public class BgpService {
 
@@ -54,7 +45,7 @@ public class BgpService {
         // TODO Implement
     }
 
-    public List<BgpRisEntry> findAll() {
+    public List<BgpRisEntry> findAll(Paging paging, SearchTerm searchTerm) {
         // TODO Implement
         return Collections.emptyList();
     }

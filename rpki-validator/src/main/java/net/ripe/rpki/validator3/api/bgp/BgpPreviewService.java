@@ -127,6 +127,10 @@ public class BgpPreviewService {
         data = builder.build();
     }
 
+    public BgpPreviewController.BgpPreview validity(Asn asn, IpRange prefix) {
+        return null;
+    }
+
     @Value(staticConstructor = "of")
     public static class BgpPreviewResult {
         int totalCount;

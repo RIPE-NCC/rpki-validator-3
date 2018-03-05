@@ -31,6 +31,8 @@ package net.ripe.rpki.validator3.api.bgp;
 
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.ipresource.Asn;
+import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.Metadata;
@@ -69,11 +71,23 @@ public class BgpPreviewController {
 
         BgpPreviewService.BgpPreviewResult bgpPreviewResult = bgpPreviewService.find(searchTerm, sorting, paging);
 
-        final Stream<BgpPreview> bgps = Stream.empty();
         return ResponseEntity.ok(ApiResponse.<Stream<BgpPreview>>builder()
             .data(bgpPreviewResult.getData())
             .metadata(Metadata.of(bgpPreviewResult.getTotalCount()))
             .build());
+    }
+
+    @GetMapping(path = "/validity")
+    public ResponseEntity<ApiResponse<BgpPreview>> validity(
+            @RequestParam(name = "asn") String asn,
+            @RequestParam(name = "prefix") String prefix) {
+
+        BgpPreviewController.BgpPreview preview = bgpPreviewService.validity(Asn.parse(asn), IpRange.parse(prefix));
+
+        return ResponseEntity.ok(ApiResponse.<BgpPreview>builder()
+                .data(preview)
+                .metadata(Metadata.of(1))
+                .build());
     }
 
     @Value
