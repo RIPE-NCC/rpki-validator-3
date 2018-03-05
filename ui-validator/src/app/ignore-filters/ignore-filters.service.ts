@@ -4,8 +4,8 @@ import {Observable} from 'rxjs/Observable';
 import 'rxjs/add/operator/do';
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/observable/throw';
-import {IIgnoreFiltersResponse} from "./filters.model";
-import {Filter} from "./filter";
+
+import {IIgnoreFilter, IIgnoreFiltersResponse} from "./filters.model";
 
 @Injectable()
 export class IgnoreFiltersService {
@@ -24,8 +24,12 @@ export class IgnoreFiltersService {
 
     return this._http.get<IIgnoreFiltersResponse>(this._ignoreFiltersUrl, {params: params})
   }
-
-  saveIgnoreFilter(filter: Filter): Observable<IIgnoreFiltersResponse> {
+  //TODO make it really work
+  saveIgnoreFilter(filter: IIgnoreFilter): Observable<IIgnoreFiltersResponse> {
+    return this._http.get<IIgnoreFiltersResponse>(this._ignoreFiltersUrl)
+  }
+  //TODO make it really work
+  deleteIgnoreFilter(filter: IIgnoreFilter): Observable<IIgnoreFiltersResponse> {
     return this._http.get<IIgnoreFiltersResponse>(this._ignoreFiltersUrl)
   }
 }
