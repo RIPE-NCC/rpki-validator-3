@@ -42,7 +42,7 @@ public class BgpPreviewServiceTest {
 
     private static final Asn AS_3333 = Asn.parse("AS3333");
 
-    private BgpPreviewService subject =  new BgpPreviewService(new ValidatedRpkiObjects());
+    private BgpPreviewService subject =  new BgpPreviewService(new String[0],5, null, new ValidatedRpkiObjects());
 
     @Test
     public void should_mark_non_matching_bgp_entry_as_unknown() {

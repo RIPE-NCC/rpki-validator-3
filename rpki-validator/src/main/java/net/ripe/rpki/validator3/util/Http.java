@@ -29,7 +29,6 @@
  */
 package net.ripe.rpki.validator3.util;
 
-import fj.data.Either;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;

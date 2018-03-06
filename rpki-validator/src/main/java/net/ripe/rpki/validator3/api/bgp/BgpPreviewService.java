@@ -30,7 +30,6 @@
 package net.ripe.rpki.validator3.api.bgp;
 
 import com.google.common.collect.ImmutableList;
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
@@ -42,6 +41,7 @@ import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -52,6 +52,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -60,21 +61,11 @@ import java.util.stream.Stream;
 @Slf4j
 public class BgpPreviewService {
 
-    @Autowired
-    private BgpRisDownloader bgpRisDownloader;
+    private final int bgpRisVisibilityThreshold;
 
-    private List<BgpRisDump> bgpRisDumps = Arrays.asList(
-        BgpRisDump.of(
-            "http://www.ris.ripe.net/dumps/riswhoisdump.IPv4.gz",
-            null,
-            Collections.emptyList()
-        ),
-        BgpRisDump.of(
-            "http://www.ris.ripe.net/dumps/riswhoisdump.IPv6.gz",
-            null,
-            Collections.emptyList()
-        )
-    );
+    private final BgpRisDownloader bgpRisDownloader;
+
+    private List<BgpRisDump> bgpRisDumps;
 
     private IntervalMap<IpRange, List<ValidatedRpkiObjects.RoaPrefix>> roaPrefixes = new NestedIntervalMap<>(IpResourceIntervalStrategy.getInstance());
 
@@ -84,25 +75,45 @@ public class BgpPreviewService {
         UNKNOWN, VALID, INVALID_ASN, INVALID_LENGTH
     }
 
-    public List<ValidatingRoa> validity(Asn asn, IpRange prefix) {
-        return null;
+    public List<ValidatingRoa> validity(final IpRange prefix) {
+        return this.roaPrefixes.findExactAndAllLessSpecific(prefix)
+                .stream()
+                .flatMap(x -> x.stream())
+                .map(r -> {
+                    final BgpPreviewEntry bgpPreviewEntry = BgpPreviewEntry.of(r.getAsn(), r.getPrefix(), Validity.UNKNOWN);
+                    final Validity validity = validateBgpRisEntry(this.roaPrefixes, bgpPreviewEntry);
+                    return ValidatingRoa.of(r.getAsn().toString(), r.getPrefix().toString(), validity.toString(), r.getLocations());
+                })
+                .sorted(Comparator.comparingInt(r -> {
+                    switch (r.getValidity()) {
+                        case "VALID":
+                            return 0;
+                        case "INVALID_LENGTH":
+                            return 1;
+                        case "INVALID_ASN":
+                            return 2;
+                    }
+                    return 10;
+                }))
+                .distinct()
+                .collect(Collectors.toList());
     }
 
-    @Value(staticConstructor = "of")
+    @lombok.Value(staticConstructor = "of")
     public static class BgpPreviewResult {
         int totalCount;
         Stream<BgpPreviewEntry> data;
     }
 
-    @Value(staticConstructor = "of")
+    @lombok.Value(staticConstructor = "of")
     public static class ValidatingRoa {
-        Asn origin;
-        IpRange prefix;
+        String origin;
+        String prefix;
         String validity;
-        String uri;
+        Set<String> uri;
     }
 
-    @Value(staticConstructor = "of")
+    @lombok.Value(staticConstructor = "of")
     public static class BgpPreviewEntry {
         Asn origin;
         IpRange prefix;
@@ -125,8 +136,10 @@ public class BgpPreviewService {
                     return (x) -> x.getValidity() == Validity.VALID;
                 case "INVALID":
                     return (x) -> x.getValidity() == Validity.INVALID_ASN || x.getValidity() == Validity.INVALID_LENGTH;
+                case "ASN":
                 case "INVALID ASN":
                     return (x) -> x.getValidity() == Validity.INVALID_ASN;
+                case "LENGTH":
                 case "INVALID LENGTH":
                     return (x) -> x.getValidity() == Validity.INVALID_LENGTH;
                 case "UNKNOWN":
@@ -160,7 +173,19 @@ public class BgpPreviewService {
     }
 
     @Autowired
-    public BgpPreviewService(ValidatedRpkiObjects validatedRpkiObjects) {
+    public BgpPreviewService(
+        @Value("${rpki.validator.bgp.ris.dump.urls}") String[] bgpRisDumpUrls,
+        @Value("${rpki.validator.bgp.ris.visibility.threshold}") int bgpRisVisibilityThreshold,
+        BgpRisDownloader bgpRisDownloader, ValidatedRpkiObjects validatedRpkiObjects
+    ) {
+        this.bgpRisVisibilityThreshold = bgpRisVisibilityThreshold;
+        this.bgpRisDumps = Arrays.asList(bgpRisDumpUrls).stream().map(url -> BgpRisDump.of(
+            url,
+            null,
+            Collections.emptyList()
+        )).collect(Collectors.toList());
+        this.bgpRisDownloader = bgpRisDownloader;
+
         validatedRpkiObjects.onUpdate(objects -> this.updateRoaPrefixes(objects.flatMap(x -> x.getRoaPrefixes().stream())));
     }
 
@@ -193,11 +218,13 @@ public class BgpPreviewService {
             ImmutableList.Builder<BgpPreviewEntry> bgpRisEntries = ImmutableList.builder();
             for (BgpRisDump dump : updated) {
                 for (BgpRisEntry entry : dump.getEntries()) {
-                    bgpRisEntries.add(BgpPreviewEntry.of(
-                        entry.getOrigin(),
-                        entry.getPrefix(),
-                        Validity.UNKNOWN
-                    ));
+                    if (entry.getVisibility() >= bgpRisVisibilityThreshold) {
+                        bgpRisEntries.add(BgpPreviewEntry.of(
+                            entry.getOrigin(),
+                            entry.getPrefix(),
+                            Validity.UNKNOWN
+                        ));
+                    }
                 }
             }
 
@@ -250,14 +277,14 @@ public class BgpPreviewService {
     }
 
     private Validity validateBgpRisEntry(IntervalMap<IpRange, List<ValidatedRpkiObjects.RoaPrefix>> roaPrefixes, BgpPreviewEntry bgpRisEntry) {
-        List<ValidatedRpkiObjects.RoaPrefix> matchingRoaPrefixes = roaPrefixes.findExactAndAllLessSpecific(bgpRisEntry.getPrefix()).stream().flatMap(x -> x.stream()).collect(Collectors.toList());
+        List<ValidatedRpkiObjects.RoaPrefix> matchingRoaPrefixes = roaPrefixes.findExactAndAllLessSpecific(bgpRisEntry.getPrefix()).stream().flatMap(Collection::stream).collect(Collectors.toList());
         List<ValidatedRpkiObjects.RoaPrefix> matchingAsnRoas = matchingRoaPrefixes.stream().filter(roaPrefix -> roaPrefix.getAsn().equals(bgpRisEntry.getOrigin())).collect(Collectors.toList());
         Validity validity;
         if (matchingRoaPrefixes.isEmpty()) {
             validity = Validity.UNKNOWN;
         } else if (matchingAsnRoas.isEmpty()) {
             validity = Validity.INVALID_ASN;
-        } else if (!matchingAsnRoas.stream().anyMatch(roaPrefix -> roaPrefix.getEffectiveLength() >= bgpRisEntry.getPrefix().getPrefixLength())) {
+        } else if (matchingAsnRoas.stream().noneMatch(roaPrefix -> roaPrefix.getEffectiveLength() >= bgpRisEntry.getPrefix().getPrefixLength())) {
             validity = Validity.INVALID_LENGTH;
         } else {
             validity = Validity.VALID;
