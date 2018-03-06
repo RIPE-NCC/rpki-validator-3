@@ -46,6 +46,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -77,7 +78,7 @@ public class BgpPreviewService {
 
     private ImmutableList<BgpRisEntry> bgpRisEntries = ImmutableList.of();
 
-    private IntervalMap<IpRange, ValidatedRpkiObjects.RoaPrefix> roaPrefixes = new NestedIntervalMap<>(IpResourceIntervalStrategy.getInstance());
+    private IntervalMap<IpRange, List<ValidatedRpkiObjects.RoaPrefix>> roaPrefixes = new NestedIntervalMap<>(IpResourceIntervalStrategy.getInstance());
 
     private ImmutableList<BgpPreviewEntry> bgpPreviewEntries = ImmutableList.of();
 
@@ -210,8 +211,15 @@ public class BgpPreviewService {
     public synchronized void updateRoaPrefixes(Stream<ValidatedRpkiObjects.RoaPrefix> roaPrefixes) {
         Instant start = Instant.now();
         try {
-            NestedIntervalMap<IpRange, ValidatedRpkiObjects.RoaPrefix> prefixes = new NestedIntervalMap<>(IpResourceIntervalStrategy.getInstance());
-            roaPrefixes.forEach(roaPrefix -> prefixes.put(roaPrefix.getPrefix(), roaPrefix));
+            NestedIntervalMap<IpRange, List<ValidatedRpkiObjects.RoaPrefix>> prefixes = new NestedIntervalMap<>(IpResourceIntervalStrategy.getInstance());
+            roaPrefixes.forEach(roaPrefix -> {
+                List<ValidatedRpkiObjects.RoaPrefix> existing = prefixes.findExact(roaPrefix.getPrefix());
+                if (existing == null) {
+                    existing = new ArrayList<>(1);
+                    prefixes.put(roaPrefix.getPrefix(), existing);
+                }
+                existing.add(roaPrefix);
+            });
 
             this.roaPrefixes = prefixes;
             this.bgpPreviewEntries = validateBgpRisEntries(this.bgpRisEntries, this.roaPrefixes);
@@ -226,16 +234,17 @@ public class BgpPreviewService {
         updateBgpRisDump(bgpRisDumps.stream().map(bgpRisDownloader::fetch).collect(Collectors.toList()));
     }
 
-    private ImmutableList<BgpPreviewEntry> validateBgpRisEntries(Iterable<BgpRisEntry> bgpRisEntries, IntervalMap<IpRange, ValidatedRpkiObjects.RoaPrefix> roaPrefixes) {
+    private ImmutableList<BgpPreviewEntry> validateBgpRisEntries(Iterable<BgpRisEntry> bgpRisEntries, IntervalMap<IpRange, List<ValidatedRpkiObjects.RoaPrefix>> roaPrefixes) {
         ImmutableList.Builder<BgpPreviewEntry> builder = ImmutableList.builder();
         for (BgpRisEntry bgpRisEntry : bgpRisEntries) {
-            ValidatedRpkiObjects.RoaPrefix matchingRoaPrefixes = roaPrefixes.findExactOrFirstLessSpecific(bgpRisEntry.getPrefix());
+            List<ValidatedRpkiObjects.RoaPrefix> matchingRoaPrefixes = roaPrefixes.findExactAndAllLessSpecific(bgpRisEntry.getPrefix()).stream().flatMap(x -> x.stream()).collect(Collectors.toList());
+            List<ValidatedRpkiObjects.RoaPrefix> matchingAsnRoas = matchingRoaPrefixes.stream().filter(roaPrefix -> roaPrefix.getAsn().equals(bgpRisEntry.getOrigin())).collect(Collectors.toList());
             Validity validity;
-            if (matchingRoaPrefixes == null) {
+            if (matchingRoaPrefixes.isEmpty()) {
                 validity = Validity.UNKNOWN;
-            } else if (!matchingRoaPrefixes.getAsn().equals(bgpRisEntry.getOrigin())) {
+            } else if (matchingAsnRoas.isEmpty()) {
                 validity = Validity.INVALID_ASN;
-            } else if (matchingRoaPrefixes.getEffectiveLength() < bgpRisEntry.getPrefix().getPrefixLength()) {
+            } else if (!matchingAsnRoas.stream().anyMatch(roaPrefix -> roaPrefix.getEffectiveLength() >= bgpRisEntry.getPrefix().getPrefixLength())) {
                 validity = Validity.INVALID_LENGTH;
             } else {
                 validity = Validity.VALID;
