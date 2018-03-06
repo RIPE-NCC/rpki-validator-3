@@ -31,6 +31,8 @@ package net.ripe.rpki.validator3.api.bgp;
 
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.ipresource.Asn;
+import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.Metadata;
@@ -45,6 +47,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.stream.Stream;
 
 @RestController
@@ -69,11 +72,27 @@ public class BgpPreviewController {
 
         BgpPreviewService.BgpPreviewResult bgpPreviewResult = bgpPreviewService.find(searchTerm, sorting, paging);
 
-        final Stream<BgpPreview> bgps = Stream.empty();
         return ResponseEntity.ok(ApiResponse.<Stream<BgpPreview>>builder()
-            .data(bgpPreviewResult.getData())
+            .data(bgpPreviewResult.getData().map(entry -> new BgpPreviewController.BgpPreview(
+                entry.getOrigin().toString(),
+                entry.getPrefix().toString(),
+                entry.getValidity().name()
+            )))
             .metadata(Metadata.of(bgpPreviewResult.getTotalCount()))
             .build());
+    }
+
+    @GetMapping(path = "/validity")
+    public ResponseEntity<ApiResponse<List<BgpPreviewService.ValidatingRoa>>> validity(
+            @RequestParam(name = "asn") String asn,
+            @RequestParam(name = "prefix") String prefix) {
+
+        List<BgpPreviewService.ValidatingRoa> roas = bgpPreviewService.validity(Asn.parse(asn), IpRange.parse(prefix));
+
+        return ResponseEntity.ok(ApiResponse.<List<BgpPreviewService.ValidatingRoa>>builder()
+                .data(roas)
+                .metadata(Metadata.of(1))
+                .build());
     }
 
     @Value

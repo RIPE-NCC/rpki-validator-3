@@ -44,6 +44,10 @@ public class Paging {
     final Integer startFrom;
     final Integer pageSize;;
 
+    public boolean isIndefinite() {
+        return startFrom == null || pageSize == null;
+    }
+
     public static <T> Links links(int startFrom, int pageSize, int totalSize, BiFunction<Integer, Integer, T> linkConstructor) {
         int previous = startFrom - pageSize;
         if (previous < 0) {
