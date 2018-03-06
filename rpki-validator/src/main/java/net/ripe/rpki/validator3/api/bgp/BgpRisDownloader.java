@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.api.bgp;
 
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
@@ -61,6 +62,7 @@ import java.util.zip.GZIPInputStream;
 @Slf4j
 public class BgpRisDownloader {
 
+    @Setter
     private HttpClient httpClient;
 
     @PostConstruct
@@ -72,7 +74,7 @@ public class BgpRisDownloader {
     public BgpRisDump fetch(@NotNull BgpRisDump dump) {
         log.debug("attempting to download new BGP RIS preview dump from {}", dump.url);
         final Supplier<Request> requestSupplier = () -> {
-            Request request = httpClient.newRequest(dump.url);
+            final Request request = httpClient.newRequest(dump.url);
             if (dump.lastModified != null) {
                 request.header("If-Modified-Since", formatAsRFC2616(dump.lastModified));
             }
