@@ -9,8 +9,7 @@
   </thead>
   <tbody>
   <tr *ngFor='let ta of trustAnchorsOverview' (click)='openTADetails(ta.id)' [ngbTooltip]="'TrustAnchors.TOOLTIP_CLICK' | translate:{value:'info'}">
-    <td>{{ta.taName}}
-    </td>
+    <td>{{ta.taName}}</td>
     <td>
       <div class='d-inline-flex  justify-content-between'>
         <flag [value]='ta.successful' [color]='"green"' class='mr-2'></flag>

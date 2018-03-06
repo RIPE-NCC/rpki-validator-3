@@ -3,6 +3,7 @@ import {Component, OnInit} from '@angular/core';
 import {BgpService} from "./bgp.service";
 import {IBgp} from "./bgp.model";
 import {ManagingTable} from "../shared/managing-table";
+import {Router} from "@angular/router";
 
 @Component({
   selector: 'app-bgp-preview',
@@ -15,7 +16,7 @@ export class BgpPreviewComponent extends ManagingTable implements OnInit {
   alertShown: boolean = true;
   bgps: IBgp[] = [];
 
-  constructor(private _bgpService: BgpService) {
+  constructor(private _bgpService: BgpService, private _router: Router) {
     super();
   }
 
@@ -45,4 +46,7 @@ export class BgpPreviewComponent extends ManagingTable implements OnInit {
         );
   }
 
+  openAnnouncementPreviewDetails(asn: string, prefix: string) {
+    this._router.navigate(['/announcement-preview/', asn, prefix]);
+  }
 }

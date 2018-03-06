@@ -1,14 +1,14 @@
 <page-title [pageTitle]='pageTitle'></page-title>
-<ngb-alert type='info' *ngIf="alertShown" (close)='alertShown=false'>
-  <p [innerHTML]="'Bgp.ALERT_MSG_P1' | translate:{value:'info'}"></p>
-  <ul>
-    <li><p [innerHTML]="'Bgp.ALERT_MSG_LI1' | translate:{value:'info'}"></p></li>
-    <li><p [innerHTML]="'Bgp.ALERT_MSG_LI2' | translate:{value:'info'}"></p></li>
-    <li><p [innerHTML]="'Bgp.ALERT_MSG_LI3' | translate:{value:'info'}"></p></li>
-    <li><p [innerHTML]="'Bgp.ALERT_MSG_LI4' | translate:{value:'info'}"></p></li>
-  </ul>
-  <p>{{ 'Bgp.ALERT_MSG_P2' | translate }}</p>
-</ngb-alert>
+<!--<ngb-alert type='info' *ngIf="alertShown" (close)='alertShown=false'>-->
+  <!--<p [innerHTML]="'Bgp.ALERT_MSG_P1' | translate:{value:'info'}"></p>-->
+  <!--<ul>-->
+    <!--<li><p [innerHTML]="'Bgp.ALERT_MSG_LI1' | translate:{value:'info'}"></p></li>-->
+    <!--<li><p [innerHTML]="'Bgp.ALERT_MSG_LI2' | translate:{value:'info'}"></p></li>-->
+    <!--<li><p [innerHTML]="'Bgp.ALERT_MSG_LI3' | translate:{value:'info'}"></p></li>-->
+    <!--<li><p [innerHTML]="'Bgp.ALERT_MSG_LI4' | translate:{value:'info'}"></p></li>-->
+  <!--</ul>-->
+  <!--<p>{{ 'Bgp.ALERT_MSG_P2' | translate }}</p>-->
+<!--</ngb-alert>-->
 <div class='form-group d-flex justify-content-between mb-3'>
   <div class='d-inline-flex'>
     <page-size-select (changedPageSize)='onChangedPageSize($event)'></page-size-select>
@@ -26,7 +26,7 @@
   </tr>
   </thead>
   <tbody>
-  <tr *ngFor='let bgp of bgps'>
+  <tr *ngFor='let bgp of bgps' (click)='openAnnouncementPreviewDetails(bgp.asn, bgp.prefix)' [ngbTooltip]="'Bgp.TOOLTIP_CLICK' | translate:{value:'info'}">
     <td>{{bgp.asn}}</td>
     <td>{{bgp.prefix}}</td>
     <td>

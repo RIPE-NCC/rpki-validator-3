@@ -25,12 +25,14 @@
   "SUCCESS": "SUCCESS",
   "WARNING": "WARNING",
   "ERROR": "ERROR",
+  "STATUS": "Status",
   "Nav": {
     "TITLE_TRUST_ANCHORS": "Configured Trust Anchors",
     "TITLE_ROAS": "Validated ROAs",
     "TITLE_IGNORE_FILTERS": "Ignore Filters",
     "TITLE_WHITELIST": "Whitelist",
     "TITLE_BGP_PREVIEW": "BGP Preview",
+    "TITLE_ANNOUNCEMENT_PREVIEW": "Announcement Preview",
     "TITLE_EXPORT_API": "Export and API",
     "TITLE_ROUTER_SESSIONS": "Router Sessions",
     "TITLE_MONITORING_TA": "Monitor for"
@@ -60,7 +62,6 @@
     "NO_RECORDS": "No repositories problems found",
     "URI": "URI",
     "REPO_TYPE": "Type",
-    "REPO_STATUS": "Status",
     "REPO_LAST_CHECKED": "Last checked"
   },
   "ValidationDetails": {
@@ -88,7 +89,11 @@
     "ALERT_MSG_LI4": "The validated ROAs found by this RPKI Validator after applying your filters and additional whitelist entries.",
     "ALERT_MSG_P2": "Please note that the BGP announcements your routers see may differ from the ones listed here.",
     "LENGTH": "Length",
-    "DETAILS_TITLE": "Details"
+    "DETAILS_TITLE": "Details",
+    "TOOLTIP_CLICK": "Click to view announcement preview"
+  },
+  "AnnouncementPreview": {
+    "RELEVANT_VALIDATED_ROAS": "Relevant Validated ROAs"
   },
   "Export": {
     "DESCRIPTION": "Here you are able to export the complete ROA data set for use in an existing BGP decision making workflow. The output will be in CSV or JSON format and consist of all validated ROAs, minus your ignore filter entries, plus your whitelist additions."

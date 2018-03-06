@@ -12,6 +12,7 @@ import {SharedModule} from "./shared/shared.module";
 import {TrustAnchorsModule} from './trust-anchors/trust-anchors.module';
 import {RoasModule} from "./roas/roas.module";
 import {BgpPreviewModule} from "./bgp-preview/bgp-preview.module";
+import {AnnouncementPreviewModule} from "./announcement-preview/announcement-preview.module";
 
 export function HttpLoaderFactory(http: HttpClient) {
   return new TranslateHttpLoader(http);
@@ -29,6 +30,7 @@ export function HttpLoaderFactory(http: HttpClient) {
     TrustAnchorsModule,
     RoasModule,
     BgpPreviewModule,
+    AnnouncementPreviewModule,
     RouterModule.forRoot(appRoutes),
     TranslateModule.forRoot({
       loader: {
