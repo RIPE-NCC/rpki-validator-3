@@ -125,8 +125,10 @@ public class BgpPreviewService {
                     return (x) -> x.getValidity() == Validity.VALID;
                 case "INVALID":
                     return (x) -> x.getValidity() == Validity.INVALID_ASN || x.getValidity() == Validity.INVALID_LENGTH;
+                case "ASN":
                 case "INVALID ASN":
                     return (x) -> x.getValidity() == Validity.INVALID_ASN;
+                case "LENGTH":
                 case "INVALID LENGTH":
                     return (x) -> x.getValidity() == Validity.INVALID_LENGTH;
                 case "UNKNOWN":
