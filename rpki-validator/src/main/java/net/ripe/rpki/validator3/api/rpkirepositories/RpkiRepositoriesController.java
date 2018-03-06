@@ -77,7 +77,7 @@ public class RpkiRepositoriesController {
         final Paging paging = Paging.of(startFrom, pageSize);
         final List<RpkiRepository> repositories = rpkiRepositories.findAll(status, taId, paging);
 
-        final int totalSize = repositories.size();
+        final int totalSize = (int) rpkiRepositories.countAll(taId);
         final Links links = Paging.links(
                 startFrom, pageSize, totalSize,
                 (sf, ps) -> methodOn(RpkiRepositoriesController.class).list(sf, ps, status, taId));

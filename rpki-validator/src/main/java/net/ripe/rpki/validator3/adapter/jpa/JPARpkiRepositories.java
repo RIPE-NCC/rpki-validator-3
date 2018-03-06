@@ -117,6 +117,19 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
     }
 
     @Override
+    public long countAll(Long taId) {
+        BooleanBuilder builder = new BooleanBuilder();
+        if (taId != null) {
+            TrustAnchor ta = trustAnchors.get(taId);
+            if (ta != null) {
+                builder.and(rpkiRepository.trustAnchors.contains(ta));
+            }
+        }
+        JPAQuery<RpkiRepository> query = select().where(builder);
+        return query.fetchCount();
+    }
+
+    @Override
     public Stream<RpkiRepository> findRsyncRepositories() {
         return stream(
             select()

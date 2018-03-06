@@ -47,6 +47,8 @@ public interface RpkiRepositories {
 
     List<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Long taId, Paging paging);
 
+    long countAll(Long taId);
+
     default List<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Long taId) {
         return findAll(optionalStatus, taId, null);
     }
