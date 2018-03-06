@@ -103,7 +103,7 @@ public class BgpPreviewService {
         String uri;
     }
 
-    @Value
+    @Value(staticConstructor = "of")
     public static class BgpPreviewEntry {
         Asn origin;
         IpRange prefix;
