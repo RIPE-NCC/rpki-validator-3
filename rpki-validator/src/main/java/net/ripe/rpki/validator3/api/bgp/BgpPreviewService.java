@@ -30,7 +30,6 @@
 package net.ripe.rpki.validator3.api.bgp;
 
 import com.google.common.collect.ImmutableList;
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
@@ -42,6 +41,7 @@ import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -59,6 +59,9 @@ import java.util.stream.Stream;
 @Service
 @Slf4j
 public class BgpPreviewService {
+
+    @Value("${rpki.validator.bgp.ris.visibility.threshold}")
+    private int bgpRisVisibilityThreshold;
 
     @Autowired
     private BgpRisDownloader bgpRisDownloader;
@@ -88,13 +91,13 @@ public class BgpPreviewService {
         return null;
     }
 
-    @Value(staticConstructor = "of")
+    @lombok.Value(staticConstructor = "of")
     public static class BgpPreviewResult {
         int totalCount;
         Stream<BgpPreviewEntry> data;
     }
 
-    @Value(staticConstructor = "of")
+    @lombok.Value(staticConstructor = "of")
     public static class ValidatingRoa {
         Asn origin;
         IpRange prefix;
@@ -102,7 +105,7 @@ public class BgpPreviewService {
         String uri;
     }
 
-    @Value(staticConstructor = "of")
+    @lombok.Value(staticConstructor = "of")
     public static class BgpPreviewEntry {
         Asn origin;
         IpRange prefix;
@@ -195,11 +198,13 @@ public class BgpPreviewService {
             ImmutableList.Builder<BgpPreviewEntry> bgpRisEntries = ImmutableList.builder();
             for (BgpRisDump dump : updated) {
                 for (BgpRisEntry entry : dump.getEntries()) {
-                    bgpRisEntries.add(BgpPreviewEntry.of(
-                        entry.getOrigin(),
-                        entry.getPrefix(),
-                        Validity.UNKNOWN
-                    ));
+                    if (entry.getVisibility() >= bgpRisVisibilityThreshold) {
+                        bgpRisEntries.add(BgpPreviewEntry.of(
+                            entry.getOrigin(),
+                            entry.getPrefix(),
+                            Validity.UNKNOWN
+                        ));
+                    }
                 }
             }
 
