@@ -52,6 +52,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -74,8 +75,28 @@ public class BgpPreviewService {
         UNKNOWN, VALID, INVALID_ASN, INVALID_LENGTH
     }
 
-    public List<ValidatingRoa> validity(Asn asn, IpRange prefix) {
-        return null;
+    public List<ValidatingRoa> validity(final IpRange prefix) {
+        return this.roaPrefixes.findExactAndAllLessSpecific(prefix)
+                .stream()
+                .flatMap(x -> x.stream())
+                .map(r -> {
+                    final BgpPreviewEntry bgpPreviewEntry = BgpPreviewEntry.of(r.getAsn(), r.getPrefix(), Validity.UNKNOWN);
+                    final Validity validity = validateBgpRisEntry(this.roaPrefixes, bgpPreviewEntry);
+                    return ValidatingRoa.of(r.getAsn().toString(), r.getPrefix().toString(), validity.toString(), r.getLocations());
+                })
+                .sorted(Comparator.comparingInt(r -> {
+                    switch (r.getValidity()) {
+                        case "VALID":
+                            return 0;
+                        case "INVALID_LENGTH":
+                            return 1;
+                        case "INVALID_ASN":
+                            return 2;
+                    }
+                    return 10;
+                }))
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     @lombok.Value(staticConstructor = "of")
@@ -86,10 +107,10 @@ public class BgpPreviewService {
 
     @lombok.Value(staticConstructor = "of")
     public static class ValidatingRoa {
-        Asn origin;
-        IpRange prefix;
+        String origin;
+        String prefix;
         String validity;
-        String uri;
+        Set<String> uri;
     }
 
     @lombok.Value(staticConstructor = "of")
@@ -256,14 +277,14 @@ public class BgpPreviewService {
     }
 
     private Validity validateBgpRisEntry(IntervalMap<IpRange, List<ValidatedRpkiObjects.RoaPrefix>> roaPrefixes, BgpPreviewEntry bgpRisEntry) {
-        List<ValidatedRpkiObjects.RoaPrefix> matchingRoaPrefixes = roaPrefixes.findExactAndAllLessSpecific(bgpRisEntry.getPrefix()).stream().flatMap(x -> x.stream()).collect(Collectors.toList());
+        List<ValidatedRpkiObjects.RoaPrefix> matchingRoaPrefixes = roaPrefixes.findExactAndAllLessSpecific(bgpRisEntry.getPrefix()).stream().flatMap(Collection::stream).collect(Collectors.toList());
         List<ValidatedRpkiObjects.RoaPrefix> matchingAsnRoas = matchingRoaPrefixes.stream().filter(roaPrefix -> roaPrefix.getAsn().equals(bgpRisEntry.getOrigin())).collect(Collectors.toList());
         Validity validity;
         if (matchingRoaPrefixes.isEmpty()) {
             validity = Validity.UNKNOWN;
         } else if (matchingAsnRoas.isEmpty()) {
             validity = Validity.INVALID_ASN;
-        } else if (!matchingAsnRoas.stream().anyMatch(roaPrefix -> roaPrefix.getEffectiveLength() >= bgpRisEntry.getPrefix().getPrefixLength())) {
+        } else if (matchingAsnRoas.stream().noneMatch(roaPrefix -> roaPrefix.getEffectiveLength() >= bgpRisEntry.getPrefix().getPrefixLength())) {
             validity = Validity.INVALID_LENGTH;
         } else {
             validity = Validity.VALID;
