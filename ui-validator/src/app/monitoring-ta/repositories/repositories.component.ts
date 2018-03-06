@@ -28,7 +28,7 @@ export class RepositoriesComponent extends ManagingTable implements OnInit {
     this.loading = true;
     this.setNumberOfFirstItemInTable();
     this._trustAnchorsService.getRepositories(this.trustAnchorId,
-                                              this.firstItemInTable.toLocaleString(),
+                                              this.firstItemInTable.toString(),
                                               this.rowsPerPage.toString(),
                                               this.searchBy,
                                               this.sortBy,
