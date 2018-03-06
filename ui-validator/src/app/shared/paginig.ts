@@ -15,7 +15,7 @@ export abstract class Paging {
   abstract loadData();
 
   resetInitialValuesPagination(): void {
-    this.page = this.previousPage = this.firstItemInTable = this.lastItemInTable = 0;
+    this.page = this.previousPage = this.firstItemInTable = this.lastItemInTable = 1;
   }
 
   setNumberOfFirstItemInTable() {
