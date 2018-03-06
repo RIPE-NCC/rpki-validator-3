@@ -60,24 +60,11 @@ import java.util.stream.Stream;
 @Slf4j
 public class BgpPreviewService {
 
-    @Value("${rpki.validator.bgp.ris.visibility.threshold}")
-    private int bgpRisVisibilityThreshold;
+    private final int bgpRisVisibilityThreshold;
 
-    @Autowired
-    private BgpRisDownloader bgpRisDownloader;
+    private final BgpRisDownloader bgpRisDownloader;
 
-    private List<BgpRisDump> bgpRisDumps = Arrays.asList(
-        BgpRisDump.of(
-            "http://www.ris.ripe.net/dumps/riswhoisdump.IPv4.gz",
-            null,
-            Collections.emptyList()
-        ),
-        BgpRisDump.of(
-            "http://www.ris.ripe.net/dumps/riswhoisdump.IPv6.gz",
-            null,
-            Collections.emptyList()
-        )
-    );
+    private List<BgpRisDump> bgpRisDumps;
 
     private IntervalMap<IpRange, List<ValidatedRpkiObjects.RoaPrefix>> roaPrefixes = new NestedIntervalMap<>(IpResourceIntervalStrategy.getInstance());
 
@@ -165,7 +152,19 @@ public class BgpPreviewService {
     }
 
     @Autowired
-    public BgpPreviewService(ValidatedRpkiObjects validatedRpkiObjects) {
+    public BgpPreviewService(
+        @Value("${rpki.validator.bgp.ris.dump.urls}") String[] bgpRisDumpUrls,
+        @Value("${rpki.validator.bgp.ris.visibility.threshold}") int bgpRisVisibilityThreshold,
+        BgpRisDownloader bgpRisDownloader, ValidatedRpkiObjects validatedRpkiObjects
+    ) {
+        this.bgpRisVisibilityThreshold = bgpRisVisibilityThreshold;
+        this.bgpRisDumps = Arrays.asList(bgpRisDumpUrls).stream().map(url -> BgpRisDump.of(
+            url,
+            null,
+            Collections.emptyList()
+        )).collect(Collectors.toList());
+        this.bgpRisDownloader = bgpRisDownloader;
+
         validatedRpkiObjects.onUpdate(objects -> this.updateRoaPrefixes(objects.flatMap(x -> x.getRoaPrefixes().stream())));
     }
 
