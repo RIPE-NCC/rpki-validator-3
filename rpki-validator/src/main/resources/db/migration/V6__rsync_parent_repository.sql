@@ -30,3 +30,5 @@
 
 ALTER TABLE rpki_repository ADD COLUMN parent_repository_id BIGINT;
 ALTER TABLE rpki_repository ADD CONSTRAINT rpki_repository__parent_repository_fk FOREIGN KEY (parent_repository_id) REFERENCES rpki_repository (id) ON DELETE SET NULL;
+
+CREATE INDEX rpki_repository__parent_repository_id_idx ON rpki_repository (parent_repository_id ASC);

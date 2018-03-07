@@ -27,40 +27,34 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.domain;
+package net.ripe.rpki.validator3.util;
 
-import net.ripe.rpki.validator3.api.Paging;
-import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.junit.Test;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Stream;
+import java.net.URI;
 
-public interface RpkiRepositories {
-    RpkiRepository register(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String uri, @NotNull RpkiRepository.Type type);
+import static net.ripe.rpki.validator3.util.RsyncUtils.generateCandidateParentUris;
+import static org.assertj.core.api.Assertions.assertThat;
 
-    Optional<RpkiRepository> findByURI(@NotNull @ValidLocationURI String uri);
+public class RsyncUtilsTest {
 
-    RpkiRepository get(long id);
-
-    Stream<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent, Paging paging);
-
-    long countAll(RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent);
-
-    Map<RpkiRepository.Status, Long> countByStatus(@PathVariable Long taId, boolean hideChildrenOfDownloadedParent);
-
-    default Stream<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Long taId) {
-        return findAll(optionalStatus, taId, false, null);
+    @Test
+    public void should_generate_candidate_parent_rsync_uris() {
+        assertThat(generateCandidateParentUris(URI.create("rsync://hostname"))).isEmpty();
+        assertThat(generateCandidateParentUris(URI.create("rsync://hostname/"))).isEmpty();
+        assertThat(generateCandidateParentUris(URI.create("rsync://hostname/repo"))).containsExactlyInAnyOrder(
+            URI.create("rsync://hostname/")
+        );
+        assertThat(generateCandidateParentUris(URI.create("rsync://hostname/repo/"))).containsExactlyInAnyOrder(
+            URI.create("rsync://hostname/")
+        );
+        assertThat(generateCandidateParentUris(URI.create("rsync://hostname/repo/child"))).containsExactlyInAnyOrder(
+            URI.create("rsync://hostname/repo/"),
+            URI.create("rsync://hostname/")
+        );
+        assertThat(generateCandidateParentUris(URI.create("rsync://hostname/repo/child/"))).containsExactlyInAnyOrder(
+            URI.create("rsync://hostname/repo/"),
+            URI.create("rsync://hostname/")
+        );
     }
-
-    default Stream<RpkiRepository> findAll(Long taId) {
-        return findAll(null, taId, false, null);
-    }
-
-    Stream<RpkiRepository> findRsyncRepositories();
-
-    void removeAllForTrustAnchor(TrustAnchor trustAnchor);
 }
