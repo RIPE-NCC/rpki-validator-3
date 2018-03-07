@@ -79,10 +79,16 @@ public class BgpPreviewService {
         return this.roaPrefixes.findExactAndAllLessSpecific(prefix)
                 .stream()
                 .flatMap(x -> x.stream())
-                .map(r -> {
+                .flatMap(r -> {
                     final BgpPreviewEntry bgpPreviewEntry = BgpPreviewEntry.of(r.getAsn(), r.getPrefix(), Validity.UNKNOWN);
                     final Validity validity = validateBgpRisEntry(this.roaPrefixes, bgpPreviewEntry);
-                    return ValidatingRoa.of(r.getAsn().toString(), r.getPrefix().toString(), validity.toString(), r.getLocations());
+                    return r.getLocations().stream().map(loc -> ValidatingRoa.of(
+                            r.getAsn().toString(),
+                            r.getPrefix().toString(),
+                            validity.toString(),
+                            r.getMaximumLength(),
+                            r.getTrustAnchor().getName(),
+                            loc));
                 })
                 .sorted(Comparator.comparingInt(r -> {
                     switch (r.getValidity()) {
@@ -110,7 +116,9 @@ public class BgpPreviewService {
         String origin;
         String prefix;
         String validity;
-        Set<String> uri;
+        int maxLength;
+        String ta;
+        String uri;
     }
 
     @lombok.Value(staticConstructor = "of")
