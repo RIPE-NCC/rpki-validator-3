@@ -1,8 +1,6 @@
+@import "variables";
 @import "../node_modules/bootstrap/scss/bootstrap";
 
-:root {
-  font-size: 13px;
-}
 .alert-info {
   background-color: #ddf4fb;
   border-color: #c6edf9;

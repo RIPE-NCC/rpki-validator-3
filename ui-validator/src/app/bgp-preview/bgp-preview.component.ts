@@ -1,6 +1,6 @@
 import {Component, OnInit} from '@angular/core';
 
-import {BgpService} from "./bgp.service";
+import {BgpService} from "../core/bgp.service";
 import {IBgp} from "./bgp.model";
 import {ManagingTable} from "../shared/managing-table";
 import {Router} from "@angular/router";
@@ -47,6 +47,6 @@ export class BgpPreviewComponent extends ManagingTable implements OnInit {
   }
 
   openAnnouncementPreviewDetails(asn: string, prefix: string) {
-    this._router.navigate(['/announcement-preview/', asn, prefix]);
+    this._router.navigate(['/announcement-preview/', prefix]);
   }
 }

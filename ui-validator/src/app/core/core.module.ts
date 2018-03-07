@@ -8,6 +8,7 @@ import {FooterComponent} from "./footer/footer.component";
 import {TrustAnchorsService} from "./trust-anchors.service";
 import {ErrorComponent} from "./error.component";
 import {ApplicationErrorHandler} from "./app-error-handler.service";
+import {BgpService} from "./bgp.service";
 
 @NgModule({
   imports: [
@@ -22,6 +23,7 @@ import {ApplicationErrorHandler} from "./app-error-handler.service";
   ],
   providers: [
     TrustAnchorsService,
+    BgpService,
     {provide: ErrorHandler, useClass: ApplicationErrorHandler}
   ],
   exports: [

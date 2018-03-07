@@ -4,6 +4,7 @@
   <span><strong>{{'Roas.PREFIX' | translate}}:</strong> {{prefix}}</span>
   <span><strong>{{'STATUS' | translate}}:</strong> {{prefix}}</span>
 </div>
+<hr/>
 <h3><strong>{{'AnnouncementPreview.RELEVANT_VALIDATED_ROAS' | translate}}</strong></h3>
 <table class='table table-striped table-bordered'>
   <thead>
@@ -17,19 +18,15 @@
   </tr>
   </thead>
   <tbody>
-  <tr *ngFor='let ta of trustAnchorsOverview'>
-    <td>{{ta.taName}}</td>
+  <tr *ngFor='let announcement of announcementPreviewData'>
+    <td>{{announcement.origin}}</td>
+    <td>{{announcement.prefix}}</td>
+    <td>{{announcement.maxLength}}</td>
+    <td>{{announcement.ta}}</td>
+    <td>{{announcement.uri}}</td>
     <td>
-      <div class='d-inline-flex justify-content-between'>
-        <flag [value]='ta.successful' [color]='"green"' class='mr-2'></flag>
-        <flag [value]='ta.warnings' [color]='"orange"' class='mr-2'></flag>
-        <flag [value]='ta.errors' [color]='"red"' class='mr-2'></flag>
-      </div>
+      <flag [value]='announcement.validity'></flag>
     </td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td>{{ta.lastUpdated}}</td>
   </tr>
   </tbody>
 </table>

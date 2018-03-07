@@ -74,7 +74,7 @@
   "Roas": {
     "ASN": "ASN",
     "PREFIX": "Prefix",
-    "MAX_LENGTH": "Maximum Length",
+    "MAX_LENGTH": "Max Length",
     "URI_OF_ROA": "URI of ROA",
     "ALERT_MSG_P1": "Not validated TA ",
     "FILTERED_FROM": "(filtered from",

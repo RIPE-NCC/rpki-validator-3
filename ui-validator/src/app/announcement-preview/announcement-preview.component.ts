@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import {ActivatedRoute} from "@angular/router";
-import {BgpService} from "../bgp-preview/bgp.service";
+import {BgpService} from "../core/bgp.service";
 
 @Component({
   selector: 'app-announcement-preview',
@@ -19,15 +19,14 @@ export class AnnouncementPreviewComponent implements OnInit {
 
   ngOnInit() {
     //TODO if asn and prefix doesn't exist show modal dialog to specified asn and prefix
-    this.asn = this._activatedRoute.snapshot.url[1].path;
-    this.prefix = this._activatedRoute.snapshot.url[2].path;
-    if (this.asn && this.prefix) {
+    this.prefix = this._activatedRoute.snapshot.url[1].path;
+    if (this.prefix) {
       this.getAnnouncementPreviewData();
     }
   }
 
   getAnnouncementPreviewData() {
-    this._bgpService.getBgpAnnouncementPreview(this.asn, this.prefix)
+    this._bgpService.getBgpAnnouncementPreview(this.prefix)
       .subscribe(
         response => this.announcementPreviewData = response.data
       )
