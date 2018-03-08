@@ -3,6 +3,7 @@ import {Router} from "@angular/router";
 
 import {ITrustAnchorOverview} from "./trust-anchor.model";
 import {TrustAnchorsService} from "../core/trust-anchors.service";
+import {MonitoringTaDataServices} from "../core/monitoring-ta-data.services";
 
 @Component({
   selector: 'app-trust-anchors',
@@ -15,7 +16,9 @@ export class TrustAnchorsComponent implements OnInit {
   trustAnchorsOverview: ITrustAnchorOverview[] = [];
   errorMessage: string;
 
-  constructor(private _trustAnchorsService: TrustAnchorsService, private _router: Router) {
+  constructor(private _trustAnchorsService: TrustAnchorsService,
+              private _monitoringTaDataServices: MonitoringTaDataServices,
+              private _router: Router) {
   }
 
   ngOnInit() {
@@ -25,7 +28,8 @@ export class TrustAnchorsComponent implements OnInit {
           error => this.errorMessage = <any>error);
   }
 
-  openTADetails(taId: string) {
-    this._router.navigate(['/trust-anchors/monitor', taId]);
+  openTADetails(selectedTA: ITrustAnchorOverview) {
+    this._monitoringTaDataServices.selectedTA = selectedTA;
+    this._router.navigate(['/trust-anchors/monitor', selectedTA.id]);
   }
 }

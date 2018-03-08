@@ -2,8 +2,9 @@ import {Component, OnInit} from '@angular/core';
 import {ActivatedRoute} from "@angular/router";
 
 import {TrustAnchorsService} from "../core/trust-anchors.service";
-import {ITrustAnchor} from "../trust-anchors/trust-anchor.model";
+import {ITrustAnchor, ITrustAnchorOverview} from "../trust-anchors/trust-anchor.model";
 import {IRepositoriesStatuses} from "./repositories/repositories.model";
+import {MonitoringTaDataServices} from "../core/monitoring-ta-data.services";
 
 @Component({
   selector: 'app-monitoring-ta',
@@ -16,13 +17,16 @@ export class MonitoringTaComponent implements OnInit {
   taId: string;
   monitoringTrustAnchor: ITrustAnchor;
   repositoriesStatuses: IRepositoriesStatuses;
+  tAOverview: ITrustAnchorOverview;
 
   constructor(private _activatedRoute: ActivatedRoute,
-              private _trustAnchorsService: TrustAnchorsService) {
+              private _trustAnchorsService: TrustAnchorsService,
+              private _monitoringTaDataServices: MonitoringTaDataServices) {
   }
 
   ngOnInit() {
     this.taId = this._activatedRoute.snapshot.url[2].path;
+    this.tAOverview = this._monitoringTaDataServices.selectedTA;
     if (this.taId) {
       this.getTrustAnchors();
     }
