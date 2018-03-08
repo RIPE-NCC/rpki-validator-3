@@ -1,4 +1,4 @@
-import {ErrorHandler, Injectable, Injector} from "@angular/core";
+import {ErrorHandler, Injectable, Injector, NgZone} from "@angular/core";
 import {Router} from "@angular/router";
 
 @Injectable()
@@ -11,6 +11,7 @@ export class ApplicationErrorHandlerService extends ErrorHandler {
   handleError(error) {
     super.handleError(error);
     const router = this.injector.get(Router);
-    router.navigate(['error', {error: error.status, errorMsg: error.statusText}] );
+    const zone = this.injector.get(NgZone);
+    zone.run(() => router.navigate(['error', {error: error.status, errorMsg: error.statusText}] ));
   }
 }

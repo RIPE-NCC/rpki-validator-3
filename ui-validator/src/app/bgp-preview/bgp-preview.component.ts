@@ -43,8 +43,7 @@ export class BgpPreviewComponent extends ManagingTable implements OnInit {
           this.setNumberOfLastItemInTable();
           if (!this.absolutItemsNumber)
             this.absolutItemsNumber = this.totalItems;
-        },
-        error => console.log(error)
+        }
         );
   }
 
