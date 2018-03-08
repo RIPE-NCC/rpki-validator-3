@@ -4,6 +4,7 @@ import {BgpService} from "../core/bgp.service";
 import {IBgp} from "./bgp.model";
 import {ManagingTable} from "../shared/managing-table";
 import {Router} from "@angular/router";
+import {BgpDataService} from "../core/bgp-data.service";
 
 @Component({
   selector: 'app-bgp-preview',
@@ -13,10 +14,11 @@ import {Router} from "@angular/router";
 export class BgpPreviewComponent extends ManagingTable implements OnInit {
 
   pageTitle: string = "Nav.TITLE_BGP_PREVIEW";
-  alertShown: boolean = true;
   bgps: IBgp[] = [];
 
-  constructor(private _bgpService: BgpService, private _router: Router) {
+  constructor(private _bgpService: BgpService,
+              private _bgpDataService: BgpDataService,
+              private _router: Router) {
     super();
   }
 
@@ -46,7 +48,8 @@ export class BgpPreviewComponent extends ManagingTable implements OnInit {
         );
   }
 
-  openAnnouncementPreviewDetails(asn: string, prefix: string) {
-    this._router.navigate(['/announcement-preview/', prefix]);
+  openAnnouncementPreviewDetails(bgp: IBgp) {
+    this._router.navigate(['/announcement-preview/', bgp.prefix]);
+    this._bgpDataService.bgpData = bgp;
   }
 }

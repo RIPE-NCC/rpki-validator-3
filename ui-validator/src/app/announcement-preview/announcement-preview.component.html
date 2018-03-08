@@ -1,12 +1,17 @@
 <page-title [pageTitle]='pageTitle'></page-title>
 <div class='form-group d-flex justify-content-between mb-3'>
-  <span><strong>{{'Roas.ASN' | translate}}:</strong> {{asn}}</span>
-  <span><strong>{{'Roas.PREFIX' | translate}}:</strong> {{prefix}}</span>
-  <span><strong>{{'STATUS' | translate}}:</strong> {{prefix}}</span>
+  <div><strong>{{'Roas.ASN' | translate}}: </strong> {{selectedBgp?.asn}}</div>
+  <div><strong>{{'Roas.PREFIX' | translate}}: </strong> {{selectedBgp?.prefix}}</div>
+  <div class="d-inline-flex"><strong>{{'STATUS' | translate}}: </strong>
+    <flag [value]="selectedBgp?.validity"></flag>
+  </div>
 </div>
 <hr/>
 <h3><strong>{{'AnnouncementPreview.RELEVANT_VALIDATED_ROAS' | translate}}</strong></h3>
-<table class='table table-striped table-bordered'>
+<ngb-alert type='warning' *ngIf='announcementPreviewData?.length == 0' [dismissible]="false">
+  {{ 'AnnouncementPreview.ALERT_MSG_NO_RELEVANT' | translate }}
+</ngb-alert>
+<table *ngIf='announcementPreviewData?.length > 0' class='table table-striped table-bordered'>
   <thead>
   <tr>
     <th scope='col'>{{ 'Roas.ASN' | translate }}</th>

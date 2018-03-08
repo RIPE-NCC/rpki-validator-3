@@ -1,9 +1,6 @@
 import {Injectable} from "@angular/core";
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {Observable} from 'rxjs/Observable';
-import 'rxjs/add/operator/do';
-import 'rxjs/add/operator/catch';
-import 'rxjs/add/observable/throw';
 
 import {IBgpResponse} from "../bgp-preview/bgp.model";
 import {IAnnouncementResponse} from "../announcement-preview/announcement.model";
@@ -12,8 +9,7 @@ import {IAnnouncementResponse} from "../announcement-preview/announcement.model"
 export class BgpService {
 
   private _bgpUrl = 'api/bgp/';
-  //private _bgpValidityUrl = 'api/bgp/validity';
-  private _bgpValidityUrl = 'api/announcement.json';
+  private _bgpValidityUrl = 'api/bgp/validity';
 
   constructor(private _http: HttpClient) {}
 

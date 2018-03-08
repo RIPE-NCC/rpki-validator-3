@@ -9,6 +9,8 @@
   "ROUTER_SESSIONS": "Router Sessions",
   "VALID": "VALID",
   "INVALID": "INVALID",
+  "INVALID_LENGTH": "INVALID LENGTH",
+  "INVALID_ASN": "INVALID ASN",
   "UNKNOWN": "UNKNOWN",
   "SEARCH": "Search",
   "LOADING": "Loading...",
@@ -93,7 +95,8 @@
     "TOOLTIP_CLICK": "Click to view announcement preview"
   },
   "AnnouncementPreview": {
-    "RELEVANT_VALIDATED_ROAS": "Relevant Validated ROAs"
+    "RELEVANT_VALIDATED_ROAS": "Relevant Validated ROAs",
+    "ALERT_MSG_NO_RELEVANT": "No relevant validated ROAs"
   },
   "Export": {
     "DESCRIPTION": "Here you are able to export the complete ROA data set for use in an existing BGP decision making workflow. The output will be in CSV or JSON format and consist of all validated ROAs, minus your ignore filter entries, plus your whitelist additions."

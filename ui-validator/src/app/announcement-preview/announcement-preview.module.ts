@@ -1,5 +1,4 @@
 import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { AnnouncementPreviewComponent } from './announcement-preview.component';
 import {SharedModule} from "../shared/shared.module";
 
@@ -7,6 +6,8 @@ import {SharedModule} from "../shared/shared.module";
   imports: [
     SharedModule
   ],
-  declarations: [AnnouncementPreviewComponent]
+  declarations: [
+    AnnouncementPreviewComponent
+  ]
 })
 export class AnnouncementPreviewModule { }

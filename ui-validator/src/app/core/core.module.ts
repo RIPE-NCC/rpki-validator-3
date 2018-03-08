@@ -7,8 +7,11 @@ import {NavComponent} from "./nav/nav.component";
 import {FooterComponent} from "./footer/footer.component";
 import {TrustAnchorsService} from "./trust-anchors.service";
 import {ErrorComponent} from "./error.component";
-import {ApplicationErrorHandler} from "./app-error-handler.service";
+import {ApplicationErrorHandlerService} from "./app-error-handler.service";
 import {BgpService} from "./bgp.service";
+import {BgpDataService} from "./bgp-data.service";
+import {ErrorService} from "./error.service";
+import {NotificationService} from "./notification.service";
 
 @NgModule({
   imports: [
@@ -24,7 +27,8 @@ import {BgpService} from "./bgp.service";
   providers: [
     TrustAnchorsService,
     BgpService,
-    {provide: ErrorHandler, useClass: ApplicationErrorHandler}
+    BgpDataService,
+    {provide: ErrorHandler, useClass: ApplicationErrorHandlerService}
   ],
   exports: [
     NavComponent,
