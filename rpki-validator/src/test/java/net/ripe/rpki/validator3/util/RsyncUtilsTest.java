@@ -29,38 +29,32 @@
  */
 package net.ripe.rpki.validator3.util;
 
-import java.io.File;
-import java.io.IOException;
+import org.junit.Test;
+
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
 
-public class RsyncUtils {
-    public static final int DEFAULT_RSYNC_PORT = 873;
+import static net.ripe.rpki.validator3.util.RsyncUtils.generateCandidateParentUris;
+import static org.assertj.core.api.Assertions.assertThat;
 
-    private RsyncUtils() {
-    }
+public class RsyncUtilsTest {
 
-    public static File localFileFromRsyncUri(File localRsyncDirectory, URI rsyncUri) throws IOException {
-        URI location = rsyncUri.normalize();
-        String host = location.getHost() + "/" + (location.getPort() < 0 ? DEFAULT_RSYNC_PORT : location.getPort());
-        return new File(
-            new File(localRsyncDirectory, host),
-            location.getRawPath()
-        ).getCanonicalFile();
-    }
-
-    public static List<URI> generateCandidateParentUris(URI uri) {
-        URI candidate = uri.normalize();
-        if (!candidate.getPath().endsWith("/")) {
-            candidate = URI.create(uri.toASCIIString() + "/");
-        }
-
-        List<URI> result = new ArrayList<>();
-        while (!"/".equals(candidate.getPath())) {
-            candidate = candidate.resolve("..");
-            result.add(candidate);
-        }
-        return result;
+    @Test
+    public void should_generate_candidate_parent_rsync_uris() {
+        assertThat(generateCandidateParentUris(URI.create("rsync://hostname"))).isEmpty();
+        assertThat(generateCandidateParentUris(URI.create("rsync://hostname/"))).isEmpty();
+        assertThat(generateCandidateParentUris(URI.create("rsync://hostname/repo"))).containsExactlyInAnyOrder(
+            URI.create("rsync://hostname/")
+        );
+        assertThat(generateCandidateParentUris(URI.create("rsync://hostname/repo/"))).containsExactlyInAnyOrder(
+            URI.create("rsync://hostname/")
+        );
+        assertThat(generateCandidateParentUris(URI.create("rsync://hostname/repo/child"))).containsExactlyInAnyOrder(
+            URI.create("rsync://hostname/repo/"),
+            URI.create("rsync://hostname/")
+        );
+        assertThat(generateCandidateParentUris(URI.create("rsync://hostname/repo/child/"))).containsExactlyInAnyOrder(
+            URI.create("rsync://hostname/repo/"),
+            URI.create("rsync://hostname/")
+        );
     }
 }

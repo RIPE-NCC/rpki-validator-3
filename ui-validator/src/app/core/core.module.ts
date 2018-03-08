@@ -8,6 +8,7 @@ import {FooterComponent} from "./footer/footer.component";
 import {TrustAnchorsService} from "./trust-anchors.service";
 import {ErrorComponent} from "./error.component";
 import {ApplicationErrorHandlerService} from "./app-error-handler.service";
+import {MonitoringTaDataServices} from "./monitoring-ta-data.services";
 import {BgpService} from "./bgp.service";
 import {BgpDataService} from "./bgp-data.service";
 
@@ -26,7 +27,8 @@ import {BgpDataService} from "./bgp-data.service";
     TrustAnchorsService,
     BgpService,
     BgpDataService,
-    {provide: ErrorHandler, useClass: ApplicationErrorHandlerService}
+    {provide: ErrorHandler, useClass: ApplicationErrorHandlerService},
+    MonitoringTaDataServices
   ],
   exports: [
     NavComponent,

@@ -194,6 +194,9 @@ public class JPAValidationRuns extends JPARepository<ValidationRun> implements V
     }
 
     private OrderSpecifier<?> toOrderSpecifier(Sorting sorting) {
+        if (sorting == null) {
+            sorting = Sorting.of(Sorting.By.LOCATION, Sorting.Direction.ASC);
+        }
         ComparableExpression<?> column;
         switch (sorting.getBy()) {
             case KEY:

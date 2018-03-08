@@ -83,7 +83,7 @@ import static java.util.stream.Collectors.toList;
 public class TrustAnchorsFactory {
     private static final X509ResourceCertificate RIPE_NCC_TA_CERTIFICATE = loadCertificate("/ripe-ncc-ta.cer");
     public static final String TA_RRDP_NOTIFY_URI = "https://rpki.test/notification.xml";
-    public static final String TA_CA_REPOSITORY_URI = "rsync://rpki.test/repository";
+    public static final String TA_CA_REPOSITORY_URI = "rsync://rpki.test/repository/";
     private static final String TA_MANIFEST_URI = "rsync://rpki.test/test-trust-anchor.mft";
     private static final String TA_CRL_URI = "rsync://rpki.test/test-trust-anchor.crl";
     public static final KeyPairFactory KEY_PAIR_FACTORY = new KeyPairFactory(BouncyCastleProvider.PROVIDER_NAME);

@@ -30,11 +30,14 @@
 package net.ripe.rpki.validator3.domain;
 
 import net.ripe.rpki.validator3.api.Paging;
+import net.ripe.rpki.validator3.api.SearchTerm;
+import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
-import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -45,16 +48,18 @@ public interface RpkiRepositories {
 
     RpkiRepository get(long id);
 
-    List<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Long taId, Paging paging);
+    Stream<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent, SearchTerm searchTerm, Sorting sorting, Paging paging);
 
-    long countAll(Long taId);
+    long countAll(RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent, SearchTerm searchTerm);
 
-    default List<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Long taId) {
-        return findAll(optionalStatus, taId, null);
+    Map<RpkiRepository.Status, Long> countByStatus(@PathVariable Long taId, boolean hideChildrenOfDownloadedParent);
+
+    default Stream<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Long taId) {
+        return findAll(optionalStatus, taId, false, null, null, null);
     }
 
-    default List<RpkiRepository> findAll(Long taId) {
-        return findAll(null, taId, null);
+    default Stream<RpkiRepository> findAll(Long taId) {
+        return findAll(null, taId, false, null, null, null);
     }
 
     Stream<RpkiRepository> findRsyncRepositories();

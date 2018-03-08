@@ -28,6 +28,7 @@
   "WARNING": "WARNING",
   "ERROR": "ERROR",
   "STATUS": "Status",
+  "SUMMARY": "Summary",
   "Nav": {
     "TITLE_TRUST_ANCHORS": "Configured Trust Anchors",
     "TITLE_ROAS": "Validated ROAs",
@@ -44,7 +45,7 @@
     "Bad request": "Bad request"
   },
   "Footer": {
-    "COPYRIGHT": "Copyright ©2009-2018 the Réseaux IP Européens Network Coordination Centre RIPE NCC. All rights restricted. Version 2.24-SNAPSHOT"
+    "COPYRIGHT": "Copyright ©2009-2018 the Réseaux IP Européens Network Coordination Centre RIPE NCC. All rights restricted."
   },
   "TrustAnchors": {
     "PROCESSED_ITEMS": "Processed Items",
@@ -52,9 +53,8 @@
     "TOOLTIP_CLICK": "Click to view monitor page"
   },
   "Monitoring": {
-    "VALIDATED_USING_TA_LOCATOR": "Trust anchor could be validated using trust anchor locator",
-    "LAST_VALIDATION": "Last Validation Run",
-    "TA_HAVE_PENDING_REPOSITORIES": "Trust Anchor still has pending repositories",
+    "VALIDATED_USING_TA_LOCATOR": "Trust Anchor could be validated",
+    "LAST_VALIDATION": "Last complete Validation Run",
     "TOOLTIP_NUMBER_DOWNLOADED": "Number of downloaded",
     "TOOLTIP_NUMBER_PENDING": "Number of pending",
     "TOOLTIP_NUMBER_FAILED": "Number of failed",

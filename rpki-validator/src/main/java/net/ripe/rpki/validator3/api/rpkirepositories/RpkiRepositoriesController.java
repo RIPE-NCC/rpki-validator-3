@@ -30,15 +30,15 @@
 package net.ripe.rpki.validator3.api.rpkirepositories;
 
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.adapter.jpa.JPARpkiObjects;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.Metadata;
 import net.ripe.rpki.validator3.api.Paging;
-import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
+import net.ripe.rpki.validator3.api.SearchTerm;
+import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
-import net.ripe.rpki.validator3.domain.TrustAnchor;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
@@ -48,11 +48,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 import java.util.stream.Stream;
 
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @RestController
@@ -68,26 +66,28 @@ public class RpkiRepositoriesController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<RpkiRepositoryResource>>> list(
-            @RequestParam(name = "startFrom", defaultValue = "0") int startFrom,
-            @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
+    public ResponseEntity<ApiResponse<Stream<RpkiRepositoryResource>>> list(
             @RequestParam(name = "status", required = false) RpkiRepository.Status status,
-            @RequestParam(name = "ta", required = false) Long taId
+            @RequestParam(name = "ta", required = false) Long taId,@RequestParam(name = "startFrom", defaultValue = "0") int startFrom,
+            @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
+            @RequestParam(name = "search", defaultValue = "", required = false) String searchString,
+            @RequestParam(name = "sortBy", defaultValue = "location") String sortBy,
+            @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection,
+            @RequestParam(name = "hideChildrenOfDownloadedParent", defaultValue = "true") boolean hideChildrenOfDownloadedParent
     ) {
+        final SearchTerm searchTerm = StringUtils.isNotBlank(searchString) ? new SearchTerm(searchString) : null;
+        final Sorting sorting = Sorting.parse(sortBy, sortDirection);
         final Paging paging = Paging.of(startFrom, pageSize);
-        final List<RpkiRepository> repositories = rpkiRepositories.findAll(status, taId, paging);
+        final Stream<RpkiRepository> repositories = rpkiRepositories.findAll(status, taId, hideChildrenOfDownloadedParent, searchTerm, sorting, paging);
 
-        final int totalSize = (int) rpkiRepositories.countAll(taId);
+        final int totalSize = (int) rpkiRepositories.countAll(status, taId, hideChildrenOfDownloadedParent, searchTerm);
         final Links links = Paging.links(
                 startFrom, pageSize, totalSize,
-                (sf, ps) -> methodOn(RpkiRepositoriesController.class).list(sf, ps, status, taId));
+                (sf, ps) -> methodOn(RpkiRepositoriesController.class).list(status, taId, sf, ps, searchString, sortBy, sortDirection, hideChildrenOfDownloadedParent));
 
-        final List<RpkiRepositoryResource> data = repositories
-                .stream()
-                .map(RpkiRepositoryResource::of)
-                .collect(Collectors.toList());
+        final Stream<RpkiRepositoryResource> data = repositories.map(RpkiRepositoryResource::of);
 
-        return ResponseEntity.ok(ApiResponse.<List<RpkiRepositoryResource>>builder()
+        return ResponseEntity.ok(ApiResponse.<Stream<RpkiRepositoryResource>>builder()
                 .data(data)
                 .links(links)
                 .metadata(Metadata.of(totalSize))
@@ -101,12 +101,16 @@ public class RpkiRepositoriesController {
     }
 
     @GetMapping(path = "/statuses/{taId}")
-    public ApiResponse<RepositoriesStatus> repositories(@PathVariable long taId) {
-        final List<RpkiRepository> repositories = rpkiRepositories.findAll(taId);
+    public ApiResponse<RepositoriesStatus> repositories(
+            @PathVariable long taId,
+            @RequestParam(name = "hideChildrenOfDownloadedParent", defaultValue = "true") boolean hideChildrenOfDownloadedParent
+    ) {
+        final Map<RpkiRepository.Status, Long> counts = rpkiRepositories.countByStatus(taId, hideChildrenOfDownloadedParent);
+
         return ApiResponse.<RepositoriesStatus>builder().data(RepositoriesStatus.of(
-                (int) repositories.stream().filter(RpkiRepository::isDownloaded).count(),
-                (int) repositories.stream().filter(RpkiRepository::isPending).count(),
-                (int) repositories.stream().filter(RpkiRepository::isFailed).count())
-        ).build();
+                counts.getOrDefault(RpkiRepository.Status.DOWNLOADED, 0L).intValue(),
+                counts.getOrDefault(RpkiRepository.Status.PENDING, 0L).intValue(),
+                counts.getOrDefault(RpkiRepository.Status.FAILED, 0L).intValue()
+        )).build();
     }
 }

@@ -214,14 +214,16 @@ public class RpkiRepositoryValidationService {
 
     private RpkiRepository findDownloadedParentRepository(Map<URI, RpkiRepository> fetchedLocations, RpkiRepository repository) {
         URI location = URI.create(repository.getRsyncRepositoryUri());
-        while (!"/".equals(location.getPath())) {
-            RpkiRepository parentRepository = fetchedLocations.get(location);
-            if (parentRepository != null && parentRepository.isDownloaded()) {
-                log.debug("Already fetched {} as part of {}, skipping", repository.getLocationUri(), location);
-                repository.setDownloaded(parentRepository.getLastDownloadedAt());
-                return parentRepository;
+        for (URI parentLocation : RsyncUtils.generateCandidateParentUris(location)) {
+            RpkiRepository parentRepository = fetchedLocations.get(parentLocation);
+            if (parentRepository != null) {
+                repository.setParentRepository(parentRepository);
+                if (parentRepository != null && parentRepository.isDownloaded()) {
+                    log.debug("Already fetched {} as part of {}, skipping", repository.getLocationUri(), location);
+                    repository.setDownloaded(parentRepository.getLastDownloadedAt());
+                    return parentRepository;
+                }
             }
-            location = location.resolve("..").normalize();
         }
         return null;
     }

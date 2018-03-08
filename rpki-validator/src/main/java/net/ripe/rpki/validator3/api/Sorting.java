@@ -83,6 +83,6 @@ public class Sorting {
     }
 
     public enum By {
-        PREFIX, ASN, TA, KEY, LOCATION, STATUS, VALIDITY
+        PREFIX, ASN, TA, KEY, LOCATION, STATUS, VALIDITY, TYPE, LASTCHECKED
     }
 }
