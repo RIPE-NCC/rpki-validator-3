@@ -40,6 +40,7 @@ import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -52,6 +53,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -75,34 +77,47 @@ public class BgpPreviewService {
         UNKNOWN, VALID, INVALID_ASN, INVALID_LENGTH
     }
 
-    public List<ValidatingRoa> validity(final IpRange prefix) {
-        return this.roaPrefixes.findExactAndAllLessSpecific(prefix)
+    public BgpValidityResource validity(final Asn origin, final IpRange prefix) {
+
+        final List<Pair<ValidatedRpkiObjects.RoaPrefix, Validity>> roaPrefixes = this.roaPrefixes.findExactAndAllLessSpecific(prefix)
                 .stream()
                 .flatMap(x -> x.stream())
-                .flatMap(r -> {
-                    final BgpPreviewEntry bgpPreviewEntry = BgpPreviewEntry.of(r.getAsn(), r.getPrefix(), Validity.UNKNOWN);
+                .map(r -> {
+                    final BgpPreviewEntry bgpPreviewEntry = BgpPreviewEntry.of(origin, prefix, Validity.UNKNOWN);
                     final Validity validity = validateBgpRisEntry(this.roaPrefixes, bgpPreviewEntry);
+                    return Pair.of(r, validity);
+                })
+                .sorted(Comparator.comparingInt(p -> {
+                    switch (p.getRight()) {
+                        case VALID:
+                            return 0;
+                        case INVALID_LENGTH:
+                            return 1;
+                        case INVALID_ASN:
+                            return 2;
+                    }
+                    return 10;
+                })).collect(Collectors.toList());
+
+        final Validity validity = roaPrefixes.stream().findFirst().map(p -> p.getRight()).orElse(Validity.UNKNOWN);
+
+        List<ValidatingRoa> validatingRoaStream = roaPrefixes
+                .stream()
+                .flatMap(p -> {
+                    final ValidatedRpkiObjects.RoaPrefix r = p.getLeft();
                     return r.getLocations().stream().map(loc -> ValidatingRoa.of(
                             r.getAsn().toString(),
                             r.getPrefix().toString(),
-                            validity.toString(),
+                            p.getRight().toString(),
                             r.getMaximumLength(),
                             r.getTrustAnchor().getName(),
                             loc));
                 })
-                .sorted(Comparator.comparingInt(r -> {
-                    switch (r.getValidity()) {
-                        case "VALID":
-                            return 0;
-                        case "INVALID_LENGTH":
-                            return 1;
-                        case "INVALID_ASN":
-                            return 2;
-                    }
-                    return 10;
-                }))
                 .distinct()
                 .collect(Collectors.toList());
+
+
+        return BgpValidityResource.of(origin.toString(), prefix.toString(), validity.toString(), validatingRoaStream);
     }
 
     @lombok.Value(staticConstructor = "of")
@@ -119,6 +134,16 @@ public class BgpPreviewService {
         int maxLength;
         String ta;
         String uri;
+    }
+
+
+    @lombok.Value(staticConstructor = "of")
+    public static class BgpValidityResource {
+        String origin;
+        String prefix;
+        String validity;
+        List<ValidatingRoa> validatingRoas;
+
     }
 
     @lombok.Value(staticConstructor = "of")
@@ -187,7 +212,7 @@ public class BgpPreviewService {
         BgpRisDownloader bgpRisDownloader, ValidatedRpkiObjects validatedRpkiObjects
     ) {
         this.bgpRisVisibilityThreshold = bgpRisVisibilityThreshold;
-        this.bgpRisDumps = Arrays.asList(bgpRisDumpUrls).stream().map(url -> BgpRisDump.of(
+        this.bgpRisDumps = Arrays.stream(bgpRisDumpUrls).map(url -> BgpRisDump.of(
             url,
             null,
             Collections.emptyList()

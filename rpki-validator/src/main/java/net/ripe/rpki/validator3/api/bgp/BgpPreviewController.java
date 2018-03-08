@@ -42,12 +42,13 @@ import net.ripe.rpki.validator3.api.Sorting;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 @RestController
@@ -60,11 +61,11 @@ public class BgpPreviewController {
 
     @GetMapping(path = "/")
     public ResponseEntity<ApiResponse<Stream<BgpPreview>>> list(
-        @RequestParam(name = "startFrom", defaultValue = "0") int startFrom,
-        @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
-        @RequestParam(name = "search", defaultValue = "", required = false) String searchString,
-        @RequestParam(name = "sortBy", defaultValue = "prefix") String sortBy,
-        @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection
+            @RequestParam(name = "startFrom", defaultValue = "0") int startFrom,
+            @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
+            @RequestParam(name = "search", defaultValue = "", required = false) String searchString,
+            @RequestParam(name = "sortBy", defaultValue = "prefix") String sortBy,
+            @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection
     ) {
         final SearchTerm searchTerm = StringUtils.isNotBlank(searchString) ? new SearchTerm(searchString) : null;
         final Sorting sorting = Sorting.parse(sortBy, sortDirection);
@@ -73,23 +74,36 @@ public class BgpPreviewController {
         BgpPreviewService.BgpPreviewResult bgpPreviewResult = bgpPreviewService.find(searchTerm, sorting, paging);
 
         return ResponseEntity.ok(ApiResponse.<Stream<BgpPreview>>builder()
-            .data(bgpPreviewResult.getData().map(entry -> new BgpPreviewController.BgpPreview(
-                entry.getOrigin().toString(),
-                entry.getPrefix().toString(),
-                entry.getValidity().name()
-            )))
-            .metadata(Metadata.of(bgpPreviewResult.getTotalCount()))
-            .build());
+                .data(bgpPreviewResult.getData().map(entry -> new BgpPreviewController.BgpPreview(
+                        entry.getOrigin().toString(),
+                        entry.getPrefix().toString(),
+                        entry.getValidity().name()
+                )))
+                .metadata(Metadata.of(bgpPreviewResult.getTotalCount()))
+                .build());
     }
 
     @GetMapping(path = "/validity")
-    public ResponseEntity<ApiResponse<List<BgpPreviewService.ValidatingRoa>>> validity(@RequestParam(name = "prefix") String prefix) {
-        List<BgpPreviewService.ValidatingRoa> roas = bgpPreviewService.validity(IpRange.parse(prefix));
-
-        return ResponseEntity.ok(ApiResponse.<List<BgpPreviewService.ValidatingRoa>>builder()
-                .data(roas)
-                .metadata(Metadata.of(roas.size()))
+    public ResponseEntity<ApiResponse<BgpPreviewService.BgpValidityResource>> validity(
+            @RequestParam(name = "prefix") String prefix,
+            @RequestParam(name = "asn") String asn
+    ) {
+        final BgpPreviewService.BgpValidityResource bgp = bgpPreviewService.validity(
+                arg(() -> Asn.parse(asn)),
+                arg(() -> IpRange.parse(prefix))
+        );
+        return ResponseEntity.ok(ApiResponse.<BgpPreviewService.BgpValidityResource>builder()
+                .data(bgp)
+                .metadata(Metadata.of(bgp.getValidatingRoas().size()))
                 .build());
+    }
+
+    private static <T> T arg(Supplier<T> s) {
+        try  {
+            return s.get();
+        } catch (Exception e) {
+            throw new HttpMessageNotReadableException(e.getMessage());
+        }
     }
 
     @Value
