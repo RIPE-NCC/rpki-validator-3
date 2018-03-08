@@ -34,8 +34,11 @@ import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.Metadata;
 import net.ripe.rpki.validator3.api.Paging;
+import net.ripe.rpki.validator3.api.SearchTerm;
+import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
@@ -64,19 +67,23 @@ public class RpkiRepositoriesController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<Stream<RpkiRepositoryResource>>> list(
-            @RequestParam(name = "startFrom", defaultValue = "0") int startFrom,
-            @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
             @RequestParam(name = "status", required = false) RpkiRepository.Status status,
-            @RequestParam(name = "ta", required = false) Long taId,
+            @RequestParam(name = "ta", required = false) Long taId,@RequestParam(name = "startFrom", defaultValue = "0") int startFrom,
+            @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
+            @RequestParam(name = "search", defaultValue = "", required = false) String searchString,
+            @RequestParam(name = "sortBy", defaultValue = "location") String sortBy,
+            @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection,
             @RequestParam(name = "hideChildrenOfDownloadedParent", defaultValue = "true") boolean hideChildrenOfDownloadedParent
     ) {
+        final SearchTerm searchTerm = StringUtils.isNotBlank(searchString) ? new SearchTerm(searchString) : null;
+        final Sorting sorting = Sorting.parse(sortBy, sortDirection);
         final Paging paging = Paging.of(startFrom, pageSize);
-        final Stream<RpkiRepository> repositories = rpkiRepositories.findAll(status, taId, hideChildrenOfDownloadedParent, paging);
+        final Stream<RpkiRepository> repositories = rpkiRepositories.findAll(status, taId, hideChildrenOfDownloadedParent, searchTerm, sorting, paging);
 
-        final int totalSize = (int) rpkiRepositories.countAll(status, taId, hideChildrenOfDownloadedParent);
+        final int totalSize = (int) rpkiRepositories.countAll(status, taId, hideChildrenOfDownloadedParent, searchTerm);
         final Links links = Paging.links(
                 startFrom, pageSize, totalSize,
-                (sf, ps) -> methodOn(RpkiRepositoriesController.class).list(sf, ps, status, taId, hideChildrenOfDownloadedParent));
+                (sf, ps) -> methodOn(RpkiRepositoriesController.class).list(status, taId, sf, ps, searchString, sortBy, sortDirection, hideChildrenOfDownloadedParent));
 
         final Stream<RpkiRepositoryResource> data = repositories.map(RpkiRepositoryResource::of);
 

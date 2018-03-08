@@ -30,8 +30,13 @@
 package net.ripe.rpki.validator3.adapter.jpa;
 
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.Order;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.jpa.impl.JPAQuery;
 import net.ripe.rpki.validator3.api.Paging;
+import net.ripe.rpki.validator3.api.SearchTerm;
+import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
@@ -115,8 +120,10 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
     }
 
     @Override
-    public Stream<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent, Paging paging) {
-        JPAQuery<RpkiRepository> query = applyFilters(select(), optionalStatus, taId, hideChildrenOfDownloadedParent);
+    public Stream<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent, SearchTerm searchTerm, Sorting sorting, Paging paging) {
+        JPAQuery<RpkiRepository> query = applyFilters(select(), optionalStatus, taId, hideChildrenOfDownloadedParent, searchTerm);
+
+        query.orderBy(toOrderSpecifier(sorting));
 
         if (paging != null) {
             final Integer startFrom = paging.getStartFrom();
@@ -133,14 +140,14 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
     }
 
     @Override
-    public long countAll(RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent) {
-        JPAQuery<RpkiRepository> query = applyFilters(select(), optionalStatus, taId, hideChildrenOfDownloadedParent);
+    public long countAll(RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent, SearchTerm searchTerm) {
+        JPAQuery<RpkiRepository> query = applyFilters(select(), optionalStatus, taId, hideChildrenOfDownloadedParent, searchTerm);
         return query.fetchCount();
     }
 
     @Override
     public Map<RpkiRepository.Status, Long> countByStatus(Long taId, boolean hideChildrenOfDownloadedParent) {
-        JPAQuery<RpkiRepository> query = applyFilters(select(), null, taId, hideChildrenOfDownloadedParent);
+        JPAQuery<RpkiRepository> query = applyFilters(select(), null, taId, hideChildrenOfDownloadedParent, null);
 
         Stream<Tuple> counts = stream(query.groupBy(rpkiRepository.status).select(rpkiRepository.status, rpkiRepository.count()));
         return counts.collect(Collectors.toMap(
@@ -172,7 +179,7 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
         }
     }
 
-    private JPAQuery<RpkiRepository> applyFilters(JPAQuery<RpkiRepository> query, RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent) {
+    private JPAQuery<RpkiRepository> applyFilters(JPAQuery<RpkiRepository> query, RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent, SearchTerm searchTerm) {
         if (optionalStatus != null) {
             query.where(rpkiRepository.status.eq(optionalStatus));
         }
@@ -189,6 +196,40 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
                 )
             );
         }
+        if (searchTerm != null) {
+            query.where(
+                rpkiRepository.rsyncRepositoryUri.likeIgnoreCase("%" + searchTerm.asString() + "%").or(
+                    rpkiRepository.rrdpNotifyUri.likeIgnoreCase("%" + searchTerm.asString() + "%")
+                ).or(
+                    rpkiRepository.status.stringValue().likeIgnoreCase("%" + searchTerm.asString() + "%")
+                ));
+        }
         return query;
+    }
+
+    private OrderSpecifier<?> toOrderSpecifier(Sorting sorting) {
+        if (sorting == null) {
+            sorting = Sorting.of(Sorting.By.LOCATION, Sorting.Direction.ASC);
+        }
+
+        Expression<? extends Comparable> column;
+        switch (sorting.getBy()) {
+            case TYPE:
+                column = rpkiRepository.type;
+                break;
+            case STATUS:
+                column = rpkiRepository.status;
+                break;
+            case LASTCHECKED:
+                column = rpkiRepository.updatedAt;
+                break;
+            case LOCATION:
+            default:
+                column = rpkiRepository.rrdpNotifyUri.coalesce(rpkiRepository.rsyncRepositoryUri);
+                break;
+        }
+
+        Order order = sorting.getDirection() == Sorting.Direction.DESC ? Order.DESC : Order.ASC;
+        return new OrderSpecifier<>(order, column);
     }
 }
