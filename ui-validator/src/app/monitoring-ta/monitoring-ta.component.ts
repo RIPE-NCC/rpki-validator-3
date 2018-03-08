@@ -26,17 +26,27 @@ export class MonitoringTaComponent implements OnInit {
 
   ngOnInit() {
     this.taId = this._activatedRoute.snapshot.url[2].path;
-    this.tAOverview = this._monitoringTaDataServices.selectedTA;
     if (this.taId) {
-      this.getTrustAnchors();
+      this.getTrustAnchor();
+    }
+    this.tAOverview = this._monitoringTaDataServices.selectedTA;
+    if (!this.tAOverview) {
+      this.getTrustAnchorOverview();
     }
   }
 
-  getTrustAnchors() {
+  getTrustAnchor() {
     this._trustAnchorsService.getTrustAnchor(this.taId)
       .subscribe(
         response => this.monitoringTrustAnchor = response.data
       )
+  }
+
+  getTrustAnchorOverview() {
+    this._trustAnchorsService.getTrustAnchorsOverview()
+      .subscribe(
+        response => this.tAOverview = response.data.find(ta => ta.id === this.taId)
+        );
   }
 
   getRepositoriesStatuses() {

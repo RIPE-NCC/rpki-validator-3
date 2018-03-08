@@ -24,8 +24,7 @@ export class TrustAnchorsComponent implements OnInit {
   ngOnInit() {
     this._trustAnchorsService.getTrustAnchorsOverview()
       .subscribe(
-        response => this.trustAnchorsOverview = response.data,
-          error => this.errorMessage = <any>error);
+        response => this.trustAnchorsOverview = response.data);
   }
 
   openTADetails(selectedTA: ITrustAnchorOverview) {
