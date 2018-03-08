@@ -27,36 +27,46 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.domain;
+package net.ripe.rpki.validator3.api.ignorefilters;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.domain.IgnoreFilter;
+import net.ripe.rpki.validator3.domain.IgnoreFilters;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
-import javax.persistence.Basic;
-import javax.persistence.Entity;
+import javax.transaction.Transactional;
+import javax.validation.Valid;
 
-@Entity
-public class IgnoreFilter extends AbstractEntity {
+@Component
+@Transactional
+@Validated
+@Slf4j
+public class IgnoreFilterService {
+    @Autowired
+    private IgnoreFilters ignoreFilters;
 
-    // TODO one of prefix or asn has to be not empty
+    public long execute(@Valid AddIgnoreFilter command) {
+        IgnoreFilter ignoreFilter = new IgnoreFilter();
+        ignoreFilter.setAsn(Long.valueOf(command.getAsn()));
+        ignoreFilter.setPrefix(command.getPrefix());
+        ignoreFilter.setComment(command.getComment());
 
-    @Basic
-    @Getter
-    @Setter
-    private String prefix;
-
-    @Basic
-    @Getter
-    @Setter
-    private Long asn;
-
-    @Basic
-    @Getter
-    @Setter
-    private String comment;
-
-    public IgnoreFilter() {
+        return add(ignoreFilter);
     }
 
+    long add(IgnoreFilter ignoreFilter) {
+        ignoreFilters.add(ignoreFilter);
 
+        log.info("added ignore filter '{}'", ignoreFilter);
+        return ignoreFilter.getId();
+    }
+
+    public void remove(long trustAnchorId) {
+        IgnoreFilter ignoreFilter = ignoreFilters.get(trustAnchorId);
+        if (ignoreFilter != null) {
+            ignoreFilters.remove(ignoreFilter);
+        }
+    }
 }
