@@ -10,8 +10,6 @@ import {ErrorComponent} from "./error.component";
 import {ApplicationErrorHandlerService} from "./app-error-handler.service";
 import {BgpService} from "./bgp.service";
 import {BgpDataService} from "./bgp-data.service";
-import {ErrorService} from "./error.service";
-import {NotificationService} from "./notification.service";
 
 @NgModule({
   imports: [
