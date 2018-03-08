@@ -18,7 +18,7 @@
       <span *ngIf='repositoriesStatuses?.pending == 0; else flagWithNumberPending'>
         {{tAOverview?.lastUpdated}}
       </span>
-      <ng-template #flagWithNumberPendings>
+      <ng-template #flagWithNumberPending>
         <flag [value]='repositoriesStatuses?.pending' [color]='"orange"' class='mr-2'
               [ngbTooltip]="'Monitoring.TOOLTIP_NUMBER_PENDING' | translate:{value:'info'}"></flag>
       </ng-template>
