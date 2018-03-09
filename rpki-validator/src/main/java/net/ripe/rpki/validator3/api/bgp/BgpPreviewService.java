@@ -101,7 +101,7 @@ public class BgpPreviewService {
 
         final Validity validity = roaPrefixes.stream().findFirst().map(p -> p.getRight()).orElse(Validity.UNKNOWN);
 
-        List<ValidatingRoa> validatingRoaStream = roaPrefixes
+        final List<ValidatingRoa> validatingRoaStream = roaPrefixes
                 .stream()
                 .flatMap(p -> {
                     final ValidatedRpkiObjects.RoaPrefix r = p.getLeft();
