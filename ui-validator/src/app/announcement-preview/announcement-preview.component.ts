@@ -1,10 +1,9 @@
-import {Component, Input, OnChanges, OnInit, TemplateRef, ViewChild} from '@angular/core';
+import {Component, Input, OnInit, TemplateRef, ViewChild} from '@angular/core';
+import { Location } from '@angular/common';
 import {ActivatedRoute, Router} from "@angular/router";
 import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
 
-import {BgpService} from "../core/bgp.service";
-import {BgpDataStore} from "../core/bgp-data.store";
-import {IBgp} from "../bgp-preview/bgp.model";
+import {BgpService} from "../core/bgp.service"
 import {IAnnouncement} from "./announcement.model";
 
 @Component({
@@ -14,8 +13,8 @@ import {IAnnouncement} from "./announcement.model";
 })
 export class AnnouncementPreviewComponent implements OnInit {
   pageTitle: string = 'Nav.TITLE_ANNOUNCEMENT_PREVIEW';
-  selectedBgp: IBgp = {asn: '', prefix: '', validity: ''};
   announcementPreviewData: Array<IAnnouncement>;
+
   @Input()
   prefix: string;
   @Input()
@@ -26,7 +25,6 @@ export class AnnouncementPreviewComponent implements OnInit {
   constructor(private _activatedRoute: ActivatedRoute,
               private _router: Router,
               private _bgpService: BgpService,
-              private _bgpDataService: BgpDataStore,
               private modalService: NgbModal) {
   }
 
@@ -35,34 +33,37 @@ export class AnnouncementPreviewComponent implements OnInit {
   }
 
   loadAnnouncementPreview():void {
-    this.prefix = this._activatedRoute.snapshot.url[1].path;
-    if (this._bgpDataService.bgpData) {
-      // navigated from bgp-preview component
-      this.selectedBgp = this._bgpDataService.bgpData;
-    } else if (this.prefix === ':prefix' || this.asn === ':asn') {
-      // open modal dialog... or show warning page
+    this.asn = this._activatedRoute.snapshot.url[1].path;
+    this.prefix = this._activatedRoute.snapshot.url[2].path;
+    if (this.prefix && this.prefix !== ':prefix'
+      && this.asn && this.asn !== ':asn') {
+      this.getAnnouncementPreviewData();
+    } else {
+      // open modal dialog
       this.prefix = this.prefix === ':prefix' ? '' : this.prefix;
       this.asn = this.asn === ':asn' ? '' : this.asn;
       this.openModalForm(this.modalTempRef);
-    } else {
-      // bookmarked url and prefix coming from url
-      this.selectedBgp.prefix = this.prefix;
     }
-    this.getAnnouncementPreviewData();
   }
 
   getAnnouncementPreviewData(): void {
-    this._bgpService.getBgpAnnouncementPreview(this.selectedBgp.prefix)
+    this._bgpService.getBgpAnnouncementPreview(this.prefix, this.asn)
       .subscribe(
         response => this.announcementPreviewData = response.data
       )
   }
 
   openModalForm(modalTempRef): void {
-    this.modalService.open(modalTempRef).result.then((result) => {
-      console.log(result);
-      this._router.navigate(['/announcement-preview/', this.prefix]);
-    }, (reason) => {
-    });
+    this.modalService.open(modalTempRef)
+    //   .result.then((result) => {
+    //   console.log(result);
+    //   this._router.navigate(['/announcement-preview/', this.asn, this.prefix]);
+    // }, (reason) => {
+    //   this._router.navigate(['/bgp-preview']);
+    // });
+  }
+
+  showNewParams() {
+    this._router.navigate(['/announcement-preview/', this.asn, this.prefix]);
   }
 }

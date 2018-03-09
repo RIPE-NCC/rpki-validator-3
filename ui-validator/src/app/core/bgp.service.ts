@@ -24,9 +24,10 @@ export class BgpService {
     return this._http.get<IBgpResponse>(this._bgpUrl, {params: params});
   }
 
-  getBgpAnnouncementPreview(prefix: string): Observable<IAnnouncementResponse> {
+  getBgpAnnouncementPreview(prefix: string, asn: string): Observable<IAnnouncementResponse> {
     const params = new HttpParams()
-      .set('prefix', prefix);
+      .set('prefix', prefix)
+      .set('asn', asn);
 
     return this._http.get<IAnnouncementResponse>(this._bgpValidityUrl, {params: params});
   }

@@ -10,7 +10,6 @@ import {ErrorComponent} from "./error.component";
 import {ApplicationErrorHandlerService} from "./app-error-handler.service";
 import {MonitoringTaDataStore} from "./monitoring-ta-data.store";
 import {BgpService} from "./bgp.service";
-import {BgpDataStore} from "./bgp-data.store";
 
 @NgModule({
   imports: [
@@ -26,7 +25,6 @@ import {BgpDataStore} from "./bgp-data.store";
   providers: [
     TrustAnchorsService,
     BgpService,
-    BgpDataStore,
     {provide: ErrorHandler, useClass: ApplicationErrorHandlerService},
     MonitoringTaDataStore
   ],
