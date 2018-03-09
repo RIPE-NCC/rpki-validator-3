@@ -4,7 +4,7 @@ import {ActivatedRoute} from "@angular/router";
 import {TrustAnchorsService} from "../core/trust-anchors.service";
 import {ITrustAnchor, ITrustAnchorOverview} from "../trust-anchors/trust-anchor.model";
 import {IRepositoriesStatuses} from "./repositories/repositories.model";
-import {MonitoringTaDataServices} from "../core/monitoring-ta-data.services";
+import {MonitoringTaDataStore} from "../core/monitoring-ta-data.store";
 
 @Component({
   selector: 'app-monitoring-ta',
@@ -21,7 +21,7 @@ export class MonitoringTaComponent implements OnInit {
 
   constructor(private _activatedRoute: ActivatedRoute,
               private _trustAnchorsService: TrustAnchorsService,
-              private _monitoringTaDataServices: MonitoringTaDataServices) {
+              private _monitoringTaDataServices: MonitoringTaDataStore) {
   }
 
   ngOnInit() {

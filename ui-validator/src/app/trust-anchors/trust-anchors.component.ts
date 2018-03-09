@@ -3,7 +3,7 @@ import {Router} from "@angular/router";
 
 import {ITrustAnchorOverview} from "./trust-anchor.model";
 import {TrustAnchorsService} from "../core/trust-anchors.service";
-import {MonitoringTaDataServices} from "../core/monitoring-ta-data.services";
+import {MonitoringTaDataStore} from "../core/monitoring-ta-data.store";
 
 @Component({
   selector: 'app-trust-anchors',
@@ -17,7 +17,7 @@ export class TrustAnchorsComponent implements OnInit {
   errorMessage: string;
 
   constructor(private _trustAnchorsService: TrustAnchorsService,
-              private _monitoringTaDataServices: MonitoringTaDataServices,
+              private _monitoringTaDataServices: MonitoringTaDataStore,
               private _router: Router) {
   }
 

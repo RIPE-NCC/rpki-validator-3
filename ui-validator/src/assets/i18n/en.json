@@ -96,7 +96,10 @@
   },
   "AnnouncementPreview": {
     "RELEVANT_VALIDATED_ROAS": "Relevant Validated ROAs",
-    "ALERT_MSG_NO_RELEVANT": "No relevant validated ROAs"
+    "ALERT_MSG_NO_RELEVANT": "No relevant validated ROAs",
+    "TITLE_MODAL_FORM": "Please indicate your ASN and Prefix in order to view announcements",
+    "SHOW": "Show",
+    "CANCEL": "Cancel"
   },
   "Export": {
     "DESCRIPTION": "Here you are able to export the complete ROA data set for use in an existing BGP decision making workflow. The output will be in CSV or JSON format and consist of all validated ROAs, minus your ignore filter entries, plus your whitelist additions."

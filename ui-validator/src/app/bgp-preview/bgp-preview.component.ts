@@ -4,7 +4,7 @@ import {BgpService} from "../core/bgp.service";
 import {IBgp} from "./bgp.model";
 import {ManagingTable} from "../shared/managing-table";
 import {Router} from "@angular/router";
-import {BgpDataService} from "../core/bgp-data.service";
+import {BgpDataStore} from "../core/bgp-data.store";
 
 @Component({
   selector: 'app-bgp-preview',
@@ -17,7 +17,7 @@ export class BgpPreviewComponent extends ManagingTable implements OnInit {
   bgps: IBgp[] = [];
 
   constructor(private _bgpService: BgpService,
-              private _bgpDataService: BgpDataService,
+              private _bgpDataService: BgpDataStore,
               private _router: Router) {
     super();
   }

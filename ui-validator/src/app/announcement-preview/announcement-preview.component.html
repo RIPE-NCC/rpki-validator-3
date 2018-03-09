@@ -35,4 +35,20 @@
   </tr>
   </tbody>
 </table>
-<div class='d-flex justify-content-between'></div>
+<!-- MODAL FORM FOR ENTERING ASN and PREFIX in case they don't exist in url-->
+<ng-template #modalEnterAsnPrefix let-c='close' let-d='dismiss'>
+  <div class='modal-header'>
+    <h4 class='modal-title'>{{'AnnouncementPreview.TITLE_MODAL_FORM' | translate}}</h4>
+    <button type='button' class='close' aria-label='Close' (click)='d("Cross click")'>
+      <span aria-hidden='true'>&times;</span>
+    </button>
+  </div>
+  <div class='modal-body'>
+    <p>{{'Roas.PREFIX' | translate}}: <input type='text' [(ngModel)]='prefix' /></p>
+    <p>{{'Roas.ASN' | translate}}: <input type='text' [(ngModel)]='asn' /></p>
+  </div>
+  <div class='modal-footer'>
+    <button type='button' class='btn btn-outline-dark' (click)='c("Close click")'>{{'AnnouncementPreview.SHOW' | translate}}</button>
+    <button type='button' class='btn btn-outline-dark' (click)='c("Close click")'>{{'AnnouncementPreview.CANCEL' | translate}}</button>
+  </div>
+</ng-template>
