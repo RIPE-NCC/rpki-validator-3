@@ -11,7 +11,8 @@ export class ApplicationErrorHandlerService extends ErrorHandler {
   handleError(error) {
     super.handleError(error);
     const router = this.injector.get(Router);
-    const zone = this.injector.get(NgZone);
+    // ROUTER cannot be used from Services, that's why they suggest using NgZone :| 
+    const zone: NgZone = this.injector.get(NgZone);
     zone.run(() => router.navigate(['error', {error: error.status, errorMsg: error.statusText}] ));
   }
 }
