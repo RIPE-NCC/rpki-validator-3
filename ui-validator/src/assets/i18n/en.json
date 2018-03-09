@@ -97,7 +97,7 @@
   "AnnouncementPreview": {
     "RELEVANT_VALIDATED_ROAS": "Relevant Validated ROAs",
     "ALERT_MSG_NO_RELEVANT": "No relevant validated ROAs",
-    "TITLE_MODAL_FORM": "Please indicate your ASN and Prefix in order to view announcements",
+    "TITLE_MODAL_FORM": "Please indicate ASN and Prefix in order to view announcements",
     "SHOW": "Show",
     "CANCEL": "Cancel"
   },

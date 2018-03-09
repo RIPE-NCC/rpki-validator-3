@@ -44,8 +44,14 @@
     </button>
   </div>
   <div class='modal-body'>
-    <p>{{'Roas.PREFIX' | translate}}: <input type='text' [(ngModel)]='prefix' /></p>
-    <p>{{'Roas.ASN' | translate}}: <input type='text' [(ngModel)]='asn' /></p>
+    <p>
+      <label class="col-md-2">{{'Roas.PREFIX' | translate}}: </label>
+      <input type='text' [(ngModel)]='prefix' />
+    </p>
+    <p>
+      <label class="col-md-2">{{'Roas.ASN' | translate}}: </label>
+      <input type='text' [(ngModel)]='asn' />
+    </p>
   </div>
   <div class='modal-footer'>
     <button type='button' class='btn btn-outline-dark' (click)='showNewParams()'>{{'AnnouncementPreview.SHOW' | translate}}</button>
