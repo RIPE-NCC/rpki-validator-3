@@ -46,6 +46,6 @@ export class BgpPreviewComponent extends ManagingTable implements OnInit {
   }
 
   openAnnouncementPreviewDetails(bgp: IBgp) {
-    this._router.navigate(['/announcement-preview/', bgp.asn, bgp.prefix]);
+    this._router.navigate(['/announcement-preview/'], { queryParams: { asn: bgp.asn, prefix: bgp.prefix} });
   }
 }

@@ -19,7 +19,7 @@ export class AnnouncementPreviewComponent implements OnInit {
   @Input()
   asn: string;
   @ViewChild('modalEnterAsnPrefix')
-  private modalTempRef : TemplateRef;
+  private modalTempRef : TemplateRef<any>;
   private modalRef: NgbModalRef;
 
   constructor(private _activatedRoute: ActivatedRoute,
@@ -33,15 +33,16 @@ export class AnnouncementPreviewComponent implements OnInit {
   }
 
   loadAnnouncementPreview():void {
-    this.asn = this._activatedRoute.snapshot.url[1].path;
-    this.prefix = this._activatedRoute.snapshot.url[2].path;
-    if (this.prefix && this.prefix !== ':prefix'
-      && this.asn && this.asn !== ':asn') {
+    this._activatedRoute.queryParams
+      .subscribe(params => {
+        // Defaults to 0 if no query param provided.
+        this.asn = params['asn'];
+        this.prefix = params['prefix']
+      });
+    if (this.prefix && this.asn) {
       this.getAnnouncementPreviewData();
     } else {
       // open modal dialog
-      this.prefix = this.prefix === ':prefix' ? '' : this.prefix;
-      this.asn = this.asn === ':asn' ? '' : this.asn;
       this.openModalForm(this.modalTempRef);
     }
   }
@@ -57,11 +58,11 @@ export class AnnouncementPreviewComponent implements OnInit {
   openModalForm(modalTempRef): void {
     this.modalRef = this._modalService.open(modalTempRef);
     this.modalRef.result.then(result => {
-      this._router.navigate(['/announcement-preview/', this.asn, this.prefix]);
+      this._router.navigate(['/announcement-preview/'], { queryParams: { asn: this.asn, prefix: this.prefix}});
       this.modalRef.close();
     }, dismiss => {
-      this._router.navigate(['/bgp-preview']);
       this.modalRef.close();
+      this._router.navigate(['/bgp-preview']);
     });
   }
 }

@@ -12,7 +12,7 @@ export const appRoutes : Routes = [
     { path: 'roas', component: RoasComponent},
     { path: 'trust-anchors/monitor/:id', component: MonitoringTaComponent},
     { path: 'bgp-preview', component: BgpPreviewComponent},
-    { path: 'announcement-preview/:asn/:prefix', component: AnnouncementPreviewComponent},
+    { path: 'announcement-preview', component: AnnouncementPreviewComponent, pathMatch: 'prefix'},
     { path: '', redirectTo: 'trust-anchors', pathMatch: 'full'},
     { path: '**', component: ErrorComponent},
     { path: 'error', component: ErrorComponent}

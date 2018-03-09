@@ -45,15 +45,15 @@
   </div>
   <div class='modal-body'>
     <p>
-      <label class="col-md-2">{{'Roas.PREFIX' | translate}}: </label>
-      <input type='text' [(ngModel)]='prefix' />
+      <label class="col-md-2"><strong>{{'Roas.PREFIX' | translate}}: </strong></label>
+      <input type='text' [(ngModel)]='prefix' autofocus />
     </p>
     <p>
-      <label class="col-md-2">{{'Roas.ASN' | translate}}: </label>
+      <label class="col-md-2"><strong>{{'Roas.ASN' | translate}}: </strong></label>
       <input type='text' [(ngModel)]='asn' />
     </p>
   </div>
   <div class='modal-footer'>
-    <button type='button' class='btn btn-outline-dark' (click)='c("reload")'>{{'AnnouncementPreview.SHOW' | translate}}</button>
+    <button type='button' class='btn btn-primary' (click)='c("reload")'>{{'AnnouncementPreview.SHOW' | translate}}</button>
   </div>
 </ng-template>
