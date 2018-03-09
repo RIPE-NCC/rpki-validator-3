@@ -1,17 +1,17 @@
 <page-title [pageTitle]='pageTitle'></page-title>
 <div class='form-group d-flex justify-content-between mb-3'>
-  <div><strong>{{'Roas.ASN' | translate}}: </strong> {{selectedBgp?.asn}}</div>
-  <div><strong>{{'Roas.PREFIX' | translate}}: </strong> {{selectedBgp?.prefix}}</div>
+  <div><strong>{{'Roas.ASN' | translate}}: </strong> {{announcementPreviewData?.origin}}</div>
+  <div><strong>{{'Roas.PREFIX' | translate}}: </strong> {{announcementPreviewData?.prefix}}</div>
   <div class="d-inline-flex"><strong>{{'STATUS' | translate}}: </strong>
-    <flag [value]="selectedBgp?.validity"></flag>
+    <flag [value]="announcementPreviewData?.validity"></flag>
   </div>
 </div>
 <hr/>
 <h3><strong>{{'AnnouncementPreview.RELEVANT_VALIDATED_ROAS' | translate}}</strong></h3>
-<ngb-alert type='warning' *ngIf='announcementPreviewData?.length == 0' [dismissible]="false">
+<ngb-alert type='warning' *ngIf='announcementPreviewData?.validatingRoas?.length == 0' [dismissible]="false">
   {{ 'AnnouncementPreview.ALERT_MSG_NO_RELEVANT' | translate }}
 </ngb-alert>
-<table *ngIf='announcementPreviewData?.length > 0' class='table table-striped table-bordered'>
+<table *ngIf='announcementPreviewData?.validatingRoas?.length > 0' class='table table-striped table-bordered'>
   <thead>
   <tr>
     <th scope='col'>{{ 'Roas.ASN' | translate }}</th>
@@ -23,7 +23,7 @@
   </tr>
   </thead>
   <tbody>
-  <tr *ngFor='let announcement of announcementPreviewData'>
+  <tr *ngFor='let announcement of announcementPreviewData.validatingRoas'>
     <td>{{announcement.origin}}</td>
     <td>{{announcement.prefix}}</td>
     <td>{{announcement.maxLength}}</td>
@@ -39,7 +39,7 @@
 <ng-template #modalEnterAsnPrefix let-c='close' let-d='dismiss'>
   <div class='modal-header'>
     <h4 class='modal-title'>{{'AnnouncementPreview.TITLE_MODAL_FORM' | translate}}</h4>
-    <button type='button' class='close' aria-label='Close' (click)='d'>
+    <button type='button' class='close' aria-label='Close' (click)='d("dismiss")'>
       <span aria-hidden='true'>&times;</span>
     </button>
   </div>
@@ -54,7 +54,6 @@
     </p>
   </div>
   <div class='modal-footer'>
-    <button type='button' class='btn btn-outline-dark' (click)='showNewParams()'>{{'AnnouncementPreview.SHOW' | translate}}</button>
-    <button type='button' class='btn btn-outline-dark' (click)='c'>{{'AnnouncementPreview.CANCEL' | translate}}</button>
+    <button type='button' class='btn btn-outline-dark' (click)='c("reload")'>{{'AnnouncementPreview.SHOW' | translate}}</button>
   </div>
 </ng-template>

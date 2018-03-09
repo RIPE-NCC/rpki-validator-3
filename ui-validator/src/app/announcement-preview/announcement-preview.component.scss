@@ -1,8 +1,14 @@
-thead > tr {
-  th:nth-child(3) {
-    width: 5%;
+table {
+  table-layout: fixed;
+  thead > tr {
+    th:nth-child(3) {
+      width: 5%;
+    }
+    th:nth-child(4) {
+      width: 15%;
+    }
   }
-  th:nth-child(4) {
-    width: 15%;
+  tbody > tr > td {
+    word-wrap: break-word;
   }
 }

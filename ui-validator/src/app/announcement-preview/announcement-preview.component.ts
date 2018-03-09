@@ -1,10 +1,9 @@
 import {Component, Input, OnInit, TemplateRef, ViewChild} from '@angular/core';
-import { Location } from '@angular/common';
 import {ActivatedRoute, Router} from "@angular/router";
-import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
+import {NgbModal, NgbModalRef} from "@ng-bootstrap/ng-bootstrap";
 
 import {BgpService} from "../core/bgp.service"
-import {IAnnouncement} from "./announcement.model";
+import {IAnnouncement, IAnnouncementData, IAnnouncementResponse} from "./announcement.model";
 
 @Component({
   selector: 'app-announcement-preview',
@@ -13,19 +12,20 @@ import {IAnnouncement} from "./announcement.model";
 })
 export class AnnouncementPreviewComponent implements OnInit {
   pageTitle: string = 'Nav.TITLE_ANNOUNCEMENT_PREVIEW';
-  announcementPreviewData: Array<IAnnouncement>;
+  announcementPreviewData: IAnnouncementData;
 
   @Input()
   prefix: string;
   @Input()
   asn: string;
   @ViewChild('modalEnterAsnPrefix')
-  private modalTempRef : TemplateRef<any>
+  private modalTempRef : TemplateRef;
+  private modalRef: NgbModalRef;
 
   constructor(private _activatedRoute: ActivatedRoute,
               private _router: Router,
               private _bgpService: BgpService,
-              private modalService: NgbModal) {
+              private _modalService: NgbModal) {
   }
 
   ngOnInit() {
@@ -53,17 +53,15 @@ export class AnnouncementPreviewComponent implements OnInit {
       )
   }
 
+  //TODO NEED TO BE CHANGED BEHAVIOR
   openModalForm(modalTempRef): void {
-    this.modalService.open(modalTempRef)
-    //   .result.then((result) => {
-    //   console.log(result);
-    //   this._router.navigate(['/announcement-preview/', this.asn, this.prefix]);
-    // }, (reason) => {
-    //   this._router.navigate(['/bgp-preview']);
-    // });
-  }
-
-  showNewParams() {
-    this._router.navigate(['/announcement-preview/', this.asn, this.prefix]);
+    this.modalRef = this._modalService.open(modalTempRef);
+    this.modalRef.result.then(result => {
+      this._router.navigate(['/announcement-preview/', this.asn, this.prefix]);
+      this.modalRef.close();
+    }, dismiss => {
+      this._router.navigate(['/bgp-preview']);
+      this.modalRef.close();
+    });
   }
 }

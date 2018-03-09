@@ -7,10 +7,16 @@ export interface IAnnouncement {
   uri: string
 }
 
+export interface IAnnouncementData {
+  origin: string,
+  prefix: string,
+  validity: string,
+  validatingRoas: Array<IAnnouncement>
+}
+
 export interface IAnnouncementResponse {
-  data:  Array<IAnnouncement>,
+  data: IAnnouncementData,
   metadata: {
     totalCount: number
   }
 }
-
