@@ -51,9 +51,12 @@
   "Monitoring": {
     "VALIDATED_USING_TA_LOCATOR": "Trust Anchor could be validated",
     "LAST_VALIDATION": "Last completed validation",
-    "TOOLTIP_NUMBER_DOWNLOADED": "downloaded",
-    "TOOLTIP_NUMBER_PENDING": "pending",
-    "TOOLTIP_NUMBER_FAILED": "failed",
+    "TOOLTIP_OBJECTS_DOWNLOADED": "valid objects",
+    "TOOLTIP_OBJECTS_PENDING": "objects with warnings",
+    "TOOLTIP_OBJECTS_FAILED": "invalid objects",
+    "TOOLTIP_REPOSITORIES_DOWNLOADED": "downloaded",
+    "TOOLTIP_REPOSITORIES_PENDING": "pending",
+    "TOOLTIP_REPOSITORIES_FAILED": "failed",
     "REPOSITORIES": "Repositories"
   },
   "Repositories": {
@@ -66,7 +69,6 @@
   "ValidationDetails": {
     "TITLE": "Validation Issues",
     "NO_RECORDS": "No validation problems found",
-    "CHECK_KEY": "Check Key",
     "CHECK_MSG": "Message",
     "CHECK_VALID": "Severity"
   },

@@ -13,9 +13,12 @@
     </td>
     <td>
       <div class='d-inline-flex  justify-content-between'>
-        <flag [value]='ta.successful' [color]='"green"' class='mr-2'></flag>
-        <flag [value]='ta.warnings' [color]='"orange"' class='mr-2'></flag>
-        <flag [value]='ta.errors' [color]='"red"' class='mr-2'></flag>
+        <flag [value]='ta.successful' [color]='"green"' class='mr-2'
+              [ngbTooltip]="'Monitoring.TOOLTIP_OBJECTS_DOWNLOADED' | translate:{value:'info'}"></flag>
+        <flag [value]='ta.warnings' [color]='"orange"' class='mr-2'
+              [ngbTooltip]="'Monitoring.TOOLTIP_OBJECTS_PENDING' | translate:{value:'info'}"></flag>
+        <flag [value]='ta.errors' [color]='"red"' class='mr-2'
+              [ngbTooltip]="'Monitoring.TOOLTIP_OBJECTS_FAILED' | translate:{value:'info'}"></flag>
       </div>
     </td>
     <td>{{ta.lastUpdated}}</td>

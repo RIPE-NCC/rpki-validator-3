@@ -31,11 +31,11 @@
     <td>
       <div class='d-inline-flex  justify-content-between'>
         <flag [value]='tAOverview?.successful' [color]='"green"' class='mr-2'
-              [ngbTooltip]="'Monitoring.TOOLTIP_NUMBER_DOWNLOADED' | translate:{value:'info'}"></flag>
+              [ngbTooltip]="'Monitoring.TOOLTIP_OBJECTS_DOWNLOADED' | translate:{value:'info'}"></flag>
         <flag [value]='tAOverview?.warnings' [color]='"orange"' class='mr-2'
-              [ngbTooltip]="'Monitoring.TOOLTIP_NUMBER_PENDING' | translate:{value:'info'}"></flag>
+              [ngbTooltip]="'Monitoring.TOOLTIP_OBJECTS_PENDING' | translate:{value:'info'}"></flag>
         <flag [value]='tAOverview?.errors' [color]='"red"' class='mr-2'
-              [ngbTooltip]="'Monitoring.TOOLTIP_NUMBER_FAILED' | translate:{value:'info'}"></flag>
+              [ngbTooltip]="'Monitoring.TOOLTIP_OBJECTS_FAILED' | translate:{value:'info'}"></flag>
       </div>
     </td>
   </tr>
@@ -46,11 +46,11 @@
     <td>
       <div class='d-inline-flex  justify-content-between'>
         <flag [value]='repositoriesStatuses?.downloaded' [color]='"green"' class='mr-2'
-              [ngbTooltip]="'Monitoring.TOOLTIP_NUMBER_DOWNLOADED' | translate:{value:'info'}"></flag>
+              [ngbTooltip]="'Monitoring.TOOLTIP_REPOSITORIES_DOWNLOADED' | translate:{value:'info'}"></flag>
         <flag [value]='repositoriesStatuses?.pending' [color]='"orange"' class='mr-2'
-              [ngbTooltip]="'Monitoring.TOOLTIP_NUMBER_PENDING' | translate:{value:'info'}"></flag>
+              [ngbTooltip]="'Monitoring.TOOLTIP_REPOSITORIES_PENDING' | translate:{value:'info'}"></flag>
         <flag [value]='repositoriesStatuses?.failed' [color]='"red"' class='mr-2'
-              [ngbTooltip]="'Monitoring.TOOLTIP_NUMBER_FAILED' | translate:{value:'info'}"></flag>
+              [ngbTooltip]="'Monitoring.TOOLTIP_REPOSITORIES_FAILED' | translate:{value:'info'}"></flag>
       </div>
     </td>
   </tr>
