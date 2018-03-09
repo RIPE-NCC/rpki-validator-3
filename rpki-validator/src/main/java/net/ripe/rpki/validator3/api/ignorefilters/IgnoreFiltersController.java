@@ -27,89 +27,84 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.api.bgp;
+package net.ripe.rpki.validator3.api.ignorefilters;
 
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.ipresource.Asn;
-import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.Metadata;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.domain.IgnoreFilters;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.function.Supplier;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
+
 @RestController
-@RequestMapping(path = "/api/bgp", produces = {Api.API_MIME_TYPE, "application/json"})
 @Slf4j
-public class BgpPreviewController {
+@RequestMapping(path = "/api/ignore-filters", produces = { Api.API_MIME_TYPE, "application/json" })
+public class IgnoreFiltersController {
 
     @Autowired
-    private BgpPreviewService bgpPreviewService;
+    private IgnoreFilters ignoreFilters;
 
-    @GetMapping(path = "/")
-    public ResponseEntity<ApiResponse<Stream<BgpPreview>>> list(
+    @Autowired
+    private IgnoreFilterService ignoreFilterService;
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<Stream<IgnoreFilter>>> list(
             @RequestParam(name = "startFrom", defaultValue = "0") int startFrom,
             @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
             @RequestParam(name = "search", defaultValue = "", required = false) String searchString,
             @RequestParam(name = "sortBy", defaultValue = "prefix") String sortBy,
-            @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection
-    ) {
+            @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection) {
+
         final SearchTerm searchTerm = StringUtils.isNotBlank(searchString) ? new SearchTerm(searchString) : null;
         final Sorting sorting = Sorting.parse(sortBy, sortDirection);
         final Paging paging = Paging.of(startFrom, pageSize);
 
-        BgpPreviewService.BgpPreviewResult bgpPreviewResult = bgpPreviewService.find(searchTerm, sorting, paging);
+        final List<net.ripe.rpki.validator3.domain.IgnoreFilter> all = ignoreFilters.all().collect(Collectors.toList());
 
-        return ResponseEntity.ok(ApiResponse.<Stream<BgpPreview>>builder()
-                .data(bgpPreviewResult.getData().map(entry -> new BgpPreviewController.BgpPreview(
-                        entry.getOrigin().toString(),
-                        entry.getPrefix().toString(),
-                        entry.getValidity().name()
-                )))
-                .metadata(Metadata.of(bgpPreviewResult.getTotalCount()))
-                .build());
-    }
+        int totalSize = all.size();
 
-    @GetMapping(path = "/validity")
-    public ResponseEntity<ApiResponse<BgpPreviewService.BgpValidityResource>> validity(
-            @RequestParam(name = "prefix") String prefix,
-            @RequestParam(name = "asn") String asn
-    ) {
-        final BgpPreviewService.BgpValidityResource bgp = bgpPreviewService.validity(
-                arg(() -> Asn.parse(asn)),
-                arg(() -> IpRange.parse(prefix))
+        final Links links = Paging.links(
+                startFrom, pageSize, totalSize,
+                (sf, ps) -> methodOn(IgnoreFiltersController.class).list(sf, ps, searchString, sortBy, sortDirection));
+
+        return ResponseEntity.ok(
+                ApiResponse.<Stream<IgnoreFilter>>builder()
+                        .links(links)
+                        .metadata(Metadata.of(totalSize))
+                        .data(all.stream().map(f -> new IgnoreFilter(f.getAsn().toString(), f.getPrefix(), f.getComment())))
+                        .build()
         );
-        return ResponseEntity.ok(ApiResponse.<BgpPreviewService.BgpValidityResource>builder()
-                .data(bgp)
-                .metadata(Metadata.of(bgp.getValidatingRoas().size()))
-                .build());
     }
 
-    private static <T> T arg(Supplier<T> s) {
-        try  {
-            return s.get();
-        } catch (Exception e) {
-            throw new HttpMessageNotReadableException(e.getMessage());
-        }
-    }
+//    @PostMapping(consumes = { Api.API_MIME_TYPE, "application/json" })
+//    public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@RequestBody @Valid ApiCommand<AddIgnoreFilter> command, Locale locale) {
+//        long id = ignoreFilterService.execute(command.getData());
+//        net.ripe.rpki.validator3.domain.IgnoreFilter ignoreFilter = ignoreFilters.get(id);
+//        Link selfRel = linkTo(methodOn(IgnoreFiltersController.class).list(id, locale, null, null, null)).withSelfRel();
+//        return ResponseEntity.created(URI.create(selfRel.getHref())).body(trustAnchorResource(ignoreFilter, locale));
+//    }
 
-    @Value
-    public static class BgpPreview {
-        private String asn;
-        private String prefix;
-        private String validity;
+    @DeleteMapping(path = "/{id}")
+    public ResponseEntity<?> delete(@PathVariable long id) {
+        ignoreFilterService.remove(id);
+        return ResponseEntity.noContent().build();
     }
 }
