@@ -15,7 +15,6 @@
     <thead>
     <tr>
       <th sortable-column='location'>{{'URI' | translate}}</th>
-      <th sortable-column='key'>{{'ValidationDetails.CHECK_KEY' | translate}}</th>
       <th sortable-column='formattedMessage'>{{'ValidationDetails.CHECK_MSG' | translate}}</th>
       <th sortable-column='status'>{{'ValidationDetails.CHECK_VALID' | translate}}</th>
     </tr>
@@ -33,7 +32,6 @@
              popoverTitle="{{'URI' | translate}}"
         />
       </td>
-      <td>{{validationCheck.key}}</td>
       <td>{{validationCheck.formattedMessage}}</td>
       <td> <flag [value]='validationCheck.status'></flag></td>
     </tr>

@@ -30,6 +30,7 @@
 package net.ripe.rpki.validator3.api.ignorefilters;
 
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.ipresource.Asn;
 import net.ripe.rpki.validator3.domain.IgnoreFilter;
 import net.ripe.rpki.validator3.domain.IgnoreFilters;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,7 +50,7 @@ public class IgnoreFilterService {
 
     public long execute(@Valid AddIgnoreFilter command) {
         IgnoreFilter ignoreFilter = new IgnoreFilter();
-        ignoreFilter.setAsn(Long.valueOf(command.getAsn()));
+        ignoreFilter.setAsn(Asn.parse(command.getAsn()).longValue());
         ignoreFilter.setPrefix(command.getPrefix());
         ignoreFilter.setComment(command.getComment());
 

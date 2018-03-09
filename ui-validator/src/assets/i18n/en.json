@@ -38,7 +38,7 @@
     "TITLE_ANNOUNCEMENT_PREVIEW": "Announcement Preview",
     "TITLE_EXPORT_API": "Export and API",
     "TITLE_ROUTER_SESSIONS": "Router Sessions",
-    "TITLE_MONITORING_TA": "Monitor for"
+    "TITLE_MONITORING_TA": "Overview for"
   },
   "Error": {
     "Page not found": "Page not found",
@@ -50,18 +50,21 @@
   "TrustAnchors": {
     "PROCESSED_ITEMS": "Processed Items",
     "LAST_UPDATED": "Last Updated",
-    "TOOLTIP_CLICK": "Click to view monitor page"
+    "TOOLTIP_CLICK": "Click to view overview page"
   },
   "Monitoring": {
     "VALIDATED_USING_TA_LOCATOR": "Trust Anchor could be validated",
-    "LAST_VALIDATION": "Last complete Validation Run",
-    "TOOLTIP_NUMBER_DOWNLOADED": "Number of downloaded",
-    "TOOLTIP_NUMBER_PENDING": "Number of pending",
-    "TOOLTIP_NUMBER_FAILED": "Number of failed",
+    "LAST_VALIDATION": "Last completed validation",
+    "TOOLTIP_OBJECTS_DOWNLOADED": "valid objects",
+    "TOOLTIP_OBJECTS_PENDING": "objects with warnings",
+    "TOOLTIP_OBJECTS_FAILED": "invalid objects",
+    "TOOLTIP_REPOSITORIES_DOWNLOADED": "downloaded",
+    "TOOLTIP_REPOSITORIES_PENDING": "pending",
+    "TOOLTIP_REPOSITORIES_FAILED": "failed",
     "REPOSITORIES": "Repositories"
   },
   "Repositories": {
-    "NO_RECORDS": "No repositories problems found",
+    "NO_RECORDS": "No repositories with problems found",
     "URI": "URI",
     "REPO_TYPE": "Type",
     "REPO_LAST_CHECKED": "Last checked"
@@ -69,23 +72,22 @@
   "ValidationDetails": {
     "TITLE": "Validation Issues",
     "NO_RECORDS": "No validation problems found",
-    "CHECK_KEY": "Check Key",
-    "CHECK_MSG": "Check Msg",
-    "CHECK_VALID": "Check Valid"
+    "CHECK_MSG": "Message",
+    "CHECK_VALID": "Severity"
   },
   "Roas": {
     "ASN": "ASN",
     "PREFIX": "Prefix",
     "MAX_LENGTH": "Max Length",
     "URI_OF_ROA": "URI of ROA",
-    "ALERT_MSG_P1": "Not validated TA ",
+    "ALERT_MSG_P1": "Some ROAs may be missing because the following Trust Anchors still have pending repositories: ",
     "FILTERED_FROM": "(filtered from",
     "TOTAL_ENTRIES": "total entries)"
   },
   "Bgp": {
     "VALIDITY": "Validity",
-    "ALERT_MSG_P1": "This page provides a <strong>preview</strong> of the likely RPKI validity states your routers will associate with BGP announcements. This preview is based on:",
-    "ALERT_MSG_LI1": "The <a href='http://www.ris.ripe.net/dumps/'>RIPE NCC Route Collector information</a> that was last updated 4 hours and 40 minutes ago.",
+    "ALERT_MSG_P1": "This page provides a <strong>preview</strong> of RPKI validity states your routers will associate with BGP announcements. This preview is based on:",
+    "ALERT_MSG_LI1": "The <a href='http://www.ris.ripe.net/dumps/'>RIPE NCC Route Collector information</a>.",
     "ALERT_MSG_LI2": "BGP announcements that are seen by 5 or more peers.",
     "ALERT_MSG_LI3": "The validation rules defined in <a href='https://tools.ietf.org/html/rfc6483#section-2'>RFC 6483</a>.",
     "ALERT_MSG_LI4": "The validated ROAs found by this RPKI Validator after applying your filters and additional whitelist entries.",

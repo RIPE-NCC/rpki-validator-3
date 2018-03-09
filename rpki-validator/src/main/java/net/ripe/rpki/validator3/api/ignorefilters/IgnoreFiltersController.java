@@ -31,6 +31,7 @@ package net.ripe.rpki.validator3.api.ignorefilters;
 
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
+import net.ripe.rpki.validator3.api.ApiCommand;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.Metadata;
 import net.ripe.rpki.validator3.api.Paging;
@@ -39,19 +40,25 @@ import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.domain.IgnoreFilters;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.validation.Valid;
+import java.net.URI;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @RestController
@@ -89,22 +96,35 @@ public class IgnoreFiltersController {
                 ApiResponse.<Stream<IgnoreFilter>>builder()
                         .links(links)
                         .metadata(Metadata.of(totalSize))
-                        .data(all.stream().map(f -> new IgnoreFilter(f.getAsn().toString(), f.getPrefix(), f.getComment())))
+                        .data(all.stream().map(f -> toIgnoreFilter(f)))
                         .build()
         );
     }
 
-//    @PostMapping(consumes = { Api.API_MIME_TYPE, "application/json" })
-//    public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@RequestBody @Valid ApiCommand<AddIgnoreFilter> command, Locale locale) {
-//        long id = ignoreFilterService.execute(command.getData());
-//        net.ripe.rpki.validator3.domain.IgnoreFilter ignoreFilter = ignoreFilters.get(id);
-//        Link selfRel = linkTo(methodOn(IgnoreFiltersController.class).list(id, locale, null, null, null)).withSelfRel();
-//        return ResponseEntity.created(URI.create(selfRel.getHref())).body(trustAnchorResource(ignoreFilter, locale));
-//    }
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<IgnoreFilter>> get(@PathVariable long id) {
+        return ResponseEntity.ok(ignoreFilterResource(ignoreFilters.get(id)));
+    }
+
+    @PostMapping(consumes = { Api.API_MIME_TYPE, "application/json" })
+    public ResponseEntity<ApiResponse<IgnoreFilter>> add(@RequestBody @Valid ApiCommand<AddIgnoreFilter> command) {
+        final long id = ignoreFilterService.execute(command.getData());
+        final net.ripe.rpki.validator3.domain.IgnoreFilter ignoreFilter = ignoreFilters.get(id);
+        final Link selfRel = linkTo(methodOn(IgnoreFiltersController.class).get(id)).withSelfRel();
+        return ResponseEntity.created(URI.create(selfRel.getHref())).body(ignoreFilterResource(ignoreFilter));
+    }
 
     @DeleteMapping(path = "/{id}")
     public ResponseEntity<?> delete(@PathVariable long id) {
         ignoreFilterService.remove(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private IgnoreFilter toIgnoreFilter(net.ripe.rpki.validator3.domain.IgnoreFilter f) {
+        return new IgnoreFilter(f.getAsn().toString(), f.getPrefix(), f.getComment());
+    }
+
+    private ApiResponse<IgnoreFilter> ignoreFilterResource(net.ripe.rpki.validator3.domain.IgnoreFilter ignoreFilter) {
+        return ApiResponse.<IgnoreFilter>builder().data(toIgnoreFilter(ignoreFilter)).build();
     }
 }
