@@ -27,46 +27,47 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.api;
+package net.ripe.rpki.validator3.api.ignorefilters;
 
-import lombok.Value;
-import org.springframework.hateoas.Link;
-import org.springframework.hateoas.Links;
-import org.springframework.web.bind.annotation.RequestParam;
+import lombok.extern.slf4j.Slf4j;
+import net.ripe.ipresource.Asn;
+import net.ripe.rpki.validator3.domain.IgnoreFilter;
+import net.ripe.rpki.validator3.domain.IgnoreFilters;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
-import java.util.function.BiFunction;
+import javax.transaction.Transactional;
+import javax.validation.Valid;
 
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+@Component
+@Transactional
+@Validated
+@Slf4j
+public class IgnoreFilterService {
+    @Autowired
+    private IgnoreFilters ignoreFilters;
 
-@Value(staticConstructor = "of")
-public class Paging {
+    public long execute(@Valid AddIgnoreFilter command) {
+        IgnoreFilter ignoreFilter = new IgnoreFilter();
+        ignoreFilter.setAsn(Asn.parse(command.getAsn()).longValue());
+        ignoreFilter.setPrefix(command.getPrefix());
+        ignoreFilter.setComment(command.getComment());
 
-    final Integer startFrom;
-    final Integer pageSize;;
-
-    public boolean isIndefinite() {
-        return startFrom == null || pageSize == null;
+        return add(ignoreFilter);
     }
 
-    public static <T> Links links(int startFrom, int pageSize, int totalSize, BiFunction<Integer, Integer, T> linkConstructor) {
-        int previous = startFrom - pageSize;
-        if (previous < 0) {
-            previous = 0;
-        }
-        int next = startFrom + pageSize;
-        int realTotal = totalSize - pageSize;
-        if (realTotal < 0) {
-            realTotal = 0;
-        }
-        if (next > realTotal) {
-            next = realTotal;
-        }
-        return new Links(
-                linkTo(linkConstructor.apply(0, pageSize)).withRel(Link.REL_FIRST),
-                linkTo(linkConstructor.apply(previous, pageSize)).withRel(Link.REL_PREVIOUS),
-                linkTo(linkConstructor.apply(next, pageSize)).withRel(Link.REL_NEXT),
-                linkTo(linkConstructor.apply(realTotal, pageSize)).withRel(Link.REL_LAST)
-        );
+    long add(IgnoreFilter ignoreFilter) {
+        ignoreFilters.add(ignoreFilter);
+
+        log.info("added ignore filter '{}'", ignoreFilter);
+        return ignoreFilter.getId();
     }
 
+    public void remove(long trustAnchorId) {
+        IgnoreFilter ignoreFilter = ignoreFilters.get(trustAnchorId);
+        if (ignoreFilter != null) {
+            ignoreFilters.remove(ignoreFilter);
+        }
+    }
 }

@@ -53,12 +53,14 @@ import javax.annotation.PostConstruct;
 import javax.transaction.Transactional;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -70,6 +72,8 @@ public class ValidatedRpkiObjects {
     private RpkiObjects rpkiObjects;
     @Autowired
     private PlatformTransactionManager transactionManager;
+
+    private List<Consumer<Stream<RoaPrefixesAndRouterCertificates>>> onUpdateListeners = new ArrayList<>();
 
     private Map<Long, RoaPrefixesAndRouterCertificates> validatedObjectsByTrustAnchor = new HashMap<>();
 
@@ -89,6 +93,10 @@ public class ValidatedRpkiObjects {
         });
     }
 
+    public synchronized void onUpdate(Consumer<Stream<RoaPrefixesAndRouterCertificates>> listener) {
+        onUpdateListeners.add(listener);
+    }
+
     @Transactional
     public void update(TrustAnchor trustAnchor, Collection<RpkiObject> rpkiObjects) {
         TrustAnchorData trustAnchorData = TrustAnchorData.of(trustAnchor.getId(), trustAnchor.getName());
@@ -105,6 +113,8 @@ public class ValidatedRpkiObjects {
             );
 
             validatedObjectsByTrustAnchor.put(trustAnchor.getId(), roaPrefixesAndRouterCertificates);
+
+            onUpdateListeners.forEach(listener -> listener.accept(validatedObjectsByTrustAnchor.values().stream()));
         });
     }
 

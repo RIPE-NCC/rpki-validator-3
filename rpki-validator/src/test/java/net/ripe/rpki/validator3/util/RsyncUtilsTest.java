@@ -27,46 +27,34 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.api;
+package net.ripe.rpki.validator3.util;
 
-import lombok.Value;
-import org.springframework.hateoas.Link;
-import org.springframework.hateoas.Links;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.junit.Test;
 
-import java.util.function.BiFunction;
+import java.net.URI;
 
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static net.ripe.rpki.validator3.util.RsyncUtils.generateCandidateParentUris;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@Value(staticConstructor = "of")
-public class Paging {
+public class RsyncUtilsTest {
 
-    final Integer startFrom;
-    final Integer pageSize;;
-
-    public boolean isIndefinite() {
-        return startFrom == null || pageSize == null;
-    }
-
-    public static <T> Links links(int startFrom, int pageSize, int totalSize, BiFunction<Integer, Integer, T> linkConstructor) {
-        int previous = startFrom - pageSize;
-        if (previous < 0) {
-            previous = 0;
-        }
-        int next = startFrom + pageSize;
-        int realTotal = totalSize - pageSize;
-        if (realTotal < 0) {
-            realTotal = 0;
-        }
-        if (next > realTotal) {
-            next = realTotal;
-        }
-        return new Links(
-                linkTo(linkConstructor.apply(0, pageSize)).withRel(Link.REL_FIRST),
-                linkTo(linkConstructor.apply(previous, pageSize)).withRel(Link.REL_PREVIOUS),
-                linkTo(linkConstructor.apply(next, pageSize)).withRel(Link.REL_NEXT),
-                linkTo(linkConstructor.apply(realTotal, pageSize)).withRel(Link.REL_LAST)
+    @Test
+    public void should_generate_candidate_parent_rsync_uris() {
+        assertThat(generateCandidateParentUris(URI.create("rsync://hostname"))).isEmpty();
+        assertThat(generateCandidateParentUris(URI.create("rsync://hostname/"))).isEmpty();
+        assertThat(generateCandidateParentUris(URI.create("rsync://hostname/repo"))).containsExactlyInAnyOrder(
+            URI.create("rsync://hostname/")
+        );
+        assertThat(generateCandidateParentUris(URI.create("rsync://hostname/repo/"))).containsExactlyInAnyOrder(
+            URI.create("rsync://hostname/")
+        );
+        assertThat(generateCandidateParentUris(URI.create("rsync://hostname/repo/child"))).containsExactlyInAnyOrder(
+            URI.create("rsync://hostname/repo/"),
+            URI.create("rsync://hostname/")
+        );
+        assertThat(generateCandidateParentUris(URI.create("rsync://hostname/repo/child/"))).containsExactlyInAnyOrder(
+            URI.create("rsync://hostname/repo/"),
+            URI.create("rsync://hostname/")
         );
     }
-
 }

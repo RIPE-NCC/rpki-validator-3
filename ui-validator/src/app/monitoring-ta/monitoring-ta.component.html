@@ -1,6 +1,6 @@
 <page-title [pageTitle]='pageTitle' [specificValue]='monitoringTrustAnchor?.name'></page-title>
-<h3><strong>{{'TRUST_ANCHOR' | translate}}</strong></h3>
-<table class='table table-striped table-bordered'>
+<h3><strong>{{'SUMMARY' | translate}}</strong></h3>
+<table class='table table-bordered'>
   <tbody>
   <tr>
     <td>
@@ -10,14 +10,38 @@
       <flag [value]='monitoringTrustAnchor?.initialCertificateTreeValidationRunCompleted'></flag>
     </td>
   </tr>
-  </tbody>
-</table>
-<h3><strong>{{'Monitoring.LAST_VALIDATION' | translate}}</strong></h3>
-<table class='table table-striped table-bordered'>
-  <tbody>
   <tr>
     <td>
-      {{'Monitoring.TA_HAVE_PENDING_REPOSITORIES' | translate}}
+      {{'Monitoring.LAST_VALIDATION' | translate}}
+    </td>
+    <td>
+      <span *ngIf='repositoriesStatuses?.pending == 0; else flagWithNumberPending'>
+        {{tAOverview?.lastUpdated}}
+      </span>
+      <ng-template #flagWithNumberPending>
+        <flag [value]='repositoriesStatuses?.pending' [color]='"orange"' class='mr-2'
+              [ngbTooltip]="'Monitoring.TOOLTIP_NUMBER_PENDING' | translate:{value:'info'}"></flag>
+      </ng-template>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      {{'TrustAnchors.PROCESSED_ITEMS' | translate}}
+    </td>
+    <td>
+      <div class='d-inline-flex  justify-content-between'>
+        <flag [value]='tAOverview?.successful' [color]='"green"' class='mr-2'
+              [ngbTooltip]="'Monitoring.TOOLTIP_NUMBER_DOWNLOADED' | translate:{value:'info'}"></flag>
+        <flag [value]='tAOverview?.warnings' [color]='"orange"' class='mr-2'
+              [ngbTooltip]="'Monitoring.TOOLTIP_NUMBER_PENDING' | translate:{value:'info'}"></flag>
+        <flag [value]='tAOverview?.errors' [color]='"red"' class='mr-2'
+              [ngbTooltip]="'Monitoring.TOOLTIP_NUMBER_FAILED' | translate:{value:'info'}"></flag>
+      </div>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      {{'Monitoring.REPOSITORIES' | translate}}
     </td>
     <td>
       <div class='d-inline-flex  justify-content-between'>

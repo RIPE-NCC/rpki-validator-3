@@ -14,6 +14,7 @@ export class FlagComponent implements OnChanges {
   green: boolean = false;
   orange: boolean = false;
   red: boolean = false;
+  gray: boolean = false;
   mutedColor: boolean = false;
   numericValue: boolean = true;
 
@@ -53,19 +54,25 @@ export class FlagComponent implements OnChanges {
     const value = isString(this.value) ? this.value.toUpperCase() : this.value;
     switch (value) {
       case 'SUCCESS':
+      case 'VALID':
       case 'DOWNLOADED': {
         this.green = true;
         break;
       }
       case 'WARNING':
+      case 'INVALID ASN':
       case 'PENDING': {
         this.orange = true;
         break;
       }
       case 'ERROR':
+      case 'NOT VALID':
       case 'FAILED': {
         this.red = true;
         break;
+      }
+      case 'UNKNOWN': {
+        this.gray = true;
       }
     }
   }
@@ -83,6 +90,6 @@ export class FlagComponent implements OnChanges {
   }
 
   removeAllFlags(): void {
-    this.green = this.orange = this.red = this.numericValue = false;
+    this.green = this.orange = this.red = this.gray = this.numericValue = false;
   }
 }

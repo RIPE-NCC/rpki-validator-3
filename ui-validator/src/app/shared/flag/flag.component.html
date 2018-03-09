@@ -25,3 +25,9 @@
     <div class='alert alert-danger-muted' role='alert'>{{value}}</div>
   </ng-template>
 </div>
+<!-- GRAY FLAG -->
+<div *ngIf='gray'>
+  <div class='alert alert-unknown' role='alert'>
+    {{numericValue ? value : (value | translate)}}
+  </div>
+</div>

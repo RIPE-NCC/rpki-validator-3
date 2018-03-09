@@ -27,46 +27,36 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.api;
+package net.ripe.rpki.validator3.domain;
 
-import lombok.Value;
-import org.springframework.hateoas.Link;
-import org.springframework.hateoas.Links;
-import org.springframework.web.bind.annotation.RequestParam;
+import lombok.Getter;
+import lombok.Setter;
 
-import java.util.function.BiFunction;
+import javax.persistence.Basic;
+import javax.persistence.Entity;
 
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+@Entity
+public class IgnoreFilter extends AbstractEntity {
 
-@Value(staticConstructor = "of")
-public class Paging {
+    // TODO one of prefix or asn has to be not empty
 
-    final Integer startFrom;
-    final Integer pageSize;;
+    @Basic
+    @Getter
+    @Setter
+    private String prefix;
 
-    public boolean isIndefinite() {
-        return startFrom == null || pageSize == null;
+    @Basic
+    @Getter
+    @Setter
+    private Long asn;
+
+    @Basic
+    @Getter
+    @Setter
+    private String comment;
+
+    public IgnoreFilter() {
     }
 
-    public static <T> Links links(int startFrom, int pageSize, int totalSize, BiFunction<Integer, Integer, T> linkConstructor) {
-        int previous = startFrom - pageSize;
-        if (previous < 0) {
-            previous = 0;
-        }
-        int next = startFrom + pageSize;
-        int realTotal = totalSize - pageSize;
-        if (realTotal < 0) {
-            realTotal = 0;
-        }
-        if (next > realTotal) {
-            next = realTotal;
-        }
-        return new Links(
-                linkTo(linkConstructor.apply(0, pageSize)).withRel(Link.REL_FIRST),
-                linkTo(linkConstructor.apply(previous, pageSize)).withRel(Link.REL_PREVIOUS),
-                linkTo(linkConstructor.apply(next, pageSize)).withRel(Link.REL_NEXT),
-                linkTo(linkConstructor.apply(realTotal, pageSize)).withRel(Link.REL_LAST)
-        );
-    }
 
 }

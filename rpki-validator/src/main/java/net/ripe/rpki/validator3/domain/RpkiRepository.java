@@ -39,9 +39,11 @@ import javax.persistence.Basic;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -107,6 +109,11 @@ public class RpkiRepository extends AbstractEntity {
     @Getter
     @Setter
     private BigInteger rrdpSerial;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @Getter
+    @Setter
+    private RpkiRepository parentRepository;
 
     protected RpkiRepository() {
     }

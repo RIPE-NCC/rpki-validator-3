@@ -27,46 +27,28 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.api;
+package net.ripe.rpki.validator3.adapter.jpa;
 
-import lombok.Value;
-import org.springframework.hateoas.Link;
-import org.springframework.hateoas.Links;
-import org.springframework.web.bind.annotation.RequestParam;
+import net.ripe.rpki.validator3.domain.IgnoreFilter;
+import net.ripe.rpki.validator3.domain.IgnoreFilters;
+import org.springframework.stereotype.Repository;
 
-import java.util.function.BiFunction;
+import javax.transaction.Transactional;
 
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import java.util.stream.Stream;
 
-@Value(staticConstructor = "of")
-public class Paging {
+import static net.ripe.rpki.validator3.domain.querydsl.QIgnoreFilter.ignoreFilter;
 
-    final Integer startFrom;
-    final Integer pageSize;;
+@Repository
+@Transactional(Transactional.TxType.REQUIRED)
+public class JPAIgnoreFilters extends JPARepository<IgnoreFilter> implements IgnoreFilters {
 
-    public boolean isIndefinite() {
-        return startFrom == null || pageSize == null;
+    protected JPAIgnoreFilters() {
+        super(ignoreFilter);
     }
 
-    public static <T> Links links(int startFrom, int pageSize, int totalSize, BiFunction<Integer, Integer, T> linkConstructor) {
-        int previous = startFrom - pageSize;
-        if (previous < 0) {
-            previous = 0;
-        }
-        int next = startFrom + pageSize;
-        int realTotal = totalSize - pageSize;
-        if (realTotal < 0) {
-            realTotal = 0;
-        }
-        if (next > realTotal) {
-            next = realTotal;
-        }
-        return new Links(
-                linkTo(linkConstructor.apply(0, pageSize)).withRel(Link.REL_FIRST),
-                linkTo(linkConstructor.apply(previous, pageSize)).withRel(Link.REL_PREVIOUS),
-                linkTo(linkConstructor.apply(next, pageSize)).withRel(Link.REL_NEXT),
-                linkTo(linkConstructor.apply(realTotal, pageSize)).withRel(Link.REL_LAST)
-        );
+    @Override
+    public Stream<IgnoreFilter> all() {
+        return stream(select());
     }
-
 }

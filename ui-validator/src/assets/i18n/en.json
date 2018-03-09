@@ -30,6 +30,7 @@
   "ADD": "Add",
   "COMMENT": "Comment",
   "REQUIRED": "Required",
+  "SUMMARY": "Summary",
   "Nav": {
     "TITLE_TRUST_ANCHORS": "Configured Trust Anchors",
     "TITLE_ROAS": "Validated ROAs",
@@ -45,7 +46,7 @@
     "Bad request": "Bad request"
   },
   "Footer": {
-    "COPYRIGHT": "Copyright ©2009-2018 the Réseaux IP Européens Network Coordination Centre RIPE NCC. All rights restricted. Version 2.24-SNAPSHOT"
+    "COPYRIGHT": "Copyright ©2009-2018 the Réseaux IP Européens Network Coordination Centre RIPE NCC. All rights restricted."
   },
   "TrustAnchors": {
     "PROCESSED_ITEMS": "Processed Items",
@@ -53,9 +54,8 @@
     "TOOLTIP_CLICK": "Click to view monitor page"
   },
   "Monitoring": {
-    "VALIDATED_USING_TA_LOCATOR": "Trust anchor could be validated using trust anchor locator",
-    "LAST_VALIDATION": "Last Validation Run",
-    "TA_HAVE_PENDING_REPOSITORIES": "Trust Anchor still has pending repositories",
+    "VALIDATED_USING_TA_LOCATOR": "Trust Anchor could be validated",
+    "LAST_VALIDATION": "Last complete Validation Run",
     "TOOLTIP_NUMBER_DOWNLOADED": "Number of downloaded",
     "TOOLTIP_NUMBER_PENDING": "Number of pending",
     "TOOLTIP_NUMBER_FAILED": "Number of failed",
@@ -81,6 +81,17 @@
     "ALERT_MSG_P1": "Not validated TA ",
     "FILTERED_FROM": "(filtered from",
     "TOTAL_ENTRIES": "total entries)"
+  },
+  "Bgp": {
+    "VALIDITY": "Validity",
+    "ALERT_MSG_P1": "This page provides a <strong>preview</strong> of the likely RPKI validity states your routers will associate with BGP announcements. This preview is based on:",
+    "ALERT_MSG_LI1": "The <a href='http://www.ris.ripe.net/dumps/'>RIPE NCC Route Collector information</a> that was last updated 4 hours and 40 minutes ago.",
+    "ALERT_MSG_LI2": "BGP announcements that are seen by 5 or more peers.",
+    "ALERT_MSG_LI3": "The validation rules defined in <a href='https://tools.ietf.org/html/rfc6483#section-2'>RFC 6483</a>.",
+    "ALERT_MSG_LI4": "The validated ROAs found by this RPKI Validator after applying your filters and additional whitelist entries.",
+    "ALERT_MSG_P2": "Please note that the BGP announcements your routers see may differ from the ones listed here.",
+    "LENGTH": "Length",
+    "DETAILS_TITLE": "Details"
   },
   "IgnoreFilters": {
     "ALERT_MSG_INTRO": "By adding a filter the validator will ignore any RPKI prefixes that overlap with the filter's prefix.",

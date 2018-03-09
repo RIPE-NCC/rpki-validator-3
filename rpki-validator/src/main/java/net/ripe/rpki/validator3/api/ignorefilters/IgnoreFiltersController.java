@@ -27,90 +27,104 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.api.rpkirepositories;
+package net.ripe.rpki.validator3.api.ignorefilters;
 
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
+import net.ripe.rpki.validator3.api.ApiCommand;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.Metadata;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
-import net.ripe.rpki.validator3.domain.RpkiRepositories;
-import net.ripe.rpki.validator3.domain.RpkiRepository;
+import net.ripe.rpki.validator3.domain.IgnoreFilters;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
+import javax.validation.Valid;
+import java.net.URI;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @RestController
-@RequestMapping(path = "/api/rpki-repositories", produces = { Api.API_MIME_TYPE, "application/json" })
 @Slf4j
-public class RpkiRepositoriesController {
-
-    private final RpkiRepositories rpkiRepositories;
+@RequestMapping(path = "/api/ignore-filters", produces = { Api.API_MIME_TYPE, "application/json" })
+public class IgnoreFiltersController {
 
     @Autowired
-    public RpkiRepositoriesController(RpkiRepositories rpkiRepositories) {
-        this.rpkiRepositories = rpkiRepositories;
-    }
+    private IgnoreFilters ignoreFilters;
+
+    @Autowired
+    private IgnoreFilterService ignoreFilterService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<Stream<RpkiRepositoryResource>>> list(
-            @RequestParam(name = "status", required = false) RpkiRepository.Status status,
-            @RequestParam(name = "ta", required = false) Long taId,@RequestParam(name = "startFrom", defaultValue = "0") int startFrom,
+    public ResponseEntity<ApiResponse<Stream<IgnoreFilter>>> list(
+            @RequestParam(name = "startFrom", defaultValue = "0") int startFrom,
             @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
             @RequestParam(name = "search", defaultValue = "", required = false) String searchString,
-            @RequestParam(name = "sortBy", defaultValue = "location") String sortBy,
-            @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection,
-            @RequestParam(name = "hideChildrenOfDownloadedParent", defaultValue = "true") boolean hideChildrenOfDownloadedParent
-    ) {
+            @RequestParam(name = "sortBy", defaultValue = "prefix") String sortBy,
+            @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection) {
+
         final SearchTerm searchTerm = StringUtils.isNotBlank(searchString) ? new SearchTerm(searchString) : null;
         final Sorting sorting = Sorting.parse(sortBy, sortDirection);
         final Paging paging = Paging.of(startFrom, pageSize);
-        final Stream<RpkiRepository> repositories = rpkiRepositories.findAll(status, taId, hideChildrenOfDownloadedParent, searchTerm, sorting, paging);
 
-        final int totalSize = (int) rpkiRepositories.countAll(status, taId, hideChildrenOfDownloadedParent, searchTerm);
+        final List<net.ripe.rpki.validator3.domain.IgnoreFilter> all = ignoreFilters.all().collect(Collectors.toList());
+
+        int totalSize = all.size();
+
         final Links links = Paging.links(
                 startFrom, pageSize, totalSize,
-                (sf, ps) -> methodOn(RpkiRepositoriesController.class).list(status, taId, sf, ps, searchString, sortBy, sortDirection, hideChildrenOfDownloadedParent));
+                (sf, ps) -> methodOn(IgnoreFiltersController.class).list(sf, ps, searchString, sortBy, sortDirection));
 
-        final Stream<RpkiRepositoryResource> data = repositories.map(RpkiRepositoryResource::of);
-
-        return ResponseEntity.ok(ApiResponse.<Stream<RpkiRepositoryResource>>builder()
-                .data(data)
-                .links(links)
-                .metadata(Metadata.of(totalSize))
-                .build());
+        return ResponseEntity.ok(
+                ApiResponse.<Stream<IgnoreFilter>>builder()
+                        .links(links)
+                        .metadata(Metadata.of(totalSize))
+                        .data(all.stream().map(f -> toIgnoreFilter(f)))
+                        .build()
+        );
     }
 
-    @GetMapping(path = "/{id}")
-    public ResponseEntity<ApiResponse<RpkiRepositoryResource>> get(@PathVariable long id) {
-        RpkiRepository rpkiRepository = rpkiRepositories.get(id);
-        return ResponseEntity.ok(ApiResponse.data(RpkiRepositoryResource.of(rpkiRepository)));
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<IgnoreFilter>> get(@PathVariable long id) {
+        return ResponseEntity.ok(ignoreFilterResource(ignoreFilters.get(id)));
     }
 
-    @GetMapping(path = "/statuses/{taId}")
-    public ApiResponse<RepositoriesStatus> repositories(
-            @PathVariable long taId,
-            @RequestParam(name = "hideChildrenOfDownloadedParent", defaultValue = "true") boolean hideChildrenOfDownloadedParent
-    ) {
-        final Map<RpkiRepository.Status, Long> counts = rpkiRepositories.countByStatus(taId, hideChildrenOfDownloadedParent);
+    @PostMapping(consumes = { Api.API_MIME_TYPE, "application/json" })
+    public ResponseEntity<ApiResponse<IgnoreFilter>> add(@RequestBody @Valid ApiCommand<AddIgnoreFilter> command) {
+        final long id = ignoreFilterService.execute(command.getData());
+        final net.ripe.rpki.validator3.domain.IgnoreFilter ignoreFilter = ignoreFilters.get(id);
+        final Link selfRel = linkTo(methodOn(IgnoreFiltersController.class).get(id)).withSelfRel();
+        return ResponseEntity.created(URI.create(selfRel.getHref())).body(ignoreFilterResource(ignoreFilter));
+    }
 
-        return ApiResponse.<RepositoriesStatus>builder().data(RepositoriesStatus.of(
-                counts.getOrDefault(RpkiRepository.Status.DOWNLOADED, 0L).intValue(),
-                counts.getOrDefault(RpkiRepository.Status.PENDING, 0L).intValue(),
-                counts.getOrDefault(RpkiRepository.Status.FAILED, 0L).intValue()
-        )).build();
+    @DeleteMapping(path = "/{id}")
+    public ResponseEntity<?> delete(@PathVariable long id) {
+        ignoreFilterService.remove(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    private IgnoreFilter toIgnoreFilter(net.ripe.rpki.validator3.domain.IgnoreFilter f) {
+        return new IgnoreFilter(f.getAsn().toString(), f.getPrefix(), f.getComment());
+    }
+
+    private ApiResponse<IgnoreFilter> ignoreFilterResource(net.ripe.rpki.validator3.domain.IgnoreFilter ignoreFilter) {
+        return ApiResponse.<IgnoreFilter>builder().data(toIgnoreFilter(ignoreFilter)).build();
     }
 }
