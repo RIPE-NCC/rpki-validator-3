@@ -35,7 +35,6 @@ export class AnnouncementPreviewComponent implements OnInit {
   loadAnnouncementPreview():void {
     this._activatedRoute.queryParams
       .subscribe(params => {
-        // Defaults to 0 if no query param provided.
         this.asn = params['asn'];
         this.prefix = params['prefix']
       });
@@ -64,5 +63,9 @@ export class AnnouncementPreviewComponent implements OnInit {
       this.modalRef.close();
       this._router.navigate(['/bgp-preview']);
     });
+  }
+
+  onSubmitModal(values: any) {
+    console.log("SUBMIT " + values)
   }
 }
