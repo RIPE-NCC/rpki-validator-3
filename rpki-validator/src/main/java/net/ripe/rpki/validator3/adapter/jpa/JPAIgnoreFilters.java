@@ -27,36 +27,28 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.domain;
+package net.ripe.rpki.validator3.adapter.jpa;
 
-import lombok.Getter;
-import lombok.Setter;
+import net.ripe.rpki.validator3.domain.IgnoreFilter;
+import net.ripe.rpki.validator3.domain.IgnoreFilters;
+import org.springframework.stereotype.Repository;
 
-import javax.persistence.Basic;
-import javax.persistence.Entity;
+import javax.transaction.Transactional;
 
-@Entity
-public class IgnoreFilter extends AbstractEntity {
+import java.util.stream.Stream;
 
-    // TODO one of prefix or asn has to be not empty
+import static net.ripe.rpki.validator3.domain.querydsl.QIgnoreFilter.ignoreFilter;
 
-    @Basic
-    @Getter
-    @Setter
-    private String prefix;
+@Repository
+@Transactional(Transactional.TxType.REQUIRED)
+public class JPAIgnoreFilters extends JPARepository<IgnoreFilter> implements IgnoreFilters {
 
-    @Basic
-    @Getter
-    @Setter
-    private Long asn;
-
-    @Basic
-    @Getter
-    @Setter
-    private String comment;
-
-    public IgnoreFilter() {
+    protected JPAIgnoreFilters() {
+        super(ignoreFilter);
     }
 
-
+    @Override
+    public Stream<IgnoreFilter> all() {
+        return stream(select());
+    }
 }

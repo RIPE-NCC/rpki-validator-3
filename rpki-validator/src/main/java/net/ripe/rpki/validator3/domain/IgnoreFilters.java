@@ -29,34 +29,14 @@
  */
 package net.ripe.rpki.validator3.domain;
 
-import lombok.Getter;
-import lombok.Setter;
+import java.util.stream.Stream;
 
-import javax.persistence.Basic;
-import javax.persistence.Entity;
+public interface IgnoreFilters {
+    Stream<IgnoreFilter> all();
 
-@Entity
-public class IgnoreFilter extends AbstractEntity {
+    void add(IgnoreFilter ignoreFilter);
 
-    // TODO one of prefix or asn has to be not empty
+    IgnoreFilter get(long ignoreFilterId);
 
-    @Basic
-    @Getter
-    @Setter
-    private String prefix;
-
-    @Basic
-    @Getter
-    @Setter
-    private Long asn;
-
-    @Basic
-    @Getter
-    @Setter
-    private String comment;
-
-    public IgnoreFilter() {
-    }
-
-
+    void remove(IgnoreFilter ignoreFilter);
 }

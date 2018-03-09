@@ -27,36 +27,13 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.domain;
+package net.ripe.rpki.validator3.api.ignorefilters;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Value;
 
-import javax.persistence.Basic;
-import javax.persistence.Entity;
-
-@Entity
-public class IgnoreFilter extends AbstractEntity {
-
-    // TODO one of prefix or asn has to be not empty
-
-    @Basic
-    @Getter
-    @Setter
+@Value
+class IgnoreFilter {
+    private String asn;
     private String prefix;
-
-    @Basic
-    @Getter
-    @Setter
-    private Long asn;
-
-    @Basic
-    @Getter
-    @Setter
     private String comment;
-
-    public IgnoreFilter() {
-    }
-
-
 }
