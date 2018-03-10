@@ -10,7 +10,8 @@ import {IIgnoreFilter, IIgnoreFiltersResponse} from "./filters.model";
 @Injectable()
 export class IgnoreFiltersService {
 
-  private _ignoreFiltersUrl = '../api/ignore-filters-response.json';
+  private _ignoreFiltersUrl = '/api/ignore-filters';
+  private _deleteIgnoreFilterUrl = '/api/ignore-filters/{id}';
 
   constructor(private _http: HttpClient) {}
 
@@ -24,12 +25,12 @@ export class IgnoreFiltersService {
 
     return this._http.get<IIgnoreFiltersResponse>(this._ignoreFiltersUrl, {params: params})
   }
-  //TODO make it really work
-  saveIgnoreFilter(filter: IIgnoreFilter): Observable<IIgnoreFiltersResponse> {
-    return this._http.get<IIgnoreFiltersResponse>(this._ignoreFiltersUrl)
+
+  saveIgnoreFilter(filter: IIgnoreFilter): Observable<any> {
+    return this._http.post(this._ignoreFiltersUrl, { data: filter });
   }
-  //TODO make it really work
-  deleteIgnoreFilter(filter: IIgnoreFilter): Observable<IIgnoreFiltersResponse> {
-    return this._http.get<IIgnoreFiltersResponse>(this._ignoreFiltersUrl)
+  
+  deleteIgnoreFilter(filter: IIgnoreFilter): Observable<any> {
+    return this._http.delete<IIgnoreFiltersResponse>(this._deleteIgnoreFilterUrl.replace('{id}', filter.id))
   }
 }

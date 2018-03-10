@@ -43,6 +43,11 @@ public class IgnoreFilter extends AbstractEntity {
     @Basic
     @Getter
     @Setter
+    private long id;
+
+    @Basic
+    @Getter
+    @Setter
     private String prefix;
 
     @Basic

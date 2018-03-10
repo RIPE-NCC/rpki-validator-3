@@ -11,6 +11,6 @@ describe('ui-validator App', () => {
 
   it('should display correctly Monitor TA page', () => {
     monitorTaPage
-      .expectTitleHeaderToBe('Monitor for RIPE NCC RPKI Root');
+      .expectTitleHeaderToBe('Overview for RIPE NCC RPKI Root');
   });
 });
