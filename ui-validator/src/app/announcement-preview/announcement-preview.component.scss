@@ -4,8 +4,11 @@ table {
     th:nth-child(3) {
       width: 5%;
     }
-    th:nth-child(4) {
-      width: 15%;
+    th:nth-child(5) {
+      width: 3rem;
+    }
+    th:nth-child(6) {
+      width: 10rem;
     }
   }
   tbody > tr > td {

@@ -29,15 +29,15 @@ export class AnnouncementPreviewComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.loadAnnouncementPreview();
-  }
-
-  loadAnnouncementPreview():void {
     this._activatedRoute.queryParams
       .subscribe(params => {
         this.asn = params['asn'];
         this.prefix = params['prefix']
+        this.loadAnnouncementPreview();
       });
+  }
+
+  loadAnnouncementPreview():void {
     if (this.prefix && this.asn) {
       this.getAnnouncementPreviewData();
     } else {
@@ -55,13 +55,15 @@ export class AnnouncementPreviewComponent implements OnInit {
 
   //TODO NEED TO BE CHANGED BEHAVIOR
   openModalForm(modalTempRef): void {
-    this.modalRef = this._modalService.open(modalTempRef);
-    this.modalRef.result.then(result => {
-      this._router.navigate(['/announcement-preview/'], { queryParams: { asn: this.asn, prefix: this.prefix}});
-      this.modalRef.close();
-    }, dismiss => {
-      this.modalRef.close();
-      this._router.navigate(['/bgp-preview']);
+    setTimeout(() => {
+      this.modalRef = this._modalService.open(modalTempRef);
+      this.modalRef.result.then(result => {
+        this._router.navigate(['/announcement-preview/'], {queryParams: {asn: this.asn, prefix: this.prefix}});
+        this.modalRef.close();
+      }, dismiss => {
+        this.modalRef.close();
+        this._router.navigate(['/bgp-preview']);
+      });
     });
   }
 
