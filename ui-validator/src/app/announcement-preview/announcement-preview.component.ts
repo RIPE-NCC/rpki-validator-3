@@ -67,18 +67,4 @@ export class AnnouncementPreviewComponent implements OnInit {
       });
     });
   }
-
-  openModalForm(modalTempRef): void {
-    setTimeout(() => {
-      this.modalRef = this._modalService.open(modalTempRef);
-      this.modalRef.result.then(result => {
-        this._router.navigate(['/announcement-preview/'], {queryParams: {asn: this.asn, prefix: this.prefix}});
-        this.modalRef.close();
-      }, dismiss => {
-        this.modalRef.close();
-        this._router.navigate(['/bgp-preview']);
-      });
-    });
-  }
-
 }

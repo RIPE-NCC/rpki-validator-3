@@ -54,9 +54,4 @@ describe('TrustAnchorsComponent', () => {
     expect(component.trustAnchorsOverview.length).toEqual(2);
   });
 
-  it('should call getTrustAnchor on click on specific ta', () => {
-    component.openTADetails('21586');
-    fixture.detectChanges();
-    expect(router.navigate).toHaveBeenCalledWith(['/trust-anchors/monitor', '21586']);
-  });
 });
