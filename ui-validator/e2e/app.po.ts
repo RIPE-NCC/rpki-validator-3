@@ -3,6 +3,7 @@ import {RoasPage} from "./pages/RoasPage";
 import {TrustAnchorsPage} from "./pages/TrustAnchorsPage";
 import {MonitorTaPage} from "./pages/MonitorTaPage";
 import {IgnoreFiltersPage} from "./pages/IgnoreFiltersPage";
+import {AnnouncementPreviewPage} from "./pages/AnnouncementPreviewPage";
 
 export class AppPage {
 
@@ -20,6 +21,10 @@ export class AppPage {
 
   navigateToIgnoreFilters() {
     return new IgnoreFiltersPage();
+  }
+
+  navigateToAnnouncementPreview(asn: string, prefix: string) {
+    return new AnnouncementPreviewPage(asn, prefix);
   }
 
   getParagraphText() {

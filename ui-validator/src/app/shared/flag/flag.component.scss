@@ -4,8 +4,12 @@
   min-width: 4rem;
   text-align: center;
   border-radius: 1rem;
-  padding: 1px 9px 2px;
-  margin: 0px;
+  padding: .0625rem .5625rem .125rem;
+  margin: 0rem;
+}
+
+.alert-trim {
+  display: inline-block;
 }
 
 .alert-success {

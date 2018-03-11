@@ -85,6 +85,10 @@ server.delete('/api/ignore-filters/130', (req, res) => {
   res.jsonp(require('./data/ignore-filters/delete-filter-response.json'));
 });
 
+server.get('/api/bgp/validity', (req, res) => {
+  res.jsonp(require('./data/announcement-preview/announcement-preview-AS3215-2.0.0.0_16.json'));
+});
+
 server.listen(3000, () => {
   console.log('Mock server running on 3000');
 });

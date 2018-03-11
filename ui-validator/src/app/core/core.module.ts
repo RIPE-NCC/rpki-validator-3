@@ -7,8 +7,9 @@ import {NavComponent} from "./nav/nav.component";
 import {FooterComponent} from "./footer/footer.component";
 import {TrustAnchorsService} from "./trust-anchors.service";
 import {ErrorComponent} from "./error.component";
-import {ApplicationErrorHandler} from "./app-error-handler.service";
-import {MonitoringTaDataServices} from "./monitoring-ta-data.services";
+import {ApplicationErrorHandlerService} from "./app-error-handler.service";
+import {MonitoringTaDataStore} from "./monitoring-ta-data.store";
+import {BgpService} from "./bgp.service";
 
 @NgModule({
   imports: [
@@ -23,8 +24,9 @@ import {MonitoringTaDataServices} from "./monitoring-ta-data.services";
   ],
   providers: [
     TrustAnchorsService,
-    {provide: ErrorHandler, useClass: ApplicationErrorHandler},
-    MonitoringTaDataServices
+    BgpService,
+    {provide: ErrorHandler, useClass: ApplicationErrorHandlerService},
+    MonitoringTaDataStore
   ],
   exports: [
     NavComponent,

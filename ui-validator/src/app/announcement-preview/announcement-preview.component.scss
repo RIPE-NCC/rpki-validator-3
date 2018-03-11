@@ -1,0 +1,22 @@
+em {
+  color: #c43c35;
+  padding-left:10px;
+}
+
+table {
+  table-layout: fixed;
+  thead > tr {
+    th:nth-child(3) {
+      width: 5%;
+    }
+    th:nth-child(5) {
+      width: 3rem;
+    }
+    th:nth-child(6) {
+      width: 10rem;
+    }
+  }
+  tbody > tr > td {
+    word-wrap: break-word;
+  }
+}

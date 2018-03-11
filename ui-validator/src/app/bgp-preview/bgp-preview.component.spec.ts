@@ -3,7 +3,7 @@ import {TranslateModule} from "@ngx-translate/core";
 import {Observable} from "rxjs/Observable";
 
 import {BgpPreviewComponent} from './bgp-preview.component';
-import {BgpService} from "./bgp.service";
+import {BgpService} from "../core/bgp.service";
 import {SharedModule} from "../shared/shared.module";
 
 class BgpServiceStub {
