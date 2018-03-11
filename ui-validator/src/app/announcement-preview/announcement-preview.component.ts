@@ -11,6 +11,7 @@ import {IAnnouncement, IAnnouncementData, IAnnouncementResponse} from "./announc
   styleUrls: ['./announcement-preview.component.scss']
 })
 export class AnnouncementPreviewComponent implements OnInit {
+
   pageTitle: string = 'Nav.TITLE_ANNOUNCEMENT_PREVIEW';
   announcementPreviewData: IAnnouncementData;
 
@@ -58,6 +59,19 @@ export class AnnouncementPreviewComponent implements OnInit {
     setTimeout(() => {
       this.modalRef = this._modalService.open(modalTempRef);
       this.modalRef.result.then(result => {
+          this._router.navigate(['/announcement-preview/'], {queryParams: {asn: this.asn, prefix: this.prefix}});
+          this.modalRef.close();
+      }, dismiss => {
+        this.modalRef.close();
+        this._router.navigate(['/bgp-preview']);
+      });
+    });
+  }
+
+  openModalForm(modalTempRef): void {
+    setTimeout(() => {
+      this.modalRef = this._modalService.open(modalTempRef);
+      this.modalRef.result.then(result => {
         this._router.navigate(['/announcement-preview/'], {queryParams: {asn: this.asn, prefix: this.prefix}});
         this.modalRef.close();
       }, dismiss => {
@@ -67,7 +81,4 @@ export class AnnouncementPreviewComponent implements OnInit {
     });
   }
 
-  onSubmitModal(values: any) {
-    console.log("SUBMIT " + values)
-  }
 }

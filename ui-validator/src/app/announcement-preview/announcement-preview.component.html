@@ -58,15 +58,24 @@
     <div class='modal-body'>
       <p>
         <label class='col-md-2' for='prefix'><strong>{{'Roas.PREFIX' | translate}}: </strong></label>
-        <input type='text' id='prefix' name='prefix' [ngModel]='prefix' autofocus />
+        <input type='text' id='prefix' name='prefix' [(ngModel)]='prefix' required autofocus />
       </p>
       <p>
         <label class="col-md-2"><strong>{{'Roas.ASN' | translate}}: </strong></label>
-        <input type='text' name='asn' [ngModel]='asn' />
+        <input type='text' name='asn' [(ngModel)]='asn' required />
       </p>
     </div>
     <div class='modal-footer'>
-      <button type='submit' class='btn btn-primary' (click)='c("reload")'>{{'AnnouncementPreview.SHOW' | translate}}</button>
+      <em *ngIf='(asnPrefixForm.controls.prefix?.invalid || asnPrefixForm.controls.asn?.invalid) && mouseoverAdd'>
+        <strong>{{'AnnouncementPreview.REQUIRED_PREFIX_AND_ASN' | translate}}</strong>
+      </em>
+      <span (mouseenter)='mouseoverAdd=true' (mouseleave)='mouseoverAdd=false'>
+        <button type='submit' class='btn btn-primary'
+                (click)='c("reload")'
+                [disabled]='asnPrefixForm.controls.prefix?.invalid || asnPrefixForm.controls.asn?.invalid'>
+          {{'AnnouncementPreview.SHOW' | translate}}
+        </button>
+      </span>
     </div>
   </form>
 </ng-template>
