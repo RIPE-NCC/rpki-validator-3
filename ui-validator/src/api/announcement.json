@@ -1,0 +1,22 @@
+{
+  "data" : [ {
+    "origin" : "AS4788",
+    "prefix" : "1.9.0.0/16",
+    "validity" : "VALID",
+    "maxLength": 20,
+    "ta": "RIPE NCC RPKI Root",
+    "uri": "rsync://rpki.ripe.net/repository/DEFAULT/4e/c73287-b1b1-4aca-bd2e-db4f352e9ad3/1/dhDX6no32bS69MyRdlL..."
+  },
+    {
+      "origin": "AS6461",
+      "prefix": "94.31.0.0/18",
+      "validity": "VALID",
+      "maxLength": 18,
+      "ta": "RIPE NCC RPKI Root",
+      "uri": "rsync://rpki.ripe.net/repository/DEFAULT/4e/c73287-b1b1-4aca-bd2e-db4f352e9ad3/1/dhDX6no32bS69MyRdlL..."
+    }
+  ],
+  "metadata" : {
+    "totalCount" : 2
+  }
+}

@@ -2,7 +2,6 @@ import {NgModule} from '@angular/core';
 
 import {SharedModule} from "../shared/shared.module";
 import {BgpPreviewComponent} from "./bgp-preview.component";
-import {BgpService} from "./bgp.service";
 
 @NgModule({
   imports: [
@@ -11,9 +10,7 @@ import {BgpService} from "./bgp.service";
   declarations: [
     BgpPreviewComponent
   ],
-  providers: [
-    BgpService
-  ]
+  providers: []
 })
 export class BgpPreviewModule {
 }

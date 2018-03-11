@@ -73,6 +73,10 @@ server.get('/api/rpki-repositories/statuses/3268', (req, res) => {
   res.jsonp(require('./data/monitor/repositories-statuses.json'));
 });
 
+server.get('/api/bgp/validity', (req, res) => {
+  res.jsonp(require('./data/announcement-preview/announcement-preview-AS3215-2.0.0.0_16.json'));
+});
+
 server.listen(3000, () => {
   console.log('Mock server running on 3000');
 });

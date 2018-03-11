@@ -1,7 +1,8 @@
-import { Injectable } from '@angular/core';
+import {Injectable} from '@angular/core';
+
 import {ITrustAnchorOverview} from "../trust-anchors/trust-anchor.model";
 
 @Injectable()
-export class MonitoringTaDataServices {
+export class MonitoringTaDataStore {
   selectedTA: ITrustAnchorOverview;
 }

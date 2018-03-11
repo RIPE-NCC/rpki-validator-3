@@ -1,0 +1,25 @@
+{
+  "data" : {
+    "origin" : "AS3215",
+    "prefix" : "2.0.0.0/16",
+    "validity" : "VALID",
+    "validatingRoas" : [ {
+      "origin" : "AS3215",
+      "prefix" : "2.0.0.0/12",
+      "validity" : "VALID",
+      "maxLength" : 16,
+      "ta" : "RIPE NCC RPKI Root",
+      "uri" : "rsync://rpki.ripe.net/repository/DEFAULT/6b/33d5d1-c450-413b-afe4-45935f506a12/1/zz2JYzBn_XVPxg85pVDwkSy3ps4.roa"
+    }, {
+      "origin" : "AS3215",
+      "prefix" : "2.0.0.0/16",
+      "validity" : "VALID",
+      "maxLength" : 16,
+      "ta" : "RIPE NCC RPKI Root",
+      "uri" : "rsync://rpki.ripe.net/repository/DEFAULT/6b/33d5d1-c450-413b-afe4-45935f506a12/1/zz2JYzBn_XVPxg85pVDwkSy3ps4.roa"
+    } ]
+  },
+  "metadata" : {
+    "totalCount" : 2
+  }
+}

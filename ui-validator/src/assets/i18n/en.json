@@ -9,6 +9,8 @@
   "ROUTER_SESSIONS": "Router Sessions",
   "VALID": "VALID",
   "INVALID": "INVALID",
+  "INVALID_LENGTH": "INVALID LENGTH",
+  "INVALID_ASN": "INVALID ASN",
   "UNKNOWN": "UNKNOWN",
   "SEARCH": "Search",
   "LOADING": "Loading...",
@@ -25,6 +27,7 @@
   "SUCCESS": "SUCCESS",
   "WARNING": "WARNING",
   "ERROR": "ERROR",
+  "STATUS": "Status",
   "SUMMARY": "Summary",
   "Nav": {
     "TITLE_TRUST_ANCHORS": "Configured Trust Anchors",
@@ -32,6 +35,7 @@
     "TITLE_IGNORE_FILTERS": "Ignore Filters",
     "TITLE_WHITELIST": "Whitelist",
     "TITLE_BGP_PREVIEW": "BGP Preview",
+    "TITLE_ANNOUNCEMENT_PREVIEW": "Announcement Preview",
     "TITLE_EXPORT_API": "Export and API",
     "TITLE_ROUTER_SESSIONS": "Router Sessions",
     "TITLE_MONITORING_TA": "Overview for"
@@ -63,7 +67,6 @@
     "NO_RECORDS": "No repositories with problems found",
     "URI": "URI",
     "REPO_TYPE": "Type",
-    "REPO_STATUS": "Status",
     "REPO_LAST_CHECKED": "Last checked"
   },
   "ValidationDetails": {
@@ -75,7 +78,7 @@
   "Roas": {
     "ASN": "ASN",
     "PREFIX": "Prefix",
-    "MAX_LENGTH": "Maximum Length",
+    "MAX_LENGTH": "Max Length",
     "URI_OF_ROA": "URI of ROA",
     "ALERT_MSG_P1": "Some ROAs may be missing because the following Trust Anchors still have pending repositories: ",
     "FILTERED_FROM": "(filtered from",
@@ -90,7 +93,15 @@
     "ALERT_MSG_LI4": "The validated ROAs found by this RPKI Validator after applying your filters and additional whitelist entries.",
     "ALERT_MSG_P2": "Please note that the BGP announcements your routers see may differ from the ones listed here.",
     "LENGTH": "Length",
-    "DETAILS_TITLE": "Details"
+    "DETAILS_TITLE": "Details",
+    "TOOLTIP_CLICK": "Click to view announcement preview"
+  },
+  "AnnouncementPreview": {
+    "RELEVANT_VALIDATED_ROAS": "Relevant Validated ROAs",
+    "ALERT_MSG_NO_RELEVANT": "No relevant validated ROAs",
+    "TITLE_MODAL_FORM": "Please indicate ASN and Prefix in order to view announcements",
+    "SHOW": "Show",
+    "REQUIRED_PREFIX_AND_ASN": "Prefix and ASN are required "
   },
   "Export": {
     "DESCRIPTION": "Here you are able to export the complete ROA data set for use in an existing BGP decision making workflow. The output will be in CSV or JSON format and consist of all validated ROAs, minus your ignore filter entries, plus your whitelist additions."

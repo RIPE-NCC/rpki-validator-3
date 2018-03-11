@@ -60,7 +60,8 @@ export class FlagComponent implements OnChanges {
         break;
       }
       case 'WARNING':
-      case 'INVALID ASN':
+      case 'INVALID_ASN':
+      case 'INVALID_LENGTH':
       case 'PENDING': {
         this.orange = true;
         break;

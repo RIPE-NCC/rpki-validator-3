@@ -1,8 +1,9 @@
 import {Component, OnInit} from '@angular/core';
 
-import {BgpService} from "./bgp.service";
+import {BgpService} from "../core/bgp.service";
 import {IBgp} from "./bgp.model";
 import {ManagingTable} from "../shared/managing-table";
+import {Router} from "@angular/router";
 
 @Component({
   selector: 'app-bgp-preview',
@@ -12,10 +13,10 @@ import {ManagingTable} from "../shared/managing-table";
 export class BgpPreviewComponent extends ManagingTable implements OnInit {
 
   pageTitle: string = "Nav.TITLE_BGP_PREVIEW";
-  alertShown: boolean = true;
   bgps: IBgp[] = [];
 
-  constructor(private _bgpService: BgpService) {
+  constructor(private _bgpService: BgpService,
+              private _router: Router) {
     super();
   }
 
@@ -40,9 +41,11 @@ export class BgpPreviewComponent extends ManagingTable implements OnInit {
           this.setNumberOfLastItemInTable();
           if (!this.absolutItemsNumber)
             this.absolutItemsNumber = this.totalItems;
-        },
-        error => console.log(error)
+        }
         );
   }
 
+  openAnnouncementPreviewDetails(bgp: IBgp) {
+    this._router.navigate(['/announcement-preview/'], { queryParams: { asn: bgp.asn, prefix: bgp.prefix} });
+  }
 }
