@@ -29,7 +29,7 @@ export class IgnoreFiltersService {
   saveIgnoreFilter(filter: IIgnoreFilter): Observable<any> {
     return this._http.post(this._ignoreFiltersUrl, { data: filter });
   }
-  
+
   deleteIgnoreFilter(filter: IIgnoreFilter): Observable<any> {
     return this._http.delete<IIgnoreFiltersResponse>(this._deleteIgnoreFilterUrl.replace('{id}', filter.id))
   }
