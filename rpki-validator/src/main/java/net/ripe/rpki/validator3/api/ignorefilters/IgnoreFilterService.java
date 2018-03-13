@@ -39,6 +39,7 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.transaction.Transactional;
 import javax.validation.Valid;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -73,7 +74,7 @@ public class IgnoreFilterService {
         }
     }
 
-    public List<IgnoreFilter> all() {
+    public Collection<IgnoreFilter> all() {
         return ignoreFilters.all().collect(Collectors.toList());
     }
 
