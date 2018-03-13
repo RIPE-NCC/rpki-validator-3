@@ -39,6 +39,8 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.transaction.Transactional;
 import javax.validation.Valid;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 @Transactional
@@ -64,10 +66,15 @@ public class IgnoreFilterService {
         return ignoreFilter.getId();
     }
 
-    public void remove(long trustAnchorId) {
-        IgnoreFilter ignoreFilter = ignoreFilters.get(trustAnchorId);
+    public void remove(long ignoreFilterId) {
+        IgnoreFilter ignoreFilter = ignoreFilters.get(ignoreFilterId);
         if (ignoreFilter != null) {
             ignoreFilters.remove(ignoreFilter);
         }
     }
+
+    public List<IgnoreFilter> all() {
+        return ignoreFilters.all().collect(Collectors.toList());
+    }
+
 }

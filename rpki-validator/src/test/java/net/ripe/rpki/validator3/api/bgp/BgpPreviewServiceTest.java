@@ -33,8 +33,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedSet;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
+import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
+import net.ripe.rpki.validator3.domain.IgnoreFilter;
 import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
 import org.junit.Test;
+
+import java.util.Collections;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -42,7 +47,12 @@ public class BgpPreviewServiceTest {
 
     private static final Asn AS_3333 = Asn.parse("AS3333");
 
-    private BgpPreviewService subject =  new BgpPreviewService(new String[0],5, null, new ValidatedRpkiObjects());
+    private BgpPreviewService subject =  new BgpPreviewService(new String[0],5, null, new ValidatedRpkiObjects(), new IgnoreFilterService() {
+        @Override
+        public List<IgnoreFilter> all() {
+            return Collections.emptyList();
+        }
+    });
 
     @Test
     public void should_mark_non_matching_bgp_entry_as_unknown() {
