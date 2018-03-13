@@ -52,7 +52,7 @@ public class BgpRisDownloaderTest {
     public void download_ipv4() {
         BgpRisDump dump = bgpRisDownloader.fetch(
                 BgpRisDump.of("http://www.ris.ripe.net/dumps/riswhoisdump.IPv4.gz",
-                        DateTime.now(), Collections.emptyList()));
+                        null, Collections.emptyList()));
 
         assertTrue("Real IPv4 dump size is " + dump.entries.size(), dump.entries.size() > 800_000);
     }
@@ -61,7 +61,7 @@ public class BgpRisDownloaderTest {
     public void download_ipv6() {
         BgpRisDump dump = bgpRisDownloader.fetch(
                 BgpRisDump.of("http://www.ris.ripe.net/dumps/riswhoisdump.IPv6.gz",
-                DateTime.now(), Collections.emptyList()));
+                        null, Collections.emptyList()));
         assertTrue("Real IPv6 dump size is " + dump.entries.size(),dump.entries.size() > 60_000);
     }
 
