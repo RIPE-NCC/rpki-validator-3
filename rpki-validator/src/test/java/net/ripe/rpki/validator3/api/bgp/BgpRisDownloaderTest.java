@@ -43,7 +43,6 @@ import static org.junit.Assert.*;
 
 @RunWith(SpringRunner.class)
 @IntegrationTest
-@Ignore
 public class BgpRisDownloaderTest {
 
     @Autowired
