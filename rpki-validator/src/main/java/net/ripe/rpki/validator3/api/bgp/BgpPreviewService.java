@@ -182,6 +182,7 @@ public class BgpPreviewService {
         this.ignoreFilterService = ignoreFilterService;
 
         validatedRpkiObjects.onUpdate(objects -> this.updateRoaPrefixes(objects.flatMap(x -> x.getRoaPrefixes().stream())));
+        this.ignoreFilterService.addListener(filters -> revalidateBgpRisEntries(filters));
     }
 
     public synchronized BgpPreviewResult find(SearchTerm searchTerm, Sorting sorting, Paging paging) {
@@ -191,7 +192,7 @@ public class BgpPreviewService {
         if (sorting == null) {
             sorting = Sorting.of(Sorting.By.PREFIX, Sorting.Direction.ASC);
         }
-        Predicate<BgpPreviewEntry> searchPredicate = BgpPreviewEntry.matches(searchTerm);
+        final Predicate<BgpPreviewEntry> searchPredicate = BgpPreviewEntry.matches(searchTerm);
 
         int count = (int) bgpPreviewEntries
             .stream()
@@ -257,27 +258,37 @@ public class BgpPreviewService {
         updateBgpRisDump(bgpRisDumps.stream().map(bgpRisDownloader::fetch).collect(Collectors.toList()));
     }
 
-    private ImmutableList<BgpPreviewEntry> validateBgpRisEntries(
-            Iterable<BgpPreviewEntry> bgpRisEntries, IntervalMap<IpRange,
-            List<ValidatedRpkiObjects.RoaPrefix>> roaPrefixes,
-            Collection<IgnoreFilter> ignoreFilters) {
-        ImmutableList.Builder<BgpPreviewEntry> builder = ImmutableList.builder();
-        for (BgpPreviewEntry bgpRisEntry : bgpRisEntries) {
-            Validity validity = validateBgpRisEntry(roaPrefixes, bgpRisEntry, ignoreFilters);
+    public void revalidateBgpRisEntries(Collection<IgnoreFilter> ignoreFilters) {
+        this.bgpPreviewEntries = validateBgpRisEntries(this.bgpPreviewEntries, this.roaPrefixes, ignoreFilters);
+    }
 
-            builder.add(new BgpPreviewEntry(
+    private ImmutableList<BgpPreviewEntry> validateBgpRisEntries(
+            ImmutableList<BgpPreviewEntry> bgpRisEntries,
+            IntervalMap<IpRange, List<ValidatedRpkiObjects.RoaPrefix>> roaPrefixes,
+            Collection<IgnoreFilter> ignoreFilters) {
+
+        long begin = System.currentTimeMillis();
+        final ImmutableList.Builder<BgpPreviewEntry> builder = ImmutableList.builder();
+        bgpRisEntries.parallelStream().map(bgpRisEntry -> {
+            final Validity validity = validateBgpRisEntry(roaPrefixes, bgpRisEntry, ignoreFilters);
+            return new BgpPreviewEntry(
                     bgpRisEntry.getOrigin(),
                     bgpRisEntry.getPrefix(),
                     validity
-            ));
-        }
-        return builder.build();
+            );
+        }).forEachOrdered(e -> builder.add(e));
+        ImmutableList<BgpPreviewEntry> built = builder.build();
+
+        long end = System.currentTimeMillis();
+        log.debug("validateBgpRisEntries duration: {}", end - begin);
+        return built;
     }
 
     private Validity validateBgpRisEntry(
             IntervalMap<IpRange, List<ValidatedRpkiObjects.RoaPrefix>> roaPrefixes,
             BgpPreviewEntry bgpRisEntry,
             Collection<IgnoreFilter> ignoreFilters) {
+
         List<ValidatedRpkiObjects.RoaPrefix> matchingRoaPrefixes = roaPrefixes
                 .findExactAndAllLessSpecific(bgpRisEntry.getPrefix())
                 .stream()
@@ -285,7 +296,11 @@ public class BgpPreviewService {
                 .filter(roa -> !matches(ignoreFilters, roa))
                 .collect(Collectors.toList());
 
-        List<ValidatedRpkiObjects.RoaPrefix> matchingAsnRoas = matchingRoaPrefixes.stream().filter(roaPrefix -> roaPrefix.getAsn().equals(bgpRisEntry.getOrigin())).collect(Collectors.toList());
+        List<ValidatedRpkiObjects.RoaPrefix> matchingAsnRoas = matchingRoaPrefixes
+                .stream()
+                .filter(roaPrefix -> roaPrefix.getAsn().equals(bgpRisEntry.getOrigin()))
+                .collect(Collectors.toList());
+
         Validity validity;
         if (matchingRoaPrefixes.isEmpty()) {
             validity = Validity.UNKNOWN;
@@ -320,7 +335,8 @@ public class BgpPreviewService {
                             return 2;
                     }
                     return 10;
-                })).collect(Collectors.toList());
+                }))
+                .collect(Collectors.toList());
 
         final Validity validity = roaPrefixes.stream().findFirst().map(p -> p.getRight()).orElse(Validity.UNKNOWN);
 
@@ -338,7 +354,6 @@ public class BgpPreviewService {
                 })
                 .distinct()
                 .collect(Collectors.toList());
-
 
         return BgpValidityResource.of(origin.toString(), prefix.toString(), validity.toString(), validatingRoaStream);
     }

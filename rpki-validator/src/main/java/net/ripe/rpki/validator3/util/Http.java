@@ -67,8 +67,6 @@ public class Http {
         try {
             response = listener.get(30, TimeUnit.SECONDS);
 
-            log.debug("response.getStatus() = " + response.getStatus());
-
             if (response.getStatus() != 200) {
                 if (response.getStatus() == 304) {
                     final NotModified error = new NotModified();
