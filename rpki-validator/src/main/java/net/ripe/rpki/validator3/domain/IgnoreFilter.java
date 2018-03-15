@@ -37,18 +37,20 @@ import javax.persistence.Entity;
 
 @Entity
 public class IgnoreFilter extends AbstractEntity {
-
-    // TODO one of prefix or asn has to be not empty
-
     @Basic
     @Getter
     @Setter
-    private String prefix;
+    private long id;
 
     @Basic
     @Getter
     @Setter
     private Long asn;
+
+    @Basic
+    @Getter
+    @Setter
+    private String prefix;
 
     @Basic
     @Getter

@@ -32,8 +32,9 @@ package net.ripe.rpki.validator3.api.ignorefilters;
 import lombok.Value;
 
 @Value
-class IgnoreFilter {
-    private String asn;
+public class IgnoreFilter {
+    private Long id;
+    private Long asn;
     private String prefix;
     private String comment;
 }

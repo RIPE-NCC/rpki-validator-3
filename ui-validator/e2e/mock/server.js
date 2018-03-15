@@ -1,6 +1,6 @@
 const jsonServer = require('json-server');
 const server = jsonServer.create();
-
+server.use(jsonServer.bodyParser);
 
 server.get('/api/roas', (req, res) => {
 
@@ -71,6 +71,18 @@ server.get('/api/rpki-repositories', (req, res) => {
 
 server.get('/api/rpki-repositories/statuses/3268', (req, res) => {
   res.jsonp(require('./data/monitor/repositories-statuses.json'));
+});
+
+server.get('/api/ignore-filters', (req, res) => {
+  res.jsonp(require('./data/ignore-filters/ignore-filters-response.json'));
+});
+
+server.post('/api/ignore-filters', (req, res) => {
+  res.jsonp(require('./data/ignore-filters/ignore-filters-response.json'));
+});
+
+server.delete('/api/ignore-filters/130', (req, res) => {
+  res.jsonp(require('./data/ignore-filters/delete-filter-response.json'));
 });
 
 server.get('/api/bgp/validity', (req, res) => {

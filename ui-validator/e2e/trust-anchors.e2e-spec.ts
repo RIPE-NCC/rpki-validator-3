@@ -25,7 +25,7 @@ describe('ui-validator App', () => {
     taPage
       .moveMouseOverRow(0)
       .expectTooltipOnRowHover(0)
-      .expectTooltipTextToBe(0, 'Click to view monitor page')
+      .expectTooltipTextToBe(0, 'Click to view overview page')
       .clickOnRow(0)
       .expectToOpenMonitoringPage(3268);
   });

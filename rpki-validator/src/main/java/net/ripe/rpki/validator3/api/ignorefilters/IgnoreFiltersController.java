@@ -121,7 +121,7 @@ public class IgnoreFiltersController {
     }
 
     private IgnoreFilter toIgnoreFilter(net.ripe.rpki.validator3.domain.IgnoreFilter f) {
-        return new IgnoreFilter(f.getAsn().toString(), f.getPrefix(), f.getComment());
+        return new IgnoreFilter(f.getId(), f.getAsn(), f.getPrefix(), f.getComment());
     }
 
     private ApiResponse<IgnoreFilter> ignoreFilterResource(net.ripe.rpki.validator3.domain.IgnoreFilter ignoreFilter) {

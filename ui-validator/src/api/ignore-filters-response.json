@@ -1,0 +1,28 @@
+{
+  "links": {
+    "first": "aa",
+    "prev": "aa",
+    "next": "aa",
+    "last": "aa"
+  },
+  "data": {
+    "ignoreFilters": [
+      {
+        "prefix": "1.0.0.0",
+        "comment": "comment about prefix"
+      },
+      {
+        "asn": "AS2222",
+        "comment": "comment about prefix"
+      },
+      {
+        "prefix": "1.0.0.0",
+        "asn": "AS1234",
+        "comment": "comment about prefix"
+      }
+    ]
+  },
+  "metadata": {
+    "totalCount": 3
+  }
+}

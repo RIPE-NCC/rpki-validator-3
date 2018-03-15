@@ -33,16 +33,24 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedSet;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
+import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
+import net.ripe.rpki.validator3.domain.IgnoreFilter;
 import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
 import org.junit.Test;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class BgpPreviewServiceTest {
 
     private static final Asn AS_3333 = Asn.parse("AS3333");
+    private static final Asn AS_2222 = Asn.parse("AS2222");
 
-    private BgpPreviewService subject =  new BgpPreviewService(new String[0],5, null, new ValidatedRpkiObjects());
+    private BgpPreviewService subject = createBgpPreviewService();
 
     @Test
     public void should_mark_non_matching_bgp_entry_as_unknown() {
@@ -84,7 +92,94 @@ public class BgpPreviewServiceTest {
         );
     }
 
+    @Test
+    public void should_reject_bgp_entry_when_roa_exists_but_ignored_by_asn_based_filter() {
+        subject = createBgpPreviewService(ImmutableList.of(ignoreFilter(AS_3333.longValue(), null)));
+        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", null, ImmutableList.of(BgpRisEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), 1000)))));
+        subject.updateRoaPrefixes(ImmutableList.of(roa(AS_3333, "10.0.0.0/8", 8)).stream());
+
+        assertThat(subject.find(null, null, null).getData()).contains(
+                BgpPreviewService.BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), BgpPreviewService.Validity.UNKNOWN)
+        );
+    }
+
+    @Test
+    public void should_reject_bgp_entry_when_roa_exists_but_ignored_by_prefix_based_filter() {
+        subject = createBgpPreviewService(ImmutableList.of(ignoreFilter(null, "10.0.0.0/8")));
+        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", null, ImmutableList.of(BgpRisEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), 1000)))));
+        subject.updateRoaPrefixes(ImmutableList.of(roa(AS_3333, "10.0.0.0/8", 8)).stream());
+
+        assertThat(subject.find(null, null, null).getData()).contains(
+                BgpPreviewService.BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), BgpPreviewService.Validity.UNKNOWN)
+        );
+    }
+
+    @Test
+    public void should_reject_bgp_entry_when_roa_exists_but_ignored_by_filter_with_covering_prefix() {
+        subject = createBgpPreviewService(ImmutableList.of(ignoreFilter(null, "0.0.0.0/4")));
+        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", null, ImmutableList.of(BgpRisEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), 1000)))));
+        subject.updateRoaPrefixes(ImmutableList.of(roa(AS_3333, "10.0.0.0/8", 8)).stream());
+
+        assertThat(subject.find(null, null, null).getData()).contains(
+                BgpPreviewService.BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), BgpPreviewService.Validity.UNKNOWN)
+        );
+    }
+
+    @Test
+    public void should_reject_bgp_entry_when_roa_exists_but_ignored_by_ans_and_prefix_based_filter() {
+        subject = createBgpPreviewService(ImmutableList.of(ignoreFilter(AS_3333.longValue(), "10.0.0.0/8")));
+        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", null, ImmutableList.of(BgpRisEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), 1000)))));
+        subject.updateRoaPrefixes(ImmutableList.of(roa(AS_3333, "10.0.0.0/8", 8)).stream());
+
+        assertThat(subject.find(null, null, null).getData()).contains(
+                BgpPreviewService.BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), BgpPreviewService.Validity.UNKNOWN)
+        );
+    }
+
+    @Test
+    public void should_accept_bgp_entry_when_ignore_filter_is_not_exactly_matching_because_asn_differs() {
+        subject = createBgpPreviewService(ImmutableList.of(ignoreFilter(AS_2222.longValue(), "10.0.0.0/8")));
+        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", null, ImmutableList.of(BgpRisEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), 1000)))));
+        subject.updateRoaPrefixes(ImmutableList.of(roa(AS_3333, "10.0.0.0/8", 8)).stream());
+
+        assertThat(subject.find(null, null, null).getData()).contains(
+                BgpPreviewService.BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), BgpPreviewService.Validity.VALID)
+        );
+    }
+
+    @Test
+    public void should_accept_bgp_entry_when_ignore_filter_is_not_exactly_matching_because_prefix_is_too_small() {
+        subject = createBgpPreviewService(ImmutableList.of(ignoreFilter(AS_3333.longValue(), "10.10.0.0/16")));
+        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", null, ImmutableList.of(BgpRisEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), 1000)))));
+        subject.updateRoaPrefixes(ImmutableList.of(roa(AS_3333, "10.0.0.0/8", 8)).stream());
+
+        assertThat(subject.find(null, null, null).getData()).contains(
+                BgpPreviewService.BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), BgpPreviewService.Validity.VALID)
+        );
+    }
+
     private ValidatedRpkiObjects.RoaPrefix roa(Asn asn, String prefix, Integer maximumLength) {
         return ValidatedRpkiObjects.RoaPrefix.of(null, asn, IpRange.parse(prefix), maximumLength, maximumLength != null ? maximumLength : IpRange.parse(prefix).getPrefixLength(), ImmutableSortedSet.of());
+    }
+
+    private BgpPreviewService createBgpPreviewService() {
+        return createBgpPreviewService(Collections.emptyList());
+    }
+
+    private BgpPreviewService createBgpPreviewService(final Collection<IgnoreFilter> ignoreFilters) {
+        return new BgpPreviewService(new String[0],5, null, new ValidatedRpkiObjects(), new IgnoreFilterService() {
+            @Override
+            public Collection<IgnoreFilter> all() {
+                return ignoreFilters;
+            }
+        });
+    }
+
+    private IgnoreFilter ignoreFilter(Long asn, String prefix) {
+        IgnoreFilter f = new IgnoreFilter();
+        f.setAsn(asn);
+        f.setPrefix(prefix);
+        f.setId(new Random().nextLong());
+        return f;
     }
 }

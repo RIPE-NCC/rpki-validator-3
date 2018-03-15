@@ -2,6 +2,7 @@ import {by, element} from 'protractor';
 import {RoasPage} from "./pages/RoasPage";
 import {TrustAnchorsPage} from "./pages/TrustAnchorsPage";
 import {MonitorTaPage} from "./pages/MonitorTaPage";
+import {IgnoreFiltersPage} from "./pages/IgnoreFiltersPage";
 import {AnnouncementPreviewPage} from "./pages/AnnouncementPreviewPage";
 
 export class AppPage {
@@ -16,6 +17,10 @@ export class AppPage {
 
   navigateToMonitorTa() {
     return new MonitorTaPage();
+  }
+
+  navigateToIgnoreFilters() {
+    return new IgnoreFiltersPage();
   }
 
   navigateToAnnouncementPreview(asn: string, prefix: string) {

@@ -76,6 +76,7 @@ public class BgpRisDownloader {
         final Supplier<Request> requestSupplier = () -> {
             final Request request = httpClient.newRequest(dump.url);
             if (dump.lastModified != null) {
+                log.debug("Adding 'If-Modified-Since' equals to {}", formatAsRFC2616(dump.lastModified));
                 request.header("If-Modified-Since", formatAsRFC2616(dump.lastModified));
             }
             return request;

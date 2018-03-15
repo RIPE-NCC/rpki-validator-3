@@ -1,10 +1,19 @@
 @import "variables";
 @import "../node_modules/bootstrap/scss/bootstrap";
 
+$red-rpki: #c43c35;
+$orange-rpki: #f89406;
+$green-rpki: #46a546;
+$alert-font: #404040;
+
 .alert-info {
   background-color: #ddf4fb;
   border-color: #c6edf9;
-  color: #404040;
+  color: $alert-font;
+}
+
+.alert-warning {
+  color: $alert-font;
 }
 
 .alert-warning {

@@ -11,6 +11,7 @@ import {CoreModule} from "./core/core.module";
 import {SharedModule} from "./shared/shared.module";
 import {TrustAnchorsModule} from './trust-anchors/trust-anchors.module';
 import {RoasModule} from "./roas/roas.module";
+import {IgnoreFiltersModule} from "./ignore-filters/ignore-filters.module";
 import {BgpPreviewModule} from "./bgp-preview/bgp-preview.module";
 import {AnnouncementPreviewModule} from "./announcement-preview/announcement-preview.module";
 
@@ -29,6 +30,7 @@ export function HttpLoaderFactory(http: HttpClient) {
     SharedModule,
     TrustAnchorsModule,
     RoasModule,
+    IgnoreFiltersModule,
     BgpPreviewModule,
     AnnouncementPreviewModule,
     RouterModule.forRoot(appRoutes),

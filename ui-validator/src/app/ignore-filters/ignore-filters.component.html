@@ -1,0 +1,116 @@
+<page-title [pageTitle]='pageTitle'></page-title>
+<ngb-alert type='success' *ngIf='alertSuccessAdded' (close)='alertSuccessAdded=false'>
+  {{ 'IgnoreFilters.ALERT_MSG_ADDED' | translate }}
+</ngb-alert>
+<ngb-alert type='success' *ngIf='alertSuccessDeleted' (close)='alertSuccessDeleted=false'>
+  {{ 'IgnoreFilters.ALERT_MSG_DELETED' | translate }}
+</ngb-alert>
+<ngb-alert type='info' *ngIf='alertShown' (close)='alertShown=false'>
+  {{ 'IgnoreFilters.ALERT_MSG_INTRO' | translate }}
+</ngb-alert>
+<h3><strong>{{'IgnoreFilters.ADD_FILTER' | translate}}</strong></h3>
+<form #filterForm='ngForm'
+      (ngSubmit)='onFilterSubmit(filterForm)'
+      class='panel'>
+  <div class='form-group row'>
+    <!-- PREFIX -->
+    <div class='col-3'>
+      <label for='prefix' class='col-form-label mr-1'><strong>{{'PREFIX' | translate}}</strong></label>
+      <em *ngIf='!validPrefix'>Not valid prefix</em>
+      <input type='text'
+             id='prefix'
+             name='prefix'
+             required
+             placeholder='{{"IgnoreFilters.PREFIX_PLACEHOLDER" | translate}}'
+             (ngModel)='filter.prefix'
+             (keyup)='validPrefix=true'
+             class='form-control'/>
+    </div>
+    <!-- ASN -->
+    <div class='col-3 pl-0'>
+      <label for='asn' class='col-form-label mr-1'><strong>{{'ASN' | translate}}</strong></label>
+      <em *ngIf='!validAsn'>Not valid asn</em>
+      <input type='text'
+             id='asn'
+             name='asn'
+             required
+             placeholder='{{"ASN" | translate}}'
+             (ngModel)='filter.asn'
+             (keyup)='validAsn=true'
+             class='form-control'/>
+    </div>
+    <!-- ADD BUTTON -->
+    <div class='align-self-end'>
+      <span (mouseenter)='mouseoverAdd=true' (mouseleave)='mouseoverAdd=false'>
+        <button type='submit'
+                [disabled]='filterForm.controls.prefix?.invalid && filterForm.controls.asn?.invalid'
+                class='btn btn-primary'>{{'ADD' | translate}}</button>
+      </span>
+      <em *ngIf='filterForm.controls.prefix?.invalid && filterForm.controls.asn?.invalid && mouseoverAdd'>
+        <strong>{{'IgnoreFilters.REQUIRED_PREFIX_OR_ASN' | translate}}</strong>
+      </em>
+    </div>
+  </div>
+  <!-- COMMENT -->
+  <div class='form-group row col-12'>
+    <label for='comment' class='col-form-label mr-1'><strong>{{'COMMENT' | translate}}</strong></label>
+    <textarea id='comment'
+              name='comment'
+              (ngModel)='filter.comment'
+              class='form-control'>
+    </textarea>
+  </div>
+</form>
+<!-- CURRENT FILTERS -->
+<h3><strong>{{'IgnoreFilters.CURRENT_FILTERS' | translate}}</strong></h3>
+<div *ngIf='ignoreFilters.length === 0; else table'>
+  <ngb-alert type='warning' [dismissible]='false'>
+    {{ 'IgnoreFilters.ALERT_MSG_NO_FILTERS' | translate }}
+  </ngb-alert>
+</div>
+<ng-template #table>
+  <div class='form-group d-flex justify-content-between mb-3'>
+    <div class='d-inline-flex'>
+      <page-size-select (changedPageSize)='onChangedPageSize($event)'></page-size-select>
+      <loading-spinner class='ml-2' [loading]='this.loading'></loading-spinner>
+    </div>
+    <search-by [(searchBy)]='searchBy'
+               (searchByChanged)='onChangedFilterBy($event)'></search-by>
+  </div>
+  <table sortable-table (sorted)='onSorted($event)' class='table table-striped table-bordered'>
+    <thead>
+    <tr>
+      <th sortable-column='prefix'>{{'PREFIX' | translate}}</th>
+      <th sortable-column='asn'>{{'ASN' | translate}}</th>
+      <th sortable-column='comment'>{{'COMMENT' | translate}}</th>
+      <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr *ngFor='let ignoreFilter of ignoreFilters'>
+      <td>{{ignoreFilter.prefix}}</td>
+      <td>{{ignoreFilter.asn}}</td>
+      <td>{{ignoreFilter.comment}}</td>
+      <td>
+        <span class='fa fa-ban ban-icon'
+              [ngbTooltip]='"IgnoreFilters.DELETE" | translate:{value:"info"}'
+              (click)='deleteFilter(ignoreFilter)'></span>
+      </td>
+    </tr>
+    <tr *ngIf='loading'>
+      <td colspan='3'>{{'LOADING' | translate}}</td>
+    </tr>
+    </tbody>
+  </table>
+  <div class='d-flex justify-content-between'>
+    <ngb-pagination [collectionSize]='totalItems' [pageSize]='rowsPerPage' [(page)]='page' [maxSize]='5'
+                    [boundaryLinks]='true'
+                    [rotate]='true' [ellipses]='false' (pageChange)='onChangePage($event)'></ngb-pagination>
+    <page-textually-status [loading]='loading'
+                           [firstItem]='firstItemInTable'
+                           [lastItem]='lastItemInTable'
+                           [totalItems]='totalItems'
+                           [absolutItems]='absolutItemsNumber'>
+    </page-textually-status>
+  </div>
+</ng-template>

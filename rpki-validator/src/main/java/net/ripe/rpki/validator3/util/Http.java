@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
@@ -41,6 +42,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+@Slf4j
 public class Http {
 
     public static class NotModified extends RuntimeException {
@@ -85,6 +87,7 @@ public class Http {
             if (response != null) {
                 response.abort(error);
             }
+            log.error("Error ", e);
             throw error;
         }
     }
