@@ -33,8 +33,7 @@ import com.mysema.commons.lang.CloseableIterator;
 import com.querydsl.core.types.EntityPath;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import net.ripe.rpki.validator3.domain.RpkiObject;
-import org.apache.commons.lang3.tuple.Pair;
+import net.ripe.rpki.validator3.api.Paging;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -100,5 +99,20 @@ abstract class JPARepository<T> {
 
     protected Date asDate(Object d) {
         return d == null ? null : new Date(((Timestamp) d).getTime());
+    }
+
+    protected <T> JPAQuery<T> applyPaging(JPAQuery<T> query, Paging paging) {
+        if (paging != null) {
+            final Integer startFrom = paging.getStartFrom();
+            if (startFrom != null) {
+                query.offset(startFrom);
+            }
+            final Integer pageSize = paging.getPageSize();
+            if (pageSize != null) {
+                query.limit(pageSize);
+            }
+        }
+
+        return query;
     }
 }

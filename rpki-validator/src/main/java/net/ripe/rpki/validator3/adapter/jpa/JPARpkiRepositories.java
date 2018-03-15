@@ -125,16 +125,7 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
 
         query.orderBy(toOrderSpecifier(sorting));
 
-        if (paging != null) {
-            final Integer startFrom = paging.getStartFrom();
-            if (startFrom != null) {
-                query.offset(startFrom);
-            }
-            final Integer pageSize = paging.getPageSize();
-            if (pageSize != null) {
-                query.limit(pageSize);
-            }
-        }
+        applyPaging(query, paging);
 
         return stream(query);
     }

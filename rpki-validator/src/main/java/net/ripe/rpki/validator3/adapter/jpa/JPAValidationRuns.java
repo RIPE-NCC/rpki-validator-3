@@ -152,12 +152,10 @@ public class JPAValidationRuns extends JPARepository<ValidationRun> implements V
 
     @Override
     public Stream<ValidationCheck> findValidationChecksForValidationRun(long validationRunId, Paging paging, SearchTerm searchTerm, Sorting sorting) {
-        return stream(
-            validationChecksQuery(validationRunId, searchTerm)
-                .orderBy(toOrderSpecifier(sorting))
-                .offset(paging.getStartFrom())
-                .limit(paging.getPageSize())
-        );
+        return stream(applyPaging(
+            validationChecksQuery(validationRunId, searchTerm).orderBy(toOrderSpecifier(sorting)),
+            paging
+        ));
     }
 
     @Override

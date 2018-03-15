@@ -29,6 +29,13 @@
  */
 package net.ripe.rpki.validator3.adapter.jpa;
 
+import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.Order;
+import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.dsl.ComparableExpression;
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.jpa.impl.JPAQuery;
+import net.ripe.ipresource.IpResourceType;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
@@ -37,6 +44,7 @@ import net.ripe.rpki.validator3.domain.RoaPrefixAssertions;
 import org.springframework.stereotype.Repository;
 
 import javax.transaction.Transactional;
+import java.math.BigDecimal;
 import java.util.stream.Stream;
 
 import static net.ripe.rpki.validator3.domain.querydsl.QRoaPrefixAssertion.roaPrefixAssertion;
@@ -51,7 +59,65 @@ public class JPARoaPrefixAssertions extends JPARepository<RoaPrefixAssertion> im
 
     @Override
     public Stream<RoaPrefixAssertion> find(SearchTerm searchTerm, Sorting sorting, Paging paging) {
-        // FIXME searching, sorting, paging
-        return stream(select());
+        JPAQuery<RoaPrefixAssertion> query = select();
+        applySearchTerm(query, searchTerm);
+        applySorting(sorting, query);
+        applyPaging(query, paging);
+        return stream(query);
+    }
+
+    @Override
+    public long count(SearchTerm searchTerm) {
+        return applySearchTerm(select(), searchTerm).fetchCount();
+    }
+
+    private JPAQuery<RoaPrefixAssertion> applySearchTerm(JPAQuery<RoaPrefixAssertion> query, SearchTerm searchTerm) {
+        if (searchTerm == null) {
+            return query;
+        }
+
+        if (searchTerm.asAsn() != null) {
+            query.where(roaPrefixAssertion.asn.eq(searchTerm.asAsn().longValue()));
+        } else if (searchTerm.asIpRange() != null) {
+            ComparableExpression<BigDecimal> begin = Expressions.asComparable(new BigDecimal(searchTerm.asIpRange().getStart().getValue()));
+            ComparableExpression<BigDecimal> end = Expressions.asComparable(new BigDecimal(searchTerm.asIpRange().getEnd().getValue()));
+
+            query.where(roaPrefixAssertion.prefixFamily.eq((byte) (searchTerm.asIpRange().getType() == IpResourceType.IPv4 ? 4 : 6)));
+            query.where(
+                roaPrefixAssertion.prefixBegin.between(begin, end)
+                    .or(roaPrefixAssertion.prefixEnd.between(begin, end))
+                    .or(begin.between(roaPrefixAssertion.prefixBegin, roaPrefixAssertion.prefixEnd))
+            );
+        } else {
+            query.where(roaPrefixAssertion.comment.likeIgnoreCase(searchTerm.asString()));
+        }
+        return query;
+    }
+
+    private JPAQuery<RoaPrefixAssertion> applySorting(Sorting sorting, JPAQuery<RoaPrefixAssertion> query) {
+        return query.orderBy(toOrderSpecifier(sorting));
+    }
+
+    private OrderSpecifier<?> toOrderSpecifier(Sorting sorting) {
+        if (sorting == null) {
+            sorting = Sorting.of(Sorting.By.ASN, Sorting.Direction.ASC);
+        }
+
+        Expression<? extends Comparable> column;
+        switch (sorting.getBy()) {
+            case PREFIX:
+                column = roaPrefixAssertion.prefix;
+                break;
+            case COMMENT:
+                column = roaPrefixAssertion.comment;
+                break;
+            case ASN:
+            default:
+                column = roaPrefixAssertion.asn;
+                break;
+        }
+
+        Order order = sorting.getDirection() == Sorting.Direction.DESC ? Order.DESC : Order.ASC;
+        return new OrderSpecifier<>(order, column);
     }
 }

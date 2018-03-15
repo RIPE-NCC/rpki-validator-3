@@ -86,7 +86,7 @@ public class RoaPrefixAssertionsController {
 
         final List<RoaPrefixAssertion> matching = roaPrefixAssertions.find(searchTerm, sorting, paging).collect(Collectors.toList());
 
-        int totalSize = matching.size();
+        int totalSize = (int) roaPrefixAssertions.count(searchTerm);
 
         final Links links = Paging.links(
             startFrom, pageSize, totalSize,
