@@ -27,59 +27,31 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.domain;
+package net.ripe.rpki.validator3.api.roaprefixassertions;
 
+import io.swagger.annotations.ApiModelProperty;
+import lombok.Builder;
 import lombok.Data;
-import net.ripe.ipresource.Asn;
-import net.ripe.ipresource.IpRange;
-import net.ripe.ipresource.IpResourceType;
 
-import javax.persistence.Basic;
-import javax.persistence.Embeddable;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-import java.math.BigDecimal;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.Size;
 
-@Data
-@Embeddable
-public class RoaPrefix {
-    public static final byte FAMILY_IPV4 = 4;
-    public static final byte FAMILY_IPV6 = 6;
+@Data(staticConstructor = "of")
+@Builder
+public class AddRoaPrefixAssertion {
+    @ApiModelProperty(position = 1, required = true)
+    String asn;
 
-    @Basic
-    @NotNull
-    @NotEmpty
+    @ApiModelProperty(position = 2, required = true)
     String prefix;
 
-    @Basic
-    byte prefixFamily;
-
-    @Basic
-    @NotNull
-    BigDecimal prefixBegin;
-
-    @Basic
-    @NotNull
-    BigDecimal prefixEnd;
-
-    @Basic
+    @ApiModelProperty(position = 3)
+    @Min(0)
+    @Max(128)
     Integer maximumLength;
 
-    @Basic
-    int effectiveLength;
-
-    @Basic
-    long asn;
-
-    public static RoaPrefix of(IpRange prefix, Integer maximumLength, Asn asn) {
-        RoaPrefix result = new RoaPrefix();
-        result.setPrefix(prefix.toString());
-        result.setPrefixFamily(prefix.getType() == IpResourceType.IPv4 ? FAMILY_IPV4 : FAMILY_IPV6);
-        result.setPrefixBegin(new BigDecimal(prefix.getStart().getValue()));
-        result.setPrefixEnd(new BigDecimal(prefix.getEnd().getValue()));
-        result.setMaximumLength(maximumLength);
-        result.setEffectiveLength(maximumLength != null ? maximumLength : prefix.getPrefixLength());
-        result.setAsn(asn.longValue());
-        return result;
-    }
+    @ApiModelProperty(position = 4)
+    @Size(max = 2000)
+    String comment;
 }

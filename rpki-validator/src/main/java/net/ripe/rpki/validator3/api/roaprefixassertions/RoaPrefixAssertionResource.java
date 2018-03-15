@@ -27,59 +27,15 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.domain;
+package net.ripe.rpki.validator3.api.roaprefixassertions;
 
-import lombok.Data;
-import net.ripe.ipresource.Asn;
-import net.ripe.ipresource.IpRange;
-import net.ripe.ipresource.IpResourceType;
+import lombok.Value;
 
-import javax.persistence.Basic;
-import javax.persistence.Embeddable;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-import java.math.BigDecimal;
-
-@Data
-@Embeddable
-public class RoaPrefix {
-    public static final byte FAMILY_IPV4 = 4;
-    public static final byte FAMILY_IPV6 = 6;
-
-    @Basic
-    @NotNull
-    @NotEmpty
-    String prefix;
-
-    @Basic
-    byte prefixFamily;
-
-    @Basic
-    @NotNull
-    BigDecimal prefixBegin;
-
-    @Basic
-    @NotNull
-    BigDecimal prefixEnd;
-
-    @Basic
-    Integer maximumLength;
-
-    @Basic
-    int effectiveLength;
-
-    @Basic
+@Value(staticConstructor = "of")
+public class RoaPrefixAssertionResource {
+    long id;
     long asn;
-
-    public static RoaPrefix of(IpRange prefix, Integer maximumLength, Asn asn) {
-        RoaPrefix result = new RoaPrefix();
-        result.setPrefix(prefix.toString());
-        result.setPrefixFamily(prefix.getType() == IpResourceType.IPv4 ? FAMILY_IPV4 : FAMILY_IPV6);
-        result.setPrefixBegin(new BigDecimal(prefix.getStart().getValue()));
-        result.setPrefixEnd(new BigDecimal(prefix.getEnd().getValue()));
-        result.setMaximumLength(maximumLength);
-        result.setEffectiveLength(maximumLength != null ? maximumLength : prefix.getPrefixLength());
-        result.setAsn(asn.longValue());
-        return result;
-    }
+    String prefix;
+    Integer maximumLength;
+    String comment;
 }

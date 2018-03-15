@@ -29,27 +29,31 @@
  */
 package net.ripe.rpki.validator3.domain;
 
-import lombok.Data;
+import lombok.Getter;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.ipresource.IpResourceType;
 
 import javax.persistence.Basic;
-import javax.persistence.Embeddable;
+import javax.persistence.Entity;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 
-@Data
-@Embeddable
-public class RoaPrefix {
-    public static final byte FAMILY_IPV4 = 4;
-    public static final byte FAMILY_IPV6 = 6;
+@Entity
+public class RoaPrefixAssertion extends AbstractEntity {
+    @Basic
+    @Getter
+    private long asn;
 
     @Basic
     @NotNull
     @NotEmpty
-    String prefix;
+    @Getter
+    private String prefix;
 
     @Basic
     byte prefixFamily;
@@ -63,23 +67,23 @@ public class RoaPrefix {
     BigDecimal prefixEnd;
 
     @Basic
-    Integer maximumLength;
+    @Getter
+    private Integer maximumLength;
 
     @Basic
-    int effectiveLength;
+    @Getter
+    private String comment;
 
-    @Basic
-    long asn;
+    public RoaPrefixAssertion() {
+    }
 
-    public static RoaPrefix of(IpRange prefix, Integer maximumLength, Asn asn) {
-        RoaPrefix result = new RoaPrefix();
-        result.setPrefix(prefix.toString());
-        result.setPrefixFamily(prefix.getType() == IpResourceType.IPv4 ? FAMILY_IPV4 : FAMILY_IPV6);
-        result.setPrefixBegin(new BigDecimal(prefix.getStart().getValue()));
-        result.setPrefixEnd(new BigDecimal(prefix.getEnd().getValue()));
-        result.setMaximumLength(maximumLength);
-        result.setEffectiveLength(maximumLength != null ? maximumLength : prefix.getPrefixLength());
-        result.setAsn(asn.longValue());
-        return result;
+    public RoaPrefixAssertion(Asn asn, IpRange prefix, @Min(0) @Max(128) Integer maximumLength, @Size(max = 2000) String comment) {
+        this.asn = asn.longValue();
+        this.prefix = prefix.toString();
+        this.prefixFamily = (byte) (prefix.getType() == IpResourceType.IPv4 ? 4 : 6);
+        this.prefixBegin = new BigDecimal(prefix.getStart().getValue());
+        this.prefixEnd = new BigDecimal(prefix.getEnd().getValue());
+        this.maximumLength = maximumLength;
+        this.comment = comment;
     }
 }
