@@ -39,8 +39,10 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.transaction.Transactional;
 import javax.validation.Valid;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Component
@@ -51,19 +53,26 @@ public class IgnoreFilterService {
     @Autowired
     private IgnoreFilters ignoreFilters;
 
+    private List<Consumer<Collection<IgnoreFilter>>> consumers = new ArrayList<>();
+
     public long execute(@Valid AddIgnoreFilter command) {
         IgnoreFilter ignoreFilter = new IgnoreFilter();
-        ignoreFilter.setAsn(Asn.parse(command.getAsn()).longValue());
+        if (command.getAsn() != null) {
+            ignoreFilter.setAsn(Asn.parse(command.getAsn()).longValue());
+        }
         ignoreFilter.setPrefix(command.getPrefix());
         ignoreFilter.setComment(command.getComment());
 
-        return add(ignoreFilter);
+        final long id = add(ignoreFilter);
+        consumers.forEach(c -> c.accept(all()));
+        return id;
     }
 
     long add(IgnoreFilter ignoreFilter) {
         ignoreFilters.add(ignoreFilter);
 
         log.info("added ignore filter '{}'", ignoreFilter);
+        consumers.forEach(c -> c.accept(all()));
         return ignoreFilter.getId();
     }
 
@@ -72,10 +81,15 @@ public class IgnoreFilterService {
         if (ignoreFilter != null) {
             ignoreFilters.remove(ignoreFilter);
         }
+        consumers.forEach(c -> c.accept(all()));
     }
 
     public Collection<IgnoreFilter> all() {
         return ignoreFilters.all().collect(Collectors.toList());
+    }
+
+    public void addListener(Consumer<Collection<IgnoreFilter>> consumer) {
+        consumers.add(consumer);
     }
 
 }

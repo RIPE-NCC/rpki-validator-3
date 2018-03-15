@@ -33,6 +33,7 @@ import lombok.Value;
 
 @Value
 public class IgnoreFilter {
+    private Long id;
     private Long asn;
     private String prefix;
     private String comment;
