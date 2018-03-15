@@ -288,6 +288,7 @@ public class BgpPreviewService {
             IntervalMap<IpRange, List<ValidatedRpkiObjects.RoaPrefix>> roaPrefixes,
             BgpPreviewEntry bgpRisEntry,
             Collection<IgnoreFilter> ignoreFilters) {
+
         List<ValidatedRpkiObjects.RoaPrefix> matchingRoaPrefixes = roaPrefixes
                 .findExactAndAllLessSpecific(bgpRisEntry.getPrefix())
                 .stream()
@@ -295,7 +296,11 @@ public class BgpPreviewService {
                 .filter(roa -> !matches(ignoreFilters, roa))
                 .collect(Collectors.toList());
 
-        List<ValidatedRpkiObjects.RoaPrefix> matchingAsnRoas = matchingRoaPrefixes.stream().filter(roaPrefix -> roaPrefix.getAsn().equals(bgpRisEntry.getOrigin())).collect(Collectors.toList());
+        List<ValidatedRpkiObjects.RoaPrefix> matchingAsnRoas = matchingRoaPrefixes
+                .stream()
+                .filter(roaPrefix -> roaPrefix.getAsn().equals(bgpRisEntry.getOrigin()))
+                .collect(Collectors.toList());
+
         Validity validity;
         if (matchingRoaPrefixes.isEmpty()) {
             validity = Validity.UNKNOWN;
@@ -330,7 +335,8 @@ public class BgpPreviewService {
                             return 2;
                     }
                     return 10;
-                })).collect(Collectors.toList());
+                }))
+                .collect(Collectors.toList());
 
         final Validity validity = roaPrefixes.stream().findFirst().map(p -> p.getRight()).orElse(Validity.UNKNOWN);
 
@@ -348,7 +354,6 @@ public class BgpPreviewService {
                 })
                 .distinct()
                 .collect(Collectors.toList());
-
 
         return BgpValidityResource.of(origin.toString(), prefix.toString(), validity.toString(), validatingRoaStream);
     }
