@@ -34,10 +34,15 @@ import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
 import net.ripe.rpki.validator3.api.roaprefixassertions.AddRoaPrefixAssertion;
 import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionsService;
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
+import net.ripe.rpki.validator3.api.slurm.dtos.SlurmLocallyAddedAssertions;
+import net.ripe.rpki.validator3.api.slurm.dtos.SlurmOutputFilters;
+import net.ripe.rpki.validator3.api.slurm.dtos.SlurmPrefixAssertion;
+import net.ripe.rpki.validator3.api.slurm.dtos.SlurmPrefixFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.util.stream.Collectors;
 
 /*
     TODO Add BGPSec-related functionality
@@ -68,12 +73,39 @@ public class SlurmService {
         if (slurm.getValidationOutputFilters() != null && slurm.getValidationOutputFilters().getPrefixFilters() != null) {
             slurm.getValidationOutputFilters().getPrefixFilters().forEach(prefixFilter -> {
                 final AddIgnoreFilter addIgnoreFilter = AddIgnoreFilter.builder()
-                        .asn(prefixFilter.getAsn().toString())
+                        .asn(prefixFilter.getAsn() == null ? null : prefixFilter.getAsn().toString())
                         .prefix(prefixFilter.getPrefix())
                         .comment(prefixFilter.getComment())
                         .build();
                 ignoreFilterService.execute(addIgnoreFilter);
             });
         }
+    }
+
+    public Slurm get() {
+        final Slurm slurm = new Slurm();
+
+        SlurmLocallyAddedAssertions slurmLocallyAddedAssertions = new SlurmLocallyAddedAssertions();
+        slurmLocallyAddedAssertions.setPrefixAssertions(roaPrefixAssertionsService.all().map(a -> {
+            SlurmPrefixAssertion prefixAssertion = new SlurmPrefixAssertion();
+            prefixAssertion.setAsn(a.getAsn());
+            prefixAssertion.setPrefix(a.getPrefix());
+            prefixAssertion.setMaxPrefixLength(a.getMaximumLength());
+            prefixAssertion.setComment(a.getComment());
+            return prefixAssertion;
+        }).collect(Collectors.toList()));
+        slurm.setLocallyAddedAssertions(slurmLocallyAddedAssertions);
+
+        SlurmOutputFilters filters = new SlurmOutputFilters();
+        filters.setPrefixFilters(ignoreFilterService.all().stream().map(f -> {
+            SlurmPrefixFilter prefixFilter = new SlurmPrefixFilter();
+            prefixFilter.setAsn(f.getAsn());
+            prefixFilter.setPrefix(f.getPrefix());
+            prefixFilter.setComment(f.getComment());
+            return prefixFilter;
+        }).collect(Collectors.toList()));
+        slurm.setValidationOutputFilters(filters);
+
+        return slurm;
     }
 }

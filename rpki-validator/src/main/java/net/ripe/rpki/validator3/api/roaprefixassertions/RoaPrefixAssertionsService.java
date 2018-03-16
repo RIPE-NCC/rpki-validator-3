@@ -40,6 +40,9 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.transaction.Transactional;
 import javax.validation.Valid;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component
 @Transactional
@@ -72,5 +75,9 @@ public class RoaPrefixAssertionsService {
         if (entity != null) {
             roaPrefixAssertions.remove(entity);
         }
+    }
+
+    public Stream<RoaPrefixAssertion> all() {
+        return roaPrefixAssertions.all();
     }
 }

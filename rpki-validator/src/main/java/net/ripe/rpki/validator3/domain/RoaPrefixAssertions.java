@@ -38,6 +38,8 @@ import java.util.stream.Stream;
 public interface RoaPrefixAssertions {
     Stream<RoaPrefixAssertion> find(SearchTerm searchTerm, Sorting sorting, Paging paging);
 
+    Stream<RoaPrefixAssertion> all();
+
     long count(SearchTerm searchTerm);
 
     void add(RoaPrefixAssertion roaPrefixAssertion);
