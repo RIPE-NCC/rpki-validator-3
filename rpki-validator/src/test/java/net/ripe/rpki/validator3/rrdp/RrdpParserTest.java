@@ -82,9 +82,4 @@ public class RrdpParserTest {
         return Thread.currentThread().getContextClassLoader().getResourceAsStream(path);
     }
 
-
-    @Property
-    public void parse_consistently() {
-
-    }
 }
