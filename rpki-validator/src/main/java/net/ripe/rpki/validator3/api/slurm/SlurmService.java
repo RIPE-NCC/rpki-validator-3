@@ -29,13 +29,51 @@
  */
 package net.ripe.rpki.validator3.api.slurm;
 
+import net.ripe.rpki.validator3.api.ignorefilters.AddIgnoreFilter;
+import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
+import net.ripe.rpki.validator3.api.roaprefixassertions.AddRoaPrefixAssertion;
+import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionsService;
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
+
+/*
+    TODO Add BGPSec-related functionality
+ */
 @Service
 public class SlurmService {
 
-    public void process(Slurm slurm) {
+    @Autowired
+    private RoaPrefixAssertionsService roaPrefixAssertionsService;
 
+    @Autowired
+    private IgnoreFilterService ignoreFilterService;
+
+    @Transactional(Transactional.TxType.REQUIRED)
+    public void process(Slurm slurm) {
+        if (slurm.getLocallyAddedAssertions() != null && slurm.getLocallyAddedAssertions().getPrefixAssertions() != null) {
+            slurm.getLocallyAddedAssertions().getPrefixAssertions().forEach(prefixAsertion -> {
+                final AddRoaPrefixAssertion add = AddRoaPrefixAssertion.builder()
+                        .asn(prefixAsertion.getAsn() == null ? null : prefixAsertion.getAsn().toString())
+                        .prefix(prefixAsertion.getPrefix())
+                        .maximumLength(prefixAsertion.getMaxPrefixLength())
+                        .comment(prefixAsertion.getComment())
+                        .build();
+                roaPrefixAssertionsService.execute(add);
+            });
+        }
+
+        if (slurm.getValidationOutputFilters() != null && slurm.getValidationOutputFilters().getPrefixFilters() != null) {
+            slurm.getValidationOutputFilters().getPrefixFilters().forEach(prefixFilter -> {
+                final AddIgnoreFilter addIgnoreFilter = AddIgnoreFilter.builder()
+                        .asn(prefixFilter.getAsn().toString())
+                        .prefix(prefixFilter.getPrefix())
+                        .comment(prefixFilter.getComment())
+                        .build();
+                ignoreFilterService.execute(addIgnoreFilter);
+            });
+        }
     }
 }
