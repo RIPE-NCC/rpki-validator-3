@@ -81,8 +81,16 @@ server.post('/api/ignore-filters', (req, res) => {
   res.jsonp(require('./data/ignore-filters/ignore-filters-response.json'));
 });
 
-server.delete('/api/ignore-filters/130', (req, res) => {
-  res.jsonp(require('./data/ignore-filters/delete-filter-response.json'));
+server.delete('/api/roa-prefix-assertions/28567', (req, res) => {
+  res.jsonp(require('./data/whitelist/delete-entry-response.json'));
+});
+
+server.get('/api/roa-prefix-assertions', (req, res) => {
+  res.jsonp(require('./data/whitelist/whitelist-response.json'));
+});
+
+server.post('/api/roa-prefix-assertions', (req, res) => {
+  res.jsonp(require('./data/whitelist/whitelist-response.json'));
 });
 
 server.get('/api/bgp/validity', (req, res) => {

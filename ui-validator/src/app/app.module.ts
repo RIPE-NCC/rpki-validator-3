@@ -14,6 +14,7 @@ import {RoasModule} from "./roas/roas.module";
 import {IgnoreFiltersModule} from "./ignore-filters/ignore-filters.module";
 import {BgpPreviewModule} from "./bgp-preview/bgp-preview.module";
 import {AnnouncementPreviewModule} from "./announcement-preview/announcement-preview.module";
+import {WhitelistModule} from "./whitelist/whitelist.module";
 
 export function HttpLoaderFactory(http: HttpClient) {
   return new TranslateHttpLoader(http);
@@ -31,6 +32,7 @@ export function HttpLoaderFactory(http: HttpClient) {
     TrustAnchorsModule,
     RoasModule,
     IgnoreFiltersModule,
+    WhitelistModule,
     BgpPreviewModule,
     AnnouncementPreviewModule,
     RouterModule.forRoot(appRoutes),

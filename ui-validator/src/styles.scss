@@ -19,3 +19,9 @@ $alert-font: #404040;
 .alert-warning {
   color: #404040;
 }
+
+ngb-alert {
+  p {
+    margin-bottom: 0 !important;
+  }
+}

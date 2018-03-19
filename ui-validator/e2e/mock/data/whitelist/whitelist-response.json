@@ -1,0 +1,21 @@
+{
+  "links" : {
+    "first" : "http://localhost:4200/api/roa-prefix-assertions?startFrom=0&pageSize=10&search=&sortBy=prefix&sortDirection=asc",
+    "prev" : "http://localhost:4200/api/roa-prefix-assertions?startFrom=0&pageSize=10&search=&sortBy=prefix&sortDirection=asc",
+    "next" : "http://localhost:4200/api/roa-prefix-assertions?startFrom=0&pageSize=10&search=&sortBy=prefix&sortDirection=asc",
+    "last" : "http://localhost:4200/api/roa-prefix-assertions?startFrom=0&pageSize=10&search=&sortBy=prefix&sortDirection=asc"
+  },
+  "data" : [ {
+    "id" : 28442,
+    "asn" : 1234,
+    "prefix" : "1.0.128.0/20"
+  }, {
+    "id" : 28567,
+    "asn" : 3215,
+    "prefix" : "2.0.128.0/20",
+    "maximumLength" : 20
+  } ],
+  "metadata" : {
+    "totalCount" : 2
+  }
+}

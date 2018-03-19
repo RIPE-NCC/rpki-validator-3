@@ -1,11 +1,11 @@
-import {Injectable} from "@angular/core";
+import {Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {Observable} from 'rxjs/Observable';
 import 'rxjs/add/operator/do';
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/observable/throw';
 
-import {IIgnoreFilter, IIgnoreFiltersResponse} from "./filters.model";
+import {IIgnoreFilter, IIgnoreFiltersResponse} from './filters.model';
 
 @Injectable()
 export class IgnoreFiltersService {

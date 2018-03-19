@@ -4,6 +4,7 @@ import {TrustAnchorsPage} from "./pages/TrustAnchorsPage";
 import {MonitorTaPage} from "./pages/MonitorTaPage";
 import {IgnoreFiltersPage} from "./pages/IgnoreFiltersPage";
 import {AnnouncementPreviewPage} from "./pages/AnnouncementPreviewPage";
+import {WhitelistPage} from "./pages/WhitelistPage";
 
 export class AppPage {
 
@@ -21,6 +22,10 @@ export class AppPage {
 
   navigateToIgnoreFilters() {
     return new IgnoreFiltersPage();
+  }
+
+  navigateToWhitelist() {
+    return new WhitelistPage();
   }
 
   navigateToAnnouncementPreview(asn: string, prefix: string) {

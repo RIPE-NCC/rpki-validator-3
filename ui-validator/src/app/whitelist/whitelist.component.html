@@ -1,16 +1,17 @@
 <page-title [pageTitle]='pageTitle'></page-title>
 <ngb-alert type='success' *ngIf='alertSuccessAdded' (close)='alertSuccessAdded=false'>
-  {{ 'IgnoreFilters.ALERT_MSG_ADDED' | translate }}
+  {{ 'Whitelist.ALERT_MSG_ADDED' | translate }}
 </ngb-alert>
 <ngb-alert type='success' *ngIf='alertSuccessDeleted' (close)='alertSuccessDeleted=false'>
-  {{ 'IgnoreFilters.ALERT_MSG_DELETED' | translate }}
+  {{ 'Whitelist.ALERT_MSG_DELETED' | translate }}
 </ngb-alert>
 <ngb-alert type='info' *ngIf='alertShown' (close)='alertShown=false'>
-  {{ 'IgnoreFilters.ALERT_MSG_INTRO' | translate }}
+  {{ 'Whitelist.ALERT_MSG_INTRO_1st' | translate }}
+  <p [innerHTML]="'Whitelist.ALERT_MSG_INTRO_2nd' | translate:{value:'info'}"></p>
 </ngb-alert>
-<h3><strong>{{'IgnoreFilters.ADD_FILTER' | translate}}</strong></h3>
-<form #filterForm='ngForm'
-      (ngSubmit)='onFilterSubmit(filterForm)'
+<h3><strong>{{'Whitelist.ADD_ENTRY' | translate}}</strong></h3>
+<form #entryForm='ngForm'
+      (ngSubmit)='onWhitelistEntrySubmit(entryForm)'
       class='panel'>
   <div class='form-group row'>
     <!-- PREFIX -->
@@ -22,7 +23,7 @@
              name='prefix'
              required
              placeholder='{{"PREFIX_PLACEHOLDER" | translate}}'
-             (ngModel)='filter.prefix'
+             (ngModel)='whitelistEntry.prefix'
              (keyup)='validPrefix=true'
              class='form-control'/>
     </div>
@@ -35,7 +36,21 @@
              name='asn'
              required
              placeholder='{{"ASN" | translate}}'
-             (ngModel)='filter.asn'
+             (ngModel)='whitelistEntry.asn'
+             (keyup)='validAsn=true'
+             class='form-control'/>
+    </div>
+    <!-- MAXIMUM PREFIX LENGTH -->
+    <div class='col-3 pl-0'>
+      <label for='maxLength' class='col-form-label mr-1'><strong>{{'Whitelist.MAX_PREFIX_LENGTH' | translate}}</strong></label>
+      <em *ngIf='!validMaxLength' class='em-max-length'>{{'Whitelist.EM_MSG_INVALID_MAX_PREFIX_LENGTH' | translate}}</em>
+      <input type='number'
+             id='maxLength'
+             name='maximumLength'
+             required
+             min="12" max="32"
+             placeholder='{{"Whitelist.MAX_PREFIX_LENGTH_PLACEHOLDER" | translate}}'
+             (ngModel)='whitelistEntry.maximumLength'
              (keyup)='validAsn=true'
              class='form-control'/>
     </div>
@@ -43,11 +58,11 @@
     <div class='align-self-end'>
       <span (mouseenter)='mouseoverAdd=true' (mouseleave)='mouseoverAdd=false'>
         <button type='submit'
-                [disabled]='filterForm.controls.prefix?.invalid && filterForm.controls.asn?.invalid'
+                [disabled]='entryForm.controls.prefix?.invalid || entryForm.controls.asn?.invalid'
                 class='btn btn-primary'>{{'ADD' | translate}}</button>
       </span>
-      <em *ngIf='filterForm.controls.prefix?.invalid && filterForm.controls.asn?.invalid && mouseoverAdd'>
-        <strong>{{'IgnoreFilters.REQUIRED_PREFIX_OR_ASN' | translate}}</strong>
+      <em *ngIf='(entryForm.controls.prefix?.invalid || entryForm.controls.asn?.invalid) && mouseoverAdd'>
+        <strong>{{'Whitelist.REQUIRED_PREFIX_AND_ASN' | translate}}</strong>
       </em>
     </div>
   </div>
@@ -56,16 +71,16 @@
     <label for='comment' class='col-form-label mr-1'><strong>{{'COMMENT' | translate}}</strong></label>
     <textarea id='comment'
               name='comment'
-              (ngModel)='filter.comment'
+              (ngModel)='whitelistEntry.comment'
               class='form-control'>
     </textarea>
   </div>
 </form>
-<!-- CURRENT FILTERS -->
-<h3><strong>{{'IgnoreFilters.CURRENT_FILTERS' | translate}}</strong></h3>
+<!-- CURRENT ENTRIES -->
+<h3><strong>{{'Whitelist.CURRENT_ENTRIES' | translate}}</strong></h3>
 <div *ngIf='absolutItemsNumber === 0; else table'>
   <ngb-alert type='warning' [dismissible]='false'>
-    {{ 'IgnoreFilters.ALERT_MSG_NO_FILTERS' | translate }}
+    {{ 'Whitelist.ALERT_MSG_NO_ENTRIES' | translate }}
   </ngb-alert>
 </div>
 <ng-template #table>
@@ -82,19 +97,21 @@
     <tr>
       <th sortable-column='prefix'>{{'PREFIX' | translate}}</th>
       <th sortable-column='asn'>{{'ASN' | translate}}</th>
+      <th sortable-column='maximumLength'>{{'Whitelist.MAX_PREFIX_LENGTH' | translate}}</th>
       <th sortable-column='comment'>{{'COMMENT' | translate}}</th>
       <th></th>
     </tr>
     </thead>
     <tbody>
-    <tr *ngFor='let ignoreFilter of ignoreFilters'>
-      <td>{{ignoreFilter.prefix}}</td>
-      <td>{{ignoreFilter.asn}}</td>
-      <td>{{ignoreFilter.comment}}</td>
+    <tr *ngFor='let item of whitelist'>
+      <td>{{item.prefix}}</td>
+      <td>{{item.asn}}</td>
+      <td>{{item.maximumLength}}</td>
+      <td>{{item.comment}}</td>
       <td>
         <span class='fa fa-ban ban-icon'
               [ngbTooltip]='"DELETE" | translate:{value:"info"}'
-              (click)='deleteFilter(ignoreFilter)'></span>
+              (click)='deleteFilter(item)'></span>
       </td>
     </tr>
     <tr *ngIf='loading'>
