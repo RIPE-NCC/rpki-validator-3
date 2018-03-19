@@ -92,4 +92,7 @@ public class IgnoreFilterService {
         consumers.add(consumer);
     }
 
+    public void clear() {
+        ignoreFilters.clear();
+    }
 }

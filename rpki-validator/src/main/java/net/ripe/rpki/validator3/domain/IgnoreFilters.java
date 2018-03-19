@@ -39,4 +39,6 @@ public interface IgnoreFilters {
     IgnoreFilter get(long ignoreFilterId);
 
     void remove(IgnoreFilter ignoreFilter);
+
+    void clear();
 }

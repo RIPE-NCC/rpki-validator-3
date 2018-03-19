@@ -47,6 +47,7 @@ import java.util.stream.Collectors;
 /*
     TODO Add BGPSec-related functionality
  */
+
 @Service
 public class SlurmService {
 
@@ -59,6 +60,7 @@ public class SlurmService {
     @Transactional(Transactional.TxType.REQUIRED)
     public void process(Slurm slurm) {
         if (slurm.getLocallyAddedAssertions() != null && slurm.getLocallyAddedAssertions().getPrefixAssertions() != null) {
+            roaPrefixAssertionsService.clear();
             slurm.getLocallyAddedAssertions().getPrefixAssertions().forEach(prefixAsertion -> {
                 final AddRoaPrefixAssertion add = AddRoaPrefixAssertion.builder()
                         .asn(prefixAsertion.getAsn() == null ? null : prefixAsertion.getAsn().toString())
@@ -71,6 +73,7 @@ public class SlurmService {
         }
 
         if (slurm.getValidationOutputFilters() != null && slurm.getValidationOutputFilters().getPrefixFilters() != null) {
+            ignoreFilterService.clear();
             slurm.getValidationOutputFilters().getPrefixFilters().forEach(prefixFilter -> {
                 final AddIgnoreFilter addIgnoreFilter = AddIgnoreFilter.builder()
                         .asn(prefixFilter.getAsn() == null ? null : prefixFilter.getAsn().toString())
@@ -85,9 +88,9 @@ public class SlurmService {
     public Slurm get() {
         final Slurm slurm = new Slurm();
 
-        SlurmLocallyAddedAssertions slurmLocallyAddedAssertions = new SlurmLocallyAddedAssertions();
+        final SlurmLocallyAddedAssertions slurmLocallyAddedAssertions = new SlurmLocallyAddedAssertions();
         slurmLocallyAddedAssertions.setPrefixAssertions(roaPrefixAssertionsService.all().map(a -> {
-            SlurmPrefixAssertion prefixAssertion = new SlurmPrefixAssertion();
+            final SlurmPrefixAssertion prefixAssertion = new SlurmPrefixAssertion();
             prefixAssertion.setAsn(a.getAsn());
             prefixAssertion.setPrefix(a.getPrefix());
             prefixAssertion.setMaxPrefixLength(a.getMaximumLength());
@@ -96,9 +99,9 @@ public class SlurmService {
         }).collect(Collectors.toList()));
         slurm.setLocallyAddedAssertions(slurmLocallyAddedAssertions);
 
-        SlurmOutputFilters filters = new SlurmOutputFilters();
+        final SlurmOutputFilters filters = new SlurmOutputFilters();
         filters.setPrefixFilters(ignoreFilterService.all().stream().map(f -> {
-            SlurmPrefixFilter prefixFilter = new SlurmPrefixFilter();
+            final SlurmPrefixFilter prefixFilter = new SlurmPrefixFilter();
             prefixFilter.setAsn(f.getAsn());
             prefixFilter.setPrefix(f.getPrefix());
             prefixFilter.setComment(f.getComment());

@@ -80,4 +80,8 @@ public class RoaPrefixAssertionsService {
     public Stream<RoaPrefixAssertion> all() {
         return roaPrefixAssertions.all();
     }
+
+    public void clear() {
+        roaPrefixAssertions.clear();
+    }
 }

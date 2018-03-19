@@ -34,17 +34,9 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiError;
 import net.ripe.rpki.validator3.api.ApiResponse;
-import net.ripe.rpki.validator3.api.Metadata;
-import net.ripe.rpki.validator3.api.Paging;
-import net.ripe.rpki.validator3.api.SearchTerm;
-import net.ripe.rpki.validator3.api.Sorting;
-import net.ripe.rpki.validator3.api.roas.ValidatedRoasController;
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
-import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
-import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.hateoas.Links;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -55,9 +47,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Locale;
-import java.util.stream.Stream;
-
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping(path = "/api/slurm", produces = {Api.API_MIME_TYPE, "application/json"})
@@ -83,10 +72,9 @@ public class SlurmController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<Slurm>> slurm() {
-        Slurm slurm = slurmService.get();
         return ResponseEntity.ok(
                 ApiResponse.<Slurm>builder()
-                        .data(slurm).build()
+                        .data(slurmService.get()).build()
         );
     }
 

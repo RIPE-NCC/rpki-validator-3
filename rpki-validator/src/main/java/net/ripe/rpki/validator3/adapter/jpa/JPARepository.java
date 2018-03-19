@@ -85,6 +85,10 @@ abstract class JPARepository<T> {
         return queryFactory.selectFrom(entityPath);
     }
 
+    public void clear() {
+        queryFactory.delete(entityPath).execute();
+    }
+
     protected Query sql(String sql) {
         return entityManager.createNativeQuery(sql);
     }

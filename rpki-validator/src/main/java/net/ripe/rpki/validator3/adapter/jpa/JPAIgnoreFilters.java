@@ -34,7 +34,6 @@ import net.ripe.rpki.validator3.domain.IgnoreFilters;
 import org.springframework.stereotype.Repository;
 
 import javax.transaction.Transactional;
-
 import java.util.stream.Stream;
 
 import static net.ripe.rpki.validator3.domain.querydsl.QIgnoreFilter.ignoreFilter;

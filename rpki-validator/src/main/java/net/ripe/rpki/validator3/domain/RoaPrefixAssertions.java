@@ -47,4 +47,6 @@ public interface RoaPrefixAssertions {
     RoaPrefixAssertion get(long id);
 
     void remove(RoaPrefixAssertion roaPrefixAssertion);
+
+    void clear();
 }
