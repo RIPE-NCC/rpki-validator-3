@@ -34,13 +34,18 @@ import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.domain.RoaPrefixAssertion;
 import net.ripe.rpki.validator3.domain.RoaPrefixAssertions;
+import net.ripe.rpki.validator3.util.Transactions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.validation.annotation.Validated;
 
 import javax.transaction.Transactional;
 import javax.validation.Valid;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -49,8 +54,15 @@ import java.util.stream.Stream;
 @Validated
 @Slf4j
 public class RoaPrefixAssertionsService {
+    private final Object listenerLock = new Object();
+
+    private final List<Consumer<Collection<RoaPrefixAssertion>>> listeners = new ArrayList<>();
+
     @Autowired
     private RoaPrefixAssertions roaPrefixAssertions;
+
+    @Autowired
+    private PlatformTransactionManager platformTransactionManager;
 
     public long execute(@Valid AddRoaPrefixAssertion command) {
         RoaPrefixAssertion entity = new RoaPrefixAssertion(
@@ -65,6 +77,7 @@ public class RoaPrefixAssertionsService {
 
     long add(RoaPrefixAssertion entity) {
         roaPrefixAssertions.add(entity);
+        notifyListeners();
 
         log.info("added ROA prefix assertion '{}'", entity);
         return entity.getId();
@@ -74,6 +87,7 @@ public class RoaPrefixAssertionsService {
         RoaPrefixAssertion entity = roaPrefixAssertions.get(roaPrefixAssertionId);
         if (entity != null) {
             roaPrefixAssertions.remove(entity);
+            notifyListeners();
         }
     }
 
@@ -83,5 +97,24 @@ public class RoaPrefixAssertionsService {
 
     public void clear() {
         roaPrefixAssertions.clear();
+        notifyListeners();
+    }
+
+    public void onUpdate(Consumer<Collection<RoaPrefixAssertion>> listener) {
+        synchronized (listenerLock) {
+            List<RoaPrefixAssertion> assertions = all().collect(Collectors.toList());
+            listener.accept(assertions);
+            listeners.add(listener);
+        }
+    }
+
+    private void notifyListeners() {
+        Transactions.afterCommit(
+            listenerLock,
+            () -> {
+                List<RoaPrefixAssertion> assertions = all().collect(Collectors.toList());
+                listeners.forEach(listener -> listener.accept(assertions));
+            }
+        );
     }
 }

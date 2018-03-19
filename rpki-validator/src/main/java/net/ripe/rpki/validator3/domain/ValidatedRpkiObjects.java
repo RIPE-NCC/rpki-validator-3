@@ -41,12 +41,11 @@ import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificate;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.util.Transactions;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.annotation.PostConstruct;
@@ -95,6 +94,7 @@ public class ValidatedRpkiObjects {
 
     public synchronized void onUpdate(Consumer<Stream<RoaPrefixesAndRouterCertificates>> listener) {
         onUpdateListeners.add(listener);
+        listener.accept(validatedObjectsByTrustAnchor.values().stream());
     }
 
     @Transactional
@@ -105,25 +105,30 @@ public class ValidatedRpkiObjects {
             extractRouterCertificates(trustAnchorData, rpkiObjects)
         );
 
-        afterCommit(() -> {
-            log.info("updating validation objects cache for trust anchor {} with {} ROA prefixes and {} router certificates",
-                trustAnchor,
-                roaPrefixesAndRouterCertificates.getRoaPrefixes().size(),
-                roaPrefixesAndRouterCertificates.getRouterCertificates().size()
-            );
+        // Only update the cache after the current transaction successfully commits.
+        Transactions.afterCommit(
+            this,
+            () -> {
+                log.info("updating validation objects cache for trust anchor {} with {} ROA prefixes and {} router certificates",
+                    trustAnchor,
+                    roaPrefixesAndRouterCertificates.getRoaPrefixes().size(),
+                    roaPrefixesAndRouterCertificates.getRouterCertificates().size()
+                );
 
-            validatedObjectsByTrustAnchor.put(trustAnchor.getId(), roaPrefixesAndRouterCertificates);
+                validatedObjectsByTrustAnchor.put(trustAnchor.getId(), roaPrefixesAndRouterCertificates);
 
-            onUpdateListeners.forEach(listener -> listener.accept(validatedObjectsByTrustAnchor.values().stream()));
-        });
+                onUpdateListeners.forEach(listener -> listener.accept(validatedObjectsByTrustAnchor.values().stream()));
+            }
+        );
     }
 
     @Transactional
     public void remove(TrustAnchor trustAnchor) {
         long trustAnchorId = trustAnchor.getId();
-        afterCommit(() -> {
-            validatedObjectsByTrustAnchor.remove(trustAnchorId);
-        });
+        Transactions.afterCommit(
+            this,
+            () -> validatedObjectsByTrustAnchor.remove(trustAnchorId)
+        );
     }
 
     public ValidatedObjects<RoaPrefix> findCurrentlyValidatedRoaPrefixes(SearchTerm searchTerm, Sorting sorting, Paging paging) {
@@ -273,17 +278,5 @@ public class ValidatedRpkiObjects {
             .sorted(sorting.comparator())
             .skip(Math.max(0, paging.getStartFrom()))
             .limit(Math.max(1, paging.getPageSize()));
-    }
-
-    private void afterCommit(Runnable runnable) {
-        // Only update the cache after the current transaction successfully commits.
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                synchronized (ValidatedRpkiObjects.this) {
-                    runnable.run();
-                }
-            }
-        });
     }
 }
