@@ -37,7 +37,6 @@ import net.ripe.rpki.validator3.domain.RoaPrefixAssertions;
 import net.ripe.rpki.validator3.util.Transactions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.validation.annotation.Validated;
 
 import javax.transaction.Transactional;
@@ -55,14 +54,10 @@ import java.util.stream.Stream;
 @Slf4j
 public class RoaPrefixAssertionsService {
     private final Object listenerLock = new Object();
-
     private final List<Consumer<Collection<RoaPrefixAssertion>>> listeners = new ArrayList<>();
 
     @Autowired
     private RoaPrefixAssertions roaPrefixAssertions;
-
-    @Autowired
-    private PlatformTransactionManager platformTransactionManager;
 
     public long execute(@Valid AddRoaPrefixAssertion command) {
         RoaPrefixAssertion entity = new RoaPrefixAssertion(
@@ -100,7 +95,7 @@ public class RoaPrefixAssertionsService {
         notifyListeners();
     }
 
-    public void onUpdate(Consumer<Collection<RoaPrefixAssertion>> listener) {
+    public void addListener(Consumer<Collection<RoaPrefixAssertion>> listener) {
         synchronized (listenerLock) {
             List<RoaPrefixAssertion> assertions = all().collect(Collectors.toList());
             listener.accept(assertions);

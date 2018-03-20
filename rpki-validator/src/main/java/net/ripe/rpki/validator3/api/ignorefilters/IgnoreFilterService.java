@@ -33,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.rpki.validator3.domain.IgnoreFilter;
 import net.ripe.rpki.validator3.domain.IgnoreFilters;
+import net.ripe.rpki.validator3.util.Transactions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -44,16 +45,18 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component
 @Transactional
 @Validated
 @Slf4j
 public class IgnoreFilterService {
+    private final Object listenersLock = new Object();
+    private final List<Consumer<Collection<IgnoreFilter>>> listeners = new ArrayList<>();
+
     @Autowired
     private IgnoreFilters ignoreFilters;
-
-    private List<Consumer<Collection<IgnoreFilter>>> consumers = new ArrayList<>();
 
     public long execute(@Valid AddIgnoreFilter command) {
         IgnoreFilter ignoreFilter = new IgnoreFilter();
@@ -63,16 +66,14 @@ public class IgnoreFilterService {
         ignoreFilter.setPrefix(command.getPrefix());
         ignoreFilter.setComment(command.getComment());
 
-        final long id = add(ignoreFilter);
-        consumers.forEach(c -> c.accept(all()));
-        return id;
+        return add(ignoreFilter);
     }
 
     long add(IgnoreFilter ignoreFilter) {
         ignoreFilters.add(ignoreFilter);
+        notifyListeners();
 
         log.info("added ignore filter '{}'", ignoreFilter);
-        consumers.forEach(c -> c.accept(all()));
         return ignoreFilter.getId();
     }
 
@@ -80,19 +81,34 @@ public class IgnoreFilterService {
         IgnoreFilter ignoreFilter = ignoreFilters.get(ignoreFilterId);
         if (ignoreFilter != null) {
             ignoreFilters.remove(ignoreFilter);
+            notifyListeners();
         }
-        consumers.forEach(c -> c.accept(all()));
     }
 
-    public Collection<IgnoreFilter> all() {
-        return ignoreFilters.all().collect(Collectors.toList());
-    }
-
-    public void addListener(Consumer<Collection<IgnoreFilter>> consumer) {
-        consumers.add(consumer);
+    public Stream<IgnoreFilter> all() {
+        return ignoreFilters.all();
     }
 
     public void clear() {
         ignoreFilters.clear();
+        notifyListeners();
+    }
+
+    public void addListener(Consumer<Collection<IgnoreFilter>> listener) {
+        synchronized (listenersLock) {
+            List<IgnoreFilter> filters = all().collect(Collectors.toList());
+            listener.accept(filters);
+            listeners.add(listener);
+        }
+    }
+
+    private void notifyListeners() {
+        Transactions.afterCommit(
+            listenersLock,
+            () -> {
+                List<IgnoreFilter> filters = all().collect(Collectors.toList());
+                listeners.forEach(listener -> listener.accept(filters));
+            }
+        );
     }
 }

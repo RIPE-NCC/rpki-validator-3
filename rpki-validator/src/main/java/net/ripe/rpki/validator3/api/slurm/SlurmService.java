@@ -100,7 +100,7 @@ public class SlurmService {
         slurm.setLocallyAddedAssertions(slurmLocallyAddedAssertions);
 
         final SlurmOutputFilters filters = new SlurmOutputFilters();
-        filters.setPrefixFilters(ignoreFilterService.all().stream().map(f -> {
+        filters.setPrefixFilters(ignoreFilterService.all().map(f -> {
             final SlurmPrefixFilter prefixFilter = new SlurmPrefixFilter();
             prefixFilter.setAsn(f.getAsn());
             prefixFilter.setPrefix(f.getPrefix());

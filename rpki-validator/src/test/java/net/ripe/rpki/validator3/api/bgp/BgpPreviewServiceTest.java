@@ -170,8 +170,8 @@ public class BgpPreviewServiceTest {
     private BgpPreviewService createBgpPreviewService(final Collection<IgnoreFilter> ignoreFilters) {
         return new BgpPreviewService(new String[0],5, null, new ValidatedRpkiObjects(), new IgnoreFilterService() {
             @Override
-            public Collection<IgnoreFilter> all() {
-                return ignoreFilters;
+            public Stream<IgnoreFilter> all() {
+                return ignoreFilters.stream();
             }
         }, new RoaPrefixAssertionsService() {
             @Override

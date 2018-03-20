@@ -66,15 +66,15 @@ import java.util.stream.Stream;
 @Component
 @Slf4j
 public class ValidatedRpkiObjects {
+    private final Object listenerLock = new Object();
+    private final List<Consumer<Collection<RoaPrefixesAndRouterCertificates>>> listeners = new ArrayList<>();
+
+    private Map<Long, RoaPrefixesAndRouterCertificates> validatedObjectsByTrustAnchor = new HashMap<>();
 
     @Autowired
     private RpkiObjects rpkiObjects;
     @Autowired
     private PlatformTransactionManager transactionManager;
-
-    private List<Consumer<Stream<RoaPrefixesAndRouterCertificates>>> onUpdateListeners = new ArrayList<>();
-
-    private Map<Long, RoaPrefixesAndRouterCertificates> validatedObjectsByTrustAnchor = new HashMap<>();
 
     @PostConstruct
     private synchronized void initialize() {
@@ -92,11 +92,6 @@ public class ValidatedRpkiObjects {
         });
     }
 
-    public synchronized void onUpdate(Consumer<Stream<RoaPrefixesAndRouterCertificates>> listener) {
-        onUpdateListeners.add(listener);
-        listener.accept(validatedObjectsByTrustAnchor.values().stream());
-    }
-
     @Transactional
     public void update(TrustAnchor trustAnchor, Collection<RpkiObject> rpkiObjects) {
         TrustAnchorData trustAnchorData = TrustAnchorData.of(trustAnchor.getId(), trustAnchor.getName());
@@ -107,7 +102,7 @@ public class ValidatedRpkiObjects {
 
         // Only update the cache after the current transaction successfully commits.
         Transactions.afterCommit(
-            this,
+            listenerLock,
             () -> {
                 log.info("updating validation objects cache for trust anchor {} with {} ROA prefixes and {} router certificates",
                     trustAnchor,
@@ -126,7 +121,7 @@ public class ValidatedRpkiObjects {
     public void remove(TrustAnchor trustAnchor) {
         long trustAnchorId = trustAnchor.getId();
         Transactions.afterCommit(
-            this,
+            listenerLock,
             () -> {
                 validatedObjectsByTrustAnchor.remove(trustAnchorId);
                 notifyListeners();
@@ -153,6 +148,13 @@ public class ValidatedRpkiObjects {
             countRouterCertificates(),
             findRouterCertificates()
         );
+    }
+
+    public void addListener(Consumer<Collection<RoaPrefixesAndRouterCertificates>> listener) {
+        synchronized (listenerLock) {
+            listeners.add(listener);
+            listener.accept(validatedObjectsByTrustAnchor.values());
+        }
     }
 
     @Value(staticConstructor = "of")
@@ -284,6 +286,6 @@ public class ValidatedRpkiObjects {
     }
 
     private void notifyListeners() {
-        onUpdateListeners.forEach(listener -> listener.accept(validatedObjectsByTrustAnchor.values().stream()));
+        listeners.forEach(listener -> listener.accept(validatedObjectsByTrustAnchor.values()));
     }
 }

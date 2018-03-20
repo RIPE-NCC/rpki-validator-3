@@ -78,7 +78,7 @@ public class BgpPreviewService {
     private ImmutableList<RoaPrefix> validatedRoaPrefixes = ImmutableList.of();
     private ImmutableList<RoaPrefix> roaPrefixAssertions = ImmutableList.of();
     private ImmutableList<BgpPreviewEntry> bgpPreviewEntries = ImmutableList.of();
-    private ImmutableList<IgnoreFilter> ignoreFilters;
+    private ImmutableList<IgnoreFilter> ignoreFilters = ImmutableList.of();
 
     public enum Validity {
         UNKNOWN, VALID, INVALID_ASN, INVALID_LENGTH
@@ -199,11 +199,10 @@ public class BgpPreviewService {
             Collections.emptyList()
         )).collect(Collectors.toList());
         this.bgpRisDownloader = bgpRisDownloader;
-        this.ignoreFilters = ImmutableList.copyOf(ignoreFilterService.all());
 
-        validatedRpkiObjects.onUpdate(objects -> updateValidatedRoaPrefixes(objects.flatMap(x -> x.getRoaPrefixes().stream())));
+        validatedRpkiObjects.addListener(objects -> updateValidatedRoaPrefixes(objects.stream().flatMap(x -> x.getRoaPrefixes().stream())));
         ignoreFilterService.addListener(filters -> updateIgnoreFilters(filters));
-        roaPrefixAssertionsService.onUpdate(roaPrefixAssertions -> updateRoaPrefixAssertions(roaPrefixAssertions));
+        roaPrefixAssertionsService.addListener(roaPrefixAssertions -> updateRoaPrefixAssertions(roaPrefixAssertions));
     }
 
     @Scheduled(initialDelay = 10_000L, fixedDelay = 600_0000L)
