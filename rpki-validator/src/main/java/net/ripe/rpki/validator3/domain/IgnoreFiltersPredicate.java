@@ -29,7 +29,6 @@
  */
 package net.ripe.rpki.validator3.domain;
 
-import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.ipresource.IpResourceSet;
@@ -40,7 +39,6 @@ import net.ripe.ipresource.etree.NestedIntervalMap;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-@Slf4j
 public class IgnoreFiltersPredicate implements Predicate<RoaPrefixDefinition> {
 
     private IpResourceSet ignoredAsns = new IpResourceSet();
@@ -69,12 +67,10 @@ public class IgnoreFiltersPredicate implements Predicate<RoaPrefixDefinition> {
     @Override
     public boolean test(RoaPrefixDefinition roaPrefix) {
         if (ignoredAsns.contains(roaPrefix.getAsn())) {
-            log.debug("ROA prefix {} with ASN {} matches ignored ASNs {}", roaPrefix.getPrefix(), roaPrefix.getAsn(), ignoredAsns);
             return true;
         }
         IpResourceSet filter = ignoredPrefixes.findExactOrFirstLessSpecific(roaPrefix.getPrefix());
         if (filter != null && filter.contains(roaPrefix.getAsn())) {
-            log.debug("ROA prefix {} with ASN {} matches ignored ASNs {}", roaPrefix.getPrefix(), roaPrefix.getAsn(), filter);
             return true;
         }
         return false;
