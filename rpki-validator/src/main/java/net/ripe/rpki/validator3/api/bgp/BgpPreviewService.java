@@ -248,13 +248,13 @@ public class BgpPreviewService {
             }
         }
 
-        this.bgpPreviewEntries = validateBgpRisEntries(bgpRisEntries.build(), this.roaPrefixes, this.ignoreFilters);
+        this.bgpPreviewEntries = validateBgpRisEntries(bgpRisEntries.build(), this.roaPrefixes);
 
         this.bgpRisDumps = updated.stream().map(x -> BgpRisDump.of(x.getUrl(), x.getLastModified(), null)).collect(Collectors.toList());
     }
 
-    public synchronized void updateValidatedRoaPrefixes(Stream<ValidatedRpkiObjects.RoaPrefix> validatedRoaPrefixes) {
-        this.validatedRoaPrefixes = ImmutableList.copyOf(validatedRoaPrefixes
+    public synchronized void updateValidatedRoaPrefixes(Stream<ValidatedRpkiObjects.RoaPrefix> prefixes) {
+        this.validatedRoaPrefixes = ImmutableList.copyOf(prefixes
             .map(p -> RoaPrefix.of(
                 p.getTrustAnchor(),
                 p.getLocations(),
@@ -268,39 +268,50 @@ public class BgpPreviewService {
             .collect(Collectors.toList())
         );
 
-        this.roaPrefixes = recalculateRoaPrefixes();
-
-        this.bgpPreviewEntries = validateBgpRisEntries(this.bgpPreviewEntries, this.roaPrefixes, this.ignoreFilters);
+        this.roaPrefixes = recalculateRoaPrefixes(this.validatedRoaPrefixes, this.ignoreFilters, this.roaPrefixAssertions);
+        this.bgpPreviewEntries = validateBgpRisEntries(this.bgpPreviewEntries, this.roaPrefixes);
     }
 
-    private synchronized void updateIgnoreFilters(Collection<IgnoreFilter> ignoreFilters) {
-        this.ignoreFilters = ImmutableList.copyOf(ignoreFilters);
-        this.bgpPreviewEntries = validateBgpRisEntries(this.bgpPreviewEntries, this.roaPrefixes, this.ignoreFilters);
+    private synchronized void updateIgnoreFilters(Collection<IgnoreFilter> filters) {
+        this.ignoreFilters = ImmutableList.copyOf(filters);
+
+        this.roaPrefixes = recalculateRoaPrefixes(this.validatedRoaPrefixes, this.ignoreFilters, this.roaPrefixAssertions);
+        this.bgpPreviewEntries = validateBgpRisEntries(this.bgpPreviewEntries, this.roaPrefixes);
     }
 
-    private synchronized void updateRoaPrefixAssertions(Collection<RoaPrefixAssertion> roaPrefixAssertions) {
-        this.roaPrefixAssertions = ImmutableList.copyOf(roaPrefixAssertions
-            .stream()
-            .map(p -> RoaPrefix.of(
-                null,
-                null,
-                p.getId(),
-                p.getComment(),
-                new Asn(p.getAsn()),
-                IpRange.parse(p.getPrefix()),
-                p.getMaximumLength(),
-                p.getMaximumLength() == null ? IpRange.parse(p.getPrefix()).getPrefixLength() : p.getMaximumLength()
-            ))
-            .collect(Collectors.toList()));
+    private synchronized void updateRoaPrefixAssertions(Collection<RoaPrefixAssertion> assertions) {
+        this.roaPrefixAssertions = ImmutableList.copyOf(
+            assertions
+                .stream()
+                .map(p -> RoaPrefix.of(
+                    null,
+                    null,
+                    p.getId(),
+                    p.getComment(),
+                    new Asn(p.getAsn()),
+                    IpRange.parse(p.getPrefix()),
+                    p.getMaximumLength(),
+                    p.getMaximumLength() == null ? IpRange.parse(p.getPrefix()).getPrefixLength() : p.getMaximumLength()
+                ))
+                .collect(Collectors.toList())
+        );
 
-        this.roaPrefixes = recalculateRoaPrefixes();
-
-        this.bgpPreviewEntries = validateBgpRisEntries(this.bgpPreviewEntries, this.roaPrefixes, this.ignoreFilters);
+        this.roaPrefixes = recalculateRoaPrefixes(this.validatedRoaPrefixes, this.ignoreFilters, this.roaPrefixAssertions);
+        this.bgpPreviewEntries = validateBgpRisEntries(this.bgpPreviewEntries, this.roaPrefixes);
     }
 
-    private NestedIntervalMap<IpRange, List<RoaPrefix>> recalculateRoaPrefixes() {
+    private static NestedIntervalMap<IpRange, List<RoaPrefix>> recalculateRoaPrefixes(
+        ImmutableList<RoaPrefix> validatedRoaPrefixes,
+        ImmutableList<IgnoreFilter> ignoreFilters,
+        ImmutableList<RoaPrefix> roaPrefixAssertions
+    ) {
         NestedIntervalMap<IpRange, List<RoaPrefix>> roaPrefixes = new NestedIntervalMap<>(IpResourceIntervalStrategy.getInstance());
-        Stream.concat(this.validatedRoaPrefixes.stream(), roaPrefixAssertions.stream()).forEach(p -> {
+        Stream.concat(
+            validatedRoaPrefixes
+                .stream()
+                .filter(new IgnoreFiltersPredicate(ignoreFilters.stream()).negate()),
+            roaPrefixAssertions.stream()
+        ).forEach(p -> {
             List<RoaPrefix> existing = roaPrefixes.findExact(p.getPrefix());
             if (existing == null) {
                 existing = new ArrayList<>(1);
@@ -313,14 +324,13 @@ public class BgpPreviewService {
 
     private ImmutableList<BgpPreviewEntry> validateBgpRisEntries(
         ImmutableList<BgpPreviewEntry> bgpRisEntries,
-        IntervalMap<IpRange, List<RoaPrefix>> roaPrefixes,
-        ImmutableList<IgnoreFilter> ignoreFilters
+        IntervalMap<IpRange, List<RoaPrefix>> roaPrefixes
     ) {
         long begin = System.currentTimeMillis();
 
         final ImmutableList.Builder<BgpPreviewEntry> builder = ImmutableList.builder();
         bgpRisEntries.parallelStream().map(bgpRisEntry -> {
-            final Validity validity = validateBgpRisEntry(roaPrefixes, bgpRisEntry, ignoreFilters);
+            final Validity validity = validateBgpRisEntry(roaPrefixes, bgpRisEntry);
             return new BgpPreviewEntry(
                     bgpRisEntry.getOrigin(),
                     bgpRisEntry.getPrefix(),
@@ -330,20 +340,25 @@ public class BgpPreviewService {
         ImmutableList<BgpPreviewEntry> built = builder.build();
 
         long end = System.currentTimeMillis();
-        log.debug("validateBgpRisEntries duration: {} ms", end - begin);
+        log.debug(
+            "validateBgpRisEntries duration: {} ms ({} RIS entries, {} validated ROA prefixes, {} ignore filters, {} ROA prefix assertions)",
+            end - begin,
+            bgpRisEntries.size(),
+            validatedRoaPrefixes.size(),
+            ignoreFilters.size(),
+            roaPrefixAssertions.size()
+        );
         return built;
     }
 
-    private Validity validateBgpRisEntry(
-            IntervalMap<IpRange, List<RoaPrefix>> roaPrefixes,
-            BgpPreviewEntry bgpRisEntry,
-            Collection<IgnoreFilter> ignoreFilters) {
-
+    private static Validity validateBgpRisEntry(
+        IntervalMap<IpRange, List<RoaPrefix>> roaPrefixes,
+        BgpPreviewEntry bgpRisEntry
+    ) {
         List<RoaPrefix> matchingRoaPrefixes = roaPrefixes
                 .findExactAndAllLessSpecific(bgpRisEntry.getPrefix())
                 .stream()
                 .flatMap(Collection::stream)
-                .filter(new IgnoreFiltersPredicate(ignoreFilters.stream()).negate())
                 .collect(Collectors.toList());
 
         List<RoaPrefix> matchingAsnRoas = matchingRoaPrefixes
@@ -370,7 +385,7 @@ public class BgpPreviewService {
                 .flatMap(x -> x.stream())
                 .map(r -> {
                     final BgpPreviewEntry bgpPreviewEntry = BgpPreviewEntry.of(origin, prefix, Validity.UNKNOWN);
-                    final Validity validity = validateBgpRisEntry(this.roaPrefixes, bgpPreviewEntry, this.ignoreFilters);
+                    final Validity validity = validateBgpRisEntry(this.roaPrefixes, bgpPreviewEntry);
                     return Pair.of(r, validity);
                 })
                 .sorted(Comparator.comparingInt(p -> {
