@@ -174,7 +174,7 @@ public class ValidatedRpkiObjects {
     }
 
     @Value(staticConstructor = "of")
-    public static class RoaPrefix {
+    public static class RoaPrefix implements RoaPrefixDefinition {
         TrustAnchorData trustAnchor;
         Asn asn;
         IpRange prefix;

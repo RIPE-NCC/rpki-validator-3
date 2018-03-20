@@ -43,7 +43,9 @@ import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
 import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionsService;
 import net.ripe.rpki.validator3.domain.IgnoreFilter;
+import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
 import net.ripe.rpki.validator3.domain.RoaPrefixAssertion;
+import net.ripe.rpki.validator3.domain.RoaPrefixDefinition;
 import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -110,7 +112,7 @@ public class BgpPreviewService {
     }
 
     @lombok.Value(staticConstructor = "of")
-    private static class RoaPrefix {
+    private static class RoaPrefix implements RoaPrefixDefinition {
         ValidatedRpkiObjects.TrustAnchorData trustAnchor;
         ImmutableSortedSet<String> locations;
         Long roaPrefixAssertionId;
@@ -341,7 +343,7 @@ public class BgpPreviewService {
                 .findExactAndAllLessSpecific(bgpRisEntry.getPrefix())
                 .stream()
                 .flatMap(Collection::stream)
-                .filter(roa -> !matches(ignoreFilters, roa))
+                .filter(new IgnoreFiltersPredicate(ignoreFilters.stream()).negate())
                 .collect(Collectors.toList());
 
         List<RoaPrefix> matchingAsnRoas = matchingRoaPrefixes
@@ -419,18 +421,5 @@ public class BgpPreviewService {
                 .collect(Collectors.toList());
 
         return BgpValidityResource.of(origin.toString(), prefix.toString(), validity.toString(), validatingRoaStream);
-    }
-
-    public static boolean matches(Collection<IgnoreFilter> filters, RoaPrefix roa) {
-        return filters.stream().anyMatch(f -> {
-            boolean b = true;
-            if (f.getAsn() != null) {
-                b = b && f.getAsn().longValue() == roa.getAsn().longValue();
-            }
-            if (f.getPrefix() != null) {
-                b = b && IpRange.parse(f.getPrefix()).contains(roa.getPrefix());
-            }
-            return b;
-        });
     }
 }

@@ -35,6 +35,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
+import net.ripe.rpki.validator3.domain.IgnoreFilters;
+import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.Settings;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
@@ -68,6 +70,9 @@ public class ObjectController {
     private TrustAnchors trustAnchors;
 
     @Autowired
+    private IgnoreFilters ignoreFilters;
+
+    @Autowired
     private Settings settings;
 
     @GetMapping(path = "/validated")
@@ -86,6 +91,7 @@ public class ObjectController {
         final Stream<RoaPrefix> validatedPrefixes = validatedRpkiObjects
             .findCurrentlyValidatedRoaPrefixes(null, null, null)
             .getObjects()
+            .filter(new IgnoreFiltersPredicate(ignoreFilters.all()).negate())
             .map(prefix -> {
                     Links links = trustAnchorLinks.get(prefix.getTrustAnchor().getId());
                     return new RoaPrefix(
