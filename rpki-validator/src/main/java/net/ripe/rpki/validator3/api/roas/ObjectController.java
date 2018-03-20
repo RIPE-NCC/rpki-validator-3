@@ -32,11 +32,14 @@ package net.ripe.rpki.validator3.api.roas;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.ipresource.Asn;
+import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
 import net.ripe.rpki.validator3.domain.IgnoreFilters;
 import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
+import net.ripe.rpki.validator3.domain.RoaPrefixAssertions;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.Settings;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
@@ -73,6 +76,9 @@ public class ObjectController {
     private IgnoreFilters ignoreFilters;
 
     @Autowired
+    private RoaPrefixAssertions roaPrefixAssertions;
+
+    @Autowired
     private Settings settings;
 
     @GetMapping(path = "/validated")
@@ -101,14 +107,24 @@ public class ObjectController {
                         links
                     );
                 }
-            )
-            .distinct();
+            );
+
+        final Stream<RoaPrefix> assertions = roaPrefixAssertions
+            .all()
+            .map(assertion -> new RoaPrefix(
+                new Asn(assertion.getAsn()).toString(),
+                IpRange.parse(assertion.getPrefix()).toString(),
+                assertion.getMaximumLength() != null ? assertion.getMaximumLength() : IpRange.parse(assertion.getPrefix()).getPrefixLength(),
+                null
+            ));
+
+        final Stream<RoaPrefix> combinedPrefixes = Stream.concat(validatedPrefixes, assertions).distinct();
 
         final Stream<RouterCertificate> routerCertificates = validatedRpkiObjects.findCurrentlyValidatedRouterCertificates().getObjects()
             .map(o -> new RouterCertificate(o.getAsn(), o.getSubjectKeyIdentifier(), o.getSubjectPublicKeyInfo()));
 
         return ResponseEntity.ok(ApiResponse.<ValidatedObjects>builder()
-                .data(new ValidatedObjects(settings.isInitialValidationRunCompleted(), trustAnchorsById.values(), validatedPrefixes, routerCertificates))
+                .data(new ValidatedObjects(settings.isInitialValidationRunCompleted(), trustAnchorsById.values(), combinedPrefixes, routerCertificates))
                 .build());
     }
 
