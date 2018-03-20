@@ -117,7 +117,7 @@ public class ValidatedRpkiObjects {
 
                 validatedObjectsByTrustAnchor.put(trustAnchor.getId(), roaPrefixesAndRouterCertificates);
 
-                onUpdateListeners.forEach(listener -> listener.accept(validatedObjectsByTrustAnchor.values().stream()));
+                notifyListeners();
             }
         );
     }
@@ -127,7 +127,10 @@ public class ValidatedRpkiObjects {
         long trustAnchorId = trustAnchor.getId();
         Transactions.afterCommit(
             this,
-            () -> validatedObjectsByTrustAnchor.remove(trustAnchorId)
+            () -> {
+                validatedObjectsByTrustAnchor.remove(trustAnchorId);
+                notifyListeners();
+            }
         );
     }
 
@@ -278,5 +281,9 @@ public class ValidatedRpkiObjects {
             .sorted(sorting.comparator())
             .skip(Math.max(0, paging.getStartFrom()))
             .limit(Math.max(1, paging.getPageSize()));
+    }
+
+    private void notifyListeners() {
+        onUpdateListeners.forEach(listener -> listener.accept(validatedObjectsByTrustAnchor.values().stream()));
     }
 }
