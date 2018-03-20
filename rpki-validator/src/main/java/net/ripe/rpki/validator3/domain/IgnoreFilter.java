@@ -40,11 +40,6 @@ public class IgnoreFilter extends AbstractEntity {
     @Basic
     @Getter
     @Setter
-    private long id;
-
-    @Basic
-    @Getter
-    @Setter
     private Long asn;
 
     @Basic
@@ -59,6 +54,4 @@ public class IgnoreFilter extends AbstractEntity {
 
     public IgnoreFilter() {
     }
-
-
 }

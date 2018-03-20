@@ -42,7 +42,6 @@ import org.junit.Test;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Random;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -186,7 +185,6 @@ public class BgpPreviewServiceTest {
         IgnoreFilter f = new IgnoreFilter();
         f.setAsn(asn);
         f.setPrefix(prefix);
-        f.setId(new Random().nextLong());
         return f;
     }
 }
