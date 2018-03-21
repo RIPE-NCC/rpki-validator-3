@@ -1,5 +1,5 @@
 // PAGINATION
-export abstract class Paging {
+export class Paging {
 
   rowsPerPage: number = 10;
   // total number of items before filter
@@ -12,10 +12,16 @@ export abstract class Paging {
   firstItemInTable: number = 0;
   lastItemInTable: number;
 
-  abstract loadData();
-
   resetInitialValuesPagination(): void {
     this.page = this.previousPage = this.firstItemInTable = this.lastItemInTable = 1;
+  }
+
+  setLoadedDataParameters(numberOfItemsOnCurrentPage: number, totalItems: number) {
+    this.numberOfItemsOnCurrentPage = numberOfItemsOnCurrentPage;
+    this.totalItems = totalItems;
+    this.setNumberOfLastItemInTable();
+    if (!this.absolutItemsNumber)
+      this.absolutItemsNumber = this.totalItems;
   }
 
   setNumberOfFirstItemInTable() {
@@ -24,18 +30,5 @@ export abstract class Paging {
 
   setNumberOfLastItemInTable() {
     this.lastItemInTable = this.firstItemInTable + this.numberOfItemsOnCurrentPage;
-  }
-
-  onChangedPageSize(pageSize: number): void {
-    this.page = Math.floor(this.firstItemInTable / pageSize) + 1;
-    this.rowsPerPage = +pageSize;
-    this.loadData();
-  }
-
-  onChangePage(page: number): void {
-    if (this.previousPage !== page) {
-      this.previousPage = this.page = page;
-      this.loadData();
-    }
   }
 }

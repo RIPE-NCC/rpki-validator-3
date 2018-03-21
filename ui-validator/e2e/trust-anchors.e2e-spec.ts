@@ -1,7 +1,7 @@
 import { AppPage } from './app.po';
 import {TrustAnchorsPage} from "./pages/TrustAnchorsPage";
 
-describe('ui-validator App', () => {
+describe('Trust Anchors ROAs page', () => {
   let taPage: TrustAnchorsPage;
 
   beforeEach(() => {

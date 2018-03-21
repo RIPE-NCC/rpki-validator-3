@@ -1,25 +1,28 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnInit, ViewChild} from '@angular/core';
 
 import {RoasService} from "./roas.service";
 import {IRoa} from "./roas.model";
 import {TrustAnchorsService} from "../core/trust-anchors.service";
 import {ITrustAnchorsResponse} from "../trust-anchors/trust-anchor.model";
-import {ManagingTable} from "../shared/managing-table";
+import {ToolbarComponent} from "../shared/toolbar/toolbar.component";
+import {ColumnSortedEvent} from "../shared/sortable-table/sort.service";
 
 @Component({
   selector: 'app-roas',
   templateUrl: './roas.component.html',
   styleUrls: ['./roas.component.scss']
 })
-export class RoasComponent extends ManagingTable implements OnInit {
+export class RoasComponent implements OnInit {
 
   pageTitle: string = 'Nav.TITLE_ROAS';
   alertShown = false;
   alertListValidatedTA: string;
   roas: IRoa[] = [];
 
-  constructor(private _roasService: RoasService, private _trustAnchorsService: TrustAnchorsService) {
-    super();
+  @ViewChild(ToolbarComponent) toolbar: ToolbarComponent;
+
+  constructor(private _roasService: RoasService,
+              private _trustAnchorsService: TrustAnchorsService) {
   }
 
   ngOnInit() {
@@ -28,22 +31,18 @@ export class RoasComponent extends ManagingTable implements OnInit {
   }
 
   loadData() {
-    this.loading = true;
-    this.setNumberOfFirstItemInTable();
-    this._roasService.getRoas(this.firstItemInTable.toString(),
-                              this.rowsPerPage.toString(),
-                              this.searchBy,
-                              this.sortBy,
-                              this.sortDirection)
+    this.toolbar.setLoading(true);
+    this.toolbar.setNumberOfFirstItemInTable();
+    this._roasService.getRoas(this.toolbar.firstItemInTable.toString(),
+                              this.toolbar.rowsPerPage.toString(),
+                              this.toolbar.searchBy,
+                              this.toolbar.sortBy,
+                              this.toolbar.sortDirection)
       .subscribe(
         response => {
-          this.loading = false;
+          this.toolbar.setLoading(false);
           this.roas = response.data;
-          this.numberOfItemsOnCurrentPage = this.roas.length;
-          this.totalItems = response.metadata.totalCount;
-          this.setNumberOfLastItemInTable();
-          if (!this.absolutItemsNumber)
-            this.absolutItemsNumber = this.totalItems;
+          this.toolbar.setLoadedDataParameters(this.roas.length, response.metadata.totalCount);
         });
   }
 
@@ -62,5 +61,14 @@ export class RoasComponent extends ManagingTable implements OnInit {
           this.alertShown = this.alertListValidatedTA.length > 0;
         }
       );
+  }
+
+  onToolbarChange() {
+    this.loadData();
+  }
+
+  onSorted(sort: ColumnSortedEvent): void {
+    this.toolbar.setColumnSortedInfo(sort);
+    this.loadData();
   }
 }

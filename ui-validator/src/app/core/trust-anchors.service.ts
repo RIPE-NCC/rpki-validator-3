@@ -1,9 +1,9 @@
-import {HttpClient, HttpParams} from "@angular/common/http";
-import {Observable} from "rxjs/Observable";
-import {Injectable} from "@angular/core";
+import {HttpClient, HttpParams} from '@angular/common/http';
+import {Observable} from 'rxjs/Observable';
+import {Injectable} from '@angular/core';
 
-import {IValidationChecksResponse} from "../monitoring-ta/validation-details/validation-detail.model";
-import {ITrustAnchorResponse} from "../trust-anchors/trust-anchor.model";
+import {IValidationChecksResponse} from '../monitoring-ta/validation-details/validation-detail.model';
+import {ITrustAnchorResponse} from '../trust-anchors/trust-anchor.model';
 
 @Injectable()
 export class TrustAnchorsService {

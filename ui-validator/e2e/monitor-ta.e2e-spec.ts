@@ -1,7 +1,7 @@
 import { AppPage } from './app.po';
 import {MonitorTaPage} from "./pages/MonitorTaPage";
 
-describe('ui-validator App', () => {
+describe('Monitor TA Page', () => {
   let monitorTaPage: MonitorTaPage;
 
   beforeEach(() => {

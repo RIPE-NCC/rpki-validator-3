@@ -1,23 +1,25 @@
-import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
+import {Component, EventEmitter, Input, OnInit, Output, ViewChild} from '@angular/core';
 
 import {IRepositoriesStatuses, IRepository} from "./repositories.model";
-import {ManagingTable} from "../../shared/managing-table";
 import {TrustAnchorsService} from "../../core/trust-anchors.service";
+import {ToolbarComponent} from "../../shared/toolbar/toolbar.component";
+import {ColumnSortedEvent} from "../../shared/sortable-table/sort.service";
 
 @Component({
   selector: 'repositories',
   templateUrl: './repositories.component.html',
   styleUrls: ['./repositories.component.scss']
 })
-export class RepositoriesComponent extends ManagingTable implements OnInit {
+export class RepositoriesComponent implements OnInit {
 
   @Input() trustAnchorId: string;
-  @Output() notify: EventEmitter<IRepositoriesStatuses> = new EventEmitter<IRepositoriesStatuses>();
+  @Output() notifyLoadedStatuses: EventEmitter<IRepositoriesStatuses> = new EventEmitter<IRepositoriesStatuses>();
 
   repositories: IRepository[] = [];
 
+  @ViewChild(ToolbarComponent) toolbar: ToolbarComponent;
+
   constructor(private _trustAnchorsService: TrustAnchorsService) {
-    super();
   }
 
   ngOnInit() {
@@ -25,24 +27,29 @@ export class RepositoriesComponent extends ManagingTable implements OnInit {
   }
 
   loadData() {
-    this.loading = true;
-    this.setNumberOfFirstItemInTable();
+    this.toolbar.loading = true;
+    this.toolbar.setNumberOfFirstItemInTable();
     this._trustAnchorsService.getRepositories(this.trustAnchorId,
-                                              this.firstItemInTable.toString(),
-                                              this.rowsPerPage.toString(),
-                                              this.searchBy,
-                                              this.sortBy,
-                                              this.sortDirection)
+                                              this.toolbar.firstItemInTable.toString(),
+                                              this.toolbar.rowsPerPage.toString(),
+                                              this.toolbar.searchBy,
+                                              this.toolbar.sortBy,
+                                              this.toolbar.sortDirection)
       .subscribe(
         response => {
-          this.loading = false;
+          this.toolbar.loading = false;
           this.repositories = response.data;
-          this.notify.emit();
-          this.numberOfItemsOnCurrentPage = this.repositories.length;
-          this.totalItems = response.metadata.totalCount;
-          this.setNumberOfLastItemInTable();
-          if (!this.absolutItemsNumber)
-            this.absolutItemsNumber = this.totalItems;
+          this.notifyLoadedStatuses.emit();
+          this.toolbar.setLoadedDataParameters(this.repositories.length, response.metadata.totalCount);
         });
+  }
+
+  onToolbarChange() {
+    this.loadData();
+  }
+
+  onSorted(sort: ColumnSortedEvent): void {
+    this.toolbar.setColumnSortedInfo(sort);
+    this.loadData();
   }
 }

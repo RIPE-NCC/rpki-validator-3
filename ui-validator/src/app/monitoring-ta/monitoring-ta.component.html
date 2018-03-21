@@ -60,5 +60,4 @@
 <validation-details [trustAnchorId]='taId'></validation-details>
 <!-- Repositories -->
 <hr/>
-<!--TODO move into repository component getRepo... -->
-<repositories [trustAnchorId]='taId' (notify)='getRepositoriesStatuses()'></repositories>
+<repositories [trustAnchorId]='taId' (notifyLoadedStatuses)='getRepositoriesStatuses()'></repositories>
