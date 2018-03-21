@@ -15,6 +15,7 @@ import {IgnoreFiltersModule} from "./ignore-filters/ignore-filters.module";
 import {BgpPreviewModule} from "./bgp-preview/bgp-preview.module";
 import {AnnouncementPreviewModule} from "./announcement-preview/announcement-preview.module";
 import {WhitelistModule} from "./whitelist/whitelist.module";
+import {MonitoringTaModule} from "./monitoring-ta/monitoring-ta.module";
 
 export function HttpLoaderFactory(http: HttpClient) {
   return new TranslateHttpLoader(http);
@@ -30,6 +31,7 @@ export function HttpLoaderFactory(http: HttpClient) {
     CoreModule,
     SharedModule,
     TrustAnchorsModule,
+    MonitoringTaModule,
     RoasModule,
     IgnoreFiltersModule,
     WhitelistModule,
