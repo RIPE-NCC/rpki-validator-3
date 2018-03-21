@@ -18,17 +18,17 @@ export class AnnouncementPreviewPage {
   }
 
   expectASNInPanelToBe(value: string) {
-    expect(element(by.css('.form-group div:nth-child(1)')).getText()).toContain(value);
+    expect(element(by.css('.announcement-panel span:nth-child(1)')).getText()).toContain(value);
     return this;
   }
 
   expectPrefixInPanelToBe(value: string) {
-    expect(element(by.css('.form-group div:nth-child(2)')).getText()).toContain(value);
+    expect(element(by.css('.announcement-panel span:nth-child(2)')).getText()).toContain(value);
     return this;
   }
 
   expectGreenFlagInPanel(value: string) {
-    expect(element(by.css('.form-group .alert-success')).getText()).toContain(value);
+    expect(element(by.css('.announcement-panel .alert-success')).getText()).toContain(value);
     return this;
   }
 
