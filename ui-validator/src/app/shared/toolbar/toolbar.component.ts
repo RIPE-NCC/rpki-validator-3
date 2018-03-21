@@ -24,6 +24,7 @@ export class ToolbarComponent extends Paging implements OnInit {
   }
 
   ngOnInit(): void {
+    
   }
 
   onChangedPageSize(pageSize: number): void {

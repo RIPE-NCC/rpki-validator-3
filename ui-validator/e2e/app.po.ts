@@ -1,10 +1,10 @@
 import {by, element} from 'protractor';
-import {RoasPage} from "./pages/RoasPage";
-import {TrustAnchorsPage} from "./pages/TrustAnchorsPage";
-import {MonitorTaPage} from "./pages/MonitorTaPage";
-import {IgnoreFiltersPage} from "./pages/IgnoreFiltersPage";
-import {AnnouncementPreviewPage} from "./pages/AnnouncementPreviewPage";
-import {WhitelistPage} from "./pages/WhitelistPage";
+import {RoasPage} from './pages/RoasPage';
+import {TrustAnchorsPage} from './pages/TrustAnchorsPage';
+import {MonitorTaPage} from './pages/MonitorTaPage';
+import {IgnoreFiltersPage} from './pages/IgnoreFiltersPage';
+import {AnnouncementPreviewPage} from './pages/AnnouncementPreviewPage';
+import {WhitelistPage} from './pages/WhitelistPage';
 
 export class AppPage {
 

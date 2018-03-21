@@ -1,9 +1,9 @@
 import {Component, OnInit} from '@angular/core';
-import {Router} from "@angular/router";
+import {Router} from '@angular/router';
 
-import {ITrustAnchorOverview} from "./trust-anchor.model";
-import {TrustAnchorsService} from "../core/trust-anchors.service";
-import {MonitoringTaDataStore} from "../core/monitoring-ta-data.store";
+import {ITrustAnchorOverview} from './trust-anchor.model';
+import {TrustAnchorsService} from '../core/trust-anchors.service';
+import {MonitoringTaDataStore} from '../core/monitoring-ta-data.store';
 
 @Component({
   selector: 'app-trust-anchors',

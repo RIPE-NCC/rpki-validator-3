@@ -1,11 +1,11 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
 
-import {RoasService} from "./roas.service";
-import {IRoa} from "./roas.model";
-import {TrustAnchorsService} from "../core/trust-anchors.service";
-import {ITrustAnchorsResponse} from "../trust-anchors/trust-anchor.model";
-import {ToolbarComponent} from "../shared/toolbar/toolbar.component";
-import {ColumnSortedEvent} from "../shared/sortable-table/sort.service";
+import {RoasService} from './roas.service';
+import {IRoa} from './roas.model';
+import {TrustAnchorsService} from '../core/trust-anchors.service';
+import {ITrustAnchorsResponse} from '../trust-anchors/trust-anchor.model';
+import {ToolbarComponent} from '../shared/toolbar/toolbar.component';
+import {ColumnSortedEvent} from '../shared/sortable-table/sort.service';
 
 @Component({
   selector: 'app-roas',

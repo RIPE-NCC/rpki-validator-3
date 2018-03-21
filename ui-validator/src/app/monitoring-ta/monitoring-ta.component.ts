@@ -1,10 +1,10 @@
 import {Component, OnInit} from '@angular/core';
-import {ActivatedRoute} from "@angular/router";
+import {ActivatedRoute} from '@angular/router';
 
-import {TrustAnchorsService} from "../core/trust-anchors.service";
-import {ITrustAnchor, ITrustAnchorOverview} from "../trust-anchors/trust-anchor.model";
-import {IRepositoriesStatuses} from "./repositories/repositories.model";
-import {MonitoringTaDataStore} from "../core/monitoring-ta-data.store";
+import {TrustAnchorsService} from '../core/trust-anchors.service';
+import {ITrustAnchor, ITrustAnchorOverview} from '../trust-anchors/trust-anchor.model';
+import {IRepositoriesStatuses} from './repositories/repositories.model';
+import {MonitoringTaDataStore} from '../core/monitoring-ta-data.store';
 
 @Component({
   selector: 'app-monitoring-ta',
