@@ -360,12 +360,16 @@ public class BgpPreviewService {
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
 
+        return validateBgpRisEntry(matchingRoaPrefixes, bgpRisEntry);
+    }
+
+    private static Validity validateBgpRisEntry(List<RoaPrefix> matchingRoaPrefixes, BgpPreviewEntry bgpRisEntry) {
         List<RoaPrefix> matchingAsnRoas = matchingRoaPrefixes
                 .stream()
                 .filter(roaPrefix -> roaPrefix.getAsn().equals(bgpRisEntry.getOrigin()))
                 .collect(Collectors.toList());
 
-        Validity validity;
+        final Validity validity;
         if (matchingRoaPrefixes.isEmpty()) {
             validity = Validity.UNKNOWN;
         } else if (matchingAsnRoas.isEmpty()) {
@@ -384,7 +388,7 @@ public class BgpPreviewService {
                 .flatMap(x -> x.stream())
                 .map(r -> {
                     final BgpPreviewEntry bgpPreviewEntry = BgpPreviewEntry.of(origin, prefix, Validity.UNKNOWN);
-                    final Validity validity = validateBgpRisEntry(this.roaPrefixes, bgpPreviewEntry);
+                    final Validity validity = validateBgpRisEntry(Collections.singletonList(r), bgpPreviewEntry);
                     return Pair.of(r, validity);
                 })
                 .sorted(Comparator.comparingInt(p -> {
