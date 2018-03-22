@@ -233,6 +233,13 @@ public class BgpPreviewService {
         return BgpPreviewResult.of(count, entries);
     }
 
+    public synchronized List<BgpPreviewEntry> findAffected(Asn asn, IpRange prefix, Integer maximumLength) {
+        return bgpPreviewEntries
+            .parallelStream()
+            .filter(entry -> prefix.contains(entry.getPrefix()))
+            .collect(Collectors.toList());
+    }
+
     public synchronized void updateBgpRisDump(Collection<BgpRisDump> updated) {
         ImmutableList.Builder<BgpPreviewEntry> bgpRisEntries = ImmutableList.builder();
         for (BgpRisDump dump : updated) {

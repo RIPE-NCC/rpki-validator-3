@@ -29,13 +29,29 @@
  */
 package net.ripe.rpki.validator3.api.roaprefixassertions;
 
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Value;
+import net.ripe.rpki.validator3.api.bgp.BgpPreviewController;
+
+import java.util.List;
 
 @Value(staticConstructor = "of")
+@ApiModel("RoaPrefixAssertion")
 public class RoaPrefixAssertionResource {
+    @ApiModelProperty(position = 1)
     long id;
+    @ApiModelProperty(position = 2)
     long asn;
+    @ApiModelProperty(position = 3)
     String prefix;
+    @ApiModelProperty(position = 4)
     Integer maximumLength;
+    @ApiModelProperty(position = 5)
     String comment;
+
+    @ApiModelProperty(position = 6)
+    List<BgpPreviewController.BgpPreview> validated;
+    @ApiModelProperty(position = 7)
+    List<BgpPreviewController.BgpPreview> invalidated;
 }
