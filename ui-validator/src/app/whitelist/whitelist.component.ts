@@ -1,8 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import {NgForm} from '@angular/forms';
 
-import {WhitelistService} from './whitelist.service';
-import {IWhitelistEntry} from './whitelist.model';
+import {IWhitelistEntry, WhitelistService} from './whitelist.service';
 import {ColumnSortedEvent} from "../shared/sortable-table/sort.service";
 import {PagingDetailsModel} from "../shared/toolbar/paging-details.model";
 import {IResponse} from "../shared/response.model";

@@ -1,9 +1,7 @@
-import {Component, OnInit, ViewChild} from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import {NgForm} from "@angular/forms";
 
-import {IgnoreFiltersService} from "./ignore-filters.service";
-import {IIgnoreFilter} from "./filters.model";
-import {ToolbarComponent} from "../shared/toolbar/toolbar.component";
+import {IgnoreFiltersService, IIgnoreFilter} from "./ignore-filters.service";
 import {ColumnSortedEvent} from "../shared/sortable-table/sort.service";
 import {IResponse} from "../shared/response.model";
 import {PagingDetailsModel} from "../shared/toolbar/paging-details.model";

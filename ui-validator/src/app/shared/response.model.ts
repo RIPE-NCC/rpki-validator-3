@@ -5,7 +5,7 @@ export interface IResponse {
     next: string,
     last: string
   },
-  data:  any[],
+  data:  any,
   metadata: {
     totalCount: number
   }

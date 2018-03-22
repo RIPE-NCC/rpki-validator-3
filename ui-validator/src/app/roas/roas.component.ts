@@ -3,7 +3,6 @@ import {Component, OnInit} from '@angular/core';
 import {RoasService} from './roas.service';
 import {IRoa} from './roas.model';
 import {TrustAnchorsService} from '../core/trust-anchors.service';
-import {ITrustAnchorsResponse} from '../trust-anchors/trust-anchor.model';
 import {ColumnSortedEvent} from '../shared/sortable-table/sort.service';
 import {PagingDetailsModel} from "../shared/toolbar/paging-details.model";
 import {IResponse} from "../shared/response.model";
@@ -53,7 +52,7 @@ export class RoasComponent implements OnInit {
     this._trustAnchorsService.getTrustAnchors()
       .subscribe(
         response => {
-          const taResponse = response as ITrustAnchorsResponse;
+          const taResponse = response as IResponse;
           taResponse.data.forEach(ta => {
             if (!ta.initialCertificateTreeValidationRunCompleted)
               listTa.push(ta.name);

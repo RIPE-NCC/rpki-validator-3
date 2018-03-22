@@ -5,7 +5,15 @@ import 'rxjs/add/operator/do';
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/observable/throw';
 
-import {IWhitelistEntry, IWhitelistResponse} from './whitelist.model';
+import {IResponse} from "../shared/response.model";
+
+export interface IWhitelistEntry {
+  id: string,
+  prefix?: string,
+  asn?: string,
+  comment?: string,
+  maximumLength: number
+}
 
 @Injectable()
 export class WhitelistService {
@@ -15,7 +23,7 @@ export class WhitelistService {
 
   constructor(private _http: HttpClient) {}
 
-  getWhitelist(startFrom: string, pageSize: string, search: string, sortBy: string, sortDirection: string): Observable<IWhitelistResponse> {
+  getWhitelist(startFrom: string, pageSize: string, search: string, sortBy: string, sortDirection: string): Observable<IResponse> {
     const params = new HttpParams()
       .set('startFrom', startFrom)
       .set('pageSize', pageSize)
@@ -23,7 +31,7 @@ export class WhitelistService {
       .set('sortBy', sortBy)
       .set('sortDirection', sortDirection);
 
-    return this._http.get<IWhitelistResponse>(this._whitelistUrl, {params: params})
+    return this._http.get<IResponse>(this._whitelistUrl, {params: params})
   }
 
   saveWhitelistEntry(entry: IWhitelistEntry): Observable<any> {
@@ -31,6 +39,6 @@ export class WhitelistService {
   }
 
   deleteWhitelistEntry(entry: IWhitelistEntry): Observable<any> {
-    return this._http.delete<IWhitelistResponse>(this._deleteWhitelistEntryUrl.replace('{id}', entry.id))
+    return this._http.delete<IResponse>(this._deleteWhitelistEntryUrl.replace('{id}', entry.id))
   }
 }
