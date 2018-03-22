@@ -79,7 +79,12 @@ export class AnnouncementPreviewPage {
   }
 
   dismissModalWindow() {
-    browser.actions().mouseMove(element(by.css('ngb-modal-window')),{x: 10, y: 10}).click();
+    browser.actions().mouseMove(element(by.css('.close')),{x: 0, y: 0}).click().perform();
+    return this;
+  }
+
+  expectToOpenBgpPage() {
+    expect(browser.getCurrentUrl()).toContain(`/bgp-preview`);
     return this;
   }
 }

@@ -5,6 +5,7 @@ import {MonitorTaPage} from './pages/MonitorTaPage';
 import {IgnoreFiltersPage} from './pages/IgnoreFiltersPage';
 import {AnnouncementPreviewPage} from './pages/AnnouncementPreviewPage';
 import {WhitelistPage} from './pages/WhitelistPage';
+import {BgpPage} from "./pages/BgpPage";
 
 export class AppPage {
 
@@ -18,6 +19,10 @@ export class AppPage {
 
   navigateToMonitorTa() {
     return new MonitorTaPage();
+  }
+
+  navigateToBgp() {
+    return new BgpPage();
   }
 
   navigateToIgnoreFilters() {

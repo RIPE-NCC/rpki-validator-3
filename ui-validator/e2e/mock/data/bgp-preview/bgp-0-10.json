@@ -2,7 +2,7 @@
   "data" : [ {
     "asn" : "AS56203",
     "prefix" : "1.0.4.0/22",
-    "validity" : "UNKNOWN"
+    "validity" : "VALID"
   }, {
     "asn" : "AS56203",
     "prefix" : "1.0.4.0/24",

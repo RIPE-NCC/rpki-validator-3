@@ -65,12 +65,11 @@ describe('AnnouncementPreview', () => {
         .expectNumberOfTableRowsToBe(2)
     });
 
-    //TODO finish after merging
-    it('should show Announcement for specifed prefix and asn in modal window', () => {
+    it('should navigate to bgp page on dismiss modal window', () => {
       announcementPreviewPage
         .expectShowModalWindow()
-        .dismissModalWindow();
-      // check if navigate to bgp page
+        .dismissModalWindow()
+        .expectToOpenBgpPage();
     });
   })
 });
