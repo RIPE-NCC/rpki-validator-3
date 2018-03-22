@@ -1,10 +1,11 @@
-import {Component, OnInit, ViewChild} from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import {NgForm} from '@angular/forms';
 
 import {WhitelistService} from './whitelist.service';
 import {IWhitelistEntry} from './whitelist.model';
-import {ToolbarComponent} from "../shared/toolbar/toolbar.component";
 import {ColumnSortedEvent} from "../shared/sortable-table/sort.service";
+import {PagingDetailsModel} from "../shared/toolbar/paging-details.model";
+import {IResponse} from "../shared/response.model";
 
 @Component({
   selector: 'app-whitelist',
@@ -19,6 +20,7 @@ export class WhitelistComponent implements OnInit {
   maxLengthRegExp: RegExp = new RegExp('^1[2-9]|2[0-9]|3[0-2]$');
 
   pageTitle: string = 'Nav.TITLE_WHITELIST';
+  loading: boolean = true;
   validPrefix: boolean = true;
   validAsn: boolean = true;
   validMaxLength: boolean = true;
@@ -29,27 +31,27 @@ export class WhitelistComponent implements OnInit {
   whitelist: IWhitelistEntry[] = [];
   whitelistEntry: IWhitelistEntry;
 
-  @ViewChild(ToolbarComponent) toolbar: ToolbarComponent;
+  response: IResponse;
+  sortTable: ColumnSortedEvent = {sortColumn: '', sortDirection: 'asc'};
+  pagingDetails: PagingDetailsModel;
 
   constructor(private _whitelistService: WhitelistService) { }
 
   ngOnInit() {
-    this.loadData();
   }
 
   loadData() {
-    this.toolbar.loading = true;
-    this.toolbar.setNumberOfFirstItemInTable();
-    this._whitelistService.getWhitelist(this.toolbar.firstItemInTable.toString(),
-                                        this.toolbar.rowsPerPage.toString(),
-                                        this.toolbar.searchBy,
-                                        this.toolbar.sortBy,
-                                        this.toolbar.sortDirection)
+    this.loading = true;
+    this._whitelistService.getWhitelist(this.pagingDetails.firstItemInTable,
+                                        this.pagingDetails.rowsPerPage,
+                                        this.pagingDetails.searchBy,
+                                        this.sortTable.sortColumn,
+                                        this.sortTable.sortDirection)
       .subscribe(
         response => {
-          this.toolbar.loading = false;
+          this.loading = false;
           this.whitelist = response.data;
-          this.toolbar.setLoadedDataParameters(this.whitelist.length, response.metadata.totalCount);
+          this.response = response
         });
   }
 
@@ -66,7 +68,6 @@ export class WhitelistComponent implements OnInit {
             this.alertSuccessAdded = true;
             this.loadData();
             form.resetForm();
-            this.toolbar.addNewItemToTable();
           }
         );
     }
@@ -79,7 +80,6 @@ export class WhitelistComponent implements OnInit {
           this.clearAlerts();
           this.alertSuccessDeleted = true;
           this.loadData();
-          this.toolbar.removedItemFromTable();
         }
       );
   }
@@ -107,12 +107,13 @@ export class WhitelistComponent implements OnInit {
     this.alertSuccessDeleted = false;
   }
 
-  onToolbarChange() {
+  onToolbarChange(pagingDetails: PagingDetailsModel) {
+    this.pagingDetails = pagingDetails;
     this.loadData();
   }
 
   onSorted(sort: ColumnSortedEvent): void {
-    this.toolbar.setColumnSortedInfo(sort);
+    this.sortTable = sort;
     this.loadData();
   }
 }

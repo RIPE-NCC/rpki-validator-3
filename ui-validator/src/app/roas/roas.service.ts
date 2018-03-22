@@ -5,7 +5,7 @@ import 'rxjs/add/operator/do';
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/observable/throw';
 
-import {IRoasResponse} from './roas.model';
+import {IResponse} from "../shared/response.model";
 
 @Injectable()
 export class RoasService {
@@ -14,7 +14,7 @@ export class RoasService {
 
   constructor(private _http: HttpClient) {}
 
-  getRoas(startFrom: string, pageSize: string, search: string, sortBy: string, sortDirection: string): Observable<IRoasResponse> {
+  getRoas(startFrom: string, pageSize: string, search: string, sortBy: string, sortDirection: string): Observable<IResponse> {
     const params = new HttpParams()
       .set('startFrom', startFrom)
       .set('pageSize', pageSize)
@@ -22,6 +22,6 @@ export class RoasService {
       .set('sortBy', sortBy)
       .set('sortDirection', sortDirection);
 
-    return this._http.get<IRoasResponse>(this._roasUrl, {params: params})
+    return this._http.get<IResponse>(this._roasUrl, {params: params})
   }
 }

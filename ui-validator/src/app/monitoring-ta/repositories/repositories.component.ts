@@ -4,6 +4,8 @@ import {IRepositoriesStatuses, IRepository} from "./repositories.model";
 import {TrustAnchorsService} from "../../core/trust-anchors.service";
 import {ToolbarComponent} from "../../shared/toolbar/toolbar.component";
 import {ColumnSortedEvent} from "../../shared/sortable-table/sort.service";
+import {PagingDetailsModel} from "../../shared/toolbar/paging-details.model";
+import {IResponse} from "../../shared/response.model";
 
 @Component({
   selector: 'repositories',
@@ -15,41 +17,44 @@ export class RepositoriesComponent implements OnInit {
   @Input() trustAnchorId: string;
   @Output() notifyLoadedStatuses: EventEmitter<IRepositoriesStatuses> = new EventEmitter<IRepositoriesStatuses>();
 
+  loading: boolean = true;
   repositories: IRepository[] = [];
-
-  @ViewChild(ToolbarComponent) toolbar: ToolbarComponent;
+  response: IResponse;
+  sortTable: ColumnSortedEvent = {sortColumn: '', sortDirection: 'asc'};
+  pagingDetails: PagingDetailsModel;
 
   constructor(private _trustAnchorsService: TrustAnchorsService) {
   }
 
   ngOnInit() {
-    this.loadData();
   }
 
   loadData() {
-    this.toolbar.loading = true;
-    this.toolbar.setNumberOfFirstItemInTable();
+    this.loading = true;
     this._trustAnchorsService.getRepositories(this.trustAnchorId,
-                                              this.toolbar.firstItemInTable.toString(),
-                                              this.toolbar.rowsPerPage.toString(),
-                                              this.toolbar.searchBy,
-                                              this.toolbar.sortBy,
-                                              this.toolbar.sortDirection)
+                                              this.pagingDetails.firstItemInTable,
+                                              this.pagingDetails.rowsPerPage,
+                                              this.pagingDetails.searchBy,
+                                              this.sortTable.sortColumn,
+                                              this.sortTable.sortDirection)
       .subscribe(
         response => {
-          this.toolbar.loading = false;
+          this.loading = false;
           this.repositories = response.data;
+          this.response = response;
+          // TODO check if there is really need for this event, maybe you can call it immidiatly
           this.notifyLoadedStatuses.emit();
-          this.toolbar.setLoadedDataParameters(this.repositories.length, response.metadata.totalCount);
         });
   }
 
-  onToolbarChange() {
+
+  onToolbarChange(pagingDetails: PagingDetailsModel) {
+    this.pagingDetails = pagingDetails;
     this.loadData();
   }
 
   onSorted(sort: ColumnSortedEvent): void {
-    this.toolbar.setColumnSortedInfo(sort);
+    this.sortTable = sort;
     this.loadData();
   }
 }

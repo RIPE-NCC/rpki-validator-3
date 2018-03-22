@@ -12,15 +12,19 @@ export class Paging {
   firstItemInTable: number = 0;
   lastItemInTable: number;
 
+  constructor() {
+    this.setNumberOfFirstItemInTable();
+  }
+
   resetInitialValuesPagination(): void {
     this.page = this.previousPage = this.firstItemInTable = this.lastItemInTable = 1;
   }
 
-  setLoadedDataParameters(numberOfItemsOnCurrentPage: number, totalItems: number) {
+  setLoadedDataParameters(numberOfItemsOnCurrentPage: number, totalItems: number, filtered: boolean) {
     this.numberOfItemsOnCurrentPage = numberOfItemsOnCurrentPage;
     this.totalItems = totalItems;
     this.setNumberOfLastItemInTable();
-    if (!this.absolutItemsNumber)
+    if (!filtered)
       this.absolutItemsNumber = this.totalItems;
   }
 

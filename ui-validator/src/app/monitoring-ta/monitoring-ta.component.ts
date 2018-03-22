@@ -21,7 +21,7 @@ export class MonitoringTaComponent implements OnInit {
 
   constructor(private _activatedRoute: ActivatedRoute,
               private _trustAnchorsService: TrustAnchorsService,
-              private _monitoringTaDataServices: MonitoringTaDataStore) {
+              private _monitoringTaDataStore: MonitoringTaDataStore) {
   }
 
   ngOnInit() {
@@ -29,7 +29,9 @@ export class MonitoringTaComponent implements OnInit {
     if (this.taId) {
       this.getTrustAnchor();
     }
-    this.tAOverview = this._monitoringTaDataServices.selectedTA;
+    // in case previously was clicked on TA page to see details
+    this.tAOverview = this._monitoringTaDataStore.selectedTA;
+    // if url was refreshed
     if (!this.tAOverview) {
       this.getTrustAnchorOverview();
     }
@@ -42,6 +44,7 @@ export class MonitoringTaComponent implements OnInit {
       )
   }
 
+  // get TA overview details in case this page wasn't open navigating from TA page
   getTrustAnchorOverview() {
     this._trustAnchorsService.getTrustAnchorsOverview()
       .subscribe(

@@ -13,9 +13,7 @@ export interface IValidationChecksResponse {
     next: string,
     last: string
   },
-  data: {
-    validationChecks: IValidationCheck[]
-  },
+  data: IValidationCheck[],
   metadata: {
     totalCount: number
   }

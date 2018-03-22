@@ -5,16 +5,16 @@ export interface IRoa {
   trustAnchor: string,
   uri: string
 }
-
-export interface IRoasResponse {
-  links: {
-    first: string,
-    prev: string,
-    next: string,
-    last: string
-  },
-  data: IRoa[],
-  metadata: {
-    totalCount: number
-  }
-}
+//
+// export interface IRoasResponse {
+//   links: {
+//     first: string,
+//     prev: string,
+//     next: string,
+//     last: string
+//   },
+//   data: IRoa[],
+//   metadata: {
+//     totalCount: number
+//   }
+// }

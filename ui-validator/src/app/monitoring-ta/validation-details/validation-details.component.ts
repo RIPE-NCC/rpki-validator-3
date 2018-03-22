@@ -1,9 +1,10 @@
-import {Component, Input, OnInit, ViewChild} from '@angular/core';
+import {Component, Input, OnInit} from '@angular/core';
 
-import {IValidationCheck, IValidationChecksResponse} from "./validation-detail.model";
-import {TrustAnchorsService} from "../../core/trust-anchors.service";
-import {ToolbarComponent} from "../../shared/toolbar/toolbar.component";
-import {ColumnSortedEvent} from "../../shared/sortable-table/sort.service";
+import {IValidationCheck} from './validation-detail.model';
+import {TrustAnchorsService} from '../../core/trust-anchors.service';
+import {ColumnSortedEvent} from '../../shared/sortable-table/sort.service';
+import {IResponse} from '../../shared/response.model';
+import {PagingDetailsModel} from '../../shared/toolbar/paging-details.model';
 
 @Component({
   selector: 'validation-details',
@@ -14,41 +15,41 @@ export class ValidationDetailsComponent implements OnInit {
 
   @Input() trustAnchorId: string;
 
+  loading: boolean = true;
   validationChecks: IValidationCheck[] = [];
-  validationChecksResponse: IValidationChecksResponse;
 
-  @ViewChild(ToolbarComponent) toolbar: ToolbarComponent;
+  response: IResponse;
+  sortTable: ColumnSortedEvent = {sortColumn: '', sortDirection: 'asc'};
+  pagingDetails: PagingDetailsModel;
 
   constructor(private _trustAnchorsService: TrustAnchorsService) {}
 
   ngOnInit() {
-    this.loadData();
   }
 
   loadData() {
-    this.toolbar.loading = true;
-    this.toolbar.setNumberOfFirstItemInTable();
+    this.loading = true;
     this._trustAnchorsService.getTrustAnchorValidationChecks(this.trustAnchorId,
-                                                              this.toolbar.firstItemInTable.toString(),
-                                                              this.toolbar.rowsPerPage.toString(),
-                                                              this.toolbar.searchBy,
-                                                              this.toolbar.sortBy,
-                                                              this.toolbar.sortDirection)
+                                                            this.pagingDetails.firstItemInTable,
+                                                            this.pagingDetails.rowsPerPage,
+                                                            this.pagingDetails.searchBy,
+                                                            this.sortTable.sortColumn,
+                                                            this.sortTable.sortDirection)
       .subscribe(
         response => {
-          this.toolbar.loading = false;
-          this.validationChecks = response.data.validationChecks;
-          this.validationChecksResponse = response;
-          this.toolbar.setLoadedDataParameters(this.validationChecks.length, response.metadata.totalCount);
+          this.loading = false;
+          this.validationChecks = response.data;
+          this.response = response;
         });
   }
 
-  onToolbarChange() {
+  onToolbarChange(pagingDetails: PagingDetailsModel) {
+    this.pagingDetails = pagingDetails;
     this.loadData();
   }
 
   onSorted(sort: ColumnSortedEvent): void {
-    this.toolbar.setColumnSortedInfo(sort);
+    this.sortTable = sort;
     this.loadData();
   }
 }

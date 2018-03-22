@@ -14,7 +14,6 @@ export class TrustAnchorsComponent implements OnInit {
 
   pageTitle: string = 'Nav.TITLE_TRUST_ANCHORS';
   trustAnchorsOverview: ITrustAnchorOverview[] = [];
-  errorMessage: string;
 
   constructor(private _trustAnchorsService: TrustAnchorsService,
               private _monitoringTaDataServices: MonitoringTaDataStore,

@@ -5,6 +5,8 @@ import {IgnoreFiltersService} from "./ignore-filters.service";
 import {IIgnoreFilter} from "./filters.model";
 import {ToolbarComponent} from "../shared/toolbar/toolbar.component";
 import {ColumnSortedEvent} from "../shared/sortable-table/sort.service";
+import {IResponse} from "../shared/response.model";
+import {PagingDetailsModel} from "../shared/toolbar/paging-details.model";
 
 @Component({
   selector: 'app-ignore-filters',
@@ -18,6 +20,7 @@ export class IgnoreFiltersComponent implements OnInit {
   asnRegExp: RegExp = new RegExp('^([AS]{2})?[0-9]{1,9}$');
 
   pageTitle: string = 'Nav.TITLE_IGNORE_FILTERS';
+  loading: boolean = true;
   validPrefix: boolean = true;
   validAsn: boolean = true;
   alertShown: boolean = true;
@@ -26,29 +29,28 @@ export class IgnoreFiltersComponent implements OnInit {
   mouseoverAdd: boolean = false;
   ignoreFilters: IIgnoreFilter[] = [];
   filter: IIgnoreFilter;
-
-  @ViewChild(ToolbarComponent) toolbar: ToolbarComponent;
+  response: IResponse;
+  sortTable: ColumnSortedEvent = {sortColumn: '', sortDirection: 'asc'};
+  pagingDetails: PagingDetailsModel;
 
   constructor(private _ignoreFiltersService: IgnoreFiltersService) {
   }
 
   ngOnInit() {
-    this.loadData();
   }
 
   loadData() {
-    this.toolbar.loading = true;
-    this.toolbar.setNumberOfLastItemInTable();
-    this._ignoreFiltersService.getIgnoreFilters(this.toolbar.firstItemInTable.toString(),
-                                                this.toolbar.rowsPerPage.toString(),
-                                                this.toolbar.searchBy,
-                                                this.toolbar.sortBy,
-                                                this.toolbar.sortDirection)
+    this.loading = true;
+    this._ignoreFiltersService.getIgnoreFilters(this.pagingDetails.firstItemInTable,
+                                                this.pagingDetails.rowsPerPage,
+                                                this.pagingDetails.searchBy,
+                                                this.sortTable.sortColumn,
+                                                this.sortTable.sortDirection)
       .subscribe(
         response => {
-          this.toolbar.loading = false;
+          this.loading = false;
           this.ignoreFilters = response.data;
-          this.toolbar.setLoadedDataParameters(this.ignoreFilters.length, response.metadata.totalCount);
+          this.response = response;
         }
       )
   }
@@ -65,7 +67,6 @@ export class IgnoreFiltersComponent implements OnInit {
             this.alertSuccessAdded = true;
             this.loadData();
             form.resetForm();
-            this.toolbar.addNewItemToTable();
           }
         );
     }
@@ -78,7 +79,6 @@ export class IgnoreFiltersComponent implements OnInit {
           this.clearAlerts();
           this.alertSuccessDeleted = true;
           this.loadData();
-          this.toolbar.removedItemFromTable()
         }
       );
   }
@@ -100,12 +100,13 @@ export class IgnoreFiltersComponent implements OnInit {
     this.alertSuccessDeleted = false;
   }
 
-  onToolbarChange() {
+  onToolbarChange(pagingDetails: PagingDetailsModel) {
+    this.pagingDetails = pagingDetails;
     this.loadData();
   }
 
   onSorted(sort: ColumnSortedEvent): void {
-    this.toolbar.setColumnSortedInfo(sort);
+    this.sortTable = sort;
     this.loadData();
   }
 }

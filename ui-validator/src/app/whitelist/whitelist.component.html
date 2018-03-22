@@ -78,12 +78,10 @@
 </form>
 <!-- CURRENT ENTRIES -->
 <h3><strong>{{'Whitelist.CURRENT_ENTRIES' | translate}}</strong></h3>
-<div *ngIf='toolbar.absolutItemsNumber === 0'>
-  <ngb-alert type='warning' [dismissible]='false'>
-    {{ 'Whitelist.ALERT_MSG_NO_ENTRIES' | translate }}
-  </ngb-alert>
-</div>
-<toolbar [hidden]='absolutItemsNumber === 0' (notifyToolbarChanged)='onToolbarChange()'>
+<toolbar [loading]='loading'
+         [responseData]='response'
+         [msgNoItems]='"Whitelist.ALERT_MSG_NO_ENTRIES" | translate:{value:"info"}'
+         (notifyToolbarChanged)='onToolbarChange($event)'>
   <table sortable-table (sorted)='onSorted($event)' class='table table-striped table-bordered'>
     <thead>
     <tr>
@@ -105,9 +103,6 @@
               [ngbTooltip]='"DELETE" | translate:{value:"info"}'
               (click)='deleteFilter(item)'></span>
       </td>
-    </tr>
-    <tr *ngIf='loading'>
-      <td colspan='3'>{{'LOADING' | translate}}</td>
     </tr>
     </tbody>
   </table>

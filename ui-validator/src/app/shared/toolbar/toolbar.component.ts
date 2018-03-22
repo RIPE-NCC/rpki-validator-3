@@ -1,7 +1,8 @@
-import {Component, EventEmitter, OnInit, Output} from '@angular/core';
+import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
 
 import {Paging} from "./paging";
-import {ColumnSortedEvent} from "../sortable-table/sort.service";
+import {PagingDetailsModel} from "./paging-details.model";
+import {IResponse} from "../response.model";
 
 @Component({
   selector: 'toolbar',
@@ -9,57 +10,55 @@ import {ColumnSortedEvent} from "../sortable-table/sort.service";
 })
 export class ToolbarComponent extends Paging implements OnInit {
 
-  // SORTING
-  sortBy: string = '';
-  sortDirection: string = 'asc';
-  // SEARCH
+  @Input()
+  loading: boolean;
+  @Input('responseData')
+  set responseData(response: IResponse) {
+    if(response) {
+      this.setLoadedDataParameters(response.data.length, response.metadata.totalCount, this.searchBy !== '');
+    }
+  }
+  @Input()
+  msgNoItems: string;
+  @Output()
+  notifyToolbarChanged: EventEmitter<PagingDetailsModel> = new EventEmitter<PagingDetailsModel>();
+  pagingDetails: PagingDetailsModel;
   searchBy: string = '';
-  // LOADING
-  loading: boolean = true;
-
-  @Output() notifyToolbarChanged: EventEmitter<any> = new EventEmitter<any>();
 
   constructor() {
     super();
   }
 
   ngOnInit(): void {
-    
+    this.notifyParentAboutToolbarChange();
   }
 
   onChangedPageSize(pageSize: number): void {
     this.page = Math.floor(this.firstItemInTable / pageSize) + 1;
     this.rowsPerPage = +pageSize;
-    this.notifyToolbarChanged.emit();
+    this.notifyParentAboutToolbarChange();
   }
 
   onChangePage(page: number): void {
     if (this.previousPage !== page) {
       this.previousPage = this.page = page;
-      this.notifyToolbarChanged.emit();
+      this.notifyParentAboutToolbarChange();
     }
   }
 
   onChangedFilterBy(searchBy: string): void {
     this.resetInitialValuesPagination();
     this.searchBy = searchBy;
-    this.notifyToolbarChanged.emit();
+    this.notifyParentAboutToolbarChange();
   }
 
-  setLoading(loading: boolean): void {
-    this.loading = loading;
-  }
-
-  setColumnSortedInfo(sort: ColumnSortedEvent) {
-    this.sortBy = sort.sortColumn;
-    this.sortDirection = sort.sortDirection;
-  }
-
-  addNewItemToTable(): void {
-    this.absolutItemsNumber++;
-  }
-
-  removedItemFromTable(): void {
-    this.absolutItemsNumber--;
+  private notifyParentAboutToolbarChange(): void {
+    this.setNumberOfFirstItemInTable();
+    this.pagingDetails = {
+      firstItemInTable: this.firstItemInTable.toString(),
+      rowsPerPage: this.rowsPerPage.toString(),
+      searchBy: this.searchBy
+    }
+    this.notifyToolbarChanged.emit(this.pagingDetails);
   }
 }
