@@ -2,7 +2,7 @@ import {AppPage} from './app.po';
 
 import {AnnouncementPreviewPage} from "./pages/AnnouncementPreviewPage";
 
-describe('AnnouncementPreview', () => {
+describe('Announcement Preview Page', () => {
   let page;
   let announcementPreviewPage: AnnouncementPreviewPage;
 

@@ -1,7 +1,7 @@
 import {AppPage} from './app.po';
 import {IgnoreFiltersPage} from "./pages/IgnoreFiltersPage";
 
-describe('Ignore Filters', () => {
+describe('Ignore Filters Page', () => {
   let ignoreFiltersPage: IgnoreFiltersPage;
 
   beforeEach(() => {

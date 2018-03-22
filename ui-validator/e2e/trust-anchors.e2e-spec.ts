@@ -1,7 +1,7 @@
 import { AppPage } from './app.po';
 import {TrustAnchorsPage} from "./pages/TrustAnchorsPage";
 
-describe('Trust Anchors ROAs page', () => {
+describe('Trust Anchors ROAs Page', () => {
   let taPage: TrustAnchorsPage;
 
   beforeEach(() => {

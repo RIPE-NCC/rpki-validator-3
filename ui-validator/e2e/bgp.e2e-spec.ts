@@ -1,7 +1,7 @@
 import {AppPage} from './app.po';
 import {BgpPage} from "./pages/BgpPage";
 
-describe('Bgp-preview Page', () => {
+describe('Bgp Preview Page', () => {
   let bgpPage: BgpPage;
 
   beforeEach(() => {
