@@ -10,7 +10,7 @@ import {Component, OnInit} from '@angular/core';
       <a href="api/export.json" class="btn-primary" target="_blank">Get JSON</a>
     </div>
     `,
-  styles: [`    
+  styles: [`
     a {
       padding: 10px;
       border-radius: 5px;

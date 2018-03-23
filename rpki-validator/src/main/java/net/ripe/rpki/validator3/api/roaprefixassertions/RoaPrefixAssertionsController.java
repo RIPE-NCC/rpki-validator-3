@@ -29,7 +29,10 @@
  */
 package net.ripe.rpki.validator3.api.roaprefixassertions;
 
+import com.google.common.collect.ImmutableList;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.ipresource.Asn;
+import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiCommand;
 import net.ripe.rpki.validator3.api.ApiResponse;
@@ -37,6 +40,8 @@ import net.ripe.rpki.validator3.api.Metadata;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.api.bgp.BgpPreviewController;
+import net.ripe.rpki.validator3.api.bgp.BgpPreviewService;
 import net.ripe.rpki.validator3.domain.RoaPrefixAssertion;
 import net.ripe.rpki.validator3.domain.RoaPrefixAssertions;
 import org.apache.commons.lang.StringUtils;
@@ -71,6 +76,9 @@ public class RoaPrefixAssertionsController {
 
     @Autowired
     private RoaPrefixAssertionsService roaPrefixAssertionsService;
+
+    @Autowired
+    private BgpPreviewService bgpPreviewService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<Stream<RoaPrefixAssertionResource>>> list(
@@ -121,12 +129,34 @@ public class RoaPrefixAssertionsController {
     }
 
     private RoaPrefixAssertionResource toResource(RoaPrefixAssertion assertion) {
+        Asn asn = new Asn(assertion.getAsn());
+        List<BgpPreviewService.BgpPreviewEntry> affected = bgpPreviewService.findAffected(
+            asn,
+            IpRange.parse(assertion.getPrefix()),
+            assertion.getMaximumLength()
+        );
+        ImmutableList.Builder<BgpPreviewController.BgpPreview> validated = ImmutableList.builder();
+        ImmutableList.Builder<BgpPreviewController.BgpPreview> invalidated = ImmutableList.builder();
+        affected.forEach(x -> {
+            BgpPreviewController.BgpPreview entry = BgpPreviewController.BgpPreview.of(
+                x.getOrigin().toString(),
+                x.getPrefix().toString(),
+                x.getValidity().toString()
+            );
+            if (x.getValidity() == BgpPreviewService.Validity.VALID && x.getOrigin().equals(asn)) {
+                validated.add(entry);
+            } else if (x.getValidity() != BgpPreviewService.Validity.VALID) {
+                invalidated.add(entry);
+            }
+        });
         return RoaPrefixAssertionResource.of(
             assertion.getId(),
             assertion.getAsn(),
             assertion.getPrefix(),
             assertion.getMaximumLength(),
-            assertion.getComment()
+            assertion.getComment(),
+            validated.build(),
+            invalidated.build()
         );
     }
 }

@@ -78,4 +78,10 @@ public class SlurmController {
         );
     }
 
+    // FIXME Do something to force browser's save file prompt instead of rendering JSON
+    @GetMapping(path="/download", produces = Api.API_MIME_TYPE)
+    public ResponseEntity<ApiResponse<Slurm>> download() {
+        return slurm();
+    }
+
 }

@@ -74,7 +74,7 @@ public class BgpPreviewController {
         BgpPreviewService.BgpPreviewResult bgpPreviewResult = bgpPreviewService.find(searchTerm, sorting, paging);
 
         return ResponseEntity.ok(ApiResponse.<Stream<BgpPreview>>builder()
-                .data(bgpPreviewResult.getData().map(entry -> new BgpPreviewController.BgpPreview(
+                .data(bgpPreviewResult.getData().map(entry -> BgpPreview.of(
                         entry.getOrigin().toString(),
                         entry.getPrefix().toString(),
                         entry.getValidity().name()
@@ -106,7 +106,7 @@ public class BgpPreviewController {
         }
     }
 
-    @Value
+    @Value(staticConstructor = "of")
     public static class BgpPreview {
         private String asn;
         private String prefix;

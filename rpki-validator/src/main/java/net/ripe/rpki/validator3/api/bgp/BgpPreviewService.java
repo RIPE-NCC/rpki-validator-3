@@ -230,7 +230,15 @@ public class BgpPreviewService {
             .sorted(BgpPreviewEntry.comparator(sorting))
             .skip(paging.getStartFrom())
             .limit(paging.getPageSize());
+
         return BgpPreviewResult.of(count, entries);
+    }
+
+    public synchronized List<BgpPreviewEntry> findAffected(Asn asn, IpRange prefix, Integer maximumLength) {
+        return bgpPreviewEntries
+            .parallelStream()
+            .filter(entry -> prefix.contains(entry.getPrefix()))
+            .collect(Collectors.toList());
     }
 
     public synchronized void updateBgpRisDump(Collection<BgpRisDump> updated) {
