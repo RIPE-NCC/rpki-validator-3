@@ -118,11 +118,11 @@
         </ng-template>
       </td>
       <td>
-        <div *ngIf='item.invalidated?.length === 0; else invalidatedWithoutPopover'>
+        <div *ngIf='item.invalidated?.length > 0; else invalidatedWithoutPopover'>
           <popover-entry [entries]='item.invalidated'></popover-entry>
         </div>
         <ng-template #invalidatedWithoutPopover>
-          <span>{{item.validated.length}} {{'Whitelist.CONTEXT_ANNOUNCEMENT' | translate}}</span>
+          <span>{{item.invalidated.length}} {{'Whitelist.CONTEXT_ANNOUNCEMENT' | translate}}</span>
         </ng-template>
       </td>
       <td>{{item.comment}}</td>

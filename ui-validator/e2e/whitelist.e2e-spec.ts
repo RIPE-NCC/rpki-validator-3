@@ -69,6 +69,32 @@ describe('Whitelist', () => {
         .deleteEntry(1)
     });
 
-  });
+    it('should show popover on mouse over announcement > 0', () => {
+      whitelistPage
+        .expectNumberOfAnnouncments(0, 3, '0 announcement(s)')
+        .expectPopoverToHave(0, 3, false)
+        .expectNumberOfAnnouncments(0, 4, '1 announcement(s)')
+        .expectPopoverToHave(0, 4, true)
+        .moveMouseOverColumn(0, 4)
+        .expectPopoverOnHover(0, 4)
+        .moveMouseOverRowInPopover(0, 4)
+        .expectTooltipTextToBe(0, 4, 'Click link to see details')
+        .expectNumberOfAnnouncments(1, 3, '1 announcement(s)')
+        .expectPopoverToHave(1, 3, true)
+        .expectNumberOfAnnouncments(1, 4, '0 announcement(s)')
+        .expectPopoverToHave(1, 4, false)
+        .moveMouseOverColumn(1, 3)
+        .expectPopoverOnHover(1, 3)
+        .moveMouseOverRowInPopover(1, 3)
+        .expectTooltipTextToBe(1, 3, 'Click link to see details');
+    });
 
+    it('should navigate to selected announcement on click in popover', () => {
+      whitelistPage
+        .moveMouseOverColumn(0, 4)
+        .expectPopoverOnHover(0, 4)
+        .clickOnRowInPopoverOfSpecifiedCell(0, 4)
+        .expectToOpenAnnouncementPage('AS56203', '1.0.6.0/24');
+    });
+  });
 });
