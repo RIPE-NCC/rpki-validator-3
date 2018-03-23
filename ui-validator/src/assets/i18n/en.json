@@ -138,5 +138,8 @@
   },
   "Export": {
     "DESCRIPTION": "Here you are able to export the complete ROA data set for use in an existing BGP decision making workflow. The output will be in CSV or JSON format and consist of all validated ROAs, minus your ignore filter entries, plus your whitelist additions."
+  },
+  "Slurm": {
+    "DESCRIPTION": "Download or upload SLURM file."
   }
 }

@@ -1,9 +1,9 @@
 export interface IWhitelistEntry {
-  id: string,
-  prefix?: string,
-  asn?: string,
-  comment?: string,
-  maximumLength: number
+  id: string;
+  prefix?: string;
+  asn?: string;
+  comment?: string;
+  maximumLength: number;
 }
 
 export interface IWhitelistResponse {
@@ -12,9 +12,9 @@ export interface IWhitelistResponse {
     prev: string,
     next: string,
     last: string
-  },
-  data: IWhitelistEntry[],
+  };
+  data: IWhitelistEntry[];
   metadata: {
     totalCount: number
-  }
+  };
 }

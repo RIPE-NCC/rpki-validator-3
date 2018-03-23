@@ -230,6 +230,7 @@ public class BgpPreviewService {
             .sorted(BgpPreviewEntry.comparator(sorting))
             .skip(paging.getStartFrom())
             .limit(paging.getPageSize());
+
         return BgpPreviewResult.of(count, entries);
     }
 
