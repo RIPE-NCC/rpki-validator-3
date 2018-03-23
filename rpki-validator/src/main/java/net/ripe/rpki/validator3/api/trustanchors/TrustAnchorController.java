@@ -160,7 +160,7 @@ public class TrustAnchorController {
     }
 
     @GetMapping(path = "/{id}/validation-checks")
-    public ResponseEntity<ApiResponse<TrustAnchorValidationChecksResource>> validationChecks(
+    public ResponseEntity<ApiResponse<Stream<ValidationCheckResource>>> validationChecks(
         @PathVariable long id,
         @RequestParam(name = "startFrom", defaultValue = "0") int startFrom,
         @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
@@ -181,9 +181,9 @@ public class TrustAnchorController {
         Links links = Paging.links(startFrom, pageSize, totalCount,
                 (sf, ps) -> methodOn(TrustAnchorController.class).validationChecks(id, sf, ps, searchString, sortBy, sortDirection, locale));
 
-        return ResponseEntity.ok(ApiResponse.<TrustAnchorValidationChecksResource>builder()
+        return ResponseEntity.ok(ApiResponse.<Stream<ValidationCheckResource>>builder()
             .links(links)
-            .data(TrustAnchorValidationChecksResource.of(checks))
+            .data(checks)
             .metadata(Metadata.of(totalCount))
             .build()
         );
