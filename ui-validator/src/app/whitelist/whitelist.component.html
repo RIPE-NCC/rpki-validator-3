@@ -48,7 +48,7 @@
              id='maxLength'
              name='maximumLength'
              required
-             min="12" max="32"
+             min='12' max='32'
              placeholder='{{"Whitelist.MAX_PREFIX_LENGTH_PLACEHOLDER" | translate}}'
              (ngModel)='whitelistEntry.maximumLength'
              (keyup)='validAsn=true'
@@ -98,6 +98,8 @@
       <th sortable-column='prefix'>{{'PREFIX' | translate}}</th>
       <th sortable-column='asn'>{{'ASN' | translate}}</th>
       <th sortable-column='maximumLength'>{{'Whitelist.MAX_PREFIX_LENGTH' | translate}}</th>
+      <th sortable-column='validates'>{{'Whitelist.VALIDATES' | translate}}</th>
+      <th sortable-column='invalidates'>{{'Whitelist.INVALIDATES' | translate}}</th>
       <th sortable-column='comment'>{{'COMMENT' | translate}}</th>
       <th></th>
     </tr>
@@ -107,6 +109,22 @@
       <td>{{item.prefix}}</td>
       <td>{{item.asn}}</td>
       <td>{{item.maximumLength}}</td>
+      <td>
+        <div *ngIf='item.validated?.length > 0; else validatedWithoutPopover'>
+          <popover-entry [entries]='item.validated'></popover-entry>
+        </div>
+        <ng-template #validatedWithoutPopover>
+          <span>{{item.validated.length}} {{'Whitelist.CONTEXT_ANNOUNCEMENT' | translate}}</span>
+        </ng-template>
+      </td>
+      <td>
+        <div *ngIf='item.invalidated?.length === 0; else invalidatedWithoutPopover'>
+          <popover-entry [entries]='item.invalidated'></popover-entry>
+        </div>
+        <ng-template #invalidatedWithoutPopover>
+          <span>{{item.validated.length}} {{'Whitelist.CONTEXT_ANNOUNCEMENT' | translate}}</span>
+        </ng-template>
+      </td>
       <td>{{item.comment}}</td>
       <td>
         <span class='fa fa-ban ban-icon'

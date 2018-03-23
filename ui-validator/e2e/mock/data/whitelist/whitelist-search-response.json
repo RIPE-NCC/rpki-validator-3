@@ -13,8 +13,15 @@
   }, {
     "id" : 349,
     "asn" : "111111",
-    "prefix" : "1.1.128.0/18"
-  } ],
+    "prefix" : "1.1.128.0/18",
+    "maximumLength" : 12,
+    "validated" : [ ],
+    "invalidated" : [ {
+      "asn" : "AS56203",
+      "prefix" : "1.0.6.0/24",
+      "validity" : "INVALID_LENGTH"
+    }]
+  }],
   "metadata" : {
     "totalCount" : 6
   }
