@@ -104,7 +104,7 @@
           <popover-entry [entries]='item.validated'></popover-entry>
         </div>
         <ng-template #validatedWithoutPopover>
-          <span>{{item.validated.length}} {{'Whitelist.CONTEXT_ANNOUNCEMENT' | translate}}</span>
+          <span>0 {{'Whitelist.CONTEXT_ANNOUNCEMENT' | translate}}</span>
         </ng-template>
       </td>
       <td>
@@ -112,7 +112,7 @@
           <popover-entry [entries]='item.invalidated'></popover-entry>
         </div>
         <ng-template #invalidatedWithoutPopover>
-          <span>{{item.invalidated.length}} {{'Whitelist.CONTEXT_ANNOUNCEMENT' | translate}}</span>
+          <span>0 {{'Whitelist.CONTEXT_ANNOUNCEMENT' | translate}}</span>
         </ng-template>
       </td>
       <td>{{item.comment}}</td>

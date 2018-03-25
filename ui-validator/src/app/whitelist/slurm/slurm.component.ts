@@ -1,83 +1,90 @@
-import {Component, OnInit, ElementRef, ViewChild} from '@angular/core';
-import {FormBuilder, FormGroup, Validators, ReactiveFormsModule } from "@angular/forms";
-import {HttpClient, HttpParams} from '@angular/common/http';
+import {Component, OnInit} from '@angular/core';
+import {TranslateService} from '@ngx-translate/core';
+
+import {WhitelistService} from '../whitelist.service';
 
 @Component({
   selector: 'slurm',
   template: `
-    <div class="pt-3 pb-4">
-      <h3><strong>{{'SLURM' | translate}}</strong></h3>
+    <div class='pt-3 pb-4'>
+      <h3><strong>{{'SLURM' | translate}}</strong>
+        <loading-spinner class='ml-2' [loading]='loading'></loading-spinner>
+      </h3>
       <p>{{'Slurm.DESCRIPTION' | translate}}</p>
-      <form [formGroup]="form" (ngSubmit)="onSubmit()">
-        <div class="form-group">
-          <button type="button"
-                  class="btn btn-primary"
-                  href="/api/slurm"
-                  download="SLURM.json"
-                  (click)="downloadSlurm()">Download SLURM</button>
-          <button type="submit"
-            class="btn btn-primary">Upload SLURM<i class="fa fa-spinner fa-spin fa-fw" *ngIf="loading"></i>
-          </button>
-          <input type="file" id="slurmFile" (change)="onFileChange($event)" #fileInput>
+      <form>
+        <div class='input-group mb-3'>
+          <a href='api/slurm/download' class='btn-primary' target='_blank'>{{'Slurm.DOWNLOAD_SLURM' | translate}}</a>
+          <div class='input-group-prepend ml-2'>
+            <button type='button' class='btn btn-primary left-rounded'
+                    [disabled]='fileName === ("Slurm.CHOOSE_FILE" | translate)'
+                    (click)='onSubmit()'>Upload SLURM</button>
+          </div>
+          <div class='custom-file'>
+            <input type='file' class='custom-file-input btn btn-primary' id='slurmFile' (change)='onFileChange($event.target.files)' required>
+            <label class='custom-file-label' for='slurmFile'>{{ fileName }}</label>
+          </div>
         </div>
+        <em *ngIf='errorUploading'>{{'Slurm.UPLOAD_FAILED' | translate}}</em>
       </form>
     </div>
     `,
   styles: [`
     a {
-      padding: 10px;
-      border-radius: 5px;
+      padding: 0.43rem;
+      border-radius: 0.4rem;
+    }
+    a:hover {
+      text-decoration: unset;
+    }
+    .input-group .btn.left-rounded {
+      border-top-left-radius: 0.40rem;
+      border-bottom-left-radius: 0.40rem;
     }
   `]
 })
 export class SlurmComponent implements OnInit {
 
-  private _slurmUploadUrl = 'api/slurm/upload';
-
-  form: FormGroup;
-  formData: FormData;
   loading = false;
+  fileName: string;
+  file: File;
+  errorUploading: boolean = false;
 
-  constructor(private fb: FormBuilder, private _http: HttpClient) {
-    this.createForm();
+  constructor(private _whitelistService: WhitelistService, private translate: TranslateService) {
   }
 
-  createForm() {
-    this.form = this.fb.group({ file: null });
+  ngOnInit() {
+    this.initInputField();
+  }
+
+  initInputField() {
+    this.translate.get('Slurm.CHOOSE_FILE').subscribe((res: string) => {
+      this.fileName = res;
+    });
+  }
+
+  onFileChange(files: FileList) {
+    if (files.length > 0) {
+      this.file = files[0];
+      this.fileName = this.file.name;
+    }
   }
 
   private prepareSave(): any {
     const input = new FormData();
-    input.append('file', this.form.get('file').value);
+    input.append('file', this.file);
     return input;
-  }
-
-  ngOnInit() {
-  }
-
-  onFileChange(event) {
-    if (event.target.files.length > 0) {
-      const file = event.target.files[0];
-      this.form.get('file').setValue(file);
-    }
-  }
-
-  downloadSlurm() {
-    window.open('/api/slurm/download');
   }
 
   onSubmit() {
      const formModel = this.prepareSave();
      this.loading = true;
      setTimeout(() => {
-       this._http.post(this._slurmUploadUrl, formModel).subscribe(
-        res => {
-          console.log(res);
-        },
-        err => {
-          console.log('Error occured');
-        }
-      );
+       this._whitelistService.uploadSlurm(formModel).subscribe(
+         res => {
+           this.errorUploading = false;
+           this.initInputField();
+         }, error => this.errorUploading = true
+       );
        this.loading = false;
      }, 1000);
    }

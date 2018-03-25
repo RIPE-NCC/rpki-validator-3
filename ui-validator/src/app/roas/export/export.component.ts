@@ -15,6 +15,9 @@ import {Component, OnInit} from '@angular/core';
       padding: 10px;
       border-radius: 5px;
     }
+    a:hover {
+      text-decoration: unset;
+    }
   `]
 })
 export class ExportComponent implements OnInit {

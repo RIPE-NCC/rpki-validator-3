@@ -3,13 +3,12 @@
 .panel {
   background-color: #f2f2f2;
   padding: 1rem;
-  border: 1px solid #dee2e6;
+  border: 0.07rem solid #dee2e6;
   margin-bottom: 1rem;
 }
 
-em {
-  color: $red-rpki;
-  padding-left:10px;
+#maxLength {
+  width: 5.5rem;
 }
 
 .em-max-length {
@@ -24,7 +23,7 @@ em {
 }
 
 thead > tr > th:nth-child(7) {
-    width: 60px;
+    width: 3.8rem;
 }
 tbody > tr > td:nth-child(7) {
   text-align: center;
