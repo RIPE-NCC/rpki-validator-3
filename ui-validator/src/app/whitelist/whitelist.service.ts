@@ -12,6 +12,7 @@ export class WhitelistService {
 
   private _whitelistUrl = '/api/roa-prefix-assertions';
   private _deleteWhitelistEntryUrl = '/api/roa-prefix-assertions/{id}';
+  private _slurmUploadUrl = 'api/slurm/upload';
 
   constructor(private _http: HttpClient) {}
 
@@ -28,6 +29,10 @@ export class WhitelistService {
 
   saveWhitelistEntry(entry: IWhitelistEntry): Observable<any> {
     return this._http.post(this._whitelistUrl, { data: entry });
+  }
+
+  uploadSlurm(formModel: IWhitelistEntry): Observable<any> {
+    return this._http.post(this._slurmUploadUrl, formModel);
   }
 
   deleteWhitelistEntry(entry: IWhitelistEntry): Observable<any> {

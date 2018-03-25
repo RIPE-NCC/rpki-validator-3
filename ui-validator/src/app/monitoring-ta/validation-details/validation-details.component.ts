@@ -35,7 +35,7 @@ export class ValidationDetailsComponent extends ManagingTable implements OnInit 
       .subscribe(
         response => {
           this.loading = false;
-          this.validationChecks = response.data.validationChecks;
+          this.validationChecks = response.data;
           this.numberOfItemsOnCurrentPage = this.validationChecks.length;
           this.totalItems = response.metadata.totalCount;
           this.setNumberOfLastItemInTable();

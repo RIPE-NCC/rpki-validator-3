@@ -5,7 +5,7 @@ import {Component, Input} from '@angular/core'
   template:
       `<span [hidden]='!loading' class='fa fa-circle-o-notch fa-spin'></span>`,
   styles: [
-    'span {font-size:30px;color:#ddd}'
+    'span {font-size:25px;color:#ddd}'
   ]
 })
 export class LoadingSpinnerComponent {
