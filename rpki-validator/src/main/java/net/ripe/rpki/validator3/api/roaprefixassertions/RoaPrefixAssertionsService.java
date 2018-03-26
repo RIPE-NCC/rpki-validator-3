@@ -104,7 +104,8 @@ public class RoaPrefixAssertionsService {
     }
 
     private void notifyListeners() {
-        Transactions.afterCommit(
+        Transactions.afterCommitOnce(
+            listenerLock,
             () -> {
                 synchronized (listenerLock) {
                     List<RoaPrefixAssertion> assertions = all().collect(Collectors.toList());

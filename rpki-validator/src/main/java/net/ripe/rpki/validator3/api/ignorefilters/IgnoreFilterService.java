@@ -103,7 +103,8 @@ public class IgnoreFilterService {
     }
 
     private void notifyListeners() {
-        Transactions.afterCommit(
+        Transactions.afterCommitOnce(
+            listenersLock,
             () -> {
                 synchronized (listenersLock) {
                     List<IgnoreFilter> filters = all().collect(Collectors.toList());
