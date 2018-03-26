@@ -33,13 +33,11 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 public class Transactions {
-    public static void afterCommit(Object lock, Runnable runnable) {
+    public static void afterCommit(Runnable runnable) {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                synchronized (lock) {
-                    runnable.run();
-                }
+                runnable.run();
             }
         });
     }

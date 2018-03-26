@@ -104,10 +104,11 @@ public class IgnoreFilterService {
 
     private void notifyListeners() {
         Transactions.afterCommit(
-            listenersLock,
             () -> {
-                List<IgnoreFilter> filters = all().collect(Collectors.toList());
-                listeners.forEach(listener -> listener.accept(filters));
+                synchronized (listenersLock) {
+                    List<IgnoreFilter> filters = all().collect(Collectors.toList());
+                    listeners.forEach(listener -> listener.accept(filters));
+                }
             }
         );
     }

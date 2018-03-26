@@ -102,17 +102,18 @@ public class ValidatedRpkiObjects {
 
         // Only update the cache after the current transaction successfully commits.
         Transactions.afterCommit(
-            listenerLock,
             () -> {
-                log.info("updating validation objects cache for trust anchor {} with {} ROA prefixes and {} router certificates",
-                    trustAnchor,
-                    roaPrefixesAndRouterCertificates.getRoaPrefixes().size(),
-                    roaPrefixesAndRouterCertificates.getRouterCertificates().size()
-                );
+                synchronized (listenerLock) {
+                    log.info("updating validation objects cache for trust anchor {} with {} ROA prefixes and {} router certificates",
+                        trustAnchor,
+                        roaPrefixesAndRouterCertificates.getRoaPrefixes().size(),
+                        roaPrefixesAndRouterCertificates.getRouterCertificates().size()
+                    );
 
-                validatedObjectsByTrustAnchor.put(trustAnchor.getId(), roaPrefixesAndRouterCertificates);
+                    validatedObjectsByTrustAnchor.put(trustAnchor.getId(), roaPrefixesAndRouterCertificates);
 
-                notifyListeners();
+                    notifyListeners();
+                }
             }
         );
     }
@@ -121,10 +122,11 @@ public class ValidatedRpkiObjects {
     public void remove(TrustAnchor trustAnchor) {
         long trustAnchorId = trustAnchor.getId();
         Transactions.afterCommit(
-            listenerLock,
             () -> {
-                validatedObjectsByTrustAnchor.remove(trustAnchorId);
-                notifyListeners();
+                synchronized (listenerLock) {
+                    validatedObjectsByTrustAnchor.remove(trustAnchorId);
+                    notifyListeners();
+                }
             }
         );
     }
