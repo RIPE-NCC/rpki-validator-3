@@ -29,32 +29,24 @@
  */
 package net.ripe.rpki.validator3.domain;
 
-import lombok.Getter;
-import lombok.Setter;
+import net.ripe.rpki.validator3.api.Paging;
+import net.ripe.rpki.validator3.api.SearchTerm;
+import net.ripe.rpki.validator3.api.Sorting;
 
-import javax.persistence.Basic;
-import javax.persistence.Entity;
+import java.util.stream.Stream;
 
-@Entity
-public class BgpSecFilter extends AbstractEntity {
-    @Basic
-    @Getter
-    @Setter
-    private Long asn;
+public interface BgpSecFilters {
+    Stream<BgpSecFilter> find(SearchTerm searchTerm, Sorting sorting, Paging paging);
 
-    @Basic
-    @Getter
-    @Setter
-    private String routerSki;
+    Stream<BgpSecFilter> all();
 
-    @Basic
-    @Getter
-    @Setter
-    private String comment;
+    long count(SearchTerm searchTerm);
 
-    public BgpSecFilter(Long asn, String routerSki, String comment) {
-        this.asn = asn;
-        this.routerSki = routerSki;
-        this.comment = comment;
-    }
+    void add(BgpSecFilter roaPrefixAssertion);
+
+    BgpSecFilter get(long id);
+
+    void remove(BgpSecFilter bgpSecAssertion);
+
+    void clear();
 }

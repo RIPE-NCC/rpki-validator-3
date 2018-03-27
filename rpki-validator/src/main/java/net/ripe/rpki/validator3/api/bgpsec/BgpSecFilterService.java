@@ -31,21 +31,19 @@ package net.ripe.rpki.validator3.api.bgpsec;
 
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
-import net.ripe.ipresource.IpRange;
+import net.ripe.rpki.validator3.api.roas.ObjectController;
 import net.ripe.rpki.validator3.domain.BgpSecAssertion;
 import net.ripe.rpki.validator3.domain.BgpSecAssertions;
-import net.ripe.rpki.validator3.domain.RoaPrefixAssertion;
-import net.ripe.rpki.validator3.util.Transactions;
+import net.ripe.rpki.validator3.domain.BgpSecFilter;
+import net.ripe.rpki.validator3.domain.BgpSecFilters;
+import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
 import javax.transaction.Transactional;
 import javax.validation.Valid;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -53,42 +51,46 @@ import java.util.stream.Stream;
 @Transactional
 @Validated
 @Slf4j
-public class BgpSecAssertionsService {
+public class BgpSecFilterService {
 
     @Autowired
-    private BgpSecAssertions bgpSecAssertions;
+    private BgpSecFilters bgpSecFilters;
 
-    public long execute(@Valid AddBgpSecAssertion command) {
-        BgpSecAssertion entity = new BgpSecAssertion(
+    public long execute(@Valid AddBgpSecFilter command) {
+        BgpSecFilter entity = new BgpSecFilter(
             command.getAsn() == null ? null : Asn.parse(command.getAsn()).longValue(),
-            command.getSki(),
-            command.getPublicKey(),
+            command.getRouterSki(),
             command.getComment()
         );
 
         return add(entity);
     }
 
-    long add(BgpSecAssertion entity) {
-        bgpSecAssertions.add(entity);
+    long add(BgpSecFilter entity) {
+        bgpSecFilters.add(entity);
 
-        log.info("added BGPSec assertion '{}'", entity);
+        log.info("added BGPSec filter '{}'", entity);
         return entity.getId();
     }
 
     public void remove(long roaPrefixAssertionId) {
-        BgpSecAssertion entity = bgpSecAssertions.get(roaPrefixAssertionId);
+        BgpSecFilter entity = bgpSecFilters.get(roaPrefixAssertionId);
         if (entity != null) {
-            bgpSecAssertions.remove(entity);
+            bgpSecFilters.remove(entity);
         }
     }
 
-    public Stream<BgpSecAssertion> all() {
-        return bgpSecAssertions.all();
+    public Stream<BgpSecFilter> all() {
+        return bgpSecFilters.all();
     }
 
     public void clear() {
-        bgpSecAssertions.clear();
+        bgpSecFilters.clear();
     }
 
+    public Stream<ValidatedRpkiObjects.RouterCertificate> filterCertificates(Stream<ValidatedRpkiObjects.RouterCertificate> routerCertificates) {
+        final List<BgpSecFilter> filters = all().collect(Collectors.toList());
+        // TODO Finish it
+        return routerCertificates.filter(rc -> filters.stream().anyMatch(x -> true));
+    }
 }

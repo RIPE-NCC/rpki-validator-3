@@ -30,7 +30,9 @@
 package net.ripe.rpki.validator3.api.slurm;
 
 import net.ripe.rpki.validator3.api.bgpsec.AddBgpSecAssertion;
+import net.ripe.rpki.validator3.api.bgpsec.AddBgpSecFilter;
 import net.ripe.rpki.validator3.api.bgpsec.BgpSecAssertionsService;
+import net.ripe.rpki.validator3.api.bgpsec.BgpSecFilterService;
 import net.ripe.rpki.validator3.api.ignorefilters.AddIgnoreFilter;
 import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
 import net.ripe.rpki.validator3.api.roaprefixassertions.AddRoaPrefixAssertion;
@@ -60,6 +62,9 @@ public class SlurmService {
     private BgpSecAssertionsService bgpSecAssertionsService;
 
     @Autowired
+    private BgpSecFilterService bgpSecFilterService;
+
+    @Autowired
     private IgnoreFilterService ignoreFilterService;
 
     @Transactional(Transactional.TxType.REQUIRED)
@@ -77,6 +82,18 @@ public class SlurmService {
             });
         }
 
+        if (slurm.getValidationOutputFilters() != null && slurm.getValidationOutputFilters().getPrefixFilters() != null) {
+            ignoreFilterService.clear();
+            slurm.getValidationOutputFilters().getPrefixFilters().forEach(prefixFilter -> {
+                final AddIgnoreFilter addIgnoreFilter = AddIgnoreFilter.builder()
+                        .asn(prefixFilter.getAsn() == null ? null : prefixFilter.getAsn().toString())
+                        .prefix(prefixFilter.getPrefix())
+                        .comment(prefixFilter.getComment())
+                        .build();
+                ignoreFilterService.execute(addIgnoreFilter);
+            });
+        }
+
         if (slurm.getLocallyAddedAssertions() != null && slurm.getLocallyAddedAssertions().getBgpsecAssertions() != null) {
             bgpSecAssertionsService.clear();
             slurm.getLocallyAddedAssertions().getBgpsecAssertions().forEach(bgpSecAssertion -> {
@@ -90,17 +107,18 @@ public class SlurmService {
             });
         }
 
-        if (slurm.getValidationOutputFilters() != null && slurm.getValidationOutputFilters().getPrefixFilters() != null) {
-            ignoreFilterService.clear();
-            slurm.getValidationOutputFilters().getPrefixFilters().forEach(prefixFilter -> {
-                final AddIgnoreFilter addIgnoreFilter = AddIgnoreFilter.builder()
-                        .asn(prefixFilter.getAsn() == null ? null : prefixFilter.getAsn().toString())
-                        .prefix(prefixFilter.getPrefix())
-                        .comment(prefixFilter.getComment())
+        if (slurm.getValidationOutputFilters() != null && slurm.getValidationOutputFilters().getBgpsecFilters() != null) {
+            bgpSecAssertionsService.clear();
+            slurm.getValidationOutputFilters().getBgpsecFilters().forEach(bgpSecFilter -> {
+                AddBgpSecFilter add = AddBgpSecFilter.builder()
+                        .asn(bgpSecFilter.getAsn() == null ? null : bgpSecFilter.getAsn().toString())
+                        .routerSki(bgpSecFilter.getRouterSKI())
+                        .comment(bgpSecFilter.getComment())
                         .build();
-                ignoreFilterService.execute(addIgnoreFilter);
+                bgpSecFilterService.execute(add);
             });
         }
+
     }
 
     public Slurm get() {

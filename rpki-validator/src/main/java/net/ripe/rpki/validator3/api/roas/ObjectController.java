@@ -36,6 +36,7 @@ import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
+import net.ripe.rpki.validator3.api.bgpsec.BgpSecFilterService;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
 import net.ripe.rpki.validator3.domain.BgpSecAssertions;
 import net.ripe.rpki.validator3.domain.IgnoreFilters;
@@ -84,6 +85,9 @@ public class ObjectController {
     private BgpSecAssertions bgpSecAssertions;
 
     @Autowired
+    private BgpSecFilterService bgpSecFilterService;
+
+    @Autowired
     private Settings settings;
 
     @GetMapping(path = "/validated")
@@ -125,7 +129,8 @@ public class ObjectController {
 
         final Stream<RoaPrefix> combinedPrefixes = Stream.concat(validatedPrefixes, assertions).distinct();
 
-        final Stream<RouterCertificate> routerCertificates = validatedRpkiObjects.findCurrentlyValidatedRouterCertificates().getObjects()
+        final Stream<ValidatedRpkiObjects.RouterCertificate> objects = validatedRpkiObjects.findCurrentlyValidatedRouterCertificates().getObjects();
+        final Stream<RouterCertificate> routerCertificates = objects
             .map(o -> new RouterCertificate(o.getAsn(), o.getSubjectKeyIdentifier(), o.getSubjectPublicKeyInfo()));
 
         final Stream<RouterCertificate> bgpSecAssertions = this.bgpSecAssertions.all().map(b -> {
@@ -133,7 +138,9 @@ public class ObjectController {
             return new RouterCertificate(asns, b.getSki(), b.getPublicKey());
         });
 
-        final Stream<RouterCertificate> combinedAssertions = Stream.concat(routerCertificates, bgpSecAssertions).distinct();
+        final Stream<RouterCertificate> filteredRouterCertificates = bgpSecFilterService.filterCertificates(routerCertificates);
+
+        final Stream<RouterCertificate> combinedAssertions = Stream.concat(filteredRouterCertificates, bgpSecAssertions).distinct();
 
         return ResponseEntity.ok(ApiResponse.<ValidatedObjects>builder()
                 .data(new ValidatedObjects(

@@ -27,68 +27,51 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.api.bgpsec;
+package net.ripe.rpki.validator3.adapter.jpa;
 
-import lombok.extern.slf4j.Slf4j;
-import net.ripe.ipresource.Asn;
-import net.ripe.ipresource.IpRange;
+import com.querydsl.jpa.impl.JPAQuery;
+import net.ripe.rpki.validator3.api.Paging;
+import net.ripe.rpki.validator3.api.SearchTerm;
+import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.domain.BgpSecAssertion;
 import net.ripe.rpki.validator3.domain.BgpSecAssertions;
-import net.ripe.rpki.validator3.domain.RoaPrefixAssertion;
-import net.ripe.rpki.validator3.util.Transactions;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import org.springframework.validation.annotation.Validated;
+import net.ripe.rpki.validator3.domain.BgpSecFilter;
+import net.ripe.rpki.validator3.domain.BgpSecFilters;
+import org.springframework.stereotype.Repository;
 
 import javax.transaction.Transactional;
-import javax.validation.Valid;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@Component
-@Transactional
-@Validated
-@Slf4j
-public class BgpSecAssertionsService {
+import static net.ripe.rpki.validator3.domain.querydsl.QBgpSecAssertion.bgpSecAssertion;
+import static net.ripe.rpki.validator3.domain.querydsl.QBgpSecFilter.bgpSecFilter;
 
-    @Autowired
-    private BgpSecAssertions bgpSecAssertions;
+@Repository
+@Transactional(Transactional.TxType.REQUIRED)
+public class JPABgpSecFilters extends JPARepository<BgpSecFilter> implements BgpSecFilters {
 
-    public long execute(@Valid AddBgpSecAssertion command) {
-        BgpSecAssertion entity = new BgpSecAssertion(
-            command.getAsn() == null ? null : Asn.parse(command.getAsn()).longValue(),
-            command.getSki(),
-            command.getPublicKey(),
-            command.getComment()
-        );
-
-        return add(entity);
+    protected JPABgpSecFilters() {
+        super(bgpSecFilter);
     }
 
-    long add(BgpSecAssertion entity) {
-        bgpSecAssertions.add(entity);
-
-        log.info("added BGPSec assertion '{}'", entity);
-        return entity.getId();
+    @Override
+    public Stream<BgpSecFilter> find(SearchTerm searchTerm, Sorting sorting, Paging paging) {
+        JPAQuery<BgpSecFilter> query = select();
+        applySearchTerm(query, searchTerm);
+        applySorting(sorting, query);
+        applyPaging(query, paging);
+        return stream(query);
     }
 
-    public void remove(long roaPrefixAssertionId) {
-        BgpSecAssertion entity = bgpSecAssertions.get(roaPrefixAssertionId);
-        if (entity != null) {
-            bgpSecAssertions.remove(entity);
-        }
+    private void applySorting(Sorting sorting, JPAQuery<BgpSecFilter> query) {
+        // TODO Implement when required
     }
 
-    public Stream<BgpSecAssertion> all() {
-        return bgpSecAssertions.all();
+    private void applySearchTerm(JPAQuery<BgpSecFilter> query, SearchTerm searchTerm) {
+        // TODO Implement when required
     }
 
-    public void clear() {
-        bgpSecAssertions.clear();
+    @Override
+    public long count(SearchTerm searchTerm) {
+        return select().fetchCount();
     }
-
 }

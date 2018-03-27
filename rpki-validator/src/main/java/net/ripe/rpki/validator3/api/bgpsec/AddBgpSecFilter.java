@@ -27,34 +27,24 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.domain;
+package net.ripe.rpki.validator3.api.bgpsec;
 
-import lombok.Getter;
-import lombok.Setter;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.Builder;
+import lombok.Data;
 
-import javax.persistence.Basic;
-import javax.persistence.Entity;
+import javax.validation.constraints.Size;
 
-@Entity
-public class BgpSecFilter extends AbstractEntity {
-    @Basic
-    @Getter
-    @Setter
-    private Long asn;
+@Data(staticConstructor = "of")
+@Builder
+public class AddBgpSecFilter {
+    @ApiModelProperty(position = 1, required = true)
+    String asn;
 
-    @Basic
-    @Getter
-    @Setter
-    private String routerSki;
+    @ApiModelProperty(position = 2)
+    String routerSki;
 
-    @Basic
-    @Getter
-    @Setter
-    private String comment;
-
-    public BgpSecFilter(Long asn, String routerSki, String comment) {
-        this.asn = asn;
-        this.routerSki = routerSki;
-        this.comment = comment;
-    }
+    @ApiModelProperty(position = 3)
+    @Size(max = 2000)
+    String comment;
 }
