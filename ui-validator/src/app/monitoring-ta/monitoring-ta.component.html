@@ -1,61 +1,63 @@
 <page-title [pageTitle]='pageTitle' [specificValue]='monitoringTrustAnchor?.name'></page-title>
-<h3><strong>{{'SUMMARY' | translate}}</strong></h3>
-<table class='table table-bordered'>
-  <tbody>
-  <tr>
-    <td>
-      {{'Monitoring.VALIDATED_USING_TA_LOCATOR' | translate}}
-    </td>
-    <td>
-      <flag [value]='monitoringTrustAnchor?.initialCertificateTreeValidationRunCompleted'></flag>
-    </td>
-  </tr>
-  <tr>
-    <td>
-      {{'Monitoring.LAST_VALIDATION' | translate}}
-    </td>
-    <td>
-      <span *ngIf='repositoriesStatuses?.pending == 0; else flagWithNumberPending'>
-        {{tAOverview?.lastUpdated}}
-      </span>
-      <ng-template #flagWithNumberPending>
-        <flag [value]='repositoriesStatuses?.pending' [color]='"orange"' class='mr-2'
-              [ngbTooltip]="'Monitoring.TOOLTIP_NUMBER_PENDING' | translate:{value:'info'}"></flag>
-      </ng-template>
-    </td>
-  </tr>
-  <tr>
-    <td>
-      {{'TrustAnchors.PROCESSED_ITEMS' | translate}}
-    </td>
-    <td>
-      <div class='d-inline-flex  justify-content-between'>
-        <flag [value]='tAOverview?.successful' [color]='"green"' class='mr-2'
-              [ngbTooltip]="'Monitoring.TOOLTIP_OBJECTS_DOWNLOADED' | translate:{value:'info'}"></flag>
-        <flag [value]='tAOverview?.warnings' [color]='"orange"' class='mr-2'
-              [ngbTooltip]="'Monitoring.TOOLTIP_OBJECTS_PENDING' | translate:{value:'info'}"></flag>
-        <flag [value]='tAOverview?.errors' [color]='"red"' class='mr-2'
-              [ngbTooltip]="'Monitoring.TOOLTIP_OBJECTS_FAILED' | translate:{value:'info'}"></flag>
-      </div>
-    </td>
-  </tr>
-  <tr>
-    <td>
-      {{'Monitoring.REPOSITORIES' | translate}}
-    </td>
-    <td>
-      <div class='d-inline-flex  justify-content-between'>
-        <flag [value]='repositoriesStatuses?.downloaded' [color]='"green"' class='mr-2'
-              [ngbTooltip]="'Monitoring.TOOLTIP_REPOSITORIES_DOWNLOADED' | translate:{value:'info'}"></flag>
-        <flag [value]='repositoriesStatuses?.pending' [color]='"orange"' class='mr-2'
-              [ngbTooltip]="'Monitoring.TOOLTIP_REPOSITORIES_PENDING' | translate:{value:'info'}"></flag>
-        <flag [value]='repositoriesStatuses?.failed' [color]='"red"' class='mr-2'
-              [ngbTooltip]="'Monitoring.TOOLTIP_REPOSITORIES_FAILED' | translate:{value:'info'}"></flag>
-      </div>
-    </td>
-  </tr>
-  </tbody>
-</table>
+<div id='summary'>
+  <h3><strong>{{'SUMMARY' | translate}}</strong></h3>
+  <table class='table table-bordered'>
+    <tbody>
+    <tr>
+      <td>
+        {{'Monitoring.VALIDATED_USING_TA_LOCATOR' | translate}}
+      </td>
+      <td>
+        <flag [value]='monitoringTrustAnchor?.initialCertificateTreeValidationRunCompleted'></flag>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        {{'Monitoring.LAST_VALIDATION' | translate}}
+      </td>
+      <td>
+        <span *ngIf='repositoriesStatuses?.pending == 0; else flagWithNumberPending'>
+          {{tAOverview?.lastUpdated}}
+        </span>
+        <ng-template #flagWithNumberPending>
+          <flag [value]='repositoriesStatuses?.pending' [color]='"orange"' class='mr-2'
+                [ngbTooltip]="'Monitoring.TOOLTIP_NUMBER_PENDING' | translate:{value:'info'}"></flag>
+        </ng-template>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        {{'TrustAnchors.PROCESSED_ITEMS' | translate}}
+      </td>
+      <td>
+        <div class='d-inline-flex  justify-content-between'>
+          <flag [value]='tAOverview?.successful' [color]='"green"' class='mr-2'
+                [ngbTooltip]="'Monitoring.TOOLTIP_OBJECTS_DOWNLOADED' | translate:{value:'info'}"></flag>
+          <flag [value]='tAOverview?.warnings' [color]='"orange"' class='mr-2'
+                [ngbTooltip]="'Monitoring.TOOLTIP_OBJECTS_PENDING' | translate:{value:'info'}"></flag>
+          <flag [value]='tAOverview?.errors' [color]='"red"' class='mr-2'
+                [ngbTooltip]="'Monitoring.TOOLTIP_OBJECTS_FAILED' | translate:{value:'info'}"></flag>
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        {{'Monitoring.REPOSITORIES' | translate}}
+      </td>
+      <td>
+        <div class='d-inline-flex  justify-content-between'>
+          <flag [value]='repositoriesStatuses?.downloaded' [color]='"green"' class='mr-2'
+                [ngbTooltip]="'Monitoring.TOOLTIP_REPOSITORIES_DOWNLOADED' | translate:{value:'info'}"></flag>
+          <flag [value]='repositoriesStatuses?.pending' [color]='"orange"' class='mr-2'
+                [ngbTooltip]="'Monitoring.TOOLTIP_REPOSITORIES_PENDING' | translate:{value:'info'}"></flag>
+          <flag [value]='repositoriesStatuses?.failed' [color]='"red"' class='mr-2'
+                [ngbTooltip]="'Monitoring.TOOLTIP_REPOSITORIES_FAILED' | translate:{value:'info'}"></flag>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
 <hr/>
 <validation-details [trustAnchorId]='taId'></validation-details>
 <!-- Repositories -->
