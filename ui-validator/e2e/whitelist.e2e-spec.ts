@@ -10,6 +10,12 @@ describe('Whitelist Page', () => {
   });
 
   describe('add entry to whitelist', () => {
+
+    it('should display correctly Whitelist title', () => {
+      whitelistPage
+        .expectTitleHeaderToBe('Whitelist');
+    });
+
     it('should show validation error if prefix and asn are empty', () => {
       whitelistPage
         .clearEntryForm()
