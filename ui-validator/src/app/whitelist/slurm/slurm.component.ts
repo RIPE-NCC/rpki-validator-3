@@ -20,7 +20,7 @@ import {WhitelistService} from '../whitelist.service';
                     (click)='onSubmit()'>Upload SLURM</button>
           </div>
           <div class='custom-file'>
-            <input type='file' class='custom-file-input btn btn-primary' id='slurmFile' (change)='onFileChange($event.target.files)' required>
+            <input type='file' class='custom-file-input btn btn-primary' id='slurmFile' (change)='onFileChange($event.target.files)' accept='.json' required>
             <label class='custom-file-label' for='slurmFile'>{{ fileName }}</label>
           </div>
         </div>
