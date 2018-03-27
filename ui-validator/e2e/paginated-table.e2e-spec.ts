@@ -45,21 +45,21 @@ describe('Paginated table', () => {
     it('should order table rows when clicking on table headers', () => {
       roasPage
         .sortTableOn('ASN')
-        .expectRowColumnToBe(0, 'ASN', '37146')
+        .expectRowColumnToBe(1, 'ASN', '37146')
         .sortTableOn('ASN')
-        .expectRowColumnToBe(0, 'ASN', '30844');
+        .expectRowColumnToBe(1, 'ASN', '30844');
 
       roasPage
         .sortTableOn('Prefix')
-        .expectRowColumnToBe(0, 'Prefix', '41.60.0.0/20')
+        .expectRowColumnToBe(1, 'Prefix', '41.60.0.0/20')
         .sortTableOn('Prefix')
-        .expectRowColumnToBe(0, 'Prefix', '10.60.0.0/20');
+        .expectRowColumnToBe(1, 'Prefix', '10.60.0.0/20');
 
       roasPage
         .sortTableOn('Trust Anchors')
-        .expectRowColumnToBe(0, 'Trust Anchors', 'AfriNIC RPKI Root')
+        .expectRowColumnToBe(1, 'Trust Anchors', 'AfriNIC RPKI Root')
         .sortTableOn('Trust Anchors')
-        .expectRowColumnToBe(0, 'Trust Anchors', 'ZfriNIC RPKI Root');
+        .expectRowColumnToBe(1, 'Trust Anchors', 'ZfriNIC RPKI Root');
 
     });
 

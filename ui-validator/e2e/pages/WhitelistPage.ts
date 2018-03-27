@@ -77,37 +77,37 @@ export class WhitelistPage extends PaginatedTablePage {
   }
 
   moveMouseOverColumn(row: number, column: number) {
-    browser.actions().mouseMove(element(by.css(`table tbody tr:nth-child(${row+1}) td:nth-child(${column+1}) span`))).perform();
+    browser.actions().mouseMove(element(by.css(`table tbody tr:nth-child(${row}) td:nth-child(${column}) span`))).perform();
     return this;
   }
 
   expectNumberOfAnnouncments(row: number, column: number, numberAnnouncments: string) {
-    expect(element(by.css(`table tbody tr:nth-child(${row+1}) td:nth-child(${column+1}) span`)).getText()).toBe(numberAnnouncments);
+    expect(element(by.css(`table tbody tr:nth-child(${row}) td:nth-child(${column}) span`)).getText()).toBe(numberAnnouncments);
     return this;
   }
 
   expectPopoverToHave(row: number, column: number, expectToSee: boolean) {
-    expect(element(by.css(`table tbody tr:nth-child(${row+1}) td:nth-child(${column+1}) popover-entry`)).isPresent()).toBe(expectToSee);
+    expect(element(by.css(`table tbody tr:nth-child(${row}) td:nth-child(${column}) popover-entry`)).isPresent()).toBe(expectToSee);
     return this;
   }
 
   expectPopoverOnHover(row: number, column: number) {
-    expect(element(by.css(`table tbody tr:nth-child(${row+1}) td:nth-child(${column+1}) popover-entry`)).isDisplayed()).toBe(true);
+    expect(element(by.css(`table tbody tr:nth-child(${row}) td:nth-child(${column}) popover-entry`)).isDisplayed()).toBe(true);
     return this;
   }
 
   moveMouseOverRowInPopover(row: number, column: number) {
-    browser.actions().mouseMove(element(by.css(`table tbody tr:nth-child(${row+1}) td:nth-child(${column+1}) popover-entry table tbody tr:nth-child(1)`))).perform();
+    browser.actions().mouseMove(element(by.css(`table tbody tr:nth-child(${row}) td:nth-child(${column}) popover-entry table tbody tr:nth-child(1)`))).perform();
     return this;
   }
 
   expectTooltipTextToBe(row: number, column: number, tooltipText: string) {
-    expect(element(by.css(`table tbody tr:nth-child(${row+1}) td:nth-child(${column+1}) popover-entry table tbody tr:nth-child(1)`)).getAttribute('ng-reflect-ngb-tooltip')).toContain(tooltipText);
+    expect(element(by.css(`table tbody tr:nth-child(${row}) td:nth-child(${column}) popover-entry table tbody tr:nth-child(1)`)).getAttribute('ng-reflect-ngb-tooltip')).toContain(tooltipText);
     return this;
   }
 
   clickOnRowInPopoverOfSpecifiedCell(row: number, column: number) {
-    element(by.css(`table tbody tr:nth-child(${row+1}) td:nth-child(${column+1}) popover-entry table tbody tr:nth-child(1)`)).click();
+    element(by.css(`table tbody tr:nth-child(${row}) td:nth-child(${column}) popover-entry table tbody tr:nth-child(1)`)).click();
     return this;
   }
 

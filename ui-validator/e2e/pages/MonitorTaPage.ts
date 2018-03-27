@@ -64,6 +64,21 @@ export class MonitorTaPage {
     return this;
   }
 
+  moveMouseOverColumnInSummaryTable(row: number, column: number, flag: number) {
+    browser.actions().mouseMove(element(by.css(`#summary table tbody tr:nth-child(${row}) td:nth-child(${column}) flag:nth-child(${flag})`))).perform();
+    return this;
+  }
+
+  expectTooltipOnRowHover(row: number, column: number, flag: number) {
+    expect(element(by.css(`#summary table tbody tr:nth-child(${row}) td:nth-child(${column}) flag:nth-child(${flag})[ng-reflect-ngb-tooltip]`)).isDisplayed()).toBe(true);
+    return this;
+  }
+
+  expectTooltipTextToBe(row: number, column: number, flag: number, tooltipText: string) {
+    expect(element(by.css(`#summary table tbody tr:nth-child(${row}) td:nth-child(${column}) flag:nth-child(${flag})`)).getAttribute('ng-reflect-ngb-tooltip')).toBe(tooltipText);
+    return this;
+  }
+
   // VALIDATION ISSUES
   expectValidationIssuesSubtitleToBe(title: string) {
     expect(element(by.css('validation-details h3')).getText()).toEqual(title);
@@ -85,7 +100,12 @@ export class MonitorTaPage {
     return this;
   }
 
-  moveMouseOverColumn(row: number, column: number) {
+  expectPopoverLinkToBe(row: number, column: number, link: string) {
+    expect(element(by.css(`validation-details table tbody tr:nth-child(${row}) td:nth-child(${column}) ngb-popover-window`)).getText()).toContain(link);
+    return this;
+  }
+
+  moveMouseOverColumnInValidationDetailsTable(row: number, column: number) {
     browser.actions().mouseMove(element(by.css(`validation-details table tbody tr:nth-child(${row}) td:nth-child(${column}) img`))).perform();
     return this;
   }
