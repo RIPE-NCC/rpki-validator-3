@@ -58,8 +58,21 @@ public class SlurmService {
     private IgnoreFilterService ignoreFilterService;
 
     @Transactional(Transactional.TxType.REQUIRED)
-    public void process(Slurm slurm) {
+    public void process(final Slurm slurm) {
         if (slurm.getLocallyAddedAssertions() != null && slurm.getLocallyAddedAssertions().getPrefixAssertions() != null) {
+            roaPrefixAssertionsService.clear();
+            slurm.getLocallyAddedAssertions().getPrefixAssertions().forEach(prefixAsertion -> {
+                final AddRoaPrefixAssertion add = AddRoaPrefixAssertion.builder()
+                        .asn(prefixAsertion.getAsn() == null ? null : prefixAsertion.getAsn().toString())
+                        .prefix(prefixAsertion.getPrefix())
+                        .maximumLength(prefixAsertion.getMaxPrefixLength())
+                        .comment(prefixAsertion.getComment())
+                        .build();
+                roaPrefixAssertionsService.execute(add);
+            });
+        }
+
+        if (slurm.getLocallyAddedAssertions() != null && slurm.getLocallyAddedAssertions().getBgpsecAssertions() != null) {
             roaPrefixAssertionsService.clear();
             slurm.getLocallyAddedAssertions().getPrefixAssertions().forEach(prefixAsertion -> {
                 final AddRoaPrefixAssertion add = AddRoaPrefixAssertion.builder()

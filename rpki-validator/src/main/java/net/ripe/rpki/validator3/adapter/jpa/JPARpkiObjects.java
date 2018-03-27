@@ -77,11 +77,6 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
     }
 
     @Override
-    public Stream<RpkiObject> all() {
-        return stream(select());
-    }
-
-    @Override
     public Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type type, byte[] authorityKeyIdentifier) {
         return Optional.ofNullable(select()
                 .where(rpkiObject.type.eq(type).and(rpkiObject.authorityKeyIdentifier.eq(authorityKeyIdentifier)))

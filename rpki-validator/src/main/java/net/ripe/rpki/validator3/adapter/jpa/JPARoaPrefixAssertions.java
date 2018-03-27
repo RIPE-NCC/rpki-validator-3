@@ -120,9 +120,4 @@ public class JPARoaPrefixAssertions extends JPARepository<RoaPrefixAssertion> im
         Order order = sorting.getDirection() == Sorting.Direction.DESC ? Order.DESC : Order.ASC;
         return new OrderSpecifier<>(order, column);
     }
-
-    @Override
-    public Stream<RoaPrefixAssertion> all() {
-        return stream(select());
-    }
 }
