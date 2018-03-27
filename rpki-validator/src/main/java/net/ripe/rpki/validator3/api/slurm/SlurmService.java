@@ -29,6 +29,8 @@
  */
 package net.ripe.rpki.validator3.api.slurm;
 
+import net.ripe.rpki.validator3.api.bgpsec.AddBgpSecAssertion;
+import net.ripe.rpki.validator3.api.bgpsec.BgpSecAssertionsService;
 import net.ripe.rpki.validator3.api.ignorefilters.AddIgnoreFilter;
 import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
 import net.ripe.rpki.validator3.api.roaprefixassertions.AddRoaPrefixAssertion;
@@ -55,6 +57,9 @@ public class SlurmService {
     private RoaPrefixAssertionsService roaPrefixAssertionsService;
 
     @Autowired
+    private BgpSecAssertionsService bgpSecAssertionsService;
+
+    @Autowired
     private IgnoreFilterService ignoreFilterService;
 
     @Transactional(Transactional.TxType.REQUIRED)
@@ -73,15 +78,15 @@ public class SlurmService {
         }
 
         if (slurm.getLocallyAddedAssertions() != null && slurm.getLocallyAddedAssertions().getBgpsecAssertions() != null) {
-            roaPrefixAssertionsService.clear();
-            slurm.getLocallyAddedAssertions().getPrefixAssertions().forEach(prefixAsertion -> {
-                final AddRoaPrefixAssertion add = AddRoaPrefixAssertion.builder()
-                        .asn(prefixAsertion.getAsn() == null ? null : prefixAsertion.getAsn().toString())
-                        .prefix(prefixAsertion.getPrefix())
-                        .maximumLength(prefixAsertion.getMaxPrefixLength())
-                        .comment(prefixAsertion.getComment())
+            bgpSecAssertionsService.clear();
+            slurm.getLocallyAddedAssertions().getBgpsecAssertions().forEach(bgpSecAssertion -> {
+                AddBgpSecAssertion add = AddBgpSecAssertion.builder()
+                        .asn(bgpSecAssertion.getAsn() == null ? null : bgpSecAssertion.getAsn().toString())
+                        .publicKey(bgpSecAssertion.getPublicKey())
+                        .ski(bgpSecAssertion.getSki())
+                        .comment(bgpSecAssertion.getComment())
                         .build();
-                roaPrefixAssertionsService.execute(add);
+                bgpSecAssertionsService.execute(add);
             });
         }
 

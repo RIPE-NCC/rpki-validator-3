@@ -37,6 +37,7 @@ import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
+import net.ripe.rpki.validator3.domain.BgpSecAssertions;
 import net.ripe.rpki.validator3.domain.IgnoreFilters;
 import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
 import net.ripe.rpki.validator3.domain.RoaPrefixAssertions;
@@ -53,6 +54,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -77,6 +79,9 @@ public class ObjectController {
 
     @Autowired
     private RoaPrefixAssertions roaPrefixAssertions;
+
+    @Autowired
+    private BgpSecAssertions bgpSecAssertions;
 
     @Autowired
     private Settings settings;
@@ -123,8 +128,19 @@ public class ObjectController {
         final Stream<RouterCertificate> routerCertificates = validatedRpkiObjects.findCurrentlyValidatedRouterCertificates().getObjects()
             .map(o -> new RouterCertificate(o.getAsn(), o.getSubjectKeyIdentifier(), o.getSubjectPublicKeyInfo()));
 
+        final Stream<RouterCertificate> bgpSecAssertions = this.bgpSecAssertions.all().map(b -> {
+            final List<String> asns = Collections.singletonList(String.valueOf(b.getAsn()));
+            return new RouterCertificate(asns, b.getSki(), b.getPublicKey());
+        });
+
+        final Stream<RouterCertificate> combinedAssertions = Stream.concat(routerCertificates, bgpSecAssertions).distinct();
+
         return ResponseEntity.ok(ApiResponse.<ValidatedObjects>builder()
-                .data(new ValidatedObjects(settings.isInitialValidationRunCompleted(), trustAnchorsById.values(), combinedPrefixes, routerCertificates))
+                .data(new ValidatedObjects(
+                        settings.isInitialValidationRunCompleted(),
+                        trustAnchorsById.values(),
+                        combinedPrefixes,
+                        combinedAssertions))
                 .build());
     }
 
