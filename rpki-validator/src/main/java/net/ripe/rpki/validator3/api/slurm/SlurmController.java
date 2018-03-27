@@ -83,5 +83,4 @@ public class SlurmController {
     public ResponseEntity<ApiResponse<Slurm>> download() {
         return slurm();
     }
-
 }
