@@ -32,15 +32,37 @@ package net.ripe.rpki.validator3.util;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 public class Transactions {
-    public static void afterCommit(Object lock, Runnable runnable) {
+    private static final ThreadLocal<Map<Object, Runnable>> AFTER_COMMIT_ONCE_RUNNABLES = ThreadLocal.withInitial(LinkedHashMap::new);
+
+    public static void afterCommit(Runnable runnable) {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                synchronized (lock) {
-                    runnable.run();
-                }
+                runnable.run();
             }
         });
+    }
+
+    public static void afterCommitOnce(Object key, Runnable runnable) {
+        Map<Object, Runnable> runnables = AFTER_COMMIT_ONCE_RUNNABLES.get();
+        if (runnables.isEmpty()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void beforeCompletion() {
+                    AFTER_COMMIT_ONCE_RUNNABLES.remove();
+                }
+
+                @Override
+                public void afterCommit() {
+                    runnables.values().forEach(Runnable::run);
+                }
+            });
+        }
+
+        runnables.putIfAbsent(key,  runnable);
     }
 }

@@ -5,17 +5,16 @@ import {Router} from "@angular/router";
 @Component({
   selector: 'popover-entry',
   template: `
-    <div (mouseleave)='p.close()'>
+    <div (mouseleave)='p.close()' (mouseover)='p.open()'>
       <div #p='ngbPopover'
             placement='bottom'
-            triggers='mouseover'
             [popoverTitle]='"DETAILS_TITLE" | translate:{value:"info"}'
             [ngbPopover]='popContent'>
         <span>{{entries.length}} {{'Whitelist.CONTEXT_ANNOUNCEMENT' | translate}}</span>
       </div>
     </div>
     <ng-template #popContent>
-      <table class='table table-bordered'>
+      <table class='table table-bordered' >
         <thead>
         <tr>
           <th>{{'PREFIX' | translate}}</th>
@@ -37,6 +36,7 @@ import {Router} from "@angular/router";
   `,
   styles: [`
       ::ng-deep .popover {
+        margin-top: 2px;
         max-width: inherit;
         width: 25rem;
       }
