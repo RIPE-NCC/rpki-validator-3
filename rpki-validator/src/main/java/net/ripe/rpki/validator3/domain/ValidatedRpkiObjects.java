@@ -38,6 +38,7 @@ import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.commons.crypto.x509cert.X509CertificateUtil;
 import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificate;
+import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
@@ -201,7 +202,7 @@ public class ValidatedRpkiObjects {
         rpkiObjects
             .stream()
             .filter(object -> object.getType() == RpkiObject.Type.ROUTER_CER)
-            .map(object -> object.get(X509RouterCertificate.class, "temporary"))
+            .map(object -> this.rpkiObjects.findCertificateRepositoryObject(object.getId(), X509RouterCertificate.class, ValidationResult.withLocation("temporary")))
             .filter(Optional::isPresent).map(Optional::get)
             .forEach(certificate -> {
                     final ImmutableList<String> asns = ImmutableList.copyOf(X509CertificateUtil.getAsns(certificate.getCertificate()));

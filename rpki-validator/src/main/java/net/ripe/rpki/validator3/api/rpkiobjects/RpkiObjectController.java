@@ -51,6 +51,7 @@ import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.domain.RpkiObject;
+import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.ValidationCheck;
 import net.ripe.rpki.validator3.domain.ValidationRuns;
 import net.ripe.rpki.validator3.util.Hex;
@@ -84,12 +85,11 @@ import java.util.stream.StreamSupport;
 @Slf4j
 public class RpkiObjectController {
 
-    private final ValidationRuns validationRuns;
+    @Autowired
+    private RpkiObjects rpkiObjects;
 
     @Autowired
-    public RpkiObjectController(final ValidationRuns validationRuns) {
-        this.validationRuns = validationRuns;
-    }
+    private ValidationRuns validationRuns;
 
     @GetMapping(path = "/")
     public ResponseEntity<ApiResponse<Stream<RpkiObj>>> all() {
@@ -148,10 +148,7 @@ public class RpkiObjectController {
                                                                          final Optional<ValidationResult> validationResult,
                                                                          final Class<T> clazz,
                                                                          final Function<T, RpkiObj> create) {
-        Optional<T> maybeCert = validationResult.flatMap(vr -> rpkiObject.get(clazz, vr));
-        if (!maybeCert.isPresent()) {
-            maybeCert = rpkiObject.get(clazz, location(rpkiObject));
-        }
+        Optional<T> maybeCert = validationResult.flatMap(vr -> rpkiObjects.findCertificateRepositoryObject(rpkiObject.getId(), clazz, vr));
         if (maybeCert.isPresent()) {
             return create.apply(maybeCert.get());
         }
