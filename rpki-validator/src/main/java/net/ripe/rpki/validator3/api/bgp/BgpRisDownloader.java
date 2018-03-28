@@ -42,6 +42,7 @@ import org.joda.time.DateTimeZone;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.validation.constraints.NotNull;
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -51,6 +52,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -69,6 +71,11 @@ public class BgpRisDownloader {
     public void postConstruct() throws Exception {
         httpClient = new HttpClient();
         httpClient.start();
+    }
+
+    @PreDestroy
+    public void preDestory() throws Exception {
+        httpClient.stop();
     }
 
     public BgpRisDump fetch(@NotNull BgpRisDump dump) {
@@ -91,7 +98,7 @@ public class BgpRisDownloader {
         };
         try {
             final List<BgpRisEntry> entries = Http.readStream(requestSupplier, streamReader);
-            return BgpRisDump.of(dump.url, DateTime.now(), entries);
+            return BgpRisDump.of(dump.url, DateTime.now(), Optional.of(entries));
         } catch (Http.NotModified n) {
             return dump;
         }

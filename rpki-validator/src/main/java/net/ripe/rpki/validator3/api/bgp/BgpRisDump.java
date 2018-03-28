@@ -32,12 +32,12 @@ package net.ripe.rpki.validator3.api.bgp;
 import lombok.Data;
 import org.joda.time.DateTime;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Data(staticConstructor = "of")
 public class BgpRisDump {
     final String url;
     final DateTime lastModified;
-    final List<BgpRisEntry> entries;
+    final Optional<List<BgpRisEntry>> entries;
 }
