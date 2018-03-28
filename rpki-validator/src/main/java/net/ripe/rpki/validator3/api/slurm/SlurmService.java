@@ -38,6 +38,8 @@ import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
 import net.ripe.rpki.validator3.api.roaprefixassertions.AddRoaPrefixAssertion;
 import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionsService;
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
+import net.ripe.rpki.validator3.api.slurm.dtos.SlurmBgpSecAssertion;
+import net.ripe.rpki.validator3.api.slurm.dtos.SlurmBgpSecFilter;
 import net.ripe.rpki.validator3.api.slurm.dtos.SlurmLocallyAddedAssertions;
 import net.ripe.rpki.validator3.api.slurm.dtos.SlurmOutputFilters;
 import net.ripe.rpki.validator3.api.slurm.dtos.SlurmPrefixAssertion;
@@ -121,7 +123,6 @@ public class SlurmService {
 
     }
 
-    // TODO Add BGP stuff
     public Slurm get() {
         final Slurm slurm = new Slurm();
 
@@ -134,6 +135,15 @@ public class SlurmService {
             prefixAssertion.setComment(a.getComment());
             return prefixAssertion;
         }).collect(Collectors.toList()));
+
+        slurmLocallyAddedAssertions.setBgpsecAssertions(bgpSecAssertionsService.all().map(a -> {
+            final SlurmBgpSecAssertion bgpSecAssertion = new SlurmBgpSecAssertion();
+            bgpSecAssertion.setAsn(a.getAsn());
+            bgpSecAssertion.setSki(a.getSki());
+            bgpSecAssertion.setPublicKey(a.getPublicKey());
+            bgpSecAssertion.setComment(a.getComment());
+            return bgpSecAssertion;
+        }).collect(Collectors.toList()));
         slurm.setLocallyAddedAssertions(slurmLocallyAddedAssertions);
 
         final SlurmOutputFilters filters = new SlurmOutputFilters();
@@ -144,6 +154,15 @@ public class SlurmService {
             prefixFilter.setComment(f.getComment());
             return prefixFilter;
         }).collect(Collectors.toList()));
+
+        filters.setBgpsecFilters(bgpSecFilterService.all().map(f -> {
+            final SlurmBgpSecFilter bgpSecFilter = new SlurmBgpSecFilter();
+            bgpSecFilter.setAsn(f.getAsn());
+            bgpSecFilter.setRouterSKI(f.getRouterSki());
+            bgpSecFilter.setComment(f.getComment());
+            return bgpSecFilter;
+        }).collect(Collectors.toList()));
+
         slurm.setValidationOutputFilters(filters);
 
         return slurm;
