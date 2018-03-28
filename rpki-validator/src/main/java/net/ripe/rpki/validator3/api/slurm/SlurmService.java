@@ -110,7 +110,7 @@ public class SlurmService {
         }
 
         if (slurm.getValidationOutputFilters() != null && slurm.getValidationOutputFilters().getBgpsecFilters() != null) {
-            bgpSecAssertionsService.clear();
+            bgpSecFilterService.clear();
             slurm.getValidationOutputFilters().getBgpsecFilters().forEach(bgpSecFilter -> {
                 AddBgpSecFilter add = AddBgpSecFilter.builder()
                         .asn(bgpSecFilter.getAsn() == null ? null : bgpSecFilter.getAsn().toString())
