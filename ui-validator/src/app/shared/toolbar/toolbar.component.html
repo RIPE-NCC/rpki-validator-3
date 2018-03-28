@@ -1,0 +1,26 @@
+<div *ngIf='absolutItemsNumber === 0'>
+  <ngb-alert type='warning' [dismissible]='false'>
+    {{msgNoItems}}
+  </ngb-alert>
+</div>
+<div [hidden]='absolutItemsNumber === 0'>
+  <div class='form-group d-flex justify-content-between mb-3'>
+    <div class='d-inline-flex'>
+      <page-size-select (changedPageSize)='onChangedPageSize($event)'></page-size-select>
+      <loading-spinner class='ml-2' [loading]='this.loading'></loading-spinner>
+    </div>
+    <search-by [(searchBy)]='searchBy'
+               (searchByChanged)='onChangedFilterBy($event)'></search-by>
+  </div>
+  <ng-content></ng-content>
+  <div class='d-flex justify-content-between'>
+    <ngb-pagination [collectionSize]='totalItems' [pageSize]='rowsPerPage' [(page)]='page' [maxSize]='5'
+                    [boundaryLinks]='true'
+                    [rotate]='true' [ellipses]='false' (pageChange)='onChangePage($event)'></ngb-pagination>
+    <page-textually-status [loading]='loading'
+                           [firstItem]='firstItemInTable'
+                           [lastItem]='lastItemInTable'
+                           [totalItems]='totalItems'
+                           [absolutItems]='absolutItemsNumber'></page-textually-status>
+  </div>
+</div>

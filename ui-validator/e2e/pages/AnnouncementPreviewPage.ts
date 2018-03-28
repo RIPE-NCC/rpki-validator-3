@@ -18,17 +18,17 @@ export class AnnouncementPreviewPage {
   }
 
   expectASNInPanelToBe(value: string) {
-    expect(element(by.css('.form-group div:nth-child(1)')).getText()).toContain(value);
+    expect(element(by.css('.announcement-panel span:nth-child(1)')).getText()).toContain(value);
     return this;
   }
 
   expectPrefixInPanelToBe(value: string) {
-    expect(element(by.css('.form-group div:nth-child(2)')).getText()).toContain(value);
+    expect(element(by.css('.announcement-panel span:nth-child(2)')).getText()).toContain(value);
     return this;
   }
 
   expectGreenFlagInPanel(value: string) {
-    expect(element(by.css('.form-group .alert-success')).getText()).toContain(value);
+    expect(element(by.css('.announcement-panel .alert-success')).getText()).toContain(value);
     return this;
   }
 
@@ -79,7 +79,12 @@ export class AnnouncementPreviewPage {
   }
 
   dismissModalWindow() {
-    browser.actions().mouseMove(element(by.css('ngb-modal-window')),{x: 10, y: 10}).click();
+    browser.actions().mouseMove(element(by.css('.close')),{x: 0, y: 0}).click().perform();
+    return this;
+  }
+
+  expectToOpenBgpPage() {
+    expect(browser.getCurrentUrl()).toContain(`/bgp-preview`);
     return this;
   }
 }

@@ -1,46 +1,55 @@
 import {Component, Input, OnInit} from '@angular/core';
 
-import {IValidationCheck} from "./validation-detail.model";
-import {ManagingTable} from "../../shared/managing-table";
-import {TrustAnchorsService} from "../../core/trust-anchors.service";
+import {IValidationCheck} from './validation-detail.model';
+import {TrustAnchorsService} from '../../core/trust-anchors.service';
+import {ColumnSortedEvent} from '../../shared/sortable-table/sort.service';
+import {IResponse} from '../../shared/response.model';
+import {PagingDetailsModel} from '../../shared/toolbar/paging-details.model';
 
 @Component({
   selector: 'validation-details',
   templateUrl: './validation-details.component.html',
   styleUrls: ['./validation-details.component.scss']
 })
-export class ValidationDetailsComponent extends ManagingTable implements OnInit {
+export class ValidationDetailsComponent implements OnInit {
 
   @Input() trustAnchorId: string;
 
+  loading: boolean = true;
   validationChecks: IValidationCheck[] = [];
 
-  constructor(private _trustAnchorsService: TrustAnchorsService) {
-    super();
-  }
+  response: IResponse;
+  sortTable: ColumnSortedEvent = {sortColumn: '', sortDirection: 'asc'};
+  pagingDetails: PagingDetailsModel;
+
+  constructor(private _trustAnchorsService: TrustAnchorsService) {}
 
   ngOnInit() {
-    this.loadData();
   }
 
   loadData() {
     this.loading = true;
-    this.setNumberOfFirstItemInTable();
     this._trustAnchorsService.getTrustAnchorValidationChecks(this.trustAnchorId,
-                                                              this.firstItemInTable.toString(),
-                                                              this.rowsPerPage.toString(),
-                                                              this.searchBy,
-                                                              this.sortBy,
-                                                              this.sortDirection)
+                                                            this.pagingDetails.firstItemInTable,
+                                                            this.pagingDetails.rowsPerPage,
+                                                            this.pagingDetails.searchBy,
+                                                            this.sortTable.sortColumn,
+                                                            this.sortTable.sortDirection)
       .subscribe(
         response => {
           this.loading = false;
           this.validationChecks = response.data;
-          this.numberOfItemsOnCurrentPage = this.validationChecks.length;
-          this.totalItems = response.metadata.totalCount;
-          this.setNumberOfLastItemInTable();
-          if (!this.absolutItemsNumber)
-            this.absolutItemsNumber = this.totalItems;
+          this.response = response;
         });
+  }
+
+  onToolbarChange(pagingDetails: PagingDetailsModel) {
+    this.pagingDetails = pagingDetails;
+    this.loadData();
+  }
+
+  onSorted(sort: ColumnSortedEvent): void {
+    this.sortTable = sort;
+    this.loadData();
   }
 }

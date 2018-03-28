@@ -1,10 +1,10 @@
 <page-title [pageTitle]='pageTitle'></page-title>
-<div class='form-group d-flex justify-content-between mb-3'>
-  <div><strong>{{'Roas.ASN' | translate}}: </strong> {{announcementPreviewData?.origin}}</div>
-  <div><strong>{{'Roas.PREFIX' | translate}}: </strong> {{announcementPreviewData?.prefix}}</div>
-  <div class="d-inline-flex"><strong>{{'STATUS' | translate}}: </strong>
+<div class='announcement-panel d-flex justify-content-between mb-3'>
+  <span><strong>{{'Roas.ASN' | translate}}: </strong> {{announcementPreviewData?.origin}}</span>
+  <span><strong>{{'Roas.PREFIX' | translate}}: </strong> {{announcementPreviewData?.prefix}}</span>
+  <span class="d-inline-flex"><strong>{{'STATUS' | translate}}: </strong>
     <flag [value]="announcementPreviewData?.validity"></flag>
-  </div>
+  </span>
 </div>
 <hr/>
 <h3><strong>{{'AnnouncementPreview.RELEVANT_VALIDATED_ROAS' | translate}}</strong></h3>

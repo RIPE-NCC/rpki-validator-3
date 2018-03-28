@@ -5,7 +5,14 @@ import 'rxjs/add/operator/do';
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/observable/throw';
 
-import {IIgnoreFilter, IIgnoreFiltersResponse} from './filters.model';
+import {IResponse} from "../shared/response.model";
+
+export interface IIgnoreFilter {
+  id: string,
+  prefix?: string,
+  asn?: string,
+  comment?: string
+}
 
 @Injectable()
 export class IgnoreFiltersService {
@@ -15,7 +22,7 @@ export class IgnoreFiltersService {
 
   constructor(private _http: HttpClient) {}
 
-  getIgnoreFilters(startFrom: string, pageSize: string, search: string, sortBy: string, sortDirection: string): Observable<IIgnoreFiltersResponse> {
+  getIgnoreFilters(startFrom: string, pageSize: string, search: string, sortBy: string, sortDirection: string): Observable<IResponse> {
     const params = new HttpParams()
       .set('startFrom', startFrom)
       .set('pageSize', pageSize)
@@ -23,7 +30,7 @@ export class IgnoreFiltersService {
       .set('sortBy', sortBy)
       .set('sortDirection', sortDirection);
 
-    return this._http.get<IIgnoreFiltersResponse>(this._ignoreFiltersUrl, {params: params})
+    return this._http.get<IResponse>(this._ignoreFiltersUrl, {params: params})
   }
 
   saveIgnoreFilter(filter: IIgnoreFilter): Observable<any> {
@@ -31,6 +38,6 @@ export class IgnoreFiltersService {
   }
 
   deleteIgnoreFilter(filter: IIgnoreFilter): Observable<any> {
-    return this._http.delete<IIgnoreFiltersResponse>(this._deleteIgnoreFilterUrl.replace('{id}', filter.id))
+    return this._http.delete<IResponse>(this._deleteIgnoreFilterUrl.replace('{id}', filter.id))
   }
 }

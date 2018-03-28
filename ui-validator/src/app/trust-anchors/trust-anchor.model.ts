@@ -7,10 +7,6 @@ export interface ITrustAnchorOverview {
   lastUpdated: string[];
 }
 
-export interface ITrustAnchorOverviewResponse {
-  data: ITrustAnchorOverview[];
-}
-
 export interface ITrustAnchor {
   type: string;
   id: number;
@@ -24,29 +20,5 @@ export interface ITrustAnchor {
   links: {
     self: string;
   }
-}
-
-export interface ITrustAnchorResponse {
-  data: ITrustAnchor;
-  includes: [
-    {
-      type: string,
-      startedAt: string,
-      completedAt: string,
-      status: string,
-      validationChecks: string[];
-    }]
-}
-
-export interface ITrustAnchorsResponse {
-  data: ITrustAnchor[];
-  includes: [
-    {
-      type: string,
-      startedAt: string,
-      completedAt: string,
-      status: string,
-      validationChecks: string[];
-    }]
 }
 

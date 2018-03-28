@@ -3,10 +3,3 @@ export interface IBgp {
   prefix: string,
   validity: string
 }
-
-export interface IBgpResponse {
-  data:  Array<IBgp>,
-  metadata: {
-    totalCount: number
-  }
-}

@@ -1,7 +1,7 @@
 import { AppPage } from './app.po';
 import {TrustAnchorsPage} from "./pages/TrustAnchorsPage";
 
-describe('ui-validator App', () => {
+describe('Trust Anchors ROAs Page', () => {
   let taPage: TrustAnchorsPage;
 
   beforeEach(() => {
@@ -13,20 +13,20 @@ describe('ui-validator App', () => {
     taPage
       .expectTitleHeaderToBe('Configured Trust Anchors')
       .expectNumberOfTableRowsToBe(3)
-      .expectGreenFlagInRow(0, '20932')
-      .expectOrangeFlagInRow(1, '4240')
-      .expectRedFlagInRow(2, '4240')
-      .expectGreenMutedFlagInRow(1)
-      .expectOrangeMutedFlagInRow(0)
-      .expectRedMutedFlagInRow(0);
+      .expectGreenFlagInRow(1, '20932')
+      .expectOrangeFlagInRow(2, '4240')
+      .expectRedFlagInRow(3, '4240')
+      .expectGreenMutedFlagInRow(2)
+      .expectOrangeMutedFlagInRow(1)
+      .expectRedMutedFlagInRow(1);
   });
 
   it('should open monitoring page on click on row', () => {
     taPage
-      .moveMouseOverRow(0)
-      .expectTooltipOnRowHover(0)
-      .expectTooltipTextToBe(0, 'Click to view overview page')
-      .clickOnRow(0)
+      .moveMouseOverRow(1)
+      .expectTooltipOnRowHover(1)
+      .expectTooltipTextToBe(1, 'Click to view overview page')
+      .clickOnRow(1)
       .expectToOpenMonitoringPage(3268);
   });
 

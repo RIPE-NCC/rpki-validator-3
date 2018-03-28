@@ -1,48 +1,59 @@
 import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
 
 import {IRepositoriesStatuses, IRepository} from "./repositories.model";
-import {ManagingTable} from "../../shared/managing-table";
 import {TrustAnchorsService} from "../../core/trust-anchors.service";
+import {ColumnSortedEvent} from "../../shared/sortable-table/sort.service";
+import {PagingDetailsModel} from "../../shared/toolbar/paging-details.model";
+import {IResponse} from "../../shared/response.model";
 
 @Component({
   selector: 'repositories',
   templateUrl: './repositories.component.html',
   styleUrls: ['./repositories.component.scss']
 })
-export class RepositoriesComponent extends ManagingTable implements OnInit {
+export class RepositoriesComponent implements OnInit {
 
   @Input() trustAnchorId: string;
-  @Output() notify: EventEmitter<IRepositoriesStatuses> = new EventEmitter<IRepositoriesStatuses>();
+  @Output() notifyLoadedStatuses: EventEmitter<IRepositoriesStatuses> = new EventEmitter<IRepositoriesStatuses>();
 
+  loading: boolean = true;
   repositories: IRepository[] = [];
+  response: IResponse;
+  sortTable: ColumnSortedEvent = {sortColumn: '', sortDirection: 'asc'};
+  pagingDetails: PagingDetailsModel;
 
   constructor(private _trustAnchorsService: TrustAnchorsService) {
-    super();
   }
 
   ngOnInit() {
-    this.loadData();
   }
 
   loadData() {
     this.loading = true;
-    this.setNumberOfFirstItemInTable();
     this._trustAnchorsService.getRepositories(this.trustAnchorId,
-                                              this.firstItemInTable.toString(),
-                                              this.rowsPerPage.toString(),
-                                              this.searchBy,
-                                              this.sortBy,
-                                              this.sortDirection)
+                                              this.pagingDetails.firstItemInTable,
+                                              this.pagingDetails.rowsPerPage,
+                                              this.pagingDetails.searchBy,
+                                              this.sortTable.sortColumn,
+                                              this.sortTable.sortDirection)
       .subscribe(
         response => {
           this.loading = false;
           this.repositories = response.data;
-          this.notify.emit();
-          this.numberOfItemsOnCurrentPage = this.repositories.length;
-          this.totalItems = response.metadata.totalCount;
-          this.setNumberOfLastItemInTable();
-          if (!this.absolutItemsNumber)
-            this.absolutItemsNumber = this.totalItems;
+          this.response = response;
+          // TODO check if there is really need for this event, maybe you can call it immidiatly
+          this.notifyLoadedStatuses.emit();
         });
+  }
+
+
+  onToolbarChange(pagingDetails: PagingDetailsModel) {
+    this.pagingDetails = pagingDetails;
+    this.loadData();
+  }
+
+  onSorted(sort: ColumnSortedEvent): void {
+    this.sortTable = sort;
+    this.loadData();
   }
 }

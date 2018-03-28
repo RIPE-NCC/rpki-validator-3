@@ -1,13 +1,13 @@
 import {Routes} from '@angular/router';
 
-import {TrustAnchorsComponent} from "./trust-anchors/trust-anchors.component";
-import {RoasComponent} from "./roas/roas.component";
-import {MonitoringTaComponent} from "./monitoring-ta/monitoring-ta.component";
-import {ErrorComponent} from "./core/error.component";
-import {IgnoreFiltersComponent} from "./ignore-filters/ignore-filters.component";
-import {BgpPreviewComponent} from "./bgp-preview/bgp-preview.component";
-import {AnnouncementPreviewComponent} from "./announcement-preview/announcement-preview.component";
-import {WhitelistComponent} from "./whitelist/whitelist.component";
+import {TrustAnchorsComponent} from './trust-anchors/trust-anchors.component';
+import {RoasComponent} from './roas/roas.component';
+import {MonitoringTaComponent} from './monitoring-ta/monitoring-ta.component';
+import {ErrorComponent} from './core/error.component';
+import {IgnoreFiltersComponent} from './ignore-filters/ignore-filters.component';
+import {BgpPreviewComponent} from './bgp-preview/bgp-preview.component';
+import {AnnouncementPreviewComponent} from './announcement-preview/announcement-preview.component';
+import {WhitelistComponent} from './whitelist/whitelist.component';
 
 export const appRoutes: Routes = [
     {path: 'trust-anchors', component: TrustAnchorsComponent},

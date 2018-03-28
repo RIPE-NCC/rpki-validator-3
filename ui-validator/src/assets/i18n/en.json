@@ -93,7 +93,8 @@
     "URI_OF_ROA": "URI of ROA",
     "ALERT_MSG_P1": "Some ROAs may be missing because the following Trust Anchors still have pending repositories: ",
     "FILTERED_FROM": "(filtered from",
-    "TOTAL_ENTRIES": "total entries)"
+    "TOTAL_ENTRIES": "total entries)",
+    "ALERT_MSG_NO_ROAS": "No validated ROAs"
   },
   "Bgp": {
     "VALIDITY": "Validity",

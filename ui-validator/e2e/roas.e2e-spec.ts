@@ -1,7 +1,7 @@
 import {AppPage} from './app.po';
 import {RoasPage} from "./pages/RoasPage";
 
-describe('Roas', () => {
+describe('Roas Page', () => {
   let roasPage: RoasPage;
 
   beforeEach(() => {

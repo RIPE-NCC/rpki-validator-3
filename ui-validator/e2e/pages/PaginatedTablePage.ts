@@ -46,7 +46,7 @@ export abstract class PaginatedTablePage {
     element.all(by.css('table thead th')).each((el, i) => {
       el.getText().then(text => {
         if (text === col) {
-          expect(element(by.css(`table tbody tr:nth-child(${row + 1}) td:nth-child(${i + 1})`)).getText()).toBe(content)
+          expect(element(by.css(`table tbody tr:nth-child(${row}) td:nth-child(${i + 1})`)).getText()).toBe(content)
         }
       })
     });

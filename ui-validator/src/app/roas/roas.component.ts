@@ -1,58 +1,58 @@
 import {Component, OnInit} from '@angular/core';
 
-import {RoasService} from "./roas.service";
-import {IRoa} from "./roas.model";
-import {TrustAnchorsService} from "../core/trust-anchors.service";
-import {ITrustAnchorsResponse} from "../trust-anchors/trust-anchor.model";
-import {ManagingTable} from "../shared/managing-table";
+import {RoasService} from './roas.service';
+import {IRoa} from './roas.model';
+import {TrustAnchorsService} from '../core/trust-anchors.service';
+import {ColumnSortedEvent} from '../shared/sortable-table/sort.service';
+import {PagingDetailsModel} from "../shared/toolbar/paging-details.model";
+import {IResponse} from "../shared/response.model";
 
 @Component({
   selector: 'app-roas',
   templateUrl: './roas.component.html',
   styleUrls: ['./roas.component.scss']
 })
-export class RoasComponent extends ManagingTable implements OnInit {
+export class RoasComponent implements OnInit {
 
   pageTitle: string = 'Nav.TITLE_ROAS';
-  alertShown = false;
+  loading: boolean = true;
+  alertShown: boolean = false;
   alertListValidatedTA: string;
   roas: IRoa[] = [];
+  response: IResponse;
+  sortTable: ColumnSortedEvent = {sortColumn: '', sortDirection: 'asc'};
+  pagingDetails: PagingDetailsModel;
 
-  constructor(private _roasService: RoasService, private _trustAnchorsService: TrustAnchorsService) {
-    super();
+  constructor(private _roasService: RoasService,
+              private _trustAnchorsService: TrustAnchorsService) {
   }
 
   ngOnInit() {
-    this.loadData();
     this.getNotValidatedTAForAlert();
   }
 
   loadData() {
     this.loading = true;
-    this.setNumberOfFirstItemInTable();
-    this._roasService.getRoas(this.firstItemInTable.toString(),
-                              this.rowsPerPage.toString(),
-                              this.searchBy,
-                              this.sortBy,
-                              this.sortDirection)
+    this._roasService.getRoas(this.pagingDetails.firstItemInTable,
+                              this.pagingDetails.rowsPerPage,
+                              this.pagingDetails.searchBy,
+                              this.sortTable.sortColumn,
+                              this.sortTable.sortDirection)
       .subscribe(
         response => {
           this.loading = false;
           this.roas = response.data;
-          this.numberOfItemsOnCurrentPage = this.roas.length;
-          this.totalItems = response.metadata.totalCount;
-          this.setNumberOfLastItemInTable();
-          if (!this.absolutItemsNumber)
-            this.absolutItemsNumber = this.totalItems;
+          this.response = response;
         });
   }
 
+  // values for alert messages
   getNotValidatedTAForAlert() {
     let listTa: string[] = [];
     this._trustAnchorsService.getTrustAnchors()
       .subscribe(
         response => {
-          const taResponse = response as ITrustAnchorsResponse;
+          const taResponse = response as IResponse;
           taResponse.data.forEach(ta => {
             if (!ta.initialCertificateTreeValidationRunCompleted)
               listTa.push(ta.name);
@@ -62,5 +62,15 @@ export class RoasComponent extends ManagingTable implements OnInit {
           this.alertShown = this.alertListValidatedTA.length > 0;
         }
       );
+  }
+
+  onToolbarChange(pagingDetails: PagingDetailsModel) {
+    this.pagingDetails = pagingDetails;
+    this.loadData();
+  }
+
+  onSorted(sort: ColumnSortedEvent): void {
+    this.sortTable = sort;
+    this.loadData();
   }
 }

@@ -1,7 +1,7 @@
 import {AppPage} from './app.po';
 import {IgnoreFiltersPage} from "./pages/IgnoreFiltersPage";
 
-describe('Ignore Filters', () => {
+describe('Ignore Filters Page', () => {
   let ignoreFiltersPage: IgnoreFiltersPage;
 
   beforeEach(() => {
@@ -60,7 +60,7 @@ describe('Ignore Filters', () => {
     it('should show filter on table', () => {
       ignoreFiltersPage
         .expectNumberOfTableRowsToBe(6)
-        .expectRowColumnToBe(0, 'Prefix', '1.0.128.0/18')
+        .expectRowColumnToBe(1, 'Prefix', '1.0.128.0/18')
     });
 
     it('should delete filter on table', () => {

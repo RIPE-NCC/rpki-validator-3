@@ -3,7 +3,7 @@ import {ActivatedRoute, Router} from "@angular/router";
 import {NgbModal, NgbModalRef} from "@ng-bootstrap/ng-bootstrap";
 
 import {BgpService} from "../core/bgp.service"
-import {IAnnouncement, IAnnouncementData, IAnnouncementResponse} from "./announcement.model";
+import {IAnnouncementData} from "./announcement.model";
 
 @Component({
   selector: 'app-announcement-preview',

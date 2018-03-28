@@ -1,6 +1,6 @@
 import {Component, Input, OnChanges, OnInit} from '@angular/core';
-import {isBoolean, isNumber} from "util";
-import {isString} from "@ng-bootstrap/ng-bootstrap/util/util";
+import {isBoolean, isNumber} from 'util';
+import {isString} from '@ng-bootstrap/ng-bootstrap/util/util';
 
 @Component({
   selector: 'flag',
