@@ -42,16 +42,20 @@ export class WhitelistComponent implements OnInit {
   loadData() {
     this.loading = true;
     this._whitelistService.getWhitelist(this.pagingDetails.firstItemInTable,
-                                        this.pagingDetails.rowsPerPage,
-                                        this.pagingDetails.searchBy,
-                                        this.sortTable.sortColumn,
-                                        this.sortTable.sortDirection)
+      this.pagingDetails.rowsPerPage,
+      this.pagingDetails.searchBy,
+      this.sortTable.sortColumn,
+      this.sortTable.sortDirection)
       .subscribe(
         response => {
           this.loading = false;
           this.whitelist = response.data;
           this.response = response
         });
+  }
+
+  onUploadSlurm(): void {
+    this.loadData();
   }
 
   onWhitelistEntrySubmit(form: NgForm): void {

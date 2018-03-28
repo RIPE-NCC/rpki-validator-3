@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, EventEmitter, OnInit, Output} from '@angular/core';
 import {TranslateService} from '@ngx-translate/core';
 
 import {WhitelistService} from '../whitelist.service';
@@ -20,8 +20,12 @@ import {WhitelistService} from '../whitelist.service';
                     (click)='onSubmit()'>Upload SLURM</button>
           </div>
           <div class='custom-file'>
-            <input type='file' class='custom-file-input btn btn-primary' id='slurmFile' (change)='onFileChange($event.target.files)' accept='.json' required>
             <label class='custom-file-label' for='slurmFile'>{{ fileName }}</label>
+            <!-- #fileInput was introduced because otherwise cannot be chosen same json file twice -->
+            <input type='file' #fileInput id='slurmFile' 
+                   class='custom-file-input btn btn-primary'
+                   (click)='fileInput.value = null' value=''
+                   (change)='onFileChange($event.target.files)' accept='.json' required>
           </div>
         </div>
         <em *ngIf='errorUploading'>{{'Slurm.UPLOAD_FAILED' | translate}}</em>
@@ -48,6 +52,8 @@ export class SlurmComponent implements OnInit {
   fileName: string;
   file: File;
   errorUploading: boolean = false;
+
+  @Output() uploadedSlurm: EventEmitter<any> = new EventEmitter<any>();
 
   constructor(private _whitelistService: WhitelistService, private translate: TranslateService) {
   }
@@ -78,14 +84,19 @@ export class SlurmComponent implements OnInit {
   onSubmit() {
      const formModel = this.prepareSave();
      this.loading = true;
-     setTimeout(() => {
+      setTimeout(() => {
        this._whitelistService.uploadSlurm(formModel).subscribe(
          res => {
+           this.loading = false;
            this.errorUploading = false;
            this.initInputField();
-         }, error => this.errorUploading = true
+           this.uploadedSlurm.emit();
+         }, error => {
+           this.loading = false;
+           this.errorUploading = true
+         }
        );
        this.loading = false;
-     }, 1000);
+      }, 1000);
    }
 }
