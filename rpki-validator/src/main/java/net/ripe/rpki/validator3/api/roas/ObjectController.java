@@ -129,9 +129,9 @@ public class ObjectController {
 
         final Stream<RoaPrefix> combinedPrefixes = Stream.concat(validatedPrefixes, assertions).distinct();
 
-        final Stream<ValidatedRpkiObjects.RouterCertificate> objects = validatedRpkiObjects.findCurrentlyValidatedRouterCertificates().getObjects();
-        final Stream<RouterCertificate> filteredRouterCertificates = bgpSecFilterService.filterCertificates(objects)
-            .map(o -> new RouterCertificate(o.getAsn(), o.getSubjectKeyIdentifier(), o.getSubjectPublicKeyInfo()));
+        final Stream<ValidatedRpkiObjects.RouterCertificate> certificates = validatedRpkiObjects.findCurrentlyValidatedRouterCertificates().getObjects();
+        final Stream<RouterCertificate> filteredRouterCertificates = bgpSecFilterService.filterCertificates(certificates)
+                .map(o -> new RouterCertificate(o.getAsn(), o.getSubjectKeyIdentifier(), o.getSubjectPublicKeyInfo()));
 
         final Stream<RouterCertificate> bgpSecAssertions = this.bgpSecAssertions.all().map(b -> {
             final List<String> asns = Collections.singletonList(String.valueOf(b.getAsn()));

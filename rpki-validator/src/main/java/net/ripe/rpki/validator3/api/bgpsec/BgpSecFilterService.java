@@ -43,6 +43,7 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.transaction.Transactional;
 import javax.validation.Valid;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -90,7 +91,21 @@ public class BgpSecFilterService {
 
     public Stream<ValidatedRpkiObjects.RouterCertificate> filterCertificates(Stream<ValidatedRpkiObjects.RouterCertificate> routerCertificates) {
         final List<BgpSecFilter> filters = all().collect(Collectors.toList());
-        // TODO Finish it
-        return routerCertificates.filter(rc -> filters.stream().anyMatch(x -> true));
+        return routerCertificates.filter(rc -> {
+            final List<Long> longAsns = rc.getAsn() != null ?
+                    rc.getAsn().stream().map(asn -> Asn.parse(asn).longValue()).collect(Collectors.toList()) :
+                    Collections.emptyList();
+
+            return filters.stream().anyMatch(f -> {
+                boolean keepIt = true;
+                if (f.getAsn() != null) {
+                    keepIt = keepIt && longAsns.stream().anyMatch(asn -> asn.equals(f.getAsn().longValue()));
+                }
+                if (f.getRouterSki() != null) {
+                    keepIt = keepIt && f.getRouterSki().equals(rc.getSubjectKeyIdentifier());
+                }
+                return keepIt;
+            });
+        });
     }
 }
