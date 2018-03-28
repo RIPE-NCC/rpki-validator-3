@@ -95,7 +95,7 @@ public class BgpPreviewService {
         String origin;
         String prefix;
         String validity;
-        int maxLength;
+        Integer maxLength;
         String ta;
         String uri;
         Long roaPrefixAssertionId;
