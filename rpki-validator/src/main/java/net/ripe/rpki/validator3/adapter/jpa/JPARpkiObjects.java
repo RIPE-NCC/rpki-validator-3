@@ -32,13 +32,17 @@ package net.ripe.rpki.validator3.adapter.jpa;
 import com.google.common.primitives.UnsignedBytes;
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQuery;
+import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
+import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
+import net.ripe.rpki.validator3.domain.EncodedRpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Repository;
 
+import javax.persistence.EntityNotFoundException;
 import javax.persistence.LockModeType;
 import javax.transaction.Transactional;
 import java.time.Instant;
@@ -51,6 +55,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.ripe.rpki.validator3.domain.querydsl.QCertificateTreeValidationRun.certificateTreeValidationRun;
+import static net.ripe.rpki.validator3.domain.querydsl.QEncodedRpkiObject.encodedRpkiObject;
 import static net.ripe.rpki.validator3.domain.querydsl.QRpkiObject.rpkiObject;
 
 @Repository
@@ -63,7 +68,7 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
 
     @Override
     public Optional<RpkiObject> findBySha256(byte[] sha256) {
-        return Optional.ofNullable(select().where(rpkiObject.sha256.eq(sha256)).fetchFirst());
+        return Optional.ofNullable(select().where(rpkiObject.sha256.eq(sha256)).fetchOne());
     }
 
     @Override
@@ -71,9 +76,16 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
         SortedMap<byte[], String> hashes = new TreeMap<>(UnsignedBytes.lexicographicalComparator());
         manifestCms.getFiles().forEach((name, hash) -> hashes.put(hash, name));
 
-        List<RpkiObject> objects = select().setLockMode(lockMode).where(rpkiObject.sha256.in(hashes.keySet())).fetch();
+        List<RpkiObject> objects = queryFactory
+            .selectFrom(rpkiObject)
+            .setLockMode(lockMode)
+            .where(rpkiObject.sha256.in(hashes.keySet()))
+            .fetch();
 
-        return objects.stream().collect(Collectors.toMap(object -> hashes.get(object.getSha256()), object -> object));
+        return objects.stream().collect(Collectors.toMap(
+            x -> hashes.get(x.getSha256()),
+            x -> x
+        ));
     }
 
     @Override
@@ -107,5 +119,18 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
     @Override
     public void merge(RpkiObject object) {
         entityManager.merge(object);
+    }
+
+    @Override
+    public <T extends CertificateRepositoryObject> Optional<T> findCertificateRepositoryObject(long rpkiObjectId, Class<T> clazz, ValidationResult validationResult) {
+        // Do not query the EncodedRpkiObject entity here to avoid having it stored in the JPA session,
+        // which consumes memory until the transaction is completed. In validation runs this can cause a lot of
+        // data to be loaded.
+        byte[] encoded = queryFactory.select(encodedRpkiObject.encoded).from(encodedRpkiObject).where(encodedRpkiObject.rpkiObject.id.eq(rpkiObjectId)).fetchOne();
+        if (encoded == null) {
+            throw new EntityNotFoundException("entity not found EncodedRpkiObject with for RpkiObject id=" + rpkiObjectId);
+        }
+
+        return new EncodedRpkiObject(encoded).get(clazz, validationResult);
     }
 }

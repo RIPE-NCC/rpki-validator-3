@@ -29,7 +29,9 @@
  */
 package net.ripe.rpki.validator3.domain;
 
+import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
+import net.ripe.rpki.commons.validation.ValidationResult;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.persistence.LockModeType;
@@ -48,6 +50,8 @@ public interface RpkiObjects {
     void merge(RpkiObject object);
     
     RpkiObject get(long id);
+
+    <T extends CertificateRepositoryObject> Optional<T> findCertificateRepositoryObject(long rpkiObjectId, Class<T> clazz, ValidationResult validationResult);
 
     Optional<RpkiObject> findBySha256(byte[] sha256);
 
