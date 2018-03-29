@@ -56,27 +56,24 @@ public class BgpSecFilterServiceTest {
 
     private static Asn ASN_1 = Asn.parse("AS123");
     private static Asn ASN_2 = Asn.parse("AS456");
-    private static Asn ASN_3 = Asn.parse("AS222");
-    private static Asn ASN_4 = Asn.parse("AS333");
-    private static Asn ASN_5 = Asn.parse("AS444");
 
-    public static final String SKI_1 = "nvln23d";
-    public static final String SKI_2 = "plspdpc";
-    public static final String SKI_3 = "09309j3";
+    private static final String SKI_1 = "nvln23d";
+    private static final String SKI_2 = "plspdpc";
+    private static final String SKI_3 = "09309j3";
 
-    public static final String PK_1 = "xxxxxxx";
-    public static final String PK_2 = "yyyyyyy";
-    public static final String PK_3 = "zzzzzzz";
+    private static final String PK_1 = "xxxxxxx";
+    private static final String PK_2 = "yyyyyyy";
+    private static final String PK_3 = "zzzzzzz";
 
-    public static final ValidatedRpkiObjects.RouterCertificate CERTIFICATE_1 = ValidatedRpkiObjects.RouterCertificate.of(
+    private static final ValidatedRpkiObjects.RouterCertificate CERTIFICATE_1 = ValidatedRpkiObjects.RouterCertificate.of(
             ValidatedRpkiObjects.TrustAnchorData.of(1L, "Test TA 1"),
             ImmutableList.of(ASN_1.toString()), SKI_1, PK_1);
 
-    public static final ValidatedRpkiObjects.RouterCertificate CERTIFICATE_2 = ValidatedRpkiObjects.RouterCertificate.of(
+    private static final ValidatedRpkiObjects.RouterCertificate CERTIFICATE_2 = ValidatedRpkiObjects.RouterCertificate.of(
             ValidatedRpkiObjects.TrustAnchorData.of(2L, "Test TA 2"),
             ImmutableList.of(ASN_1.toString(), ASN_2.toString()), SKI_2, PK_2);
 
-    public static final ValidatedRpkiObjects.RouterCertificate CERTIFICATE_3 = ValidatedRpkiObjects.RouterCertificate.of(
+    private static final ValidatedRpkiObjects.RouterCertificate CERTIFICATE_3 = ValidatedRpkiObjects.RouterCertificate.of(
             ValidatedRpkiObjects.TrustAnchorData.of(3L, "Test TA 3"),
             ImmutableList.of(ASN_1.toString()), SKI_3, PK_3);
 
