@@ -89,17 +89,23 @@ public class BgpSecFilterService {
         bgpSecFilters.clear();
     }
 
-    public Stream<ValidatedRpkiObjects.RouterCertificate> filterCertificates(Stream<ValidatedRpkiObjects.RouterCertificate> routerCertificates) {
-        final List<BgpSecFilter> filters = all().collect(Collectors.toList());
+    public Stream<ValidatedRpkiObjects.RouterCertificate> filterCertificates(final Stream<ValidatedRpkiObjects.RouterCertificate> routerCertificates) {
+        return filterCertificates(routerCertificates, all().collect(Collectors.toList()));
+    }
+
+    Stream<ValidatedRpkiObjects.RouterCertificate> filterCertificates(
+            final Stream<ValidatedRpkiObjects.RouterCertificate> routerCertificates,
+            final List<BgpSecFilter> filters) {
         return routerCertificates.filter(rc -> {
             final List<Long> longAsns = rc.getAsn() != null ?
                     rc.getAsn().stream().map(asn -> Asn.parse(asn).longValue()).collect(Collectors.toList()) :
                     Collections.emptyList();
 
-            return filters.stream().anyMatch(f -> {
+            return !filters.stream().anyMatch(f -> {
                 boolean keepIt = true;
-                if (f.getAsn() != null) {
-                    keepIt = keepIt && longAsns.stream().anyMatch(asn -> asn.equals(f.getAsn().longValue()));
+                final Long asn = f.getAsn();
+                if (asn != null) {
+                    keepIt = longAsns.stream().anyMatch(a -> a == asn.longValue());
                 }
                 if (f.getRouterSki() != null) {
                     keepIt = keepIt && f.getRouterSki().equals(rc.getSubjectKeyIdentifier());
