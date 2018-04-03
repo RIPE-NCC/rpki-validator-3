@@ -5,6 +5,7 @@ import {IgnoreFiltersService, IIgnoreFilter} from "./ignore-filters.service";
 import {ColumnSortedEvent} from "../shared/sortable-table/sort.service";
 import {IResponse} from "../shared/response.model";
 import {PagingDetailsModel} from "../shared/toolbar/paging-details.model";
+import {RpkiToastrService} from "../core/rpki-toastr.service";
 
 @Component({
   selector: 'app-ignore-filters',
@@ -22,16 +23,14 @@ export class IgnoreFiltersComponent implements OnInit {
   validPrefix: boolean = true;
   validAsn: boolean = true;
   alertShown: boolean = true;
-  alertSuccessAdded: boolean = false;
-  alertSuccessDeleted: boolean = false;
-  mouseoverAdd: boolean = false;
   ignoreFilters: IIgnoreFilter[] = [];
   filter: IIgnoreFilter;
   response: IResponse;
   sortTable: ColumnSortedEvent = {sortColumn: '', sortDirection: 'asc'};
   pagingDetails: PagingDetailsModel;
 
-  constructor(private _ignoreFiltersService: IgnoreFiltersService) {
+  constructor(private _ignoreFiltersService: IgnoreFiltersService,
+              private _toastr: RpkiToastrService) {
   }
 
   ngOnInit() {
@@ -61,10 +60,11 @@ export class IgnoreFiltersComponent implements OnInit {
       this._ignoreFiltersService.saveIgnoreFilter(filter)
         .subscribe(
           response => {
-            this.clearAlerts();
-            this.alertSuccessAdded = true;
             this.loadData();
             form.resetForm();
+            this._toastr.success('IgnoreFilters.TOASTR_MSG_ADDED')
+          }, error => {
+            this._toastr.error('IgnoreFilters.TOASTR_MSG_ADD_ERROR')
           }
         );
     }
@@ -74,9 +74,10 @@ export class IgnoreFiltersComponent implements OnInit {
     this._ignoreFiltersService.deleteIgnoreFilter(filter)
       .subscribe(
         response => {
-          this.clearAlerts();
-          this.alertSuccessDeleted = true;
           this.loadData();
+          this._toastr.info('IgnoreFilters.TOASTR_MSG_DELETED')
+        }, error => {
+          this._toastr.error('IgnoreFilters.TOASTR_MSG_DELETE_ERROR')
         }
       );
   }
@@ -93,9 +94,10 @@ export class IgnoreFiltersComponent implements OnInit {
     }
   }
 
-  clearAlerts() {
-    this.alertSuccessAdded = false;
-    this.alertSuccessDeleted = false;
+  showToastrMsgAddDisable(disable: boolean): void {
+    if (disable) {
+      this._toastr.info('IgnoreFilters.TOASTR_MSG_REQUIRED_PREFIX_OR_ASN');
+    }
   }
 
   onToolbarChange(pagingDetails: PagingDetailsModel) {

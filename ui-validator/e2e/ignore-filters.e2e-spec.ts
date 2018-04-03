@@ -38,21 +38,18 @@ describe('Ignore Filters Page', () => {
       ignoreFiltersPage
         .addFilter('1.0.128.0/20', '', 'comment')
         .expectFilterAdded();
-
     });
 
     it('should add a filter with asn and comment', () => {
       ignoreFiltersPage
         .addFilter('', '11111', 'comment')
         .expectFilterAdded();
-
     });
 
     it('should add a filter with prefix, asn and comment', () => {
       ignoreFiltersPage
         .addFilter('1.0.128.0/20', '11111', 'comment')
         .expectFilterAdded();
-
     });
   });
 

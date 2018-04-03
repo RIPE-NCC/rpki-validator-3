@@ -1,7 +1,8 @@
 import {Component, EventEmitter, OnInit, Output} from '@angular/core';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService} from "@ngx-translate/core";
 
 import {WhitelistService} from '../whitelist.service';
+import {RpkiToastrService} from "../../core/rpki-toastr.service";
 
 @Component({
   selector: 'slurm',
@@ -20,7 +21,7 @@ import {WhitelistService} from '../whitelist.service';
                     (click)='onSubmit()'>Upload SLURM</button>
           </div>
           <div class='custom-file'>
-            <label class='custom-file-label' for='slurmFile'>{{ fileName }}</label>
+            <label class='custom-file-label' for='slurmFile'>{{fileName}}</label>
             <!-- #fileInput was introduced because otherwise cannot be chosen same json file twice -->
             <input type='file' #fileInput id='slurmFile' 
                    class='custom-file-input btn btn-primary'
@@ -28,7 +29,6 @@ import {WhitelistService} from '../whitelist.service';
                    (change)='onFileChange($event.target.files)' accept='.json' required>
           </div>
         </div>
-        <em *ngIf='errorUploading'>{{'Slurm.UPLOAD_FAILED' | translate}}</em>
       </form>
     </div>
     `,
@@ -51,11 +51,12 @@ export class SlurmComponent implements OnInit {
   loading = false;
   fileName: string;
   file: File;
-  errorUploading: boolean = false;
 
   @Output() uploadedSlurm: EventEmitter<any> = new EventEmitter<any>();
 
-  constructor(private _whitelistService: WhitelistService, private translate: TranslateService) {
+  constructor(private _whitelistService: WhitelistService,
+              private _translateService: TranslateService,
+              private _toastr: RpkiToastrService) {
   }
 
   ngOnInit() {
@@ -63,9 +64,9 @@ export class SlurmComponent implements OnInit {
   }
 
   initInputField() {
-    this.translate.get('Slurm.CHOOSE_FILE').subscribe((res: string) => {
-      this.fileName = res;
-    });
+    this._translateService.get('Slurm.CHOOSE_FILE').subscribe(
+      res => this.fileName = res
+    );
   }
 
   onFileChange(files: FileList) {
@@ -88,12 +89,12 @@ export class SlurmComponent implements OnInit {
        this._whitelistService.uploadSlurm(formModel).subscribe(
          res => {
            this.loading = false;
-           this.errorUploading = false;
            this.initInputField();
            this.uploadedSlurm.emit();
+           this._toastr.success('Slurm.SUCCESS_LOADED')
          }, error => {
            this.loading = false;
-           this.errorUploading = true
+           this._toastr.error('Slurm.UPLOAD_FAILED')
          }
        );
        this.loading = false;

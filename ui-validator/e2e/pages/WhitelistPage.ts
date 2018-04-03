@@ -67,12 +67,14 @@ export class WhitelistPage extends PaginatedTablePage {
 
   expectPrefixAndAsnValidationMessage() {
     browser.actions().mouseMove(element(by.css('form .align-self-end button'))).perform();
-    expect(element(by.css('form em')).getText()).toBe('Prefix and ASN are required');
+    expect(element(by.css('#toast-container .toast-info')).isPresent()).toBe(true);
+    expect(element(by.id('toast-container')).getText()).toBe('Prefix and ASN are required to enable adding.');
     return this;
   }
 
   expectEntryAdded() {
-    expect(element(by.css('.alert.alert-success')).getText()).toContain('The entry has been added to the whitelist.');
+    expect(element(by.css('#toast-container .toast-success')).isPresent()).toBe(true);
+    expect(element(by.id('toast-container')).getText()).toContain('The entry has been added to the whitelist.');
     return this;
   }
 

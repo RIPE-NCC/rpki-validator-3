@@ -12,7 +12,7 @@ export class IgnoreFiltersPage extends PaginatedTablePage {
     element(by.css('form #prefix')).sendKeys(prefix);
     element(by.css('form #asn')).sendKeys(asn);
     element(by.css('form #comment')).sendKeys(comment);
-    element(by.css('form button')).click();
+    element(by.css('form .align-self-end button')).click();
     return this;
   }
 
@@ -40,12 +40,14 @@ export class IgnoreFiltersPage extends PaginatedTablePage {
 
   expectPrefixAndAsnValidationMessage() {
     browser.actions().mouseMove(element(by.css('form button'))).perform();
-    expect(element(by.css('form em')).getText()).toBe('Prefix and/or ASN are required');
+    expect(element(by.css('.toast-info')).isDisplayed()).toBe(true);
+    expect(element(by.id('toast-container')).getText()).toContain('Prefix and/or ASN are required to enable adding.');
     return this;
   }
 
   expectFilterAdded() {
-    expect(element(by.css('.alert.alert-success')).getText()).toContain('The filter has been added.');
+    expect(element(by.css('#toast-container .toast-success')).isPresent()).toBe(true);
+    expect(element(by.css('#toast-container .toast-success')).getText()).toContain('The filter has been added.');
     return this;
   }
 

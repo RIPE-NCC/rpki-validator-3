@@ -112,17 +112,19 @@
     "ALERT_MSG_NO_RELEVANT": "No relevant validated ROAs",
     "TITLE_MODAL_FORM": "Please indicate ASN and Prefix in order to view announcements",
     "SHOW": "Show",
-    "REQUIRED_PREFIX_AND_ASN": "Prefix and ASN are required "
+    "TOASTR_MSG_REQUIRED_PREFIX_AND_ASN": "Prefix and ASN are required "
   },
   "IgnoreFilters": {
     "ALERT_MSG_INTRO": "By adding a filter the validator will ignore any RPKI prefixes that overlap with the filter's prefix.",
     "ALERT_MSG_NO_FILTERS": "No filters defined.",
     "ADD_FILTER": "Add filter",
     "CURRENT_FILTERS": "Current filters",
-    "REQUIRED_PREFIX_OR_ASN": "Prefix and/or ASN are required",
+    "TOASTR_MSG_REQUIRED_PREFIX_OR_ASN": "Prefix and/or ASN are required to enable adding.",
     "FILTERED_ROA_PREFIXES":"Filtered ROA prefixes",
-    "ALERT_MSG_ADDED": "The filter has been added.",
-    "ALERT_MSG_DELETED": "The filter has been removed."
+    "TOASTR_MSG_ADDED": "The filter has been added.",
+    "TOASTR_MSG_ADD_ERROR": "Error happened. Filter wasn't add. Please try again.",
+    "TOASTR_MSG_DELETED": "The filter has been removed.",
+    "TOASTR_MSG_DELETE_ERROR": "Error happened. Filter wasn't remove. Please try again."
   },
   "Whitelist": {
     "VALIDATES": "Validates",
@@ -135,10 +137,12 @@
     "MAX_PREFIX_LENGTH_PLACEHOLDER": "Number",
     "EM_MSG_INVALID_MAX_PREFIX_LENGTH": "Number must be between 12 and 32",
     "ALERT_MSG_NO_ENTRIES": "No entries defined.",
-    "REQUIRED_PREFIX_AND_ASN": "Prefix and ASN are required",
+    "TOASTR_MSG_REQUIRED_PREFIX_AND_ASN": "Prefix and ASN are required to enable adding.",
     "CURRENT_ENTRIES": "Current entries",
-    "ALERT_MSG_ADDED": "The entry has been added to the whitelist.",
-    "ALERT_MSG_DELETED": "The entry has been removed from the whitelist.",
+    "TOASTR_MSG_ADDED": "The entry has been added to the whitelist.",
+    "TOASTR_MSG_ADD_ERROR": "Error happened. Entry wasn't add to whitelist. Please try again.",
+    "TOASTR_MSG_DELETED": "The entry has been removed from the whitelist.",
+    "TOASTR_MSG_DELETED_ERROR": "Error happened. Entry wasn't delete from whitelist. Please try again.",
     "CLICK_LINK_TO_ANNOUNCEMENT": "Click link to see details about announcement"
   },
   "Export": {
@@ -148,6 +152,7 @@
     "DESCRIPTION": "Download or upload SLURM file.",
     "CHOOSE_FILE": "Choose file ...",
     "DOWNLOAD_SLURM": "Download SLURM",
-    "UPLOAD_FAILED": "Upload failed! Something is wrong with chosen file"
+    "UPLOAD_FAILED": "Upload failed! Something is wrong with chosen file",
+    "SUCCESS_LOADED": "Loaded successfully"
   }
 }
