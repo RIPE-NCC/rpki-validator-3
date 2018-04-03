@@ -5,6 +5,7 @@ import {IWhitelistEntry, WhitelistService} from './whitelist.service';
 import {ColumnSortedEvent} from "../shared/sortable-table/sort.service";
 import {PagingDetailsModel} from "../shared/toolbar/paging-details.model";
 import {IResponse} from "../shared/response.model";
+import {RpkiToastrService} from "../core/rpki-toastr.service";
 
 @Component({
   selector: 'app-whitelist',
@@ -23,10 +24,9 @@ export class WhitelistComponent implements OnInit {
   validPrefix: boolean = true;
   validAsn: boolean = true;
   validMaxLength: boolean = true;
+  // button is submitted until waiting for response
+  submitted: boolean = false;
   alertShown: boolean = true;
-  alertSuccessAdded: boolean = false;
-  alertSuccessDeleted: boolean = false;
-  mouseoverAdd: boolean = false;
   whitelist: IWhitelistEntry[] = [];
   whitelistEntry: IWhitelistEntry;
 
@@ -34,7 +34,9 @@ export class WhitelistComponent implements OnInit {
   sortTable: ColumnSortedEvent = {sortColumn: '', sortDirection: 'asc'};
   pagingDetails: PagingDetailsModel;
 
-  constructor(private _whitelistService: WhitelistService) { }
+  constructor(private _whitelistService: WhitelistService,
+              private _toastr: RpkiToastrService) {
+  }
 
   ngOnInit() {
   }
@@ -64,13 +66,17 @@ export class WhitelistComponent implements OnInit {
     this.validateAsn(entry.asn);
     this.validateMaxLength(entry.maximumLength);
     if (this.validPrefix && this.validAsn && this.validMaxLength) {
+      this.submitted = true;
       this._whitelistService.saveWhitelistEntry(entry)
         .subscribe(
           response => {
-            this.clearAlerts();
-            this.alertSuccessAdded = true;
             this.loadData();
             form.resetForm();
+            this.submitted = false;
+            this._toastr.success('Whitelist.TOASTR_MSG_ADDED')
+          }, error => {
+            this.submitted = false;
+            this._toastr.error('Whitelist.TOASTR_MSG_ADD_ERROR')
           }
         );
     }
@@ -80,9 +86,10 @@ export class WhitelistComponent implements OnInit {
     this._whitelistService.deleteWhitelistEntry(entry)
       .subscribe(
         response => {
-          this.clearAlerts();
-          this.alertSuccessDeleted = true;
           this.loadData();
+          this._toastr.info('Whitelist.TOASTR_MSG_DELETED')
+        }, error => {
+          this._toastr.error('Whitelist.TOASTR_MSG_DELETED_ERROR')
         }
       );
   }
@@ -105,9 +112,10 @@ export class WhitelistComponent implements OnInit {
     }
   }
 
-  clearAlerts() {
-    this.alertSuccessAdded = false;
-    this.alertSuccessDeleted = false;
+  showToastrMsgAddDisable(disable: boolean): void {
+    if (disable) {
+      this._toastr.info('Whitelist.TOASTR_MSG_REQUIRED_PREFIX_AND_ASN');
+    }
   }
 
   onToolbarChange(pagingDetails: PagingDetailsModel) {

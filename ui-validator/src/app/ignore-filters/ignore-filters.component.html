@@ -1,10 +1,4 @@
 <page-title [pageTitle]='pageTitle'></page-title>
-<ngb-alert type='success' *ngIf='alertSuccessAdded' (close)='alertSuccessAdded=false'>
-  {{ 'IgnoreFilters.ALERT_MSG_ADDED' | translate }}
-</ngb-alert>
-<ngb-alert type='success' *ngIf='alertSuccessDeleted' (close)='alertSuccessDeleted=false'>
-  {{ 'IgnoreFilters.ALERT_MSG_DELETED' | translate }}
-</ngb-alert>
 <ngb-alert type='info' *ngIf='alertShown' (close)='alertShown=false'>
   {{ 'IgnoreFilters.ALERT_MSG_INTRO' | translate }}
 </ngb-alert>
@@ -41,14 +35,11 @@
     </div>
     <!-- ADD BUTTON -->
     <div class='align-self-end'>
-      <span (mouseenter)='mouseoverAdd=true' (mouseleave)='mouseoverAdd=false'>
+      <span (mouseenter)='showToastrMsgAddDisable(filterForm.controls.prefix?.invalid && filterForm.controls.asn?.invalid)'>
         <button type='submit'
-                [disabled]='filterForm.controls.prefix?.invalid && filterForm.controls.asn?.invalid'
+                [disabled]='(filterForm.controls.prefix?.invalid && filterForm.controls.asn?.invalid) || submitted'
                 class='btn btn-primary'>{{'ADD' | translate}}</button>
       </span>
-      <em *ngIf='filterForm.controls.prefix?.invalid && filterForm.controls.asn?.invalid && mouseoverAdd'>
-        <strong>{{'IgnoreFilters.REQUIRED_PREFIX_OR_ASN' | translate}}</strong>
-      </em>
     </div>
   </div>
   <!-- COMMENT -->

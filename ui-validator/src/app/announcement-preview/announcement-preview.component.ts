@@ -4,6 +4,7 @@ import {NgbModal, NgbModalRef} from "@ng-bootstrap/ng-bootstrap";
 
 import {BgpService} from "../core/bgp.service"
 import {IAnnouncementData} from "./announcement.model";
+import {RpkiToastrService} from "../core/rpki-toastr.service";
 
 @Component({
   selector: 'app-announcement-preview',
@@ -26,7 +27,8 @@ export class AnnouncementPreviewComponent implements OnInit {
   constructor(private _activatedRoute: ActivatedRoute,
               private _router: Router,
               private _bgpService: BgpService,
-              private _modalService: NgbModal) {
+              private _modalService: NgbModal,
+              private _toastr: RpkiToastrService) {
   }
 
   ngOnInit() {
@@ -66,5 +68,11 @@ export class AnnouncementPreviewComponent implements OnInit {
         this._router.navigate(['/bgp-preview']);
       });
     });
+  }
+
+  showToastrMsgAddDisable(disable: boolean): void {
+    if (disable) {
+      this._toastr.info('AnnouncementPreview.TOASTR_MSG_REQUIRED_PREFIX_AND_ASN');
+    }
   }
 }

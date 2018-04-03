@@ -1,10 +1,4 @@
 <page-title [pageTitle]='pageTitle'></page-title>
-<ngb-alert type='success' *ngIf='alertSuccessAdded' (close)='alertSuccessAdded=false'>
-  {{ 'Whitelist.ALERT_MSG_ADDED' | translate }}
-</ngb-alert>
-<ngb-alert type='success' *ngIf='alertSuccessDeleted' (close)='alertSuccessDeleted=false'>
-  {{ 'Whitelist.ALERT_MSG_DELETED' | translate }}
-</ngb-alert>
 <ngb-alert type='info' *ngIf='alertShown' (close)='alertShown=false'>
   {{ 'Whitelist.ALERT_MSG_INTRO_1st' | translate }}
   <p [innerHTML]="'Whitelist.ALERT_MSG_INTRO_2nd' | translate:{value:'info'}"></p>
@@ -56,14 +50,11 @@
     </div>
     <!-- ADD BUTTON -->
     <div class='align-self-end'>
-      <span (mouseenter)='mouseoverAdd=true' (mouseleave)='mouseoverAdd=false'>
+      <span (mouseenter)='showToastrMsgAddDisable(entryForm.controls.prefix?.invalid || entryForm.controls.asn?.invalid)'>
         <button type='submit'
-                [disabled]='entryForm.controls.prefix?.invalid || entryForm.controls.asn?.invalid'
+                [disabled]='entryForm.controls.prefix?.invalid || entryForm.controls.asn?.invalid || submitted'
                 class='btn btn-primary'>{{'ADD' | translate}}</button>
       </span>
-      <em *ngIf='(entryForm.controls.prefix?.invalid || entryForm.controls.asn?.invalid) && mouseoverAdd'>
-        <strong>{{'Whitelist.REQUIRED_PREFIX_AND_ASN' | translate}}</strong>
-      </em>
     </div>
   </div>
   <!-- COMMENT -->
@@ -125,4 +116,5 @@
     </tbody>
   </table>
 </toolbar>
+<hr>
 <slurm (uploadedSlurm)='onUploadSlurm()'></slurm>

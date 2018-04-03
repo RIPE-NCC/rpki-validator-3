@@ -1,5 +1,6 @@
-import {Component, Input, OnInit, Output} from '@angular/core'
+import {Component, OnInit} from '@angular/core'
 import {ActivatedRoute} from "@angular/router";
+import {TranslateService} from "@ngx-translate/core";
 
 @Component({
   template: `
@@ -17,13 +18,33 @@ export class ErrorComponent implements OnInit {
   errorMsg: string = 'Page not found';
   error: string = '404';
 
-  constructor(private _activatedRoute: ActivatedRoute) { }
+  constructor(private _activatedRoute: ActivatedRoute,
+              private _translateService: TranslateService) { }
 
   ngOnInit(): void {
     const errorStatus = this._activatedRoute.snapshot.params['error'];
     if (errorStatus && errorStatus !== '200') {
-      this.error = errorStatus;
-      this.errorMsg = this._activatedRoute.snapshot.params['errorMsg'];
+      switch (errorStatus) {
+        case '504': {
+          this.error = '';
+          this.errorMsg = 'Error.BACKEND_DOWN';
+          break;
+        }
+        case '0': {
+          this.error = '';
+          this.errorMsg = 'Error.FRONTEND_DOWN';
+          break;
+        }
+        case 'undefined': {
+          this.error = '';
+          this.errorMsg = 'Error.UNKONOWN';
+          break;
+        }
+        default: {
+          this.error = errorStatus;
+          this.errorMsg = this._activatedRoute.snapshot.params['errorMsg'];
+        }
+      }
     }
   }
 }
