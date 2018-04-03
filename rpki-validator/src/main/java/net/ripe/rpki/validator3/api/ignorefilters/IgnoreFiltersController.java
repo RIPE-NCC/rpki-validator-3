@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.api.ignorefilters;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiCommand;
+import net.ripe.rpki.validator3.api.ApiError;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.Metadata;
 import net.ripe.rpki.validator3.api.Paging;
@@ -42,6 +43,7 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -108,7 +110,15 @@ public class IgnoreFiltersController {
 
     @PostMapping(consumes = { Api.API_MIME_TYPE, "application/json" })
     public ResponseEntity<ApiResponse<IgnoreFilter>> add(@RequestBody @Valid ApiCommand<AddIgnoreFilter> command) {
-        final long id = ignoreFilterService.execute(command.getData());
+        final long id;
+        try {
+            id = ignoreFilterService.execute(command.getData());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(ApiError.of(
+                    HttpStatus.BAD_REQUEST,
+                    "ASN " + command.getData().asn + " is invalid."
+            )));
+        }
         final net.ripe.rpki.validator3.domain.IgnoreFilter ignoreFilter = ignoreFilters.get(id);
         final Link selfRel = linkTo(methodOn(IgnoreFiltersController.class).get(id)).withSelfRel();
         return ResponseEntity.created(URI.create(selfRel.getHref())).body(ignoreFilterResource(ignoreFilter));
