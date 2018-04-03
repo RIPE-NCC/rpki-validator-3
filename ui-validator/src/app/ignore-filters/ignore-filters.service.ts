@@ -9,9 +9,9 @@ import {IResponse} from "../shared/response.model";
 
 export interface IIgnoreFilter {
   id: string,
-  prefix?: string,
-  asn?: string,
-  comment?: string
+  prefix: string,
+  asn: string,
+  comment: string
 }
 
 @Injectable()
