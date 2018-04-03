@@ -100,7 +100,7 @@ public class BgpPreviewService {
         String prefix;
         String validity;
         Integer maxLength;
-        String ta;
+        String source;
         String uri;
         Long roaPrefixAssertionId;
         String roaPrefixAssertionComment;
@@ -112,7 +112,6 @@ public class BgpPreviewService {
         String prefix;
         String validity;
         List<ValidatingRoa> validatingRoas;
-
     }
 
     @lombok.Value(staticConstructor = "of")
@@ -343,7 +342,7 @@ public class BgpPreviewService {
         return roaPrefixes;
     }
 
-    private Map<String, ImmutableList<BgpPreviewEntry>> validateBgpRisEntries(Map<String, ImmutableList<BgpPreviewEntry>> bgpRisEntries, IntervalMap<IpRange, List<RoaPrefix>> roaPrefixes) {
+    private <T> Map<T, ImmutableList<BgpPreviewEntry>> validateBgpRisEntries(Map<T, ImmutableList<BgpPreviewEntry>> bgpRisEntries, IntervalMap<IpRange, List<RoaPrefix>> roaPrefixes) {
         return bgpRisEntries.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> validateBgpRisEntries(entry.getValue(), roaPrefixes)));
     }
 
@@ -452,7 +451,7 @@ public class BgpPreviewService {
                            r.getPrefix().toString(),
                            p.getRight().toString(),
                            r.getMaximumLength(),
-                           null,
+                           "Whitelist",
                            null,
                             r.getRoaPrefixAssertionId(),
                             r.getComment()

@@ -17,7 +17,7 @@
     <th scope='col'>{{'Roas.ASN' | translate}}</th>
     <th scope='col'>{{'Roas.PREFIX' | translate}}</th>
     <th scope='col'>{{'Roas.MAX_LENGTH' | translate}}</th>
-    <th scope='col'>{{'TRUST_ANCHOR' | translate}}</th>
+    <th scope='col'>{{'AnnouncementPreview.SOURCE' | translate}}</th>
     <th scope='col'>{{'URI' | translate}}</th>
     <th scope='col'>{{'STATUS' | translate}}</th>
   </tr>
@@ -27,9 +27,10 @@
     <td>{{announcement.origin}}</td>
     <td>{{announcement.prefix}}</td>
     <td>{{announcement.maxLength}}</td>
-    <td>{{announcement.ta}}</td>
+    <td>{{announcement.source}}</td>
     <td (mouseleave)='p.close()'>
-      <img src='../../assets/images/uri-icon.png'
+      <img *ngIf="announcement.uri"
+           src='../../assets/images/uri-icon.png'
            [style.width.px]='20'
            [style.margin.px]='0'
            #p='ngbPopover'

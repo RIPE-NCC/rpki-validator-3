@@ -3,7 +3,7 @@ export interface IAnnouncement {
   prefix: string,
   validity: string,
   maxLength: number,
-  ta: string,
+  source: string,
   uri: string
 }
 
