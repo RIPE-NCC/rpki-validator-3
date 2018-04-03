@@ -127,9 +127,9 @@
     "TOASTR_MSG_REQUIRED_PREFIX_OR_ASN": "Prefix and/or ASN are required to enable adding.",
     "FILTERED_ROA_PREFIXES":"Filtered ROA prefixes",
     "TOASTR_MSG_ADDED": "The filter has been added.",
-    "TOASTR_MSG_ADD_ERROR": "Error happened. Filter wasn't add. Please try again.",
+    "TOASTR_MSG_ADD_ERROR": "Error happened. Filter has not been added. Please try again.",
     "TOASTR_MSG_DELETED": "The filter has been removed.",
-    "TOASTR_MSG_DELETE_ERROR": "Error happened. Filter wasn't remove. Please try again."
+    "TOASTR_MSG_DELETE_ERROR": "Error happened. Filter has not been removed. Please try again."
   },
   "Whitelist": {
     "VALIDATES": "Validates",
