@@ -22,7 +22,8 @@
              placeholder='{{"PREFIX_PLACEHOLDER" | translate}}'
              (ngModel)='whitelistEntry.prefix'
              (keyup)='validPrefix=true'
-             class='form-control'/>
+             class='form-control'
+             sanitize />
     </div>
     <!-- ASN -->
     <div class='col-3 pl-0'>
@@ -35,7 +36,8 @@
              placeholder='{{"ASN" | translate}}'
              (ngModel)='whitelistEntry.asn'
              (keyup)='validAsn=true'
-             class='form-control'/>
+             class='form-control'
+             sanitize />
     </div>
     <!-- MAXIMUM PREFIX LENGTH -->
     <div class='col-3 pl-0'>
@@ -49,7 +51,7 @@
              placeholder='{{"Whitelist.MAX_PREFIX_LENGTH_PLACEHOLDER" | translate}}'
              (ngModel)='whitelistEntry.maximumLength'
              (keyup)='validAsn=true'
-             class='form-control'/>
+             class='form-control' />
     </div>
     <!-- ADD BUTTON -->
     <div class='align-self-end'>
