@@ -52,7 +52,7 @@
     <div class='align-self-end'>
       <span (mouseenter)='showToastrMsgAddDisable(entryForm.controls.prefix?.invalid || entryForm.controls.asn?.invalid)'>
         <button type='submit'
-                [disabled]='entryForm.controls.prefix?.invalid || entryForm.controls.asn?.invalid'
+                [disabled]='entryForm.controls.prefix?.invalid || entryForm.controls.asn?.invalid || submitted'
                 class='btn btn-primary'>{{'ADD' | translate}}</button>
       </span>
     </div>

@@ -24,10 +24,9 @@ export class WhitelistComponent implements OnInit {
   validPrefix: boolean = true;
   validAsn: boolean = true;
   validMaxLength: boolean = true;
+  // button is submitted until waiting for response
+  submitted: boolean = false;
   alertShown: boolean = true;
-  //alertSuccessAdded: boolean = false;
-  alertSuccessDeleted: boolean = false;
-  mouseoverAdd: boolean = false;
   whitelist: IWhitelistEntry[] = [];
   whitelistEntry: IWhitelistEntry;
 
@@ -67,13 +66,16 @@ export class WhitelistComponent implements OnInit {
     this.validateAsn(entry.asn);
     this.validateMaxLength(entry.maximumLength);
     if (this.validPrefix && this.validAsn && this.validMaxLength) {
+      this.submitted = true;
       this._whitelistService.saveWhitelistEntry(entry)
         .subscribe(
           response => {
             this.loadData();
             form.resetForm();
+            this.submitted = false;
             this._toastr.success('Whitelist.TOASTR_MSG_ADDED')
           }, error => {
+            this.submitted = false;
             this._toastr.error('Whitelist.TOASTR_MSG_ADD_ERROR')
           }
         );

@@ -53,7 +53,10 @@
   },
   "Error": {
     "Page not found": "Page not found",
-    "Bad request": "Bad request"
+    "Bad request": "Bad request",
+    "BACKEND_DOWN": "Backend is down. Please start application",
+    "FRONTEND_DOWN": "Frontend is down. Please start application",
+    "UNKONOWN": "Please refresh page"
   },
   "Footer": {
     "COPYRIGHT": "Copyright ©2009-2018 the Réseaux IP Européens Network Coordination Centre RIPE NCC. All rights restricted."

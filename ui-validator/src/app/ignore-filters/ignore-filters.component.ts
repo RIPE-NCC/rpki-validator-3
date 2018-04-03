@@ -22,6 +22,8 @@ export class IgnoreFiltersComponent implements OnInit {
   loading: boolean = true;
   validPrefix: boolean = true;
   validAsn: boolean = true;
+  // button is submitted until waiting for response
+  submitted: boolean = false;
   alertShown: boolean = true;
   ignoreFilters: IIgnoreFilter[] = [];
   filter: IIgnoreFilter;
@@ -57,13 +59,16 @@ export class IgnoreFiltersComponent implements OnInit {
     this.validatePrefix(filter.prefix);
     this.validateAsn(filter.asn);
     if (this.validPrefix && this.validAsn) {
+      this.submitted = true;
       this._ignoreFiltersService.saveIgnoreFilter(filter)
         .subscribe(
           response => {
             this.loadData();
             form.resetForm();
+            this.submitted = false;
             this._toastr.success('IgnoreFilters.TOASTR_MSG_ADDED')
           }, error => {
+            this.submitted = false;
             this._toastr.error('IgnoreFilters.TOASTR_MSG_ADD_ERROR')
           }
         );
