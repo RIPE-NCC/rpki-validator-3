@@ -17,7 +17,7 @@ import {RpkiToastrService} from "../../core/rpki-toastr.service";
           <a href='api/slurm/download' class='btn-primary' target='_blank'>{{'Slurm.DOWNLOAD_SLURM' | translate}}</a>
           <div class='input-group-prepend ml-2'>
             <button type='button' class='btn btn-primary left-rounded'
-                    [disabled]='fileName === ("Slurm.CHOOSE_FILE" | translate)'
+                    [disabled]='fileName === ("Slurm.CHOOSE_FILE" | translate) || loading'
                     (click)='onSubmit()'>Upload SLURM</button>
           </div>
           <div class='custom-file'>
@@ -83,13 +83,13 @@ export class SlurmComponent implements OnInit {
   }
 
   onSubmit() {
-     const formModel = this.prepareSave();
-     this.loading = true;
+    this.loading = true;
+    const formModel = this.prepareSave();
       setTimeout(() => {
        this._whitelistService.uploadSlurm(formModel).subscribe(
          res => {
            this.loading = false;
-           this.initInputField();
+             this.initInputField();
            this.uploadedSlurm.emit();
            this._toastr.success('Slurm.SUCCESS_LOADED')
          }, error => {
