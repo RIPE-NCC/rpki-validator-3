@@ -115,7 +115,8 @@
     "ALERT_MSG_NO_RELEVANT": "No relevant validated ROAs",
     "TITLE_MODAL_FORM": "Please indicate ASN and Prefix in order to view announcements",
     "SHOW": "Show",
-    "TOASTR_MSG_REQUIRED_PREFIX_AND_ASN": "Prefix and ASN are required "
+    "TOASTR_MSG_REQUIRED_PREFIX_AND_ASN": "Prefix and ASN are required ",
+    "TOASTR_MSG_ERROR": "Specified prefix and/or ASN are not valid"
   },
   "IgnoreFilters": {
     "ALERT_MSG_INTRO": "By adding a filter the validator will ignore any RPKI prefixes that overlap with the filter's prefix.",

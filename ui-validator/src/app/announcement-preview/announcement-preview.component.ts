@@ -52,7 +52,12 @@ export class AnnouncementPreviewComponent implements OnInit {
   getAnnouncementPreviewData(): void {
     this._bgpService.getBgpAnnouncementPreview(this.prefix, this.asn)
       .subscribe(
-        response => this.announcementPreviewData = response.data
+        response => {
+          this.announcementPreviewData = response.data;
+        }, error => {
+          // open modal dialog
+          this.openModalForm(this.modalTempRef);
+        }
       )
   }
 
@@ -61,8 +66,8 @@ export class AnnouncementPreviewComponent implements OnInit {
     setTimeout(() => {
       this.modalRef = this._modalService.open(modalTempRef);
       this.modalRef.result.then(result => {
-          this._router.navigate(['/announcement-preview/'], {queryParams: {asn: this.asn, prefix: this.prefix}});
-          this.modalRef.close();
+        this._router.navigate(['/announcement-preview/'], {queryParams: {asn: this.asn, prefix: this.prefix}});
+        this.modalRef.close();
       }, dismiss => {
         this.modalRef.close();
         this._router.navigate(['/bgp-preview']);
@@ -70,9 +75,12 @@ export class AnnouncementPreviewComponent implements OnInit {
     });
   }
 
-  showToastrMsgAddDisable(disable: boolean): void {
+  showToastrMsgAddDisable(disable: boolean, prefixEntered: boolean, asnEntered: boolean): void {
     if (disable) {
       this._toastr.info('AnnouncementPreview.TOASTR_MSG_REQUIRED_PREFIX_AND_ASN');
+    } else if (!prefixEntered && !asnEntered) {
+      // user didn't try to fix prefix or asn in form and move mouse over button
+      this._toastr.info('AnnouncementPreview.TOASTR_MSG_ERROR');
     }
   }
 }

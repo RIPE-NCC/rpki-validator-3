@@ -66,10 +66,10 @@
       </p>
     </div>
     <div class='modal-footer'>
-      <span (mouseenter)='showToastrMsgAddDisable(asnPrefixForm.controls.prefix?.invalid || asnPrefixForm.controls.asn?.invalid)'>
+      <span (mouseenter)='showToastrMsgAddDisable(asnPrefixForm.controls.prefix?.invalid || asnPrefixForm.controls.asn?.invalid, asnPrefixForm.controls.prefix?.dirty, asnPrefixForm.controls.asn?.dirty)'>
         <button type='submit' class='btn btn-primary'
                 (click)='c("reload")'
-                [disabled]='asnPrefixForm.controls.prefix?.invalid || asnPrefixForm.controls.asn?.invalid'>
+                [disabled]='asnPrefixForm.controls.prefix?.invalid || asnPrefixForm.controls.asn?.invalid || (!asnPrefixForm.controls.prefix?.dirty && !asnPrefixForm.controls.asn?.dirty)'>
           {{'AnnouncementPreview.SHOW' | translate}}
         </button>
       </span>
