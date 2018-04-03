@@ -3,7 +3,10 @@
   {{ 'Whitelist.ALERT_MSG_INTRO_1st' | translate }}
   <p [innerHTML]="'Whitelist.ALERT_MSG_INTRO_2nd' | translate:{value:'info'}"></p>
 </ngb-alert>
-<h3><strong>{{'Whitelist.ADD_ENTRY' | translate}}</strong></h3>
+<h3>
+  <strong>{{'Whitelist.ADD_ENTRY' | translate}}</strong>
+  <loading-spinner class='ml-2' [loading]='submitted'></loading-spinner>
+</h3>
 <form #entryForm='ngForm'
       (ngSubmit)='onWhitelistEntrySubmit(entryForm)'
       class='panel'>

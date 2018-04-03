@@ -2,7 +2,10 @@
 <ngb-alert type='info' *ngIf='alertShown' (close)='alertShown=false'>
   {{ 'IgnoreFilters.ALERT_MSG_INTRO' | translate }}
 </ngb-alert>
-<h3><strong>{{'IgnoreFilters.ADD_FILTER' | translate}}</strong></h3>
+<h3>
+  <strong>{{'IgnoreFilters.ADD_FILTER' | translate}}</strong>
+  <loading-spinner class='ml-2' [loading]='submitted'></loading-spinner>
+</h3>
 <form #filterForm='ngForm'
       (ngSubmit)='onFilterSubmit(filterForm)'
       class='panel'>
