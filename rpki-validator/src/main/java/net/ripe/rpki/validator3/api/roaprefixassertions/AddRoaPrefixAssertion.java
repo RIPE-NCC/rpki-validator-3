@@ -37,16 +37,19 @@ import net.ripe.rpki.validator3.domain.constraints.ValidPrefix;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 @Data(staticConstructor = "of")
 @Builder
 public class AddRoaPrefixAssertion {
     @ApiModelProperty(position = 1, required = true)
+    @NotNull
     @ValidAsn
     String asn;
 
     @ApiModelProperty(position = 2, required = true)
+    @NotNull
     @ValidPrefix
     String prefix;
 

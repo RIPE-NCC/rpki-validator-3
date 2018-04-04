@@ -36,6 +36,7 @@ import net.ripe.rpki.validator3.domain.constraints.ValidAsn;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 @Data(staticConstructor = "of")
@@ -45,10 +46,12 @@ public class AddBgpSecAssertion {
     @ValidAsn
     String asn;
 
-    @ApiModelProperty(position = 2, required = false)
+    @ApiModelProperty(position = 2, required = true)
+    @NotNull
     String ski;
 
-    @ApiModelProperty(position = 3, required = false)
+    @ApiModelProperty(position = 3, required = true)
+    @NotNull
     String publicKey;
 
     @ApiModelProperty(position = 4)
