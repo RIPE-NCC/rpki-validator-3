@@ -6,20 +6,23 @@
     "successful" : 20932,
     "warnings" : 0,
     "errors" : 0,
-    "lastUpdated" : "2018-02-25 04:32:31"
+    "lastUpdated" : "2018-02-25 04:32:31",
+    "completedValidation": true
   }, {
     "id" : "3261",
     "taName" : "APNIC RPKI Root",
     "successful" : 0,
     "warnings" : 4240,
     "errors" : 0,
-    "lastUpdated" : "2018-02-25 04:32:39"
+    "lastUpdated" : "2018-02-25 04:32:39",
+    "completedValidation": true
   }, {
     "id" : "30",
     "taName" : "AfriNIC RPKI Root",
     "successful" : 0,
     "warnings" : 0,
     "errors" : 4240,
-    "lastUpdated" : "2018-02-25 04:32:33"
+    "lastUpdated" : "2018-02-25 04:32:33",
+    "completedValidation": true
   } ]
 }

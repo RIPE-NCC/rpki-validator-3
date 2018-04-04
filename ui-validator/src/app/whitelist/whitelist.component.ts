@@ -73,10 +73,10 @@ export class WhitelistComponent implements OnInit {
             this.loadData();
             form.resetForm();
             this.submitted = false;
-            this._toastr.success('Whitelist.TOASTR_MSG_ADDED')
+            this._toastr.success('Whitelist.TOASTR_MSG_ADDED');
           }, error => {
             this.submitted = false;
-            this._toastr.error('Whitelist.TOASTR_MSG_ADD_ERROR')
+            this._toastr.error('Whitelist.TOASTR_MSG_ADD_ERROR');
           }
         );
     }
@@ -87,9 +87,9 @@ export class WhitelistComponent implements OnInit {
       .subscribe(
         response => {
           this.loadData();
-          this._toastr.info('Whitelist.TOASTR_MSG_DELETED')
+          this._toastr.info('Whitelist.TOASTR_MSG_DELETED');
         }, error => {
-          this._toastr.error('Whitelist.TOASTR_MSG_DELETED_ERROR')
+          this._toastr.error('Whitelist.TOASTR_MSG_DELETED_ERROR');
         }
       );
   }

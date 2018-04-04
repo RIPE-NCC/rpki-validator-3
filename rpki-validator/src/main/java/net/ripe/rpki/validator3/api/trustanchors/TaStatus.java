@@ -41,4 +41,5 @@ public class TaStatus {
     final int warnings;
     final int successful;
     final Date lastUpdated;
+    final boolean completedValidation;
 }

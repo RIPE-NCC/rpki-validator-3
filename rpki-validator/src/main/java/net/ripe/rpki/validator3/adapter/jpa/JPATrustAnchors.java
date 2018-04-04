@@ -109,7 +109,8 @@ public class JPATrustAnchors extends JPARepository<TrustAnchor> implements Trust
                 "        FROM validation_run \n" +
                 "        WHERE trust_anchor_id = taId \n" +
                 "        AND type = 'CT' \n" +
-                "       ) AS lastUpdated \n" +
+                "       ) AS lastUpdated, \n" +
+                "       completedValidation \n" +
                 "     FROM (\n" +
                 "     SELECT DISTINCT \n" +
                 "       ta.id as taId, \n" +
@@ -117,7 +118,8 @@ public class JPATrustAnchors extends JPARepository<TrustAnchor> implements Trust
                 "        CASE WHEN vc.status = 'ERROR'   THEN 1 ELSE 0 END AS errors,\n" +
                 "        CASE WHEN vc.status = 'WARNING' THEN 1 ELSE 0 END AS warnings,\n" +
                 "        vr.id as vrid,\n" +
-                "        vc.location\n" +
+                "        vc.location, \n" +
+                "        initial_certificate_tree_validation_run_completed AS completedValidation \n" +
                 "     FROM trust_anchor ta\n" +
                 "     INNER JOIN validation_run vr ON vr.trust_anchor_id = ta.id\n" +
                 "     LEFT JOIN validation_check vc ON vc.validation_run_id = vr.id\n" +
@@ -138,7 +140,8 @@ public class JPATrustAnchors extends JPARepository<TrustAnchor> implements Trust
                     asInt(fields[2]),
                     asInt(fields[3]),
                     asInt(fields[4]),
-                    asDate(fields[5]));
+                    asDate(fields[5]),
+                    asBoolean(fields[6]));
         })).collect(Collectors.toList());
     }
 
