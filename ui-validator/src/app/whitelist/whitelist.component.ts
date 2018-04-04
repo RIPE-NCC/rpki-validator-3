@@ -77,6 +77,8 @@ export class WhitelistComponent implements OnInit {
           }, error => {
             this.submitted = false;
             this._toastr.error('Whitelist.TOASTR_MSG_ADD_ERROR');
+            this.validPrefix = !(error.error.errors.some(err => err.source.pointer === '/data/prefix'));
+            this.validAsn = !error.error.errors.some(err => err.source.pointer === '/data/asn');
           }
         );
     }

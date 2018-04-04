@@ -66,10 +66,12 @@ export class IgnoreFiltersComponent implements OnInit {
             this.loadData();
             form.resetForm();
             this.submitted = false;
-            this._toastr.success('IgnoreFilters.TOASTR_MSG_ADDED')
+            this._toastr.success('IgnoreFilters.TOASTR_MSG_ADDED');
           }, error => {
             this.submitted = false;
-            this._toastr.error('IgnoreFilters.TOASTR_MSG_ADD_ERROR')
+            this._toastr.error('IgnoreFilters.TOASTR_MSG_ADD_ERROR');
+            this.validPrefix = !(error.error.errors.some(err => err.source.pointer === '/data/prefix'));
+            this.validAsn = !error.error.errors.some(err => err.source.pointer === '/data/asn');
           }
         );
     }
