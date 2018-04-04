@@ -49,7 +49,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Retention(RUNTIME)
 @Documented
 @Constraint(validatedBy = {})
-@Pattern(regexp = "^(?:AS)?(\\d+)(\\.(\\d+))?$", flags = Pattern.Flag.CASE_INSENSITIVE)
+@Pattern(regexp = "^(\\s*)(?:AS)?(\\d+)(\\.(\\d+))?(\\s*)$", flags = Pattern.Flag.CASE_INSENSITIVE)
 public @interface ValidAsn {
 
     String message() default "{net.ripe.rpki.validator3.domain.constraints.ValidAsn.message}";

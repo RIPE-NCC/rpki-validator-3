@@ -61,7 +61,7 @@ public class IgnoreFilterService {
     public long execute(@Valid AddIgnoreFilter command) {
         IgnoreFilter ignoreFilter = new IgnoreFilter();
         if (command.getAsn() != null) {
-            ignoreFilter.setAsn(Asn.parse(command.getAsn()).longValue());
+            ignoreFilter.setAsn(Asn.parse(command.getAsn().trim()).longValue());
         }
         ignoreFilter.setPrefix(command.getPrefix());
         ignoreFilter.setComment(command.getComment());

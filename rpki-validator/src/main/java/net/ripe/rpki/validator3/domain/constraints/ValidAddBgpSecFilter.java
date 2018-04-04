@@ -27,28 +27,31 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.api.bgpsec;
+package net.ripe.rpki.validator3.domain.constraints;
 
-import io.swagger.annotations.ApiModelProperty;
-import lombok.Builder;
-import lombok.Data;
-import net.ripe.rpki.validator3.domain.constraints.ValidAddBgpSecFilter;
-import net.ripe.rpki.validator3.domain.constraints.ValidAsn;
+import javax.validation.Constraint;
+import javax.validation.Payload;
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-import javax.validation.constraints.Size;
+import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
+import static java.lang.annotation.ElementType.CONSTRUCTOR;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.ElementType.TYPE_USE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-@Data(staticConstructor = "of")
-@Builder
-@ValidAddBgpSecFilter
-public class AddBgpSecFilter {
-    @ApiModelProperty(position = 1)
-    @ValidAsn
-    String asn;
+@Target({METHOD, FIELD, ANNOTATION_TYPE, CONSTRUCTOR, PARAMETER, TYPE_USE})
+@Retention(RUNTIME)
+@Documented
+@Constraint(validatedBy = AddBgpSecFilterValidator.class)
+public @interface ValidAddBgpSecFilter {
 
-    @ApiModelProperty(position = 2)
-    String routerSki;
+    String message() default "{net.ripe.rpki.validator3.domain.constraints.ValidAddBgpSecFilter.message}";
 
-    @ApiModelProperty(position = 3)
-    @Size(max = 2000)
-    String comment;
+    Class<?>[] groups() default {};
+
+    Class<? extends Payload>[] payload() default {};
 }

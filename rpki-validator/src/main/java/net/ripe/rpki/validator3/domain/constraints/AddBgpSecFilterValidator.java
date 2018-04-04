@@ -27,28 +27,20 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.api.bgpsec;
+package net.ripe.rpki.validator3.domain.constraints;
 
-import io.swagger.annotations.ApiModelProperty;
-import lombok.Builder;
-import lombok.Data;
-import net.ripe.rpki.validator3.domain.constraints.ValidAddBgpSecFilter;
-import net.ripe.rpki.validator3.domain.constraints.ValidAsn;
+import net.ripe.rpki.validator3.api.bgpsec.AddBgpSecFilter;
+import net.ripe.rpki.validator3.api.ignorefilters.AddIgnoreFilter;
 
-import javax.validation.constraints.Size;
+import javax.validation.ConstraintValidator;
+import javax.validation.ConstraintValidatorContext;
 
-@Data(staticConstructor = "of")
-@Builder
-@ValidAddBgpSecFilter
-public class AddBgpSecFilter {
-    @ApiModelProperty(position = 1)
-    @ValidAsn
-    String asn;
-
-    @ApiModelProperty(position = 2)
-    String routerSki;
-
-    @ApiModelProperty(position = 3)
-    @Size(max = 2000)
-    String comment;
+public class AddBgpSecFilterValidator implements ConstraintValidator<ValidAddIgnoreFilter, AddBgpSecFilter> {
+    @Override
+    public boolean isValid(AddBgpSecFilter value, ConstraintValidatorContext context) {
+        if (value.getAsn() == null && value.getRouterSki() == null) {
+            return false;
+        }
+        return true;
+    }
 }

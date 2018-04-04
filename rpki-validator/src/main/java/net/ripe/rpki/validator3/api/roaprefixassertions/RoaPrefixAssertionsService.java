@@ -61,8 +61,8 @@ public class RoaPrefixAssertionsService {
 
     public long execute(@Valid AddRoaPrefixAssertion command) {
         RoaPrefixAssertion entity = new RoaPrefixAssertion(
-            Asn.parse(command.getAsn()),
-            IpRange.parse(command.getPrefix()),
+            Asn.parse(command.getAsn().trim()),
+            IpRange.parse(command.getPrefix().trim()),
             command.getMaximumLength(),
             command.getComment()
         );

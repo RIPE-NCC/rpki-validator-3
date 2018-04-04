@@ -41,7 +41,7 @@ public class PrefixValidator implements ConstraintValidator<ValidPrefix, String>
             return true;
         }
         try {
-            IpRange.parse(value);
+            IpRange.parse(value.trim());
             return true;
         } catch (Exception e) {
             return false;
