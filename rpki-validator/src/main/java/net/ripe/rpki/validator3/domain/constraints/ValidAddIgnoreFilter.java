@@ -27,30 +27,33 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.api.ignorefilters;
+package net.ripe.rpki.validator3.domain.constraints;
 
-import io.swagger.annotations.ApiModelProperty;
-import lombok.Builder;
-import lombok.Data;
-import net.ripe.rpki.validator3.domain.constraints.ValidAddIgnoreFilter;
-import net.ripe.rpki.validator3.domain.constraints.ValidAsn;
-import net.ripe.rpki.validator3.domain.constraints.ValidPrefix;
-import net.ripe.rpki.validator3.domain.constraints.ValidPublicKeyInfo;
+import javax.validation.Constraint;
+import javax.validation.Payload;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-@Data(staticConstructor = "of")
-@Builder
-@ValidAddIgnoreFilter
-public class AddIgnoreFilter {
+import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
+import static java.lang.annotation.ElementType.CONSTRUCTOR;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.ElementType.TYPE_USE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-    @ApiModelProperty(position = 1)
-    @ValidAsn
-    String asn;
+@Target({METHOD, FIELD, ANNOTATION_TYPE, CONSTRUCTOR, PARAMETER, TYPE_USE})
+@Retention(RUNTIME)
+@Documented
+@Constraint(validatedBy = AddIgnoreFilterValidator.class)
+public @interface ValidAddIgnoreFilter {
 
-    @ApiModelProperty(position = 2)
-    @ValidPrefix
-    String prefix;
+    String message() default "{net.ripe.rpki.validator3.domain.constraints.ValidAddIgnoreFilter.message}";
 
-    @ApiModelProperty(position = 3)
-    String comment;
+    Class<?>[] groups() default {};
+
+    Class<? extends Payload>[] payload() default {};
 }
-

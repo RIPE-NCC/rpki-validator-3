@@ -27,30 +27,23 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.api.ignorefilters;
+package net.ripe.rpki.validator3.domain.constraints;
 
-import io.swagger.annotations.ApiModelProperty;
-import lombok.Builder;
-import lombok.Data;
-import net.ripe.rpki.validator3.domain.constraints.ValidAddIgnoreFilter;
-import net.ripe.rpki.validator3.domain.constraints.ValidAsn;
-import net.ripe.rpki.validator3.domain.constraints.ValidPrefix;
-import net.ripe.rpki.validator3.domain.constraints.ValidPublicKeyInfo;
+import net.ripe.rpki.validator3.api.ignorefilters.AddIgnoreFilter;
 
-@Data(staticConstructor = "of")
-@Builder
-@ValidAddIgnoreFilter
-public class AddIgnoreFilter {
+import javax.validation.ConstraintValidator;
+import javax.validation.ConstraintValidatorContext;
 
-    @ApiModelProperty(position = 1)
-    @ValidAsn
-    String asn;
+public class AddIgnoreFilterValidator implements ConstraintValidator<ValidAddIgnoreFilter, AddIgnoreFilter> {
+    @Override
+    public void initialize(ValidAddIgnoreFilter constraintAnnotation) {
+    }
 
-    @ApiModelProperty(position = 2)
-    @ValidPrefix
-    String prefix;
-
-    @ApiModelProperty(position = 3)
-    String comment;
+    @Override
+    public boolean isValid(AddIgnoreFilter value, ConstraintValidatorContext context) {
+        if (value.getAsn() == null && value.getPrefix() == null) {
+            return false;
+        }
+        return true;
+    }
 }
-

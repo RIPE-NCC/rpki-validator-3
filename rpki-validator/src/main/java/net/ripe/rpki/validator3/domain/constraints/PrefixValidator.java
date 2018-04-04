@@ -27,30 +27,24 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.api.ignorefilters;
+package net.ripe.rpki.validator3.domain.constraints;
 
-import io.swagger.annotations.ApiModelProperty;
-import lombok.Builder;
-import lombok.Data;
-import net.ripe.rpki.validator3.domain.constraints.ValidAddIgnoreFilter;
-import net.ripe.rpki.validator3.domain.constraints.ValidAsn;
-import net.ripe.rpki.validator3.domain.constraints.ValidPrefix;
-import net.ripe.rpki.validator3.domain.constraints.ValidPublicKeyInfo;
+import net.ripe.ipresource.IpRange;
 
-@Data(staticConstructor = "of")
-@Builder
-@ValidAddIgnoreFilter
-public class AddIgnoreFilter {
+import javax.validation.ConstraintValidator;
+import javax.validation.ConstraintValidatorContext;
 
-    @ApiModelProperty(position = 1)
-    @ValidAsn
-    String asn;
-
-    @ApiModelProperty(position = 2)
-    @ValidPrefix
-    String prefix;
-
-    @ApiModelProperty(position = 3)
-    String comment;
+public class PrefixValidator implements ConstraintValidator<ValidPrefix, String> {
+    @Override
+    public boolean isValid(String value, ConstraintValidatorContext context) {
+        if (value == null) {
+            return true;
+        }
+        try {
+            IpRange.parse(value);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }
-
