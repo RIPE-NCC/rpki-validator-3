@@ -110,6 +110,10 @@ abstract class JPARepository<T> {
         return d == null ? null : new Date(((Timestamp) d).getTime());
     }
 
+    protected Boolean asBoolean(Object o) {
+        return o == null ? null : (Boolean)o;
+    }
+
     protected <T> JPAQuery<T> applyPaging(JPAQuery<T> query, Paging paging) {
         if (paging != null) {
             final Integer startFrom = paging.getStartFrom();
