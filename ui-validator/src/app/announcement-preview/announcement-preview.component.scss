@@ -20,3 +20,9 @@ table {
     word-wrap: break-word;
   }
 }
+
+::ng-deep .popover {
+  margin-top: 2px;
+  max-width: inherit;
+  width: 25rem;
+}
