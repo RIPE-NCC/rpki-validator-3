@@ -110,15 +110,7 @@ public class IgnoreFiltersController {
 
     @PostMapping(consumes = { Api.API_MIME_TYPE, "application/json" })
     public ResponseEntity<ApiResponse<IgnoreFilter>> add(@RequestBody @Valid ApiCommand<AddIgnoreFilter> command) {
-        final long id;
-        try {
-            id = ignoreFilterService.execute(command.getData());
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(ApiError.of(
-                    HttpStatus.BAD_REQUEST,
-                    "ASN " + command.getData().asn + " is invalid."
-            )));
-        }
+        final long id = ignoreFilterService.execute(command.getData());
         final net.ripe.rpki.validator3.domain.IgnoreFilter ignoreFilter = ignoreFilters.get(id);
         final Link selfRel = linkTo(methodOn(IgnoreFiltersController.class).get(id)).withSelfRel();
         return ResponseEntity.created(URI.create(selfRel.getHref())).body(ignoreFilterResource(ignoreFilter));

@@ -32,6 +32,8 @@ package net.ripe.rpki.validator3.api.roaprefixassertions;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Builder;
 import lombok.Data;
+import net.ripe.rpki.validator3.domain.constraints.ValidAsn;
+import net.ripe.rpki.validator3.domain.constraints.ValidPrefix;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
@@ -41,9 +43,11 @@ import javax.validation.constraints.Size;
 @Builder
 public class AddRoaPrefixAssertion {
     @ApiModelProperty(position = 1, required = true)
+    @ValidAsn
     String asn;
 
     @ApiModelProperty(position = 2, required = true)
+    @ValidPrefix
     String prefix;
 
     @ApiModelProperty(position = 3)

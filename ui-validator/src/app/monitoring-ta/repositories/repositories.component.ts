@@ -41,7 +41,7 @@ export class RepositoriesComponent implements OnInit {
           this.loading = false;
           this.repositories = response.data;
           this.response = response;
-          // TODO check if there is really need for this event, maybe you can call it immidiatly
+          // notify to refresh repositories statuses
           this.notifyLoadedStatuses.emit();
         });
   }

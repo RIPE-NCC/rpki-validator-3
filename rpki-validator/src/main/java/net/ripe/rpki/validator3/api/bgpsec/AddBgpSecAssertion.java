@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.api.bgpsec;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Builder;
 import lombok.Data;
+import net.ripe.rpki.validator3.domain.constraints.ValidAsn;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
@@ -41,6 +42,7 @@ import javax.validation.constraints.Size;
 @Builder
 public class AddBgpSecAssertion {
     @ApiModelProperty(position = 1, required = true)
+    @ValidAsn
     String asn;
 
     @ApiModelProperty(position = 2, required = false)

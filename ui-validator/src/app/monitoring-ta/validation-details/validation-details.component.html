@@ -1,6 +1,5 @@
 <h3><strong>{{'ValidationDetails.TITLE' | translate}}</strong></h3>
-<toolbar [hidden]='validationChecks.length === 0'
-         [loading]='loading'
+<toolbar [loading]='loading'
          [responseData]='response'
          [msgNoItems]='"ValidationDetails.NO_RECORDS" | translate:{value:"info"}'
          (notifyToolbarChanged)='onToolbarChange($event)'>
