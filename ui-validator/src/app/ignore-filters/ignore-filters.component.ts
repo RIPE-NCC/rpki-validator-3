@@ -24,6 +24,7 @@ export class IgnoreFiltersComponent implements OnInit {
   validAsn: boolean = true;
   // button is submitted until waiting for response
   submitted: boolean = false;
+  deleting: boolean = false;
   alertShown: boolean = true;
   ignoreFilters: IIgnoreFilter[] = [];
   filter: IIgnoreFilter;
@@ -78,15 +79,20 @@ export class IgnoreFiltersComponent implements OnInit {
   }
 
   deleteFilter(filter: IIgnoreFilter): void {
-    this._ignoreFiltersService.deleteIgnoreFilter(filter)
-      .subscribe(
-        response => {
-          this.loadData();
-          this._toastr.info('IgnoreFilters.TOASTR_MSG_DELETED')
-        }, error => {
-          this._toastr.error('IgnoreFilters.TOASTR_MSG_DELETE_ERROR')
-        }
-      );
+    if (!this.deleting) {
+      this.deleting = true;
+      this._ignoreFiltersService.deleteIgnoreFilter(filter)
+        .subscribe(
+          response => {
+            this.loadData();
+            this._toastr.info('IgnoreFilters.TOASTR_MSG_DELETED');
+            this.deleting = false;
+          }, error => {
+            this._toastr.error('IgnoreFilters.TOASTR_MSG_DELETE_ERROR')
+            this.deleting = false;
+          }
+        );
+    }
   }
 
   validatePrefix(prefix: string): void {

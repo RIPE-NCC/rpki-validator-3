@@ -26,6 +26,7 @@ export class WhitelistComponent implements OnInit {
   validMaxLength: boolean = true;
   // button is submitted until waiting for response
   submitted: boolean = false;
+  deleting: boolean = false;
   alertShown: boolean = true;
   whitelist: IWhitelistEntry[] = [];
   whitelistEntry: IWhitelistEntry;
@@ -85,15 +86,20 @@ export class WhitelistComponent implements OnInit {
   }
 
   deleteFilter(entry: IWhitelistEntry): void {
-    this._whitelistService.deleteWhitelistEntry(entry)
-      .subscribe(
-        response => {
-          this.loadData();
-          this._toastr.info('Whitelist.TOASTR_MSG_DELETED');
-        }, error => {
-          this._toastr.error('Whitelist.TOASTR_MSG_DELETED_ERROR');
-        }
-      );
+    if (!this.deleting) {
+      this.deleting = true;
+      this._whitelistService.deleteWhitelistEntry(entry)
+        .subscribe(
+          response => {
+            this.loadData();
+            this._toastr.info('Whitelist.TOASTR_MSG_DELETED');
+            this.deleting = false;
+          }, error => {
+            this._toastr.error('Whitelist.TOASTR_MSG_DELETED_ERROR');
+            this.deleting = false;
+          }
+        );
+    }
   }
 
   validatePrefix(prefix: string): void {
