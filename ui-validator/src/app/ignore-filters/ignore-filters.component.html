@@ -69,6 +69,7 @@
       <tr>
         <th sortable-column='prefix'>{{'PREFIX' | translate}}</th>
         <th sortable-column='asn'>{{'ASN' | translate}}</th>
+        <th>{{'IgnoreFilters.MATCHING_ANNOUNCEMENTS' | translate}}</th>
         <th sortable-column='comment'>{{'COMMENT' | translate}}</th>
         <th></th>
       </tr>
@@ -77,6 +78,14 @@
       <tr *ngFor='let ignoreFilter of ignoreFilters'>
         <td>{{ignoreFilter.prefix}}</td>
         <td>{{ignoreFilter.asn}}</td>
+        <td>
+          <div *ngIf='ignoreFilter.matchingAnnouncements?.length > 0; else matchingAnnouncementsPopover'>
+            <popover-matching-announcements [entries]='ignoreFilter.matchingAnnouncements'></popover-matching-announcements>
+          </div>
+          <ng-template #matchingAnnouncementsPopover>
+            <span>0 {{'IgnoreFilters.MATCHING_ANNOUNCEMENTS' | translate}}</span>
+          </ng-template>
+        </td>
         <td>{{ignoreFilter.comment}}</td>
         <td>
             <span class='fa fa-ban ban-icon'

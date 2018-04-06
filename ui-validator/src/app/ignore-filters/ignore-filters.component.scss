@@ -9,17 +9,22 @@
 
 em {
   color: $red-rpki;
-  padding-left:10px;
+  padding-left:.6rem;
 }
 
 .ban-icon {
-  font-size:20px;
+  font-size:1.25rem;
   color: $red-rpki;
 }
 
-thead > tr > th:nth-child(4) {
-    width: 60px;
+thead > tr {
+  th:nth-child(3) {
+    width: 12.5rem;
+  }
+  th:nth-child(5) {
+    width: 3.5rem;
+  }
 }
-tbody > tr > td:nth-child(4) {
+tbody > tr > td:nth-child(5) {
   text-align: center;
 }

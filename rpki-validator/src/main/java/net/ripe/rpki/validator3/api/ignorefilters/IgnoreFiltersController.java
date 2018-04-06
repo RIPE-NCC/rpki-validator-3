@@ -29,7 +29,10 @@
  */
 package net.ripe.rpki.validator3.api.ignorefilters;
 
+import com.google.common.collect.ImmutableList;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.ipresource.Asn;
+import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiCommand;
 import net.ripe.rpki.validator3.api.ApiResponse;
@@ -37,6 +40,8 @@ import net.ripe.rpki.validator3.api.Metadata;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.api.bgp.BgpPreviewController;
+import net.ripe.rpki.validator3.api.bgp.BgpPreviewService;
 import net.ripe.rpki.validator3.domain.IgnoreFilters;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,6 +76,9 @@ public class IgnoreFiltersController {
 
     @Autowired
     private IgnoreFilterService ignoreFilterService;
+
+    @Autowired
+    private BgpPreviewService bgpPreviewService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<Stream<IgnoreFilter>>> list(
@@ -121,7 +129,21 @@ public class IgnoreFiltersController {
     }
 
     private IgnoreFilter toIgnoreFilter(net.ripe.rpki.validator3.domain.IgnoreFilter f) {
-        return new IgnoreFilter(f.getId(), f.getAsn(), f.getPrefix(), f.getComment());
+        List<BgpPreviewService.BgpPreviewEntry> affected = bgpPreviewService.findAffected(
+                new Asn(f.getAsn()),
+                IpRange.parse(f.getPrefix()),
+                null
+        );
+        ImmutableList.Builder<BgpPreviewController.BgpPreview> validated = ImmutableList.builder();
+        affected.forEach(x -> {
+            BgpPreviewController.BgpPreview entry = BgpPreviewController.BgpPreview.of(
+                    x.getOrigin().toString(),
+                    x.getPrefix().toString(),
+                    x.getValidity().toString()
+            );
+            validated.add(entry);
+        });
+        return new IgnoreFilter(f.getId(), f.getAsn(), f.getPrefix(), f.getComment(), validated.build());
     }
 
     private ApiResponse<IgnoreFilter> ignoreFilterResource(net.ripe.rpki.validator3.domain.IgnoreFilter ignoreFilter) {

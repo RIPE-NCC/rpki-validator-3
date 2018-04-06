@@ -11,6 +11,7 @@ export interface IIgnoreFilter {
   id: string,
   prefix: string,
   asn: string,
+  matchingAnnouncements: string,
   comment: string
 }
 
