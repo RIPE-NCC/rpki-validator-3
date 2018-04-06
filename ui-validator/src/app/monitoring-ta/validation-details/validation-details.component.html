@@ -27,6 +27,9 @@
       <td>{{validationCheck.formattedMessage}}</td>
       <td> <flag [value]='validationCheck.status'></flag></td>
     </tr>
+    <tr *ngIf='validationChecks.length === 0'>
+      <td colspan='3'>{{'NO_RECORDS' | translate}}</td>
+    </tr>
     </tbody>
   </table>
 </toolbar>

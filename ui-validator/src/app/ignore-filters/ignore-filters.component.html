@@ -84,6 +84,9 @@
                   (click)='deleteFilter(ignoreFilter)'></span>
         </td>
       </tr>
+      <tr *ngIf='ignoreFilters.length === 0'>
+        <td colspan='4'>{{'NO_RECORDS' | translate}}</td>
+      </tr>
       </tbody>
     </table>
   </toolbar>

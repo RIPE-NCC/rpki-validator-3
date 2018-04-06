@@ -118,6 +118,9 @@
               (click)='deleteFilter(item)'></span>
       </td>
     </tr>
+    <tr *ngIf='whitelist.length === 0'>
+      <td colspan='7'>{{'NO_RECORDS' | translate}}</td>
+    </tr>
     </tbody>
   </table>
 </toolbar>

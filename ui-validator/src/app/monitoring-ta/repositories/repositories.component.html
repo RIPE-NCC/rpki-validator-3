@@ -19,6 +19,9 @@
         <td><flag [value]='repo.status'></flag></td>
         <td>{{repo.lastDownloadedAt | date:'medium'}}</td>
       </tr>
+      <tr *ngIf='repositories.length === 0'>
+        <td colspan='4'>{{'NO_RECORDS' | translate}}</td>
+      </tr>
     </tbody>
   </table>
 </toolbar>
