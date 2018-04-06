@@ -29,10 +29,18 @@
  */
 package net.ripe.rpki.validator3.domain;
 
+import net.ripe.rpki.validator3.api.Paging;
+import net.ripe.rpki.validator3.api.SearchTerm;
+import net.ripe.rpki.validator3.api.Sorting;
+
 import java.util.stream.Stream;
 
 public interface IgnoreFilters {
     Stream<IgnoreFilter> all();
+
+    Stream<IgnoreFilter> find(SearchTerm searchTerm, Sorting sorting, Paging paging);
+
+    long count(SearchTerm searchTerm);
 
     void add(IgnoreFilter ignoreFilter);
 

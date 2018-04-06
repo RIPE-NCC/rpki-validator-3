@@ -111,6 +111,9 @@ public class JPARoaPrefixAssertions extends JPARepository<RoaPrefixAssertion> im
             case COMMENT:
                 column = roaPrefixAssertion.comment;
                 break;
+            case MAXIMUMLENGTH:
+                column = roaPrefixAssertion.maximumLength;
+                break;
             case ASN:
             default:
                 column = roaPrefixAssertion.asn;
