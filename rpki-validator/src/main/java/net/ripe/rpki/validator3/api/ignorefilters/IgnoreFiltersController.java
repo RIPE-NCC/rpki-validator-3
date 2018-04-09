@@ -130,7 +130,7 @@ public class IgnoreFiltersController {
 
     private IgnoreFilter toIgnoreFilter(net.ripe.rpki.validator3.domain.IgnoreFilter f) {
         List<BgpPreviewService.BgpPreviewEntry> affected = bgpPreviewService.findAffected(
-                new Asn(f.getAsn()),
+                f.getAsn() != null ? new Asn(f.getAsn()) : null,
                 IpRange.parse(f.getPrefix()),
                 null
         );
