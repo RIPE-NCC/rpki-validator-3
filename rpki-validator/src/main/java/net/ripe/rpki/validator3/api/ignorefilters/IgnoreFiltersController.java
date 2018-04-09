@@ -32,7 +32,6 @@ package net.ripe.rpki.validator3.api.ignorefilters;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiCommand;
-import net.ripe.rpki.validator3.api.ApiError;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.Metadata;
 import net.ripe.rpki.validator3.api.Paging;
@@ -43,7 +42,6 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -86,9 +84,9 @@ public class IgnoreFiltersController {
         final Sorting sorting = Sorting.parse(sortBy, sortDirection);
         final Paging paging = Paging.of(startFrom, pageSize);
 
-        final List<net.ripe.rpki.validator3.domain.IgnoreFilter> all = ignoreFilters.all().collect(Collectors.toList());
+        final List<net.ripe.rpki.validator3.domain.IgnoreFilter> matching = ignoreFilters.find(searchTerm, sorting, paging).collect(Collectors.toList());
 
-        int totalSize = all.size();
+        int totalSize = (int) ignoreFilters.count(searchTerm);
 
         final Links links = Paging.links(
                 startFrom, pageSize, totalSize,
@@ -98,7 +96,7 @@ public class IgnoreFiltersController {
                 ApiResponse.<Stream<IgnoreFilter>>builder()
                         .links(links)
                         .metadata(Metadata.of(totalSize))
-                        .data(all.stream().map(f -> toIgnoreFilter(f)))
+                        .data(matching.stream().map(this::toIgnoreFilter))
                         .build()
         );
     }

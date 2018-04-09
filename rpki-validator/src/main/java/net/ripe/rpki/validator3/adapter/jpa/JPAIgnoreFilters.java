@@ -29,6 +29,13 @@
  */
 package net.ripe.rpki.validator3.adapter.jpa;
 
+import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.Order;
+import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.jpa.impl.JPAQuery;
+import net.ripe.rpki.validator3.api.Paging;
+import net.ripe.rpki.validator3.api.SearchTerm;
+import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.domain.IgnoreFilter;
 import net.ripe.rpki.validator3.domain.IgnoreFilters;
 import org.springframework.stereotype.Repository;
@@ -49,5 +56,64 @@ public class JPAIgnoreFilters extends JPARepository<IgnoreFilter> implements Ign
     @Override
     public Stream<IgnoreFilter> all() {
         return stream(select());
+    }
+
+    @Override
+    public Stream<IgnoreFilter> find(SearchTerm searchTerm, Sorting sorting, Paging paging) {
+        JPAQuery<IgnoreFilter> query = select();
+        applySearchTerm(query, searchTerm);
+        applySorting(sorting, query);
+        applyPaging(query, paging);
+        return stream(query);
+    }
+
+    @Override
+    public long count(SearchTerm searchTerm) {
+        return applySearchTerm(select(), searchTerm).fetchCount();
+    }
+
+    private JPAQuery<IgnoreFilter> applySearchTerm(JPAQuery<IgnoreFilter> query, SearchTerm searchTerm) {
+        if (searchTerm == null) {
+            return query;
+        }
+
+        if (searchTerm.asAsn() != null) {
+            query.where(ignoreFilter.asn.eq(searchTerm.asAsn().longValue()));
+        } else if (searchTerm.asIpRange() != null) {
+            if (searchTerm != null) {
+                query.where(
+                        ignoreFilter.prefix.likeIgnoreCase("%" + searchTerm.asString() + "%"));
+            }
+        } else {
+            query.where(ignoreFilter.comment.likeIgnoreCase(searchTerm.asString()));
+        }
+        return query;
+    }
+
+    private JPAQuery<IgnoreFilter> applySorting(Sorting sorting, JPAQuery<IgnoreFilter> query) {
+        return query.orderBy(toOrderSpecifier(sorting));
+    }
+
+    private OrderSpecifier<?> toOrderSpecifier(Sorting sorting) {
+        if (sorting == null) {
+            sorting = Sorting.of(Sorting.By.ASN, Sorting.Direction.ASC);
+        }
+
+        Expression<? extends Comparable> column;
+        switch (sorting.getBy()) {
+            case PREFIX:
+                column = ignoreFilter.prefix;
+                break;
+            case COMMENT:
+                column = ignoreFilter.comment;
+                break;
+            case ASN:
+            default:
+                column = ignoreFilter.asn;
+                break;
+        }
+
+        Order order = sorting.getDirection() == Sorting.Direction.DESC ? Order.DESC : Order.ASC;
+        return new OrderSpecifier<>(order, column);
     }
 }
