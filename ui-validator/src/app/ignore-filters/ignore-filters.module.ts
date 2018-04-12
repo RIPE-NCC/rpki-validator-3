@@ -4,6 +4,7 @@ import {FormsModule} from "@angular/forms";
 import {IgnoreFiltersComponent} from './ignore-filters.component';
 import {SharedModule} from "../shared/shared.module";
 import {IgnoreFiltersService} from "./ignore-filters.service";
+import {PopoverAffectedRoasComponent} from "./popover-affected-roas.component";
 
 @NgModule({
   imports: [
@@ -11,7 +12,8 @@ import {IgnoreFiltersService} from "./ignore-filters.service";
     FormsModule
   ],
   declarations: [
-    IgnoreFiltersComponent
+    IgnoreFiltersComponent,
+    PopoverAffectedRoasComponent
   ],
   providers: [
     IgnoreFiltersService

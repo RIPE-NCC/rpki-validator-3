@@ -30,6 +30,9 @@
 package net.ripe.rpki.validator3.api.ignorefilters;
 
 import lombok.Value;
+import net.ripe.rpki.validator3.api.roas.ObjectController;
+
+import java.util.stream.Stream;
 
 @Value
 public class IgnoreFilter {
@@ -37,4 +40,5 @@ public class IgnoreFilter {
     private Long asn;
     private String prefix;
     private String comment;
+    private Stream<ObjectController.RoaPrefix> affectedRoas;
 }

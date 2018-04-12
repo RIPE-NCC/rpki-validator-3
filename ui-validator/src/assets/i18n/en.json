@@ -114,6 +114,8 @@
     "TOASTR_MSG_ERROR": "Specified prefix and/or ASN are not valid"
   },
   "IgnoreFilters": {
+    "AFFECTED_ROAS": "Affected ROAs",
+    "NUMBER_AFFECTED_ROAS": "affected ROA(s)",
     "ALERT_MSG_INTRO": "By adding a filter the validator will ignore any RPKI prefixes that overlap with the filter's prefix.",
     "ALERT_MSG_NO_FILTERS": "No filters defined.",
     "ADD_FILTER": "Add filter",

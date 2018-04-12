@@ -11,6 +11,7 @@ export interface IIgnoreFilter {
   id: string,
   prefix: string,
   asn: string,
+  affectedRoas: string,
   comment: string
 }
 

@@ -69,6 +69,7 @@
       <tr>
         <th sortable-column='prefix'>{{'PREFIX' | translate}}</th>
         <th sortable-column='asn'>{{'ASN' | translate}}</th>
+        <th>{{'IgnoreFilters.AFFECTED_ROAS' | translate}}</th>
         <th sortable-column='comment'>{{'COMMENT' | translate}}</th>
         <th></th>
       </tr>
@@ -77,6 +78,14 @@
       <tr *ngFor='let ignoreFilter of ignoreFilters'>
         <td>{{ignoreFilter.prefix}}</td>
         <td>{{ignoreFilter.asn}}</td>
+        <td>
+          <div *ngIf='ignoreFilter.affectedRoas?.length > 0; else affectedRoasPopover'>
+            <popover-affected-roas [entries]='ignoreFilter.affectedRoas'></popover-affected-roas>
+          </div>
+          <ng-template #affectedRoasPopover>
+            <span>0 {{'IgnoreFilters.NUMBER_AFFECTED_ROAS' | translate}}</span>
+          </ng-template>
+        </td>
         <td>{{ignoreFilter.comment}}</td>
         <td>
             <span class='fa fa-ban ban-icon'
