@@ -4,7 +4,7 @@ import {FormsModule} from "@angular/forms";
 import {IgnoreFiltersComponent} from './ignore-filters.component';
 import {SharedModule} from "../shared/shared.module";
 import {IgnoreFiltersService} from "./ignore-filters.service";
-import {PopoverMatchingAnnouncementsComponent} from "./popover-matching-announcements.component";
+import {PopoverAffectedRoasComponent} from "./popover-affected-roas.component";
 
 @NgModule({
   imports: [
@@ -13,7 +13,7 @@ import {PopoverMatchingAnnouncementsComponent} from "./popover-matching-announce
   ],
   declarations: [
     IgnoreFiltersComponent,
-    PopoverMatchingAnnouncementsComponent
+    PopoverAffectedRoasComponent
   ],
   providers: [
     IgnoreFiltersService

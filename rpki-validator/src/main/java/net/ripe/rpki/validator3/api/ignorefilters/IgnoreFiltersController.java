@@ -33,6 +33,9 @@ import com.google.common.collect.ImmutableList;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
+import net.ripe.ipresource.etree.IntervalMap;
+import net.ripe.ipresource.etree.IpResourceIntervalStrategy;
+import net.ripe.ipresource.etree.NestedIntervalMap;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiCommand;
 import net.ripe.rpki.validator3.api.ApiResponse;
@@ -42,7 +45,10 @@ import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.api.bgp.BgpPreviewController;
 import net.ripe.rpki.validator3.api.bgp.BgpPreviewService;
+import net.ripe.rpki.validator3.api.roas.ObjectController;
 import net.ripe.rpki.validator3.domain.IgnoreFilters;
+import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
+import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.Link;
@@ -78,7 +84,7 @@ public class IgnoreFiltersController {
     private IgnoreFilterService ignoreFilterService;
 
     @Autowired
-    private BgpPreviewService bgpPreviewService;
+    private ValidatedRpkiObjects validatedRpkiObjects;
 
     @GetMapping
     public ResponseEntity<ApiResponse<Stream<IgnoreFilter>>> list(
@@ -129,21 +135,21 @@ public class IgnoreFiltersController {
     }
 
     private IgnoreFilter toIgnoreFilter(net.ripe.rpki.validator3.domain.IgnoreFilter f) {
-        List<BgpPreviewService.BgpPreviewEntry> affected = bgpPreviewService.findAffected(
-                f.getAsn() != null ? new Asn(f.getAsn()) : null,
-                IpRange.parse(f.getPrefix()),
-                null
-        );
-        ImmutableList.Builder<BgpPreviewController.BgpPreview> validated = ImmutableList.builder();
-        affected.forEach(x -> {
-            BgpPreviewController.BgpPreview entry = BgpPreviewController.BgpPreview.of(
-                    x.getOrigin().toString(),
-                    x.getPrefix().toString(),
-                    x.getValidity().toString()
-            );
-            validated.add(entry);
-        });
-        return new IgnoreFilter(f.getId(), f.getAsn(), f.getPrefix(), f.getComment(), validated.build());
+        IgnoreFiltersPredicate ignoreFiltersPredicate = new IgnoreFiltersPredicate(Stream.of(ignoreFilters.get(f.getId())));
+        final Stream<ObjectController.RoaPrefix> validatedPrefixes = validatedRpkiObjects
+                .findCurrentlyValidatedRoaPrefixes(null, null, null)
+                .getObjects()
+                .filter(roa -> ignoreFiltersPredicate.test(roa))
+                .map(prefix -> {
+                            return new ObjectController.RoaPrefix(
+                                    String.valueOf(prefix.getAsn()),
+                                    prefix.getPrefix().toString(),
+                                    prefix.getEffectiveLength(),
+                                    null
+                            );
+                        }
+                );
+        return new IgnoreFilter(f.getId(), f.getAsn(), f.getPrefix(), f.getComment(), validatedPrefixes);
     }
 
     private ApiResponse<IgnoreFilter> ignoreFilterResource(net.ripe.rpki.validator3.domain.IgnoreFilter ignoreFilter) {
