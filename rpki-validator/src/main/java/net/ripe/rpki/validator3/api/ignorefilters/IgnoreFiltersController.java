@@ -135,20 +135,17 @@ public class IgnoreFiltersController {
     }
 
     private IgnoreFilter toIgnoreFilter(net.ripe.rpki.validator3.domain.IgnoreFilter f) {
-        final IgnoreFiltersPredicate ignoreFiltersPredicate = new IgnoreFiltersPredicate(Stream.of(ignoreFilters.get(f.getId())));
+        final IgnoreFiltersPredicate ignoreFiltersPredicate = new IgnoreFiltersPredicate(Stream.of(f));
         final Stream<ObjectController.RoaPrefix> affectedRoas = validatedRpkiObjects
                 .findCurrentlyValidatedRoaPrefixes(null, null, null)
                 .getObjects()
                 .filter(roa -> ignoreFiltersPredicate.test(roa))
-                .map(prefix -> {
-                            return new ObjectController.RoaPrefix(
-                                    String.valueOf(prefix.getAsn()),
-                                    prefix.getPrefix().toString(),
-                                    prefix.getEffectiveLength(),
-                                    null
-                            );
-                        }
-                );
+                .map(prefix -> new ObjectController.RoaPrefix(
+                        String.valueOf(prefix.getAsn()),
+                        prefix.getPrefix().toString(),
+                        prefix.getEffectiveLength(),
+                        null
+                ));
         return new IgnoreFilter(f.getId(), f.getAsn(), f.getPrefix(), f.getComment(), affectedRoas);
     }
 
