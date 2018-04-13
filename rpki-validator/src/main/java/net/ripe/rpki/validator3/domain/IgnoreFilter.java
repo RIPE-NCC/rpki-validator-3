@@ -31,9 +31,14 @@ package net.ripe.rpki.validator3.domain;
 
 import lombok.Getter;
 import lombok.Setter;
+import net.ripe.ipresource.Asn;
+import net.ripe.ipresource.IpRange;
+import net.ripe.ipresource.IpResourceType;
 
 import javax.persistence.Basic;
 import javax.persistence.Entity;
+import javax.validation.constraints.Size;
+import java.math.BigDecimal;
 
 @Entity
 public class IgnoreFilter extends AbstractEntity {
@@ -48,10 +53,30 @@ public class IgnoreFilter extends AbstractEntity {
     private String prefix;
 
     @Basic
+    byte prefixFamily;
+
+    @Basic
+    BigDecimal prefixBegin;
+
+    @Basic
+    BigDecimal prefixEnd;
+
+    @Basic
     @Getter
     @Setter
     private String comment;
 
     public IgnoreFilter() {
+    }
+
+    public IgnoreFilter(Asn asn, IpRange prefix, @Size(max = 2000) String comment) {
+        this.asn = asn != null ? asn.longValue() : null;
+        if (prefix != null) {
+            this.prefix = prefix.toString();
+            this.prefixFamily = (byte) (prefix.getType() == IpResourceType.IPv4 ? 4 : 6);
+            this.prefixBegin = new BigDecimal(prefix.getStart().getValue());
+            this.prefixEnd = new BigDecimal(prefix.getEnd().getValue());
+        }
+        this.comment = comment;
     }
 }

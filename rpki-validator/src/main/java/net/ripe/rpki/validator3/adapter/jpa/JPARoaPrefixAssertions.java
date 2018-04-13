@@ -89,7 +89,7 @@ public class JPARoaPrefixAssertions extends JPARepository<RoaPrefixAssertion> im
                     .or(begin.between(roaPrefixAssertion.prefixBegin, roaPrefixAssertion.prefixEnd))
             );
         } else {
-            query.where(roaPrefixAssertion.comment.likeIgnoreCase(searchTerm.asString()));
+            query.where(roaPrefixAssertion.comment.likeIgnoreCase("%" + searchTerm.asString() + "%"));
         }
         return query;
     }

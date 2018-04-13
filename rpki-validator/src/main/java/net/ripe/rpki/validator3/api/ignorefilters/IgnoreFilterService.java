@@ -31,6 +31,7 @@ package net.ripe.rpki.validator3.api.ignorefilters;
 
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
+import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.domain.IgnoreFilter;
 import net.ripe.rpki.validator3.domain.IgnoreFilters;
 import net.ripe.rpki.validator3.util.Transactions;
@@ -59,12 +60,10 @@ public class IgnoreFilterService {
     private IgnoreFilters ignoreFilters;
 
     public long execute(@Valid AddIgnoreFilter command) {
-        IgnoreFilter ignoreFilter = new IgnoreFilter();
-        if (command.getAsn() != null) {
-            ignoreFilter.setAsn(Asn.parse(command.getAsn().trim()).longValue());
-        }
-        ignoreFilter.setPrefix(command.getPrefix());
-        ignoreFilter.setComment(command.getComment());
+        IgnoreFilter ignoreFilter = new IgnoreFilter(
+            command.getAsn() != null ? Asn.parse(command.getAsn().trim()) : null,
+            command.getPrefix() != null ? IpRange.parse(command.getPrefix().trim()) : null,
+            command.getComment());
 
         return add(ignoreFilter);
     }
