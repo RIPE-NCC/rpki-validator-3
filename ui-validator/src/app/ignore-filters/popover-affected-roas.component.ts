@@ -2,7 +2,6 @@ import {Component, Input, OnInit} from '@angular/core';
 import {IBgp} from "../bgp-preview/bgp.model";
 import {Router} from "@angular/router";
 
-// TODO Ivana!!! remember to replace this component with  popover-entry
 @Component({
   selector: 'popover-affected-roas',
   template: `

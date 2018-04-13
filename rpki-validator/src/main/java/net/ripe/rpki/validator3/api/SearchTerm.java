@@ -31,6 +31,7 @@ package net.ripe.rpki.validator3.api;
 
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
+import net.ripe.ipresource.IpResourceType;
 import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
 
 import java.util.function.Predicate;
@@ -65,7 +66,7 @@ public class SearchTerm implements Predicate<ValidatedRpkiObjects.RoaPrefix> {
         if (range != null && range.overlaps(prefix.getPrefix())) {
             return true;
         }
-        return prefix.getTrustAnchor().getName().contains(term) || prefix.getLocations().stream().anyMatch(uri -> uri.contains(term));
+        return prefix.getTrustAnchor().getName().contains(term);
     }
 
     private Asn convertAsn(String value) {

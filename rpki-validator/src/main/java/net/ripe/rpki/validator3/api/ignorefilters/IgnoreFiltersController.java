@@ -29,13 +29,7 @@
  */
 package net.ripe.rpki.validator3.api.ignorefilters;
 
-import com.google.common.collect.ImmutableList;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.ipresource.Asn;
-import net.ripe.ipresource.IpRange;
-import net.ripe.ipresource.etree.IntervalMap;
-import net.ripe.ipresource.etree.IpResourceIntervalStrategy;
-import net.ripe.ipresource.etree.NestedIntervalMap;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiCommand;
 import net.ripe.rpki.validator3.api.ApiResponse;
@@ -43,8 +37,6 @@ import net.ripe.rpki.validator3.api.Metadata;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
-import net.ripe.rpki.validator3.api.bgp.BgpPreviewController;
-import net.ripe.rpki.validator3.api.bgp.BgpPreviewService;
 import net.ripe.rpki.validator3.api.roas.ObjectController;
 import net.ripe.rpki.validator3.domain.IgnoreFilters;
 import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;

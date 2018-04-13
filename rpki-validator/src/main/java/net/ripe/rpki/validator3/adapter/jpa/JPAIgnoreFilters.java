@@ -80,9 +80,9 @@ public class JPAIgnoreFilters extends JPARepository<IgnoreFilter> implements Ign
         if (searchTerm.asAsn() != null) {
             query.where(ignoreFilter.asn.eq(searchTerm.asAsn().longValue()));
         } else if (searchTerm.asIpRange() != null) {
-            query.where(ignoreFilter.prefix.likeIgnoreCase("%" + searchTerm.asString() + "%"));
+            query.where(ignoreFilter.prefix.likeIgnoreCase(searchTerm.asIpRange().toString()));
         } else {
-            query.where(ignoreFilter.comment.likeIgnoreCase(searchTerm.asString()));
+            query.where(ignoreFilter.comment.likeIgnoreCase("%" + searchTerm.asString() + "%"));
         }
         return query;
     }
