@@ -66,7 +66,22 @@ public class HttpRrdpClient implements RrdpClient {
         try {
             return Http.readStream(() -> httpClient.newRequest(uri), reader);
         } catch (Exception e) {
-            throw new RrdpException("Error downloading '" + uri + "'", e);
+            throw new RrdpException("Error downloading '" + uri + "', cause: " + fullMessage(e), e);
+        }
+    }
+
+    private static String fullMessage(Throwable t) {
+        final StringBuilder s = new StringBuilder();
+        while (true) {
+            s.append(t.getMessage());
+            if (t == t.getCause()) {
+                return s.toString();
+            }
+            t = t.getCause();
+            if (t == null) {
+                return s.toString();
+            }
+            s.append(", cause: ");
         }
     }
 
