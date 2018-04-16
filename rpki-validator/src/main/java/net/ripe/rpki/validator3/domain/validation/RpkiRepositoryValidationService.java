@@ -74,6 +74,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
@@ -156,6 +157,10 @@ public class RpkiRepositoryValidationService {
         validationRunRepository.add(validationRun);
 
         Stream<RpkiRepository> repositories = rpkiRepositories.findRsyncRepositories();
+        log.debug("Going to potentially process these rsync repositories: {}",
+                repositories.map(RpkiRepository::getLocationUri).collect(Collectors.toList()));
+
+        repositories = rpkiRepositories.findRsyncRepositories();
 
         Map<String, RpkiObject> objectsBySha256 = new HashMap<>();
         Map<URI, RpkiRepository> fetchedLocations = new HashMap<>();
@@ -197,7 +202,10 @@ public class RpkiRepositoryValidationService {
                 }
             }
 
-            if (repository.getType() == RpkiRepository.Type.RSYNC && (parentRepository == null || parentRepository.getType() == RpkiRepository.Type.RSYNC_PREFETCH)) {
+            if (repository.getType() == RpkiRepository.Type.RSYNC_PREFETCH ||
+                    repository.getType() == RpkiRepository.Type.RSYNC &&
+                            (parentRepository == null || parentRepository.getType() == RpkiRepository.Type.RSYNC_PREFETCH)) {
+                log.debug("Storing object downloaded for {}", repository.getLocationUri());
                 storeObjects(targetDirectory, validationRun, validationResult, objectsBySha256, repository);
             }
         } catch (IOException e) {
@@ -218,8 +226,8 @@ public class RpkiRepositoryValidationService {
             RpkiRepository parentRepository = fetchedLocations.get(parentLocation);
             if (parentRepository != null) {
                 repository.setParentRepository(parentRepository);
-                if (parentRepository != null && parentRepository.isDownloaded()) {
-                    log.debug("Already fetched {} as part of {}, skipping", repository.getLocationUri(), location);
+                if (parentRepository.isDownloaded()) {
+                    log.debug("Already fetched {} as part of {}, skipping", repository.getLocationUri(), parentRepository.getLocationUri());
                     repository.setDownloaded(parentRepository.getLastDownloadedAt());
                     return parentRepository;
                 }

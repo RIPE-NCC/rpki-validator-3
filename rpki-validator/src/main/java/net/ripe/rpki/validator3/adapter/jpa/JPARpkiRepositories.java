@@ -34,6 +34,7 @@ import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.jpa.impl.JPAQuery;
+import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
@@ -60,6 +61,7 @@ import static net.ripe.rpki.validator3.domain.querydsl.QRpkiRepository.rpkiRepos
 
 @Repository
 @Transactional(Transactional.TxType.REQUIRED)
+@Slf4j
 public class JPARpkiRepositories extends JPARepository<RpkiRepository> implements RpkiRepositories {
     private final QuartzValidationScheduler quartzValidationScheduler;
     private final ValidationRuns validationRuns;
@@ -75,6 +77,7 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
 
     @Override
     public RpkiRepository register(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String uri, RpkiRepository.Type type) {
+        log.debug("Registering repository {} of type {}", uri, type);
         RpkiRepository result = findByURI(uri).orElseGet(() -> {
             RpkiRepository repository = new RpkiRepository(trustAnchor, uri, type);
             entityManager.persist(repository);
