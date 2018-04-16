@@ -53,6 +53,7 @@ export class AnnouncementPreviewComponent implements OnInit {
     this._bgpService.getBgpAnnouncementPreview(this.prefix, this.asn)
       .subscribe(
         response => {
+          response.data.filteredRoas.map(roa => roa.validity = 'FILTERED_' + roa.validity);
           this.announcementPreviewData = response.data;
         }, error => {
           // open modal dialog
@@ -61,7 +62,6 @@ export class AnnouncementPreviewComponent implements OnInit {
       )
   }
 
-  //TODO NEED TO BE CHANGED BEHAVIOR
   openModalForm(modalTempRef): void {
     setTimeout(() => {
       this.modalRef = this._modalService.open(modalTempRef);

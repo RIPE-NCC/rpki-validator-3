@@ -29,7 +29,7 @@
     <td>{{announcement.maxLength}}</td>
     <td>{{announcement.source}}</td>
     <td>
-      <div *ngIf="announcement.uri" (mouseleave)='p.close()'>
+      <div *ngIf='announcement.uri' (mouseleave)='p.close()'>
         <img src='../../assets/images/uri-icon.png'
              [style.width.px]='20'
              [style.margin.px]='0'
@@ -42,6 +42,27 @@
     </td>
     <td>
       <flag [value]='announcement.validity'></flag>
+    </td>
+  </tr>
+  <tr *ngFor='let filteredRoa of announcementPreviewData.filteredRoas'>
+    <td>{{filteredRoa.origin}}</td>
+    <td>{{filteredRoa.prefix}}</td>
+    <td>{{filteredRoa.maxLength}}</td>
+    <td>{{filteredRoa.source}}</td>
+    <td>
+      <div *ngIf="filteredRoa.uri" (mouseleave)='p.close()'>
+        <img src='../../assets/images/uri-icon.png'
+             [style.width.px]='20'
+             [style.margin.px]='0'
+             #p='ngbPopover'
+             ngbPopover='{{filteredRoa.uri}}'
+             placement='bottom'
+             triggers='mouseover'
+             popoverTitle="{{'Roas.URI_OF_ROA' | translate}}" />
+      </div>
+    </td>
+    <td>
+      <flag [value]='filteredRoa.validity'></flag>
     </td>
   </tr>
   </tbody>

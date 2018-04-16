@@ -84,15 +84,15 @@ public class BgpPreviewController {
     }
 
     @GetMapping(path = "/validity")
-    public ResponseEntity<ApiResponse<BgpPreviewService.BgpValidityResource>> validity(
+    public ResponseEntity<ApiResponse<BgpPreviewService.BgpValidityWithFilteredResource>> validity(
             @RequestParam(name = "prefix") String prefix,
             @RequestParam(name = "asn") String asn
     ) {
-        final BgpPreviewService.BgpValidityResource bgp = bgpPreviewService.validity(
+        final BgpPreviewService.BgpValidityWithFilteredResource bgp = bgpPreviewService.validity(
                 arg(() -> Asn.parse(asn)),
                 arg(() -> IpRange.parse(prefix))
         );
-        return ResponseEntity.ok(ApiResponse.<BgpPreviewService.BgpValidityResource>builder()
+        return ResponseEntity.ok(ApiResponse.<BgpPreviewService.BgpValidityWithFilteredResource>builder()
                 .data(bgp)
                 .metadata(Metadata.of(bgp.getValidatingRoas().size()))
                 .build());

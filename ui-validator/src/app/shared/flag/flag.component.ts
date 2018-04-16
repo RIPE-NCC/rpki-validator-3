@@ -72,7 +72,11 @@ export class FlagComponent implements OnChanges {
         this.red = true;
         break;
       }
-      case 'UNKNOWN': {
+      case 'UNKNOWN':
+      case 'FILTERED_VALID':
+      case 'FILTERED_INVALID':
+      case 'FILTERED_INVALID_ASN':
+      case 'FILTERED_INVALID_LENGTH':{
         this.gray = true;
       }
     }
