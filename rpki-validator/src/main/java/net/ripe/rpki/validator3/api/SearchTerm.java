@@ -30,20 +30,25 @@
 package net.ripe.rpki.validator3.api;
 
 import net.ripe.ipresource.Asn;
+import net.ripe.ipresource.IpAddress;
 import net.ripe.ipresource.IpRange;
-import net.ripe.ipresource.IpResourceType;
 import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
 
 import java.util.function.Predicate;
+
+import static net.ripe.ipresource.IpResourceType.IPv4;
 
 public class SearchTerm implements Predicate<ValidatedRpkiObjects.RoaPrefix> {
     private final String term;
     private final IpRange range;
     private final Asn asn;
 
+    private final static int IPv4_PREFIX_LENGTH = 32;
+    private final static int IPv6_PREFIX_LENGTH = 128;
+
     public SearchTerm(String term) {
         this.term = term == null ? "" : term.trim();
-        this.range = convertRange(term);
+        this.range = convertPrefix(term);
         this.asn = convertAsn(term);
     }
 
@@ -83,5 +88,28 @@ public class SearchTerm implements Predicate<ValidatedRpkiObjects.RoaPrefix> {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private IpRange convertIpAddress(String value) {
+        try {
+            IpAddress ipAddress = IpAddress.parse(value);
+            // single IPv4 address treat it like a /32 and IPv6 like /128
+            if (IPv4.equals(ipAddress.getType())) {
+                return IpRange.prefix(ipAddress, IPv4_PREFIX_LENGTH);
+            } else {
+                return IpRange.prefix(ipAddress, IPv6_PREFIX_LENGTH);
+            }
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private IpRange convertPrefix(String value) {
+        IpRange range = convertRange(value);
+        // in case value is single IP address e.g. 1.0.0.2 without suffix e.g. /24
+        if (range == null) {
+            return convertIpAddress(value);
+        }
+        return range;
     }
 }

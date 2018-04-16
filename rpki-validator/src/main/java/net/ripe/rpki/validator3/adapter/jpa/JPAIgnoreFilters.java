@@ -32,7 +32,10 @@ package net.ripe.rpki.validator3.adapter.jpa;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.dsl.ComparableExpression;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQuery;
+import net.ripe.ipresource.IpResourceType;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
@@ -41,6 +44,7 @@ import net.ripe.rpki.validator3.domain.IgnoreFilters;
 import org.springframework.stereotype.Repository;
 
 import javax.transaction.Transactional;
+import java.math.BigDecimal;
 import java.util.stream.Stream;
 
 import static net.ripe.rpki.validator3.domain.querydsl.QIgnoreFilter.ignoreFilter;
@@ -80,7 +84,15 @@ public class JPAIgnoreFilters extends JPARepository<IgnoreFilter> implements Ign
         if (searchTerm.asAsn() != null) {
             query.where(ignoreFilter.asn.eq(searchTerm.asAsn().longValue()));
         } else if (searchTerm.asIpRange() != null) {
-            query.where(ignoreFilter.prefix.likeIgnoreCase(searchTerm.asIpRange().toString()));
+            ComparableExpression<BigDecimal> begin = Expressions.asComparable(new BigDecimal(searchTerm.asIpRange().getStart().getValue()));
+            ComparableExpression<BigDecimal> end = Expressions.asComparable(new BigDecimal(searchTerm.asIpRange().getEnd().getValue()));
+
+            query.where(ignoreFilter.prefixFamily.eq((byte) (searchTerm.asIpRange().getType() == IpResourceType.IPv4 ? 4 : 6)));
+            query.where(
+                    ignoreFilter.prefixBegin.between(begin, end)
+                            .or(ignoreFilter.prefixEnd.between(begin, end))
+                            .or(begin.between(ignoreFilter.prefixBegin, ignoreFilter.prefixEnd))
+            );
         } else {
             query.where(ignoreFilter.comment.likeIgnoreCase("%" + searchTerm.asString() + "%"));
         }
