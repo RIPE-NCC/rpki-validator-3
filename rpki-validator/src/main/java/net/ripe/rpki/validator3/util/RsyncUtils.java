@@ -56,7 +56,7 @@ public class RsyncUtils {
             candidate = URI.create(uri.toASCIIString() + "/");
         }
 
-        List<URI> result = new ArrayList<>();
+        final List<URI> result = new ArrayList<>();
         while (!"/".equals(candidate.getPath())) {
             candidate = candidate.resolve("..");
             result.add(candidate);

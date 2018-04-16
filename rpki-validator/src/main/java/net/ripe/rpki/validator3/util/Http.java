@@ -87,7 +87,6 @@ public class Http {
             if (response != null) {
                 response.abort(error);
             }
-            log.error("Error ", e);
             throw error;
         }
     }

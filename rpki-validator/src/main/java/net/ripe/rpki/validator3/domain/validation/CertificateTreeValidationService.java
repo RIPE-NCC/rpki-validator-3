@@ -151,12 +151,8 @@ public class CertificateTreeValidationService {
     }
 
     private boolean isValidationRunCompleted(ValidationResult validationResult) {
-        for (net.ripe.rpki.commons.validation.ValidationCheck check: validationResult.getWarnings()) {
-            if (check.getStatus() != ValidationStatus.PASSED && VALIDATOR_RPKI_REPOSITORY_PENDING.equals(check.getKey())) {
-                return false;
-            }
-        }
-        return true;
+        return validationResult.getWarnings().stream()
+                .noneMatch(check -> check.getStatus() != ValidationStatus.PASSED && VALIDATOR_RPKI_REPOSITORY_PENDING.equals(check.getKey()));
     }
 
     private List<RpkiObject> validateCertificateAuthority(TrustAnchor trustAnchor,

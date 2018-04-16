@@ -94,7 +94,7 @@ public class SearchTerm implements Predicate<ValidatedRpkiObjects.RoaPrefix> {
         try {
             IpAddress ipAddress = IpAddress.parse(value);
             // single IPv4 address treat it like a /32 and IPv6 like /128
-            if (ipAddress.getType().equals(IPv4)) {
+            if (IPv4.equals(ipAddress.getType())) {
                 return IpRange.prefix(ipAddress, IPv4_PREFIX_LENGTH);
             } else {
                 return IpRange.prefix(ipAddress, IPv6_PREFIX_LENGTH);
