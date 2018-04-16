@@ -2,6 +2,7 @@
 // https://github.com/angular/protractor/blob/master/lib/config.ts
 
 const { SpecReporter } = require('jasmine-spec-reporter');
+const chromium = require('chromium');
 
 exports.config = {
   allScriptsTimeout: 11000,
@@ -11,6 +12,7 @@ exports.config = {
   capabilities: {
     'browserName': 'chrome',
     chromeOptions: {
+      binary: chromium.path,
       args: [ "--headless", "--disable-gpu", "--window-size=1200,800" ]
     }
   },
