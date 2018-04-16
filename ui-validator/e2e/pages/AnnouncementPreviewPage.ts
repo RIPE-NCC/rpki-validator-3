@@ -42,6 +42,11 @@ export class AnnouncementPreviewPage {
     return this;
   }
 
+  expectFlagFiltered(row: number, value: string) {
+    expect(element(by.css(`table tbody tr:nth-child(${row}) flag[ng-reflect-value="FILTERED_VALID"] .alert-unknown`)).getText()).toBe(value);
+    return this;
+  }
+
   expectShowModalWindow() {
     expect(element(by.css('ngb-modal-window')).isPresent()).toBe(true);
     return this;

@@ -86,7 +86,7 @@ public class BgpPreviewService {
     private Map<String, ImmutableList<BgpPreviewEntry>> bgpPreviewEntries = new TreeMap<>();
 
     public enum Validity {
-        UNKNOWN, VALID, FILTERED_, INVALID_ASN, INVALID_LENGTH
+        UNKNOWN, VALID, INVALID_ASN, INVALID_LENGTH
     }
 
     @lombok.Value(staticConstructor = "of")
@@ -158,8 +158,6 @@ public class BgpPreviewService {
             switch (searchTerm.asString().trim().toUpperCase()) {
                 case "VALID":
                     return (x) -> x.getValidity() == Validity.VALID;
-                case "FILTERED":
-                    return (x) -> x.getValidity() == Validity.FILTERED_;
                 case "INVALID":
                     return (x) -> x.getValidity() == Validity.INVALID_ASN || x.getValidity() == Validity.INVALID_LENGTH;
                 case "ASN":

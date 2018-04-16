@@ -17,7 +17,15 @@
       "maxLength" : 16,
       "ta" : "RIPE NCC RPKI Root",
       "uri" : "rsync://rpki.ripe.net/repository/DEFAULT/6b/33d5d1-c450-413b-afe4-45935f506a12/1/zz2JYzBn_XVPxg85pVDwkSy3ps4.roa"
-    } ]
+    } ],
+    "filteredRoas" : [ {
+      "origin" : "AS56203",
+      "prefix" : "1.2.128.0/18",
+      "validity" : "VALID",
+      "maxLength" : 18,
+      "ta" : "RIPE NCC RPKI Root",
+      "uri" : "rsync://rpki.ripe.net/repository/DEFAULT/6b/33d5d1-c450-413b-afe4-45935f506a12/1/zz2JYzBn_XVPxg85pVDwkSy3ps4.roa"
+    }]
   },
   "metadata" : {
     "totalCount" : 2
