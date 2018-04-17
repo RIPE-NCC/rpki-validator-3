@@ -22,7 +22,7 @@ describe('Announcement Preview Page', () => {
         .expectPrefixInPanelToBe('2.0.0.0/16')
         .expectGreenFlagInPanel('VALID')
         .expectSubtitleToBe('Relevant Validated ROAs')
-        .expectNumberOfTableRowsToBe(2);
+        .expectNumberOfTableRowsToBe(3);
     });
   });
 
@@ -62,7 +62,8 @@ describe('Announcement Preview Page', () => {
         .expectPrefixInPanelToBe('2.0.0.0/16')
         .expectGreenFlagInPanel('VALID')
         .expectSubtitleToBe('Relevant Validated ROAs')
-        .expectNumberOfTableRowsToBe(2)
+        .expectNumberOfTableRowsToBe(3)
+        .expectFlagFiltered(3, 'FILTERED VALID')
     });
 
     it('should navigate to bgp page on dismiss modal window', () => {

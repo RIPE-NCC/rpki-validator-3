@@ -11,7 +11,8 @@ export interface IAnnouncementData {
   origin: string,
   prefix: string,
   validity: string,
-  validatingRoas: Array<IAnnouncement>
+  validatingRoas: Array<IAnnouncement>,
+  filteredRoas: Array<IAnnouncement>
 }
 
 export interface IAnnouncementResponse {

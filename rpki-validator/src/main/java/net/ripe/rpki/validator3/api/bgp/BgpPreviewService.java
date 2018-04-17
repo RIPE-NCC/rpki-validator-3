@@ -78,6 +78,7 @@ public class BgpPreviewService {
     private List<BgpRisDump> bgpRisDumps;
 
     private IntervalMap<IpRange, List<RoaPrefix>> roaPrefixes = new NestedIntervalMap<>(IpResourceIntervalStrategy.getInstance());
+    private IntervalMap<IpRange, List<RoaPrefix>> filteredRoaPrefixes = new NestedIntervalMap<>(IpResourceIntervalStrategy.getInstance());
 
     private ImmutableList<RoaPrefix> validatedRoaPrefixes = ImmutableList.of();
     private ImmutableList<RoaPrefix> roaPrefixAssertions = ImmutableList.of();
@@ -107,11 +108,20 @@ public class BgpPreviewService {
     }
 
     @lombok.Value(staticConstructor = "of")
-    public static class BgpValidityResource {
+    public static class BgpValidity {
         String origin;
         String prefix;
         String validity;
         List<ValidatingRoa> validatingRoas;
+    }
+
+    @lombok.Value(staticConstructor = "of")
+    public static class BgpValidityWithFilteredResource {
+        String origin;
+        String prefix;
+        String validity;
+        List<ValidatingRoa> validatingRoas;
+        List<ValidatingRoa> filteredRoas;
     }
 
     @lombok.Value(staticConstructor = "of")
@@ -289,6 +299,7 @@ public class BgpPreviewService {
         );
 
         this.roaPrefixes = recalculateRoaPrefixes(this.validatedRoaPrefixes, this.ignoreFilters, this.roaPrefixAssertions);
+        this.filteredRoaPrefixes = recalculateFilteredRoaPrefixes(this.validatedRoaPrefixes, this.ignoreFilters);
         this.bgpPreviewEntries = validateBgpRisEntries(this.bgpPreviewEntries, this.roaPrefixes);
     }
 
@@ -296,6 +307,7 @@ public class BgpPreviewService {
         this.ignoreFilters = ImmutableList.copyOf(filters);
 
         this.roaPrefixes = recalculateRoaPrefixes(this.validatedRoaPrefixes, this.ignoreFilters, this.roaPrefixAssertions);
+        this.filteredRoaPrefixes = recalculateFilteredRoaPrefixes(this.validatedRoaPrefixes, this.ignoreFilters);
         this.bgpPreviewEntries = validateBgpRisEntries(this.bgpPreviewEntries, this.roaPrefixes);
     }
 
@@ -339,6 +351,25 @@ public class BgpPreviewService {
             }
             existing.add(p);
         });
+        return roaPrefixes;
+    }
+
+    private static NestedIntervalMap<IpRange, List<RoaPrefix>> recalculateFilteredRoaPrefixes(
+            ImmutableList<RoaPrefix> validatedRoaPrefixes,
+            ImmutableList<IgnoreFilter> ignoreFilters
+    ) {
+        NestedIntervalMap<IpRange, List<RoaPrefix>> roaPrefixes = new NestedIntervalMap<>(IpResourceIntervalStrategy.getInstance());
+        validatedRoaPrefixes
+                .stream()
+                .filter(new IgnoreFiltersPredicate(ignoreFilters.stream()))
+                .forEach(p -> {
+                    List<RoaPrefix> existing = roaPrefixes.findExact(p.getPrefix());
+                    if (existing == null) {
+                        existing = new ArrayList<>(1);
+                        roaPrefixes.put(p.getPrefix(), existing);
+                    }
+                    existing.add(p);
+                });
         return roaPrefixes;
     }
 
@@ -407,8 +438,24 @@ public class BgpPreviewService {
         return validity;
     }
 
-    public BgpValidityResource validity(final Asn origin, final IpRange prefix) {
-        final List<Pair<RoaPrefix, Validity>> roaPrefixes = this.roaPrefixes.findExactAndAllLessSpecific(prefix)
+    public BgpValidityWithFilteredResource validity(final Asn origin, final IpRange prefix) {
+        BgpValidity roas = validity(origin, prefix, this.roaPrefixes);
+        BgpValidity filtered = validity(origin, prefix, this.filteredRoaPrefixes);
+        List<ValidatingRoa> filteredRoasWithoutUnknown = filtered.getValidatingRoas()
+                .stream()
+                .filter(r -> !Validity.UNKNOWN.toString().equals(r.getValidity()))
+                .collect(Collectors.toList());
+
+        return BgpValidityWithFilteredResource.of(
+                origin.toString(),
+                prefix.toString(),
+                roas.getValidity(),
+                roas.getValidatingRoas(),
+                filteredRoasWithoutUnknown);
+    }
+
+    private BgpValidity validity(final Asn origin, final IpRange prefix, final IntervalMap<IpRange, List<RoaPrefix>> prefixes) {
+        final List<Pair<RoaPrefix, Validity>> matchingRoaPrefixes = prefixes.findExactAndAllLessSpecific(prefix)
                 .stream()
                 .flatMap(x -> x.stream())
                 .map(r -> {
@@ -429,9 +476,9 @@ public class BgpPreviewService {
                 }))
                 .collect(Collectors.toList());
 
-        final Validity validity = roaPrefixes.stream().findFirst().map(p -> p.getRight()).orElse(Validity.UNKNOWN);
+        final Validity validity = matchingRoaPrefixes.stream().findFirst().map(p -> p.getRight()).orElse(Validity.UNKNOWN);
 
-        final List<ValidatingRoa> validatingRoaStream = roaPrefixes
+        final List<ValidatingRoa> validatingRoaStream = matchingRoaPrefixes
                 .stream()
                 .flatMap(p -> {
                     final RoaPrefix r = p.getLeft();
@@ -463,6 +510,6 @@ public class BgpPreviewService {
                 .distinct()
                 .collect(Collectors.toList());
 
-        return BgpValidityResource.of(origin.toString(), prefix.toString(), validity.toString(), validatingRoaStream);
+        return BgpValidity.of(origin.toString(), prefix.toString(), validity.toString(), validatingRoaStream);
     }
 }
