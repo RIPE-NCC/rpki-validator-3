@@ -8,7 +8,9 @@
 </div>
 <hr/>
 <h3><strong>{{'AnnouncementPreview.RELEVANT_VALIDATED_ROAS' | translate}}</strong></h3>
-<ngb-alert type='warning' *ngIf='announcementPreviewData?.validatingRoas?.length == 0' [dismissible]="false">
+<ngb-alert type='warning'
+           *ngIf='announcementPreviewData?.validatingRoas?.length == 0 && announcementPreviewData?.filteredRoas?.length == 0'
+           [dismissible]="false">
   {{ 'AnnouncementPreview.ALERT_MSG_NO_RELEVANT' | translate }}
 </ngb-alert>
 <table *ngIf='announcementPreviewData?.validatingRoas?.length > 0 || announcementPreviewData?.filteredRoas?.length > 0'
