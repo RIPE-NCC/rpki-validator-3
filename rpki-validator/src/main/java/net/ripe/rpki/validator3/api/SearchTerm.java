@@ -71,7 +71,7 @@ public class SearchTerm implements Predicate<ValidatedRpkiObjects.RoaPrefix> {
         if (range != null && range.overlaps(prefix.getPrefix())) {
             return true;
         }
-        return prefix.getTrustAnchor().getName().contains(term);
+        return prefix.getTrustAnchor().getName().contains(term) || prefix.getLocations().stream().anyMatch(uri -> uri.contains(term));
     }
 
     private Asn convertAsn(String value) {
