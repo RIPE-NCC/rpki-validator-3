@@ -1,0 +1,27 @@
+p {
+  background-color: #f2f2f2;
+  padding: .75rem;
+  border: .0625rem solid #dee2e6;
+}
+
+table {
+  table-layout: fixed;
+
+  thead > tr {
+    th:nth-child(1) {
+      width: 50%;
+    }
+    th:nth-child(2) {
+      width: 10%;
+    }    th:nth-child(3) {
+      width: 10em;
+    }
+    th:nth-child(4) {
+      width: 13em;
+    }
+  }
+
+  tbody > tr > td {
+    word-wrap: break-word;
+  }
+}

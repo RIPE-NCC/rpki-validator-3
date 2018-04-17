@@ -1,14 +1,21 @@
+@import "../../../styles";
+
 .alert {
   min-width: 4rem;
   text-align: center;
   border-radius: 1rem;
-  padding: 1px 9px 2px;
+  padding: .0625rem .5625rem .125rem;
+  margin: 0rem;
+}
+
+.alert-trim {
+  display: inline-block;
 }
 
 .alert-success {
   color: white;
-  background-color: #46a546;
-  border-color: #46a546;
+  background-color: $green-rpki;
+  border-color: $green-rpki;
 }
 
 .alert-success-muted {
@@ -18,8 +25,8 @@
 
 .alert-warning {
   color: white;
-  background-color: #f89406;
-  border-color: #f89406;
+  background-color: $orange-rpki;
+  border-color: $orange-rpki;
 }
 
 .alert-warning-muted {
@@ -29,11 +36,17 @@
 
 .alert-danger {
   color: white;
-  background-color: #c43c35;
-  border-color: #c43c35;
+  background-color: $red-rpki;
+  border-color: $red-rpki;
 }
 
 .alert-danger-muted {
   @extend .alert-danger;
   opacity: 0.25;
+}
+
+.alert-unknown {
+  color: white;
+  background-color: lightgray;
+  border-color: lightgray;
 }

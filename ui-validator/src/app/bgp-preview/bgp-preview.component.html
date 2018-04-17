@@ -1,0 +1,26 @@
+<page-title [pageTitle]='pageTitle'></page-title>
+<toolbar [loading]='loading'
+         [responseData]='response'
+         (notifyToolbarChanged)='onToolbarChange($event)'>
+  <table sortable-table (sorted)='onSorted($event)' class='table table-striped table-bordered'>
+    <thead>
+    <tr>
+      <th sortable-column='asn'>{{'Roas.ASN' | translate}}</th>
+      <th sortable-column='prefix'>{{'Roas.PREFIX' | translate}}</th>
+      <th sortable-column='validity'>{{'Bgp.VALIDITY' | translate}}</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr *ngFor='let bgp of bgps' (click)='openAnnouncementPreviewDetails(bgp)' [ngbTooltip]="'Bgp.TOOLTIP_CLICK' | translate:{value:'info'}">
+      <td>{{bgp.asn}}</td>
+      <td>{{bgp.prefix}}</td>
+      <td>
+        <flag [value]='bgp.validity'></flag>
+      </td>
+    </tr>
+    <tr *ngIf='bgps.length === 0'>
+      <td colspan="3">{{'NO_RECORDS' | translate}}</td>
+    </tr>
+    </tbody>
+  </table>
+</toolbar>

@@ -8,17 +8,26 @@
   </tr>
   </thead>
   <tbody>
-  <tr *ngFor='let ta of trustAnchorsOverview' (click)='openTADetails(ta.id)' [ngbTooltip]="'TrustAnchors.TOOLTIP_CLICK' | translate:{value:'info'}">
-    <td>{{ta.taName}}
-    </td>
+  <tr *ngFor='let ta of trustAnchorsOverview' (click)='openTADetails(ta)' [ngbTooltip]="'TrustAnchors.TOOLTIP_CLICK' | translate:{value:'info'}">
+    <td>{{ta.taName}}</td>
     <td>
-      <div class='d-flex justify-content-between'>
-        <flag [value]='ta.successful' [color]='"green"'></flag>
-        <flag [value]='ta.warnings' [color]='"orange"'></flag>
-        <flag [value]='ta.errors' [color]='"red"'></flag>
+      <div *ngIf='ta.completedValidation' class='d-inline-flex  justify-content-between'>
+        <flag [value]='ta.successful' [color]='"green"' class='mr-2'
+              [ngbTooltip]="'Monitoring.TOOLTIP_OBJECTS_DOWNLOADED' | translate:{value:'info'}"></flag>
+        <flag [value]='ta.warnings' [color]='"orange"' class='mr-2'
+              [ngbTooltip]="'Monitoring.TOOLTIP_OBJECTS_PENDING' | translate:{value:'info'}"></flag>
+        <flag [value]='ta.errors' [color]='"red"' class='mr-2'
+              [ngbTooltip]="'Monitoring.TOOLTIP_OBJECTS_FAILED' | translate:{value:'info'}"></flag>
       </div>
     </td>
-    <td>{{ta.lastUpdated}}</td>
+    <td>
+      <div *ngIf='ta.completedValidation; else lastUpdated'>
+        {{ta.lastUpdated}}
+      </div>
+      <ng-template #lastUpdated>
+        <flag [value]='"PENDING"'></flag>
+      </ng-template>
+    </td>
   </tr>
   </tbody>
 </table>

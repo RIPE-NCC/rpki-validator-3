@@ -1,14 +1,34 @@
-import { AppPage } from './app.po';
+import {AppPage} from './app.po';
+import {RoasPage} from "./pages/RoasPage";
 
-describe('ui-validator App', () => {
-  let page: AppPage;
+describe('Roas Page', () => {
+  let roasPage: RoasPage;
 
   beforeEach(() => {
-    page = new AppPage();
+    const page = new AppPage();
+    roasPage = page.navigateToRoas()
   });
 
-  it('should display Validated ROAs page title', () => {
-    page.navigateTo("roas");
-    expect(page.getParagraphText()).toEqual('Validated ROAs');
+  it('should display correctly Validated ROAs page', () => {
+    roasPage
+      .expectTitleHeaderToBe('Validated ROAs')
+      .expectPaginationSizeToBe(10)
+      .expectExportButtonsVisible();
+
   });
+
+  describe('export', () => {
+
+    it('as CSV', () => {
+      roasPage
+        .expectExportButtonsVisible()
+        .exportAsCsv();
+    });
+
+    it('as JSON', () => {
+      roasPage
+        .expectExportButtonsVisible()
+        .exportAsJson();
+    });
+  })
 });

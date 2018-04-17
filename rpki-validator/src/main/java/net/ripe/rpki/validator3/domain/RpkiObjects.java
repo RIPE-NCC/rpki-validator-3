@@ -29,11 +29,9 @@
  */
 package net.ripe.rpki.validator3.domain;
 
+import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
-import net.ripe.rpki.validator3.adapter.jpa.JPARpkiObjects;
-import net.ripe.rpki.validator3.api.Paging;
-import net.ripe.rpki.validator3.api.SearchTerm;
-import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.commons.validation.ValidationResult;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.persistence.LockModeType;
@@ -53,6 +51,8 @@ public interface RpkiObjects {
     
     RpkiObject get(long id);
 
+    <T extends CertificateRepositoryObject> Optional<T> findCertificateRepositoryObject(long rpkiObjectId, Class<T> clazz, ValidationResult validationResult);
+
     Optional<RpkiObject> findBySha256(byte[] sha256);
 
     Map<String, RpkiObject> findObjectsInManifest(ManifestCms manifestCms, LockModeType lockMode);
@@ -61,19 +61,5 @@ public interface RpkiObjects {
 
     Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type type, byte[] authorityKeyIdentifier);
 
-    default Stream<JPARpkiObjects.RoaPrefix> findCurrentlyValidatedRoaPrefixes() {
-        return findCurrentlyValidatedRoaPrefixes(null, null, null);
-    }
-
-    Stream<JPARpkiObjects.RoaPrefix> findCurrentlyValidatedRoaPrefixes(Paging paging, SearchTerm searchTerm, Sorting sorting);
-
-    default Stream<JPARpkiObjects.RoaPrefix> findCurrentlyValidatedRoaPrefixes(Paging paging) {
-        return findCurrentlyValidatedRoaPrefixes(paging, null, null);
-    }
-
-    Stream<RpkiObject> findRouterCertificates();
-
     long deleteUnreachableObjects(Instant unreachableSince);
-
-    int countCurrentlyValidatedRoaPrefixes(SearchTerm searchTerm);
 }

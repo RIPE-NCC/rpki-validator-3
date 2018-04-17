@@ -31,30 +31,82 @@ package net.ripe.rpki.validator3.api.bgp;
 
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.ipresource.Asn;
+import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
+import net.ripe.rpki.validator3.api.Metadata;
+import net.ripe.rpki.validator3.api.Paging;
+import net.ripe.rpki.validator3.api.SearchTerm;
+import net.ripe.rpki.validator3.api.Sorting;
+import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 @RestController
-@RequestMapping(path = "/api/bgp", produces = { Api.API_MIME_TYPE, "application/json" })
+@RequestMapping(path = "/api/bgp", produces = {Api.API_MIME_TYPE, "application/json"})
 @Slf4j
 public class BgpPreviewController {
 
+    @Autowired
+    private BgpPreviewService bgpPreviewService;
+
     @GetMapping(path = "/")
-    public ResponseEntity<ApiResponse<Stream<BgpPreview>>> list() {
-        // TODO This functionality is not implemented yet
-        final Stream<BgpPreview> bgps = Stream.empty();
+    public ResponseEntity<ApiResponse<Stream<BgpPreview>>> list(
+            @RequestParam(name = "startFrom", defaultValue = "0") int startFrom,
+            @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
+            @RequestParam(name = "search", defaultValue = "", required = false) String searchString,
+            @RequestParam(name = "sortBy", defaultValue = "prefix") String sortBy,
+            @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection
+    ) {
+        final SearchTerm searchTerm = StringUtils.isNotBlank(searchString) ? new SearchTerm(searchString) : null;
+        final Sorting sorting = Sorting.parse(sortBy, sortDirection);
+        final Paging paging = Paging.of(startFrom, pageSize);
+
+        BgpPreviewService.BgpPreviewResult bgpPreviewResult = bgpPreviewService.find(searchTerm, sorting, paging);
+
         return ResponseEntity.ok(ApiResponse.<Stream<BgpPreview>>builder()
-                .data(bgps)
+                .data(bgpPreviewResult.getData().map(entry -> BgpPreview.of(
+                        entry.getOrigin().toString(),
+                        entry.getPrefix().toString(),
+                        entry.getValidity().name()
+                )))
+                .metadata(Metadata.of(bgpPreviewResult.getTotalCount()))
                 .build());
     }
 
-    @Value
+    @GetMapping(path = "/validity")
+    public ResponseEntity<ApiResponse<BgpPreviewService.BgpValidityWithFilteredResource>> validity(
+            @RequestParam(name = "prefix") String prefix,
+            @RequestParam(name = "asn") String asn
+    ) {
+        final BgpPreviewService.BgpValidityWithFilteredResource bgp = bgpPreviewService.validity(
+                arg(() -> Asn.parse(asn)),
+                arg(() -> IpRange.parse(prefix))
+        );
+        return ResponseEntity.ok(ApiResponse.<BgpPreviewService.BgpValidityWithFilteredResource>builder()
+                .data(bgp)
+                .metadata(Metadata.of(bgp.getValidatingRoas().size()))
+                .build());
+    }
+
+    private static <T> T arg(Supplier<T> s) {
+        try  {
+            return s.get();
+        } catch (Exception e) {
+            throw new HttpMessageNotReadableException(e.getMessage());
+        }
+    }
+
+    @Value(staticConstructor = "of")
     public static class BgpPreview {
         private String asn;
         private String prefix;

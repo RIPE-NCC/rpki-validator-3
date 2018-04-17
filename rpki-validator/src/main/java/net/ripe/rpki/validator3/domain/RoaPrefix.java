@@ -52,7 +52,6 @@ public class RoaPrefix {
     String prefix;
 
     @Basic
-    @NotNull
     byte prefixFamily;
 
     @Basic

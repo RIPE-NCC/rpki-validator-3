@@ -34,6 +34,7 @@ import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchors;
+import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.domain.ValidationRuns;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -51,6 +52,8 @@ public class TrustAnchorService {
     private TrustAnchors trustAnchors;
     @Autowired
     private RpkiRepositories rpkiRepositories;
+    @Autowired
+    private ValidatedRpkiObjects validatedRpkiObjects;
     @Autowired
     private ValidationRuns validationRunRepository;
 
@@ -81,5 +84,6 @@ public class TrustAnchorService {
         validationRunRepository.removeAllForTrustAnchor(trustAnchor);
         rpkiRepositories.removeAllForTrustAnchor(trustAnchor);
         trustAnchors.remove(trustAnchor);
+        validatedRpkiObjects.remove(trustAnchor);
     }
 }

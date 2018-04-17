@@ -1,9 +1,33 @@
+@import "variables";
 @import "../node_modules/bootstrap/scss/bootstrap";
-:root {
-  font-size: 13px;
-}
+@import "../node_modules/ngx-toastr/toastr";
+
+$red-rpki: #c43c35;
+$orange-rpki: #f89406;
+$green-rpki: #46a546;
+$alert-font: #404040;
+
 .alert-info {
   background-color: #ddf4fb;
   border-color: #c6edf9;
+  color: $alert-font;
+}
+
+.alert-warning {
+  color: $alert-font;
+}
+
+.alert-warning {
   color: #404040;
+}
+
+ngb-alert {
+  p {
+    margin-bottom: 0 !important;
+  }
+}
+
+em {
+  color: $red-rpki;
+  padding-left:0.7rem;
 }

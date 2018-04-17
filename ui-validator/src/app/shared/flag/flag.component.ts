@@ -1,31 +1,37 @@
-import {Component, Input, OnInit} from '@angular/core';
-import {isNumber} from "util";
+import {Component, Input, OnChanges, OnInit} from '@angular/core';
+import {isBoolean, isNumber} from 'util';
+import {isString} from '@ng-bootstrap/ng-bootstrap/util/util';
 
 @Component({
   selector: 'flag',
   templateUrl: './flag.component.html',
   styleUrls: ['./flag.component.scss']
 })
-export class FlagComponent implements OnInit {
+export class FlagComponent implements OnChanges {
 
-  @Input() value: string | number;
+  @Input() value: string | number | boolean;
   @Input() color?: string;
   green: boolean = false;
   orange: boolean = false;
   red: boolean = false;
+  gray: boolean = false;
   mutedColor: boolean = false;
-
+  numericValue: boolean = true;
 
   constructor() { }
 
-  ngOnInit() {
+  ngOnChanges() {
+    this.removeAllFlags();
     if (isNumber(this.value)) {
+      this.numericValue = true;
       this.setNumericFlag();
-    } else {
+    } else if (isString(this.value)){
       this.setTextualFlag();
+    } else {
+      this.setYesNoFlag();
     }
   }
-//FIXME switch have to be changes in both methods - depend of response from backend
+
   setNumericFlag(): void {
     this.mutedColor = this.value <= 0;
     switch(this.color) {
@@ -37,7 +43,7 @@ export class FlagComponent implements OnInit {
         this.orange = true;
         break;
       }
-      default: {
+      case 'red': {
         this.red = true;
         break;
       }
@@ -45,19 +51,50 @@ export class FlagComponent implements OnInit {
   }
 
   setTextualFlag(): void {
-    switch(this.value) {
-      case 'true': {
+    const value = isString(this.value) ? this.value.toUpperCase() : this.value;
+    switch (value) {
+      case 'SUCCESS':
+      case 'VALID':
+      case 'DOWNLOADED': {
         this.green = true;
         break;
       }
-      case 'WARNING': {
+      case 'WARNING':
+      case 'INVALID_ASN':
+      case 'INVALID_LENGTH':
+      case 'PENDING': {
         this.orange = true;
         break;
       }
-      default: {
+      case 'ERROR':
+      case 'NOT VALID':
+      case 'FAILED': {
         this.red = true;
         break;
       }
+      case 'UNKNOWN':
+      case 'FILTERED_VALID':
+      case 'FILTERED_INVALID':
+      case 'FILTERED_INVALID_ASN':
+      case 'FILTERED_INVALID_LENGTH':{
+        this.gray = true;
+      }
     }
+  }
+
+  setYesNoFlag(): void {
+    if (isBoolean(this.value)){
+      if (this.value) {
+        this.value = 'YES';
+        this.green = true;
+      } else {
+        this.value = 'NO';
+        this.red = true;
+      }
+    }
+  }
+
+  removeAllFlags(): void {
+    this.green = this.orange = this.red = this.gray = this.numericValue = false;
   }
 }

@@ -29,29 +29,39 @@
  */
 package net.ripe.rpki.validator3.adapter.jpa;
 
-import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.Order;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.jpa.impl.JPAQuery;
+import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Paging;
+import net.ripe.rpki.validator3.api.SearchTerm;
+import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchors;
 import net.ripe.rpki.validator3.domain.ValidationRuns;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
+import net.ripe.rpki.validator3.util.RsyncUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import javax.transaction.Transactional;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
-import java.util.List;
+import java.net.URI;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.ripe.rpki.validator3.domain.querydsl.QRpkiRepository.rpkiRepository;
 
 @Repository
 @Transactional(Transactional.TxType.REQUIRED)
+@Slf4j
 public class JPARpkiRepositories extends JPARepository<RpkiRepository> implements RpkiRepositories {
     private final QuartzValidationScheduler quartzValidationScheduler;
     private final ValidationRuns validationRuns;
@@ -67,6 +77,7 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
 
     @Override
     public RpkiRepository register(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String uri, RpkiRepository.Type type) {
+        log.debug("Registering repository {} of type {}", uri, type);
         RpkiRepository result = findByURI(uri).orElseGet(() -> {
             RpkiRepository repository = new RpkiRepository(trustAnchor, uri, type);
             entityManager.persist(repository);
@@ -79,41 +90,64 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
         if (type == RpkiRepository.Type.RSYNC && result.getType() == RpkiRepository.Type.RSYNC_PREFETCH) {
             result.setType(RpkiRepository.Type.RSYNC);
         }
+
+        if (result.getType() == RpkiRepository.Type.RSYNC) {
+            RpkiRepository foundParent = findRsyncParentRepository(uri);
+            if (foundParent != null) {
+                result.setParentRepository(foundParent);
+                if (foundParent.isDownloaded()) {
+                    result.setDownloaded(foundParent.getLastDownloadedAt());
+                }
+            }
+        }
         return result;
+    }
+
+    private RpkiRepository findRsyncParentRepository(@NotNull @ValidLocationURI String uri) {
+        URI location = URI.create(uri);
+        for (URI parentURI : RsyncUtils.generateCandidateParentUris(location)) {
+            RpkiRepository parent = select().where(rpkiRepository.rsyncRepositoryUri.eq(parentURI.toASCIIString())).fetchFirst();
+            if (parent != null) {
+                return parent;
+            }
+        }
+        return null;
     }
 
     @Override
     public Optional<RpkiRepository> findByURI(@NotNull @ValidLocationURI String uri) {
-        String normalized = uri;
+        String normalized = URI.create(uri).normalize().toASCIIString();
         return Optional.ofNullable(select().where(
             rpkiRepository.rrdpNotifyUri.eq(normalized).or(rpkiRepository.rsyncRepositoryUri.eq(normalized))
         ).fetchFirst());
     }
 
     @Override
-    public List<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Integer taId, Paging paging) {
-        BooleanBuilder builder = new BooleanBuilder();
-        if (optionalStatus != null) {
-            builder.and(rpkiRepository.status.eq(optionalStatus));
-        }
-        if (taId != null) {
-            TrustAnchor ta = trustAnchors.get(taId);
-            if (ta != null) {
-                builder.and(rpkiRepository.trustAnchors.contains(ta));
-            }
-        }
-        JPAQuery<RpkiRepository> query = select().where(builder);
-        if (paging != null) {
-            final Integer startFrom = paging.getStartFrom();
-            if (startFrom != null) {
-                query.offset(startFrom);
-            }
-            final Integer pageSize = paging.getPageSize();
-            if (pageSize != null) {
-                query.limit(pageSize);
-            }
-        }
-        return query.fetch();
+    public Stream<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent, SearchTerm searchTerm, Sorting sorting, Paging paging) {
+        JPAQuery<RpkiRepository> query = applyFilters(select(), optionalStatus, taId, hideChildrenOfDownloadedParent, searchTerm);
+
+        query.orderBy(toOrderSpecifier(sorting));
+
+        applyPaging(query, paging);
+
+        return stream(query);
+    }
+
+    @Override
+    public long countAll(RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent, SearchTerm searchTerm) {
+        JPAQuery<RpkiRepository> query = applyFilters(select(), optionalStatus, taId, hideChildrenOfDownloadedParent, searchTerm);
+        return query.fetchCount();
+    }
+
+    @Override
+    public Map<RpkiRepository.Status, Long> countByStatus(Long taId, boolean hideChildrenOfDownloadedParent) {
+        JPAQuery<RpkiRepository> query = applyFilters(select(), null, taId, hideChildrenOfDownloadedParent, null);
+
+        Stream<Tuple> counts = stream(query.groupBy(rpkiRepository.status).select(rpkiRepository.status, rpkiRepository.count()));
+        return counts.collect(Collectors.toMap(
+            tuple -> tuple.get(0, RpkiRepository.Status.class),
+            tuple -> tuple.get(1, Long.class)
+        ));
     }
 
     @Override
@@ -137,5 +171,59 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
                 entityManager.remove(repository);
             }
         }
+    }
+
+    private JPAQuery<RpkiRepository> applyFilters(JPAQuery<RpkiRepository> query, RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent, SearchTerm searchTerm) {
+        if (optionalStatus != null) {
+            query.where(rpkiRepository.status.eq(optionalStatus));
+        }
+        if (taId != null) {
+            query.where(rpkiRepository.trustAnchors.any().id.eq(taId));
+        }
+        if (hideChildrenOfDownloadedParent) {
+            // Keep repository if it is not a child or (the parent is failed and has never been successfully downloaded).
+            query.leftJoin(rpkiRepository.parentRepository).where(
+                rpkiRepository.parentRepository.isNull().or(
+                    rpkiRepository.parentRepository.status.eq(RpkiRepository.Status.FAILED).and(
+                        rpkiRepository.parentRepository.lastDownloadedAt.isNull()
+                    )
+                )
+            );
+        }
+        if (searchTerm != null) {
+            query.where(
+                rpkiRepository.rsyncRepositoryUri.likeIgnoreCase("%" + searchTerm.asString() + "%").or(
+                    rpkiRepository.rrdpNotifyUri.likeIgnoreCase("%" + searchTerm.asString() + "%")
+                ).or(
+                    rpkiRepository.status.stringValue().likeIgnoreCase("%" + searchTerm.asString() + "%")
+                ));
+        }
+        return query;
+    }
+
+    private OrderSpecifier<?> toOrderSpecifier(Sorting sorting) {
+        if (sorting == null) {
+            sorting = Sorting.of(Sorting.By.LOCATION, Sorting.Direction.ASC);
+        }
+
+        Expression<? extends Comparable> column;
+        switch (sorting.getBy()) {
+            case TYPE:
+                column = rpkiRepository.type;
+                break;
+            case STATUS:
+                column = rpkiRepository.status;
+                break;
+            case LASTCHECKED:
+                column = rpkiRepository.updatedAt;
+                break;
+            case LOCATION:
+            default:
+                column = rpkiRepository.rrdpNotifyUri.coalesce(rpkiRepository.rsyncRepositoryUri);
+                break;
+        }
+
+        Order order = sorting.getDirection() == Sorting.Direction.DESC ? Order.DESC : Order.ASC;
+        return new OrderSpecifier<>(order, column);
     }
 }

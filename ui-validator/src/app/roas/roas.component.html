@@ -1,0 +1,43 @@
+<page-title [pageTitle]='pageTitle'></page-title>
+<ngb-alert type='info' *ngIf='alertShown' (close)='alertShown=false'>
+  {{ 'Roas.ALERT_MSG_P1' | translate }} <strong>{{ alertListValidatedTA }}</strong>
+</ngb-alert>
+<toolbar [loading]='loading'
+         [responseData]='response'
+         [msgNoItems]='"Roas.ALERT_MSG_NO_ROAS" | translate:{value:"info"}'
+         (notifyToolbarChanged)='onToolbarChange($event)'>
+  <table sortable-table (sorted)='onSorted($event)' class='table table-striped table-bordered'>
+    <thead>
+    <tr>
+      <th sortable-column='asn'>{{ 'ASN' | translate }}</th>
+      <th sortable-column='prefix'>{{ 'PREFIX' | translate }}</th>
+      <th>{{ 'Roas.MAX_LENGTH' | translate }}</th>
+      <th sortable-column='ta'>{{ 'TRUST_ANCHORS' | translate }}</th>
+      <th>{{ 'Roas.URI_OF_ROA' | translate }}</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr *ngFor='let roa of roas'>
+      <td>{{ roa.asn }}</td>
+      <td>{{ roa.prefix }}</td>
+      <td>{{ roa.length }}</td>
+      <td>{{ roa.trustAnchor }}</td>
+      <td (mouseleave)='p.close()'>
+        <img src='../../assets/images/uri-icon.png'
+             [style.width.px]='20'
+             [style.margin.px]='0'
+             #p='ngbPopover'
+             ngbPopover='{{ roa.uri }}'
+             placement='bottom'
+             triggers='mouseover'
+             popoverTitle='{{"Roas.URI_OF_ROA" | translate}}'
+        />
+      </td>
+    <tr *ngIf='roas.length === 0'>
+      <td colspan='5'>{{'NO_RECORDS' | translate}}</td>
+    </tr>
+    </tbody>
+  </table>
+</toolbar>
+<hr>
+<export></export>

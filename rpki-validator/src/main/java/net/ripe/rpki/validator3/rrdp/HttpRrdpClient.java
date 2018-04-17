@@ -30,9 +30,8 @@
 package net.ripe.rpki.validator3.rrdp;
 
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.util.Http;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -41,9 +40,6 @@ import javax.annotation.PostConstruct;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 import static org.springframework.util.StreamUtils.copy;
@@ -61,46 +57,42 @@ public class HttpRrdpClient implements RrdpClient {
     public void postConstruct() throws Exception {
         final SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setTrustAll(trustAllTlsCertificates);
-        // TODO @mpuzanov find out why using HttpClientTransportOverHTTP2 makes GET request hang
         httpClient = new HttpClient(sslContextFactory);
         httpClient.start();
     }
 
     @Override
     public <T> T readStream(final String uri, Function<InputStream, T> reader) {
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        httpClient.newRequest(uri).send(listener);
-
-        Response response = null;
         try {
-            response = listener.get(30, TimeUnit.SECONDS);
+            return Http.readStream(() -> httpClient.newRequest(uri), reader);
+        } catch (Exception e) {
+            throw new RrdpException("Error downloading '" + uri + "', cause: " + fullMessage(e), e);
+        }
+    }
 
-            if (response.getStatus() != 200) {
-                RrdpException error = new RrdpException("unexpected response status " + response.getStatus() + " for " + uri);
-                response.abort(error);
-                throw error;
+    private static String fullMessage(Throwable t) {
+        final StringBuilder s = new StringBuilder();
+        while (true) {
+            s.append(t.getMessage());
+            if (t == t.getCause()) {
+                return s.toString();
             }
-
-            try (InputStream inputStream = listener.getInputStream()) {
-                return reader.apply(inputStream);
+            t = t.getCause();
+            if (t == null) {
+                return s.toString();
             }
-        } catch (IOException | InterruptedException | TimeoutException | ExecutionException e) {
-            RrdpException error = new RrdpException("failed reading response stream for " + uri + ": " + e, e);
-            if (response != null) {
-                response.abort(error);
-            }
-            throw error;
+            s.append(", cause: ");
         }
     }
 
     @Override
     public byte[] getBody(String uri) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         readStream(uri, s -> {
             try {
                 return copy(s, baos);
             } catch (IOException e) {
-                throw new RrdpException("error reading response body for " + uri + ": " + e, e);
+                throw new RuntimeException(e);
             }
         });
         return baos.toByteArray();

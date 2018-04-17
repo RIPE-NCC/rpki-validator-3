@@ -37,33 +37,29 @@ import net.ripe.rpki.commons.crypto.cms.ghostbuster.GhostbustersCms;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.crypto.cms.roa.RoaCms;
 import net.ripe.rpki.commons.crypto.crl.X509Crl;
-import net.ripe.rpki.commons.crypto.util.CertificateRepositoryObjectFactory;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificate;
-import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.util.Sha256;
-import org.bouncycastle.util.encoders.Hex;
 
 import javax.persistence.Basic;
+import javax.persistence.CascadeType;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
+import javax.persistence.OneToOne;
 import javax.persistence.OrderBy;
 import javax.persistence.OrderColumn;
 import javax.validation.Valid;
-import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.math.BigInteger;
 import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -114,12 +110,9 @@ public class RpkiObject extends AbstractEntity {
     @Getter
     private byte[] sha256;
 
-    @Basic
-    @Getter
+    @OneToOne(optional = false, fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "rpkiObject")
     @NotNull
-    @NotEmpty
-    @Size(max = MAX_SIZE)
-    private byte[] encoded;
+    private EncodedRpkiObject encodedRpkiObject;
 
     @ElementCollection(fetch = FetchType.LAZY)
     @OrderColumn
@@ -138,8 +131,9 @@ public class RpkiObject extends AbstractEntity {
 
     public RpkiObject(String location, CertificateRepositoryObject object) {
         this.locations.add(location);
-        this.encoded = object.getEncoded();
-        this.sha256 = Sha256.hash(this.encoded);
+        byte[] encoded = object.getEncoded();
+        this.sha256 = Sha256.hash(encoded);
+        this.encodedRpkiObject = new EncodedRpkiObject(this, encoded);
         this.lastMarkedReachableAt = Instant.now();
         if (object instanceof X509ResourceCertificate) {
             this.serialNumber = ((X509ResourceCertificate) object).getSerialNumber();
@@ -181,42 +175,6 @@ public class RpkiObject extends AbstractEntity {
         }
     }
 
-    public <T extends CertificateRepositoryObject> Optional<T> get(Class<T> clazz, ValidationResult validationResult) {
-        ValidationResult temporary = ValidationResult.withLocation(validationResult.getCurrentLocation());
-        try {
-            return get(clazz, validationResult.getCurrentLocation().getName());
-        } finally {
-            validationResult.addAll(temporary);
-        }
-    }
-
-    public <T extends CertificateRepositoryObject> Optional<T> get(final Class<T> clazz, final String location) {
-        ValidationResult temporary = ValidationResult.withLocation(location);
-
-        temporary.rejectIfFalse(Arrays.equals(Sha256.hash(encoded), sha256), "rpki.object.sha256.matches");
-        if (temporary.hasFailureForCurrentLocation()) {
-            return Optional.empty();
-        }
-
-        ValidationResult ignored = ValidationResult.withLocation(location);
-        CertificateRepositoryObject candidate = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(
-                encoded,
-                ignored // Ignore any parse errors, as all stored objects must be parsable
-        );
-
-        temporary.rejectIfNull(candidate, "rpki.object.parsable");
-        if (temporary.hasFailureForCurrentLocation()) {
-            return Optional.empty();
-        }
-
-        temporary.rejectIfFalse(clazz.isInstance(candidate), "rpki.object.type.matches", clazz.getSimpleName(), candidate.getClass().getSimpleName());
-        if (temporary.hasFailureForCurrentLocation()) {
-            return Optional.empty();
-        }
-
-        return Optional.of(clazz.cast(candidate));
-    }
-
     public void addLocation(String location) {
         this.locations.add(location);
     }
@@ -237,7 +195,6 @@ public class RpkiObject extends AbstractEntity {
     public String toString() {
         return toStringBuilder()
                 .append("type", getType())
-                .append("hash", Hex.toHexString(getSha256()))
                 .append("serialNumber", getSerialNumber())
                 .append("locations", getLocations())
                 .build();

@@ -9,7 +9,13 @@
   "ROUTER_SESSIONS": "Router Sessions",
   "VALID": "VALID",
   "INVALID": "INVALID",
+  "INVALID_LENGTH": "INVALID LENGTH",
+  "INVALID_ASN": "INVALID ASN",
   "UNKNOWN": "UNKNOWN",
+  "FILTERED_VALID": "FILTERED VALID",
+  "FILTERED_INVALID": "FILTERED INVALID",
+  "FILTERED_INVALID_ASN": "FILTERED INVALID ASN",
+  "FILTERED_INVALID_LENGTH": "FILTERED INVALID LENGTH",
   "SEARCH": "Search",
   "LOADING": "Loading...",
   "NO_RECORDS": "No matching records found",
@@ -18,37 +24,140 @@
   "OF": "of",
   "SHOW": "Show",
   "ENTRIES": "entries",
+  "URI": "URI",
+  "PREFIX": "Prefix",
+  "PREFIX_PLACEHOLDER": "IPv4 or IPv6 prefix",
+  "ASN": "ASN",
+  "ORIGIN": "Origin",
+  "EXPORT": "Export",
+  "YES": "Yes",
+  "NO": "No",
+  "SUCCESS": "SUCCESS",
+  "WARNING": "WARNING",
+  "ERROR": "ERROR",
+  "ADD": "Add",
+  "DELETE": "Delete",
+  "COMMENT": "Comment",
+  "REQUIRED": "Required",
+  "STATUS": "Status",
+  "SUMMARY": "Summary",
+  "DETAILS_TITLE": "Details",
+  "EM_MSG_INVALID_PREFIX": "Not valid prefix",
+  "EM_MSG_INVALID_ASN": "Not valid asn",
   "Nav": {
     "TITLE_TRUST_ANCHORS": "Configured Trust Anchors",
     "TITLE_ROAS": "Validated ROAs",
     "TITLE_IGNORE_FILTERS": "Ignore Filters",
     "TITLE_WHITELIST": "Whitelist",
     "TITLE_BGP_PREVIEW": "BGP Preview",
+    "TITLE_ANNOUNCEMENT_PREVIEW": "Announcement Preview",
     "TITLE_EXPORT_API": "Export and API",
     "TITLE_ROUTER_SESSIONS": "Router Sessions",
-    "TITLE_MONITORING_TA": "Monitor for"
+    "TITLE_MONITORING_TA": "Overview for"
+  },
+  "Error": {
+    "Page not found": "Page not found",
+    "Bad request": "Bad request",
+    "BACKEND_DOWN": "Backend is down. Please start application",
+    "FRONTEND_DOWN": "Frontend is down. Please start application",
+    "UNKONOWN": "Please refresh page"
   },
   "Footer": {
-    "COPYRIGHT": "Copyright ©2009-2018 the Réseaux IP Européens Network Coordination Centre RIPE NCC. All rights restricted. Version 2.24-SNAPSHOT"
+    "COPYRIGHT": "Copyright ©2009-2018 the Réseaux IP Européens Network Coordination Centre RIPE NCC. All rights restricted."
   },
   "TrustAnchors": {
     "PROCESSED_ITEMS": "Processed Items",
     "LAST_UPDATED": "Last Updated",
-    "TOOLTIP_CLICK": "Click to view monitor page"
+    "TOOLTIP_CLICK": "Click to view overview page"
   },
   "Monitoring": {
-    "VALIDATED_USING_TA_LOCATOR": "Trust anchor could be validated using trust anchor locator",
-    "DROPPED_MORE_THEN_10_PERC": "Object count has not dropped more than 10% since the last validation",
-    "FEWER_THEN_10_ERRORS": "Fewer than 10 validation errors",
-    "LESS_THEN_10_PERC_VAL_ERROR": "Less than 10% of objects have a validation error",
-    "ALL_OBJECT_FETCHED_SUCCESS": "All objects fetched successfully",
-    "STATISTICS": "Statistics for the last validation run"
+    "VALIDATED_USING_TA_LOCATOR": "Trust Anchor could be validated",
+    "LAST_VALIDATION": "Last completed validation",
+    "TOOLTIP_OBJECTS_DOWNLOADED": "valid objects",
+    "TOOLTIP_OBJECTS_PENDING": "objects with warnings",
+    "TOOLTIP_OBJECTS_FAILED": "invalid objects",
+    "TOOLTIP_REPOSITORIES_DOWNLOADED": "downloaded",
+    "TOOLTIP_REPOSITORIES_PENDING": "pending",
+    "TOOLTIP_REPOSITORIES_FAILED": "failed",
+    "REPOSITORIES": "Repositories"
+  },
+  "Repositories": {
+    "NO_RECORDS": "No repositories with problems found",
+    "URI": "URI",
+    "REPO_TYPE": "Type",
+    "REPO_LAST_CHECKED": "Last checked"
+  },
+  "ValidationDetails": {
+    "TITLE": "Validation Issues",
+    "NO_RECORDS": "No validation problems found",
+    "CHECK_MSG": "Message",
+    "CHECK_VALID": "Severity"
   },
   "Roas": {
     "ASN": "ASN",
     "PREFIX": "Prefix",
-    "MAX_LENGTH": "Maximum Length",
+    "MAX_LENGTH": "Max Length",
     "URI_OF_ROA": "URI of ROA",
-    "ALERT_MSG_P1": "Validated ROAs from"
+    "ALERT_MSG_P1": "Some ROAs may be missing because the following Trust Anchors still have pending repositories: ",
+    "FILTERED_FROM": "(filtered from",
+    "TOTAL_ENTRIES": "total entries)",
+    "ALERT_MSG_NO_ROAS": "No validated ROAs"
+  },
+  "Bgp": {
+    "VALIDITY": "Validity",
+    "LENGTH": "Length",
+    "TOOLTIP_CLICK": "Click to view announcement preview"
+  },
+  "AnnouncementPreview": {
+    "RELEVANT_VALIDATED_ROAS": "Relevant Validated ROAs",
+    "ALERT_MSG_NO_RELEVANT": "No relevant validated ROAs",
+    "TITLE_MODAL_FORM": "Please indicate ASN and Prefix in order to view announcements",
+    "SHOW": "Show",
+    "SOURCE" : "Source",
+    "TOASTR_MSG_REQUIRED_PREFIX_AND_ASN": "Prefix and ASN are required ",
+    "TOASTR_MSG_ERROR": "Specified prefix and/or ASN are not valid"
+  },
+  "IgnoreFilters": {
+    "AFFECTED_ROAS": "Affected ROAs",
+    "NUMBER_AFFECTED_ROAS": "affected ROA(s)",
+    "ALERT_MSG_INTRO": "By adding a filter the validator will ignore any RPKI prefixes that overlap with the filter's prefix.",
+    "ALERT_MSG_NO_FILTERS": "No filters defined.",
+    "ADD_FILTER": "Add filter",
+    "CURRENT_FILTERS": "Current filters",
+    "TOASTR_MSG_REQUIRED_PREFIX_OR_ASN": "Prefix and/or ASN are required to enable adding.",
+    "FILTERED_ROA_PREFIXES":"Filtered ROA prefixes",
+    "TOASTR_MSG_ADDED": "The filter has been added.",
+    "TOASTR_MSG_ADD_ERROR": "Error happened. Filter has not been added. Please try again.",
+    "TOASTR_MSG_DELETED": "The filter has been removed.",
+    "TOASTR_MSG_DELETE_ERROR": "Error happened. Filter has not been removed. Please try again."
+  },
+  "Whitelist": {
+    "VALIDATES": "Validates",
+    "INVALIDATES": "Invalidates",
+    "CONTEXT_ANNOUNCEMENT": "announcement(s)",
+    "ALERT_MSG_INTRO_1st": "By adding a whitelist entry you can manually authorise an ASN to originate a prefix in addition to the validated ROAs from the repository.",
+    "ALERT_MSG_INTRO_2nd": "Please note that whitelist entries may <strong>invalidate</strong> announcements for this prefix from other ASNs, just like ROAs. This may be intentional (you are whitelisting ASN A, ASN B is hijacking), or not (ASN B should also be authorised, or you made a mistake). When you create a whitelist entry here, make sure to check the table below for a report on prefixes validated / invalidated by this entry and verify that no unintentional side effects occured.",
+    "ADD_ENTRY": "Add entry",
+    "MAX_PREFIX_LENGTH": "Maximum prefix length",
+    "MAX_PREFIX_LENGTH_PLACEHOLDER": "Number",
+    "EM_MSG_INVALID_MAX_PREFIX_LENGTH": "Number must be between 12 and 32",
+    "ALERT_MSG_NO_ENTRIES": "No entries defined.",
+    "TOASTR_MSG_REQUIRED_PREFIX_AND_ASN": "Prefix and ASN are required to enable adding.",
+    "CURRENT_ENTRIES": "Current entries",
+    "TOASTR_MSG_ADDED": "The entry has been added to the whitelist.",
+    "TOASTR_MSG_ADD_ERROR": "Error happened. Entry wasn't add to whitelist. Please try again.",
+    "TOASTR_MSG_DELETED": "The entry has been removed from the whitelist.",
+    "TOASTR_MSG_DELETED_ERROR": "Error happened. Entry wasn't delete from whitelist. Please try again.",
+    "CLICK_LINK_TO_ANNOUNCEMENT": "Click link to see details about announcement"
+  },
+  "Export": {
+    "DESCRIPTION": "Here you are able to export the complete ROA data set for use in an existing BGP decision making workflow. The output will be in CSV or JSON format and consist of all validated ROAs, minus your ignore filter entries, plus your whitelist additions."
+  },
+  "Slurm": {
+    "DESCRIPTION": "Download or upload SLURM file.",
+    "CHOOSE_FILE": "Choose file ...",
+    "DOWNLOAD_SLURM": "Download SLURM",
+    "UPLOAD_FAILED": "Upload failed! Something is wrong with chosen file",
+    "SUCCESS_LOADED": "Loaded successfully"
   }
 }

@@ -5,7 +5,7 @@
 
     <groupId>net.ripe.rpki</groupId>
     <artifactId>rpki-validator</artifactId>
-    <version>3.0.0-SNAPSHOT</version>
+    <version>3.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>rpki-validator-3</name>
@@ -260,7 +260,7 @@
             <plugin>
                 <groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
-                <version>2.1.1</version>
+                <version>3.1.2</version>
                 <configuration>
                     <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
                     <suppressionFiles>rpki-validator/suppressions.xml</suppressionFiles>
@@ -290,7 +290,7 @@
                     <license>BSD</license>
                     <distribution>CentOS 7</distribution>
                     <name>rpki-validator</name>
-                    <version>3.0beta</version>
+                    <version>3.0</version>
                     <release>${build.number}</release>
                     <group>Applications/System</group>
                     <packager>RIPE NCC</packager>
@@ -318,7 +318,7 @@
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
-                                    <location>src/main/resources/packaging/centos7/usr/bin/</location>
+                                    <location>src/main/resources/packaging/generic/bin/</location>
                                     <includes>
                                         <include>rpki-validator-3.sh</include>
                                     </includes>
@@ -345,7 +345,7 @@
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
-                                    <location>src/main/resources/packaging/centos7/etc/rpki-validator-3/</location>
+                                    <location>src/main/resources/packaging/generic/conf/</location>
                                     <includes>
                                         <include>application-defaults.properties</include>
                                     </includes>
@@ -372,7 +372,7 @@
                             <recurseDirectories>true</recurseDirectories>
                             <sources>
                                 <source>
-                                    <location>src/main/resources/packaging/centos7/var/lib/rpki-validator-3/</location>
+                                    <location>src/main/resources/packaging/generic/workdirs/</location>
                                     <excludes>
                                         <exclude>*/.ignore.me</exclude>
                                     </excludes>
@@ -389,6 +389,7 @@
 
                     <postinstallScriptlet>
                         <script>
+                            /bin/systemctl daemon-reload
                             /bin/systemctl try-restart rpki-validator-3
                         </script>
                     </postinstallScriptlet>
@@ -399,6 +400,25 @@
                     </requires>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <descriptors>
+                        <descriptor>src/main/resources/packaging/generic/assembly/distribution.xml</descriptor>
+                    </descriptors>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 

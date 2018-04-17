@@ -76,7 +76,7 @@ public class RrdpService {
         try {
             doStoreRepository(rpkiRepository, validationRun);
         } catch (RrdpException e) {
-            log.warn("error retrieving RRDP repository: " + e, e);
+            log.warn("Error retrieving RRDP repository at {}: " + e.getMessage(), rpkiRepository.getRrdpNotifyUri());
             ValidationCheck validationCheck = new ValidationCheck(validationRun, rpkiRepository.getRrdpNotifyUri(),
                     ValidationCheck.Status.ERROR, ErrorCodes.RRDP_FETCH, e.getMessage());
             validationRun.addCheck(validationCheck);
@@ -198,7 +198,7 @@ public class RrdpService {
         });
     }
 
-    void storeDelta(final Delta delta, final RpkiRepositoryValidationRun validationRun) {
+    private void storeDelta(final Delta delta, final RpkiRepositoryValidationRun validationRun) {
         delta.asMap().forEach((uri, deltaElement) -> {
             if (deltaElement instanceof DeltaPublish) {
                 applyDeltaPublish(validationRun, uri, (DeltaPublish) deltaElement);

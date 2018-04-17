@@ -3,6 +3,9 @@ Description=RPKI Validator
 After=network.target
 
 [Service]
+Environment=JAVA_CMD=/usr/bin/java
+Environment=CONFIG_DIR=/etc/rpki-validator-3
+Environment=JAR=/usr/lib/rpki-validator-3.jar
 ExecStart=/usr/bin/rpki-validator-3.sh
 User=rpki
 Group=rpki

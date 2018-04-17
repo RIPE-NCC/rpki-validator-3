@@ -37,8 +37,9 @@ import java.util.Date;
 public class TaStatus {
     final String id;
     final String taName;
-    final int successful;
-    final int warnings;
     final int errors;
+    final int warnings;
+    final int successful;
     final Date lastUpdated;
+    final boolean completedValidation;
 }

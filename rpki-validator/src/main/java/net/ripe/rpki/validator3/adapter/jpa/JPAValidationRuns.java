@@ -152,12 +152,10 @@ public class JPAValidationRuns extends JPARepository<ValidationRun> implements V
 
     @Override
     public Stream<ValidationCheck> findValidationChecksForValidationRun(long validationRunId, Paging paging, SearchTerm searchTerm, Sorting sorting) {
-        return stream(
-            validationChecksQuery(validationRunId, searchTerm)
-                .orderBy(toOrderSpecifier(sorting))
-                .offset(paging.getStartFrom())
-                .limit(paging.getPageSize())
-        );
+        return stream(applyPaging(
+            validationChecksQuery(validationRunId, searchTerm).orderBy(toOrderSpecifier(sorting)),
+            paging
+        ));
     }
 
     @Override
@@ -194,6 +192,9 @@ public class JPAValidationRuns extends JPARepository<ValidationRun> implements V
     }
 
     private OrderSpecifier<?> toOrderSpecifier(Sorting sorting) {
+        if (sorting == null) {
+            sorting = Sorting.of(Sorting.By.LOCATION, Sorting.Direction.ASC);
+        }
         ComparableExpression<?> column;
         switch (sorting.getBy()) {
             case KEY:

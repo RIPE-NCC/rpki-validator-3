@@ -32,29 +32,33 @@ package net.ripe.rpki.validator3.api.roas;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.commons.crypto.x509cert.X509CertificateUtil;
-import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificate;
+import net.ripe.ipresource.Asn;
+import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
+import net.ripe.rpki.validator3.api.bgpsec.BgpSecFilterService;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
+import net.ripe.rpki.validator3.domain.BgpSecAssertions;
+import net.ripe.rpki.validator3.domain.IgnoreFilters;
+import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
+import net.ripe.rpki.validator3.domain.RoaPrefixAssertions;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.Settings;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchors;
+import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Base64;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -66,39 +70,82 @@ public class ObjectController {
     private RpkiObjects rpkiObjects;
 
     @Autowired
+    private ValidatedRpkiObjects validatedRpkiObjects;
+
+    @Autowired
     private TrustAnchors trustAnchors;
+
+    @Autowired
+    private IgnoreFilters ignoreFilters;
+
+    @Autowired
+    private RoaPrefixAssertions roaPrefixAssertions;
+
+    @Autowired
+    private BgpSecAssertions bgpSecAssertions;
+
+    @Autowired
+    private BgpSecFilterService bgpSecFilterService;
 
     @Autowired
     private Settings settings;
 
     @GetMapping(path = "/validated")
     public ResponseEntity<ApiResponse<ValidatedObjects>> list(Locale locale) {
-        final Map<String, TrustAnchorResource> trustAnchorsById = trustAnchors.findAll()
-                .stream().collect(Collectors.toMap(TrustAnchor::getName, ta -> TrustAnchorResource.of(ta, locale)));
+        final Map<Long, TrustAnchorResource> trustAnchorsById = trustAnchors.findAll().stream()
+            .collect(Collectors.toMap(
+                TrustAnchor::getId,
+                ta -> TrustAnchorResource.of(ta, locale))
+            );
+        final Map<Long, Links> trustAnchorLinks = trustAnchorsById.entrySet().stream()
+            .collect(Collectors.toMap(
+                entry -> entry.getKey(),
+                entry -> new Links(entry.getValue().getLinks().getLink("self").withRel(TrustAnchor.TYPE)))
+            );
 
-        final Stream<RoaPrefix> validatedPrefixes = rpkiObjects
-                .findCurrentlyValidatedRoaPrefixes()
-                .map(r -> {
-                    final Link trustAnchorLink = trustAnchorsById.get(r.getTrustAnchor()).getLinks().getLink("self");
+        final Stream<RoaPrefix> validatedPrefixes = validatedRpkiObjects
+            .findCurrentlyValidatedRoaPrefixes(null, null, null)
+            .getObjects()
+            .filter(new IgnoreFiltersPredicate(ignoreFilters.all()).negate())
+            .map(prefix -> {
+                    Links links = trustAnchorLinks.get(prefix.getTrustAnchor().getId());
                     return new RoaPrefix(
-                            r.getAsn(),
-                            r.getPrefix(),
-                            r.getLength(),
-                            new Links(trustAnchorLink.withRel(TrustAnchor.TYPE)));
-                });
+                        String.valueOf(prefix.getAsn()),
+                        prefix.getPrefix().toString(),
+                        prefix.getEffectiveLength(),
+                        links
+                    );
+                }
+            );
 
-        final Base64.Encoder encoder = Base64.getEncoder();
-        final Stream<RouterCertificate> routerCertificates = rpkiObjects.findRouterCertificates().map(o ->
-                o.get(X509RouterCertificate.class, "temporary").map(c -> {
-                    final List<String> asns = X509CertificateUtil.getAsns(c.getCertificate());
-                    final String ski = encoder.encodeToString(X509CertificateUtil.getSubjectKeyIdentifier(c.getCertificate()));
-                    final String pkInfo = X509CertificateUtil.getEncodedSubjectPublicKeyInfo(c.getCertificate());
-                    return new RouterCertificate(asns, ski, pkInfo);
-                })
-        ).filter(Optional::isPresent).map(Optional::get);
+        final Stream<RoaPrefix> assertions = roaPrefixAssertions
+            .all()
+            .map(assertion -> new RoaPrefix(
+                new Asn(assertion.getAsn()).toString(),
+                IpRange.parse(assertion.getPrefix()).toString(),
+                assertion.getMaximumLength() != null ? assertion.getMaximumLength() : IpRange.parse(assertion.getPrefix()).getPrefixLength(),
+                null
+            ));
+
+        final Stream<RoaPrefix> combinedPrefixes = Stream.concat(validatedPrefixes, assertions).distinct();
+
+        final Stream<ValidatedRpkiObjects.RouterCertificate> certificates = validatedRpkiObjects.findCurrentlyValidatedRouterCertificates().getObjects();
+        final Stream<RouterCertificate> filteredRouterCertificates = bgpSecFilterService.filterCertificates(certificates)
+                .map(o -> new RouterCertificate(o.getAsn(), o.getSubjectKeyIdentifier(), o.getSubjectPublicKeyInfo()));
+
+        final Stream<RouterCertificate> bgpSecAssertions = this.bgpSecAssertions.all().map(b -> {
+            final List<String> asns = Collections.singletonList(String.valueOf(b.getAsn()));
+            return new RouterCertificate(asns, b.getSki(), b.getPublicKey());
+        });
+
+        final Stream<RouterCertificate> combinedAssertions = Stream.concat(filteredRouterCertificates, bgpSecAssertions).distinct();
 
         return ResponseEntity.ok(ApiResponse.<ValidatedObjects>builder()
-                .data(new ValidatedObjects(settings.isInitialValidationRunCompleted(), trustAnchorsById.values(), validatedPrefixes, routerCertificates))
+                .data(new ValidatedObjects(
+                        settings.isInitialValidationRunCompleted(),
+                        trustAnchorsById.values(),
+                        combinedPrefixes,
+                        combinedAssertions))
                 .build());
     }
 

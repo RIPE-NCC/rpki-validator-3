@@ -1,3 +1,8 @@
+table > tbody > tr {
+  td:nth-child(2) {
+    width: 6.87em;
+  }
+}
 .center {
   display: flex;
   align-items: center;
@@ -5,8 +10,8 @@
 }
 .alert {
   text-align: center;
-  border-radius: 0.5rem;
-  border: 0px;
+  border-radius: .5rem;
+  border: 0rem;
   display: inline-block;
   margin: 0 auto;
 }

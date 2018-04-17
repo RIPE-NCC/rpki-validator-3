@@ -5,7 +5,7 @@
 
     <groupId>net.ripe.rpki</groupId>
     <artifactId>rpki-rtr-server</artifactId>
-    <version>3.0.0-SNAPSHOT</version>
+    <version>3.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>rpki-rtr-server</name>
@@ -268,7 +268,7 @@
             <plugin>
                 <groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
-                <version>2.1.1</version>
+                <version>3.1.2</version>
                 <configuration>
                     <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
                     <suppressionFiles>rpki-rtr-server/suppressions.xml</suppressionFiles>
@@ -297,7 +297,7 @@
                     <license>BSD</license>
                     <distribution>CentOS 7</distribution>
                     <name>rpki-rtr-server</name>
-                    <version>3.0beta</version>
+                    <version>3.0</version>
                     <release>${build.number}</release>
                     <group>Applications/System</group>
                     <packager>RIPE NCC</packager>
@@ -325,7 +325,7 @@
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
-                                    <location>src/main/resources/packaging/centos7/usr/bin/</location>
+                                    <location>src/main/resources/packaging/generic/bin/</location>
                                     <includes>
                                         <include>rpki-rtr-server.sh</include>
                                     </includes>
@@ -338,7 +338,7 @@
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
-                                    <location>src/main/resources/packaging/centos7/etc/rpki-rtr-server/</location>
+                                    <location>src/main/resources/packaging/generic/conf/</location>
                                     <includes>
                                         <include>application.properties</include>
                                     </includes>
@@ -352,7 +352,7 @@
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
-                                    <location>src/main/resources/packaging/centos7/etc/rpki-rtr-server/</location>
+                                    <location>src/main/resources/packaging/generic/conf/</location>
                                     <includes>
                                         <include>application-defaults.properties</include>
                                     </includes>
@@ -372,20 +372,6 @@
                                 </source>
                             </sources>
                         </mapping>
-                        <mapping>
-                            <directory>/var/lib/rpki-rtr-server/</directory>
-                            <configuration>true</configuration>
-                            <directoryIncluded>true</directoryIncluded>
-                            <recurseDirectories>true</recurseDirectories>
-                            <sources>
-                                <source>
-                                    <location>src/main/resources/packaging/centos7/var/lib/rpki-rtr-server/</location>
-                                    <excludes>
-                                        <exclude>*/.ignore.me</exclude>
-                                    </excludes>
-                                </source>
-                            </sources>
-                        </mapping>
                     </mappings>
                     <preinstallScriptlet>
                         <script>
@@ -395,16 +381,35 @@
                     </preinstallScriptlet>
                     <postinstallScriptlet>
                         <script>
+                            /bin/systemctl daemon-reload
                             /bin/systemctl try-restart rpki-rtr-server
                         </script>
                     </postinstallScriptlet>
                     <autoRequires>true</autoRequires>
                     <requires>
                         <require>java-1.8.0-openjdk</require>
-                        <require>rsync</require>
                     </requires>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <descriptors>
+                        <descriptor>src/main/resources/packaging/generic/assembly/distribution.xml</descriptor>
+                    </descriptors>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 

@@ -1,37 +1,74 @@
-import {HttpClient, HttpErrorResponse} from "@angular/common/http";
-import {Observable} from "rxjs/Observable";
-import {Injectable} from "@angular/core";
+import {HttpClient, HttpParams} from '@angular/common/http';
+import {Observable} from 'rxjs/Observable';
+import {Injectable} from '@angular/core';
+
+import {IValidationChecksResponse} from '../monitoring-ta/validation-details/validation-detail.model';
+import {IResponse} from "../shared/response.model";
 
 @Injectable()
 export class TrustAnchorsService {
 
     private _trustAnchorsUrl = 'api/trust-anchors';
     private _trustAnchorsStatusesUrl = 'api/trust-anchors/statuses';
-    private _trustAnchorByIdUrl = 'api/trust-anchors/';
+
+    private _trustAnchorByIdUrl = 'api/trust-anchors/{id}';
+    private _trustAnchorByIdValidationChecksUrl = 'api/trust-anchors/{id}/validation-checks';
+    private _repositoriesByTaId = 'api/rpki-repositories/';
+    private _repositoriesStatusesByTaId = 'api/rpki-repositories/statuses/{taId}';
+
 
     constructor(private _http: HttpClient) {
     }
 
     getTrustAnchors(): Observable<any> {
         return this._http.get<any>(this._trustAnchorsUrl)
-            .do(reponse => console.log('All: ' + JSON.stringify(reponse.data)))
-            .catch(this.handleError);
     }
 
     getTrustAnchorsOverview(): Observable<any> {
-        return this._http.get<any>(this._trustAnchorsStatusesUrl)
-            .do(reponse => console.log('All: ' + JSON.stringify(reponse.data)))
-            .catch(this.handleError);
+        return this._http.get<any>(this._trustAnchorsStatusesUrl);
     }
 
-    getTrustAnchor(id: string): Observable<any> {
-      return this._http.get<any>(this._trustAnchorByIdUrl + id)
-          .do(reponse => console.log('ID RESPONSE: ' + JSON.stringify(reponse.data)))
-          .catch(this.handleError);
+    getTrustAnchor(id: string): Observable<IResponse> {
+      return this._http.get<IResponse>(this._trustAnchorByIdUrl.replace('{id}', id));
     }
 
-    private handleError(err: HttpErrorResponse) {
-        console.log(err.message);
-        return Observable.throw(err.message);
+    getTrustAnchorValidationChecks(id: string,
+                                   startFrom: string,
+                                   pageSize: string,
+                                   search: string,
+                                   sortBy: string,
+                                   sortDirection: string): Observable<IValidationChecksResponse> {
+      const params = new HttpParams()
+        .set('id', id)
+        .set('startFrom', startFrom)
+        .set('pageSize', pageSize)
+        .set('search', search)
+        .set('sortBy', sortBy)
+        .set('sortDirection', sortDirection);
+
+      return this._http.get<any>(this._trustAnchorByIdValidationChecksUrl.replace('{id}', id),
+        {params: params})
+    }
+
+    getRepositories(trustAnchorId: string,
+                    startFrom: string,
+                    pageSize: string,
+                    search: string,
+                    sortBy: string,
+                    sortDirection: string): Observable<any> {
+
+      const params = new HttpParams()
+        .set('ta', trustAnchorId)
+        .set('startFrom', startFrom)
+        .set('pageSize', pageSize)
+        .set('search', search)
+        .set('sortBy', sortBy)
+        .set('sortDirection', sortDirection);
+
+      return this._http.get<any>(this._repositoriesByTaId, { params: params })
+    }
+
+    getRepositoriesStatuses(trustAnchorId: string) {
+      return this._http.get<any>(this._repositoriesStatusesByTaId.replace('{taId}', trustAnchorId))
     }
 }

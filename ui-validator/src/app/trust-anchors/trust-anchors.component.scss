@@ -1,3 +1,12 @@
+thead > tr {
+  th:nth-child(2) {
+    width: 8em;
+  }
+  th:nth-child(3) {
+    width: 14em;
+  }
+}
+
 tbody > tr:hover {
   background-color: lightgray;
 }

@@ -1,12 +1,40 @@
-import { browser, by, element } from 'protractor';
+import {by, element} from 'protractor';
+import {RoasPage} from './pages/RoasPage';
+import {TrustAnchorsPage} from './pages/TrustAnchorsPage';
+import {MonitorTaPage} from './pages/MonitorTaPage';
+import {IgnoreFiltersPage} from './pages/IgnoreFiltersPage';
+import {AnnouncementPreviewPage} from './pages/AnnouncementPreviewPage';
+import {WhitelistPage} from './pages/WhitelistPage';
+import {BgpPage} from "./pages/BgpPage";
 
 export class AppPage {
-  navigateTo() {
-    return browser.get('/');
+
+  navigateToRoas() {
+    return new RoasPage();
   }
 
-  navigateTo(page: string) {
-    return browser.get('/' + page);
+  navigateToTrustAnchors() {
+    return new TrustAnchorsPage();
+  }
+
+  navigateToMonitorTa() {
+    return new MonitorTaPage();
+  }
+
+  navigateToBgp() {
+    return new BgpPage();
+  }
+
+  navigateToIgnoreFilters() {
+    return new IgnoreFiltersPage();
+  }
+
+  navigateToWhitelist() {
+    return new WhitelistPage();
+  }
+
+  navigateToAnnouncementPreview(asn: string, prefix: string) {
+    return new AnnouncementPreviewPage(asn, prefix);
   }
 
   getParagraphText() {

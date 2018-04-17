@@ -1,0 +1,30 @@
+@import "../../styles";
+
+.panel {
+  background-color: #f2f2f2;
+  padding: 1rem;
+  border: 1px solid #dee2e6;
+  margin-bottom: 1rem;
+}
+
+em {
+  color: $red-rpki;
+  padding-left:.6rem;
+}
+
+.ban-icon {
+  font-size:1.25rem;
+  color: $red-rpki;
+}
+
+thead > tr {
+  th:nth-child(3) {
+    width: 12.5rem;
+  }
+  th:nth-child(5) {
+    width: 3.5rem;
+  }
+}
+tbody > tr > td:nth-child(5) {
+  text-align: center;
+}

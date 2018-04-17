@@ -32,6 +32,8 @@ package net.ripe.rpki.validator3.util;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 
 public class RsyncUtils {
     public static final int DEFAULT_RSYNC_PORT = 873;
@@ -46,6 +48,19 @@ public class RsyncUtils {
             new File(localRsyncDirectory, host),
             location.getRawPath()
         ).getCanonicalFile();
+    }
 
+    public static List<URI> generateCandidateParentUris(URI uri) {
+        URI candidate = uri.normalize();
+        if (!candidate.getPath().endsWith("/")) {
+            candidate = URI.create(uri.toASCIIString() + "/");
+        }
+
+        final List<URI> result = new ArrayList<>();
+        while (!"/".equals(candidate.getPath())) {
+            candidate = candidate.resolve("..");
+            result.add(candidate);
+        }
+        return result;
     }
 }

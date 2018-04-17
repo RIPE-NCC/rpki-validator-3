@@ -34,7 +34,7 @@ import net.ripe.ipresource.IpAddress;
 import net.ripe.ipresource.IpRange;
 import net.ripe.ipresource.IpResourceSet;
 import net.ripe.rpki.commons.crypto.ValidityPeriod;
-import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
+import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificate;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.commons.validation.ValidationString;
 import net.ripe.rpki.validator3.IntegrationTest;
@@ -224,7 +224,8 @@ public class CertificateTreeValidationServiceTest {
         List<Pair<CertificateTreeValidationRun, RpkiObject>> validated = rpkiObjects.findCurrentlyValidated(RpkiObject.Type.CER).collect(toList());
         assertThat(validated).hasSize(1);
         assertThat(validated.get(0).getLeft()).isEqualTo(completed.get(0));
-        assertThat(validated.get(0).getRight().get(X509ResourceCertificate.class, ValidationResult.withLocation("ignored.cer")).get().getSubject()).isEqualTo(new X500Principal("CN=child-ca"));
+        Optional<X509RouterCertificate> cro = rpkiObjects.findCertificateRepositoryObject(validated.get(0).getRight().getId(), X509RouterCertificate.class, ValidationResult.withLocation("ignored.cer"));
+        assertThat(cro).isPresent().hasValueSatisfying(x -> assertThat(x.getSubject()).isEqualTo(new X500Principal("CN=child-ca")));
     }
 
     @Test
@@ -282,25 +283,27 @@ public class CertificateTreeValidationServiceTest {
         KeyPair childKeyPair = KEY_PAIR_FACTORY.generate();
 
         final ValidityPeriod mftValidityPeriod = new ValidityPeriod(
-                Instant.now().minus(Duration.standardDays(2)),
-                Instant.now().minus(Duration.standardDays(1))
+            Instant.now().minus(Duration.standardDays(2)),
+            Instant.now().minus(Duration.standardDays(1))
         );
 
         TrustAnchor ta = factory.createTrustAnchor(x -> {
             CertificateAuthority child = CertificateAuthority.builder()
-                    .dn("CN=child-ca")
-                    .keyPair(childKeyPair)
-                    .certificateLocation("rsync://rpki.test/CN=child-ca.cer")
-                    .resources(IpResourceSet.parse("192.168.128.0/17"))
-                    .notifyURI(TA_RRDP_NOTIFY_URI)
-                    .manifestURI("rsync://rpki.test/CN=child-ca/child-ca.mft")
-                    .repositoryURI("rsync://rpki.test/CN=child-ca/")
-                    .crlDistributionPoint("rsync://rpki.test/CN=child-ca/child-ca.crl")
-                    .build();
+                .dn("CN=child-ca")
+                .keyPair(childKeyPair)
+                .certificateLocation("rsync://rpki.test/CN=child-ca.cer")
+                .resources(IpResourceSet.parse("192.168.128.0/17"))
+                .notifyURI(TA_RRDP_NOTIFY_URI)
+                .manifestURI("rsync://rpki.test/CN=child-ca/child-ca.mft")
+                .repositoryURI("rsync://rpki.test/CN=child-ca/")
+                .crlDistributionPoint("rsync://rpki.test/CN=child-ca/child-ca.crl")
+                .build();
             x.children(Collections.singletonList(child));
         }, mftValidityPeriod);
 
         trustAnchors.add(ta);
+        entityManager.flush();
+
         RpkiRepository repository = rpkiRepositories.register(ta, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
         repository.setFailed();
         entityManager.flush();

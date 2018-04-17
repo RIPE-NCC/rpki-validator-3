@@ -1,11 +1,16 @@
-import {NgModule} from '@angular/core';
+import {ErrorHandler, NgModule} from '@angular/core';
 import {RouterModule} from '@angular/router';
-import {NgbModule} from "@ng-bootstrap/ng-bootstrap";
-import {TranslateModule} from "@ngx-translate/core";
+import {NgbModule} from '@ng-bootstrap/ng-bootstrap';
+import {TranslateModule} from '@ngx-translate/core';
 
-import {NavComponent} from "./nav/nav.component";
-import {FooterComponent} from "./footer/footer.component";
-import {TrustAnchorsService} from "./trust-anchors.service";
+import {NavComponent} from './nav/nav.component';
+import {FooterComponent} from './footer/footer.component';
+import {TrustAnchorsService} from './trust-anchors.service';
+import {ErrorComponent} from './error.component';
+import {ApplicationErrorHandlerService} from './app-error-handler.service';
+import {MonitoringTaDataStore} from './monitoring-ta-data.store';
+import {BgpService} from './bgp.service';
+import {RpkiToastrService} from "./rpki-toastr.service";
 
 @NgModule({
   imports: [
@@ -15,15 +20,21 @@ import {TrustAnchorsService} from "./trust-anchors.service";
   ],
   declarations: [
     NavComponent,
-    FooterComponent
+    FooterComponent,
+    ErrorComponent
   ],
   providers: [
-    TrustAnchorsService
+    TrustAnchorsService,
+    BgpService,
+    RpkiToastrService,
+    {provide: ErrorHandler, useClass: ApplicationErrorHandlerService},
+    MonitoringTaDataStore
   ],
   exports: [
     NavComponent,
-    FooterComponent
+    FooterComponent,
+    ErrorComponent
   ]
 })
 export class CoreModule {
-};
+}

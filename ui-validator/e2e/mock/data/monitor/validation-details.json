@@ -1,0 +1,27 @@
+{
+  "links" : {
+    "first" : "http://localhost:4200/api/trust-anchors/3268/validation-checks?startFrom=0&pageSize=10&search=&sortBy=location&sortDirection=asc",
+    "prev" : "http://localhost:4200/api/trust-anchors/3268/validation-checks?startFrom=0&pageSize=10&search=&sortBy=location&sortDirection=asc",
+    "next" : "http://localhost:4200/api/trust-anchors/3268/validation-checks?startFrom=0&pageSize=10&search=&sortBy=location&sortDirection=asc",
+    "last" : "http://localhost:4200/api/trust-anchors/3268/validation-checks?startFrom=0&pageSize=10&search=&sortBy=location&sortDirection=asc"
+  },
+  "data" : [
+    {
+      "location" : "rsync://ca.rg.net/rpki/RGnet/2GliShrzqgtMquuCAoH0Re5u_vQ.gbr",
+      "status" : "ERROR",
+      "key" : "validator.manifest.entry.found",
+      "parameters" : [ "rsync://ca.rg.net/rpki/RGnet/WWz_C2qLO_yVk8-8glRCLHuz7Fw.mft" ],
+      "formattedMessage" : "Manifest entry in rsync://ca.rg.net/rpki/RGnet/WWz_C2qLO_yVk8-8glRCLHuz7Fw.mft not found"
+    },
+    {
+      "location" : "rsync://ca.rg.net/rpki/RGnet/2GliShrzqgtMquuCAoH0Re5u_vQ.gbr",
+      "status" : "WARNING",
+      "key" : "validator.manifest.entry.found",
+      "parameters" : [ "rsync://ca.rg.net/rpki/RGnet/WWz_C2qLO_yVk8-8glRCLHuz7Fw.mft" ],
+      "formattedMessage" : "Manifest entry in rsync://ca.rg.net/rpki/RGnet/WWz_C2qLO_yVk8-8glRCLHuz7Fw.mft not found"
+    }
+  ],
+  "metadata" : {
+    "totalCount" : 1
+  }
+}

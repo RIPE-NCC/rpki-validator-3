@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.domain.cleanup;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
+import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
@@ -142,7 +143,7 @@ public class RpkiObjectCleanupService {
     }
 
     private void traceManifest(Instant now, String name, RpkiObject manifest) {
-        manifest.get(ManifestCms.class, name).ifPresent(manifestCms -> {
+        this.rpkiObjects.findCertificateRepositoryObject(manifest.getId(), ManifestCms.class, ValidationResult.withLocation(name)).ifPresent(manifestCms -> {
             rpkiObjects.findObjectsInManifest(manifestCms, LockModeType.PESSIMISTIC_WRITE).forEach((entry, rpkiObject) -> {
                 markAndTraceObject(now, entry, rpkiObject);
             });
@@ -150,7 +151,7 @@ public class RpkiObjectCleanupService {
     }
 
     private void traceCaCertificate(Instant now, String name, RpkiObject caCertificate) {
-        caCertificate.get(X509ResourceCertificate.class, name).ifPresent(certificate -> {
+        this.rpkiObjects.findCertificateRepositoryObject(caCertificate.getId(), X509ResourceCertificate.class, ValidationResult.withLocation(name)).ifPresent(certificate -> {
             if (certificate.isCa() && certificate.getManifestUri() != null) {
                 traceCertificateAuthority(now, certificate);
             }

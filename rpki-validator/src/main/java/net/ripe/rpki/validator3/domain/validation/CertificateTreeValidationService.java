@@ -51,8 +51,8 @@ import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.Settings;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchors;
+import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.domain.ValidationRuns;
-import net.ripe.rpki.validator3.util.Sha256;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -89,6 +89,8 @@ public class CertificateTreeValidationService {
     private ValidationRuns validationRuns;
     @Autowired
     private Settings settings;
+    @Autowired
+    private ValidatedRpkiObjects validatedRpkiObjects;
 
     @Transactional(Transactional.TxType.REQUIRED)
     public void validate(long trustAnchorId) {
@@ -140,6 +142,8 @@ public class CertificateTreeValidationService {
                     log.info("All trust anchors have completed their initial certificate tree validation run, validator is now ready");
                 }
             }
+
+            validatedRpkiObjects.update(trustAnchor, validationRun.getValidatedObjects());
         } finally {
             validationRun.completeWith(validationResult);
             log.info("tree validation {} for {}", validationRun.getStatus(), trustAnchor);
@@ -147,12 +151,8 @@ public class CertificateTreeValidationService {
     }
 
     private boolean isValidationRunCompleted(ValidationResult validationResult) {
-        for (net.ripe.rpki.commons.validation.ValidationCheck check: validationResult.getWarnings()) {
-            if (check.getStatus() != ValidationStatus.PASSED && VALIDATOR_RPKI_REPOSITORY_PENDING.equals(check.getKey())) {
-                return false;
-            }
-        }
-        return true;
+        return validationResult.getWarnings().stream()
+                .noneMatch(check -> check.getStatus() != ValidationStatus.PASSED && VALIDATOR_RPKI_REPOSITORY_PENDING.equals(check.getKey()));
     }
 
     private List<RpkiObject> validateCertificateAuthority(TrustAnchor trustAnchor,
@@ -184,7 +184,7 @@ public class CertificateTreeValidationService {
                 }
             }
 
-            Optional<ManifestCms> maybeManifest = manifestObject.flatMap(x -> x.get(ManifestCms.class, temporary));
+            Optional<ManifestCms> maybeManifest = manifestObject.flatMap(x -> rpkiObjects.findCertificateRepositoryObject(x.getId(), ManifestCms.class, temporary));
 
             temporary.rejectIfTrue(manifestObject.isPresent() &&
                             rpkiRepository.getStatus() == RpkiRepository.Status.FAILED &&
@@ -215,7 +215,7 @@ public class CertificateTreeValidationService {
             }
 
             temporary.setLocation(new ValidationLocation(crlUri));
-            Optional<X509Crl> crl = crlObject.flatMap(x -> x.get(X509Crl.class, temporary));
+            Optional<X509Crl> crl = crlObject.flatMap(x -> rpkiObjects.findCertificateRepositoryObject(x.getId(), X509Crl.class, temporary));
             if (temporary.hasFailureForCurrentLocation()) {
                 return validatedObjects;
             }
@@ -236,12 +236,8 @@ public class CertificateTreeValidationService {
 
             manifestEntries.forEach((location, obj) -> {
                 temporary.setLocation(new ValidationLocation(location));
-                temporary.rejectIfFalse(Arrays.equals(Sha256.hash(obj.getEncoded()), obj.getSha256()), VALIDATOR_RPKI_OBJECT_HASH_MATCHES);
-                if (temporary.hasFailureForCurrentLocation()) {
-                    return;
-                }
 
-                Optional<CertificateRepositoryObject> maybeCertificateRepositoryObject = obj.get(CertificateRepositoryObject.class, temporary);
+                Optional<CertificateRepositoryObject> maybeCertificateRepositoryObject = rpkiObjects.findCertificateRepositoryObject(obj.getId(), CertificateRepositoryObject.class, temporary);
                 if (temporary.hasFailureForCurrentLocation()) {
                     return;
                 }
@@ -263,6 +259,7 @@ public class CertificateTreeValidationService {
                 });
             });
         } catch (Exception e) {
+            log.debug("e", e);
             validationResult.error(ErrorCodes.UNHANDLED_EXCEPTION, e.toString(), ExceptionUtils.getStackTrace(e));
         } finally {
             validationResult.addAll(temporary);

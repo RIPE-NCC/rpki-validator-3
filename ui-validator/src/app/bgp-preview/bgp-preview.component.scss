@@ -1,0 +1,14 @@
+thead > tr {
+  th:nth-child(3) {
+    width: 15%;
+  }
+}
+
+tbody > tr:hover {
+  background-color: lightgray;
+}
+
+/deep/ .popover {
+  max-width: inherit;
+  width: 37.5rem;
+}

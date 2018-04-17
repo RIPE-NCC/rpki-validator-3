@@ -1,0 +1,28 @@
+{
+  "links" : {
+    "first" : "http://localhost:4200/api/ignore-filters?startFrom=0&pageSize=10&search=&sortBy=prefix&sortDirection=asc",
+    "prev" : "http://localhost:4200/api/ignore-filters?startFrom=0&pageSize=10&search=&sortBy=prefix&sortDirection=asc",
+    "next" : "http://localhost:4200/api/ignore-filters?startFrom=0&pageSize=10&search=&sortBy=prefix&sortDirection=asc",
+    "last" : "http://localhost:4200/api/ignore-filters?startFrom=0&pageSize=10&search=&sortBy=prefix&sortDirection=asc"
+  },
+  "data" : [ {
+    "id" : 130,
+    "asn" : "9737",
+    "prefix" : "1.0.128.0/18",
+    "comment" : "test"
+  }, {
+    "id" : 349,
+    "asn" : "111111",
+    "prefix" : "1.1.128.0/18",
+    "maximumLength" : 12,
+    "validated" : [ ],
+    "invalidated" : [ {
+      "asn" : "AS56203",
+      "prefix" : "1.0.6.0/24",
+      "validity" : "INVALID_LENGTH"
+    }]
+  }],
+  "metadata" : {
+    "totalCount" : 6
+  }
+}
