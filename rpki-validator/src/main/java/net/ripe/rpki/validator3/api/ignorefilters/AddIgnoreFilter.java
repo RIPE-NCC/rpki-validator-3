@@ -35,7 +35,6 @@ import lombok.Data;
 import net.ripe.rpki.validator3.domain.constraints.ValidAddIgnoreFilter;
 import net.ripe.rpki.validator3.domain.constraints.ValidAsn;
 import net.ripe.rpki.validator3.domain.constraints.ValidPrefix;
-import net.ripe.rpki.validator3.domain.constraints.ValidPublicKeyInfo;
 
 @Data(staticConstructor = "of")
 @Builder

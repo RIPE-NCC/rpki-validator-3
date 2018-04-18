@@ -44,6 +44,6 @@ export class WhitelistService {
   }
 
   deleteWhitelistEntry(entry: IWhitelistEntry): Observable<any> {
-    return this._http.delete<IResponse>(this._deleteWhitelistEntryUrl.replace('{id}', entry.id))
+    return this._http.delete<IResponse>(this._deleteWhitelistEntryUrl.replace('{id}', entry.id));
   }
 }
