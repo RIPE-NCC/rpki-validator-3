@@ -2,10 +2,10 @@ import {Component, OnInit} from '@angular/core';
 import {NgForm} from '@angular/forms';
 
 import {IWhitelistEntry, WhitelistService} from './whitelist.service';
-import {ColumnSortedEvent} from "../shared/sortable-table/sort.service";
-import {PagingDetailsModel} from "../shared/toolbar/paging-details.model";
-import {IResponse} from "../shared/response.model";
-import {RpkiToastrService} from "../core/rpki-toastr.service";
+import {ColumnSortedEvent} from '../shared/sortable-table/sort.service';
+import {PagingDetailsModel} from '../shared/toolbar/paging-details.model';
+import {IResponse} from '../shared/response.model';
+import {RpkiToastrService} from '../core/rpki-toastr.service';
 
 @Component({
   selector: 'app-whitelist',
@@ -22,9 +22,6 @@ export class WhitelistComponent implements OnInit {
   loading: boolean = true;
   validPrefix: boolean = true;
   validAsn: boolean = true;
-  validMaxLengthIpv4: boolean = true;
-  validMaxLengthIpv6: boolean = true;
-  validMaxLengthInRange: boolean = true;
   // button is submitted until waiting for response
   submitted: boolean = false;
   deleting: boolean = false;
@@ -80,9 +77,14 @@ export class WhitelistComponent implements OnInit {
             this._toastr.error('Whitelist.TOASTR_MSG_ADD_ERROR');
             this.validPrefix = !(error.error.errors.some(err => err.source.pointer === '/data/prefix'));
             this.validAsn = !error.error.errors.some(err => err.source.pointer === '/data/asn');
-            this.validMaxLengthIpv4 = !error.error.errors.some(err => err.detail === 'MAX_LENGTH_LONGER_32');
-            this.validMaxLengthIpv6 = !error.error.errors.some(err => err.detail === 'MAX_LENGTH_LONGER_128');
-            this.validMaxLengthInRange = !error.error.errors.some(err => err.detail === 'MAX_LENGTH_LONGER_PREFIX_LENGTH');
+            // max length have to be >= prefix length and for ipv4 <= 32 and ipv6 <= 128
+            if (error.error.errors.some(err => err.detail === 'MAX_LENGTH_LONGER_32')) {
+              this._toastr.error('Whitelist.TOASTR_MAX_LENGTH_LONGER_32');
+            } else if (error.error.errors.some(err => err.detail === 'MAX_LENGTH_LONGER_128')) {
+              this._toastr.error('Whitelist.TOASTR_MAX_LENGTH_LONGER_128');
+            } else if (error.error.errors.some(err => err.detail === 'MAX_LENGTH_LONGER_PREFIX_LENGTH')) {
+              this._toastr.error('Whitelist.TOASTR_MAX_LENGTH_LONGER_PREFIX_LENGTH');
+            }
           }
         );
     }
