@@ -4,8 +4,8 @@ import {RoasService} from './roas.service';
 import {IRoa} from './roas.model';
 import {TrustAnchorsService} from '../core/trust-anchors.service';
 import {ColumnSortedEvent} from '../shared/sortable-table/sort.service';
-import {PagingDetailsModel} from "../shared/toolbar/paging-details.model";
-import {IResponse} from "../shared/response.model";
+import {PagingDetailsModel} from '../shared/toolbar/paging-details.model';
+import {IResponse} from '../shared/response.model';
 
 @Component({
   selector: 'app-roas',
@@ -54,8 +54,9 @@ export class RoasComponent implements OnInit {
         response => {
           const taResponse = response as IResponse;
           taResponse.data.forEach(ta => {
-            if (!ta.initialCertificateTreeValidationRunCompleted)
+            if (!ta.initialCertificateTreeValidationRunCompleted) {
               listTa.push(ta.name);
+            }
           });
           this.alertListValidatedTA = listTa.join(', ');
           // don't show alert if all ta are validated

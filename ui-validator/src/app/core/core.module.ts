@@ -10,7 +10,7 @@ import {ErrorComponent} from './error.component';
 import {ApplicationErrorHandlerService} from './app-error-handler.service';
 import {MonitoringTaDataStore} from './monitoring-ta-data.store';
 import {BgpService} from './bgp.service';
-import {RpkiToastrService} from "./rpki-toastr.service";
+import {RpkiToastrService} from './rpki-toastr.service';
 
 @NgModule({
   imports: [

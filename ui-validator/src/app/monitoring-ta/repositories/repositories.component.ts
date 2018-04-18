@@ -1,10 +1,10 @@
 import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
 
-import {IRepositoriesStatuses, IRepository} from "./repositories.model";
-import {TrustAnchorsService} from "../../core/trust-anchors.service";
-import {ColumnSortedEvent} from "../../shared/sortable-table/sort.service";
-import {PagingDetailsModel} from "../../shared/toolbar/paging-details.model";
-import {IResponse} from "../../shared/response.model";
+import {IRepositoriesStatuses, IRepository} from './repositories.model';
+import {TrustAnchorsService} from '../../core/trust-anchors.service';
+import {ColumnSortedEvent} from '../../shared/sortable-table/sort.service';
+import {PagingDetailsModel} from '../../shared/toolbar/paging-details.model';
+import {IResponse} from '../../shared/response.model';
 
 @Component({
   selector: 'repositories',

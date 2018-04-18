@@ -1,7 +1,7 @@
 import {NgModule} from '@angular/core';
 
-import {SharedModule} from "../shared/shared.module";
-import {BgpPreviewComponent} from "./bgp-preview.component";
+import {SharedModule} from '../shared/shared.module';
+import {BgpPreviewComponent} from './bgp-preview.component';
 
 @NgModule({
   imports: [

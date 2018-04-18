@@ -1,5 +1,5 @@
-import {ErrorHandler, Injectable, Injector, NgZone} from "@angular/core";
-import {Router} from "@angular/router";
+import {ErrorHandler, Injectable, Injector, NgZone} from '@angular/core';
+import {Router} from '@angular/router';
 
 @Injectable()
 export class ApplicationErrorHandlerService extends ErrorHandler {

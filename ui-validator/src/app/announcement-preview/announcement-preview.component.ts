@@ -1,10 +1,10 @@
 import {Component, Input, OnInit, TemplateRef, ViewChild} from '@angular/core';
-import {ActivatedRoute, Router} from "@angular/router";
-import {NgbModal, NgbModalRef} from "@ng-bootstrap/ng-bootstrap";
+import {ActivatedRoute, Router} from '@angular/router';
+import {NgbModal, NgbModalRef} from '@ng-bootstrap/ng-bootstrap';
 
-import {BgpService} from "../core/bgp.service"
-import {IAnnouncementData} from "./announcement.model";
-import {RpkiToastrService} from "../core/rpki-toastr.service";
+import {BgpService} from '../core/bgp.service';
+import {IAnnouncementData} from './announcement.model';
+import {RpkiToastrService} from '../core/rpki-toastr.service';
 
 @Component({
   selector: 'app-announcement-preview',
@@ -21,7 +21,7 @@ export class AnnouncementPreviewComponent implements OnInit {
   @Input()
   asn: string;
   @ViewChild('modalEnterAsnPrefix')
-  private modalTempRef : TemplateRef<any>;
+  private modalTempRef: TemplateRef<any>;
   private modalRef: NgbModalRef;
 
   constructor(private _activatedRoute: ActivatedRoute,
@@ -35,12 +35,12 @@ export class AnnouncementPreviewComponent implements OnInit {
     this._activatedRoute.queryParams
       .subscribe(params => {
         this.asn = params['asn'];
-        this.prefix = params['prefix']
+        this.prefix = params['prefix'];
         this.loadAnnouncementPreview();
       });
   }
 
-  loadAnnouncementPreview():void {
+  loadAnnouncementPreview(): void {
     if (this.prefix && this.asn) {
       this.getAnnouncementPreviewData();
     } else {
@@ -59,7 +59,7 @@ export class AnnouncementPreviewComponent implements OnInit {
           // open modal dialog
           this.openModalForm(this.modalTempRef);
         }
-      )
+      );
   }
 
   openModalForm(modalTempRef): void {

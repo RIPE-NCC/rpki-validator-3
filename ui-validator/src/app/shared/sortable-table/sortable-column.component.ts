@@ -1,6 +1,6 @@
-import { Component, OnInit, Input, EventEmitter, OnDestroy, HostListener } from '@angular/core';
-import {SortService} from "./sort.service";
-import {Subscription} from "rxjs/Subscription";
+import {Component, OnInit, Input, HostListener} from '@angular/core';
+import {SortService} from './sort.service';
+import {Subscription} from 'rxjs/Subscription';
 
 @Component({
   selector: '[sortable-column]',
@@ -26,13 +26,9 @@ export class SortableColumnComponent implements OnInit {
 
   ngOnInit() {
     this.columnSortedSubscription = this.sortService.columnSorted.subscribe(event => {
-      if (this.columnName != event.sortColumn) {
+      if (this.columnName !== event.sortColumn) {
         this.sortDirection = '';
       }
     });
-  }
-
-  ngOnDestroy() {
-    this.columnSortedSubscription.unsubscribe();
   }
 }

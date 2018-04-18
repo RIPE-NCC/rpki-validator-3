@@ -1,11 +1,11 @@
 import {Component, OnInit} from '@angular/core';
 
-import {BgpService} from "../core/bgp.service";
-import {IBgp} from "./bgp.model";
-import {Router} from "@angular/router";
-import {ColumnSortedEvent} from "../shared/sortable-table/sort.service";
-import {PagingDetailsModel} from "../shared/toolbar/paging-details.model";
-import {IResponse} from "../shared/response.model";
+import {BgpService} from '../core/bgp.service';
+import {IBgp} from './bgp.model';
+import {Router} from '@angular/router';
+import {ColumnSortedEvent} from '../shared/sortable-table/sort.service';
+import {PagingDetailsModel} from '../shared/toolbar/paging-details.model';
+import {IResponse} from '../shared/response.model';
 
 @Component({
   selector: 'app-bgp-preview',
@@ -14,7 +14,7 @@ import {IResponse} from "../shared/response.model";
 })
 export class BgpPreviewComponent implements OnInit {
 
-  pageTitle: string = "Nav.TITLE_BGP_PREVIEW";
+  pageTitle: string = 'Nav.TITLE_BGP_PREVIEW';
   loading: boolean = true;
   bgps: IBgp[] = [];
   response: IResponse;
@@ -39,7 +39,7 @@ export class BgpPreviewComponent implements OnInit {
         response => {
           this.loading = false;
           this.bgps = response.data;
-          this.response = response
+          this.response = response;
         });
   }
 

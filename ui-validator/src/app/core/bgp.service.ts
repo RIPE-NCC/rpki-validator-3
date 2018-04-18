@@ -1,9 +1,9 @@
-import {Injectable} from "@angular/core";
+import {Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {Observable} from 'rxjs/Observable';
 
-import {IAnnouncementResponse} from "../announcement-preview/announcement.model";
-import {IResponse} from "../shared/response.model";
+import {IAnnouncementResponse} from '../announcement-preview/announcement.model';
+import {IResponse} from '../shared/response.model';
 
 @Injectable()
 export class BgpService {

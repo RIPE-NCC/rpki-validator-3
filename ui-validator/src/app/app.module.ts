@@ -4,11 +4,11 @@ import {RouterModule} from '@angular/router';
 import {HttpClient, HttpClientModule} from '@angular/common/http';
 import {TranslateLoader, TranslateModule} from '@ngx-translate/core';
 import {TranslateHttpLoader} from '@ngx-translate/http-loader';
-import {BrowserAnimationsModule} from "@angular/platform-browser/animations";
-import {ToastrModule} from "ngx-toastr";
+import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
+import {ToastrModule} from 'ngx-toastr';
 
 import {AppComponent} from './app.component';
-import {appRoutes} from './routes'
+import {appRoutes} from './routes';
 import {CoreModule} from './core/core.module';
 import {SharedModule} from './shared/shared.module';
 import {TrustAnchorsModule} from './trust-anchors/trust-anchors.module';

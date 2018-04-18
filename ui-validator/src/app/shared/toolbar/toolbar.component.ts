@@ -1,8 +1,8 @@
 import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
 
-import {Paging} from "./paging";
-import {PagingDetailsModel} from "./paging-details.model";
-import {IResponse} from "../response.model";
+import {Paging} from './paging';
+import {PagingDetailsModel} from './paging-details.model';
+import {IResponse} from '../response.model';
 
 @Component({
   selector: 'toolbar',
@@ -14,7 +14,7 @@ export class ToolbarComponent extends Paging implements OnInit {
   loading: boolean;
   @Input('responseData')
   set responseData(response: IResponse) {
-    if(response) {
+    if (response) {
       this.setLoadedDataParameters(response.data.length, response.metadata.totalCount, this.searchBy !== '');
     }
   }
@@ -58,7 +58,7 @@ export class ToolbarComponent extends Paging implements OnInit {
       firstItemInTable: this.firstItemInTable.toString(),
       rowsPerPage: this.rowsPerPage.toString(),
       searchBy: this.searchBy
-    }
+    };
     this.notifyToolbarChanged.emit(this.pagingDetails);
   }
 }

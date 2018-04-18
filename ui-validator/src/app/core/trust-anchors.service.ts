@@ -3,7 +3,7 @@ import {Observable} from 'rxjs/Observable';
 import {Injectable} from '@angular/core';
 
 import {IValidationChecksResponse} from '../monitoring-ta/validation-details/validation-detail.model';
-import {IResponse} from "../shared/response.model";
+import {IResponse} from '../shared/response.model';
 
 @Injectable()
 export class TrustAnchorsService {
@@ -21,7 +21,7 @@ export class TrustAnchorsService {
     }
 
     getTrustAnchors(): Observable<any> {
-        return this._http.get<any>(this._trustAnchorsUrl)
+        return this._http.get<any>(this._trustAnchorsUrl);
     }
 
     getTrustAnchorsOverview(): Observable<any> {
@@ -47,7 +47,7 @@ export class TrustAnchorsService {
         .set('sortDirection', sortDirection);
 
       return this._http.get<any>(this._trustAnchorByIdValidationChecksUrl.replace('{id}', id),
-        {params: params})
+        {params: params});
     }
 
     getRepositories(trustAnchorId: string,
@@ -65,10 +65,10 @@ export class TrustAnchorsService {
         .set('sortBy', sortBy)
         .set('sortDirection', sortDirection);
 
-      return this._http.get<any>(this._repositoriesByTaId, { params: params })
+      return this._http.get<any>(this._repositoriesByTaId, { params: params });
     }
 
     getRepositoriesStatuses(trustAnchorId: string) {
-      return this._http.get<any>(this._repositoriesStatusesByTaId.replace('{taId}', trustAnchorId))
+      return this._http.get<any>(this._repositoriesStatusesByTaId.replace('{taId}', trustAnchorId));
     }
 }

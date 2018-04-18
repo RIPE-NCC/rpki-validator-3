@@ -41,7 +41,7 @@ export class MonitoringTaComponent implements OnInit {
     this._trustAnchorsService.getTrustAnchor(this.taId)
       .subscribe(
         response => this.monitoringTrustAnchor = response.data
-      )
+      );
   }
 
   // get TA overview details in case this page wasn't open navigating from TA page
@@ -56,6 +56,6 @@ export class MonitoringTaComponent implements OnInit {
     this._trustAnchorsService.getRepositoriesStatuses(this.taId)
       .subscribe(
         response => this.repositoriesStatuses = response.data
-      )
+      );
   }
 }

@@ -1,11 +1,11 @@
 import {Component, OnInit} from '@angular/core';
-import {NgForm} from "@angular/forms";
+import {NgForm} from '@angular/forms';
 
-import {IgnoreFiltersService, IIgnoreFilter} from "./ignore-filters.service";
-import {ColumnSortedEvent} from "../shared/sortable-table/sort.service";
-import {IResponse} from "../shared/response.model";
-import {PagingDetailsModel} from "../shared/toolbar/paging-details.model";
-import {RpkiToastrService} from "../core/rpki-toastr.service";
+import {IgnoreFiltersService, IIgnoreFilter} from './ignore-filters.service';
+import {ColumnSortedEvent} from '../shared/sortable-table/sort.service';
+import {IResponse} from '../shared/response.model';
+import {PagingDetailsModel} from '../shared/toolbar/paging-details.model';
+import {RpkiToastrService} from '../core/rpki-toastr.service';
 
 @Component({
   selector: 'app-ignore-filters',
@@ -52,7 +52,7 @@ export class IgnoreFiltersComponent implements OnInit {
           this.ignoreFilters = response.data;
           this.response = response;
         }
-      )
+      );
   }
 
   onFilterSubmit(form: NgForm): void {
@@ -88,7 +88,7 @@ export class IgnoreFiltersComponent implements OnInit {
             this._toastr.info('IgnoreFilters.TOASTR_MSG_DELETED');
             this.deleting = false;
           }, error => {
-            this._toastr.error('IgnoreFilters.TOASTR_MSG_DELETE_ERROR')
+            this._toastr.error('IgnoreFilters.TOASTR_MSG_DELETE_ERROR');
             this.deleting = false;
           }
         );

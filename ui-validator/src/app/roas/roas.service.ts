@@ -5,7 +5,7 @@ import 'rxjs/add/operator/do';
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/observable/throw';
 
-import {IResponse} from "../shared/response.model";
+import {IResponse} from '../shared/response.model';
 
 @Injectable()
 export class RoasService {
@@ -22,6 +22,6 @@ export class RoasService {
       .set('sortBy', sortBy)
       .set('sortDirection', sortDirection);
 
-    return this._http.get<IResponse>(this._roasUrl, {params: params})
+    return this._http.get<IResponse>(this._roasUrl, {params: params});
   }
 }

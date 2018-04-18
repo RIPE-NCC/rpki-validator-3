@@ -14,7 +14,7 @@ import {LoadingSpinnerComponent} from './loading-spinner.component';
 import {PageSizeSelectComponent} from './toolbar/page-size-select.component';
 import {PageTextuallyStatusComponent} from './toolbar/page-textually-status.component';
 import {ToolbarComponent} from './toolbar/toolbar.component';
-import {InputSanitizeDirective} from "./input-null-default.directive";
+import {InputSanitizeDirective} from './input-null-default.directive';
 
 @NgModule({
   imports: [

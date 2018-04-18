@@ -1,6 +1,6 @@
 import {Component, Input, OnInit} from '@angular/core';
-import {IBgp} from "../bgp-preview/bgp.model";
-import {Router} from "@angular/router";
+import {IBgp} from '../bgp-preview/bgp.model';
+import {Router} from '@angular/router';
 
 @Component({
   selector: 'popover-affected-roas',

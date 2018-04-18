@@ -4,9 +4,9 @@ export interface IResponse {
     prev: string,
     next: string,
     last: string
-  },
-  data:  any,
+  };
+  data:  any;
   metadata: {
     totalCount: number
-  }
+  };
 }

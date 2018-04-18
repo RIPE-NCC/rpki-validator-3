@@ -26,6 +26,6 @@ export class SearchComponent implements OnInit {
 
   onFilter() {
     clearTimeout(this.timer);
-    this.timer = setTimeout(() => {this.searchByChanged.emit(this.searchBy) },500)
+    this.timer = setTimeout(() => {this.searchByChanged.emit(this.searchBy)},500);
   }
 }

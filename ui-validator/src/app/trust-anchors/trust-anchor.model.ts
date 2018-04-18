@@ -20,6 +20,6 @@ export interface ITrustAnchor {
   certificate: string;
   links: {
     self: string;
-  }
+  };
 }
 

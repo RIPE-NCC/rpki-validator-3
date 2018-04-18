@@ -1,4 +1,4 @@
-import {Component, Input, OnChanges, OnInit} from '@angular/core';
+import {Component, Input, OnChanges} from '@angular/core';
 import {isBoolean, isNumber} from 'util';
 import {isString} from '@ng-bootstrap/ng-bootstrap/util/util';
 
@@ -83,7 +83,7 @@ export class FlagComponent implements OnChanges {
   }
 
   setYesNoFlag(): void {
-    if (isBoolean(this.value)){
+    if (isBoolean(this.value)) {
       if (this.value) {
         this.value = 'YES';
         this.green = true;

@@ -23,6 +23,6 @@ export class PageSizeSelectComponent implements OnInit {
   ngOnInit() {}
 
   onChangePageSize(size: number) {
-    this.changedPageSize.emit(size)
+    this.changedPageSize.emit(size);
   }
 }
