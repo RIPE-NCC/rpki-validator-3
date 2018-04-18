@@ -1,7 +1,7 @@
 import {AppPage} from './app.po';
 import {WhitelistPage} from './pages/WhitelistPage';
 
-fdescribe('Whitelist Page', () => {
+describe('Whitelist Page', () => {
   let whitelistPage: WhitelistPage;
 
   beforeEach(() => {
