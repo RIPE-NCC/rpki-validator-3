@@ -151,7 +151,7 @@
     "TOASTR_MSG_DELETED": "The entry has been removed from the whitelist.",
     "TOASTR_MSG_DELETED_ERROR": "Error happened. Entry wasn't delete from whitelist. Please try again.",
     "TOASTR_MAX_LENGTH_LONGER_32": "Max length must be between 0 and 32 for IPv4",
-    "TOASTR_MAX_LENGTH_LONGER_128": "Max length must be between 0 and 128 for IPv4",
+    "TOASTR_MAX_LENGTH_LONGER_128": "Max length must be between 0 and 128 for IPv6",
     "TOASTR_MAX_LENGTH_LONGER_PREFIX_LENGTH": "Max length cannot be shorter than prefix length",
     "CLICK_LINK_TO_ANNOUNCEMENT": "Click link to see details about announcement"
   },
