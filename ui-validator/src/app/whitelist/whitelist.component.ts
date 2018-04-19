@@ -74,7 +74,6 @@ export class WhitelistComponent implements OnInit {
             this._toastr.success('Whitelist.TOASTR_MSG_ADDED');
           }, error => {
             this.submitted = false;
-            this._toastr.error('Whitelist.TOASTR_MSG_ADD_ERROR');
             this.validPrefix = !(error.error.errors.some(err => err.source.pointer === '/data/prefix'));
             this.validAsn = !error.error.errors.some(err => err.source.pointer === '/data/asn');
             // max length have to be >= prefix length and for ipv4 <= 32 and ipv6 <= 128
@@ -84,6 +83,8 @@ export class WhitelistComponent implements OnInit {
               this._toastr.error('Whitelist.TOASTR_MAX_LENGTH_LONGER_128');
             } else if (error.error.errors.some(err => err.detail === 'MAX_LENGTH_LONGER_PREFIX_LENGTH')) {
               this._toastr.error('Whitelist.TOASTR_MAX_LENGTH_LONGER_PREFIX_LENGTH');
+            } else {
+              this._toastr.error('Whitelist.TOASTR_MSG_ADD_ERROR');
             }
           }
         );
