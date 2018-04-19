@@ -45,7 +45,7 @@ public class BgpSecFilter extends AbstractEntity {
     @Basic
     @Getter
     @Setter
-    private String routerSki;
+    private String ski;
 
     @Basic
     @Getter
@@ -55,9 +55,9 @@ public class BgpSecFilter extends AbstractEntity {
     public BgpSecFilter() {
     }
 
-    public BgpSecFilter(Long asn, String routerSki, String comment) {
+    public BgpSecFilter(Long asn, String ski, String comment) {
         this.asn = asn;
-        this.routerSki = routerSki;
+        this.ski = ski;
         this.comment = comment;
     }
 }

@@ -34,6 +34,6 @@ import lombok.Data;
 @Data
 public class SlurmBgpSecFilter {
     private Long asn;
-    private String routerSKI;
+    private String ski;
     private String comment;
 }

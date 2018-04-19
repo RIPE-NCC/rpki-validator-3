@@ -114,7 +114,7 @@ public class SlurmService {
             slurm.getValidationOutputFilters().getBgpsecFilters().forEach(bgpSecFilter -> {
                 AddBgpSecFilter add = AddBgpSecFilter.builder()
                         .asn(bgpSecFilter.getAsn() == null ? null : bgpSecFilter.getAsn().toString())
-                        .routerSki(bgpSecFilter.getRouterSKI())
+                        .ski(bgpSecFilter.getSki())
                         .comment(bgpSecFilter.getComment())
                         .build();
                 bgpSecFilterService.execute(add);
@@ -158,7 +158,7 @@ public class SlurmService {
         filters.setBgpsecFilters(bgpSecFilterService.all().map(f -> {
             final SlurmBgpSecFilter bgpSecFilter = new SlurmBgpSecFilter();
             bgpSecFilter.setAsn(f.getAsn());
-            bgpSecFilter.setRouterSKI(f.getRouterSki());
+            bgpSecFilter.setSki(f.getSki());
             bgpSecFilter.setComment(f.getComment());
             return bgpSecFilter;
         }).collect(Collectors.toList()));

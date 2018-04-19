@@ -62,9 +62,9 @@ public class SlurmParserTest {
         final List<SlurmBgpSecFilter> bgpsecFilters = slurm.getValidationOutputFilters().getBgpsecFilters();
         assertEquals(new Long(64496), bgpsecFilters.get(0).getAsn());
         assertEquals(null, bgpsecFilters.get(1).getAsn());
-        assertEquals("Zm9v", bgpsecFilters.get(1).getRouterSKI());
+        assertEquals("Zm9v", bgpsecFilters.get(1).getSki());
         assertEquals(new Long(64497), bgpsecFilters.get(2).getAsn());
-        assertEquals("YmFy", bgpsecFilters.get(2).getRouterSKI());
+        assertEquals("YmFy", bgpsecFilters.get(2).getSki());
         assertEquals("Key for ASN 64497 matching Router SKI", bgpsecFilters.get(2).getComment());
 
         final List<SlurmPrefixAssertion> prefixAssertions = slurm.getLocallyAddedAssertions().getPrefixAssertions();

@@ -46,7 +46,7 @@ public class AddBgpSecFilter {
     String asn;
 
     @ApiModelProperty(position = 2)
-    String routerSki;
+    String ski;
 
     @ApiModelProperty(position = 3)
     @Size(max = 2000)

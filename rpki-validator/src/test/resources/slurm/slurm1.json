@@ -30,12 +30,12 @@
         "comment": "All keys for ASN"
       },
       {
-        "routerSKI": "Zm9v",
+        "ski": "Zm9v",
         "comment": "Key matching Router SKI"
       },
       {
         "asn": 64497,
-        "routerSKI": "YmFy",
+        "ski": "YmFy",
         "comment": "Key for ASN 64497 matching Router SKI"
       }
     ]

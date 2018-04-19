@@ -30,7 +30,6 @@
 package net.ripe.rpki.validator3.domain.constraints;
 
 import net.ripe.rpki.validator3.api.bgpsec.AddBgpSecFilter;
-import net.ripe.rpki.validator3.api.ignorefilters.AddIgnoreFilter;
 
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
@@ -38,7 +37,7 @@ import javax.validation.ConstraintValidatorContext;
 public class AddBgpSecFilterValidator implements ConstraintValidator<ValidAddIgnoreFilter, AddBgpSecFilter> {
     @Override
     public boolean isValid(AddBgpSecFilter value, ConstraintValidatorContext context) {
-        if (value.getAsn() == null && value.getRouterSki() == null) {
+        if (value.getAsn() == null && value.getSki() == null) {
             return false;
         }
         return true;

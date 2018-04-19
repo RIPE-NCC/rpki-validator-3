@@ -31,9 +31,6 @@ package net.ripe.rpki.validator3.api.bgpsec;
 
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
-import net.ripe.rpki.validator3.api.roas.ObjectController;
-import net.ripe.rpki.validator3.domain.BgpSecAssertion;
-import net.ripe.rpki.validator3.domain.BgpSecAssertions;
 import net.ripe.rpki.validator3.domain.BgpSecFilter;
 import net.ripe.rpki.validator3.domain.BgpSecFilters;
 import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
@@ -60,7 +57,7 @@ public class BgpSecFilterService {
     public long execute(@Valid AddBgpSecFilter command) {
         BgpSecFilter entity = new BgpSecFilter(
             command.getAsn() == null ? null : Asn.parse(command.getAsn()).longValue(),
-            command.getRouterSki(),
+            command.getSki(),
             command.getComment()
         );
 
@@ -107,8 +104,8 @@ public class BgpSecFilterService {
                 if (asn != null) {
                     keepIt = longAsns.stream().anyMatch(a -> a == asn.longValue());
                 }
-                if (f.getRouterSki() != null) {
-                    keepIt = keepIt && f.getRouterSki().equals(rc.getSubjectKeyIdentifier());
+                if (f.getSki() != null) {
+                    keepIt = keepIt && f.getSki().equals(rc.getSubjectKeyIdentifier());
                 }
                 return keepIt;
             });
