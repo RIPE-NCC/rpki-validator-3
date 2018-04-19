@@ -44,7 +44,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Constraint(validatedBy = AddRoaPrefixAssertionValidator.class)
 public @interface ValidAddRoaPrefixAssertion {
 
-    String message() default "{net.ripe.rpki.validator3.domain.constraints.ValidAddRoaPrefixAssertion.message}";
+    String message() default "Not a valid prefix assertion";
 
     Class<?>[] groups() default {};
 
