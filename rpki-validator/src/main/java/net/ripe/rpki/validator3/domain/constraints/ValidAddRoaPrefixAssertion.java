@@ -27,32 +27,26 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.api.bgpsec;
+package net.ripe.rpki.validator3.domain.constraints;
 
-import io.swagger.annotations.ApiModelProperty;
-import lombok.Builder;
-import lombok.Data;
-import net.ripe.rpki.validator3.domain.constraints.ValidAsn;
+import javax.validation.Constraint;
+import javax.validation.Payload;
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-@Data(staticConstructor = "of")
-@Builder
-public class AddBgpSecAssertion {
-    @ApiModelProperty(position = 1, required = true)
-    @ValidAsn
-    String asn;
+@Target({METHOD, FIELD, ANNOTATION_TYPE, CONSTRUCTOR, PARAMETER, TYPE_USE})
+@Retention(RUNTIME)
+@Documented
+@Constraint(validatedBy = AddRoaPrefixAssertionValidator.class)
+public @interface ValidAddRoaPrefixAssertion {
 
-    @ApiModelProperty(position = 2, required = true)
-    @NotNull
-    String ski;
+    String message() default "Not a valid prefix assertion";
 
-    @ApiModelProperty(position = 3, required = true)
-    @NotNull
-    String publicKey;
+    Class<?>[] groups() default {};
 
-    @ApiModelProperty(position = 4)
-    @Size(max = 2000)
-    String comment;
+    Class<? extends Payload>[] payload() default {};
 }

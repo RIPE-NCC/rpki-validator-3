@@ -1,5 +1,5 @@
 import {AppPage} from './app.po';
-import {WhitelistPage} from "./pages/WhitelistPage";
+import {WhitelistPage} from './pages/WhitelistPage';
 
 describe('Whitelist Page', () => {
   let whitelistPage: WhitelistPage;
@@ -43,18 +43,7 @@ describe('Whitelist Page', () => {
         .expectEntryAdded()
         .clearEntryForm()
         .addWhitelistEntry('1.0.128.0/20', 'AS1234', 12,'e2e test comment')
-        .expectEntryAdded()
-    });
-
-    it('should not add a entry with maxLength < 12 and > 32', () => {
-      whitelistPage
-        .addWhitelistEntry('1.0.128.0/20', 'AS1234', 11, 'comment')
-        .expectMaxLengthValidationMessage()
-        .clearEntryForm()
-        .addWhitelistEntry('1.0.128.0/20', 'AS1234', 33, 'comment')
-        .expectMaxLengthValidationMessage()
-        .clearEntryForm()
-        .addWhitelistEntry('1.0.128.0/20', 'AS1234', 32, 'comment')
+        .expectEntryAdded();
     });
   });
 

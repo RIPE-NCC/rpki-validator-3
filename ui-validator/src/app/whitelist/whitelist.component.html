@@ -42,15 +42,13 @@
     <!-- MAXIMUM PREFIX LENGTH -->
     <div class='col-3 pl-0'>
       <label for='maxLength' class='col-form-label mr-1'><strong>{{'Whitelist.MAX_PREFIX_LENGTH' | translate}}</strong></label>
-      <em *ngIf='!validMaxLength' class='em-max-length'>{{'Whitelist.EM_MSG_INVALID_MAX_PREFIX_LENGTH' | translate}}</em>
       <input type='number'
              id='maxLength'
              name='maximumLength'
              required
-             min='12' max='32'
+             min='0'
              placeholder='{{"Whitelist.MAX_PREFIX_LENGTH_PLACEHOLDER" | translate}}'
              (ngModel)='whitelistEntry.maximumLength'
-             (keyup)='validAsn=true'
              class='form-control' />
     </div>
     <!-- ADD BUTTON -->

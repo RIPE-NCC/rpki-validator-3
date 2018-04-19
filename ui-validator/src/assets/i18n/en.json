@@ -140,7 +140,9 @@
     "ADD_ENTRY": "Add entry",
     "MAX_PREFIX_LENGTH": "Maximum prefix length",
     "MAX_PREFIX_LENGTH_PLACEHOLDER": "Number",
-    "EM_MSG_INVALID_MAX_PREFIX_LENGTH": "Number must be between 12 and 32",
+    "EM_MSG_INVALID_IPV4_MAX_PREFIX_LENGTH": "Max length have to be smaller then 32",
+    "EM_MSG_INVALID_IPV6_MAX_PREFIX_LENGTH": "Max length have to be smaller then 128",
+    "EM_MSG_INVALID_MAX_PREFIX_LENGTH_RANGE": "Max length have to be bigger or equal to prefix length",
     "ALERT_MSG_NO_ENTRIES": "No entries defined.",
     "TOASTR_MSG_REQUIRED_PREFIX_AND_ASN": "Prefix and ASN are required to enable adding.",
     "CURRENT_ENTRIES": "Current entries",
@@ -148,15 +150,20 @@
     "TOASTR_MSG_ADD_ERROR": "Error happened. Entry wasn't add to whitelist. Please try again.",
     "TOASTR_MSG_DELETED": "The entry has been removed from the whitelist.",
     "TOASTR_MSG_DELETED_ERROR": "Error happened. Entry wasn't delete from whitelist. Please try again.",
+    "TOASTR_MAX_LENGTH_LONGER_32": "Max length must be between 0 and 32 for IPv4",
+    "TOASTR_MAX_LENGTH_LONGER_128": "Max length must be between 0 and 128 for IPv6",
+    "TOASTR_MAX_LENGTH_LONGER_PREFIX_LENGTH": "Max length cannot be shorter than prefix length",
     "CLICK_LINK_TO_ANNOUNCEMENT": "Click link to see details about announcement"
   },
   "Export": {
     "DESCRIPTION": "Here you are able to export the complete ROA data set for use in an existing BGP decision making workflow. The output will be in CSV or JSON format and consist of all validated ROAs, minus your ignore filter entries, plus your whitelist additions."
   },
   "Slurm": {
+    "SLURM": "SLURM",
     "DESCRIPTION": "Download or upload SLURM file.",
     "CHOOSE_FILE": "Choose file ...",
     "DOWNLOAD_SLURM": "Download SLURM",
+    "UPLOAD_SLURM": "Upload SLURM",
     "UPLOAD_FAILED": "Upload failed! Something is wrong with chosen file",
     "SUCCESS_LOADED": "Loaded successfully"
   }

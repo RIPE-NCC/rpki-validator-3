@@ -18,7 +18,7 @@ import {RpkiToastrService} from "../../core/rpki-toastr.service";
           <div class='input-group-prepend ml-2'>
             <button type='button' class='btn btn-primary left-rounded'
                     [disabled]='fileName === ("Slurm.CHOOSE_FILE" | translate) || loading'
-                    (click)='onSubmit()'>Upload SLURM</button>
+                    (click)='onSubmit()'>{{'Slurm.UPLOAD_SLURM' | translate}}</button>
           </div>
           <div class='custom-file'>
             <label class='custom-file-label' for='slurmFile'>{{fileName}}</label>

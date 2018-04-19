@@ -1,5 +1,5 @@
 import {browser, by, element} from 'protractor';
-import {PaginatedTablePage} from "./PaginatedTablePage";
+import {PaginatedTablePage} from './PaginatedTablePage';
 
 export class WhitelistPage extends PaginatedTablePage {
 
@@ -13,14 +13,14 @@ export class WhitelistPage extends PaginatedTablePage {
     return this;
   }
 
-  addWhitelistEntry(prefix: string = "", asn: string = "") {
+  addWhitelistEntry(prefix: string = '', asn: string = '') {
     element(by.css('form #prefix')).sendKeys(prefix);
     element(by.css('form #asn')).sendKeys(asn);
     element(by.css('form .align-self-end button')).click();
     return this;
   }
 
-  addWhitelistEntry(prefix: string = "", asn: string = "", maxLength: number) {
+  addWhitelistEntry(prefix: string = '', asn: string = '', maxLength: number) {
     element(by.css('form #prefix')).sendKeys(prefix);
     element(by.css('form #asn')).sendKeys(asn);
     element(by.css('form #maxLength')).sendKeys(maxLength);
@@ -28,7 +28,7 @@ export class WhitelistPage extends PaginatedTablePage {
     return this;
   }
 
-  addWhitelistEntry(prefix: string = "", asn: string = "", maxLength: number = 0, comment: string = "") {
+  addWhitelistEntry(prefix: string = '', asn: string = '', maxLength: number = 0, comment: string = '') {
     element(by.css('form #prefix')).sendKeys(prefix);
     element(by.css('form #asn')).sendKeys(asn);
     element(by.css('form #maxLength')).sendKeys(maxLength);
@@ -57,11 +57,6 @@ export class WhitelistPage extends PaginatedTablePage {
 
   expectAsnValidationMessage() {
     expect(element(by.css('form em')).getText()).toBe('Not valid asn');
-    return this;
-  }
-
-  expectMaxLengthValidationMessage() {
-    expect(element(by.css('form em')).getText()).toBe('Number must be between 12 and 32');
     return this;
   }
 
