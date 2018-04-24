@@ -4,7 +4,7 @@
     {
       "asn": 65536
     },
-    {BgpRisDownloaderTest
+    {
       "hostname": "rpki.example.com"
     }
   ],
