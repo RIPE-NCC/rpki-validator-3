@@ -51,13 +51,13 @@ public class BgpRisDownloaderTest {
     public void download_ipv4() {
         BgpRisDump dump = bgpRisDownloader.fetch(
             BgpRisDump.of("http://www.ris.ripe.net/dumps/riswhoisdump.IPv4.gz",null, Optional.empty()));
-        assertThat(dump.getEntries()).hasValueSatisfying(entries -> assertThat(entries.size()).isGreaterThan(850_000));
+        assertThat(dump.getEntries()).hasValueSatisfying(entries -> assertThat(entries.size()).isGreaterThan(800_000));
     }
 
     @Test
     public void download_ipv6() {
         BgpRisDump dump = bgpRisDownloader.fetch(
             BgpRisDump.of("http://www.ris.ripe.net/dumps/riswhoisdump.IPv6.gz",null, Optional.empty()));
-        assertThat(dump.getEntries()).hasValueSatisfying(entries -> assertThat(entries.size()).isGreaterThan(70_000));
+        assertThat(dump.getEntries()).hasValueSatisfying(entries -> assertThat(entries.size()).isGreaterThan(60_000));
     }
 }
