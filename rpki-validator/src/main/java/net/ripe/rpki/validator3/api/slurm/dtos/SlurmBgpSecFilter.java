@@ -29,11 +29,13 @@
  */
 package net.ripe.rpki.validator3.api.slurm.dtos;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
 public class SlurmBgpSecFilter {
     private Long asn;
+    @JsonProperty("SKI")
     private String ski;
     private String comment;
 }

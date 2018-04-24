@@ -4,7 +4,7 @@
     {
       "asn": 65536
     },
-    {
+    {BgpRisDownloaderTest
       "hostname": "rpki.example.com"
     }
   ],
@@ -30,12 +30,12 @@
         "comment": "All keys for ASN"
       },
       {
-        "ski": "Zm9v",
+        "SKI": "Zm9v",
         "comment": "Key matching Router SKI"
       },
       {
         "asn": 64497,
-        "ski": "YmFy",
+        "SKI": "YmFy",
         "comment": "Key for ASN 64497 matching Router SKI"
       }
     ]
