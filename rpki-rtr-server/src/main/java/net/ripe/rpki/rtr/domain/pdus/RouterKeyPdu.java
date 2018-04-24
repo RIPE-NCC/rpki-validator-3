@@ -44,7 +44,7 @@ public class RouterKeyPdu implements Pdu {
 
     @Override
     public int length() {
-        return 24 + subjectPublicKeyInfo.length;
+        return 8 + subjectKeyIdentifier.length + 4 + subjectPublicKeyInfo.length;
     }
 
     @Override
