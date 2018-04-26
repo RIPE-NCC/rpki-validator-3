@@ -8,7 +8,7 @@ import {RpkiToastrService} from "../../core/rpki-toastr.service";
   selector: 'slurm',
   template: `
     <div class='pt-3 pb-4'>
-      <h3><strong>{{'SLURM' | translate}}</strong>
+      <h3><strong>{{'Slurm.SLURM' | translate}}</strong>
         <loading-spinner class='ml-2' [loading]='loading'></loading-spinner>
       </h3>
       <p>{{'Slurm.DESCRIPTION' | translate}}</p>
@@ -23,7 +23,7 @@ import {RpkiToastrService} from "../../core/rpki-toastr.service";
           <div class='custom-file'>
             <label class='custom-file-label' for='slurmFile'>{{fileName}}</label>
             <!-- #fileInput was introduced because otherwise cannot be chosen same json file twice -->
-            <input type='file' #fileInput id='slurmFile' 
+            <input type='file' #fileInput id='slurmFile'
                    class='custom-file-input btn btn-primary'
                    (click)='fileInput.value = null' value=''
                    (change)='onFileChange($event.target.files)' accept='.json' required>
