@@ -29,19 +29,37 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 
-EXECUTION_DIR=`dirname "$BASH_SOURCE"`
-cd ${EXECUTION_DIR}
-
-JAVA_CMD=${JAVA_CMD:-"/usr/bin/java"}
-JAR=${JAR:-"./lib/rpki-validator-3.jar"}
-CONFIG_DIR=${CONFIG_DIR:-"./conf"}
-
-CONFIG_FILE="${CONFIG_DIR}/application.properties"
+function warn {
+    echo -e "[ warning ] $1"
+}
 
 function error_exit {
     echo -e "[ error ] $1"
     exit 1
 }
+
+EXECUTION_DIR=`dirname "$BASH_SOURCE"`
+cd ${EXECUTION_DIR}
+
+if [ -z ${JAVA_CMD} ]; then
+  if [ -z ${JAVA_HOME} ]; then
+    warn "Neither JAVA_CMD nor JAVA_HOME are set, will try to find java on path."
+    export JAVA_CMD=`which java`
+  else
+    export JAVA_CMD="${JAVA_HOME}/bin/java"
+  fi
+else
+  warn "JAVA_CMD is set"
+fi
+
+if [ ! -x $JAVA_CMD ]; then
+  error_exit "Cannot find java, please install java 8 or higher"
+fi
+
+JAR=${JAR:-"./lib/rpki-validator-3.jar"}
+CONFIG_DIR=${CONFIG_DIR:-"./conf"}
+
+CONFIG_FILE="${CONFIG_DIR}/application.properties"
 
 function parse_config_line {
     local CONFIG_KEY="$1"
