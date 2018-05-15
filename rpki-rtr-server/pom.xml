@@ -395,6 +395,7 @@
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
+                    <finalName>rpki-server-3.0-${build.number}</finalName>
                     <descriptors>
                         <descriptor>src/main/resources/packaging/generic/assembly/distribution.xml</descriptor>
                     </descriptors>
