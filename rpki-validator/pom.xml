@@ -321,6 +321,7 @@
                                     <location>src/main/resources/packaging/generic/bin/</location>
                                     <includes>
                                         <include>rpki-validator-3.sh</include>
+                                        <include>upload-tal.sh</include>
                                     </includes>
                                 </source>
                             </sources>
