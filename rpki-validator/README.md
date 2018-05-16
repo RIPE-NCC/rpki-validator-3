@@ -1,21 +1,15 @@
 RPKI - Validator
 ================
 
-License
--------
+For instructions on installing and using the RPKI Validator, please have a look at the wiki:
+https://github.com/RIPE-NCC/rpki-validator-3/wiki
 
-Description
------------
 
-The Certification Validator Tool allows you to validate objects that have been published in a public certificate repository.
-This tool is designed to help network operators make better routing decisions based on the RPKI data set.
+Development 
+------------
 
-Prerequisites 
--------------
-
-Building RPM requires presence of the rpmbuild tool. On Mac OS 
+Building the RPM (from maven) requires the presence of the rpmbuild tool. On Mac OS 
 
 `brew install rpm`
 
 will install everything needed.
-
