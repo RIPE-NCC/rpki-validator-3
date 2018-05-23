@@ -156,15 +156,9 @@ public class RpkiRepositoryValidationService {
         final RsyncRepositoryValidationRun validationRun = new RsyncRepositoryValidationRun();
         validationRunRepository.add(validationRun);
 
-        Stream<RpkiRepository> repositories = rpkiRepositories.findRsyncRepositories();
-        log.debug("Going to potentially process these rsync repositories: {}",
-                repositories.map(RpkiRepository::getLocationUri).collect(Collectors.toList()));
-
-        repositories = rpkiRepositories.findRsyncRepositories();
-
-        Map<String, RpkiObject> objectsBySha256 = new HashMap<>();
-        Map<URI, RpkiRepository> fetchedLocations = new HashMap<>();
-        ValidationResult results = repositories
+        final Map<String, RpkiObject> objectsBySha256 = new HashMap<>();
+        final Map<URI, RpkiRepository> fetchedLocations = new HashMap<>();
+        ValidationResult results = rpkiRepositories.findRsyncRepositories()
             .filter((repository) -> {
                 boolean needsUpdate = repository.isPending() || repository.getLastDownloadedAt() == null || repository.getLastDownloadedAt().isBefore(cutoffTime);
                 if (!needsUpdate) {
