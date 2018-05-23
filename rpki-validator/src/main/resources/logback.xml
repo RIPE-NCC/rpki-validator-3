@@ -1,0 +1,12 @@
+<configuration>
+    <logger name="org.hibernate.transaction" level="OFF"/>
+    <logger name="org.quartz" level="OFF"/>
+
+    <root level="WARN">
+        <appender class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{ISO8601} \t %-5level \t %thread \t\t %logger{1} \t\t %m%n</pattern>
+            </encoder>
+        </appender>
+    </root>
+</configuration>
