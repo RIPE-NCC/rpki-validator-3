@@ -128,7 +128,8 @@ public class JPATrustAnchors extends JPARepository<TrustAnchor> implements Trust
                 "       GROUP BY vr1.trust_anchor_id, vr1.rpki_repository_id\n" +
                 "     )\n" +
                 "  )\n" +
-                "GROUP BY taid";
+                "GROUP BY taId " +
+                "ORDER BY taName";
 
         return ((Stream<TaStatus>) sql(sql).getResultList().stream().map(o -> {
             final Object[] fields = (Object[]) o;
