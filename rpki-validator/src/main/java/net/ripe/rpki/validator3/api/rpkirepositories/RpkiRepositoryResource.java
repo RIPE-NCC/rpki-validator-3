@@ -40,6 +40,7 @@ import javax.validation.constraints.NotNull;
 import java.math.BigInteger;
 import java.time.Instant;
 
+import static net.ripe.rpki.validator3.api.util.Dates.formatUTC;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
@@ -58,7 +59,7 @@ public class RpkiRepositoryResource {
     @NotNull
     final RpkiRepository.Status status;
 
-    final Instant lastDownloadedAt;
+    final String lastDownloadedAt;
 
     final String rrdpSessionId;
 
@@ -72,7 +73,7 @@ public class RpkiRepositoryResource {
             rpkiRepository.getId(),
             rpkiRepository.getLocationUri(),
             rpkiRepository.getStatus(),
-            rpkiRepository.getLastDownloadedAt(),
+            formatUTC(rpkiRepository.getLastDownloadedAt()),
             rpkiRepository.getRrdpSessionId(),
             rpkiRepository.getRrdpSerial(),
             new Links(

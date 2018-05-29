@@ -34,7 +34,7 @@ import com.querydsl.core.types.EntityPath;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import net.ripe.rpki.validator3.api.Paging;
-import net.ripe.rpki.validator3.domain.RoaPrefixAssertion;
+import net.ripe.rpki.validator3.api.util.Dates;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -125,7 +125,6 @@ abstract class JPARepository<T> {
                 query.limit(pageSize);
             }
         }
-
         return query;
     }
 }

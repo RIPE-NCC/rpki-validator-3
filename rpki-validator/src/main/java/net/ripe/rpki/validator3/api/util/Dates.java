@@ -27,19 +27,26 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.api.trustanchors;
+package net.ripe.rpki.validator3.api.util;
 
-import lombok.Data;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 
-import java.util.Date;
+public class Dates {
 
-@Data(staticConstructor = "of")
-public class TaStatus {
-    final String id;
-    final String taName;
-    final int errors;
-    final int warnings;
-    final int successful;
-    final String lastUpdated;
-    final boolean completedValidation;
+    public static String formatUTC(Object o) {
+        if (o == null) {
+            return null;
+        }
+        return formatUTC(((Timestamp) o).toInstant());
+    }
+
+    public static String formatUTC(Instant i) {
+        if (i == null) {
+            return null;
+        }
+        return DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC).format(i);
+    }
 }

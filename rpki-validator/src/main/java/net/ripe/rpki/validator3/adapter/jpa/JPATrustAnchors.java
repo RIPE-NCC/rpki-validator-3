@@ -31,15 +31,13 @@ package net.ripe.rpki.validator3.adapter.jpa;
 
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
+import net.ripe.rpki.validator3.api.util.Dates;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import javax.transaction.Transactional;
-import java.sql.Timestamp;
-import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -140,7 +138,7 @@ public class JPATrustAnchors extends JPARepository<TrustAnchor> implements Trust
                     asInt(fields[2]),
                     asInt(fields[3]),
                     asInt(fields[4]),
-                    asDate(fields[5]),
+                    Dates.formatUTC(fields[5]),
                     asBoolean(fields[6]));
         })).collect(Collectors.toList());
     }
