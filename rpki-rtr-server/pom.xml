@@ -334,7 +334,7 @@
                         </mapping>
                         <mapping>
                             <directory>/etc/rpki-rtr-server/</directory>
-                            <configuration>true</configuration>
+                            <configuration>noreplace</configuration>
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
@@ -361,7 +361,6 @@
                         </mapping>
                         <mapping>
                             <directory>/etc/systemd/system/</directory>
-                            <configuration>true</configuration>
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>

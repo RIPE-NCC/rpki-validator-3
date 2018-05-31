@@ -328,7 +328,7 @@
                         </mapping>
                         <mapping>
                             <directory>/etc/rpki-validator-3/</directory>
-                            <configuration>true</configuration>
+                            <configuration>noreplace</configuration>
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
