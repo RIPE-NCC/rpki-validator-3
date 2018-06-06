@@ -76,6 +76,4 @@ parse_config_line "jvm.memory.maximum" JVM_XMX
 
 MEM_OPTIONS="-Xms$JVM_XMS -Xmx$JVM_XMX"
 
-JDK_OPTIONS=""
-
-exec ${JAVA_CMD} ${MEM_OPTIONS} ${JDK_OPTIONS} -Dspring.config.location="classpath:/application.properties,file:${CONFIG_DIR}/application-defaults.properties,file:${CONFIG_FILE}" -jar "${JAR}"
+exec ${JAVA_CMD} ${MEM_OPTIONS} -Dspring.config.location="classpath:/application.properties,file:${CONFIG_DIR}/application-defaults.properties,file:${CONFIG_FILE}" -jar "${JAR}"

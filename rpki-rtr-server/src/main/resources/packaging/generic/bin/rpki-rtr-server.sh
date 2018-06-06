@@ -58,12 +58,4 @@ parse_config_line "jvm.memory.maximum" JVM_XMX
 
 MEM_OPTIONS="-Xms$JVM_XMS -Xmx$JVM_XMX"
 
-JDK_OPTIONS=""
-
-# for Java 9 and later we have to add extra dependencies
-JAVA_VERSION=`${JAVA_CMD} -version 2>&1| grep version | sed 's/.*"\(.*\)".*/\1/g'`
-if [[ "$JAVA_VERSION" =~ ^1.9.* || "$JAVA_VERSION" =~ ^10\..* ]]; then
-    JDK_OPTIONS="$JDK_OPTIONS --add-modules java.xml.bind"
-fi
-
-exec ${JAVA_CMD} ${MEM_OPTIONS} ${JDK_OPTIONS} -Dspring.config.location="classpath:/application.properties,file:${CONFIG_DIR}/application-defaults.properties,file:${CONFIG_FILE}" -jar "${JAR}"
+exec ${JAVA_CMD} ${MEM_OPTIONS} -Dspring.config.location="classpath:/application.properties,file:${CONFIG_DIR}/application-defaults.properties,file:${CONFIG_FILE}" -jar "${JAR}"
