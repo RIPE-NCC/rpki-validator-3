@@ -44,6 +44,7 @@ import net.ripe.rpki.rtr.adapter.netty.PduCodec;
 import net.ripe.rpki.rtr.domain.RtrCache;
 import net.ripe.rpki.rtr.domain.RtrClients;
 import net.ripe.rpki.rtr.domain.SerialNumber;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -61,11 +62,13 @@ import java.util.stream.Collectors;
 @Service
 public class RtrServer {
 
+    public static final String DEFAULT_RTR_HOST = "localhost";
     public static final int DEFAULT_RTR_PORT = 9178;
 
     @Autowired
     private RtrCache rtrCache;
 
+    private String address;
     private int port;
 
     @Autowired
@@ -74,15 +77,19 @@ public class RtrServer {
     @Autowired
     private Provider<RtrClientHandler> rtrClientHandlerProvider;
 
-    public RtrServer(@Value("${rtr.server.port}") int port) {
+    public RtrServer(
+            @Value("${rtr.server.address}") String address,
+            @Value("${rtr.server.port}") int port) {
+        setAddress(address);
         setPort(port);
     }
 
+    private void setAddress(String address) {
+        this.address = !StringUtils.isEmpty(address) ? address : DEFAULT_RTR_HOST;
+    }
+
     private void setPort(int port) {
-        if (port == -1) {
-            port = DEFAULT_RTR_PORT;
-        }
-        this.port = port;
+        this.port = port == -1 ? DEFAULT_RTR_PORT : port;
     }
 
     private EventLoopGroup bossGroup;
@@ -125,7 +132,7 @@ public class RtrServer {
         bossGroup = new NioEventLoopGroup();
         workerGroup = new NioEventLoopGroup();
         try {
-            ServerBootstrap b = new ServerBootstrap();
+            final ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
                 .childHandler(new ChannelInitializer<SocketChannel>() {
@@ -142,7 +149,7 @@ public class RtrServer {
 
             log.info("Running RTR at port {}", port);
 
-            ChannelFuture f = b.bind(port).sync();
+            final ChannelFuture f = b.bind(address, port).sync();
             f.channel().closeFuture().sync();
         } finally {
             shutdownWorkers();
