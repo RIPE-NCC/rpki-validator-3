@@ -35,7 +35,7 @@ import java.util.List;
 
 @Data
 public class Slurm {
-    private String slurmVersion;
+    private final String slurmVersion = "1";
 
     private List<SlurmTarget> slurmTarget;
 
