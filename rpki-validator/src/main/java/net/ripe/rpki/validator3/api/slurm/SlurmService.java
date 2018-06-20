@@ -75,7 +75,7 @@ public class SlurmService {
             roaPrefixAssertionsService.clear();
             slurm.getLocallyAddedAssertions().getPrefixAssertions().forEach(prefixAsertion -> {
                 final AddRoaPrefixAssertion add = AddRoaPrefixAssertion.builder()
-                        .asn(prefixAsertion.getAsn() == null ? null : prefixAsertion.getAsn().toString())
+                        .asn(prefixAsertion.getAsn())
                         .prefix(prefixAsertion.getPrefix())
                         .maximumLength(prefixAsertion.getMaxPrefixLength())
                         .comment(prefixAsertion.getComment())
@@ -88,7 +88,7 @@ public class SlurmService {
             ignoreFilterService.clear();
             slurm.getValidationOutputFilters().getPrefixFilters().forEach(prefixFilter -> {
                 final AddIgnoreFilter addIgnoreFilter = AddIgnoreFilter.builder()
-                        .asn(prefixFilter.getAsn() == null ? null : prefixFilter.getAsn().toString())
+                        .asn(prefixFilter.getAsn())
                         .prefix(prefixFilter.getPrefix())
                         .comment(prefixFilter.getComment())
                         .build();
@@ -100,7 +100,7 @@ public class SlurmService {
             bgpSecAssertionsService.clear();
             slurm.getLocallyAddedAssertions().getBgpsecAssertions().forEach(bgpSecAssertion -> {
                 AddBgpSecAssertion add = AddBgpSecAssertion.builder()
-                        .asn(bgpSecAssertion.getAsn() == null ? null : bgpSecAssertion.getAsn().toString())
+                        .asn(bgpSecAssertion.getAsn())
                         .publicKey(bgpSecAssertion.getPublicKey())
                         .ski(bgpSecAssertion.getSki())
                         .comment(bgpSecAssertion.getComment())
@@ -113,7 +113,7 @@ public class SlurmService {
             bgpSecFilterService.clear();
             slurm.getValidationOutputFilters().getBgpsecFilters().forEach(bgpSecFilter -> {
                 AddBgpSecFilter add = AddBgpSecFilter.builder()
-                        .asn(bgpSecFilter.getAsn() == null ? null : bgpSecFilter.getAsn().toString())
+                        .asn(bgpSecFilter.getAsn())
                         .ski(bgpSecFilter.getSki())
                         .comment(bgpSecFilter.getComment())
                         .build();
@@ -129,7 +129,7 @@ public class SlurmService {
         final SlurmLocallyAddedAssertions slurmLocallyAddedAssertions = new SlurmLocallyAddedAssertions();
         slurmLocallyAddedAssertions.setPrefixAssertions(roaPrefixAssertionsService.all().map(a -> {
             final SlurmPrefixAssertion prefixAssertion = new SlurmPrefixAssertion();
-            prefixAssertion.setAsn(a.getAsn());
+            prefixAssertion.setAsn(String.valueOf(a.getAsn()));
             prefixAssertion.setPrefix(a.getPrefix());
             prefixAssertion.setMaxPrefixLength(a.getMaximumLength());
             prefixAssertion.setComment(a.getComment());
@@ -138,7 +138,7 @@ public class SlurmService {
 
         slurmLocallyAddedAssertions.setBgpsecAssertions(bgpSecAssertionsService.all().map(a -> {
             final SlurmBgpSecAssertion bgpSecAssertion = new SlurmBgpSecAssertion();
-            bgpSecAssertion.setAsn(a.getAsn());
+            bgpSecAssertion.setAsn(String.valueOf(a.getAsn()));
             bgpSecAssertion.setSki(a.getSki());
             bgpSecAssertion.setPublicKey(a.getPublicKey());
             bgpSecAssertion.setComment(a.getComment());
@@ -149,7 +149,7 @@ public class SlurmService {
         final SlurmOutputFilters filters = new SlurmOutputFilters();
         filters.setPrefixFilters(ignoreFilterService.all().map(f -> {
             final SlurmPrefixFilter prefixFilter = new SlurmPrefixFilter();
-            prefixFilter.setAsn(f.getAsn());
+            prefixFilter.setAsn(String.valueOf(f.getAsn()));
             prefixFilter.setPrefix(f.getPrefix());
             prefixFilter.setComment(f.getComment());
             return prefixFilter;
@@ -157,7 +157,7 @@ public class SlurmService {
 
         filters.setBgpsecFilters(bgpSecFilterService.all().map(f -> {
             final SlurmBgpSecFilter bgpSecFilter = new SlurmBgpSecFilter();
-            bgpSecFilter.setAsn(f.getAsn());
+            bgpSecFilter.setAsn(String.valueOf(f.getAsn()));
             bgpSecFilter.setSki(f.getSki());
             bgpSecFilter.setComment(f.getComment());
             return bgpSecFilter;

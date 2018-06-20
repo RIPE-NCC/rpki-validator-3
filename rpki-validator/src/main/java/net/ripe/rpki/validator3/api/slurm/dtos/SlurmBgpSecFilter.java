@@ -34,7 +34,7 @@ import lombok.Data;
 
 @Data
 public class SlurmBgpSecFilter {
-    private Long asn;
+    private String asn;
     @JsonProperty("SKI")
     private String ski;
     private String comment;

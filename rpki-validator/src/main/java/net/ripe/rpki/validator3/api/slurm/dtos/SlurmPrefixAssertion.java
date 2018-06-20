@@ -33,7 +33,7 @@ import lombok.Data;
 
 @Data
 public class SlurmPrefixAssertion {
-    private Long asn;
+    private String asn;
     private String prefix;
     private Integer maxPrefixLength;
     private String comment;
