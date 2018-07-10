@@ -232,10 +232,10 @@ public class RrdpParser {
         }
     }
 
-    private String getAttr(final StartElement startElement, final String attrName, final String absentMessage) {
+    private String getAttr(final StartElement startElement, final String attrName, final String noAttrMessage) {
         final String attr = getAttr(startElement, attrName);
         if (attr == null)
-            throw new RrdpException(absentMessage);
+            throw new RrdpException(noAttrMessage);
         return attr;
     }
 
