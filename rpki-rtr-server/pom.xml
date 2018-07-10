@@ -38,6 +38,7 @@
 
         <maven.build.timestamp.format>yyyyMMddHHmmss</maven.build.timestamp.format>
         <build.number>DEV${maven.build.timestamp}</build.number>
+        <jetty-http2-client.version>9.4.11.v20180605</jetty-http2-client.version>
     </properties>
 
     <dependencies>
@@ -130,12 +131,12 @@
         <dependency>
             <groupId>org.eclipse.jetty.http2</groupId>
             <artifactId>http2-client</artifactId>
-            <version>9.4.6.v20170531</version>
+            <version>${jetty-http2-client.version}</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty.http2</groupId>
             <artifactId>http2-http-client-transport</artifactId>
-            <version>9.4.6.v20170531</version>
+            <version>${jetty-http2-client.version}</version>
         </dependency>
         <dependency>
             <groupId>org.mortbay.jetty.alpn</groupId>
