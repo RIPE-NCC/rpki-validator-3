@@ -61,6 +61,7 @@ public class Http {
     public static <T> T readStream(final Supplier<Request> requestF, Function<InputStream, T> reader) {
         InputStreamResponseListener listener = new InputStreamResponseListener();
         Request request = requestF.get();
+        request.header("User-Agent", "RIPE NCC RPKI Validator version 3");
         request.send(listener);
 
         Response response = null;
