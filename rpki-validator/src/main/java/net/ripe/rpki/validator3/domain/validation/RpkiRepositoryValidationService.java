@@ -74,8 +74,6 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 @Slf4j
@@ -177,8 +175,13 @@ public class RpkiRepositoryValidationService {
         affectedTrustAnchors.forEach(validationRunRepository::runCertificateTreeValidation);
     }
 
-    protected ValidationResult processRsyncRepository(Set<TrustAnchor> affectedTrustAnchors, RsyncRepositoryValidationRun validationRun, Map<URI, RpkiRepository> fetchedLocations, Map<String, RpkiObject> objectsBySha256, RpkiRepository repository) {
-        ValidationResult validationResult = ValidationResult.withLocation(URI.create(repository.getRsyncRepositoryUri()));
+    protected ValidationResult processRsyncRepository(Set<TrustAnchor> affectedTrustAnchors,
+                                                      RsyncRepositoryValidationRun validationRun,
+                                                      Map<URI, RpkiRepository> fetchedLocations,
+                                                      Map<String, RpkiObject> objectsBySha256,
+                                                      RpkiRepository repository) {
+
+        final ValidationResult validationResult = ValidationResult.withLocation(URI.create(repository.getRsyncRepositoryUri()));
 
         validationRun.addRpkiRepository(repository);
 
