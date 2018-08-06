@@ -30,7 +30,6 @@
 package net.ripe.rpki.validator3.api.bgp;
 
 import net.ripe.ipresource.Asn;
-import net.ripe.ipresource.IpAddress;
 import net.ripe.ipresource.IpRange;
 import org.junit.Test;
 
@@ -64,6 +63,6 @@ public class BgpRisParsingTest {
     }
 
     private List<BgpRisEntry> parse(String content) throws UnsupportedEncodingException {
-        return new BgpRisDownloader().parse(new ByteArrayInputStream(content.getBytes("UTF-8")));
+        return BgpRisDownloader.parse(new ByteArrayInputStream(content.getBytes("UTF-8")));
     }
 }

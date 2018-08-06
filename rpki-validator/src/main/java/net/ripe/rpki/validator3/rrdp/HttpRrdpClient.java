@@ -32,7 +32,10 @@ package net.ripe.rpki.validator3.rrdp;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.util.Http;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpProxy;
+import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -48,16 +51,18 @@ import static org.springframework.util.StreamUtils.copy;
 @Slf4j
 public class HttpRrdpClient implements RrdpClient {
 
-    @Value("${rpki.validator.rrdp.trust.all.tls.certificates}")
-    private boolean trustAllTlsCertificates;
+    private final Http http;
 
     private HttpClient httpClient;
 
+    @Autowired
+    public HttpRrdpClient(Http http) {
+        this.http = http;
+    }
+
     @PostConstruct
     public void postConstruct() throws Exception {
-        final SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setTrustAll(trustAllTlsCertificates);
-        httpClient = new HttpClient(sslContextFactory);
+        httpClient = http.client();
         httpClient.start();
     }
 

@@ -29,7 +29,6 @@
  */
 package net.ripe.rpki.validator3.api.bgp;
 
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
@@ -39,6 +38,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -64,12 +64,18 @@ import java.util.zip.GZIPInputStream;
 @Slf4j
 public class BgpRisDownloader {
 
-    @Setter
+    private final Http http;
+
     private HttpClient httpClient;
+
+    @Autowired
+    public BgpRisDownloader(Http http) {
+        this.http = http;
+    }
 
     @PostConstruct
     public void postConstruct() throws Exception {
-        httpClient = new HttpClient();
+        httpClient = http.client();
         httpClient.start();
     }
 
@@ -104,7 +110,7 @@ public class BgpRisDownloader {
         }
     }
 
-    public List<BgpRisEntry> parse(final InputStream is) {
+    public static List<BgpRisEntry> parse(final InputStream is) {
         final BufferedReader reader = new BufferedReader(new InputStreamReader(is));
 
         final IdentityMap id = new IdentityMap();
@@ -120,7 +126,7 @@ public class BgpRisDownloader {
 
     private static Pattern regexp = Pattern.compile("^\\s*([0-9]+)\\s+([0-9a-fA-F.:/]+)\\s+([0-9]+)\\s*$");
 
-    private BgpRisEntry parseLine(final String line, final Function<Object, Object> uniq) {
+    private static BgpRisEntry parseLine(final String line, final Function<Object, Object> uniq) {
         final Matcher matcher = regexp.matcher(line);
         if (matcher.matches()) {
             final Asn asn = (Asn) uniq.apply(Asn.parse(matcher.group(1)));

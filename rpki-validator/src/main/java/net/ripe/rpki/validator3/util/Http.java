@@ -30,9 +30,15 @@
 package net.ripe.rpki.validator3.util;
 
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpProxy;
+import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,8 +48,31 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+@Component
 @Slf4j
 public class Http {
+
+    @Value("${rpki.validator.rrdp.trust.all.tls.certificates}")
+    private boolean trustAllTlsCertificates;
+
+    @Value("${rpki.validator.http.proxy.host:#{null}}")
+    private String proxyHost;
+
+    @Value("${rpki.validator.http.proxy.port:#{null}}")
+    private Integer proxyPort;
+
+    public HttpClient client() {
+        final SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setTrustAll(trustAllTlsCertificates);
+        HttpClient httpClient = new HttpClient(sslContextFactory);
+        log.info("Trust all TLS certificates: {}, proxy host is {}, proxy port is {}", trustAllTlsCertificates, proxyHost, proxyPort);
+        if (proxyHost != null && proxyPort != null) {
+            ProxyConfiguration proxyConfig = httpClient.getProxyConfiguration();
+            HttpProxy proxy = new HttpProxy(proxyHost, proxyPort);
+            proxyConfig.getProxies().add(proxy);
+        }
+        return httpClient;
+    }
 
     public static class NotModified extends RuntimeException {
     }
