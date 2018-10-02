@@ -68,8 +68,8 @@ public class RpkiRepositoriesController {
     @GetMapping
     public ResponseEntity<ApiResponse<Stream<RpkiRepositoryResource>>> list(
             @RequestParam(name = "status", required = false) RpkiRepository.Status status,
-            @RequestParam(name = "ta", required = false) Long taId,@RequestParam(name = "startFrom", defaultValue = "0") int startFrom,
-            @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
+            @RequestParam(name = "ta", required = false) Long taId,@RequestParam(name = "startFrom", defaultValue = "0") long startFrom,
+            @RequestParam(name = "pageSize", defaultValue = "20") long pageSize,
             @RequestParam(name = "search", defaultValue = "", required = false) String searchString,
             @RequestParam(name = "sortBy", defaultValue = "location") String sortBy,
             @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection,

@@ -225,7 +225,7 @@ public class BgpPreviewService {
 
     public synchronized BgpPreviewResult find(SearchTerm searchTerm, Sorting sorting, Paging paging) {
         if (paging == null) {
-            paging = Paging.of(0, Integer.MAX_VALUE);
+            paging = Paging.of(0L, Long.MAX_VALUE);
         }
         if (sorting == null) {
             sorting = Sorting.of(Sorting.By.PREFIX, Sorting.Direction.ASC);

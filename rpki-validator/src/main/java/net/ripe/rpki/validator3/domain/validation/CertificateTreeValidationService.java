@@ -63,6 +63,7 @@ import javax.transaction.Transactional;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -196,7 +197,7 @@ public class CertificateTreeValidationService {
                 return validatedObjects;
             }
 
-            ManifestCms manifest = maybeManifest.get();
+            final ManifestCms manifest = maybeManifest.get();
             List<Map.Entry<String, byte[]>> crlEntries = manifest.getFiles().entrySet().stream()
                 .filter((entry) -> RepositoryObjectType.parse(entry.getKey()) == RepositoryObjectType.Crl)
                 .collect(toList());

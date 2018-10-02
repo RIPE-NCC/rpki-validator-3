@@ -29,16 +29,10 @@
  */
 package net.ripe.rpki.validator3.adapter.jpa;
 
-import com.google.common.base.Preconditions;
-import net.ripe.rpki.validator3.api.Api;
-import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
-import org.quartz.SimpleScheduleBuilder;
-import org.quartz.TriggerBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Component;
 
 import javax.transaction.Transactional;

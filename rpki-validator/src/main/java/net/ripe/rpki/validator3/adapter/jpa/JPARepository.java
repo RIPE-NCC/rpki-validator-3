@@ -90,8 +90,8 @@ abstract class JPARepository<T> {
         return stream(select());
     }
 
-    public void clear() {
-        queryFactory.delete(entityPath).execute();
+    public long clear() {
+        return queryFactory.delete(entityPath).execute();
     }
 
     protected Query sql(String sql) {
@@ -116,11 +116,11 @@ abstract class JPARepository<T> {
 
     protected <T> JPAQuery<T> applyPaging(JPAQuery<T> query, Paging paging) {
         if (paging != null) {
-            final Integer startFrom = paging.getStartFrom();
+            final Long startFrom = paging.getStartFrom();
             if (startFrom != null) {
                 query.offset(startFrom);
             }
-            final Integer pageSize = paging.getPageSize();
+            final Long pageSize = paging.getPageSize();
             if (pageSize != null) {
                 query.limit(pageSize);
             }

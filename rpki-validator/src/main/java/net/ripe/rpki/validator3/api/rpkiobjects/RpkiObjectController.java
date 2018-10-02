@@ -59,9 +59,11 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.transaction.Transactional;
 import java.math.BigInteger;
 import java.security.cert.X509CRLEntry;
 import java.util.Arrays;
@@ -124,6 +126,13 @@ public class RpkiObjectController {
         return ResponseEntity.ok(ApiResponse.data(rpkiObjStream));
     }
 
+    @PostMapping(path = "purge-all")
+    @Transactional
+    public ResponseEntity<?> purge() {
+        long count = rpkiObjects.clear();
+        return ResponseEntity.ok(ApiResponse.data("Removed " + count + " objects"));
+    }
+
     private RpkiObj mapRpkiObject(final RpkiObject rpkiObject, final Optional<ValidationResult> validationResult) {
         switch (rpkiObject.getType()) {
             case CER:
@@ -148,11 +157,9 @@ public class RpkiObjectController {
                                                                          final Optional<ValidationResult> validationResult,
                                                                          final Class<T> clazz,
                                                                          final Function<T, RpkiObj> create) {
-        Optional<T> maybeCert = validationResult.flatMap(vr -> rpkiObjects.findCertificateRepositoryObject(rpkiObject.getId(), clazz, vr));
-        if (maybeCert.isPresent()) {
-            return create.apply(maybeCert.get());
-        }
-        return null;
+        return validationResult
+                .flatMap(vr -> rpkiObjects.findCertificateRepositoryObject(rpkiObject.getId(), clazz, vr))
+                .map(create).orElse(null);
     }
 
     private static String location(final RpkiObject rpkiObject) {

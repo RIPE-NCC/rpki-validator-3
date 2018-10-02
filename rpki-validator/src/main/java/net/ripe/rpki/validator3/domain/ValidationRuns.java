@@ -60,4 +60,6 @@ public interface ValidationRuns {
     Stream<ValidationCheck> findValidationChecksForValidationRun(long validationRunId, Paging paging, SearchTerm searchTerm, Sorting sorting);
 
     int countValidationChecksForValidationRun(long validationRunId, SearchTerm searchTerm);
+
+    long clear();
 }

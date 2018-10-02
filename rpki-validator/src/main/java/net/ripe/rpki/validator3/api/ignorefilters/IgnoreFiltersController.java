@@ -80,8 +80,8 @@ public class IgnoreFiltersController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<Stream<IgnoreFilter>>> list(
-            @RequestParam(name = "startFrom", defaultValue = "0") int startFrom,
-            @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
+            @RequestParam(name = "startFrom", defaultValue = "0") long startFrom,
+            @RequestParam(name = "pageSize", defaultValue = "20") long pageSize,
             @RequestParam(name = "search", defaultValue = "", required = false) String searchString,
             @RequestParam(name = "sortBy", defaultValue = "prefix") String sortBy,
             @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection) {

@@ -5,7 +5,7 @@
                              http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.sonatype.mavenbook.multi</groupId>
-    <artifactId>parent</artifactId>
+    <artifactId>rpki-validator-3-parent</artifactId>
     <version>0.8-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Multi Chapter Parent Project</name>

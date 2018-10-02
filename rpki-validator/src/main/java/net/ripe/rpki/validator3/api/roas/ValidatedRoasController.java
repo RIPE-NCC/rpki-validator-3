@@ -63,8 +63,8 @@ public class ValidatedRoasController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<Stream<RoaPrefix>>> list(
-            @RequestParam(name = "startFrom", defaultValue = "0") int startFrom,
-            @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
+            @RequestParam(name = "startFrom", defaultValue = "0") long startFrom,
+            @RequestParam(name = "pageSize", defaultValue = "20") long pageSize,
             @RequestParam(name = "search", defaultValue = "", required = false) String searchString,
             @RequestParam(name = "sortBy", defaultValue = "prefix") String sortBy,
             @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection) {
@@ -83,7 +83,7 @@ public class ValidatedRoasController {
                 prefix.getLocations().first()
             ));
 
-        int totalSize = currentlyValidatedRoaPrefixes.getTotalCount();
+        long totalSize = currentlyValidatedRoaPrefixes.getTotalCount();
         final Links links = Paging.links(
                 startFrom, pageSize, totalSize,
                 (sf, ps) -> methodOn(ValidatedRoasController.class).list(sf, ps, searchString, sortBy, sortDirection));

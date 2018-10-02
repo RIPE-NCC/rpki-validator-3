@@ -134,7 +134,7 @@ public class ValidatedRpkiObjects {
 
     public ValidatedObjects<RoaPrefix> findCurrentlyValidatedRoaPrefixes(SearchTerm searchTerm, Sorting sorting, Paging paging) {
         if (paging == null) {
-            paging = Paging.of(0, Integer.MAX_VALUE);
+            paging = Paging.of(0L, Long.MAX_VALUE);
         }
         if (sorting == null) {
             sorting = Sorting.of(Sorting.By.TA, Sorting.Direction.ASC);
@@ -162,7 +162,7 @@ public class ValidatedRpkiObjects {
 
     @Value(staticConstructor = "of")
     public static class ValidatedObjects<T> {
-        int totalCount;
+        long totalCount;
         Stream<T> objects;
     }
 
@@ -253,11 +253,7 @@ public class ValidatedRpkiObjects {
     }
 
     private int countRouterCertificates() {
-        int result = 0;
-        for (RoaPrefixesAndRouterCertificates x : validatedObjects()) {
-            result += x.getRouterCertificates().size();
-        }
-        return result;
+        return validatedObjects().stream().mapToInt(x -> x.getRouterCertificates().size()).sum();
     }
 
     private Stream<RouterCertificate> findRouterCertificates() {
@@ -266,16 +262,11 @@ public class ValidatedRpkiObjects {
             .flatMap(x -> x.getRouterCertificates().stream());
     }
 
-    private int countRoaPrefixes(SearchTerm searchTerm) {
-        int result = 0;
-        for (RoaPrefixesAndRouterCertificates x : validatedObjects()) {
-            for (RoaPrefix prefix : x.getRoaPrefixes()) {
-                if (searchTerm == null || searchTerm.test(prefix)) {
-                    ++result;
-                }
-            }
-        }
-        return result;
+    private long countRoaPrefixes(SearchTerm searchTerm) {
+        return validatedObjects().stream()
+                .flatMap(x -> x.getRoaPrefixes().stream())
+                .filter(prefix -> searchTerm == null || searchTerm.test(prefix))
+                .count();
     }
 
     private Stream<RoaPrefix> findRoaPrefixes(SearchTerm searchTerm, Sorting sorting, Paging paging) {

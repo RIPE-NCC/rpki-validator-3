@@ -62,4 +62,6 @@ public interface RpkiObjects {
     Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type type, byte[] authorityKeyIdentifier);
 
     long deleteUnreachableObjects(Instant unreachableSince);
+
+    long clear();
 }

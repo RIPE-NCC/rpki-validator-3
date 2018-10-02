@@ -48,5 +48,5 @@ public interface BgpSecAssertions {
 
     void remove(BgpSecAssertion bgpSecAssertion);
 
-    void clear();
+    long clear();
 }

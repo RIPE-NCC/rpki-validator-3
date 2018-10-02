@@ -48,5 +48,5 @@ public interface IgnoreFilters {
 
     void remove(IgnoreFilter ignoreFilter);
 
-    void clear();
+    long clear();
 }

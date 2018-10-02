@@ -41,20 +41,20 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 @Value(staticConstructor = "of")
 public class Paging {
 
-    final Integer startFrom;
-    final Integer pageSize;;
+    final Long startFrom;
+    final Long pageSize;;
 
     public boolean isIndefinite() {
         return startFrom == null || pageSize == null;
     }
 
-    public static <T> Links links(int startFrom, int pageSize, int totalSize, BiFunction<Integer, Integer, T> linkConstructor) {
-        int previous = startFrom - pageSize;
+    public static <T> Links links(long startFrom, long pageSize, long totalSize, BiFunction<Long, Long, T> linkConstructor) {
+        long previous = startFrom - pageSize;
         if (previous < 0) {
             previous = 0;
         }
-        int next = startFrom + pageSize;
-        int realTotal = totalSize - pageSize;
+        long next = startFrom + pageSize;
+        long realTotal = totalSize - pageSize;
         if (realTotal < 0) {
             realTotal = 0;
         }
@@ -62,7 +62,7 @@ public class Paging {
             next = realTotal;
         }
         return new Links(
-                linkTo(linkConstructor.apply(0, pageSize)).withRel(Link.REL_FIRST),
+                linkTo(linkConstructor.apply(0L, pageSize)).withRel(Link.REL_FIRST),
                 linkTo(linkConstructor.apply(previous, pageSize)).withRel(Link.REL_PREVIOUS),
                 linkTo(linkConstructor.apply(next, pageSize)).withRel(Link.REL_NEXT),
                 linkTo(linkConstructor.apply(realTotal, pageSize)).withRel(Link.REL_LAST)

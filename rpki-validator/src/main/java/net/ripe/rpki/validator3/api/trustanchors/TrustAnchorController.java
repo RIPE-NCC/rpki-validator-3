@@ -93,8 +93,6 @@ public class TrustAnchorController {
     @Autowired
     private ValidationRuns validationRunRepository;
     @Autowired
-    private RpkiRepositories rpkiRepositories;
-    @Autowired
     private MessageSource messageSource;
 
     @GetMapping
@@ -161,8 +159,8 @@ public class TrustAnchorController {
     @GetMapping(path = "/{id}/validation-checks")
     public ResponseEntity<ApiResponse<Stream<ValidationCheckResource>>> validationChecks(
         @PathVariable long id,
-        @RequestParam(name = "startFrom", defaultValue = "0") int startFrom,
-        @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
+        @RequestParam(name = "startFrom", defaultValue = "0") long startFrom,
+        @RequestParam(name = "pageSize", defaultValue = "20") long pageSize,
         @RequestParam(name = "search", required = false) String searchString,
         @RequestParam(name = "sortBy", defaultValue = "location") String sortBy,
         @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection,
