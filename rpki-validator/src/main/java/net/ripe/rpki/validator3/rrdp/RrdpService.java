@@ -157,10 +157,15 @@ public class RrdpService {
                         ", notification file serial is " + notification.serial + ", but the list of deltas is empty.");
             }
         } else {
+            final BigInteger earliestDelta = orderedDeltas.get(0).getSerial();
             final BigInteger lastDeltaSerial = orderedDeltas.get(orderedDeltas.size() - 1).getSerial();
             if (!notification.serial.equals(lastDeltaSerial)) {
                 throw new RrdpException("The last delta serial is " + lastDeltaSerial +
                         ", notification file serial is " + notification.serial);
+            }
+            if (earliestDelta.compareTo(notification.serial) > 0) {
+                throw new RrdpException("The earliest available delta serial " + earliestDelta +
+                        " is later than notification file serial is " + notification.serial);
             }
             final BigInteger[] previous = {null};
             orderedDeltas.forEach(d -> {

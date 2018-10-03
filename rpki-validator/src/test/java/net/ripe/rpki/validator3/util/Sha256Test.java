@@ -33,6 +33,7 @@ import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.runner.RunWith;
 
+import java.security.MessageDigest;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertTrue;
@@ -43,4 +44,12 @@ public class Sha256Test {
     public void formatAndParse(byte[] bytes) throws Exception {
         assertTrue(Arrays.equals(bytes, Hex.parse(Hex.format(bytes))));
     }
+
+    @Property
+    public void digestOursAndStandard(byte[] bytes) throws Exception {
+        byte[] ours = Sha256.hash(bytes);
+        byte[] standard = MessageDigest.getInstance("SHA-256").digest(bytes);
+        assertTrue(Arrays.equals(ours, standard));
+    }
+
 }
