@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.rrdp;
 
+import net.ripe.rpki.validator3.domain.ErrorCodes;
 import net.ripe.rpki.validator3.util.Hex;
 
 import javax.xml.stream.XMLEventReader;
@@ -235,7 +236,7 @@ public class RrdpParser {
     private String getAttr(final StartElement startElement, final String attrName, final String noAttrMessage) {
         final String attr = getAttr(startElement, attrName);
         if (attr == null)
-            throw new RrdpException(noAttrMessage);
+            throw new RrdpException(ErrorCodes.RRDP_PARSE_ERROR, noAttrMessage);
         return attr;
     }
 

@@ -32,6 +32,11 @@ package net.ripe.rpki.validator3.domain;
 public class ErrorCodes {
     public static final String RRDP_FETCH = "rrdp.fetch";
     public static final String RRDP_FETCH_DELTAS = "rrdp.fetch.deltas";
+    public static final String RRDP_PARSE_ERROR = "rrdp.parse.error";
+    public static final String RRDP_WRONG_SNAPSHOT_HASH = "rrdp.wrong.snapshot.hash";
+    public static final String RRDP_WRONG_DELTA_HASH = "rrdp.wrong.delta.hash";
+    public static final String RRDP_WRONG_DELTA_SESSION = "rrdp.wrong.delta.session";
+    public static final String RRDP_SERIAL_MISMATCH = "rrdp.serial.mismatch";
     public static final String RRDP_REPLACE_NONEXISTENT_OBJECT = "rrdp.replace.nonexistent.object";
     public static final String RRDP_WITHDRAW_NONEXISTENT_OBJECT = "rrdp.withdraw.nonexistent.object";
 

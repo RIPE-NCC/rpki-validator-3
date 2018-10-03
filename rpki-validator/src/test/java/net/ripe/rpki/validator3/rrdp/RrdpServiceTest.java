@@ -255,7 +255,7 @@ public class RrdpServiceTest {
 
         assertEquals(1, validationRun.getValidationChecks().size());
         final ValidationCheck validationCheck = validationRun.getValidationChecks().get(0);
-        assertEquals(ErrorCodes.RRDP_FETCH_DELTAS, validationCheck.getKey());
+        assertEquals(ErrorCodes.RRDP_WRONG_DELTA_SESSION, validationCheck.getKey());
         assertEquals(ValidationCheck.Status.WARNING, validationCheck.getStatus());
         assertEquals(rpkiRepository.getRrdpNotifyUri(), validationCheck.getLocation());
         assertTrue(validationCheck.getParameters().get(0).contains("Session id of the delta"));
@@ -270,7 +270,7 @@ public class RrdpServiceTest {
     }
 
     @Test
-    public void should_parse_notification_use_delta_add_and_replace_an_object() {
+    public void should_parse_notification_use_delta_and_fail_to_use_it() {
         final byte[] certificate = Objects.aParseableCertificate();
         final String sessionId = UUID.randomUUID().toString();
         final byte[] emptySnapshotXml = Objects.snapshotXml(3, sessionId);
@@ -301,7 +301,57 @@ public class RrdpServiceTest {
         // do the first run to get the snapshot
         RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepository);
         subject.storeRepository(rpkiRepository, validationRun);
-        assertEquals(0, validationRun.getValidationChecks().size());
+        assertEquals(1, validationRun.getValidationChecks().size());
+
+        final ValidationCheck validationCheck = validationRun.getValidationChecks().get(0);
+        assertEquals(ErrorCodes.RRDP_REPLACE_NONEXISTENT_OBJECT, validationCheck.getKey());
+        assertEquals(ValidationCheck.Status.WARNING, validationCheck.getStatus());
+
+        final List<RpkiObject> objects = rpkiObjects.all().collect(Collectors.toList());
+        assertEquals(0, objects.size());
+    }
+
+    @Test
+    public void should_parse_notification_use_delta_and_fall_back_to_snapshot() {
+        final byte[] certificate = Objects.aParseableCertificate();
+        final String sessionId = UUID.randomUUID().toString();
+        final long serial = 3;
+
+        final Objects.Publish crl = new Objects.Publish("rsync://host/path/crl1.crl", Objects.aParseableCrl());
+        rrdpClient.add(crl.uri, crl.content);
+
+        final byte[] snapshotXml = Objects.snapshotXml(serial, sessionId, crl);
+        final Objects.SnapshotInfo snapshot = new Objects.SnapshotInfo("https://host/path/snapshot.xml", Sha256.hash(snapshotXml));
+        rrdpClient.add(snapshot.uri, snapshotXml);
+
+        final Objects.DeltaPublish publishCert = new Objects.DeltaPublish("rsync://host/path/cert.cer", certificate);
+        final byte[] deltaXml1 = Objects.deltaXml(2, sessionId, publishCert);
+
+        final Objects.DeltaPublish republishCert = new Objects.DeltaPublish("rsync://host/path/cert.cer", Sha256.hash(publishCert.content), certificate);
+        final byte[] deltaXml2 = Objects.deltaXml(serial, sessionId, republishCert);
+
+        final Objects.DeltaInfo deltaInfo1 = new Objects.DeltaInfo("https://host/path/delta1.xml", Sha256.hash(deltaXml1), 2);
+        final Objects.DeltaInfo deltaInfo2 = new Objects.DeltaInfo("https://host/path/delta2.xml", Sha256.hash(deltaXml2), 3);
+        rrdpClient.add(deltaInfo1.uri, deltaXml1);
+        rrdpClient.add(deltaInfo2.uri, deltaXml2);
+
+        final String notificationUri = "https://rrdp.ripe.net/notification.xml";
+        rrdpClient.add(notificationUri, Objects.notificationXml(3, sessionId, snapshot, deltaInfo1, deltaInfo2));
+
+        final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
+        entityManager.persist(trustAnchor);
+
+        // make current serial lower to trigger delta download
+        final RpkiRepository rpkiRepository = makeRpkiRepository(sessionId, notificationUri, trustAnchor);
+
+        // do the first run to get the snapshot
+        RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepository);
+        subject.storeRepository(rpkiRepository, validationRun);
+        assertEquals(1, validationRun.getValidationChecks().size());
+
+        final ValidationCheck validationCheck = validationRun.getValidationChecks().get(0);
+        assertEquals(ErrorCodes.RRDP_REPLACE_NONEXISTENT_OBJECT, validationCheck.getKey());
+        assertEquals(ValidationCheck.Status.WARNING, validationCheck.getStatus());
 
         final List<RpkiObject> objects = rpkiObjects.all().collect(Collectors.toList());
         assertEquals(1, objects.size());
@@ -346,7 +396,7 @@ public class RrdpServiceTest {
         assertEquals(1, validationRun.getValidationChecks().size());
 
         final ValidationCheck validationCheck = validationRun.getValidationChecks().get(0);
-        assertEquals(ErrorCodes.RRDP_FETCH_DELTAS, validationCheck.getKey());
+        assertEquals(ErrorCodes.RRDP_SERIAL_MISMATCH, validationCheck.getKey());
         assertEquals(ValidationCheck.Status.WARNING, validationCheck.getStatus());
         assertEquals(rpkiRepository.getRrdpNotifyUri(), validationCheck.getLocation());
         assertEquals("Serials of the deltas are not contiguous: found 2 and 4 after it", validationCheck.getParameters().get(0));
@@ -397,7 +447,7 @@ public class RrdpServiceTest {
         assertEquals(1, validationRun.getValidationChecks().size());
 
         final ValidationCheck validationCheck = validationRun.getValidationChecks().get(0);
-        assertEquals(ErrorCodes.RRDP_FETCH_DELTAS, validationCheck.getKey());
+        assertEquals(ErrorCodes.RRDP_SERIAL_MISMATCH, validationCheck.getKey());
         assertEquals(ValidationCheck.Status.WARNING, validationCheck.getStatus());
         assertEquals(rpkiRepository.getRrdpNotifyUri(), validationCheck.getLocation());
         assertEquals("The last delta serial is 3, notification file serial is 4", validationCheck.getParameters().get(0));
@@ -442,7 +492,7 @@ public class RrdpServiceTest {
         subject.storeRepository(rpkiRepository, validationRun);
         assertEquals(1, validationRun.getValidationChecks().size());
         final ValidationCheck validationCheck = validationRun.getValidationChecks().get(0);
-        assertEquals(ErrorCodes.RRDP_FETCH_DELTAS, validationCheck.getKey());
+        assertEquals(ErrorCodes.RRDP_WRONG_DELTA_HASH, validationCheck.getKey());
         assertEquals(ValidationCheck.Status.WARNING, validationCheck.getStatus());
         assertEquals(rpkiRepository.getRrdpNotifyUri(), validationCheck.getLocation());
 

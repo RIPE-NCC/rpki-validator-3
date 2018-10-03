@@ -33,14 +33,18 @@ public class RrdpException extends RuntimeException {
 
     private static final long serialVersionUID = 1L;
 
-    public RrdpException() {
-    }
+    private String errorCode;
 
-    public RrdpException(String message) {
+    public RrdpException(String errorCode, String message) {
         super(message);
+        this.errorCode = errorCode;
     }
 
     public RrdpException(String message, Throwable cause) {
         super(message, cause);
+    }
+
+    public String getErrorCode() {
+        return errorCode;
     }
 }

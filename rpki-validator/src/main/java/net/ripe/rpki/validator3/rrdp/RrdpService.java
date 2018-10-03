@@ -99,6 +99,7 @@ public class RrdpService {
                             collect(Collectors.toList());
 
                     verifyDeltaSerials(deltas, notification, rpkiRepository);
+                    verifyIfDeltasAreApplicable(deltas);
 
                     deltas.forEach(d -> {
                         storeDelta(d, validationRun);
@@ -107,11 +108,16 @@ public class RrdpService {
 
                 } catch (RrdpException e) {
                     log.info("Processing deltas failed {}, falling back to snapshot processing.", e.getMessage());
+                    final String errorCode = e.getErrorCode() != null ? e.getErrorCode() : ErrorCodes.RRDP_FETCH_DELTAS;
                     ValidationCheck validationCheck = new ValidationCheck(validationRun, rpkiRepository.getRrdpNotifyUri(),
-                            ValidationCheck.Status.WARNING, ErrorCodes.RRDP_FETCH_DELTAS, e.getMessage());
+                            ValidationCheck.Status.WARNING, errorCode, e.getMessage());
                     validationRun.addCheck(validationCheck);
                     readSnapshot(rpkiRepository, validationRun, notification);
                 }
+            } else {
+                log.info("Repository serial {} is ahead of the serial in notification file {}, fetching the snapshot",
+                        rpkiRepository.getRrdpSessionId(), notification.sessionId);
+                readSnapshot(rpkiRepository, validationRun, notification);
             }
         } else {
             log.info("Repository has session id '{}' but the downloaded version has session id '{}', fetching the snapshot",
@@ -124,8 +130,8 @@ public class RrdpService {
         final byte[] snapshotBody = rrdpClient.getBody(notification.snapshotUri);
         final byte[] snapshotHash = Sha256.hash(snapshotBody);
         if (!Arrays.equals(Hex.parse(notification.snapshotHash), snapshotHash)) {
-            throw new RrdpException("Hash of the snapshot file " + notification.snapshotUri + " is " + Hex.format(snapshotHash) +
-                    ", but notification file says " + notification.snapshotHash);
+            throw new RrdpException(ErrorCodes.RRDP_WRONG_SNAPSHOT_HASH, "Hash of the snapshot file " +
+                    notification.snapshotUri + " is " + Hex.format(snapshotHash) + ", but notification file says " + notification.snapshotHash);
         }
 
         final Snapshot snapshot = rrdpParser.snapshot(new ByteArrayInputStream(snapshotBody));
@@ -138,13 +144,13 @@ public class RrdpService {
         final byte[] deltaBody = rrdpClient.getBody(di.getUri());
         final byte[] deltaHash = Sha256.hash(deltaBody);
         if (!Arrays.equals(Hex.parse(di.getHash()), deltaHash)) {
-            throw new RrdpException("Hash of the delta file " + di + " is " + Hex.format(deltaHash) +
+            throw new RrdpException(ErrorCodes.RRDP_WRONG_DELTA_HASH, "Hash of the delta file " + di + " is " + Hex.format(deltaHash) +
                     ", but notification file says " + di.getHash());
         }
 
         final Delta d = rrdpParser.delta(new ByteArrayInputStream(deltaBody));
         if (!d.getSessionId().equals(notification.sessionId)) {
-            throw new RrdpException("Session id of the delta (" + di +
+            throw new RrdpException(ErrorCodes.RRDP_WRONG_DELTA_SESSION, "Session id of the delta (" + di +
                     ") is not the same as in the notification file: " + notification.sessionId);
         }
         return d;
@@ -153,31 +159,29 @@ public class RrdpService {
     private void verifyDeltaSerials(final List<Delta> orderedDeltas, final Notification notification, RpkiRepository rpkiRepository) {
         if (orderedDeltas.isEmpty()) {
             if (!rpkiRepository.getRrdpSerial().equals(notification.serial)) {
-                throw new RrdpException("The current serial is " + rpkiRepository.getRrdpSerial() +
+                throw new RrdpException(ErrorCodes.RRDP_SERIAL_MISMATCH, "The current serial is " + rpkiRepository.getRrdpSerial() +
                         ", notification file serial is " + notification.serial + ", but the list of deltas is empty.");
             }
         } else {
-            final BigInteger earliestDelta = orderedDeltas.get(0).getSerial();
-            final BigInteger lastDeltaSerial = orderedDeltas.get(orderedDeltas.size() - 1).getSerial();
-            if (!notification.serial.equals(lastDeltaSerial)) {
-                throw new RrdpException("The last delta serial is " + lastDeltaSerial +
+            final BigInteger earliestDeltaSerial = orderedDeltas.get(0).getSerial();
+            final BigInteger latestDeltaSerial = orderedDeltas.get(orderedDeltas.size() - 1).getSerial();
+            if (!notification.serial.equals(latestDeltaSerial)) {
+                throw new RrdpException(ErrorCodes.RRDP_SERIAL_MISMATCH, "The last delta serial is " + latestDeltaSerial +
                         ", notification file serial is " + notification.serial);
             }
-            if (earliestDelta.compareTo(notification.serial) > 0) {
-                throw new RrdpException("The earliest available delta serial " + earliestDelta +
+            if (earliestDeltaSerial.compareTo(notification.serial) > 0) {
+                throw new RrdpException(ErrorCodes.RRDP_SERIAL_MISMATCH, "The earliest available delta serial " + earliestDeltaSerial +
                         " is later than notification file serial is " + notification.serial);
             }
-            final BigInteger[] previous = {null};
-            orderedDeltas.forEach(d -> {
-                        if (previous[0] == null) {
-                            previous[0] = d.getSerial();
-                        } else {
-                            if (!d.getSerial().equals(previous[0].add(BigInteger.ONE))) {
-                                throw new RrdpException(String.format("Serials of the deltas are not contiguous: found %d and %d after it", previous[0], d.getSerial()));
-                            }
-                        }
+            if (orderedDeltas.size() > 1) {
+                for (int i = 0; i < orderedDeltas.size() - 1; i++) {
+                    final BigInteger currentSerial = orderedDeltas.get(i).getSerial();
+                    final BigInteger nextSerial = orderedDeltas.get(i + 1).getSerial();
+                    if (!currentSerial.add(BigInteger.ONE).equals(nextSerial)) {
+                        throw new RrdpException(ErrorCodes.RRDP_SERIAL_MISMATCH, String.format("Serials of the deltas are not contiguous: found %d and %d after it", currentSerial, nextSerial));
                     }
-            );
+                }
+            }
         }
     }
 
@@ -214,12 +218,13 @@ public class RrdpService {
     }
 
     private void applyDeltaWithdraw(RpkiRepositoryValidationRun validationRun, String uri, DeltaWithdraw deltaWithdraw) {
-        final Optional<RpkiObject> maybeObject = rpkiObjectRepository.findBySha256(deltaWithdraw.getHash());
+        final byte[] sha256 = deltaWithdraw.getHash();
+        final Optional<RpkiObject> maybeObject = rpkiObjectRepository.findBySha256(sha256);
         if (maybeObject.isPresent()) {
             maybeObject.get().removeLocation(uri);
         } else {
             ValidationCheck validationCheck = new ValidationCheck(validationRun, uri,
-                    ValidationCheck.Status.ERROR, ErrorCodes.RRDP_WITHDRAW_NONEXISTENT_OBJECT, Hex.format(deltaWithdraw.getHash()));
+                    ValidationCheck.Status.ERROR, ErrorCodes.RRDP_WITHDRAW_NONEXISTENT_OBJECT, Hex.format(sha256));
             validationRun.addCheck(validationCheck);
         }
     }
@@ -237,6 +242,28 @@ public class RrdpService {
             }
         } else {
             addRpkiObject(validationRun, uri, deltaPublish, null);
+        }
+    }
+
+    private void verifyIfDeltasAreApplicable(List<Delta> deltas) {
+        deltas.parallelStream().forEach(d ->
+                d.asMap().forEach((uri, deltaElement) -> {
+                            if (deltaElement instanceof DeltaPublish) {
+                                ((DeltaPublish) deltaElement).getHash().ifPresent(sha ->
+                                        checkObjectExists(deltaElement, ErrorCodes.RRDP_REPLACE_NONEXISTENT_OBJECT, sha));
+                            } else if (deltaElement instanceof DeltaWithdraw) {
+                                checkObjectExists(deltaElement, ErrorCodes.RRDP_WITHDRAW_NONEXISTENT_OBJECT, ((DeltaWithdraw) deltaElement).getHash());
+                            }
+                        }
+                )
+        );
+    }
+
+    private void checkObjectExists(DeltaElement deltaElement, String errorCode, byte[] sha) {
+        final Optional<RpkiObject> objectByHash = rpkiObjectRepository.findBySha256(sha);
+        if (!objectByHash.isPresent()) {
+            throw new RrdpException(errorCode, "Couldn't find an object with location '" +
+                    deltaElement.uri + "' with hash " + Hex.format(sha));
         }
     }
 
