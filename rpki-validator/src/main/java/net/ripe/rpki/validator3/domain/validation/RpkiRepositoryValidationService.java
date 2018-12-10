@@ -32,7 +32,6 @@ package net.ripe.rpki.validator3.domain.validation;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.util.CertificateRepositoryObjectFactory;
-import net.ripe.rpki.commons.rsync.Rsync;
 import net.ripe.rpki.commons.validation.ValidationLocation;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
@@ -47,7 +46,7 @@ import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.ValidationRuns;
 import net.ripe.rpki.validator3.rrdp.RrdpService;
 import net.ripe.rpki.validator3.util.Hex;
-import net.ripe.rpki.validator3.util.RsyncUtils;
+import net.ripe.rpki.validator3.util.Rsync;
 import net.ripe.rpki.validator3.util.Sha256;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -186,7 +185,7 @@ public class RpkiRepositoryValidationService {
         validationRun.addRpkiRepository(repository);
 
         try {
-            File targetDirectory = RsyncUtils.localFileFromRsyncUri(
+            File targetDirectory = Rsync.localFileFromRsyncUri(
                 rsyncLocalStorageDirectory,
                 URI.create(repository.getRsyncRepositoryUri())
             );
@@ -219,7 +218,7 @@ public class RpkiRepositoryValidationService {
 
     private RpkiRepository findDownloadedParentRepository(Map<URI, RpkiRepository> fetchedLocations, RpkiRepository repository) {
         URI location = URI.create(repository.getRsyncRepositoryUri());
-        for (URI parentLocation : RsyncUtils.generateCandidateParentUris(location)) {
+        for (URI parentLocation : Rsync.generateCandidateParentUris(location)) {
             RpkiRepository parentRepository = fetchedLocations.get(parentLocation);
             if (parentRepository != null) {
                 repository.setParentRepository(parentRepository);
@@ -315,7 +314,7 @@ public class RpkiRepositoryValidationService {
             log.info("created local rsync storage directory {} for repository {}", targetDirectory, rpkiRepository);
         }
 
-        Rsync rsync = new Rsync(rpkiRepository.getLocationUri(), targetDirectory.getPath());
+        net.ripe.rpki.commons.rsync.Rsync rsync = new net.ripe.rpki.commons.rsync.Rsync(rpkiRepository.getLocationUri(), targetDirectory.getPath());
         rsync.addOptions("--update", "--times", "--copy-links", "--recursive", "--delete");
         int exitStatus = rsync.execute();
         validationResult.rejectIfTrue(exitStatus != 0, ErrorCodes.RSYNC_FETCH, String.valueOf(exitStatus), ArrayUtils.toString(rsync.getErrorLines()));

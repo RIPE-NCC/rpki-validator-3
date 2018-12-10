@@ -33,10 +33,10 @@ import org.junit.Test;
 
 import java.net.URI;
 
-import static net.ripe.rpki.validator3.util.RsyncUtils.generateCandidateParentUris;
+import static net.ripe.rpki.validator3.util.Rsync.generateCandidateParentUris;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RsyncUtilsTest {
+public class RsyncTest {
 
     @Test
     public void should_generate_candidate_parent_rsync_uris() {

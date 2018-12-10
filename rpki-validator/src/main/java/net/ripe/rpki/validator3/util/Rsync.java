@@ -35,10 +35,11 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RsyncUtils {
-    public static final int DEFAULT_RSYNC_PORT = 873;
+public class Rsync {
 
-    private RsyncUtils() {
+    private static final int DEFAULT_RSYNC_PORT = 873;
+
+    private Rsync() {
     }
 
     public static File localFileFromRsyncUri(File localRsyncDirectory, URI rsyncUri) throws IOException {

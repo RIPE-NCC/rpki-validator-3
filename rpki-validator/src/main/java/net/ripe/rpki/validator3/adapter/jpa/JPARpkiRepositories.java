@@ -44,7 +44,7 @@ import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchors;
 import net.ripe.rpki.validator3.domain.ValidationRuns;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
-import net.ripe.rpki.validator3.util.RsyncUtils;
+import net.ripe.rpki.validator3.util.Rsync;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
@@ -105,7 +105,7 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
 
     private RpkiRepository findRsyncParentRepository(@NotNull @ValidLocationURI String uri) {
         URI location = URI.create(uri);
-        for (URI parentURI : RsyncUtils.generateCandidateParentUris(location)) {
+        for (URI parentURI : Rsync.generateCandidateParentUris(location)) {
             RpkiRepository parent = select().where(rpkiRepository.rsyncRepositoryUri.eq(parentURI.toASCIIString())).fetchFirst();
             if (parent != null) {
                 return parent;

@@ -199,7 +199,7 @@ public class CertificateTreeValidationService {
 
             final ManifestCms manifest = maybeManifest.get();
             List<Map.Entry<String, byte[]>> crlEntries = manifest.getFiles().entrySet().stream()
-                .filter((entry) -> RepositoryObjectType.parse(entry.getKey()) == RepositoryObjectType.Crl)
+                .filter(entry -> RepositoryObjectType.parse(entry.getKey()) == RepositoryObjectType.Crl)
                 .collect(toList());
             temporary.rejectIfFalse(crlEntries.size() == 1, VALIDATOR_MANIFEST_CONTAINS_ONE_CRL_ENTRY, String.valueOf(crlEntries.size()));
             if (temporary.hasFailureForCurrentLocation()) {

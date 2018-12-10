@@ -36,11 +36,10 @@ import net.ripe.rpki.commons.crypto.util.CertificateRepositoryObjectFactory;
 import net.ripe.rpki.commons.crypto.x509cert.X509CertificateUtil;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.rsync.CommandExecutionException;
-import net.ripe.rpki.commons.rsync.Rsync;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.*;
 import net.ripe.rpki.validator3.rrdp.RrdpService;
-import net.ripe.rpki.validator3.util.RsyncUtils;
+import net.ripe.rpki.validator3.util.Rsync;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -157,12 +156,12 @@ public class TrustAnchorValidationService {
     }
 
     private File fetchTrustAnchorCertificate(URI trustAnchorCertificateURI, ValidationResult validationResult) throws IOException {
-        File targetFile = RsyncUtils.localFileFromRsyncUri(localRsyncStorageDirectory, trustAnchorCertificateURI);
+        File targetFile = Rsync.localFileFromRsyncUri(localRsyncStorageDirectory, trustAnchorCertificateURI);
         if (targetFile.getParentFile().mkdirs()) {
             log.info("created local rsync storage directory {} for trust anchor {}", targetFile.getParentFile(), trustAnchorCertificateURI);
         }
 
-        Rsync rsync = new Rsync(trustAnchorCertificateURI.toASCIIString(), targetFile.getPath());
+        net.ripe.rpki.commons.rsync.Rsync rsync = new net.ripe.rpki.commons.rsync.Rsync(trustAnchorCertificateURI.toASCIIString(), targetFile.getPath());
         rsync.addOptions("--update", "--times", "--copy-links");
         int exitStatus = rsync.execute();
         if (exitStatus != 0) {

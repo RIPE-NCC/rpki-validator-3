@@ -63,6 +63,6 @@ public class Transactions {
             });
         }
 
-        runnables.putIfAbsent(key,  runnable);
+        runnables.putIfAbsent(key, runnable);
     }
 }
