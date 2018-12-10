@@ -36,6 +36,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import javax.persistence.LockModeType;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -64,4 +65,6 @@ public interface RpkiObjects {
     long deleteUnreachableObjects(Instant unreachableSince);
 
     long clear();
+
+    List<Pair<RpkiObject, CertificateRepositoryObject>> findEager(RpkiObject.Type type);
 }
