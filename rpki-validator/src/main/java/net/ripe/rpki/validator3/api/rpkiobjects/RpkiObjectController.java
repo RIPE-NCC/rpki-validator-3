@@ -158,7 +158,7 @@ public class RpkiObjectController {
                 .map(p -> (X509ResourceCertificate) p.getRight())
                 .collect(Collectors.toList());
 
-        final List<X509ResourceCertificate> bottomLayer = allCerts
+        final List<X509ResourceCertificate> roaParents = allCerts
                 .stream()
                 .filter(c -> !c.isRoot() && roaAKIs.contains(Hex.format(c.getSubjectKeyIdentifier())))
                 .collect(Collectors.toList());
@@ -173,7 +173,7 @@ public class RpkiObjectController {
                 Function.identity(),
                 (c1, c2) -> c1.getSerialNumber().compareTo(c2.getSerialNumber()) > 0 ? c1 : c2));
 
-        bottomLayer.parallelStream()
+        roaParents.parallelStream()
                 .map(c -> {
                     final String aki = Hex.format(c.getAuthorityKeyIdentifier());
                     return bySki.get(aki);
