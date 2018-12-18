@@ -151,15 +151,17 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
                         .and(rpkiObject.encodedRpkiObject.id.eq(encodedRpkiObject.id))
                 );
 
-        return stream(select).parallel().map(t -> {
-            final byte[] content = t.get(1, byte[].class);
-            final RpkiObject rpkiObject = t.get(0, RpkiObject.class);
-            final SortedSet<String> locations = rpkiObject.getLocations();
-            final String location = locations.isEmpty() ? "default" : locations.first();
-            final ValidationResult vr = ValidationResult.withLocation(location);
-            final CertificateRepositoryObject repositoryObject = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(content, vr);
-            return Pair.of(rpkiObject, repositoryObject);
-        }).collect(Collectors.toList());
+        return stream(select)
+                .collect(Collectors.toList())
+                .parallelStream().map(t -> {
+                    final byte[] content = t.get(1, byte[].class);
+                    final RpkiObject rpkiObject = t.get(0, RpkiObject.class);
+                    final SortedSet<String> locations = rpkiObject.getLocations();
+                    final String location = locations.isEmpty() ? "default" : locations.first();
+                    final ValidationResult vr = ValidationResult.withLocation(location);
+                    final CertificateRepositoryObject repositoryObject = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(content, vr);
+                    return Pair.of(rpkiObject, repositoryObject);
+                }).collect(Collectors.toList());
     }
 
 }
