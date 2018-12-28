@@ -132,9 +132,13 @@ public class BgpPreviewService {
         String comment;
 
         Asn asn;
-        IpRange prefix;
+        PackedIpRange prefix;
         Integer maximumLength;
         int effectiveLength;
+
+        public IpRange getPrefix() {
+            return prefix.toIpRange();
+        }
     }
 
     @lombok.Value(staticConstructor = "of")
@@ -320,7 +324,7 @@ public class BgpPreviewService {
                 null,
                 null,
                 p.getAsn(),
-                p.getPrefix(),
+                new PackedIpRange(p.getPrefix()),
                 p.getMaximumLength(),
                 p.getEffectiveLength()
             ))
@@ -350,7 +354,7 @@ public class BgpPreviewService {
                     p.getId(),
                     p.getComment(),
                     new Asn(p.getAsn()),
-                    IpRange.parse(p.getPrefix()),
+                    new PackedIpRange(IpRange.parse(p.getPrefix())),
                     p.getMaximumLength(),
                     p.getMaximumLength() == null ? IpRange.parse(p.getPrefix()).getPrefixLength() : p.getMaximumLength()
                 ))
@@ -373,10 +377,11 @@ public class BgpPreviewService {
                 .filter(new IgnoreFiltersPredicate(ignoreFilters.stream()).negate()),
             roaPrefixAssertions.stream()
         ).forEach(p -> {
-            List<RoaPrefix> existing = roaPrefixes.findExact(p.getPrefix());
+            final IpRange ipRange = p.getPrefix();
+            List<RoaPrefix> existing = roaPrefixes.findExact(ipRange);
             if (existing == null) {
                 existing = new ArrayList<>(1);
-                roaPrefixes.put(p.getPrefix(), existing);
+                roaPrefixes.put(ipRange, existing);
             }
             existing.add(p);
         });
@@ -392,10 +397,11 @@ public class BgpPreviewService {
                 .stream()
                 .filter(new IgnoreFiltersPredicate(ignoreFilters.stream()))
                 .forEach(p -> {
-                    List<RoaPrefix> existing = roaPrefixes.findExact(p.getPrefix());
+                    final IpRange ipRange = p.getPrefix();
+                    List<RoaPrefix> existing = roaPrefixes.findExact(ipRange);
                     if (existing == null) {
                         existing = new ArrayList<>(1);
-                        roaPrefixes.put(p.getPrefix(), existing);
+                        roaPrefixes.put(ipRange, existing);
                     }
                     existing.add(p);
                 });
