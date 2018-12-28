@@ -47,6 +47,7 @@ import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
 import net.ripe.rpki.validator3.domain.RoaPrefixAssertion;
 import net.ripe.rpki.validator3.domain.RoaPrefixDefinition;
 import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
+import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -132,29 +133,25 @@ public class BgpPreviewService {
         String comment;
 
         Asn asn;
-        PackedIpRange prefix;
+        IpRange prefix;
         Integer maximumLength;
         int effectiveLength;
-
-        public IpRange getPrefix() {
-            return prefix.toIpRange();
-        }
     }
 
     @lombok.Value(staticConstructor = "of")
     public static class BgpPreviewEntry {
         // store it in memory optimised way, as we are going to store a lot of these objects in memory
-        int origin;
+        long origin;
         PackedIpRange prefix;
         Validity validity;
 
         BgpPreviewEntry(Asn origin, IpRange prefix, Validity validity) {
-            this.origin = (int) origin.longValue();
+            this.origin = origin.longValue();
             this.prefix = new PackedIpRange(prefix);
             this.validity = validity;
         }
 
-        BgpPreviewEntry(int origin, PackedIpRange prefix, Validity validity) {
+        BgpPreviewEntry(long origin, PackedIpRange prefix, Validity validity) {
             this.origin = origin;
             this.prefix = prefix;
             this.validity = validity;
@@ -324,7 +321,7 @@ public class BgpPreviewService {
                 null,
                 null,
                 p.getAsn(),
-                new PackedIpRange(p.getPrefix()),
+                p.getPrefix(),
                 p.getMaximumLength(),
                 p.getEffectiveLength()
             ))
@@ -354,7 +351,7 @@ public class BgpPreviewService {
                     p.getId(),
                     p.getComment(),
                     new Asn(p.getAsn()),
-                    new PackedIpRange(IpRange.parse(p.getPrefix())),
+                    IpRange.parse(p.getPrefix()),
                     p.getMaximumLength(),
                     p.getMaximumLength() == null ? IpRange.parse(p.getPrefix()).getPrefixLength() : p.getMaximumLength()
                 ))
@@ -416,25 +413,23 @@ public class BgpPreviewService {
         ImmutableList<BgpPreviewEntry> bgpRisEntries,
         IntervalMap<IpRange, List<RoaPrefix>> roaPrefixes
     ) {
-        long begin = System.currentTimeMillis();
+        final Pair<ImmutableList<BgpPreviewEntry>, Long> timed = Time.timed(() -> {
+            final ImmutableList.Builder<BgpPreviewEntry> builder = ImmutableList.builder();
+            bgpRisEntries.parallelStream()
+                    .map(bgpRisEntry -> bgpRisEntry.ofValidity(validateBgpRisEntry(roaPrefixes, bgpRisEntry)))
+                    .forEachOrdered(builder::add);
+            return builder.build();
+        });
 
-        final ImmutableList.Builder<BgpPreviewEntry> builder = ImmutableList.builder();
-        bgpRisEntries.parallelStream().map(bgpRisEntry -> {
-            final Validity validity = validateBgpRisEntry(roaPrefixes, bgpRisEntry);
-            return bgpRisEntry.ofValidity(validity);
-        }).forEachOrdered(e -> builder.add(e));
-        ImmutableList<BgpPreviewEntry> built = builder.build();
-
-        long end = System.currentTimeMillis();
         log.debug(
             "validateBgpRisEntries duration: {} ms ({} RIS entries, {} validated ROA prefixes, {} ignore filters, {} ROA prefix assertions)",
-            end - begin,
+            timed.getRight(),
             bgpRisEntries.size(),
             validatedRoaPrefixes.size(),
             ignoreFilters.size(),
             roaPrefixAssertions.size()
         );
-        return built;
+        return timed.getLeft();
     }
 
     private static Validity validateBgpRisEntry(
@@ -488,7 +483,7 @@ public class BgpPreviewService {
     private BgpValidity validity(final Asn origin, final IpRange prefix, final IntervalMap<IpRange, List<RoaPrefix>> prefixes) {
         final List<Pair<RoaPrefix, Validity>> matchingRoaPrefixes = prefixes.findExactAndAllLessSpecific(prefix)
                 .stream()
-                .flatMap(x -> x.stream())
+                .flatMap(Collection::stream)
                 .map(r -> {
                     final BgpPreviewEntry bgpPreviewEntry = BgpPreviewEntry.of(origin, prefix, Validity.UNKNOWN);
                     final Validity validity = validateBgpRisEntry(Collections.singletonList(r), bgpPreviewEntry);

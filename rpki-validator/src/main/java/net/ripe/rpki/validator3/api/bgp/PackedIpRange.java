@@ -47,11 +47,11 @@ public class PackedIpRange {
 
     public PackedIpRange(IpRange ipRange) {
         if (ipRange.getType() == IPv4) {
-            int start = ipRange.getStart().getValue().intValue();
-            int end = ipRange.getEnd().getValue().intValue();
-            content = ByteBuffer.allocate(8)
-                    .putInt(start)
-                    .putInt(end).array();
+            long start = ipRange.getStart().getValue().longValue();
+            long end = ipRange.getEnd().getValue().longValue();
+            content = new byte[8];
+            toBytes(start, 0, content);
+            toBytes(end, 4, content);
         } else if (ipRange.getType() == IPv6) {
             byte[] start = ipRange.getStart().getValue().toByteArray();
             byte[] end = ipRange.getEnd().getValue().toByteArray();
@@ -75,10 +75,9 @@ public class PackedIpRange {
     public IpRange toIpRange() {
         if (content.length == 8) {
             // it's IPv4
-            ByteBuffer byteBuffer = ByteBuffer.wrap(content);
-            int start = byteBuffer.getInt(0);
-            int end = byteBuffer.getInt(4);
-            return IpRange.range(new Ipv4Address(start), new Ipv4Address(end));
+            long s = fromBytes(content, 0);
+            long e = fromBytes(content, 4);
+            return IpRange.range(new Ipv4Address(s), new Ipv4Address(e));
         } else {
             // it's IPv6
             final ByteBuffer byteBuffer = ByteBuffer.wrap(content);
@@ -95,5 +94,22 @@ public class PackedIpRange {
             final BigInteger end = new BigInteger(tmp);
             return IpRange.range(new Ipv6Address(start), new Ipv6Address(end));
         }
+    }
+
+    private static long fromBytes(byte[] b, int offset) {
+        long s = 0L;
+        for (short i = 0; i < 3; i++) {
+            s |= b[i + offset] & 0xFF;
+            s <<= 8;
+        }
+        s |= b[3 + offset] & 0xFF;
+        return s;
+    }
+
+    private static void toBytes(long s, int offset, byte[] b) {
+        b[offset] = (byte) (s >>> 24);
+        b[offset + 1] = (byte) (s >>> 16);
+        b[offset + 2] = (byte) (s >>> 8);
+        b[offset + 3] = (byte) s;
     }
 }
