@@ -139,21 +139,38 @@ public class BgpPreviewService {
 
     @lombok.Value(staticConstructor = "of")
     public static class BgpPreviewEntry {
-        Asn origin;
-        IpRange prefix;
+        // store it in memory optimised way, as we are going to store a lot of these objects in memory
+        int origin;
+        PackedIpRange prefix;
         Validity validity;
+
+        BgpPreviewEntry(Asn origin, IpRange prefix, Validity validity) {
+            this.origin = (int) origin.longValue();
+            this.prefix = new PackedIpRange(prefix);
+            this.validity = validity;
+        }
+
+        BgpPreviewEntry(int origin, PackedIpRange prefix, Validity validity) {
+            this.origin = origin;
+            this.prefix = prefix;
+            this.validity = validity;
+        }
+
+        public static BgpPreviewEntry of(Asn origin, IpRange prefix, Validity validity) {
+            return new BgpPreviewEntry(origin, prefix, validity);
+        }
 
         private static Predicate<BgpPreviewEntry> matches(SearchTerm searchTerm) {
             if (searchTerm == null) {
-                return (x) -> true;
+                return x -> true;
             }
             if (searchTerm.asAsn() != null) {
                 Asn asn = searchTerm.asAsn();
-                return (x) -> asn.equals(x.getOrigin());
+                return x -> asn.longValue() == x.origin;
             }
             if (searchTerm.asIpRange() != null) {
                 IpRange range = searchTerm.asIpRange();
-                return (x) -> range.overlaps(x.getPrefix());
+                return x -> range.overlaps(x.getPrefix());
             }
             switch (searchTerm.asString().trim().toUpperCase()) {
                 case "VALID":
@@ -178,21 +195,33 @@ public class BgpPreviewService {
             switch (sorting.getBy()) {
                 case ASN:
                     columns = Comparator.comparing(BgpPreviewEntry::getOrigin)
-                        .thenComparing(Comparator.comparing(BgpPreviewEntry::getPrefix))
-                        .thenComparing(Comparator.comparing(BgpPreviewEntry::getValidity));
+                        .thenComparing(BgpPreviewEntry::getPrefix)
+                        .thenComparing(BgpPreviewEntry::getValidity);
                     break;
                 case VALIDITY:
                     columns = Comparator.comparing(BgpPreviewEntry::getValidity)
-                        .thenComparing(Comparator.comparing(BgpPreviewEntry::getPrefix))
-                        .thenComparing(Comparator.comparing(BgpPreviewEntry::getOrigin));
+                        .thenComparing(BgpPreviewEntry::getPrefix)
+                        .thenComparing(BgpPreviewEntry::getOrigin);
                     break;
                 case TA:
                 default:
                     columns = Comparator.comparing(BgpPreviewEntry::getPrefix)
-                        .thenComparing(Comparator.comparing(BgpPreviewEntry::getOrigin))
-                        .thenComparing(Comparator.comparing(BgpPreviewEntry::getValidity));
+                        .thenComparing(BgpPreviewEntry::getOrigin)
+                        .thenComparing(BgpPreviewEntry::getValidity);
             }
             return sorting.getDirection() == Sorting.Direction.DESC ? columns.reversed() : columns;
+        }
+
+        BgpPreviewEntry ofValidity(Validity validity) {
+            return new BgpPreviewEntry(origin, prefix, validity);
+        }
+
+        public Asn getOrigin() {
+            return new Asn(origin);
+        }
+
+        public IpRange getPrefix() {
+            return prefix.toIpRange();
         }
     }
 
@@ -386,11 +415,7 @@ public class BgpPreviewService {
         final ImmutableList.Builder<BgpPreviewEntry> builder = ImmutableList.builder();
         bgpRisEntries.parallelStream().map(bgpRisEntry -> {
             final Validity validity = validateBgpRisEntry(roaPrefixes, bgpRisEntry);
-            return new BgpPreviewEntry(
-                    bgpRisEntry.getOrigin(),
-                    bgpRisEntry.getPrefix(),
-                    validity
-            );
+            return bgpRisEntry.ofValidity(validity);
         }).forEachOrdered(e -> builder.add(e));
         ImmutableList<BgpPreviewEntry> built = builder.build();
 
