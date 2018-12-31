@@ -66,5 +66,5 @@ public interface RpkiObjects {
 
     long clear();
 
-    List<Pair<RpkiObject, CertificateRepositoryObject>> findEager(RpkiObject.Type type);
+    Stream<byte[]> streamObjects(RpkiObject.Type type);
 }

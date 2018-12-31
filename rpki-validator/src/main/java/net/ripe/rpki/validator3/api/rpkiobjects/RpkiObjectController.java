@@ -46,43 +46,35 @@ import net.ripe.rpki.commons.crypto.cms.ghostbuster.GhostbustersCms;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.crypto.cms.roa.RoaCms;
 import net.ripe.rpki.commons.crypto.crl.X509Crl;
+import net.ripe.rpki.commons.crypto.util.CertificateRepositoryObjectFactory;
 import net.ripe.rpki.commons.crypto.x509cert.X509CertificateInformationAccessDescriptor;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificate;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
-import net.ripe.rpki.validator3.api.roas.ExportsController;
 import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
-import net.ripe.rpki.validator3.domain.RoaPrefix;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.ValidationCheck;
 import net.ripe.rpki.validator3.domain.ValidationRuns;
 import net.ripe.rpki.validator3.util.Hex;
-import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletResponse;
-import javax.transaction.Transactional;
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.cert.X509CRLEntry;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -90,13 +82,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
-import static net.ripe.rpki.validator3.domain.RpkiObject.Type.CER;
 
 @RestController
 @RequestMapping(path = "/api/rpki-objects", produces = { Api.API_MIME_TYPE, "application/json" })
@@ -142,20 +131,30 @@ public class RpkiObjectController {
         return ResponseEntity.ok(ApiResponse.data(rpkiObjStream));
     }
 
+
+    private static Stream<CertificateRepositoryObject> toObjects(Stream<byte[]> byteStream, String fileExtension) {
+        List<byte[]> collect = byteStream.collect(Collectors.toList());
+        return collect.
+                parallelStream().
+                map(bytes -> {
+                    final ValidationResult vr = ValidationResult.withLocation("whatever." + fileExtension);
+                    return CertificateRepositoryObjectFactory.createCertificateRepositoryObject(bytes, vr);
+                });
+    }
+
     @GetMapping(path = "/certified.csv", produces = "text/csv; charset=UTF-8")
     public void certified(HttpServletResponse response) throws IOException {
         final IpResourceSet all = IpResourceSet.parse("0/0, ::/0");
 
         final IpResourceSet ipResources = new IpResourceSet();
-        final Set<String> roaAKIs = rpkiObjects.findEager(RpkiObject.Type.ROA).stream()
-                .filter(p -> p.getRight() instanceof RoaCms)
-                .map(p -> Hex.format(((RoaCms) p.getRight()).getCertificate().getAuthorityKeyIdentifier()))
+        final Set<String> roaAKIs = toObjects(rpkiObjects.streamObjects(RpkiObject.Type.ROA), "roa")
+                .filter(p -> p instanceof RoaCms)
+                .map(p -> Hex.format(((RoaCms) p).getCertificate().getAuthorityKeyIdentifier()))
                 .collect(Collectors.toSet());
 
-        final List<X509ResourceCertificate> allCerts = rpkiObjects.findEager(RpkiObject.Type.CER)
-                .stream()
-                .filter(p -> p.getRight() instanceof X509ResourceCertificate)
-                .map(p -> (X509ResourceCertificate) p.getRight())
+        final List<X509ResourceCertificate> allCerts = toObjects(rpkiObjects.streamObjects(RpkiObject.Type.CER), "cer")
+                .filter(p -> p instanceof X509ResourceCertificate)
+                .map(p -> (X509ResourceCertificate) p)
                 .collect(Collectors.toList());
 
         final List<X509ResourceCertificate> roaParents = allCerts
