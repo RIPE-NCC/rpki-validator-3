@@ -59,7 +59,7 @@ public class ExportsController {
     @Autowired
     private Settings settings;
 
-    @GetMapping(path = "/api/export.json", produces = "text/json; charset=UTF-8")
+    @GetMapping(path = "/api/export.json", consumes = {"text/json", "application/json"},  produces = "text/json; charset=UTF-8")
     public JsonExport exportJson(HttpServletResponse response) {
         if (!settings.isInitialValidationRunCompleted()) {
             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
@@ -67,7 +67,7 @@ public class ExportsController {
         }
 
         Stream<JsonRoaPrefix> validatedPrefixes = validatedRpkiObjects
-            .findCurrentlyValidatedRoaPrefixes(null, null, null)
+            .findCurrentlyValidatedRoaPrefixes()
             .getObjects()
             .map(r -> new JsonRoaPrefix(
                 String.valueOf(r.getAsn()),
@@ -91,7 +91,7 @@ public class ExportsController {
         try (CSVWriter writer = new CSVWriter(response.getWriter())) {
             writer.writeNext(new String[]{"ASN", "IP Prefix", "Max Length", "Trust Anchor"});
             Stream<CsvRoaPrefix> validatedPrefixes = validatedRpkiObjects
-                .findCurrentlyValidatedRoaPrefixes(null, null, null)
+                .findCurrentlyValidatedRoaPrefixes()
                 .getObjects()
                 .map(r -> new CsvRoaPrefix(
                     String.valueOf(r.getAsn()),

@@ -132,6 +132,10 @@ public class ValidatedRpkiObjects {
         );
     }
 
+    public ValidatedObjects<RoaPrefix> findCurrentlyValidatedRoaPrefixes() {
+        return findCurrentlyValidatedRoaPrefixes(null, null, null);
+    }
+
     public ValidatedObjects<RoaPrefix> findCurrentlyValidatedRoaPrefixes(SearchTerm searchTerm, Sorting sorting, Paging paging) {
         if (paging == null) {
             paging = Paging.of(0L, Long.MAX_VALUE);
