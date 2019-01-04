@@ -41,6 +41,34 @@ public class Validator3Application {
 
     public static void main(String[] args) {
         Locale.setDefault(Locale.ENGLISH);
-        SpringApplication.run(Validator3Application.class, args);
+        try {
+            SpringApplication.run(Validator3Application.class, args);
+        } catch (Exception e) {
+            terminateIfKnownProblem(e);
+        }
+    }
+
+    private static void terminateIfKnownProblem(Throwable e) {
+        if (e == null) {
+            return;
+        }
+        if (e.getClass().getName().equals("org.h2.jdbc.JdbcSQLException")) {
+            if (e.getMessage().contains("Database may be already in use")) {
+                System.err.println("The database is locked by another process, check if another instance of the validator is running.");
+                System.exit(7);
+            } else {
+                System.err.println("There is a problem using H2 database.");
+                System.exit(7);
+            }
+        } else if (e.getClass().getName().equals("java.net.BindException")) {
+            if (e.getMessage().contains("Address already in use")) {
+                System.err.println("The binding address is already in use by another application.");
+                System.exit(7);
+            } else {
+                terminateIfKnownProblem(e.getCause());
+            }
+        } else {
+            terminateIfKnownProblem(e.getCause());
+        }
     }
 }

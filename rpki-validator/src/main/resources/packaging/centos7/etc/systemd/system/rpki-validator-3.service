@@ -7,6 +7,11 @@ Environment=JAVA_CMD=/usr/bin/java
 Environment=CONFIG_DIR=/etc/rpki-validator-3
 Environment=JAR=/usr/lib/rpki-validator-3.jar
 ExecStart=/usr/bin/rpki-validator-3.sh
+
+# prevent restart in case there's a problem
+# with the database or binding to socket
+RestartPreventExitStatus=7
+
 User=rpki
 Group=rpki
 
