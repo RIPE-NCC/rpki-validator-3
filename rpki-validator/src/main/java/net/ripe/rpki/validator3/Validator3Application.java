@@ -29,10 +29,15 @@
  */
 package net.ripe.rpki.validator3;
 
+import org.springframework.beans.factory.BeanCreationException;
+import org.springframework.boot.Banner;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+import java.net.BindException;
 import java.util.Locale;
 
 @SpringBootApplication
@@ -42,7 +47,10 @@ public class Validator3Application {
     public static void main(String[] args) {
         Locale.setDefault(Locale.ENGLISH);
         try {
-            SpringApplication.run(Validator3Application.class, args);
+            SpringApplication application = new SpringApplicationBuilder(Validator3Application.class)
+                    .bannerMode(Banner.Mode.OFF)
+                    .build();
+            application.run(args);
         } catch (Exception e) {
             terminateIfKnownProblem(e);
         }
@@ -52,20 +60,24 @@ public class Validator3Application {
         if (e == null) {
             return;
         }
-        if (e.getClass().getName().equals("org.h2.jdbc.JdbcSQLException")) {
+
+        boolean bindError = e instanceof java.net.BindException;
+        bindError = bindError || e.getClass().getName().equals("org.springframework.boot.web.embedded.tomcat.ConnectorStartFailedException");
+
+        if (e instanceof BeanCreationException) {
+            bindError = bindError || ((BeanCreationException) e).getMostSpecificCause() instanceof BindException;
+        }
+
+        if (bindError) {
+            System.err.println("The binding address is already in use by another application.");
+            System.exit(7);
+        } else if (e.getClass().getName().equals("org.h2.jdbc.JdbcSQLException")) {
             if (e.getMessage().contains("Database may be already in use")) {
                 System.err.println("The database is locked by another process, check if another instance of the validator is running.");
                 System.exit(7);
             } else {
                 System.err.println("There is a problem using H2 database.");
                 System.exit(7);
-            }
-        } else if (e.getClass().getName().equals("java.net.BindException")) {
-            if (e.getMessage().contains("Address already in use")) {
-                System.err.println("The binding address is already in use by another application.");
-                System.exit(7);
-            } else {
-                terminateIfKnownProblem(e.getCause());
             }
         } else {
             terminateIfKnownProblem(e.getCause());
