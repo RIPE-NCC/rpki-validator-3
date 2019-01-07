@@ -37,6 +37,7 @@ import net.ripe.rpki.commons.crypto.x509cert.X509CertificateUtil;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.rsync.CommandExecutionException;
 import net.ripe.rpki.commons.validation.ValidationResult;
+import net.ripe.rpki.commons.validation.ValidationString;
 import net.ripe.rpki.validator3.domain.*;
 import net.ripe.rpki.validator3.rrdp.RrdpService;
 import net.ripe.rpki.validator3.util.Rsync;
@@ -109,7 +110,7 @@ public class TrustAnchorValidationService {
                     if (!validationResult.hasFailureForCurrentLocation()) {
                         // validity time?
                         int comparedSerial = trustAnchor.getCertificate() == null ? 1 : trustAnchor.getCertificate().getSerialNumber().compareTo(certificate.getSerialNumber());
-                        validationResult.warnIfTrue(comparedSerial < 0, "repository.object.is.older.than.previous.object", trustAnchorCertificateURI.toASCIIString());
+                        validationResult.warnIfTrue(comparedSerial < 0, ValidationString.VALIDATOR_REPOSITORY_OBJECT_IS_OLDER_THAN_PREVIOUS_OBJECT, trustAnchorCertificateURI.toASCIIString());
                         if (comparedSerial > 0) {
                             trustAnchor.setCertificate(certificate);
                             updated = true;
