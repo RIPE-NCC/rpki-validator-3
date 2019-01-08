@@ -103,7 +103,7 @@ public class RoaPrefixAssertionsController {
         return ResponseEntity.ok(
             ApiResponse.<Stream<RoaPrefixAssertionResource>>builder()
                 .links(links)
-                .metadata(Metadata.of(totalSize))
+                .metadata(Metadata.of(totalSize, System.currentTimeMillis()))
                 .data(matching.stream().map(this::toResource))
                 .build()
         );

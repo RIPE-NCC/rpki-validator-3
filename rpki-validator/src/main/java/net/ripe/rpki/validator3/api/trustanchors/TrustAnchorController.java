@@ -41,7 +41,6 @@ import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.api.validationruns.ValidationCheckResource;
 import net.ripe.rpki.validator3.api.validationruns.ValidationRunController;
 import net.ripe.rpki.validator3.api.validationruns.ValidationRunResource;
-import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.domain.TrustAnchors;
@@ -181,7 +180,7 @@ public class TrustAnchorController {
         return ResponseEntity.ok(ApiResponse.<Stream<ValidationCheckResource>>builder()
             .links(links)
             .data(checks)
-            .metadata(Metadata.of(totalCount))
+            .metadata(Metadata.of(totalCount, System.currentTimeMillis()))
             .build()
         );
     }

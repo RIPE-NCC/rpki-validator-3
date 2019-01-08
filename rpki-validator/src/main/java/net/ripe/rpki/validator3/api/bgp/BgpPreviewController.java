@@ -79,7 +79,7 @@ public class BgpPreviewController {
                         entry.getPrefix().toString(),
                         entry.getValidity().name()
                 )))
-                .metadata(Metadata.of(bgpPreviewResult.getTotalCount()))
+                .metadata(Metadata.of(bgpPreviewResult.getTotalCount(), bgpPreviewResult.getLastModified()))
                 .build());
     }
 
@@ -94,7 +94,7 @@ public class BgpPreviewController {
         );
         return ResponseEntity.ok(ApiResponse.<BgpPreviewService.BgpValidityWithFilteredResource>builder()
                 .data(bgp)
-                .metadata(Metadata.of(bgp.getValidatingRoas().size()))
+                .metadata(Metadata.of(bgp.getValidatingRoas().size(), System.currentTimeMillis()))
                 .build());
     }
 

@@ -34,4 +34,5 @@ import lombok.Value;
 @Value(staticConstructor = "of")
 public class Metadata {
     final long totalCount;
+    final long lastModified;
 }
