@@ -47,12 +47,12 @@ import javax.validation.constraints.NotNull;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -94,17 +94,18 @@ public class BgpRisDownloader {
             }
             return request;
         };
-        final Function<InputStream, List<BgpRisEntry>> streamReader = s -> {
+        final BiFunction<InputStream, Long, BgpRisDump> streamReader = (stream, lastModified) -> {
             try {
-                return parse(new GZIPInputStream(s));
+                List<BgpRisEntry> entries = parse(new GZIPInputStream(stream));
+                return BgpRisDump.of(dump.url, new DateTime(lastModified), Optional.of(entries));
             } catch (Exception e) {
                 log.error("Error downloading RIS dump: " + dump.url);
-                return Collections.emptyList();
+                return dump;
             }
         };
+
         try {
-            final List<BgpRisEntry> entries = Http.readStream(requestSupplier, streamReader);
-            return BgpRisDump.of(dump.url, DateTime.now(), Optional.of(entries));
+            return  Http.readStream(requestSupplier, streamReader);
         } catch (Http.NotModified n) {
             return dump;
         }

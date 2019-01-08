@@ -49,6 +49,7 @@ import net.ripe.rpki.validator3.domain.RoaPrefixDefinition;
 import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -62,11 +63,14 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static java.util.Comparator.*;
 
 @Service
 @Slf4j
@@ -93,6 +97,7 @@ public class BgpPreviewService {
     @lombok.Value(staticConstructor = "of")
     public static class BgpPreviewResult {
         int totalCount;
+        long lastModified;
         Stream<BgpPreviewEntry> data;
     }
 
@@ -199,18 +204,18 @@ public class BgpPreviewService {
             Comparator<BgpPreviewEntry> columns;
             switch (sorting.getBy()) {
                 case ASN:
-                    columns = Comparator.comparing(BgpPreviewEntry::getOrigin)
+                    columns = comparing(BgpPreviewEntry::getOrigin)
                         .thenComparing(BgpPreviewEntry::getPrefix)
                         .thenComparing(BgpPreviewEntry::getValidity);
                     break;
                 case VALIDITY:
-                    columns = Comparator.comparing(BgpPreviewEntry::getValidity)
+                    columns = comparing(BgpPreviewEntry::getValidity)
                         .thenComparing(BgpPreviewEntry::getPrefix)
                         .thenComparing(BgpPreviewEntry::getOrigin);
                     break;
                 case TA:
                 default:
-                    columns = Comparator.comparing(BgpPreviewEntry::getPrefix)
+                    columns = comparing(BgpPreviewEntry::getPrefix)
                         .thenComparing(BgpPreviewEntry::getOrigin)
                         .thenComparing(BgpPreviewEntry::getValidity);
             }
@@ -282,7 +287,10 @@ public class BgpPreviewService {
             .skip(paging.getStartFrom())
             .limit(paging.getPageSize());
 
-        return BgpPreviewResult.of(count, entries);
+
+        DateTime lastModified =
+                bgpRisDumps.stream().map(BgpRisDump::getLastModified).filter(Objects::nonNull).min(Comparator.reverseOrder()).orElse(DateTime.now());
+        return BgpPreviewResult.of(count, lastModified.getMillis(), entries);
     }
 
     public synchronized List<BgpPreviewEntry> findAffected(Asn asn, IpRange prefix, Integer maximumLength) {
@@ -493,7 +501,7 @@ public class BgpPreviewService {
                     final Validity validity = validateBgpRisEntry(Collections.singletonList(r), bgpPreviewEntry);
                     return Pair.of(r, validity);
                 })
-                .sorted(Comparator.comparingInt(p -> {
+                .sorted(comparingInt(p -> {
                     switch (p.getRight()) {
                         case VALID:
                             return 0;

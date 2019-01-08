@@ -38,6 +38,7 @@ import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionsServi
 import net.ripe.rpki.validator3.domain.IgnoreFilter;
 import net.ripe.rpki.validator3.domain.RoaPrefixAssertion;
 import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
+import org.joda.time.DateTime;
 import org.junit.Test;
 
 import java.util.Collection;
@@ -56,10 +57,13 @@ public class BgpPreviewServiceTest {
 
     @Test
     public void should_mark_non_matching_bgp_entry_as_unknown() {
-        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", null, Optional.of(ImmutableList.of(BgpRisEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), 1000))))));
+        DateTime lastModified = DateTime.now();
+        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", lastModified, Optional.of(ImmutableList.of(BgpRisEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), 1000))))));
         subject.updateValidatedRoaPrefixes(ImmutableList.of(roa(AS_3333, "127.0.0.0/8", 8)).stream());
 
-        assertThat(subject.find(null, null, null).getData()).contains(
+        BgpPreviewService.BgpPreviewResult bgpPreviewResult = subject.find(null, null, null);
+        assertThat(bgpPreviewResult.getLastModified()).isEqualByComparingTo(lastModified.getMillis());
+        assertThat(bgpPreviewResult.getData()).contains(
             BgpPreviewService.BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), BgpPreviewService.Validity.UNKNOWN)
         );
     }
