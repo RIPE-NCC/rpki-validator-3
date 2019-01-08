@@ -65,6 +65,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import springfox.documentation.annotations.ApiIgnore;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -143,6 +144,7 @@ public class RpkiObjectController {
     }
 
     @GetMapping(path = "/certified.csv", produces = "text/csv; charset=UTF-8")
+    @ApiIgnore
     public void certified(HttpServletResponse response) throws IOException {
         final IpResourceSet all = IpResourceSet.parse("0/0, ::/0");
 
