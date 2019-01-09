@@ -19,7 +19,7 @@ describe('Bgp Preview Page', () => {
     bgpPage
       .moveMouseOverRow(1)
       .expectTooltipOnRowHover(1)
-      .expectTooltipTextToBe(1, 'Click to view announcement pre')
+      .expectTooltipTextToBe(1, 'Click to see announcement prev')
       .clickOnRow(1)
       .expectToOpenAnnouncementPage('AS56203','1.0.4.0/22');
   });

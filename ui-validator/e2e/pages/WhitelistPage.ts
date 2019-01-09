@@ -2,7 +2,6 @@ import {browser, by, element} from 'protractor';
 import {PaginatedTablePage} from './PaginatedTablePage';
 
 export class WhitelistPage extends PaginatedTablePage {
-
   constructor() {
     super();
     browser.get('/whitelist');
@@ -51,25 +50,25 @@ export class WhitelistPage extends PaginatedTablePage {
   }
 
   expectPrefixValidationMessage() {
-    expect(element(by.css('form em')).getText()).toBe('Not valid prefix');
+    expect(element(by.css('form em')).getText()).toBe('Invalid prefix');
     return this;
   }
 
   expectAsnValidationMessage() {
-    expect(element(by.css('form em')).getText()).toBe('Not valid asn');
+    expect(element(by.css('form em')).getText()).toBe('Invalid asn');
     return this;
   }
 
   expectPrefixAndAsnValidationMessage() {
     browser.actions().mouseMove(element(by.css('form .align-self-end button'))).perform();
     expect(element(by.css('#toast-container .toast-info')).isPresent()).toBe(true);
-    expect(element(by.id('toast-container')).getText()).toBe('Prefix and ASN are required to enable adding.');
+    expect(element(by.id('toast-container')).getText()).toBe('Prefix and ASN are both required.');
     return this;
   }
 
   expectEntryAdded() {
     expect(element(by.css('#toast-container .toast-success')).isPresent()).toBe(true);
-    expect(element(by.id('toast-container')).getText()).toContain('The entry has been added to the whitelist.');
+    expect(element(by.id('toast-container')).getText()).toContain('Whitelist entry has been added.');
     return this;
   }
 

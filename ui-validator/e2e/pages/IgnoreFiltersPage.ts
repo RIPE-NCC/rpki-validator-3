@@ -29,25 +29,25 @@ export class IgnoreFiltersPage extends PaginatedTablePage {
   }
 
   expectPrefixValidationMessage() {
-    expect(element(by.css('form em')).getText()).toBe('Not valid prefix');
+    expect(element(by.css('form em')).getText()).toBe('Invalid prefix');
     return this;
   }
 
   expectAsnValidationMessage() {
-    expect(element(by.css('form em')).getText()).toBe('Not valid asn');
+    expect(element(by.css('form em')).getText()).toBe('Invalid asn');
     return this;
   }
 
   expectPrefixAndAsnValidationMessage() {
     browser.actions().mouseMove(element(by.css('form button'))).perform();
     expect(element(by.css('.toast-info')).isDisplayed()).toBe(true);
-    expect(element(by.id('toast-container')).getText()).toContain('Prefix and/or ASN are required to enable adding.');
+    expect(element(by.id('toast-container')).getText()).toContain('Prefix and/or ASN are required');
     return this;
   }
 
   expectFilterAdded() {
     expect(element(by.css('#toast-container .toast-success')).isPresent()).toBe(true);
-    expect(element(by.css('#toast-container .toast-success')).getText()).toContain('The filter has been added.');
+    expect(element(by.css('#toast-container .toast-success')).getText()).toContain('Filter has been added.');
     return this;
   }
 

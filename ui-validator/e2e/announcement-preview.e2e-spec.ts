@@ -35,7 +35,7 @@ describe('Announcement Preview Page', () => {
     it('should display correctly modal window for Announcement', () => {
       announcementPreviewPage
         .expectShowModalWindow()
-        .expectModalWindowMessage('Please indicate ASN and Prefix in order to view announcements')
+        .expectModalWindowMessage('Please enter both an ASN and a Prefix')
         .expectModalWindowToContainInputField('prefix')
         .expectModalWindowToContainInputField('asn')
         .expectShowButtonOnModalToBe(false);
