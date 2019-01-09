@@ -7,6 +7,7 @@ export interface IResponse {
   };
   data:  any;
   metadata: {
-    totalCount: number
+    totalCount: number,
+    lastModified: number
   };
 }

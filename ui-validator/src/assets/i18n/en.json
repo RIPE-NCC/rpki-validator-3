@@ -106,7 +106,14 @@
   "Bgp": {
     "VALIDITY": "Validity",
     "LENGTH": "Length",
-    "TOOLTIP_CLICK": "Click to see announcement preview"
+    "TOOLTIP_CLICK": "Click to see announcement preview",
+    "INFO" : "This page provides a <strong>preview</strong> of the likely RPKI validity states your routers will associate with BGP announcements. This preview is based on:",
+    "INFO1" : "The <a href='http://www.ris.ripe.net/dumps/'>RIPE NCC Route Collector information</a> that was last updated ",
+    "INFO2" : "BGP announcements that are seen by 5 or more peers.",
+    "INFO3" : "The validation rules defined in <a href='https://tools.ietf.org/html/rfc6483#section-2'>RFC 6483</a>.",
+    "INFO4" : "The validated ROAs found by this RPKI Validator after applying your filters and additional whitelist entries.",
+    "INFO5" : "Please note that the BGP announcements your routers see may differ from the ones listed here."
+
   },
   "AnnouncementPreview": {
     "RELEVANT_VALIDATED_ROAS": "Relevant Validated ROAs",

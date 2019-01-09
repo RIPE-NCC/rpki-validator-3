@@ -17,6 +17,8 @@ export class BgpPreviewComponent implements OnInit {
   pageTitle: string = 'Nav.TITLE_BGP_PREVIEW';
   loading: boolean = true;
   bgps: IBgp[] = [];
+  lastModified : string;
+  alertShown: boolean = true;
   response: IResponse;
   sortTable: ColumnSortedEvent = {sortColumn: '', sortDirection: 'asc'};
   pagingDetails: PagingDetailsModel;
@@ -39,6 +41,8 @@ export class BgpPreviewComponent implements OnInit {
         response => {
           this.loading = false;
           this.bgps = response.data;
+
+          this.lastModified = this.elapsedTimeString(response.metadata.lastModified);
           this.response = response;
         });
   }
@@ -50,6 +54,15 @@ export class BgpPreviewComponent implements OnInit {
   onToolbarChange(pagingDetails: PagingDetailsModel) {
     this.pagingDetails = pagingDetails;
     this.loadData();
+  }
+
+  elapsedTimeString(lastModified: number) {
+    let now = new Date().getTime();
+    let modified = new Date(lastModified).getTime();
+    let diff = now-modified;
+    let hoursDiff = Math.floor(diff/(60*60*1000));
+    let minDiff = Math.floor((diff % (60*60*1000))/(60*1000));
+    return hoursDiff + " hours " + minDiff+" minutes ago.";
   }
 
   onSorted(sort: ColumnSortedEvent): void {

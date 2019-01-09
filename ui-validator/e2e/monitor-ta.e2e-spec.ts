@@ -37,19 +37,19 @@ describe('Monitor TA Page', () => {
       .expectTooltipTextToBe(3, 2, 1, 'valid objects')
       .moveMouseOverColumnInSummaryTable(4, 2, 1)
       .expectTooltipOnRowHover(4, 2, 1)
-      .expectTooltipTextToBe(4, 2, 1, 'downloaded')
+      .expectTooltipTextToBe(4, 2, 1, 'downloaded repositories')
       .moveMouseOverColumnInSummaryTable(3, 2, 2)
       .expectTooltipOnRowHover(3, 2, 2)
       .expectTooltipTextToBe(3, 2, 2, 'objects with warnings')
       .moveMouseOverColumnInSummaryTable(4, 2, 2)
       .expectTooltipOnRowHover(4, 2, 2)
-      .expectTooltipTextToBe(4, 2, 2, 'pending')
+      .expectTooltipTextToBe(4, 2, 2, 'pending repositories')
       .moveMouseOverColumnInSummaryTable(3, 2, 3)
       .expectTooltipOnRowHover(3, 2, 3)
       .expectTooltipTextToBe(3, 2, 3, 'invalid objects')
       .moveMouseOverColumnInSummaryTable(4, 2, 3)
       .expectTooltipOnRowHover(4, 2, 3)
-      .expectTooltipTextToBe(4, 2, 3, 'failed');
+      .expectTooltipTextToBe(4, 2, 3, 'unreachable repositories');
   });
 
   it('should display correctly Validation Issues of page', () => {

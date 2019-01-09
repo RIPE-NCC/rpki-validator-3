@@ -25,7 +25,7 @@ describe('Trust Anchors ROAs Page', () => {
     taPage
       .moveMouseOverRow(1)
       .expectTooltipOnRowHover(1)
-      .expectTooltipTextToBe(1, 'Click to view overview page')
+      .expectTooltipTextToBe(1, 'Click for overview')
       .clickOnRow(1)
       .expectToOpenMonitoringPage(3268);
   });

@@ -79,7 +79,7 @@ public class BgpPreviewController {
                         entry.getPrefix().toString(),
                         entry.getValidity().name()
                 )))
-                .metadata(Metadata.of(bgpPreviewResult.getTotalCount()))
+                .metadata(Metadata.of(bgpPreviewResult.getTotalCount(), bgpPreviewResult.getLastModified()))
                 .build());
     }
 
