@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, Input, OnInit} from '@angular/core';
 
 import {RoasService} from './roas.service';
 import {IRoa} from './roas.model';
@@ -6,6 +6,7 @@ import {TrustAnchorsService} from '../core/trust-anchors.service';
 import {ColumnSortedEvent} from '../shared/sortable-table/sort.service';
 import {PagingDetailsModel} from '../shared/toolbar/paging-details.model';
 import {IResponse} from '../shared/response.model';
+import {ActivatedRoute, Router} from "@angular/router";
 
 @Component({
   selector: 'app-roas',
@@ -23,21 +24,29 @@ export class RoasComponent implements OnInit {
   sortTable: ColumnSortedEvent = {sortColumn: '', sortDirection: 'asc'};
   pagingDetails: PagingDetailsModel;
 
-  constructor(private _roasService: RoasService,
+  @Input()
+  q: string;
+
+  constructor(private _activatedRoute: ActivatedRoute,
+              private _router: Router,
+              private _roasService: RoasService,
               private _trustAnchorsService: TrustAnchorsService) {
   }
 
   ngOnInit() {
-    this.getNotValidatedTAForAlert();
+    this._activatedRoute.queryParams.subscribe(params => {
+      this.q = params['q'];
+      this.getNotValidatedTAForAlert();
+    });
   }
 
   loadData() {
     this.loading = true;
     this._roasService.getRoas(this.pagingDetails.firstItemInTable,
-                              this.pagingDetails.rowsPerPage,
-                              this.pagingDetails.searchBy,
-                              this.sortTable.sortColumn,
-                              this.sortTable.sortDirection)
+      this.pagingDetails.rowsPerPage,
+      this.q ? this.q : this.pagingDetails.searchBy,
+      this.sortTable.sortColumn,
+      this.sortTable.sortDirection)
       .subscribe(
         response => {
           this.loading = false;
