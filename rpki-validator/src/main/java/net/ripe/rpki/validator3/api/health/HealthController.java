@@ -72,8 +72,7 @@ public class HealthController {
         final Map<String, Boolean> bgpDumpReady = bgpPreviewService.getBgpDumps().stream().
                 collect(Collectors.toMap(
                         BgpRisDump::getUrl,
-                        // the dump was updated not more than 20 minutes ago
-                        dmp -> dmp.getLastModified() != null && dmp.getLastModified().plusMinutes(20).isAfterNow()
+                        dmp -> dmp.getLastModified() != null
                 ));
 
         final String databaseStatus = databaseStatus();
