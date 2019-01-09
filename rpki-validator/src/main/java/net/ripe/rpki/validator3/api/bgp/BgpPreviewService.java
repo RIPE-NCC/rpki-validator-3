@@ -542,4 +542,8 @@ public class BgpPreviewService {
 
         return BgpValidity.of(origin.toString(), prefix.toString(), validity.toString(), validatingRoaStream);
     }
+
+    public List<BgpRisDump> getBgpDumps() {
+        return bgpRisDumps;
+    }
 }
