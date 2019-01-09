@@ -35,4 +35,8 @@ import lombok.Value;
 public class Metadata {
     final long totalCount;
     final long lastModified;
+
+    public static Metadata of(long totalCount) {
+        return new Metadata(totalCount, System.currentTimeMillis());
+    }
 }

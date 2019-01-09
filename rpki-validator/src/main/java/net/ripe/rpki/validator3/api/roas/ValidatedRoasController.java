@@ -90,7 +90,7 @@ public class ValidatedRoasController {
         return ResponseEntity.ok(
                 ApiResponse.<Stream<RoaPrefix>>builder()
                         .links(links)
-                        .metadata(Metadata.of(totalSize, System.currentTimeMillis()))
+                        .metadata(Metadata.of(totalSize))
                         .data(roas).build()
         );
     }

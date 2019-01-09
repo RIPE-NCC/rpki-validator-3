@@ -101,7 +101,7 @@ public class IgnoreFiltersController {
         return ResponseEntity.ok(
                 ApiResponse.<Stream<IgnoreFilter>>builder()
                         .links(links)
-                        .metadata(Metadata.of(totalSize, System.currentTimeMillis()))
+                        .metadata(Metadata.of(totalSize))
                         .data(matching.stream().map(this::toIgnoreFilter))
                         .build()
         );

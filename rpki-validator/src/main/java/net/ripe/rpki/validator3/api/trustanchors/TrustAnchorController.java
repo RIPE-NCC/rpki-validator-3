@@ -180,7 +180,7 @@ public class TrustAnchorController {
         return ResponseEntity.ok(ApiResponse.<Stream<ValidationCheckResource>>builder()
             .links(links)
             .data(checks)
-            .metadata(Metadata.of(totalCount, System.currentTimeMillis()))
+            .metadata(Metadata.of(totalCount))
             .build()
         );
     }

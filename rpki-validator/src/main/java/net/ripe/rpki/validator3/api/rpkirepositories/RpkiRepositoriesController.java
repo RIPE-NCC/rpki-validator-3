@@ -90,7 +90,7 @@ public class RpkiRepositoriesController {
         return ResponseEntity.ok(ApiResponse.<Stream<RpkiRepositoryResource>>builder()
                 .data(data)
                 .links(links)
-                .metadata(Metadata.of(totalSize, System.currentTimeMillis()))
+                .metadata(Metadata.of(totalSize))
                 .build());
     }
 

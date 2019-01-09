@@ -94,7 +94,7 @@ public class BgpPreviewController {
         );
         return ResponseEntity.ok(ApiResponse.<BgpPreviewService.BgpValidityWithFilteredResource>builder()
                 .data(bgp)
-                .metadata(Metadata.of(bgp.getValidatingRoas().size(), System.currentTimeMillis()))
+                .metadata(Metadata.of(bgp.getValidatingRoas().size()))
                 .build());
     }
 
