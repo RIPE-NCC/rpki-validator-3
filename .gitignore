@@ -37,3 +37,5 @@ ui-validator/npm-debug.log
 # generated content
 rpki-validator/src/main/resources/static/
 
+.vscode/launch.json
+.vscode/settings.json
