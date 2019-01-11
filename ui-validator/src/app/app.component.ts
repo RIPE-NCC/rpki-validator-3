@@ -16,7 +16,4 @@ export class AppComponent {
     this._translateService.use(language);
   }
 
-  static contextPath(): string {
-    return window['validator-context-path'];
-  }
 }

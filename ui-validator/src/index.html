@@ -5,14 +5,12 @@
   <meta charset="utf-8">
   <title>RPKI Validator - Quick Overview of BGP Origin Validation</title>
   <!--
-    contextPath is substituted by the IndexPageServlet to support UI on different context paths
+    NOTE: Do not format <base href="/"/> element too much. It is used to
+    substitute the actual server.servlet.context-path value.
   -->
-  <base href="${contextPath}"/>
+  <base href="/"/>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="https://www.ripe.net/favicon.ico"/>
-  <script>
-    window['validator-context-path'] = '${contextPath}';
-  </script>
 </head>
 
 <body>

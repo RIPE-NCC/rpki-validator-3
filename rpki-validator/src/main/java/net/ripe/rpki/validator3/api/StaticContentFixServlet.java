@@ -64,7 +64,7 @@ public class StaticContentFixServlet extends HttpServlet {
         try {
             final URL r = getClass().getResource("/static/index.html");
             final String text = Resources.toString(r, Charsets.UTF_8);
-            final String indexHtml = text.replaceAll("\\$\\{contextPath}", basePath);
+            final String indexHtml = text.replaceAll("<base(\\s+)href(\\s*)=(\\s*)\"/\"/>", "<base href=\"" + basePath + "\"/>");
             response.setContentType("text/html");
             PrintWriter writer = response.getWriter();
             writer.write(indexHtml);
@@ -75,6 +75,9 @@ public class StaticContentFixServlet extends HttpServlet {
     }
 
     private static String basePath(String cp) {
+        if (cp == null) {
+            return "/";
+        }
         cp = cp.endsWith("/") ? cp : cp + "/";
         cp = cp.startsWith("/") ? cp : "/" + cp;
         return cp;

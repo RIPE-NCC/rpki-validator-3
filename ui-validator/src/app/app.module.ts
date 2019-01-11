@@ -19,8 +19,16 @@ import {AnnouncementPreviewModule} from './announcement-preview/announcement-pre
 import {WhitelistModule} from './whitelist/whitelist.module';
 import {MonitoringTaModule} from './monitoring-ta/monitoring-ta.module';
 
+export function getBaseHref() : string {
+  let base = document.getElementsByTagName("base");
+  if (!base || base.length == 0) {
+    return "/";
+  }
+  return base.item(0).getAttribute("href");
+}
+
 export function HttpLoaderFactory(http: HttpClient) {
-  return new TranslateHttpLoader(http, AppComponent.contextPath() + 'assets/i18n/');
+  return new TranslateHttpLoader(http, getBaseHref() + 'assets/i18n/');
 }
 
 @NgModule({
@@ -51,7 +59,7 @@ export function HttpLoaderFactory(http: HttpClient) {
     ToastrModule.forRoot()
   ],
   providers: [
-    { provide: 'BASE_URL', useFactory: AppComponent.contextPath }
+    { provide: 'BASE_URL', useValue: getBaseHref() }
   ],
   bootstrap: [AppComponent]
 })
