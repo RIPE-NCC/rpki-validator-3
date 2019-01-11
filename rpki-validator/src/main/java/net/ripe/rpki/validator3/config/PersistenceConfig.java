@@ -37,7 +37,6 @@ import org.springframework.context.annotation.Configuration;
 import javax.persistence.EntityManager;
 
 @Configuration
-@Slf4j
 public class PersistenceConfig {
     @Bean
     public JPAQueryFactory jpaQueryFactory(EntityManager entityManager) {

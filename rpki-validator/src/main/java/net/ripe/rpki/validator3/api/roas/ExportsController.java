@@ -53,53 +53,63 @@ import java.util.stream.Stream;
 @Slf4j
 public class ExportsController {
 
-    @Autowired
-    private ValidatedRpkiObjects validatedRpkiObjects;
+    public static final String JSON = "text/json; charset=UTF-8";
+    public static final String CSV = "text/csv; charset=UTF-8";
+
+    private final ValidatedRpkiObjects validatedRpkiObjects;
+
+    private final Settings settings;
 
     @Autowired
-    private Settings settings;
+    public ExportsController(ValidatedRpkiObjects validatedRpkiObjects, Settings settings) {
+        this.validatedRpkiObjects = validatedRpkiObjects;
+        this.settings = settings;
+    }
 
-    @GetMapping(path = "/api/export.json", consumes = {"text/json", "application/json"},  produces = "text/json; charset=UTF-8")
+    @GetMapping(path = "/api/export.json", produces = JSON)
     public JsonExport exportJson(HttpServletResponse response) {
+        response.setContentType(JSON);
+
         if (!settings.isInitialValidationRunCompleted()) {
             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
             return null;
         }
 
         Stream<JsonRoaPrefix> validatedPrefixes = validatedRpkiObjects
-            .findCurrentlyValidatedRoaPrefixes()
-            .getObjects()
-            .map(r -> new JsonRoaPrefix(
-                String.valueOf(r.getAsn()),
-                r.getPrefix().toString(),
-                r.getEffectiveLength(),
-                r.getTrustAnchor().getName()
-            ))
-            .distinct();
+                .findCurrentlyValidatedRoaPrefixes()
+                .getObjects()
+                .map(r -> new JsonRoaPrefix(
+                        String.valueOf(r.getAsn()),
+                        r.getPrefix().toString(),
+                        r.getEffectiveLength(),
+                        r.getTrustAnchor().getName()
+                ))
+                .distinct();
 
         return new JsonExport(validatedPrefixes);
     }
 
-    @GetMapping(path = "/api/export.csv", produces = "text/csv; charset=UTF-8")
+    @GetMapping(path = "/api/export.csv", produces = CSV)
     public void exportCsv(HttpServletResponse response) throws IOException {
+        response.setContentType(CSV);
+
         if (!settings.isInitialValidationRunCompleted()) {
             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
             return;
         }
 
-        response.setContentType("text/csv; charset=UTF-8");
         try (CSVWriter writer = new CSVWriter(response.getWriter())) {
             writer.writeNext(new String[]{"ASN", "IP Prefix", "Max Length", "Trust Anchor"});
             Stream<CsvRoaPrefix> validatedPrefixes = validatedRpkiObjects
-                .findCurrentlyValidatedRoaPrefixes()
-                .getObjects()
-                .map(r -> new CsvRoaPrefix(
-                    String.valueOf(r.getAsn()),
-                    r.getPrefix().toString(),
-                    r.getEffectiveLength(),
-                    r.getTrustAnchor().getName())
-                )
-                .distinct();
+                    .findCurrentlyValidatedRoaPrefixes()
+                    .getObjects()
+                    .map(r -> new CsvRoaPrefix(
+                            String.valueOf(r.getAsn()),
+                            r.getPrefix().toString(),
+                            r.getEffectiveLength(),
+                            r.getTrustAnchor().getName())
+                    )
+                    .distinct();
             validatedPrefixes.forEach(prefix -> {
                 writer.writeNext(new String[]{
                         prefix.getAsn(),
@@ -112,7 +122,7 @@ public class ExportsController {
     }
 
     @Value
-    public static class CsvRoaPrefix {
+    private static class CsvRoaPrefix {
         private String asn;
         private String prefix;
         private int maxLength;
@@ -120,13 +130,13 @@ public class ExportsController {
     }
 
     @Value
-    public static class JsonExport {
+    private static class JsonExport {
         @ApiModelProperty(position = 3)
         Stream<JsonRoaPrefix> roas;
     }
 
     @Value
-    public static class JsonRoaPrefix {
+    private static class JsonRoaPrefix {
         private String asn;
         private String prefix;
         private int maxLength;
