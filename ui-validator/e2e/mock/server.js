@@ -98,7 +98,11 @@ server.get('/api/bgp/validity', (req, res) => {
 });
 
 server.get('/api/bgp', (req, res) => {
-  res.jsonp(require('./data/bgp-preview/bgp-0-10.json'));
+  if (req.query.search === 'AS9737') {
+    res.jsonp(require('./data/bgp-preview/bgp-AS9737.json'));
+  } else {
+    res.jsonp(require('./data/bgp-preview/bgp-0-10.json'));
+  }
 });
 
 server.listen(3000, () => {

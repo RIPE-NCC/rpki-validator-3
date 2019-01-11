@@ -9,8 +9,8 @@ import {BgpPage} from "./pages/BgpPage";
 
 export class AppPage {
 
-  navigateToRoas() {
-    return new RoasPage();
+  navigateToRoas(q: string) {
+    return new RoasPage(q);
   }
 
   navigateToTrustAnchors() {
@@ -21,8 +21,8 @@ export class AppPage {
     return new MonitorTaPage();
   }
 
-  navigateToBgp() {
-    return new BgpPage();
+  navigateToBgp(q:string) {
+    return new BgpPage(q);
   }
 
   navigateToIgnoreFilters() {
