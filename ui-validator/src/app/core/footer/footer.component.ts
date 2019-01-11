@@ -7,7 +7,11 @@ import { Component, OnInit } from '@angular/core';
 })
 export class FooterComponent implements OnInit {
 
-  constructor() { }
+  contextPath: string = "/";
+
+  constructor() {
+    this.contextPath = window['validator-context-path'];
+  }
 
   ngOnInit() {
   }

@@ -20,7 +20,7 @@ import {WhitelistModule} from './whitelist/whitelist.module';
 import {MonitoringTaModule} from './monitoring-ta/monitoring-ta.module';
 
 export function HttpLoaderFactory(http: HttpClient) {
-  return new TranslateHttpLoader(http);
+  return new TranslateHttpLoader(http, AppComponent.contextPath() + 'assets/i18n/');
 }
 
 @NgModule({
@@ -50,7 +50,9 @@ export function HttpLoaderFactory(http: HttpClient) {
     BrowserAnimationsModule,
     ToastrModule.forRoot()
   ],
-  providers: [],
+  providers: [
+    { provide: 'BASE_URL', useFactory: AppComponent.contextPath }
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule {

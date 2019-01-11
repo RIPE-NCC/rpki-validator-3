@@ -18,8 +18,8 @@ export interface IWhitelistEntry {
 @Injectable()
 export class WhitelistService {
 
-  private _whitelistUrl = '/api/roa-prefix-assertions';
-  private _deleteWhitelistEntryUrl = '/api/roa-prefix-assertions/{id}';
+  private _whitelistUrl = 'api/roa-prefix-assertions';
+  private _deleteWhitelistEntryUrl = 'api/roa-prefix-assertions/{id}';
   private _slurmUploadUrl = 'api/slurm/upload';
 
   constructor(private _http: HttpClient) {}

@@ -18,8 +18,8 @@ export interface IIgnoreFilter {
 @Injectable()
 export class IgnoreFiltersService {
 
-  private _ignoreFiltersUrl = '/api/ignore-filters';
-  private _deleteIgnoreFilterUrl = '/api/ignore-filters/{id}';
+  private _ignoreFiltersUrl = 'api/ignore-filters';
+  private _deleteIgnoreFilterUrl = 'api/ignore-filters/{id}';
 
   constructor(private _http: HttpClient) {}
 
