@@ -19,6 +19,9 @@ import {AnnouncementPreviewModule} from './announcement-preview/announcement-pre
 import {WhitelistModule} from './whitelist/whitelist.module';
 import {MonitoringTaModule} from './monitoring-ta/monitoring-ta.module';
 
+// Use the href from <base href="..."/> to
+// 1) create the prefix for rhe translation component
+// 2) provide prefix for all the other static links and Angular calls
 export function getBaseHref() : string {
   let base = document.getElementsByTagName("base");
   if (!base || base.length == 0) {
