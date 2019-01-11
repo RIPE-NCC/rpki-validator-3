@@ -27,16 +27,13 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.api;
+package net.ripe.rpki.validator3.api.health;
 
-import lombok.Value;
+import java.util.Map;
 
-@Value(staticConstructor = "of")
-public class Metadata {
-    final long totalCount;
-    final long lastModified;
-
-    public static Metadata of(long totalCount) {
-        return new Metadata(totalCount, System.currentTimeMillis());
-    }
+@lombok.Value(staticConstructor = "of")
+public class Health {
+    Map<String, Boolean> trustAnchorReady;
+    Map<String, Boolean> bgpDumpReady;
+    String databaseStatus;
 }

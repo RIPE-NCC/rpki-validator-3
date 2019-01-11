@@ -15,6 +15,7 @@ export interface IValidationChecksResponse {
   };
   data: IValidationCheck[];
   metadata: {
-    totalCount: number
+    totalCount: number,
+    lastModified: number
   };
 }

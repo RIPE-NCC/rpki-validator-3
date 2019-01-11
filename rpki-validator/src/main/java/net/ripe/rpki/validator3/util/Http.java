@@ -45,6 +45,7 @@ import java.io.InputStream;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -87,7 +88,12 @@ public class Http {
         }
     }
 
-    public static <T> T readStream(final Supplier<Request> requestF, Function<InputStream, T> reader) {
+    public static <T> T readStream(final Supplier<Request> requestF, Function<InputStream,  T> reader) {
+        BiFunction<InputStream, Long, T> ignoreLastModified = (stream, ignoredLastModified) -> reader.apply(stream);
+        return readStream(requestF, ignoreLastModified);
+    }
+
+    public static <T> T readStream(final Supplier<Request> requestF, BiFunction<InputStream, Long,  T> reader) {
         InputStreamResponseListener listener = new InputStreamResponseListener();
         Request request = requestF.get();
         request.header("User-Agent", "RIPE NCC RPKI Validator version 3");
@@ -109,8 +115,9 @@ public class Http {
                 }
             }
 
+            long lastModified = response.getHeaders().getDateField("Last-Modified");
             try (InputStream inputStream = listener.getInputStream()) {
-                return reader.apply(inputStream);
+                return reader.apply(inputStream, lastModified);
             }
         } catch (IOException | InterruptedException | TimeoutException | ExecutionException e) {
             final Failure error = new Failure("failed reading response stream for " + request.getURI() + ": " + e, e);

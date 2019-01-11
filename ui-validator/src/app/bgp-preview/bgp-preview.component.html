@@ -1,4 +1,15 @@
 <page-title [pageTitle]='pageTitle'></page-title>
+<ngb-alert type='info' *ngIf='alertShown' (close)='alertShown=false'>
+  <p [innerHTML]="'Bgp.INFO' | translate:{value:'info'}"></p>
+  <ul>
+    <li><span [innerHTML]="'Bgp.INFO1' | translate:{value:'info'}"></span> {{lastModified}} </li>
+    <li>{{ 'Bgp.INFO2' | translate }} </li>
+    <li><span [innerHTML]="'Bgp.INFO3' | translate:{value:'info'}"></span></li>
+    <li>{{ 'Bgp.INFO4' | translate }}</li>
+  </ul>
+  {{ 'Bgp.INFO5' | translate }}
+
+</ngb-alert>
 <toolbar [loading]='loading'
          [responseData]='response'
          (notifyToolbarChanged)='onToolbarChange($event)'>
