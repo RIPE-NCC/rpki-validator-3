@@ -29,8 +29,10 @@
  */
 package net.ripe.rpki.validator3.api;
 
+import com.google.common.collect.ImmutableSortedSet;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
+import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects.RoaPrefix;
 import org.junit.Test;
 
@@ -38,36 +40,42 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 public class SearchTermTest {
 
-    final RoaPrefix prefixTest = RoaPrefix.of(null, null, IpRange.parse("10.0.0.0/8"), 32, 32, null);
-    final RoaPrefix asnTest = RoaPrefix.of(null,  Asn.parse("3642"), null, 32, 32, null);
-
+    private final RoaPrefix prefixTest = RoaPrefix.of(null, null, IpRange.parse("10.0.0.0/8"), 32, 32, null);
+    private final RoaPrefix asnTest = RoaPrefix.of(null, Asn.parse("3642"), null, 32, 32, null);
+    private final RoaPrefix genericTest = RoaPrefix.of(
+            ValidatedRpkiObjects.TrustAnchorData.of(1L, "Bla Anchor"),
+            Asn.parse("3642"),
+            null, 32, 32,
+            ImmutableSortedSet.of("Some location"));
 
     @Test
-    public void should_accept_matching_asn(){
-        SearchTerm validASN = new SearchTerm("3642");
-        validASN.test(asnTest);
-        assertThat(validASN.test(asnTest)).isTrue();
+    public void should_test_asn() {
+        assertThat(new SearchTerm("3642").test(asnTest)).isTrue();
+        assertThat(new SearchTerm("as3642").test(asnTest)).isTrue();
+        assertThat(new SearchTerm("AS3642").test(asnTest)).isTrue();
+        assertThat(new SearchTerm("AS364").test(asnTest)).isFalse();
+        assertThat(new SearchTerm("364").test(asnTest)).isFalse();
     }
 
     @Test
-    public void should_accept_matching_prefix(){
-        SearchTerm searchPrefix = new SearchTerm("10.0.0.0");
-        searchPrefix.test(prefixTest);
-        assertThat(searchPrefix.test(prefixTest)).isTrue();
+    public void should_test_single_address() {
+        assertThat(new SearchTerm("10.0.0.0").test(prefixTest)).isTrue();
+        assertThat(new SearchTerm("12.0.0.0").test(prefixTest)).isFalse();
     }
 
     @Test
-    public void should_reject_mismatched_asn(){
-        SearchTerm validASN = new SearchTerm("1111");
-        validASN.test(asnTest);
-        assertThat(validASN.test(asnTest)).isFalse();
+    public void should_test_prefix() {
+        assertThat(new SearchTerm("10.10.0.0/16").test(prefixTest)).isTrue();
+        assertThat(new SearchTerm("11.10.0.0/16").test(prefixTest)).isFalse();
     }
 
     @Test
-    public void should_reject_non_overlapping_prefix(){
-        SearchTerm searchPrefix = new SearchTerm("11.0.0.0");
-        searchPrefix.test(prefixTest);
-        assertThat(searchPrefix.test(prefixTest)).isFalse();
+    public void should_test_generic() {
+        assertThat(new SearchTerm("Bla").test(genericTest)).isTrue();
+        assertThat(new SearchTerm("bla").test(genericTest)).isFalse();
+        assertThat(new SearchTerm("3742").test(genericTest)).isFalse();
+        assertThat(new SearchTerm("locati").test(genericTest)).isTrue();
     }
+
 
 }
