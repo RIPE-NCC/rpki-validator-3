@@ -42,6 +42,7 @@ public class SearchTerm implements Predicate<ValidatedRpkiObjects.RoaPrefix> {
     private final String term;
     private final IpRange range;
     private final Asn asn;
+    private final Predicate<ValidatedRpkiObjects.RoaPrefix> actualPredicate;
 
     private final static int IPv4_PREFIX_LENGTH = 32;
     private final static int IPv6_PREFIX_LENGTH = 128;
@@ -50,6 +51,21 @@ public class SearchTerm implements Predicate<ValidatedRpkiObjects.RoaPrefix> {
         this.term = term == null ? "" : term.trim();
         this.range = convertPrefix(term);
         this.asn = convertAsn(term);
+        actualPredicate = createPredicate();
+    }
+
+    private Predicate<ValidatedRpkiObjects.RoaPrefix> createPredicate() {
+        if (asn != null) {
+            return prefix -> asn.equals(prefix.getAsn());
+        }
+
+        if (range != null) {
+            return prefix -> range.overlaps(prefix.getPrefix());
+        }
+
+        return prefix ->
+                prefix.getTrustAnchor().getName().contains(term) ||
+                        prefix.getLocations().stream().anyMatch(uri -> uri.contains(term));
     }
 
     public Asn asAsn() {
@@ -65,16 +81,7 @@ public class SearchTerm implements Predicate<ValidatedRpkiObjects.RoaPrefix> {
     }
 
     public boolean test(ValidatedRpkiObjects.RoaPrefix prefix) {
-        if (asn != null){
-          return asn.equals(prefix.getAsn());
-        }
-
-        if (range != null){
-            return range.overlaps(prefix.getPrefix());
-        }
-
-        return  prefix.getTrustAnchor().getName().contains(term) ||
-                prefix.getLocations().stream().anyMatch(uri -> uri.contains(term));
+        return actualPredicate.test(prefix);
     }
 
     private Asn convertAsn(String value) {
