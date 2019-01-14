@@ -3,10 +3,15 @@ import {PaginatedTablePage} from "./PaginatedTablePage";
 
 export class RoasPage extends PaginatedTablePage {
 
-  constructor() {
+  constructor(q:string) {
     super();
-    browser.get('/roas');
+    let uri = '/roas';
+    if (q) {
+      uri += '?q='+q;
+    }
+    browser.get(uri);
   }
+
 
   exportAsCsv() {
     element(by.cssContainingText('export a.btn-primary', 'CSV')).click();

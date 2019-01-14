@@ -1,8 +1,8 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, Input, OnInit} from '@angular/core';
 
 import {BgpService} from '../core/bgp.service';
 import {IBgp} from './bgp.model';
-import {Router} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {ColumnSortedEvent} from '../shared/sortable-table/sort.service';
 import {PagingDetailsModel} from '../shared/toolbar/paging-details.model';
 import {IResponse} from '../shared/response.model';
@@ -23,18 +23,26 @@ export class BgpPreviewComponent implements OnInit {
   sortTable: ColumnSortedEvent = {sortColumn: '', sortDirection: 'asc'};
   pagingDetails: PagingDetailsModel;
 
-  constructor(private _bgpService: BgpService,
+
+  @Input()
+  q: string;
+
+  constructor(private _activatedRoute: ActivatedRoute,
+              private _bgpService: BgpService,
               private _router: Router) {
   }
 
   ngOnInit() {
+    this._activatedRoute.queryParams.subscribe(params => {
+      this.q = params['q'];
+    });
   }
 
   loadData() {
     this.loading = true;
     this._bgpService.getBgp(this.pagingDetails.firstItemInTable,
                             this.pagingDetails.rowsPerPage,
-                            this.pagingDetails.searchBy,
+                            this.q ? this.q : this.pagingDetails.searchBy,
                             this.sortTable.sortColumn,
                             this.sortTable.sortDirection)
       .subscribe(

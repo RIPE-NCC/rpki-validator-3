@@ -1,0 +1,18 @@
+{
+  "data" : [ {
+    "asn" : "AS9737",
+    "prefix" : "1.0.128.0/17",
+    "validity" : "UNKNOWN"
+  }, {
+    "asn" : "AS9737",
+    "prefix" : "1.0.128.0/18",
+    "validity" : "UNKNOWN"
+  }, {
+    "asn" : "AS9737",
+    "prefix" : "1.0.128.0/19",
+    "validity" : "UNKNOWN"
+  } ],
+  "metadata" : {
+    "totalCount" : 3
+  }
+}

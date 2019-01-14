@@ -3,9 +3,13 @@ import {PaginatedTablePage} from "./PaginatedTablePage";
 
 export class BgpPage extends PaginatedTablePage {
 
-  constructor() {
+  constructor(q:string) {
     super();
-    browser.get('/bgp-preview');
+    let uri = '/bgp-preview';
+    if (q) {
+      uri += '?q='+q;
+    }
+    browser.get(uri);
   }
 
   expectTitleHeaderToBe(title: string) {

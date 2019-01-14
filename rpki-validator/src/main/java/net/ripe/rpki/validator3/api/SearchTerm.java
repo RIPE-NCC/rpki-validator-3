@@ -65,13 +65,16 @@ public class SearchTerm implements Predicate<ValidatedRpkiObjects.RoaPrefix> {
     }
 
     public boolean test(ValidatedRpkiObjects.RoaPrefix prefix) {
-        if (asn != null && asn.equals(prefix.getAsn())) {
-            return true;
+        if (asn != null){
+          return asn.equals(prefix.getAsn());
         }
-        if (range != null && range.overlaps(prefix.getPrefix())) {
-            return true;
+
+        if (range != null){
+            return range.overlaps(prefix.getPrefix());
         }
-        return prefix.getTrustAnchor().getName().contains(term) || prefix.getLocations().stream().anyMatch(uri -> uri.contains(term));
+
+        return  prefix.getTrustAnchor().getName().contains(term) ||
+                prefix.getLocations().stream().anyMatch(uri -> uri.contains(term));
     }
 
     private Asn convertAsn(String value) {
