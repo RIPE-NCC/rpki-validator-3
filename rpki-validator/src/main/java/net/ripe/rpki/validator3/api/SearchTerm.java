@@ -92,34 +92,21 @@ public class SearchTerm implements Predicate<ValidatedRpkiObjects.RoaPrefix> {
         }
     }
 
-    private IpRange convertRange(String value) {
+    private IpRange convertPrefix(String value) {
         try {
             return IpRange.parse(value);
         } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private IpRange convertIpAddress(String value) {
-        try {
-            IpAddress ipAddress = IpAddress.parse(value);
-            // single IPv4 address treat it like a /32 and IPv6 like /128
-            if (IPv4.equals(ipAddress.getType())) {
-                return IpRange.prefix(ipAddress, IPv4_PREFIX_LENGTH);
-            } else {
-                return IpRange.prefix(ipAddress, IPv6_PREFIX_LENGTH);
+            try {
+                final IpAddress ipAddress = IpAddress.parse(value);
+                // single IPv4 address treat it like a /32 and IPv6 like /128
+                if (IPv4.equals(ipAddress.getType())) {
+                    return IpRange.prefix(ipAddress, IPv4_PREFIX_LENGTH);
+                } else {
+                    return IpRange.prefix(ipAddress, IPv6_PREFIX_LENGTH);
+                }
+            } catch (Exception ignored) {
+                return null;
             }
-        } catch (Exception e) {
-            return null;
         }
-    }
-
-    private IpRange convertPrefix(String value) {
-        IpRange range = convertRange(value);
-        // in case value is single IP address e.g. 1.0.0.2 without suffix e.g. /24
-        if (range == null) {
-            return convertIpAddress(value);
-        }
-        return range;
     }
 }
