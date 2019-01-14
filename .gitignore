@@ -23,6 +23,9 @@ dist/
 nbdist/
 .nb-gradle/
 
+# other editors/IDEs
+.vscode
+
 # H2 development database
 /*.mv.db
 /*.trace.db
@@ -37,3 +40,5 @@ ui-validator/npm-debug.log
 # generated content
 rpki-validator/src/main/resources/static/
 
+.vscode/launch.json
+.vscode/settings.json
