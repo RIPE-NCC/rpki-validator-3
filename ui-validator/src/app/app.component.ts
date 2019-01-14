@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import {Component, Input} from '@angular/core';
 import {TranslateService} from '@ngx-translate/core';
 
 @Component({
@@ -15,4 +15,5 @@ export class AppComponent {
   switchLanguage(language: string) {
     this._translateService.use(language);
   }
+
 }
