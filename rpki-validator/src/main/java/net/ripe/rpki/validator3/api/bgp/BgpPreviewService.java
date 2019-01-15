@@ -56,6 +56,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -314,25 +315,26 @@ public class BgpPreviewService {
         final Predicate<BgpPreviewEntry> searchPredicate = BgpPreviewEntry.matches(searchTerm);
 
         return readLocked(() -> {
-            Pair<Integer, Long> timedCount = Time.timed(() -> (int) bgpPreviewEntries
-                    .values()
-                    .stream()
-                    .flatMap(Collection::stream)
-                    .filter(searchPredicate)
-                    .count());
+            final int count;
+            if (searchTerm == null) {
+                count = bgpPreviewEntries.values().stream().map(AbstractCollection::size).reduce((s1, s2) -> s1 + s2).orElse(0);
+             } else {
+                count = (int) bgpPreviewEntries
+                        .values()
+                        .stream()
+                        .flatMap(Collection::stream)
+                        .filter(searchPredicate)
+                        .count();
+            }
 
-            int count = timedCount.getLeft();
-
-            Pair<Stream<BgpPreviewEntry>, Long> timedStream = Time.timed(() -> bgpPreviewEntries
+            Stream<BgpPreviewEntry> entries = bgpPreviewEntries
                     .values()
                     .stream()
                     .flatMap(Collection::stream)
                     .filter(searchPredicate)
                     .sorted(BgpPreviewEntry.comparator(finalSorting))
                     .skip(finalPaging.getStartFrom())
-                    .limit(finalPaging.getPageSize()));
-
-            Stream<BgpPreviewEntry> entries = timedStream.getLeft();
+                    .limit(finalPaging.getPageSize());
 
             DateTime lastModified = bgpRisDumps.stream()
                     .map(BgpRisDump::getLastModified)
