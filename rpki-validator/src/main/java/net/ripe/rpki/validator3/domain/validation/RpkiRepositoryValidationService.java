@@ -180,6 +180,7 @@ public class RpkiRepositoryValidationService {
                                                       Map<String, RpkiObject> objectsBySha256,
                                                       RpkiRepository repository) {
 
+        log.debug("Processing rsync repository {}", repository);
         final ValidationResult validationResult = ValidationResult.withLocation(URI.create(repository.getRsyncRepositoryUri()));
 
         validationRun.addRpkiRepository(repository);

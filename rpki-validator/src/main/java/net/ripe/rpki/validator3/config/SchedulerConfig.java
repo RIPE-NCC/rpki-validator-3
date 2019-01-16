@@ -27,32 +27,27 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.adapter.jpa;
+package net.ripe.rpki.validator3.config;
 
-import net.ripe.rpki.validator3.domain.TrustAnchor;
-import org.quartz.Scheduler;
-import org.quartz.SchedulerException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.SchedulingConfigurer;
+import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 
-import javax.transaction.Transactional;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
-@Component
-@Transactional(Transactional.TxType.MANDATORY)
-public class QuartzRisDownloadScheduler {
-
-    private final Scheduler scheduler;
-
-    @Autowired
-    public QuartzRisDownloadScheduler(Scheduler scheduler) {
-        this.scheduler = scheduler;
+@Configuration
+@EnableScheduling
+public class SchedulerConfig implements SchedulingConfigurer {
+    @Override
+    public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
+        taskRegistrar.setScheduler(taskExecutor());
     }
 
-    public void triggerCertificateTreeValidation(TrustAnchor trustAnchor) {
-        try {
-            scheduler.triggerJob(QuartzCertificateTreeValidationJob.getJobKey(trustAnchor));
-        } catch (SchedulerException ex) {
-            throw new RuntimeException(ex);
-        }
+    @Bean(destroyMethod = "shutdown")
+    public Executor taskExecutor() {
+        return Executors.newScheduledThreadPool(10);
     }
 }
