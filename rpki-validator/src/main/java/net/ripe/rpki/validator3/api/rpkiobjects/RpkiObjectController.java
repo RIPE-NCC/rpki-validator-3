@@ -133,9 +133,9 @@ public class RpkiObjectController {
     }
 
 
-    private static Stream<CertificateRepositoryObject> toObjects(Stream<byte[]> byteStream, String fileExtension) {
-        List<byte[]> collect = byteStream.collect(Collectors.toList());
-        return collect.
+    private static Stream<CertificateRepositoryObject> objectStream(Stream<byte[]> byteStream, String fileExtension) {
+        return byteStream.
+                collect(Collectors.toList()).
                 parallelStream().
                 map(bytes -> {
                     final ValidationResult vr = ValidationResult.withLocation("whatever." + fileExtension);
@@ -149,12 +149,12 @@ public class RpkiObjectController {
         final IpResourceSet all = IpResourceSet.parse("0/0, ::/0");
 
         final IpResourceSet ipResources = new IpResourceSet();
-        final Set<String> roaAKIs = toObjects(rpkiObjects.streamObjects(RpkiObject.Type.ROA), "roa")
+        final Set<String> roaAKIs = objectStream(rpkiObjects.streamObjects(RpkiObject.Type.ROA), "roa")
                 .filter(p -> p instanceof RoaCms)
                 .map(p -> Hex.format(((RoaCms) p).getCertificate().getAuthorityKeyIdentifier()))
                 .collect(Collectors.toSet());
 
-        final List<X509ResourceCertificate> allCerts = toObjects(rpkiObjects.streamObjects(RpkiObject.Type.CER), "cer")
+        final List<X509ResourceCertificate> allCerts = objectStream(rpkiObjects.streamObjects(RpkiObject.Type.CER), "cer")
                 .filter(p -> p instanceof X509ResourceCertificate)
                 .map(p -> (X509ResourceCertificate) p)
                 .collect(Collectors.toList());
@@ -204,6 +204,25 @@ public class RpkiObjectController {
             }
         }
     }
+
+
+    @GetMapping(path = "/certificates.csv", produces = "text/csv; charset=UTF-8")
+    @ApiIgnore
+    public void certificates(HttpServletResponse response) throws IOException {
+        response.setContentType("text/csv; charset=UTF-8");
+
+        try (final CSVWriter writer = new CSVWriter(response.getWriter())) {
+            writer.writeNext(new String[]{"Subject", "Resources"});
+
+            objectStream(rpkiObjects.streamObjects(RpkiObject.Type.CER), "cer")
+                    .filter(p -> p instanceof X509ResourceCertificate)
+                    .map(p -> (X509ResourceCertificate) p)
+                    .forEach(c -> {
+                        writer.writeNext(new String[]{c.getSubject().toString(), c.getResources().toString()});
+                    });
+        }
+    }
+
 
     private static <T> Set<T> oneElem(T c) {
         Set<T> a = new HashSet<>();
