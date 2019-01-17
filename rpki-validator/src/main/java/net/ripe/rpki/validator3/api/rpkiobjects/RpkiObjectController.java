@@ -215,10 +215,14 @@ public class RpkiObjectController {
             writer.writeNext(new String[]{"Subject", "Resources"});
 
             objectStream(rpkiObjects.streamObjects(RpkiObject.Type.CER), "cer")
-                    .filter(p -> p instanceof X509ResourceCertificate)
-                    .map(p -> (X509ResourceCertificate) p)
-                    .forEach(c -> {
-                        writer.writeNext(new String[]{c.getSubject().toString(), c.getResources().toString()});
+                    .forEachOrdered(c -> {
+                        if (c instanceof X509ResourceCertificate) {
+                            final X509ResourceCertificate cert = (X509ResourceCertificate) c;
+                            writer.writeNext(new String[]{
+                                    cert.getSubject().toString(),
+                                    cert.getResources().toString()
+                            });
+                        }
                     });
         }
     }
