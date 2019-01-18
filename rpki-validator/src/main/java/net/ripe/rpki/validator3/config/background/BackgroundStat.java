@@ -27,41 +27,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.adapter.jpa;
+package net.ripe.rpki.validator3.config.background;
 
-import lombok.Getter;
-import lombok.Setter;
-import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
-import net.ripe.rpki.validator3.domain.validation.TrustAnchorValidationService;
-import org.quartz.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.Date;
+import java.util.Map;
 
-@DisallowConcurrentExecution
-public class QuartzTrustAnchorValidationJob implements Job {
-
-    public static final String TRUST_ANCHOR_ID_KEY = "trustAnchorId";
-
-    @Autowired
-    private TrustAnchorValidationService validationService;
-
-    @Getter
-    @Setter
-    private long trustAnchorId;
-
-    @Override
-    public void execute(JobExecutionContext context) throws JobExecutionException {
-        validationService.validate(trustAnchorId);
-    }
-
-    static JobDetail buildJob(TrustAnchor trustAnchor) {
-        return JobBuilder.newJob(QuartzTrustAnchorValidationJob.class)
-            .withIdentity(getJobKey(trustAnchor))
-            .usingJobData(TRUST_ANCHOR_ID_KEY, trustAnchor.getId())
-            .build();
-    }
-
-    static JobKey getJobKey(TrustAnchor trustAnchor) {
-        return new JobKey(String.format("%s#%s", TrustAnchorValidationRun.TYPE, trustAnchor.getName()));
-    }
+@lombok.Value(staticConstructor = "of")
+public class BackgroundStat {
+    Map<String, Date> lastRunning;
 }

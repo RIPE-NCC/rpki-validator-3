@@ -57,9 +57,14 @@ public class BackgroundJobs {
     @Autowired
     public BackgroundJobs(Scheduler scheduler,
                           @Value("${rpki.validator.validation.run.cleanup.interval.ms:3600000}") int validationRunCleanUpDelay,
-                          @Value("${rpki.validator.rpki.object.cleanup.interval.ms:3600000}") int rpkiObjectsRunCleanUpDelay) throws SchedulerException {
+                          @Value("${rpki.validator.rpki.object.cleanup.interval.ms:3600000}") int rpkiObjectsRunCleanUpDelay,
+                          BackgroundJobInfo listener
+                          ) throws SchedulerException {
 
         this.scheduler = scheduler;
+
+        scheduler.getListenerManager()
+                .addSchedulerListener(listener);
 
         schedule(RpkiObjectCleanupJob.class,
                 futureDate(1, MINUTE),
@@ -76,6 +81,7 @@ public class BackgroundJobs {
         schedule(DownloadBgpRisDumpsJob.class,
                 futureDate(10, SECOND),
                 simpleSchedule().repeatForever().withIntervalInMinutes(10));
+
     }
 
     private <T extends Trigger> void schedule(Class<? extends Job> jobClass, Date startAt, ScheduleBuilder<T> schedule) throws SchedulerException {
@@ -91,5 +97,4 @@ public class BackgroundJobs {
         );
         log.info(String.format("Scheduled '%s', starting from '%s'", jobClass.getName(), startAt));
     }
-
 }
