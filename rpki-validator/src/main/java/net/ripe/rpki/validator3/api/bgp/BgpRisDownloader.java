@@ -85,7 +85,7 @@ public class BgpRisDownloader {
     }
 
     public BgpRisDump fetch(@NotNull BgpRisDump dump) {
-        log.debug("attempting to download new BGP RIS preview dump from {}", dump.url);
+        log.info("attempting to download new BGP RIS preview dump from {}", dump.url);
         final Supplier<Request> requestSupplier = () -> {
             final Request request = httpClient.newRequest(dump.url);
             if (dump.lastModified != null) {

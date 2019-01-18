@@ -296,10 +296,12 @@ public class BgpPreviewService {
     @Scheduled(initialDelay = 10_000L, fixedDelay = 600_000L)
     private void downloadRisPreview() {
         sequential(() -> {
+            log.info("Updating BGP RIS dumps");
             final List<BgpRisDump> updated = bgpRisDumps.stream()
                     .map(bgpRisDownloader::fetch)
                     .collect(Collectors.toList());
             updateBgpRisDump(updated);
+            log.info("Finished updating BGP RIS dumps");
         });
     }
 
