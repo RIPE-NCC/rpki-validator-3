@@ -27,27 +27,21 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.config;
+package net.ripe.rpki.rtr.background;
 
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.SchedulingConfigurer;
-import org.springframework.scheduling.config.ScheduledTaskRegistrar;
+import net.ripe.rpki.rtr.RtrServer;
+import org.quartz.Job;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
+public class DisconnectInactiveClientsJob implements Job {
 
-@Configuration
-@EnableScheduling
-public class SchedulerConfig implements SchedulingConfigurer {
+    @Autowired
+    private RtrServer rtrServer;
+
     @Override
-    public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
-        taskRegistrar.setScheduler(taskExecutor());
-    }
-
-    @Bean(destroyMethod = "shutdown")
-    public Executor taskExecutor() {
-        return Executors.newScheduledThreadPool(10);
+    public void execute(JobExecutionContext context) throws JobExecutionException {
+        rtrServer.disconnectInactiveClients();
     }
 }

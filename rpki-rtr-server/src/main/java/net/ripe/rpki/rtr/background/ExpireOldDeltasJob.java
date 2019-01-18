@@ -27,42 +27,21 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.domain.cleanup;
+package net.ripe.rpki.rtr.background;
 
-import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.domain.ValidationRuns;
+import net.ripe.rpki.rtr.RtrServer;
+import org.quartz.Job;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
 
-import javax.persistence.EntityManager;
-import javax.transaction.Transactional;
-import java.time.Duration;
-import java.time.Instant;
-
-@Service
-@Slf4j
-public class ValidationRunCleanupService {
+public class ExpireOldDeltasJob implements Job {
 
     @Autowired
-    private EntityManager entityManager;
+    private RtrServer rtrServer;
 
-    @Autowired
-    private ValidationRuns validationRuns;
-
-    private final Duration cleanupGraceDuration;
-
-    public ValidationRunCleanupService(@Value("${rpki.validator.validation.run.cleanup.grace.duration}") String cleanupGraceDuration) {
-        this.cleanupGraceDuration = Duration.parse(cleanupGraceDuration);
-    }
-
-    @Transactional
-    public long cleanupValidationRuns() {
-        // Delete all validation runs older than `cleanupGraceDuration` that have a later validation run.
-        Instant completedBefore = Instant.now().minus(cleanupGraceDuration);
-        long removedCount = validationRuns.removeOldValidationRuns(completedBefore);
-        log.info("Removed {} old validation runs", removedCount);
-        return removedCount;
+    @Override
+    public void execute(JobExecutionContext context) throws JobExecutionException {
+        rtrServer.expireOldDeltas();
     }
 }
