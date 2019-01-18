@@ -69,8 +69,7 @@ public class RefreshCacheController {
         this.restTemplate = restTemplateBuilder.build();
     }
 
-    @Scheduled(initialDelay = 10_000L, fixedDelay = 60_000L)
-    private void refreshObjectCache() {
+    public void refreshObjectCache() {
         log.info("fetching validated roa prefixes from {}", validatedObjectsUri);
         ValidatedObjectsResponse response = restTemplate.getForObject(validatedObjectsUri, ValidatedObjectsResponse.class);
 

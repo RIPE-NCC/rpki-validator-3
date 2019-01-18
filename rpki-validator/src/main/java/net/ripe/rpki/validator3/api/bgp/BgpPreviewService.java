@@ -293,8 +293,7 @@ public class BgpPreviewService {
         }
     }
 
-    @Scheduled(initialDelay = 10_000L, fixedDelay = 600_000L)
-    private void downloadRisPreview() {
+    public void downloadRisPreview() {
         sequential(() -> {
             log.info("Updating BGP RIS dumps");
             final List<BgpRisDump> updated = bgpRisDumps.stream()

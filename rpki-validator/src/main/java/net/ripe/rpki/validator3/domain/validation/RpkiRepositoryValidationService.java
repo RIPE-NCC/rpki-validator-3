@@ -141,7 +141,6 @@ public class RpkiRepositoryValidationService {
         }
     }
 
-    @Scheduled(initialDelay = 10_000, fixedDelay = 10_000)
     public void validateRsyncRepositories() {
         entityManager.setFlushMode(FlushModeType.COMMIT);
 
@@ -292,7 +291,7 @@ public class RpkiRepositoryValidationService {
                         RpkiObject object = new RpkiObject(validationResult.getCurrentLocation().getName(), obj);
                         rpkiObjects.add(object);
                         validationRun.addRpkiObject(object);
-                        log.debug("added to database {}", object);
+//                        log.debug("added to database {}", object);
                         return object;
                     }
                 });

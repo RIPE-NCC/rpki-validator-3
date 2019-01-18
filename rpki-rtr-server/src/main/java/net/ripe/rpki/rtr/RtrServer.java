@@ -111,7 +111,6 @@ public class RtrServer {
         shutdownWorkers();
     }
 
-    @Scheduled(initialDelay = 10_000L, fixedDelay = 60_000L)
     public void expireOldDeltas() {
         SerialNumber lowestSerialNumber = clients.getLowestSerialNumber().orElse(rtrCache.getSerialNumber());
         Set<SerialNumber> forgottenDeltas = rtrCache.forgetDeltasBefore(lowestSerialNumber);
@@ -120,7 +119,6 @@ public class RtrServer {
         }
     }
 
-    @Scheduled(initialDelay = 20_000L, fixedDelay = 60_000L)
     public void disconnectInactiveClients() {
         int disconnected = clients.disconnectInactive(Instant.now());
         if (disconnected > 0) {
