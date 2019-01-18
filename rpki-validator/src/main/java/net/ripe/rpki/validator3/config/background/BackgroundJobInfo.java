@@ -6,13 +6,12 @@ import org.quartz.listeners.SchedulerListenerSupport;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.TreeMap;
 
 @Component
 public class BackgroundJobInfo extends SchedulerListenerSupport {
 
-    private  Map<String, Date> backgroundJobStats = new HashMap<>();
+    private  TreeMap<String, Date> backgroundJobStats = new TreeMap<>();
 
     @Override
     public void jobScheduled(Trigger trigger) {
@@ -24,7 +23,7 @@ public class BackgroundJobInfo extends SchedulerListenerSupport {
         backgroundJobStats.put(((SimpleTriggerImpl) trigger).getJobName(), trigger.getFinalFireTime());
     }
 
-    public Map<String, Date> getStat() {
+    public TreeMap<String, Date> getStat() {
         return backgroundJobStats;
     }
 }

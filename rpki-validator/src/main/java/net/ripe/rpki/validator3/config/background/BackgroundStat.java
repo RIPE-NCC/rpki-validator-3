@@ -30,9 +30,9 @@
 package net.ripe.rpki.validator3.config.background;
 
 import java.util.Date;
-import java.util.Map;
+import java.util.TreeMap;
 
 @lombok.Value(staticConstructor = "of")
 public class BackgroundStat {
-    Map<String, Date> lastRunning;
+    TreeMap<String, Date> lastRunning;
 }
