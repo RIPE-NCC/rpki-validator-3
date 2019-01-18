@@ -291,7 +291,7 @@ public class RpkiRepositoryValidationService {
                         RpkiObject object = new RpkiObject(validationResult.getCurrentLocation().getName(), obj);
                         rpkiObjects.add(object);
                         validationRun.addRpkiObject(object);
-//                        log.debug("added to database {}", object);
+                        log.debug("added to database {}", object);
                         return object;
                     }
                 });
