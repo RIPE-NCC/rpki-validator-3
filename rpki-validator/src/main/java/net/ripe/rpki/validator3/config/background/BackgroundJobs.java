@@ -31,6 +31,7 @@ package net.ripe.rpki.validator3.config.background;
 
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.Job;
+import org.quartz.JobKey;
 import org.quartz.ScheduleBuilder;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
@@ -79,17 +80,22 @@ public class BackgroundJobs {
     }
 
     private <T extends Trigger> void schedule(Class<? extends Job> jobClass, Date startAt, ScheduleBuilder<T> schedule) throws SchedulerException {
+        final JobKey jobKey = JobKey.jobKey(jobClass.getName());
+        if (scheduler.checkExists(jobKey)) {
+            scheduler.deleteJob(jobKey);
+        }
         scheduler.scheduleJob(
                 newJob(jobClass)
-                        .withIdentity(jobClass.getName())
+                        .withIdentity(jobKey)
+                        .storeDurably(false)
                         .build(),
                 newTrigger()
-                        .withIdentity(jobClass.getName() + "Trigger")
+                        .withIdentity(jobKey + "-Trigger")
                         .startAt(startAt)
                         .withSchedule(schedule)
                         .build()
         );
-        log.info(String.format("Scheduled '%s', starting from '%s'", jobClass.getName(), startAt));
+        log.info(String.format("Scheduled '%s', starting from '%s'", jobKey, startAt));
     }
 
 }
