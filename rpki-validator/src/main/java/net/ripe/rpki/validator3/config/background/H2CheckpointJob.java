@@ -27,18 +27,23 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.config;
+package net.ripe.rpki.validator3.config.background;
 
-import com.querydsl.jpa.impl.JPAQueryFactory;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import net.ripe.rpki.validator3.config.H2Database;
+import org.quartz.DisallowConcurrentExecution;
+import org.quartz.Job;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.persistence.EntityManager;
+@DisallowConcurrentExecution
+class H2CheckpointJob implements Job {
 
-@Configuration
-public class PersistenceConfig {
-    @Bean
-    public JPAQueryFactory jpaQueryFactory(EntityManager entityManager) {
-        return new JPAQueryFactory(entityManager);
+    @Autowired
+    private H2Database h2Database;
+
+    @Override
+    public void execute(JobExecutionContext context) throws JobExecutionException {
+        h2Database.checkpoint();
     }
 }

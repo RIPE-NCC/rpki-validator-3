@@ -83,6 +83,9 @@ public class BackgroundJobs {
                 futureDate(10, SECOND),
                 simpleSchedule().repeatForever().withIntervalInMinutes(10));
 
+        schedule(H2CheckpointJob.class,
+                futureDate(10, SECOND),
+                simpleSchedule().repeatForever().withIntervalInHours(24));
     }
 
     private <T extends Trigger> void schedule(Class<? extends Job> jobClass, Date startAt, ScheduleBuilder<T> schedule) throws SchedulerException {
