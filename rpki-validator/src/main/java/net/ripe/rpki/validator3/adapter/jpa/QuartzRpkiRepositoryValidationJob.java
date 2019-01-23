@@ -68,6 +68,6 @@ public class QuartzRpkiRepositoryValidationJob implements Job {
     }
 
     static JobKey getJobKey(RpkiRepository rpkiRepository) {
-        return new JobKey(String.format("%s#%d", RpkiRepositoryValidationRun.TYPE, rpkiRepository.getId()));
+        return new JobKey(String.format("%s#%s", RpkiRepositoryValidationRun.TYPE, rpkiRepository.getRrdpNotifyUri()));
     }
 }

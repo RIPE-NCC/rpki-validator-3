@@ -62,6 +62,6 @@ public class QuartzTrustAnchorValidationJob implements Job {
     }
 
     static JobKey getJobKey(TrustAnchor trustAnchor) {
-        return new JobKey(String.format("%s#%d", TrustAnchorValidationRun.TYPE, trustAnchor.getId()));
+        return new JobKey(String.format("%s#%s", TrustAnchorValidationRun.TYPE, trustAnchor.getName()));
     }
 }

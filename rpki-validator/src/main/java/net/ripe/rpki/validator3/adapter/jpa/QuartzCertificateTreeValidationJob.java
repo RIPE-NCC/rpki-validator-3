@@ -63,6 +63,6 @@ public class QuartzCertificateTreeValidationJob implements Job {
     }
 
     static JobKey getJobKey(TrustAnchor trustAnchor) {
-        return new JobKey(String.format("%s#%d", CertificateTreeValidationRun.TYPE, trustAnchor.getId()));
+        return new JobKey(String.format("%s#%s", CertificateTreeValidationRun.TYPE, trustAnchor.getName()));
     }
 }
