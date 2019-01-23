@@ -64,7 +64,7 @@ public class BackgroundJobs {
         this.scheduler = scheduler;
 
         scheduler.getListenerManager()
-                .addSchedulerListener(listener);
+                .addJobListener(listener);
 
         schedule(RpkiObjectCleanupJob.class,
                 futureDate(1, MINUTE),

@@ -34,5 +34,5 @@ import java.util.TreeMap;
 
 @lombok.Value(staticConstructor = "of")
 public class BackgroundStat {
-    TreeMap<String, Date> lastRunning;
+    TreeMap<String, Date> lastExecuted;
 }
