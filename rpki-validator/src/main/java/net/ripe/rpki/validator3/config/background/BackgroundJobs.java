@@ -29,18 +29,27 @@
  */
 package net.ripe.rpki.validator3.config.background;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.Job;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
 import org.quartz.JobKey;
 import org.quartz.ScheduleBuilder;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.Trigger;
+import org.quartz.listeners.JobListenerSupport;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Date;
+import java.util.Map;
+import java.util.TreeMap;
 
 import static org.quartz.DateBuilder.IntervalUnit.MINUTE;
 import static org.quartz.DateBuilder.IntervalUnit.SECOND;
@@ -51,21 +60,19 @@ import static org.quartz.TriggerBuilder.newTrigger;
 
 @Component
 @Slf4j
-public class BackgroundJobs {
+public class BackgroundJobs extends JobListenerSupport {
 
     private final Scheduler scheduler;
 
     @Autowired
     public BackgroundJobs(Scheduler scheduler,
                           @Value("${rpki.validator.validation.run.cleanup.interval.ms:3600000}") int validationRunCleanUpDelay,
-                          @Value("${rpki.validator.rpki.object.cleanup.interval.ms:3600000}") int rpkiObjectsRunCleanUpDelay,
-                          BackgroundJobInfo listener
+                          @Value("${rpki.validator.rpki.object.cleanup.interval.ms:3600000}") int rpkiObjectsRunCleanUpDelay
                           ) throws SchedulerException {
 
         this.scheduler = scheduler;
 
-        scheduler.getListenerManager()
-                .addJobListener(listener);
+        scheduler.getListenerManager().addJobListener(this);
 
         schedule(RpkiObjectCleanupJob.class,
                 futureDate(1, MINUTE),
@@ -105,5 +112,64 @@ public class BackgroundJobs {
                         .build()
         );
         log.info(String.format("Scheduled '%s', starting from '%s'", jobKey, startAt));
+    }
+
+    @Data(staticConstructor = "of")
+    public static class Execution {
+        public final Instant lastStarted;
+        public final Instant lastFinished;
+        public final long count;
+        public final long totalRunTime;
+        public final long averageRunTime;
+
+        static Execution again(Execution e) {
+            if (e == null) {
+                return of(now(), null, 1, 0, 0);
+            }
+            return of(now(), null, e.count + 1, e.totalRunTime, e.totalRunTime/(e.count + 1));
+        }
+
+        static Execution finish(Execution e) {
+            final Instant finished = now();
+            final long newTotalTime = e.totalRunTime + Duration.between(e.lastStarted, finished).toMillis();
+            return of(e.lastStarted, finished, e.count, newTotalTime, newTotalTime/e.count);
+        }
+
+        static Instant now() {
+            return Instant.now(Clock.systemUTC());
+        }
+    }
+
+    private final TreeMap<String, Execution> backgroundJobStats = new TreeMap<>();
+
+    @Override
+    public void jobToBeExecuted(JobExecutionContext context) {
+        final String key = context.getJobDetail().getKey().toString();
+        synchronized (backgroundJobStats) {
+            final Execution execution = backgroundJobStats.get(key);
+            backgroundJobStats.put(key, Execution.again(execution));
+        }
+    }
+
+    @Override
+    public void jobWasExecuted(JobExecutionContext context, JobExecutionException jobException) {
+        final String key = context.getJobDetail().getKey().toString();
+        synchronized (backgroundJobStats) {
+            final Execution execution = backgroundJobStats.get(key);
+            if (execution != null) {
+                backgroundJobStats.put(key, Execution.finish(execution));
+            }
+        }
+    }
+
+    @Override
+    public String getName() {
+        return "Background jobs stat collector";
+    }
+
+    public Map<String, Execution> getStat() {
+        synchronized (backgroundJobStats) {
+            return backgroundJobStats;
+        }
     }
 }
