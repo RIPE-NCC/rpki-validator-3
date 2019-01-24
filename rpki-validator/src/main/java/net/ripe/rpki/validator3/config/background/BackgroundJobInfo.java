@@ -35,6 +35,9 @@ import org.quartz.JobExecutionException;
 import org.quartz.listeners.JobListenerSupport;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
 import java.util.TreeMap;
@@ -44,19 +47,27 @@ public class BackgroundJobInfo extends JobListenerSupport {
 
     @Data(staticConstructor = "of")
     public static class Execution {
-        public final Date started;
-        public final Date finished;
+        public final Instant lastStarted;
+        public final Instant lastFinished;
         public final long count;
+        public final long totalRunTime;
+        public final long averageRunTime;
 
         static Execution again(Execution e) {
             if (e == null) {
-                return of(new Date(), null, 1);
+                return of(now(), null, 1, 0, 0);
             }
-            return of(e.started, e.finished, e.count + 1);
+            return of(now(), null, e.count + 1, e.totalRunTime, e.totalRunTime/(e.count + 1));
         }
 
         static Execution finish(Execution e) {
-            return of(e.started, new Date(), e.count);
+            final Instant finished = now();
+            final long newTotalTime = e.totalRunTime + Duration.between(e.lastStarted, finished).toMillis();
+            return of(e.lastStarted, finished, e.count, newTotalTime, newTotalTime/e.count);
+        }
+
+        static Instant now() {
+            return Instant.now(Clock.systemUTC());
         }
     }
 
@@ -84,7 +95,7 @@ public class BackgroundJobInfo extends JobListenerSupport {
 
     @Override
     public String getName() {
-        return "Stat collector";
+        return "Background jobs stat collector";
     }
 
     public Map<String, Execution> getStat() {
