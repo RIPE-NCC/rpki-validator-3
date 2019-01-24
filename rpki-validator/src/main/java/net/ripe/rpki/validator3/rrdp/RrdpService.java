@@ -200,7 +200,6 @@ public class RrdpService {
                     RpkiObject object = maybeRpkiObject.right().value();
                     rpkiObjectRepository.add(object);
                     validationRun.addRpkiObject(object);
-                    log.debug("added to database {}", object);
                     return object;
                 }
             });
@@ -279,7 +278,6 @@ public class RrdpService {
             } else {
                 log.debug("The object added is the same {}", object);
             }
-            log.debug("Added to database {}", object);
         }
     }
 
