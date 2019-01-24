@@ -69,7 +69,7 @@ public class PersistenceConfig {
             if (jdbcUrl.startsWith("jdbc:h2:file:")) {
                 // we don't want to mess up with people tweaking their H2 configuration
                 if (!jdbcUrl.contains(";")) {
-                    final String betterFsUrl = jdbcUrl.replaceAll("jdbc:h2:file:", "jdbc:h2:split:nioMapped:");
+                    final String betterFsUrl = jdbcUrl.replaceAll("jdbc:h2:file:", "jdbc:h2:nio:");
                     dsb.url(betterFsUrl + ";COMPRESS=TRUE;MVCC=TRUE;MULTI_THREADED=TRUE;MAX_COMPACT_TIME=3000");
                 }
             } else {
