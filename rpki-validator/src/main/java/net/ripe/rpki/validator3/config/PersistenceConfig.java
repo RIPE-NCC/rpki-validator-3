@@ -30,13 +30,54 @@
 package net.ripe.rpki.validator3.config;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 import javax.persistence.EntityManager;
+import javax.sql.DataSource;
 
 @Configuration
 public class PersistenceConfig {
+
+    @Bean
+    @Primary
+    @ConfigurationProperties("spring.datasource")
+    public DataSourceProperties getDatasourceProperties() {
+        return new DataSourceProperties();
+    }
+
+    @ConfigurationProperties("spring.datasource")
+    @Bean
+    @Primary
+    public DataSource dataSource() {
+        final DataSourceProperties ds = getDatasourceProperties();
+        final DataSourceBuilder<?> dsb = DataSourceBuilder
+                .create()
+                .type(ds.getType())
+                .driverClassName(ds.getDriverClassName())
+                .username(ds.getUsername())
+                .password(ds.getPassword());
+
+        final String jdbcUrl = ds.getUrl();
+        if (jdbcUrl == null) {
+            dsb.url("jdbc:h2:mem:" + ds.getUsername() + ";DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE");
+        } else {
+            if (jdbcUrl.startsWith("jdbc:h2:file:")) {
+                // we don't want to mess up with people tweaking their H2 configuration
+                if (!jdbcUrl.contains(";")) {
+                    dsb.url(jdbcUrl + ";COMPRESS=TRUE;MVCC=TRUE;MULTI_THREADED=TRUE;MAX_COMPACT_TIME=3000");
+                }
+            } else {
+                dsb.url(jdbcUrl);
+            }
+        }
+        return dsb.build();
+    }
+
     @Bean
     public JPAQueryFactory jpaQueryFactory(EntityManager entityManager) {
         return new JPAQueryFactory(entityManager);

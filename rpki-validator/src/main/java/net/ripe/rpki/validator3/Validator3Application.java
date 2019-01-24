@@ -33,15 +33,9 @@ import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.jdbc.DataSourceBuilder;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-import javax.sql.DataSource;
 import java.net.BindException;
 import java.util.Locale;
 
@@ -87,36 +81,5 @@ public class Validator3Application {
         } else {
             terminateIfKnownProblem(e.getCause());
         }
-    }
-
-    @Bean
-    @Primary
-    @ConfigurationProperties("spring.datasource")
-    public DataSourceProperties getDatasourceProperties() {
-        return new DataSourceProperties();
-    }
-
-    @ConfigurationProperties(prefix = "spring.datasource")
-    @Bean
-    @Primary
-    public DataSource dataSource() {
-        final DataSourceProperties ds = getDatasourceProperties();
-        final DataSourceBuilder<?> dsb = DataSourceBuilder
-                .create()
-                .type(ds.getType())
-                .driverClassName(ds.getDriverClassName())
-                .username(ds.getUsername())
-                .password(ds.getPassword());
-
-        String jdbcUrl = ds.getUrl();
-        if (jdbcUrl.startsWith("jdbc:h2:file:")) {
-            if (jdbcUrl.endsWith(";")) {
-                jdbcUrl = jdbcUrl.substring(0, jdbcUrl.length() - 1);
-            }
-            dsb.url(jdbcUrl + ";COMPRESS=TRUE;MVCC=TRUE;DEFRAG_ALWAYS=TRUE;MULTI_THREADED=TRUE");
-        } else {
-            dsb.url(jdbcUrl);
-        }
-        return dsb.build();
     }
 }
