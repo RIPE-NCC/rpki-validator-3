@@ -43,6 +43,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.stream.Stream;
 
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+
 /**
  * Controller to export validated ROA prefix information.
  * <p>
@@ -66,7 +68,7 @@ public class ExportsController {
         this.settings = settings;
     }
 
-    @GetMapping(path = "/api/export.json", produces = JSON)
+    @GetMapping(path = "/api/export.json", produces = {JSON, APPLICATION_JSON_VALUE})
     public JsonExport exportJson(HttpServletResponse response) {
         response.setContentType(JSON);
 
