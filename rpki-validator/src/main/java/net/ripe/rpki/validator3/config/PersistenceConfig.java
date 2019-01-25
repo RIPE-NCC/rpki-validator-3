@@ -50,7 +50,6 @@ public class PersistenceConfig {
         return new DataSourceProperties();
     }
 
-    @ConfigurationProperties("spring.datasource")
     @Bean
     @Primary
     public DataSource dataSource() {
@@ -64,13 +63,12 @@ public class PersistenceConfig {
 
         final String jdbcUrl = ds.getUrl();
         if (jdbcUrl == null) {
-            dsb.url("jdbc:h2:mem:" + ds.getUsername() + ";DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE");
+            dsb.url("jdbc:h2:nioMemLZF:" + ds.getUsername() + ";DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE");
         } else {
             if (jdbcUrl.startsWith("jdbc:h2:file:")) {
                 // we don't want to mess up with people tweaking their H2 configuration
                 if (!jdbcUrl.contains(";")) {
-                    final String betterFsUrl = jdbcUrl.replaceAll("jdbc:h2:file:", "jdbc:h2:nio:");
-                    dsb.url(betterFsUrl + ";COMPRESS=TRUE;MVCC=TRUE;MULTI_THREADED=TRUE;MAX_COMPACT_TIME=3000");
+                    dsb.url(jdbcUrl + ";COMPRESS=TRUE;MVCC=TRUE;MULTI_THREADED=TRUE;MAX_COMPACT_TIME=3000");
                 }
             } else {
                 dsb.url(jdbcUrl);
