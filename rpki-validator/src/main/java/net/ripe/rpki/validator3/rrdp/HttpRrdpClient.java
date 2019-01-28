@@ -30,13 +30,11 @@
 package net.ripe.rpki.validator3.rrdp;
 
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.api.util.BuildInformation;
 import net.ripe.rpki.validator3.util.Http;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpProxy;
-import org.eclipse.jetty.client.ProxyConfiguration;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.client.api.Request;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -55,9 +53,12 @@ public class HttpRrdpClient implements RrdpClient {
 
     private HttpClient httpClient;
 
+    private final BuildInformation buildInformation;
+
     @Autowired
-    public HttpRrdpClient(Http http) {
+    public HttpRrdpClient(Http http, BuildInformation buildInformation) {
         this.http = http;
+        this.buildInformation = buildInformation;
     }
 
     @PostConstruct
@@ -69,7 +70,14 @@ public class HttpRrdpClient implements RrdpClient {
     @Override
     public <T> T readStream(final String uri, Function<InputStream, T> reader) {
         try {
-            return Http.readStream(() -> httpClient.newRequest(uri), reader);
+            return Http.readStream(() -> {
+                final Request request = httpClient.newRequest(uri);
+                final String version = buildInformation.getVersion();
+                request.header("User-Agent", "RIPE NCC RPKI Validator/" +
+                        version +
+                        " (+https://github.com/RIPE-NCC/rpki-validator-3)");
+                return request;
+            }, reader);
         } catch (Exception e) {
             throw new RrdpException("Error downloading '" + uri + "', cause: " + fullMessage(e), e);
         }

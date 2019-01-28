@@ -57,6 +57,7 @@
         <fileSet>
             <directory>src/main/resources/packaging/generic/conf</directory>
             <outputDirectory>conf</outputDirectory>
+            <filtered>true</filtered>
             <excludes>
                 <exclude>.ignore.me</exclude>
             </excludes>
