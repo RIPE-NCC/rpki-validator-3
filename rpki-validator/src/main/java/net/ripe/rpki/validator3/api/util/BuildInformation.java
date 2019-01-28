@@ -30,6 +30,7 @@
 package net.ripe.rpki.validator3.api.util;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -37,10 +38,11 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class BuildInformation {
 
-    @Value("${validator.version}")
-    private String version;
+    private final String version;
 
-    public BuildInformation() {
+    @Autowired
+    public BuildInformation(@Value("${validator.version}") String version) {
+        this.version = version;
         log.info("validator.version initialised with " + version);
     }
 
