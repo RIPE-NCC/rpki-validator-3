@@ -36,6 +36,7 @@
         <springfox.version>2.7.0</springfox.version>
         <maven.build.timestamp.format>yyyyMMddHHmmss</maven.build.timestamp.format>
         <build.number>DEV${maven.build.timestamp}</build.number>
+        <build.version>3.0</build.version>
         <jetty-http2-client.version>9.4.11.v20180605</jetty-http2-client.version>
     </properties>
 
@@ -343,7 +344,7 @@
                     <license>BSD</license>
                     <distribution>CentOS 7</distribution>
                     <name>rpki-validator</name>
-                    <version>3.0</version>
+                    <version>${build.version}</version>
                     <release>${build.number}</release>
                     <group>Applications/System</group>
                     <packager>RIPE NCC</packager>
