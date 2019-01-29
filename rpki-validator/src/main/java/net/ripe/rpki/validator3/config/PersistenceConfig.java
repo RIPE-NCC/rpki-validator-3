@@ -65,11 +65,9 @@ public class PersistenceConfig {
         if (jdbcUrl == null) {
             dsb.url("jdbc:h2:nioMemLZF:" + ds.getUsername() + ";DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE");
         } else {
-            if (jdbcUrl.startsWith("jdbc:h2:file:")) {
-                // we don't want to mess up with people tweaking their H2 configuration
-                if (!jdbcUrl.contains(";")) {
-                    dsb.url(jdbcUrl + ";COMPRESS=TRUE;MVCC=TRUE;MULTI_THREADED=TRUE;MAX_COMPACT_TIME=3000");
-                }
+            // we don't want to mess up with people tweaking their H2 configuration
+            if (jdbcUrl.startsWith("jdbc:h2:file:") && !jdbcUrl.contains(";")) {
+                dsb.url(jdbcUrl + ";COMPRESS=TRUE;MVCC=TRUE;MULTI_THREADED=TRUE;MAX_COMPACT_TIME=3000");
             } else {
                 dsb.url(jdbcUrl);
             }
