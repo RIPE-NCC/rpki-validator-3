@@ -30,10 +30,12 @@
 package net.ripe.rpki.validator3.api.health;
 
 import java.util.Map;
+import net.ripe.rpki.validator3.api.util.BuildInformation;
 
 @lombok.Value(staticConstructor = "of")
 public class Health {
     Map<String, Boolean> trustAnchorReady;
     Map<String, Boolean> bgpDumpReady;
     String databaseStatus;
+    BuildInformation buildInformation; 
 }

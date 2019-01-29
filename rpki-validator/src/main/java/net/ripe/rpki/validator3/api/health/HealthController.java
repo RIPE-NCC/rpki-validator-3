@@ -35,6 +35,7 @@ import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.bgp.BgpPreviewService;
 import net.ripe.rpki.validator3.api.bgp.BgpRisDump;
 import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
+import net.ripe.rpki.validator3.api.util.BuildInformation;
 import net.ripe.rpki.validator3.config.background.BackgroundJobs;
 import net.ripe.rpki.validator3.domain.TrustAnchors;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,6 +65,10 @@ public class HealthController {
     @Autowired
     private BackgroundJobs backgroundJobs;
 
+    @Autowired
+    private BuildInformation buildInformation;
+
+
     @GetMapping(path = "/")
     public ResponseEntity<ApiResponse<Health>> health() {
 
@@ -82,7 +87,7 @@ public class HealthController {
         final String databaseStatus = databaseStatus();
 
         return ResponseEntity.ok(ApiResponse.<Health>builder()
-                .data(Health.of(trustAnchorReady, bgpDumpReady, databaseStatus))
+                .data(Health.of(trustAnchorReady, bgpDumpReady, databaseStatus, buildInformation))
                 .build());
     }
 
