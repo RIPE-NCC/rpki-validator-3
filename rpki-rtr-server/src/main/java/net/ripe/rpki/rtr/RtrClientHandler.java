@@ -255,7 +255,7 @@ public class RtrClientHandler extends SimpleChannelInboundHandler<Pdu> implement
     }
 
     @Override
-    public synchronized SerialNumber getClientSerialNumber() {
+    public SerialNumber getClientSerialNumber() {
         return clientSerialNumber;
     }
 

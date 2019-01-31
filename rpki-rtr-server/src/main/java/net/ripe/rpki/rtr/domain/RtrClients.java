@@ -30,6 +30,7 @@
 package net.ripe.rpki.rtr.domain;
 
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.rtr.util.Locks;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -37,44 +38,54 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Service
 @Slf4j
 public class RtrClients {
 
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final Set<RtrClient> clients = new HashSet<>();
 
-    public synchronized void register(final RtrClient client) {
-        if (clients.add(client)) {
+    public void register(final RtrClient client) {
+        boolean added = Locks.locked(lock.writeLock(), () -> clients.add(client));
+        if (added) {
             log.info("registered client {}", client);
         }
     }
 
-    public synchronized void clear() {
-        clients.clear();
+    public void clear() {
+        Locks.locked(lock.writeLock(), clients::clear);
     }
 
-    public synchronized void unregister(RtrClient client) {
-        if (clients.remove(client)) {
+    public void unregister(RtrClient client) {
+        boolean removed = Locks.locked(lock.writeLock(), () -> clients.remove(client));
+        if (removed) {
             log.info("unregistered client {}", client);
         }
     }
 
-    public synchronized Set<RtrClient> list() {
-        return new HashSet<>(clients);
+    public Set<RtrClient> list() {
+        return Locks.locked(lock.readLock(), () -> new HashSet<>(clients));
     }
 
     public void cacheUpdated(short sessionId, SerialNumber updatedSerialNumber) {
-        clients.forEach(client -> client.cacheUpdated(sessionId, updatedSerialNumber));
+        Locks.locked(lock.readLock(), () ->
+                clients.forEach(client -> client.cacheUpdated(sessionId, updatedSerialNumber))
+        );
     }
 
     public Optional<SerialNumber> getLowestSerialNumber() {
-        return clients.stream().map(RtrClient::getClientSerialNumber).min(Comparator.naturalOrder());
+        return Locks.locked(lock.readLock(), () ->
+                clients.stream().map(RtrClient::getClientSerialNumber).min(Comparator.naturalOrder()));
     }
 
-    public synchronized int disconnectInactive(Instant now) {
-        int before = clients.size();
-        clients.removeIf(client -> client.disconnectIfInactive(now));
-        return before - clients.size();
+    public int disconnectInactive(Instant now) {
+        return Locks.locked(lock.writeLock(), () -> {
+            int before = clients.size();
+            clients.removeIf(client -> client.disconnectIfInactive(now));
+            return before - clients.size();
+        });
     }
 }
