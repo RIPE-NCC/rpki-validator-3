@@ -31,6 +31,7 @@ package net.ripe.rpki.rtr;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
@@ -65,23 +66,25 @@ public class RtrServer {
     public static final String DEFAULT_RTR_HOST = "localhost";
     public static final int DEFAULT_RTR_PORT = 9178;
 
-    @Autowired
-    private RtrCache rtrCache;
-
     private String address;
     private int port;
 
-    @Autowired
-    private RtrClients clients;
+    private final RtrCache rtrCache;
+    private final RtrClients clients;
+    private final Provider<RtrClientHandler> rtrClientHandlerProvider;
 
     @Autowired
-    private Provider<RtrClientHandler> rtrClientHandlerProvider;
-
     public RtrServer(
             @Value("${rtr.server.address}") String address,
-            @Value("${rtr.server.port}") int port) {
+            @Value("${rtr.server.port}") int port,
+            RtrCache rtrCache,
+            RtrClients clients,
+            Provider<RtrClientHandler> rtrClientHandlerProvider) {
         setAddress(address);
         setPort(port);
+        this.rtrCache = rtrCache;
+        this.clients = clients;
+        this.rtrClientHandlerProvider = rtrClientHandlerProvider;
     }
 
     private void setAddress(String address) {
@@ -136,8 +139,13 @@ public class RtrServer {
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     public void initChannel(SocketChannel ch) {
-                        ChannelTrafficShapingHandler traffic = new ChannelTrafficShapingHandler(0);
                         RtrClientHandler rtrClientHandler = rtrClientHandlerProvider.get();
+                        ChannelTrafficShapingHandler traffic = new ChannelTrafficShapingHandler(0) {
+                            @Override
+                            public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+                                rtrClientHandler.exceptionCaught(ctx, cause);
+                            }
+                        };
                         rtrClientHandler.setTrafficShapingHandler(traffic);
                         ch.pipeline().addLast(traffic, new PduCodec(), new ChunkedWriteHandler(), rtrClientHandler);
                     }
