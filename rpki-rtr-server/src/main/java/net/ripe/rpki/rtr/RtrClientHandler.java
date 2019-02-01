@@ -62,6 +62,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.ArrayDeque;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
@@ -225,13 +227,20 @@ public class RtrClientHandler extends SimpleChannelInboundHandler<Pdu> implement
         return ctx.writeAndFlush(EndOfDataPdu.of(clientProtocolVersion, clientSessionId, clientSerialNumber, clientRefreshInterval, clientRetryInterval, clientExpireInterval));
     }
 
+    private static Optional<RtrProtocolException> getRtrError(Throwable cause) {
+        Throwable t = cause;
+        while (t != null && t != t.getCause()) {
+            if (t instanceof RtrProtocolException) {
+                return Optional.of((RtrProtocolException) t);
+            }
+            t = t.getCause();
+        }
+        return Optional.empty();
+    }
+
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        Optional<RtrProtocolException> rtrError = Stream
-            .iterate(cause, Throwable::getCause)
-            .filter(t -> t instanceof RtrProtocolException)
-            .map(t -> (RtrProtocolException) t)
-            .findFirst();
+        final Optional<RtrProtocolException> rtrError = getRtrError(cause);
         if (rtrError.filter(x -> !x.isSendToClient()).isPresent()) {
             log.warn("do not send error in response to client error PDU", rtrError.get());
             ctx.close();
