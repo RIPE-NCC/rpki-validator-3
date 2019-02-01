@@ -33,6 +33,9 @@ import fj.data.Either;
 import lombok.Getter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.rtr.util.Locks;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.springframework.stereotype.Component;
 
 import java.security.SecureRandom;
@@ -43,6 +46,8 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
@@ -52,6 +57,8 @@ public class RtrCache {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final SerialNumber initialVersion;
+
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     @Getter
     private volatile short sessionId;
@@ -67,36 +74,46 @@ public class RtrCache {
         reset();
     }
 
-    public synchronized void reset() {
-        this.ready = false;
+    public void reset() {
+        Locks.locked(lock.writeLock(), () -> {
+            this.ready = false;
+            generateNewSessionId();
+            this.data = new VersionedSet<>(initialVersion);
+        });
+    }
 
+    private void generateNewSessionId() {
         short newSessionId;
         do {
             newSessionId = (short) RANDOM.nextInt();
         } while (this.sessionId == newSessionId);
         this.sessionId = newSessionId;
-
-        this.data = new VersionedSet<>(initialVersion);
     }
 
-    public synchronized Optional<SerialNumber> update(Collection<RtrDataUnit> updatedPdus) {
-        ready = true;
-        if (data.updateValues(updatedPdus)) {
-            log.info(
-                "{} validated ROAs updated to serial number {} (delta with {} announcements, {} withdrawals)",
-                data.size(),
-                data.getCurrentVersion().getValue(),
-                data.getDelta(data.getCurrentVersion().previous()).map(x -> x.getAdditions().size()).orElse(0),
-                data.getDelta(data.getCurrentVersion().previous()).map(x -> x.getRemovals().size()).orElse(0)
-            );
-            return Optional.of(getSerialNumber());
-        } else {
-            log.info("no updates to cached data");
-            return Optional.empty();
-        }
+    public Optional<SerialNumber> update(Collection<RtrDataUnit> updatedPdus) {
+        return Locks.locked(lock.writeLock(), () -> {
+            ready = true;
+            if (data.updateValues(updatedPdus)) {
+                log.info(
+                        "{} validated ROAs updated to serial number {} (delta with {} announcements, {} withdrawals)",
+                        data.size(),
+                        data.getCurrentVersion().getValue(),
+                        data.getDelta(data.getCurrentVersion().previous()).map(x -> x.getAdditions().size()).orElse(0),
+                        data.getDelta(data.getCurrentVersion().previous()).map(x -> x.getRemovals().size()).orElse(0)
+                );
+                return Optional.of(getSerialNumber());
+            } else {
+                log.info("no updates to cached data");
+                return Optional.empty();
+            }
+        });
     }
 
-    public synchronized Content getCurrentContent() {
+    public Content getCurrentContent() {
+        return Locks.locked(lock.readLock(), this::getCurrentContentNoLock);
+    }
+
+    private Content getCurrentContentNoLock() {
         return Content.of(sessionId, getSerialNumber(), ready, data.getValues());
     }
 
@@ -105,8 +122,8 @@ public class RtrCache {
      *
      * @return the current serial number of the RTR cache
      */
-    public synchronized SerialNumber getSerialNumber() {
-        return data.getCurrentVersion();
+    public SerialNumber getSerialNumber() {
+        return Locks.locked(lock.readLock(), () -> data.getCurrentVersion());
     }
 
     /**
@@ -114,32 +131,36 @@ public class RtrCache {
      *
      * @return the delta from the requested <code>serialNumber</code> to the current state
      */
-    public synchronized Optional<Delta> getDeltaFrom(SerialNumber serialNumber) {
-        if (!ready || serialNumber.isAfter(getSerialNumber())) {
-            return Optional.empty();
-        } else if (serialNumber.equals(getSerialNumber())) {
-            return Optional.of(Delta.of(sessionId, serialNumber, Collections.emptySortedSet(), Collections.emptySortedSet()));
-        } else {
-            Optional<VersionedSet.Delta<RtrDataUnit>> delta = data.getDelta(serialNumber);
-            return delta.map(d -> Delta.of(sessionId, getSerialNumber(), d.getAdditions(), d.getRemovals()));
-        }
+    Optional<Delta> getDeltaFrom(SerialNumber serialNumber) {
+        return Locks.locked(lock.readLock(), () -> {
+            if (!ready || serialNumber.isAfter(getSerialNumber())) {
+                return Optional.empty();
+            } else if (serialNumber.equals(getSerialNumber())) {
+                return Optional.of(Delta.of(sessionId, serialNumber, Collections.emptySortedSet(), Collections.emptySortedSet()));
+            } else {
+                Optional<VersionedSet.Delta<RtrDataUnit>> delta = data.getDelta(serialNumber);
+                return delta.map(d -> Delta.of(sessionId, getSerialNumber(), d.getAdditions(), d.getRemovals()));
+            }
+        });
     }
 
-    public synchronized Either<Delta, Content> getDeltaOrContent(SerialNumber serialNumber) {
-        Optional<Delta> maybeDelta = getDeltaFrom(serialNumber);
-        if (maybeDelta.isPresent()) {
-            return Either.left(maybeDelta.get());
-        } else {
-            return Either.right(getCurrentContent());
-        }
+    public Either<Delta, Content> getDeltaOrContent(SerialNumber serialNumber) {
+        return Locks.locked(lock.readLock(), () -> getDeltaFrom(serialNumber)
+                .<Either<Delta, Content>>map(Either::left)
+                .orElseGet(() -> Either.right(getCurrentContentNoLock())));
     }
 
-    public synchronized Set<SerialNumber> forgetDeltasBefore(SerialNumber serialNumber) {
-        return data.forgetDeltasBefore(serialNumber);
+    public Set<SerialNumber> forgetDeltasBefore(SerialNumber serialNumber) {
+        return Locks.locked(lock.writeLock(), () -> data.forgetDeltasBefore(serialNumber));
     }
 
-    public synchronized State getState() {
-        Content content = getCurrentContent();
+    public State getState() {
+        final Triple<Content, VersionedSet<RtrDataUnit>, Short> t =
+                Locks.locked(lock.readLock(), () -> Triple.of(getCurrentContentNoLock(), data, sessionId));
+
+        final Content content = t.getLeft();
+        final VersionedSet<RtrDataUnit> data = t.getMiddle();
+        final Short sessionId = t.getRight();
         SortedMap<SerialNumber, Delta> deltas = data.getDeltas().entrySet().stream().map(entry ->
             Delta.of(sessionId, entry.getKey(), entry.getValue().getAdditions(), entry.getValue().getRemovals())
         ).collect(toSortedMap());
