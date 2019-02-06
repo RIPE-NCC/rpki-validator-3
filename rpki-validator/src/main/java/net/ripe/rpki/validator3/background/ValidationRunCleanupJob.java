@@ -27,47 +27,23 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.adapter.jpa;
+package net.ripe.rpki.validator3.background;
 
-import lombok.Getter;
-import lombok.Setter;
-import net.ripe.rpki.validator3.domain.RpkiRepository;
-import net.ripe.rpki.validator3.domain.RpkiRepositoryValidationRun;
-import net.ripe.rpki.validator3.domain.validation.RpkiRepositoryValidationService;
+import net.ripe.rpki.validator3.domain.cleanup.ValidationRunCleanupService;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
-import org.quartz.JobBuilder;
-import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
-import org.quartz.JobKey;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @DisallowConcurrentExecution
-public class QuartzRpkiRepositoryValidationJob implements Job {
-
-    public static final String RPKI_REPOSITORY_ID = "rpkiRepositoryId";
+class ValidationRunCleanupJob implements Job {
 
     @Autowired
-    private RpkiRepositoryValidationService validationService;
-
-    @Getter
-    @Setter
-    private long rpkiRepositoryId;
+    private ValidationRunCleanupService validationRunCleanupService;
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
-        validationService.validateRpkiRepository(rpkiRepositoryId);
-    }
-
-    static JobDetail buildJob(RpkiRepository rpkiRepository) {
-        return JobBuilder.newJob(QuartzRpkiRepositoryValidationJob.class)
-            .withIdentity(getJobKey(rpkiRepository))
-            .usingJobData(RPKI_REPOSITORY_ID, rpkiRepository.getId())
-            .build();
-    }
-
-    static JobKey getJobKey(RpkiRepository rpkiRepository) {
-        return new JobKey(String.format("%s#%s", RpkiRepositoryValidationRun.TYPE, rpkiRepository.getRrdpNotifyUri()));
+        validationRunCleanupService.cleanupValidationRuns();
     }
 }

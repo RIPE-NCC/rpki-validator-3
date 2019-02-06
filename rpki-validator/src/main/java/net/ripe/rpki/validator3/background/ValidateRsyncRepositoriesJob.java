@@ -27,7 +27,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.config.background;
+package net.ripe.rpki.validator3.background;
 
 import net.ripe.rpki.validator3.domain.validation.RpkiRepositoryValidationService;
 import org.quartz.DisallowConcurrentExecution;

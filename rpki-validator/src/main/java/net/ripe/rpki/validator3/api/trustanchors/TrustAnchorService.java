@@ -29,33 +29,63 @@
  */
 package net.ripe.rpki.validator3.api.trustanchors;
 
+import com.google.common.io.PatternFilenameFilter;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
+import net.ripe.rpki.validator3.domain.Settings;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchors;
 import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.domain.ValidationRuns;
+import net.ripe.rpki.validator3.util.TrustAnchorLocator;
+import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.validation.annotation.Validated;
 
+import javax.annotation.PostConstruct;
 import javax.transaction.Transactional;
 import javax.validation.Valid;
+import java.io.File;
+import java.net.URI;
+import java.util.Optional;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Component
 @Transactional
 @Validated
 @Slf4j
 public class TrustAnchorService {
+
     @Autowired
     private TrustAnchors trustAnchors;
+
     @Autowired
     private RpkiRepositories rpkiRepositories;
+
     @Autowired
     private ValidatedRpkiObjects validatedRpkiObjects;
+
     @Autowired
     private ValidationRuns validationRunRepository;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+
+    @Autowired
+    private Settings settings;
+
+    @Autowired
+    private ValidationScheduler validationScheduler;
+
+    @Value("${rpki.validator.preconfigured.trust.anchors.directory}")
+    private File preconfiguredTrustAnchorDirectory;
 
     public long execute(@Valid AddTrustAnchor command) {
         TrustAnchor trustAnchor = new TrustAnchor(false);
@@ -63,7 +93,6 @@ public class TrustAnchorService {
         trustAnchor.setLocations(command.getLocations());
         trustAnchor.setSubjectPublicKeyInfo(command.getSubjectPublicKeyInfo());
         trustAnchor.setRsyncPrefetchUri(command.getRsyncPrefetchUri());
-
         return add(trustAnchor);
     }
 
@@ -85,5 +114,61 @@ public class TrustAnchorService {
         rpkiRepositories.removeAllForTrustAnchor(trustAnchor);
         trustAnchors.remove(trustAnchor);
         validatedRpkiObjects.remove(trustAnchor);
+    }
+
+    @PostConstruct
+    public void managePreconfiguredAndExistingTrustAnchors() {
+        log.info("Automatically adding preconfigured trust anchors");
+
+        if (settings.isPreconfiguredTalsLoaded()) {
+            log.info("Preconfigured trust anchors are already loaded, skipping");
+            scheduleTasValidation();
+            return;
+        }
+
+        settings.markPreconfiguredTalsLoaded();
+
+        final File[] tals = preconfiguredTrustAnchorDirectory.listFiles(new PatternFilenameFilter(Pattern.compile("^.*\\.tal$")));
+        if (ArrayUtils.isEmpty(tals)) {
+            log.warn("No preconfigured trust anchors found at {}, skipping", preconfiguredTrustAnchorDirectory);
+            return;
+        }
+
+        for (File tal : tals) {
+            final TrustAnchorLocator locator = TrustAnchorLocator.fromFile(tal);
+            new TransactionTemplate(transactionManager).execute((status) -> {
+                Optional<TrustAnchor> ta = trustAnchors.findBySubjectPublicKeyInfo(locator.getPublicKeyInfo());
+                if (ta.isPresent()) {
+                    log.info("Preconfigured trust anchor '{}' already installed, skipping", locator.getCaName());
+                } else {
+                    TrustAnchor trustAnchor = new TrustAnchor(true);
+                    trustAnchor.setName(locator.getCaName());
+                    trustAnchor.setLocations(locator.getCertificateLocations().stream().map(URI::toASCIIString).collect(Collectors.toList()));
+                    trustAnchor.setSubjectPublicKeyInfo(locator.getPublicKeyInfo());
+                    trustAnchor.setRsyncPrefetchUri(
+                            locator.getPrefetchUris().stream()
+                                    .filter(uri -> "rsync".equalsIgnoreCase(uri.getScheme()))
+                                    .map(URI::toASCIIString)
+                                    .findFirst().orElse(null)
+                    );
+                    add(trustAnchor);
+                }
+                return null;
+            });
+        }
+
+        scheduleTasValidation();
+    }
+
+    private void scheduleTasValidation() {
+        log.info("Schedule TA validation that were in the database already");
+        new TransactionTemplate(transactionManager).execute((status) -> {
+            trustAnchors.findAll().forEach(ta -> {
+                if (!validationScheduler.scheduledTrustAnchor(ta)) {
+                    validationScheduler.addTrustAnchor(ta);
+                }
+            });
+            return null;
+        });
     }
 }

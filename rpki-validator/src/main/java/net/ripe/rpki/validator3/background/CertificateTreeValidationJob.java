@@ -27,23 +27,42 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.config.background;
+package net.ripe.rpki.validator3.background;
 
-import net.ripe.rpki.validator3.api.bgp.BgpPreviewService;
-import org.quartz.DisallowConcurrentExecution;
-import org.quartz.Job;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
+import lombok.Getter;
+import lombok.Setter;
+import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
+import net.ripe.rpki.validator3.domain.TrustAnchor;
+import net.ripe.rpki.validator3.domain.validation.CertificateTreeValidationService;
+import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @DisallowConcurrentExecution
-class DownloadBgpRisDumpsJob implements Job {
+public class CertificateTreeValidationJob implements Job {
+
+    public static final String TRUST_ANCHOR_ID_KEY = "trustAnchorId";
 
     @Autowired
-    private BgpPreviewService bgpPreviewService;
+    private CertificateTreeValidationService validationService;
+
+    @Getter
+    @Setter
+    private long trustAnchorId;
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
-        bgpPreviewService.downloadRisPreview();
+        validationService.validate(trustAnchorId);
+    }
+
+    static JobDetail buildJob(TrustAnchor trustAnchor) {
+        return JobBuilder.newJob(CertificateTreeValidationJob.class)
+            .storeDurably()
+            .withIdentity(getJobKey(trustAnchor))
+            .usingJobData(TRUST_ANCHOR_ID_KEY, trustAnchor.getId())
+            .build();
+    }
+
+    static JobKey getJobKey(TrustAnchor trustAnchor) {
+        return new JobKey(String.format("%s#%s#%d", CertificateTreeValidationRun.TYPE, trustAnchor.getName(), trustAnchor.getId()));
     }
 }

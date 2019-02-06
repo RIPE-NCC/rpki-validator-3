@@ -27,9 +27,9 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.config.background;
+package net.ripe.rpki.validator3.background;
 
-import net.ripe.rpki.validator3.domain.cleanup.ValidationRunCleanupService;
+import net.ripe.rpki.validator3.api.bgp.BgpPreviewService;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
@@ -37,13 +37,13 @@ import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @DisallowConcurrentExecution
-class ValidationRunCleanupJob implements Job {
+class DownloadBgpRisDumpsJob implements Job {
 
     @Autowired
-    private ValidationRunCleanupService validationRunCleanupService;
+    private BgpPreviewService bgpPreviewService;
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
-        validationRunCleanupService.cleanupValidationRuns();
+        bgpPreviewService.downloadRisPreview();
     }
 }

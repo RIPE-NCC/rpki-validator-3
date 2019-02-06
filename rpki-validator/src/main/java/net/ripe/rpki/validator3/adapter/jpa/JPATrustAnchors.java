@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.adapter.jpa;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
 import net.ripe.rpki.validator3.api.util.Dates;
+import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchors;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,10 +51,10 @@ import static net.ripe.rpki.validator3.domain.querydsl.QTrustAnchor.trustAnchor;
 @Slf4j
 public class JPATrustAnchors extends JPARepository<TrustAnchor> implements TrustAnchors {
 
-    private final QuartzValidationScheduler validationScheduler;
+    private final ValidationScheduler validationScheduler;
 
     @Autowired
-    public JPATrustAnchors(QuartzValidationScheduler validationScheduler) {
+    public JPATrustAnchors(ValidationScheduler validationScheduler) {
         super(trustAnchor);
         this.validationScheduler = validationScheduler;
     }

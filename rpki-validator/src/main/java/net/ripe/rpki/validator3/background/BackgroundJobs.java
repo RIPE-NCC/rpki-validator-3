@@ -27,8 +27,9 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.config.background;
+package net.ripe.rpki.validator3.background;
 
+import com.google.common.base.CaseFormat;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.Job;
@@ -84,7 +85,7 @@ public class BackgroundJobs extends JobListenerSupport {
 
         schedule(ValidateRsyncRepositoriesJob.class,
                 futureDate(10, SECOND),
-                simpleSchedule().repeatForever().withIntervalInSeconds(10));
+                simpleSchedule().repeatForever().withIntervalInMinutes(5));
 
         schedule(DownloadBgpRisDumpsJob.class,
                 futureDate(10, SECOND),
@@ -92,7 +93,7 @@ public class BackgroundJobs extends JobListenerSupport {
     }
 
     private <T extends Trigger> void schedule(Class<? extends Job> jobClass, Date startAt, ScheduleBuilder<T> schedule) throws SchedulerException {
-        final JobKey jobKey = JobKey.jobKey(jobClass.getName());
+        final JobKey jobKey = JobKey.jobKey(CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN, jobClass.getSimpleName()));
         if (scheduler.checkExists(jobKey)) {
             scheduler.deleteJob(jobKey);
         }

@@ -27,7 +27,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.adapter.jpa;
+package net.ripe.rpki.validator3.background;
 
 import com.google.common.base.Preconditions;
 import net.ripe.rpki.validator3.api.Api;
@@ -42,12 +42,12 @@ import javax.transaction.Transactional;
 
 @Component
 @Transactional(Transactional.TxType.MANDATORY)
-public class QuartzValidationScheduler {
+public class ValidationScheduler {
 
     private final Scheduler scheduler;
 
     @Autowired
-    public QuartzValidationScheduler(Scheduler scheduler) {
+    public ValidationScheduler(Scheduler scheduler) {
         this.scheduler = scheduler;
     }
 
@@ -60,22 +60,31 @@ public class QuartzValidationScheduler {
 
         try {
             scheduler.scheduleJob(
-                QuartzTrustAnchorValidationJob.buildJob(trustAnchor),
+                TrustAnchorValidationJob.buildJob(trustAnchor),
                 TriggerBuilder.newTrigger()
                     .startNow()
                     .withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(10))
                     .build()
             );
-            scheduler.addJob(QuartzCertificateTreeValidationJob.buildJob(trustAnchor), true);
+            scheduler.addJob(CertificateTreeValidationJob.buildJob(trustAnchor), true);
         } catch (SchedulerException ex) {
             throw new RuntimeException(ex);
         }
     }
 
+    public boolean scheduledTrustAnchor(TrustAnchor trustAnchor) {
+        try {
+            return scheduler.checkExists(TrustAnchorValidationJob.getJobKey(trustAnchor)) &&
+                    scheduler.checkExists(CertificateTreeValidationJob.getJobKey(trustAnchor));
+        } catch (SchedulerException e) {
+            return false;
+        }
+    }
+
     public void removeTrustAnchor(TrustAnchor trustAnchor) {
         try {
-            boolean trustAnchorValidationDeleted = scheduler.deleteJob(QuartzTrustAnchorValidationJob.getJobKey(trustAnchor));
-            boolean certificateTreeValidationDeleted = scheduler.deleteJob(QuartzCertificateTreeValidationJob.getJobKey(trustAnchor));
+            boolean trustAnchorValidationDeleted = scheduler.deleteJob(TrustAnchorValidationJob.getJobKey(trustAnchor));
+            boolean certificateTreeValidationDeleted = scheduler.deleteJob(CertificateTreeValidationJob.getJobKey(trustAnchor));
             if (!trustAnchorValidationDeleted || !certificateTreeValidationDeleted) {
                 throw new EmptyResultDataAccessException("validation job for trust anchor or certificate tree not found", 1);
             }
@@ -93,7 +102,7 @@ public class QuartzValidationScheduler {
 
         try {
             scheduler.scheduleJob(
-                QuartzRpkiRepositoryValidationJob.buildJob(rpkiRepository),
+                RepositoryValidationJob.buildJob(rpkiRepository),
                 TriggerBuilder.newTrigger()
                     .startNow()
                     .withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(1))
@@ -106,7 +115,7 @@ public class QuartzValidationScheduler {
 
     public void removeRpkiRepository(RpkiRepository repository) {
         try {
-            boolean jobDeleted = scheduler.deleteJob(QuartzRpkiRepositoryValidationJob.getJobKey(repository));
+            boolean jobDeleted = scheduler.deleteJob(RepositoryValidationJob.getJobKey(repository));
             if (!jobDeleted) {
                 throw new EmptyResultDataAccessException("validation job for RPKI repository not found", 1);
             }
@@ -117,7 +126,7 @@ public class QuartzValidationScheduler {
 
     public void triggerCertificateTreeValidation(TrustAnchor trustAnchor) {
         try {
-            scheduler.triggerJob(QuartzCertificateTreeValidationJob.getJobKey(trustAnchor));
+            scheduler.triggerJob(CertificateTreeValidationJob.getJobKey(trustAnchor));
         } catch (SchedulerException ex) {
             throw new RuntimeException(ex);
         }

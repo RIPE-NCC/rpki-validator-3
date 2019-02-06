@@ -38,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
@@ -63,14 +64,14 @@ import static net.ripe.rpki.validator3.domain.querydsl.QRpkiRepository.rpkiRepos
 @Transactional(Transactional.TxType.REQUIRED)
 @Slf4j
 public class JPARpkiRepositories extends JPARepository<RpkiRepository> implements RpkiRepositories {
-    private final QuartzValidationScheduler quartzValidationScheduler;
+    private final ValidationScheduler validationScheduler;
     private final ValidationRuns validationRuns;
     private final TrustAnchors trustAnchors;
 
     @Autowired
-    public JPARpkiRepositories(QuartzValidationScheduler quartzValidationScheduler, ValidationRuns validationRuns, TrustAnchors trustAnchors) {
+    public JPARpkiRepositories(ValidationScheduler validationScheduler, ValidationRuns validationRuns, TrustAnchors trustAnchors) {
         super(rpkiRepository);
-        this.quartzValidationScheduler = quartzValidationScheduler;
+        this.validationScheduler = validationScheduler;
         this.validationRuns = validationRuns;
         this.trustAnchors = trustAnchors;
     }
@@ -82,7 +83,7 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
             RpkiRepository repository = new RpkiRepository(trustAnchor, uri, type);
             entityManager.persist(repository);
             if (repository.getType() == RpkiRepository.Type.RRDP) {
-                quartzValidationScheduler.addRpkiRepository(repository);
+                validationScheduler.addRpkiRepository(repository);
             }
             return repository;
         });
@@ -165,7 +166,7 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
             repository.removeTrustAnchor(trustAnchor);
             if (repository.getTrustAnchors().isEmpty()) {
                 if (repository.getType() == RpkiRepository.Type.RRDP) {
-                    quartzValidationScheduler.removeRpkiRepository(repository);
+                    validationScheduler.removeRpkiRepository(repository);
                 }
                 validationRuns.removeAllForRpkiRepository(repository);
                 entityManager.remove(repository);

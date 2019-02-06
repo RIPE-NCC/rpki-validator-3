@@ -40,6 +40,7 @@ import com.querydsl.jpa.impl.JPAQuery;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.api.SearchTerm;
+import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
@@ -70,10 +71,10 @@ import static net.ripe.rpki.validator3.domain.querydsl.QValidationRun.validation
 @Repository
 @Transactional(Transactional.TxType.REQUIRED)
 public class JPAValidationRuns extends JPARepository<ValidationRun> implements ValidationRuns {
-    private final QuartzValidationScheduler validationScheduler;
+    private final ValidationScheduler validationScheduler;
 
     @Autowired
-    public JPAValidationRuns(QuartzValidationScheduler validationScheduler) {
+    public JPAValidationRuns(ValidationScheduler validationScheduler) {
         super(validationRun);
         this.validationScheduler = validationScheduler;
     }
