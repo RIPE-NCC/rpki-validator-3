@@ -100,7 +100,6 @@ public class BackgroundJobs extends JobListenerSupport {
         scheduler.scheduleJob(
                 newJob(jobClass)
                         .withIdentity(jobKey)
-                        .storeDurably(false)
                         .build(),
                 newTrigger()
                         .withIdentity(jobKey + "-Trigger")

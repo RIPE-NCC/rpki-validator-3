@@ -80,7 +80,6 @@ public class BackgroundJobs {
         scheduler.scheduleJob(
                 newJob(jobClass)
                         .withIdentity(jobKey)
-                        .storeDurably(false)
                         .build(),
                 newTrigger()
                         .withIdentity(jobKey + "-Trigger")
