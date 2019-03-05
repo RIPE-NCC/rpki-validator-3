@@ -67,7 +67,7 @@ public class PersistenceConfig {
         } else {
             // we don't want to mess up with people tweaking their H2 configuration
             if (jdbcUrl.startsWith("jdbc:h2:file:") && !jdbcUrl.contains(";")) {
-                dsb.url(jdbcUrl + ";COMPRESS=TRUE;MVCC=TRUE;MULTI_THREADED=TRUE;MAX_COMPACT_TIME=3000");
+                dsb.url(jdbcUrl + ";MVCC=TRUE;MULTI_THREADED=TRUE;MAX_COMPACT_TIME=30000");
             } else {
                 dsb.url(jdbcUrl);
             }

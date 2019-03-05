@@ -54,6 +54,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.net.URI;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -105,14 +106,11 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
     }
 
     private RpkiRepository findRsyncParentRepository(@NotNull @ValidLocationURI String uri) {
-        URI location = URI.create(uri);
-        for (URI parentURI : Rsync.generateCandidateParentUris(location)) {
-            RpkiRepository parent = select().where(rpkiRepository.rsyncRepositoryUri.eq(parentURI.toASCIIString())).fetchFirst();
-            if (parent != null) {
-                return parent;
-            }
-        }
-        return null;
+        return Rsync.generateCandidateParentUris(URI.create(uri)).stream()
+                .map(parentURI -> select().where(rpkiRepository.rsyncRepositoryUri.eq(parentURI.toASCIIString())).fetchFirst())
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
     }
 
     @Override
@@ -128,7 +126,6 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
         JPAQuery<RpkiRepository> query = applyFilters(select(), optionalStatus, taId, hideChildrenOfDownloadedParent, searchTerm);
 
         query.orderBy(toOrderSpecifier(sorting));
-
         applyPaging(query, paging);
 
         return stream(query);
