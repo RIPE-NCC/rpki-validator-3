@@ -38,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
@@ -53,6 +54,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.net.URI;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -63,14 +65,14 @@ import static net.ripe.rpki.validator3.domain.querydsl.QRpkiRepository.rpkiRepos
 @Transactional(Transactional.TxType.REQUIRED)
 @Slf4j
 public class JPARpkiRepositories extends JPARepository<RpkiRepository> implements RpkiRepositories {
-    private final QuartzValidationScheduler quartzValidationScheduler;
+    private final ValidationScheduler validationScheduler;
     private final ValidationRuns validationRuns;
     private final TrustAnchors trustAnchors;
 
     @Autowired
-    public JPARpkiRepositories(QuartzValidationScheduler quartzValidationScheduler, ValidationRuns validationRuns, TrustAnchors trustAnchors) {
+    public JPARpkiRepositories(ValidationScheduler validationScheduler, ValidationRuns validationRuns, TrustAnchors trustAnchors) {
         super(rpkiRepository);
-        this.quartzValidationScheduler = quartzValidationScheduler;
+        this.validationScheduler = validationScheduler;
         this.validationRuns = validationRuns;
         this.trustAnchors = trustAnchors;
     }
@@ -82,7 +84,7 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
             RpkiRepository repository = new RpkiRepository(trustAnchor, uri, type);
             entityManager.persist(repository);
             if (repository.getType() == RpkiRepository.Type.RRDP) {
-                quartzValidationScheduler.addRpkiRepository(repository);
+                validationScheduler.addRpkiRepository(repository);
             }
             return repository;
         });
@@ -104,14 +106,11 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
     }
 
     private RpkiRepository findRsyncParentRepository(@NotNull @ValidLocationURI String uri) {
-        URI location = URI.create(uri);
-        for (URI parentURI : Rsync.generateCandidateParentUris(location)) {
-            RpkiRepository parent = select().where(rpkiRepository.rsyncRepositoryUri.eq(parentURI.toASCIIString())).fetchFirst();
-            if (parent != null) {
-                return parent;
-            }
-        }
-        return null;
+        return Rsync.generateCandidateParentUris(URI.create(uri)).stream()
+                .map(parentURI -> select().where(rpkiRepository.rsyncRepositoryUri.eq(parentURI.toASCIIString())).fetchFirst())
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
     }
 
     @Override
@@ -127,7 +126,6 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
         JPAQuery<RpkiRepository> query = applyFilters(select(), optionalStatus, taId, hideChildrenOfDownloadedParent, searchTerm);
 
         query.orderBy(toOrderSpecifier(sorting));
-
         applyPaging(query, paging);
 
         return stream(query);
@@ -165,7 +163,7 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
             repository.removeTrustAnchor(trustAnchor);
             if (repository.getTrustAnchors().isEmpty()) {
                 if (repository.getType() == RpkiRepository.Type.RRDP) {
-                    quartzValidationScheduler.removeRpkiRepository(repository);
+                    validationScheduler.removeRpkiRepository(repository);
                 }
                 validationRuns.removeAllForRpkiRepository(repository);
                 entityManager.remove(repository);

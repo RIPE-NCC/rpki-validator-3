@@ -105,7 +105,7 @@ public class TrustAnchorValidationService {
                 } else if (trustAnchorCertificateSize > RpkiObject.MAX_SIZE) {
                     validationResult.error(ErrorCodes.REPOSITORY_OBJECT_MAXIMUM_SIZE, trustAnchorCertificateURI.toASCIIString(), String.valueOf(trustAnchorCertificateSize), String.valueOf(RpkiObject.MAX_SIZE));
                 } else {
-                    X509ResourceCertificate certificate = parseCertificate(trustAnchor, targetFile, validationResult);
+                    final X509ResourceCertificate certificate = parseCertificate(trustAnchor, targetFile, validationResult);
 
                     if (!validationResult.hasFailureForCurrentLocation()) {
                         // validity time?

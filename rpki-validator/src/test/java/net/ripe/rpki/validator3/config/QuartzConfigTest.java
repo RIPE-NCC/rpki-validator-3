@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.config;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.IntegrationTest;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.quartz.Job;
@@ -52,6 +53,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(SpringRunner.class)
 @IntegrationTest
+@Ignore("Because we don't persist quartz jobs anymore")
 @Slf4j
 public class QuartzConfigTest {
 

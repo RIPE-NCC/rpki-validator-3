@@ -27,23 +27,23 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.adapter.jpa;
+package net.ripe.rpki.validator3.background;
 
 import lombok.Getter;
 import lombok.Setter;
-import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.validation.CertificateTreeValidationService;
+import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
+import net.ripe.rpki.validator3.domain.validation.TrustAnchorValidationService;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @DisallowConcurrentExecution
-public class QuartzCertificateTreeValidationJob implements Job {
+public class TrustAnchorValidationJob implements Job {
 
     public static final String TRUST_ANCHOR_ID_KEY = "trustAnchorId";
 
     @Autowired
-    private CertificateTreeValidationService validationService;
+    private TrustAnchorValidationService validationService;
 
     @Getter
     @Setter
@@ -55,14 +55,13 @@ public class QuartzCertificateTreeValidationJob implements Job {
     }
 
     static JobDetail buildJob(TrustAnchor trustAnchor) {
-        return JobBuilder.newJob(QuartzCertificateTreeValidationJob.class)
-            .storeDurably()
+        return JobBuilder.newJob(TrustAnchorValidationJob.class)
             .withIdentity(getJobKey(trustAnchor))
             .usingJobData(TRUST_ANCHOR_ID_KEY, trustAnchor.getId())
             .build();
     }
 
     static JobKey getJobKey(TrustAnchor trustAnchor) {
-        return new JobKey(String.format("%s#%s", CertificateTreeValidationRun.TYPE, trustAnchor.getName()));
+        return new JobKey(String.format("%s#%s#%d", TrustAnchorValidationRun.TYPE, trustAnchor.getName(), trustAnchor.getId()));
     }
 }

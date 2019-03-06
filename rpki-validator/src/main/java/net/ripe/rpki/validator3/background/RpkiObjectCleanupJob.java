@@ -27,18 +27,23 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.config;
+package net.ripe.rpki.validator3.background;
 
-import org.springframework.boot.autoconfigure.quartz.SchedulerFactoryBeanCustomizer;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import net.ripe.rpki.validator3.domain.cleanup.RpkiObjectCleanupService;
+import org.quartz.DisallowConcurrentExecution;
+import org.quartz.Job;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.sql.DataSource;
+@DisallowConcurrentExecution
+class RpkiObjectCleanupJob implements Job {
 
-@Configuration
-public class QuartzConfig {
-    @Bean
-    public SchedulerFactoryBeanCustomizer schedulerFactoryBeanCustomizer(DataSource dataSource) {
-        return (schedulerFactoryBean) -> schedulerFactoryBean.setDataSource(dataSource);
+    @Autowired
+    private RpkiObjectCleanupService rpkiObjectCleanupService;
+
+    @Override
+    public void execute(JobExecutionContext context) throws JobExecutionException {
+        rpkiObjectCleanupService.cleanupRpkiObjects();
     }
 }
