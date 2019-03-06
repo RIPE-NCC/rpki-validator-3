@@ -113,7 +113,7 @@ public class TrustAnchorValidationService {
                         int comparedSerial = trustAnchor.getCertificate() == null ? 1 : trustAnchor.getCertificate().getSerialNumber().compareTo(certificate.getSerialNumber());
                         validationResult.warnIfTrue(comparedSerial < 0, ValidationString.VALIDATOR_REPOSITORY_OBJECT_IS_OLDER_THAN_PREVIOUS_OBJECT, trustAnchorCertificateURI.toASCIIString());
                         if (comparedSerial > 0) {
-                            log.info("Setting certificate " + trustAnchorCertificateURI + " for the TA " + trustAnchor.getName());
+                            log.info("Setting certificate {} for the TA {}", trustAnchorCertificateURI, trustAnchor.getName());
                             trustAnchor.setCertificate(certificate);
                             updated = true;
                         }
@@ -122,12 +122,13 @@ public class TrustAnchorValidationService {
             }
 
             if (validationResult.hasFailures()) {
-                log.warn("Validation result for the TA " + trustAnchor.getName() + " has failures: " +
+                log.warn("Validation result for the TA {} has failures: {}", trustAnchor.getName(),
                         validationResult.getFailures(new ValidationLocation(trustAnchorCertificateURI)));
             }
 
             validationRun.completeWith(validationResult);
             if (updated) {
+                entityManager.merge(trustAnchor);
                 validationRunRepository.runCertificateTreeValidation(trustAnchor);
             }
         } catch (CommandExecutionException | IOException e) {
