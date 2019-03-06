@@ -165,6 +165,7 @@ public class TrustAnchorService {
         new TransactionTemplate(transactionManager).execute((status) -> {
             trustAnchors.findAll().forEach(ta -> {
                 if (!validationScheduler.scheduledTrustAnchor(ta)) {
+                    log.info("Adding " + ta.getName() + " to the validation scheduler");
                     validationScheduler.addTrustAnchor(ta);
                 }
             });

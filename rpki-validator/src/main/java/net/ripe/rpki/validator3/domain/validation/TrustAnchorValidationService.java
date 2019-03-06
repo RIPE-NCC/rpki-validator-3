@@ -36,6 +36,7 @@ import net.ripe.rpki.commons.crypto.util.CertificateRepositoryObjectFactory;
 import net.ripe.rpki.commons.crypto.x509cert.X509CertificateUtil;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.rsync.CommandExecutionException;
+import net.ripe.rpki.commons.validation.ValidationLocation;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.commons.validation.ValidationString;
 import net.ripe.rpki.validator3.domain.*;
@@ -85,7 +86,7 @@ public class TrustAnchorValidationService {
     public void validate(long trustAnchorId) {
         TrustAnchor trustAnchor = trustAnchorRepository.get(trustAnchorId);
 
-        log.debug("trust anchor {} located at {} with subject public key info {}", trustAnchor.getName(), trustAnchor.getLocations(), trustAnchor.getSubjectPublicKeyInfo());
+        log.info("trust anchor {} located at {} with subject public key info {}", trustAnchor.getName(), trustAnchor.getLocations(), trustAnchor.getSubjectPublicKeyInfo());
 
         TrustAnchorValidationRun validationRun = new TrustAnchorValidationRun(trustAnchor);
         validationRunRepository.add(validationRun);
@@ -112,11 +113,17 @@ public class TrustAnchorValidationService {
                         int comparedSerial = trustAnchor.getCertificate() == null ? 1 : trustAnchor.getCertificate().getSerialNumber().compareTo(certificate.getSerialNumber());
                         validationResult.warnIfTrue(comparedSerial < 0, ValidationString.VALIDATOR_REPOSITORY_OBJECT_IS_OLDER_THAN_PREVIOUS_OBJECT, trustAnchorCertificateURI.toASCIIString());
                         if (comparedSerial > 0) {
+                            log.info("Setting certificate " + trustAnchorCertificateURI + " for the TA " + trustAnchor.getName());
                             trustAnchor.setCertificate(certificate);
                             updated = true;
                         }
                     }
                 }
+            }
+
+            if (validationResult.hasFailures()) {
+                log.warn("Validation result for the TA " + trustAnchor.getName() + " has failures: " +
+                        validationResult.getFailures(new ValidationLocation(trustAnchorCertificateURI)));
             }
 
             validationRun.completeWith(validationResult);
