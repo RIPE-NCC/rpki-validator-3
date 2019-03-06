@@ -128,7 +128,7 @@ public class TrustAnchorValidationService {
 
             validationRun.completeWith(validationResult);
             if (updated) {
-                entityManager.merge(trustAnchor);
+                entityManager.persist(trustAnchor);
                 validationRunRepository.runCertificateTreeValidation(trustAnchor);
             }
         } catch (CommandExecutionException | IOException e) {

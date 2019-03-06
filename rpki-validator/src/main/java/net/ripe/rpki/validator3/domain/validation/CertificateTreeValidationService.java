@@ -138,7 +138,7 @@ public class CertificateTreeValidationService {
 
             if (isValidationRunCompleted(validationResult)) {
                 trustAnchor.markInitialCertificateTreeValidationRunCompleted();
-                entityManager.merge(trustAnchor);
+                entityManager.persist(trustAnchor);
                 if (!settings.isInitialValidationRunCompleted() && trustAnchors.allInitialCertificateTreeValidationRunsCompleted()) {
                     settings.markInitialValidationRunCompleted();
                     log.info("All trust anchors have completed their initial certificate tree validation run, validator is now ready");
