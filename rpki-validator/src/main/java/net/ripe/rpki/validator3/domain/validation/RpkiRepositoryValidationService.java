@@ -170,7 +170,10 @@ public class RpkiRepositoryValidationService {
             );
 
         validationRun.completeWith(results);
-        affectedTrustAnchors.forEach(validationRunRepository::runCertificateTreeValidation);
+        affectedTrustAnchors.forEach(r -> {
+            log.info("The following repository was affected, validation will be triggered {}", r);
+            validationRunRepository.runCertificateTreeValidation(r);
+        });
     }
 
     protected ValidationResult processRsyncRepository(Set<TrustAnchor> affectedTrustAnchors,
@@ -201,8 +204,11 @@ public class RpkiRepositoryValidationService {
             if (repository.getType() == RpkiRepository.Type.RSYNC_PREFETCH ||
                     repository.getType() == RpkiRepository.Type.RSYNC &&
                             (parentRepository == null || parentRepository.getType() == RpkiRepository.Type.RSYNC_PREFETCH)) {
-                log.debug("Storing object downloaded for {}", repository.getLocationUri());
+                log.info("Storing object downloaded for {}", repository.getLocationUri());
                 storeObjects(targetDirectory, validationRun, validationResult, objectsBySha256, repository);
+            } else {
+                log.info("Not storing any objects for the repository {} because parent repository is {}",
+                        repository.getLocationUri(), parentRepository == null ? null : parentRepository.getType());
             }
         } catch (IOException e) {
             repository.setFailed();
