@@ -42,6 +42,7 @@ import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.commons.validation.ValidationStatus;
 import net.ripe.rpki.commons.validation.ValidationString;
 import net.ripe.rpki.commons.validation.objectvalidators.CertificateRepositoryObjectValidationContext;
+import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
 import net.ripe.rpki.validator3.domain.RpkiObject;
@@ -92,6 +93,8 @@ public class CertificateTreeValidationService {
     private Settings settings;
     @Autowired
     private ValidatedRpkiObjects validatedRpkiObjects;
+    @Autowired
+    private ValidationScheduler validationScheduler;
 
     @Transactional(Transactional.TxType.REQUIRED)
     public void validate(long trustAnchorId) {
@@ -272,11 +275,13 @@ public class CertificateTreeValidationService {
 
     private RpkiRepository registerRepository(TrustAnchor trustAnchor, Map<URI, RpkiRepository> registeredRepositories, CertificateRepositoryObjectValidationContext context) {
         if (context.getRpkiNotifyURI() != null) {
-            return registeredRepositories.computeIfAbsent(context.getRpkiNotifyURI(), (uri) -> rpkiRepositories.register(
-                trustAnchor,
-                uri.toASCIIString(),
-                RpkiRepository.Type.RRDP
+            RpkiRepository rpkiRepository = registeredRepositories.computeIfAbsent(context.getRpkiNotifyURI(), (uri) -> rpkiRepositories.register(
+                    trustAnchor,
+                    uri.toASCIIString(),
+                    RpkiRepository.Type.RRDP
             ));
+            validationScheduler.addRpkiRepository(rpkiRepository);
+            return rpkiRepository;
         } else {
             return registeredRepositories.computeIfAbsent(context.getRepositoryURI(), (uri) -> rpkiRepositories.register(
                 trustAnchor,

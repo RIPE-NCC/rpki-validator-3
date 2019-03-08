@@ -30,6 +30,7 @@
 package net.ripe.rpki.validator3.background;
 
 import com.google.common.base.Preconditions;
+import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
@@ -42,6 +43,7 @@ import javax.transaction.Transactional;
 
 @Component
 @Transactional(Transactional.TxType.MANDATORY)
+@Slf4j
 public class ValidationScheduler {
 
     private final Scheduler scheduler;
@@ -101,13 +103,17 @@ public class ValidationScheduler {
         );
 
         try {
-            scheduler.scheduleJob(
-                RepositoryValidationJob.buildJob(rpkiRepository),
-                TriggerBuilder.newTrigger()
-                    .startNow()
-                    .withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(1))
-                    .build()
-            );
+            if (!scheduler.checkExists(RepositoryValidationJob.getJobKey(rpkiRepository))) {
+                log.info("Adding repository to the scheduler {}", rpkiRepository);
+
+                scheduler.scheduleJob(
+                        RepositoryValidationJob.buildJob(rpkiRepository),
+                        TriggerBuilder.newTrigger()
+                                .startNow()
+                                .withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(1))
+                                .build()
+                );
+            }
         } catch (SchedulerException ex) {
             throw new RuntimeException(ex);
         }

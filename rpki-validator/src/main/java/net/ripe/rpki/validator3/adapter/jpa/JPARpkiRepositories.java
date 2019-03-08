@@ -83,9 +83,6 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
         RpkiRepository result = findByURI(uri).orElseGet(() -> {
             RpkiRepository repository = new RpkiRepository(trustAnchor, uri, type);
             entityManager.persist(repository);
-            if (repository.getType() == RpkiRepository.Type.RRDP) {
-                validationScheduler.addRpkiRepository(repository);
-            }
             return repository;
         });
         result.addTrustAnchor(trustAnchor);
