@@ -52,6 +52,8 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 
@@ -186,6 +188,7 @@ public class RrdpService {
     }
 
     void storeSnapshot(final Snapshot snapshot, final RpkiRepositoryValidationRun validationRun) {
+        final AtomicInteger counter = new AtomicInteger();
         snapshot.asMap().forEach((objUri, value) -> {
             byte[] content = value.content;
             rpkiObjectRepository.findBySha256(Sha256.hash(content)).map(existing -> {
@@ -200,48 +203,60 @@ public class RrdpService {
                     RpkiObject object = maybeRpkiObject.right().value();
                     rpkiObjectRepository.add(object);
                     validationRun.addRpkiObject(object);
+                    counter.incrementAndGet();
                     return object;
                 }
             });
         });
+        log.info("Added (or updated locations for) {} new objects", counter.get());
     }
 
     private void storeDelta(final Delta delta, final RpkiRepositoryValidationRun validationRun) {
+        final AtomicInteger added = new AtomicInteger();
+        final AtomicInteger deleted = new AtomicInteger();
         delta.asMap().forEach((uri, deltaElement) -> {
             if (deltaElement instanceof DeltaPublish) {
-                applyDeltaPublish(validationRun, uri, (DeltaPublish) deltaElement);
+                if (applyDeltaPublish(validationRun, uri, (DeltaPublish) deltaElement)) {
+                    added.incrementAndGet();
+                }
             } else if (deltaElement instanceof DeltaWithdraw) {
-                applyDeltaWithdraw(validationRun, uri, (DeltaWithdraw) deltaElement);
+                if (applyDeltaWithdraw(validationRun, uri, (DeltaWithdraw) deltaElement)) {
+                    deleted.incrementAndGet();
+                }
             }
         });
+        log.info("Added (or updated locations for) {} new objects, delete (or removed locations) for {} objects",
+                added.get(), deleted.get());
     }
 
-    private void applyDeltaWithdraw(RpkiRepositoryValidationRun validationRun, String uri, DeltaWithdraw deltaWithdraw) {
+    private boolean applyDeltaWithdraw(RpkiRepositoryValidationRun validationRun, String uri, DeltaWithdraw deltaWithdraw) {
         final byte[] sha256 = deltaWithdraw.getHash();
         final Optional<RpkiObject> maybeObject = rpkiObjectRepository.findBySha256(sha256);
         if (maybeObject.isPresent()) {
             maybeObject.get().removeLocation(uri);
+            return true;
         } else {
             ValidationCheck validationCheck = new ValidationCheck(validationRun, uri,
                     ValidationCheck.Status.ERROR, ErrorCodes.RRDP_WITHDRAW_NONEXISTENT_OBJECT, Hex.format(sha256));
             validationRun.addCheck(validationCheck);
         }
+        return false;
     }
 
-    private void applyDeltaPublish(RpkiRepositoryValidationRun validationRun, String uri, DeltaPublish deltaPublish) {
+    private boolean applyDeltaPublish(RpkiRepositoryValidationRun validationRun, String uri, DeltaPublish deltaPublish) {
         if (deltaPublish.getHash().isPresent()) {
             final byte[] sha256 = deltaPublish.getHash().get();
             final Optional<RpkiObject> existing = rpkiObjectRepository.findBySha256(sha256);
             if (existing.isPresent()) {
-                addRpkiObject(validationRun, uri, deltaPublish, sha256);
+                return addRpkiObject(validationRun, uri, deltaPublish, sha256);
             } else {
                 ValidationCheck validationCheck = new ValidationCheck(validationRun, uri,
                         ValidationCheck.Status.ERROR, ErrorCodes.RRDP_REPLACE_NONEXISTENT_OBJECT, Hex.format(sha256));
                 validationRun.addCheck(validationCheck);
+                return false;
             }
-        } else {
-            addRpkiObject(validationRun, uri, deltaPublish, null);
         }
+        return addRpkiObject(validationRun, uri, deltaPublish, null);
     }
 
     private void verifyIfDeltasAreApplicable(List<Delta> deltas) {
@@ -266,7 +281,7 @@ public class RrdpService {
         }
     }
 
-    private void addRpkiObject(RpkiRepositoryValidationRun validationRun, String uri, DeltaPublish deltaPublish, final byte[] existingHash) {
+    private boolean addRpkiObject(RpkiRepositoryValidationRun validationRun, String uri, DeltaPublish deltaPublish, final byte[] existingHash) {
         final Either<ValidationResult, RpkiObject> maybeRpkiObject = createRpkiObject(uri, deltaPublish.getContent());
         if (maybeRpkiObject.isLeft()) {
             validationRun.addChecks(maybeRpkiObject.left().value());
@@ -275,10 +290,12 @@ public class RrdpService {
             if (existingHash == null || !Arrays.equals(object.getSha256(), existingHash)) {
                 validationRun.addRpkiObject(object);
                 rpkiObjectRepository.add(object);
+                return true;
             } else {
                 log.debug("The object added is the same {}", object);
             }
         }
+        return false;
     }
 
     private Either<ValidationResult, RpkiObject> createRpkiObject(final String uri, final byte[] content) {
