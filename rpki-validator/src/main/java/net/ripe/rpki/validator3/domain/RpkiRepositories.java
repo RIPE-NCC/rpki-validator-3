@@ -64,5 +64,7 @@ public interface RpkiRepositories {
 
     Stream<RpkiRepository> findRsyncRepositories();
 
+    Stream<RpkiRepository> findRrdpRepositories();
+
     void removeAllForTrustAnchor(TrustAnchor trustAnchor);
 }

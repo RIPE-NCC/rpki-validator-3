@@ -155,6 +155,15 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
     }
 
     @Override
+    public Stream<RpkiRepository> findRrdpRepositories() {
+        return stream(
+                select()
+                        .where(rpkiRepository.type.in(RpkiRepository.Type.RRDP, RpkiRepository.Type.RSYNC_PREFETCH))
+                        .orderBy(rpkiRepository.rsyncRepositoryUri.asc(), rpkiRepository.id.asc())
+        );
+    }
+
+    @Override
     public void removeAllForTrustAnchor(TrustAnchor trustAnchor) {
         for (RpkiRepository repository : select().where(rpkiRepository.trustAnchors.contains(trustAnchor)).fetch()) {
             repository.removeTrustAnchor(trustAnchor);
