@@ -89,7 +89,8 @@ public class RrdpService {
     private void doStoreRepository(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun) {
         final Notification notification = rrdpClient.readStream(rpkiRepository.getRrdpNotifyUri(), rrdpParser::notification);
 
-        log.info("The local serial is '{}' and the latest serial is {}", rpkiRepository.getRrdpSerial(), notification.serial);
+        log.info("Repository {} has local serial is '{}' and the latest serial is {}",
+                rpkiRepository.getRrdpNotifyUri(), rpkiRepository.getRrdpSerial(), notification.serial);
 
         if (notification.sessionId.equals(rpkiRepository.getRrdpSessionId())) {
             if (rpkiRepository.getRrdpSerial().compareTo(notification.serial) <= 0) {
@@ -104,7 +105,7 @@ public class RrdpService {
                     verifyIfDeltasAreApplicable(deltas);
 
                     deltas.forEach(d -> {
-                        storeDelta(d, validationRun);
+                        storeDelta(d, validationRun, rpkiRepository);
                         rpkiRepository.setRrdpSerial(rpkiRepository.getRrdpSerial().add(BigInteger.ONE));
                     });
 
@@ -211,7 +212,7 @@ public class RrdpService {
         log.info("Added (or updated locations for) {} new objects", counter.get());
     }
 
-    private void storeDelta(final Delta delta, final RpkiRepositoryValidationRun validationRun) {
+    private void storeDelta(final Delta delta, final RpkiRepositoryValidationRun validationRun, final RpkiRepository rpkiRepository) {
         final AtomicInteger added = new AtomicInteger();
         final AtomicInteger deleted = new AtomicInteger();
         delta.asMap().forEach((uri, deltaElement) -> {
@@ -225,8 +226,8 @@ public class RrdpService {
                 }
             }
         });
-        log.info("Added (or updated locations for) {} new objects, delete (or removed locations) for {} objects",
-                added.get(), deleted.get());
+        log.info("Repository {}: added (or updated locations for) {} new objects, delete (or removed locations) for {} objects",
+                rpkiRepository.getRrdpNotifyUri(), added.get(), deleted.get());
     }
 
     private boolean applyDeltaWithdraw(RpkiRepositoryValidationRun validationRun, String uri, DeltaWithdraw deltaWithdraw) {
@@ -289,10 +290,10 @@ public class RrdpService {
             RpkiObject object = maybeRpkiObject.right().value();
             if (existingHash == null || !Arrays.equals(object.getSha256(), existingHash)) {
                 validationRun.addRpkiObject(object);
-                rpkiObjectRepository.add(object);
+                rpkiObjectRepository.merge(object);
                 return true;
             } else {
-                log.debug("The object added is the same {}", object);
+                log.info("The object added is the same {}", object);
             }
         }
         return false;
