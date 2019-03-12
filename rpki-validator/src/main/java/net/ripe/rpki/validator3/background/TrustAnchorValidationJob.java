@@ -33,6 +33,7 @@ import lombok.Getter;
 import lombok.Setter;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
+import net.ripe.rpki.validator3.domain.ValidationRuns;
 import net.ripe.rpki.validator3.domain.validation.TrustAnchorValidationService;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;

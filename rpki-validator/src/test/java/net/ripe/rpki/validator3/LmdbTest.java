@@ -12,7 +12,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -29,34 +28,30 @@ public class LmdbTest {
     @Rule
     public final TemporaryFolder tmp = new TemporaryFolder();
 
-    @Test
-    public void testLmdbSpeed() throws IOException {
-        final File path = tmp.newFolder();
-
-        System.out.println("path = " + path.getAbsolutePath());
-
-        final Env<ByteBuffer> env = create()
-                .setMapSize(1024 * 1024 * 1024)
-                .setMaxDbs(1)
-                .open(path);
-
-        final Dbi<ByteBuffer> db = env.openDbi(DB_NAME, MDB_CREATE);
-
-        for (long k = 1; k < 100_000; k++) {
-            final ByteBuffer key = makeKey(env);
-            final ByteBuffer val = allocateDirect(700);
-            val.put(("Blabla_" + k).getBytes(UTF_8)).flip();
-            db.put(key, val);
-        }
-
-        env.close();
-    }
+//    @Test
+//    public void testLmdbSpeed() throws IOException {
+//        final File path = tmp.newFolder();
+//
+//        System.out.println("path = " + path.getAbsolutePath());
+//
+//        final Env<ByteBuffer> env = create()
+//                .setMapSize(1024 * 1024 * 1024)
+//                .setMaxDbs(1)
+//                .open(path);
+//
+//        final Dbi<ByteBuffer> db = env.openDbi(DB_NAME, MDB_CREATE);
+//
+//        for (long k = 1; k < 100_000; k++) {
+//            final ByteBuffer key = uuidBB();
+//            db.put(key, bb("blabla_" + key));
+//        }
+//
+//        env.close();
+//    }
 
     @Test
     public void testLmdbSpeedTx() throws IOException {
         final File path = tmp.newFolder();
-
-        System.out.println("path = " + path.getAbsolutePath());
 
         final Env<ByteBuffer> env = create()
                 .setMapSize(1024 * 1024 * 1024)
@@ -66,11 +61,30 @@ public class LmdbTest {
         final Dbi<ByteBuffer> db = env.openDbi(DB_NAME, MDB_CREATE);
 
         try (Txn<ByteBuffer> txn = env.txnWrite()) {
-            for (long k = 1; k < 100_000; k++) {
-                final ByteBuffer key = makeKey(env);
-                final ByteBuffer val = allocateDirect(700);
-                val.put(("Blabla_" + k).getBytes(UTF_8)).flip();
-                db.put(txn, key, val);
+            for (long k = 1; k < 10_000_000; k++) {
+                final ByteBuffer key = uuidBB();
+                db.put(txn, key, bb("blabla_" + key));
+            }
+            txn.commit();
+        }
+
+        env.close();
+    }
+
+    @Test
+    public void testLmdbSpeedTxIntKey() throws IOException {
+        final File path = tmp.newFolder();
+
+        final Env<ByteBuffer> env = create()
+                .setMapSize(1024 * 1024 * 1024)
+                .setMaxDbs(1)
+                .open(path);
+
+        final Dbi<ByteBuffer> db = env.openDbi(DB_NAME, MDB_CREATE);
+
+        try (Txn<ByteBuffer> txn = env.txnWrite()) {
+            for (long k = 1; k < 10_000_000; k++) {
+                db.put(txn, bb(k), bb("blabla_" + k));
             }
             txn.commit();
         }
@@ -81,9 +95,6 @@ public class LmdbTest {
     @Test
     public void testLmdTwoDbTx() throws IOException {
         final File path = tmp.newFolder();
-
-        System.out.println("path = " + path.getAbsolutePath());
-
         final Env<ByteBuffer> env = create()
                 .setMapSize(1024 * 1024 * 1024)
                 .setMaxDbs(2)
@@ -92,41 +103,44 @@ public class LmdbTest {
         final Dbi<ByteBuffer> db1 = env.openDbi(DB_NAME, MDB_CREATE);
         final Dbi<ByteBuffer> db2 = env.openDbi(DB_NAME + "1", MDB_CREATE);
 
-        Txn<ByteBuffer> readTxn = env.txnRead();
+        final ByteBuffer k1 = uuidBB();
+        final ByteBuffer k2 = uuidBB();
 
-        final ByteBuffer k1 = makeKey(env);
         try (Txn<ByteBuffer> txn = env.txnWrite()) {
-            db1.put(txn, k1, makeVal("v1"));
-//            db2.put(txn, k1, makeVal("v2"));
+            db1.put(txn, k1, bb("v1"));
+            db2.put(txn, k1, bb("v2"));
             txn.abort();
-//            txn.close();
         }
 
-        final ByteBuffer k2 = makeKey(env);
-        try (Txn<ByteBuffer> txn1 = env.txnWrite()) {
-            db1.put(txn1, k2, makeVal("v1"));
-//            db2.put(txn, k2, makeVal("v2"));
-            txn1.commit();
+        try (Txn<ByteBuffer> txn = env.txnWrite()) {
+            db1.put(txn, k2, bb("v1"));
+            db2.put(txn, k2, bb("v2"));
+            txn.commit();
         }
 
-        assertNull(db1.get(readTxn, k1));
-        assertNull(db2.get(readTxn, k1));
+        try (Txn<ByteBuffer> readTxn = env.txnRead()) {
+            assertNull(db1.get(readTxn, k1));
+            assertNull(db2.get(readTxn, k1));
 
-        assertNotNull(db1.get(readTxn, k2));
-        assertNotNull(db2.get(readTxn, k2));
+            assertNotNull(db1.get(readTxn, k2));
+            assertNotNull(db2.get(readTxn, k2));
+        }
 
         env.close();
     }
 
-    private static ByteBuffer makeKey(Env<ByteBuffer> env) {
+
+    private static ByteBuffer uuidBB() {
         UUID uuid = Generators.timeBasedGenerator().generate();
-        final ByteBuffer key = allocateDirect(env.getMaxKeySize());
+        final ByteBuffer key = allocateDirect(16);
         key.putLong(uuid.getMostSignificantBits());
         key.putLong(uuid.getLeastSignificantBits());
+        key.flip();
         return key;
     }
 
-    private static ByteBuffer makeVal(String s) {
+    private static <T> ByteBuffer bb(T t) {
+        final String s = t.toString();
         final ByteBuffer val = allocateDirect(s.length()*2);
         val.put(s.getBytes(UTF_8)).flip();
         return val;
