@@ -95,7 +95,7 @@ public class ValidationScheduler {
         }
     }
 
-    public void addRpkiRepository(RpkiRepository rpkiRepository) {
+    public synchronized void addRpkiRepository(RpkiRepository rpkiRepository) {
         Preconditions.checkArgument(
             rpkiRepository.getId() >= Api.MINIMUM_VALID_ID,
             "rpkiRepository id %s is not valid",
