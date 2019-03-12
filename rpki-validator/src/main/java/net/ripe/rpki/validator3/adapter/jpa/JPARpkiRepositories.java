@@ -230,4 +230,11 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
         Order order = sorting.getDirection() == Sorting.Direction.DESC ? Order.DESC : Order.ASC;
         return new OrderSpecifier<>(order, column);
     }
+
+    @Override
+    public void remove(long id) {
+        RpkiRepository rpkiRepository = super.get(id);
+        validationRuns.removeAllForRpkiRepository(rpkiRepository);
+        validationScheduler.removeRpkiRepository(rpkiRepository);
+    }
 }

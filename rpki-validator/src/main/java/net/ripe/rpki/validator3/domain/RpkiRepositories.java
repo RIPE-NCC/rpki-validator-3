@@ -67,4 +67,6 @@ public interface RpkiRepositories {
     Stream<RpkiRepository> findRrdpRepositories();
 
     void removeAllForTrustAnchor(TrustAnchor trustAnchor);
+
+    void remove(long id);
 }
