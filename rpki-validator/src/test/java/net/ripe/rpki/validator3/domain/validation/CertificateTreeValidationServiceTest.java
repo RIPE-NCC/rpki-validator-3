@@ -38,6 +38,7 @@ import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificate;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.commons.validation.ValidationString;
 import net.ripe.rpki.validator3.IntegrationTest;
+import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.domain.RoaPrefix;
 import net.ripe.rpki.validator3.domain.RpkiObject;
@@ -96,6 +97,9 @@ public class CertificateTreeValidationServiceTest {
 
     @Autowired
     private RpkiRepositories rpkiRepositories;
+
+    @Autowired
+    private ValidationScheduler validationScheduler;
 
     @Autowired
     private RpkiObjects rpkiObjects;
@@ -325,6 +329,7 @@ public class CertificateTreeValidationServiceTest {
         )));
         trustAnchors.add(ta);
         RpkiRepository repository = rpkiRepositories.register(ta, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
+//        validationScheduler.addRpkiRepository(repository);
         repository.setDownloaded();
         entityManager.flush();
 
