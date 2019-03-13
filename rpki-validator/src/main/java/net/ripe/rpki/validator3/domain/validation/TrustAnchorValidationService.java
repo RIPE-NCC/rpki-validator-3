@@ -42,6 +42,7 @@ import net.ripe.rpki.commons.validation.ValidationString;
 import net.ripe.rpki.validator3.domain.*;
 import net.ripe.rpki.validator3.rrdp.RrdpService;
 import net.ripe.rpki.validator3.util.Rsync;
+import net.ripe.rpki.validator3.util.Transactions;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -128,15 +129,13 @@ public class TrustAnchorValidationService {
 
             validationRun.completeWith(validationResult);
             if (updated) {
-                entityManager.persist(trustAnchor);
-                validationRunRepository.runCertificateTreeValidation(trustAnchor);
+                Transactions.afterCommit(() -> validationRunRepository.runCertificateTreeValidation(trustAnchor));
             }
         } catch (CommandExecutionException | IOException e) {
             log.error("validation run for trust anchor {} failed", trustAnchor, e);
             validationRun.addCheck(new ValidationCheck(validationRun, validationRun.getTrustAnchorCertificateURI(), ValidationCheck.Status.ERROR, ErrorCodes.UNHANDLED_EXCEPTION, e.toString()));
             validationRun.setFailed();
         }
-
     }
 
     private X509ResourceCertificate parseCertificate(TrustAnchor trustAnchor, File certificateFile, ValidationResult validationResult) throws IOException {

@@ -58,6 +58,8 @@ public interface RpkiObjects {
 
     Map<String, RpkiObject> findObjectsInManifest(ManifestCms manifestCms, LockModeType lockMode);
 
+    Map<byte[], RpkiObject> findObjectsInManifest(Map<String, byte[]> manifestFiles);
+
     Stream<RpkiObject> all();
 
     Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type type, byte[] authorityKeyIdentifier);

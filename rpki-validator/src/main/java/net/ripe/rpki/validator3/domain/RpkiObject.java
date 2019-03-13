@@ -70,6 +70,10 @@ public class RpkiObject extends AbstractEntity {
     public static final int MIN_SIZE = 1;
     public static final int MAX_SIZE = 1024 * 1024;
 
+    public EncodedRpkiObject getEncodedRpkiObject() {
+        return encodedRpkiObject;
+    }
+
     public enum Type {
         CER, MFT, CRL, ROA, GBR, ROUTER_CER, OTHER
     }

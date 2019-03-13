@@ -60,6 +60,7 @@ import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityManager;
 import javax.persistence.FlushModeType;
+import javax.persistence.LockModeType;
 import javax.transaction.Transactional;
 import java.net.URI;
 import java.util.ArrayList;
@@ -141,7 +142,6 @@ public class CertificateTreeValidationService {
 
             if (isValidationRunCompleted(validationResult)) {
                 trustAnchor.markInitialCertificateTreeValidationRunCompleted();
-                entityManager.persist(trustAnchor);
                 if (!settings.isInitialValidationRunCompleted() && trustAnchors.allInitialCertificateTreeValidationRunsCompleted()) {
                     settings.markInitialValidationRunCompleted();
                     log.info("All trust anchors have completed their initial certificate tree validation run, validator is now ready");
@@ -306,10 +306,31 @@ public class CertificateTreeValidationService {
                 if (!hashMatches) {
                     return;
                 }
-
                 result.put(location, obj);
             });
         }
         return result;
     }
+
+//    private Map<URI, RpkiObject> retrieveManifestEntries(ManifestCms manifest, URI manifestUri, ValidationResult validationResult) {
+//        final Map<byte[], RpkiObject> objectsInManifest = rpkiObjects.findObjectsInManifest(manifest.getFiles());
+//
+//        Map<URI, RpkiObject> result = new LinkedHashMap<>();
+//        for (Map.Entry<String, byte[]> entry : manifest.getFiles().entrySet()) {
+//            URI location = manifestUri.resolve(entry.getKey());
+//            validationResult.setLocation(new ValidationLocation(location));
+//
+//            RpkiObject object = objectsInManifest.get(entry.getValue());
+//            validationResult.rejectIfFalse(object != null, VALIDATOR_MANIFEST_ENTRY_FOUND, manifestUri.toASCIIString());
+//
+//            if (object != null) {
+//                boolean hashMatches = Arrays.equals(object.getSha256(), entry.getValue());
+//                validationResult.rejectIfFalse(hashMatches, VALIDATOR_MANIFEST_ENTRY_HASH_MATCHES, entry.getKey());
+//                if (hashMatches) {
+//                    result.put(location, object);
+//                }
+//            };
+//        }
+//        return result;
+//    }
 }
