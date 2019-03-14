@@ -13,9 +13,13 @@ import org.lmdbjava.Txn;
 
 import java.nio.ByteBuffer;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.lmdbjava.Env.create;
 
 public class StoreTest {
@@ -40,16 +44,53 @@ public class StoreTest {
 
     @Test
     public void putAndGetByIndex() {
-        putAndGet("a");
-        putAndGet("aa");
-        putAndGet("ab");
-        putAndGet("bbb");
-        putAndGet("xxx");
+        Key ka = putAndGet("a");
+        Key kaa = putAndGet("aa");
+        Key kab = putAndGet("ab");
+        Key kbbb = putAndGet("bbb");
+        Key kxxx = putAndGet("xxx");
 
         try (Txn<ByteBuffer> txn = env.txnRead()) {
             assertEquals(Sets.newHashSet("a"), new HashSet<>(store.getByIndex(LENGTH_INDEX, txn, intKey(1))));
             assertEquals(Sets.newHashSet("aa", "ab"), new HashSet<>(store.getByIndex(LENGTH_INDEX, txn, intKey(2))));
             assertEquals(Sets.newHashSet("bbb", "xxx"), new HashSet<>(store.getByIndex(LENGTH_INDEX, txn, intKey(3))));
+        }
+    }
+
+    @Test
+    public void putAndDelete() {
+        Key ka = putAndGet("a");
+        Key kaa = putAndGet("aa");
+        putAndGet("ab");
+        Key kbbb = putAndGet("bbb");
+        putAndGet("xxx");
+
+        store.delete(ka);
+
+        try (Txn<ByteBuffer> txn = env.txnRead()) {
+            assertFalse(store.get(txn, ka).isPresent());
+            assertTrue(store.get(txn, kaa).isPresent());
+            assertTrue(store.get(txn, kbbb).isPresent());
+            assertEquals(Sets.newHashSet(), new HashSet<>(store.getByIndex(LENGTH_INDEX, txn, intKey(1))));
+            assertEquals(Sets.newHashSet("ab", "aa"), new HashSet<>(store.getByIndex(LENGTH_INDEX, txn, intKey(2))));
+            assertEquals(Sets.newHashSet("bbb", "xxx"), new HashSet<>(store.getByIndex(LENGTH_INDEX, txn, intKey(3))));
+        }
+
+        store.delete(kaa);
+
+        try (Txn<ByteBuffer> txn = env.txnRead()) {
+            assertFalse(store.get(txn, kaa).isPresent());
+            assertTrue(store.get(txn, kbbb).isPresent());
+            assertEquals(Sets.newHashSet("ab"), new HashSet<>(store.getByIndex(LENGTH_INDEX, txn, intKey(2))));
+            assertEquals(Sets.newHashSet("bbb", "xxx"), new HashSet<>(store.getByIndex(LENGTH_INDEX, txn, intKey(3))));
+        }
+
+        store.delete(kbbb);
+
+        try (Txn<ByteBuffer> txn = env.txnRead()) {
+            assertFalse(store.get(txn, kbbb).isPresent());
+            assertEquals(Sets.newHashSet("ab"), new HashSet<>(store.getByIndex(LENGTH_INDEX, txn, intKey(2))));
+            assertEquals(Sets.newHashSet("xxx"), new HashSet<>(store.getByIndex(LENGTH_INDEX, txn, intKey(3))));
         }
     }
 
@@ -63,17 +104,17 @@ public class StoreTest {
         store.put(null, "x");
     }
 
-    private void putAndGet(String v) {
+    private Key putAndGet(String v) {
         final Key key = key(UUID.randomUUID());
         store.put(key, v);
         try (Txn<ByteBuffer> txn = env.txnRead()) {
             assertEquals(v, store.get(txn, key).get());
         }
+        return key;
     }
 
     private static Key stringLen(String s) {
-        int length = s.length();
-        return intKey(length);
+        return intKey(s.length());
     }
 
     private static Key intKey(int length) {

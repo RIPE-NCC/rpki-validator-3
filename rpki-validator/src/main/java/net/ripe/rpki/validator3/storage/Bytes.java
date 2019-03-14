@@ -8,4 +8,11 @@ public class Bytes {
         bb.put(bytes).flip();
         return bb;
     }
+
+    public static byte[] toBytes(ByteBuffer bb) {
+        byte[] bytes = new byte[bb.remaining()];
+        bb.get(bytes);
+        bb.flip();
+        return bytes;
+    }
 }

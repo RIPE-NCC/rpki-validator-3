@@ -36,6 +36,8 @@ public class Store<T> {
         this.mainDb = env.openDbi(name + ":main", MDB_CREATE);
         this.indexFunctions = indexFunctions;
         this.indexes = new HashMap<>();
+
+        // TODO Add index management, reindexing if the index set has changed
         indexFunctions.forEach((n, idxFun) ->
                 indexes.put(n, env.openDbi(name + ":idx:" + n, MDB_CREATE, MDB_DUPSORT)));
     }
@@ -48,22 +50,46 @@ public class Store<T> {
         }
     }
 
-    private void checkKeyAndValue(Key primaryKey, T value) {
-        checkNotNull(primaryKey, "Key is null");
-        checkNotNull(value, "Value is null");
-    }
-
     public void put(Txn<ByteBuffer> txn, Key primaryKey, T value) {
         checkKeyAndValue(primaryKey, value);
         final ByteBuffer pkBuf = primaryKey.toByteBuffer();
         mainDb.put(txn, pkBuf, serializer.toBytes(value));
         indexFunctions.forEach((n, idxFun) -> {
             final Key indexKey = idxFun.apply(value);
-            final Dbi<ByteBuffer> indexDb = indexes.get(n);
-            try (Cursor<ByteBuffer> c = indexDb.openCursor(txn)) {
+            checkNotNull(indexKey, "Index key for value + " + value + " is null.");
+            try (Cursor<ByteBuffer> c = indexes.get(n).openCursor(txn)) {
                 c.put(indexKey.toByteBuffer(), pkBuf);
             }
         });
+    }
+
+    public void delete(Key primaryKey) {
+        checkNotNull(primaryKey, "Key is null");
+        try (Txn<ByteBuffer> txn = env.txnWrite()) {
+            delete(txn, primaryKey);
+            txn.commit();
+        }
+    }
+
+    public void delete(Txn<ByteBuffer> txn, Key primaryKey) {
+        checkNotNull(primaryKey, "Key is null");
+        final ByteBuffer pkBuf = primaryKey.toByteBuffer();
+        if (indexFunctions.isEmpty()) {
+            mainDb.delete(txn, pkBuf);
+        } else {
+            final ByteBuffer bb = mainDb.get(txn, pkBuf);
+            if (bb != null) {
+                // TODO probably avoid deserialization, just store the
+                //  index keys next to the serialized value
+                final T value = serializer.fromBytes(bb);
+                mainDb.delete(txn, pkBuf);
+                indexFunctions.forEach((n, idxFun) -> {
+                    final Key indexKey = idxFun.apply(value);
+                    checkNotNull(indexKey, "Index key for value + " + value + " is null.");
+                    indexes.get(n).delete(txn, indexKey.toByteBuffer(), pkBuf);
+                });
+            }
+        }
     }
 
     public Optional<T> get(Txn<ByteBuffer> txn, Key primaryKey) {
@@ -97,5 +123,10 @@ public class Store<T> {
         if (v == null) {
             throw new NullPointerException(s);
         }
+    }
+
+    private void checkKeyAndValue(Key primaryKey, T value) {
+        checkNotNull(primaryKey, "Key is null");
+        checkNotNull(value, "Value is null");
     }
 }
