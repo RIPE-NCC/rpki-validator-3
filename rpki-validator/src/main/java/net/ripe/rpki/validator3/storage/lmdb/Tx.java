@@ -29,22 +29,48 @@
  */
 package net.ripe.rpki.validator3.storage.lmdb;
 
-import lombok.AllArgsConstructor;
-import net.ripe.rpki.validator3.storage.Bytes;
-import net.ripe.rpki.validator3.util.Hex;
+import org.lmdbjava.Env;
+import org.lmdbjava.Txn;
 
-import java.nio.ByteBuffer;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
-@AllArgsConstructor
-public class Key {
-    private final ByteBuffer key;
+/**
+ * Keep only one write LMDB transaction per thread.
+ *
+ * @param <T>
+ */
+public class Tx<T> {
 
-    public ByteBuffer toByteBuffer() {
-        return key;
+    private Env<T> env;
+
+    private final ThreadLocal<Txn<T>> localWriteTx = ThreadLocal.withInitial(() -> env.txnWrite());
+
+    private Tx(Env<T> env) {
+        this.env = env;
     }
 
-    @Override
-    public String toString() {
-        return Hex.format(Bytes.toBytes(key));
+    public <R> R writeTx(Function<Tx<T>, R> f) {
+        try (Txn<T> txn = txn()) {
+            R r = f.apply(this);
+            txn.commit();
+            return r;
+        }
     }
+
+    public void useWriteTx(Consumer<Tx<T>> f) {
+        try (Txn<T> txn = txn()) {
+            f.accept(this);
+            txn.commit();
+        }
+    }
+
+    public static <R> Tx<R> of(Env<R> e) {
+        return new Tx<>(e);
+    }
+
+    public Txn<T> txn() {
+        return localWriteTx.get();
+    }
+
 }

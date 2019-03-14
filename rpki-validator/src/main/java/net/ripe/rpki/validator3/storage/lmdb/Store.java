@@ -1,3 +1,32 @@
+/**
+ * The BSD License
+ *
+ * Copyright (c) 2010-2018 RIPE NCC
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *   - Redistributions of source code must retain the above copyright notice,
+ *     this list of conditions and the following disclaimer.
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *   - Neither the name of the RIPE NCC nor the names of its contributors may be
+ *     used to endorse or promote products derived from this software without
+ *     specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 package net.ripe.rpki.validator3.storage.lmdb;
 
 import net.ripe.rpki.validator3.storage.Serializer;
@@ -44,15 +73,13 @@ public class Store<T> {
 
     public void put(Key primaryKey, T value) {
         checkKeyAndValue(primaryKey, value);
-        try (Txn<ByteBuffer> txn = env.txnWrite()) {
-            put(txn, primaryKey, value);
-            txn.commit();
-        }
+        Tx.of(env).useWriteTx(tx -> put(tx, primaryKey, value));
     }
 
-    public void put(Txn<ByteBuffer> txn, Key primaryKey, T value) {
+    public void put(Tx<ByteBuffer> tx, Key primaryKey, T value) {
         checkKeyAndValue(primaryKey, value);
         final ByteBuffer pkBuf = primaryKey.toByteBuffer();
+        final Txn<ByteBuffer> txn = tx.txn();
         mainDb.put(txn, pkBuf, serializer.toBytes(value));
         indexFunctions.forEach((n, idxFun) -> {
             final Key indexKey = idxFun.apply(value);
@@ -65,15 +92,14 @@ public class Store<T> {
 
     public void delete(Key primaryKey) {
         checkNotNull(primaryKey, "Key is null");
-        try (Txn<ByteBuffer> txn = env.txnWrite()) {
-            delete(txn, primaryKey);
-            txn.commit();
-        }
+        Tx.of(env).useWriteTx(tx -> delete(tx, primaryKey));
     }
 
-    public void delete(Txn<ByteBuffer> txn, Key primaryKey) {
+    public void delete(Tx<ByteBuffer> tx, Key primaryKey) {
         checkNotNull(primaryKey, "Key is null");
         final ByteBuffer pkBuf = primaryKey.toByteBuffer();
+
+        final Txn<ByteBuffer> txn = tx.txn();
         if (indexFunctions.isEmpty()) {
             mainDb.delete(txn, pkBuf);
         } else {
