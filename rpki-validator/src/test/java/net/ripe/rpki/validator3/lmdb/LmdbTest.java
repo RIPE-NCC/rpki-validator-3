@@ -34,12 +34,11 @@ import java.util.stream.Stream;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.Env.create;
 
 
+@Ignore
 public class LmdbTest {
 
     private static final String DB_NAME = "test-db";
@@ -94,43 +93,6 @@ public class LmdbTest {
     }
 
     @Test
-    public void testLmdTwoDbTx() throws IOException {
-        final File path = tmp.newFolder();
-        final Env<ByteBuffer> env = create()
-                .setMapSize(1024 * 1024 * 1024)
-                .setMaxDbs(2)
-                .open(path);
-
-        final Dbi<ByteBuffer> db1 = env.openDbi(DB_NAME, MDB_CREATE);
-        final Dbi<ByteBuffer> db2 = env.openDbi(DB_NAME + "1", MDB_CREATE);
-
-        final ByteBuffer k1 = uuidBB();
-        final ByteBuffer k2 = uuidBB();
-
-        try (Txn<ByteBuffer> txn = env.txnWrite()) {
-            db1.put(txn, k1, bb("v1"));
-            db2.put(txn, k1, bb("v2"));
-            txn.abort();
-        }
-
-        try (Txn<ByteBuffer> txn = env.txnWrite()) {
-            db1.put(txn, k2, bb("v1"));
-            db2.put(txn, k2, bb("v2"));
-            txn.commit();
-        }
-
-        try (Txn<ByteBuffer> readTxn = env.txnRead()) {
-            assertNull(db1.get(readTxn, k1));
-            assertNull(db2.get(readTxn, k1));
-
-            assertNotNull(db1.get(readTxn, k2));
-            assertNotNull(db2.get(readTxn, k2));
-        }
-
-        env.close();
-    }
-
-    @Test
     public void testLmdbSpeedForBinary() throws IOException {
         final Kryo kryo = new Kryo();
         kryo.register(Bla.class);
@@ -142,7 +104,6 @@ public class LmdbTest {
                     final ByteBufferOutput bbo = new ByteBufferOutput(1024*1024);
                     Bla bla = generateBla();
                     kryo.writeObject(bbo, bla);
-//                    System.out.println("bla1 = " + bla);
                     byte[] bytes = bbo.toBytes();
                     ByteBuffer bb = allocateDirect(bytes.length);
                     bb.put(bytes).flip();
@@ -153,7 +114,6 @@ public class LmdbTest {
                     byte[] data = new byte[buffer.remaining()];
                     buffer.get(data);
                     Bla bla = kryo.readObject(new Input(data), Bla.class);
-//                    System.out.println("bla2 = " + bla);
                     return bla;
                 }
         );
@@ -175,7 +135,6 @@ public class LmdbTest {
                     byte[] data = new byte[buffer.remaining()];
                     buffer.get(data);
                     Bla bla = (Bla) coder.toObject(data);
-//                    System.out.println("bla3 = " + bla);
                     return bla;
                 }
         );
@@ -205,7 +164,7 @@ public class LmdbTest {
                                   BiFunction<Pair<Dbi<ByteBuffer>, Txn<ByteBuffer>>, ByteBuffer, T> extract) throws IOException {
         File path = tmp.newFolder();
         final Env<ByteBuffer> env = create()
-                .setMapSize(8 * 1024 * 1024 * 1024L)
+                .setMapSize(1024 * 1024 * 1024L)
                 .setMaxDbs(1)
                 .open(path);
 
@@ -236,26 +195,6 @@ public class LmdbTest {
         env.close();
     }
 
-
-    @Test
-    public void testWrite() {
-        File path = new File("/tmp/test-lmdb-ser1");
-
-        final DefaultCoder coder = new DefaultCoder(true, Bla.class, Thingy.class);
-
-        final Env<ByteBuffer> env = create()
-                .setMapSize(8 * 1024 * 1024 * 1024L)
-                .setMaxDbs(1)
-                .open(path);
-
-        final Dbi<ByteBuffer> db = env.openDbi(DB_NAME, MDB_CREATE);
-
-        Bla bla = generateBla();
-        try (Txn<ByteBuffer> txn = env.txnWrite()) {
-            db.put(txn, bb(2), bb(coder.toByteArray(bla)));
-            txn.commit();
-        }
-    }
 
     private static ByteBuffer uuidBB() {
         UUID uuid = makeUuid();
@@ -294,7 +233,7 @@ public class LmdbTest {
     }
 
     private byte[] randomBytes(Random r) {
-        final int len = r.nextInt(64*1024);
+        final int len = r.nextInt(1024);
         byte[] b = new byte[len];
         r.nextBytes(b);
         return b;
