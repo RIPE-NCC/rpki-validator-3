@@ -1,13 +1,13 @@
 package net.ripe.rpki.validator3.storage.lmdb;
 
-import com.google.common.collect.ImmutableList;
+import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.Serializer;
-import net.ripe.rpki.validator3.storage.data.Base;
-import org.lmdbjava.Cursor;
 import org.lmdbjava.CursorIterator;
 import org.lmdbjava.Dbi;
+import org.lmdbjava.DbiFlags;
 import org.lmdbjava.Env;
 import org.lmdbjava.KeyRange;
+import org.lmdbjava.MaskedFlag;
 import org.lmdbjava.PutFlags;
 import org.lmdbjava.Txn;
 
@@ -20,9 +20,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
+import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.DbiFlags.MDB_DUPSORT;
 
-public class Store<T extends Base> {
+public class Store<T> {
     private final Env<ByteBuffer> env;
     private final Dbi<ByteBuffer> mainDb;
     private final Serializer<T> serializer;
@@ -35,20 +36,28 @@ public class Store<T extends Base> {
                  final Map<String, Function<T, Key>> indexFunctions) {
         this.env = env;
         this.serializer = serializer;
-        this.mainDb = env.openDbi(name + ":main");
+        this.mainDb = env.openDbi(name + ":main", MDB_CREATE);
         this.indexFunctions = indexFunctions;
         this.indexes = new HashMap<>();
         indexFunctions.forEach((n, idxFun) ->
-                indexes.put(n, env.openDbi(name + ":idx:" + n, MDB_DUPSORT)));
+                indexes.put(n, env.openDbi(name + ":idx:" + n, MDB_CREATE, MDB_DUPSORT)));
     }
 
     public void put(Key primaryKey, T value) {
+        checkKeyAndValue(primaryKey, value);
         try (Txn<ByteBuffer> txn = env.txnWrite()) {
             put(txn, primaryKey, value);
+            txn.commit();
         }
     }
 
+    private void checkKeyAndValue(Key primaryKey, T value) {
+        checkNotNull(primaryKey, "Key is null");
+        checkNotNull(value, "Value is null");
+    }
+
     public void put(Txn<ByteBuffer> txn, Key primaryKey, T value) {
+        checkKeyAndValue(primaryKey, value);
         final ByteBuffer pkBuf = primaryKey.toByteBuffer();
         mainDb.put(txn, pkBuf, serializer.toBytes(value));
         indexFunctions.forEach((n, idxFun) -> {
@@ -59,13 +68,16 @@ public class Store<T extends Base> {
     }
 
     public Optional<T> get(Txn<ByteBuffer> txn, Key primaryKey) {
+        checkNotNull(primaryKey, "Key is null");
         ByteBuffer bb = mainDb.get(txn, primaryKey.toByteBuffer());
         return bb == null ?
                 Optional.empty() :
                 Optional.of(serializer.fromBytes(bb));
     }
 
+
     public List<T> getByIndex(String indexName, Txn<ByteBuffer> txn, Key indexKey) {
+        checkNotNull(indexKey, "Index key is null");
         final Dbi<ByteBuffer> index = indexes.get(indexName);
         if (index == null) {
             return Collections.emptyList();
@@ -75,8 +87,7 @@ public class Store<T extends Base> {
         final CursorIterator<ByteBuffer> iterator = index.iterate(txn, KeyRange.closed(idxKey, idxKey));
         final List<T> values = new ArrayList<>();
         while (iterator.hasNext()) {
-            final CursorIterator.KeyVal<ByteBuffer> next = iterator.next();
-            ByteBuffer bb = mainDb.get(txn, next.val());
+            final ByteBuffer bb = mainDb.get(txn, iterator.next().val());
             if (bb != null) {
                 values.add(serializer.fromBytes(bb));
             }
@@ -84,4 +95,9 @@ public class Store<T extends Base> {
         return values;
     }
 
+    private static void checkNotNull(Object v, String s) {
+        if (v == null) {
+            throw new NullPointerException(s);
+        }
+    }
 }

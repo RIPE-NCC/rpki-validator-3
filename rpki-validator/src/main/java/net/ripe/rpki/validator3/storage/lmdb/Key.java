@@ -6,9 +6,9 @@ import java.nio.ByteBuffer;
 
 @Value
 public class Key {
-    private byte[] key;
+    private final ByteBuffer key;
 
     public ByteBuffer toByteBuffer() {
-        return ByteBuffer.wrap(key);
+        return key;
     }
 }
