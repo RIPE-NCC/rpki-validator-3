@@ -12,7 +12,7 @@ import javax.annotation.PostConstruct;
 import java.nio.ByteBuffer;
 
 @Component
-public class BinarySerializer {
+public class BinarySerializer<T> implements Serializer<T> {
 
     private final Kryo kryo = new Kryo();
 
@@ -25,13 +25,15 @@ public class BinarySerializer {
         }
     }
 
-    public <T> ByteBuffer serialize(T t) {
+    @Override
+    public ByteBuffer toBytes(T t) {
         final ByteBufferOutput bbo = new ByteBufferOutput();
         kryo.writeObject(bbo, t);
         return bbo.getByteBuffer();
     }
 
-    public <T> T deserialize(ByteBuffer bb, Class<T> c) {
+    @Override
+    public T fromBytes(ByteBuffer bb, Class<T> c) {
         return kryo.readObject(new ByteBufferInput(bb), c);
     }
 }
