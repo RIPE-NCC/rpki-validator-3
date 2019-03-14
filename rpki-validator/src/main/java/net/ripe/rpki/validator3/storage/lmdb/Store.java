@@ -49,6 +49,14 @@ import java.util.function.Function;
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.DbiFlags.MDB_DUPSORT;
 
+/**
+ * TODO
+ *  Use some sort of T fingerprint to determine the situation when the definition of T is different
+ *  from what is store on the disk has changed and needs to be recreated from scratch.
+ *
+ *
+ * @param <T>
+ */
 public class Store<T> {
     private final Env<ByteBuffer> env;
     private final Dbi<ByteBuffer> mainDb;
