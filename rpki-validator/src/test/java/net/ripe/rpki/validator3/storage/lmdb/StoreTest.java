@@ -1,8 +1,7 @@
 package net.ripe.rpki.validator3.storage.lmdb;
 
 import com.google.common.collect.ImmutableMap;
-import com.jsoniter.spi.OmitValue;
-import com.pholser.junit.quickcheck.Property;
+import com.google.common.collect.Sets;
 import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.FSTSerializer;
 import org.junit.Before;
@@ -13,6 +12,7 @@ import org.lmdbjava.Env;
 import org.lmdbjava.Txn;
 
 import java.nio.ByteBuffer;
+import java.util.HashSet;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
@@ -26,6 +26,8 @@ public class StoreTest {
     private Env<ByteBuffer> env;
     private Store<String> store;
 
+    private static final String LENGTH_INDEX = "length-index";
+
     @Before
     public void setUp() throws Exception {
         env = create()
@@ -33,47 +35,55 @@ public class StoreTest {
                 .setMaxDbs(100)
                 .open(tmp.newFolder());
 
-        store = new Store<>(env, "test", new FSTSerializer<>(), ImmutableMap.of("length-index", StoreTest::stringLen));
+        store = new Store<>(env, "test", new FSTSerializer<>(), ImmutableMap.of(LENGTH_INDEX, StoreTest::stringLen));
+    }
+
+    @Test
+    public void putAndGetByIndex() {
+        putAndGet("a");
+        putAndGet("aa");
+        putAndGet("ab");
+        putAndGet("bbb");
+        putAndGet("xxx");
+
+        try (Txn<ByteBuffer> txn = env.txnRead()) {
+            assertEquals(Sets.newHashSet("a"), new HashSet<>(store.getByIndex(LENGTH_INDEX, txn, intKey(1))));
+            assertEquals(Sets.newHashSet("aa", "ab"), new HashSet<>(store.getByIndex(LENGTH_INDEX, txn, intKey(2))));
+            assertEquals(Sets.newHashSet("bbb", "xxx"), new HashSet<>(store.getByIndex(LENGTH_INDEX, txn, intKey(3))));
+        }
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void putAndGetNull() {
+        putAndGet(null);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void putAndGetNullKey() {
+        store.put(null, "x");
+    }
+
+    private void putAndGet(String v) {
+        final Key key = key(UUID.randomUUID());
+        store.put(key, v);
+        try (Txn<ByteBuffer> txn = env.txnRead()) {
+            assertEquals(v, store.get(txn, key).get());
+        }
     }
 
     private static Key stringLen(String s) {
+        int length = s.length();
+        return intKey(length);
+    }
+
+    private static Key intKey(int length) {
         final ByteBuffer bb = ByteBuffer.allocateDirect(Integer.BYTES);
-        bb.putInt(s.length()).flip();
+        bb.putInt(length).flip();
         return new Key(bb);
     }
 
     private static Key key(Object o) {
         return new Key(Bytes.toDirectBuffer(o.toString().getBytes()));
     }
-
-    @Test
-    public void putAndGet() throws Exception {
-        putAndGet("v");
-        putAndGet("v1");
-        putAndGet("v2");
-    }
-
-    @Test(expected = NullPointerException.class)
-    public void putAndGetNull() throws Exception {
-        putAndGet(null);
-    }
-
-    @Test(expected = NullPointerException.class)
-    public void putAndGetNullKey() throws Exception {
-        store.put(null, "x");
-    }
-
-    private void putAndGet(String v) {
-        final Key k1 = key(UUID.randomUUID());
-        store.put(k1, v);
-        try (Txn<ByteBuffer> txn = env.txnRead()) {
-            assertEquals(v, store.get(txn, k1).get());
-        }
-    }
-
-    @Property
-    public void putAndGetByIndex(byte[] bytes) throws Exception {
-    }
-
 
 }

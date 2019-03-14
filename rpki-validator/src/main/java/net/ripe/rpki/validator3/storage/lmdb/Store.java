@@ -1,14 +1,11 @@
 package net.ripe.rpki.validator3.storage.lmdb;
 
-import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.Serializer;
+import org.lmdbjava.Cursor;
 import org.lmdbjava.CursorIterator;
 import org.lmdbjava.Dbi;
-import org.lmdbjava.DbiFlags;
 import org.lmdbjava.Env;
 import org.lmdbjava.KeyRange;
-import org.lmdbjava.MaskedFlag;
-import org.lmdbjava.PutFlags;
 import org.lmdbjava.Txn;
 
 import java.nio.ByteBuffer;
@@ -63,7 +60,9 @@ public class Store<T> {
         indexFunctions.forEach((n, idxFun) -> {
             final Key indexKey = idxFun.apply(value);
             final Dbi<ByteBuffer> indexDb = indexes.get(n);
-            indexDb.put(txn, indexKey.toByteBuffer(), pkBuf, PutFlags.MDB_APPENDDUP);
+            try (Cursor<ByteBuffer> c = indexDb.openCursor(txn)) {
+                c.put(indexKey.toByteBuffer(), pkBuf);
+            }
         });
     }
 
@@ -74,7 +73,6 @@ public class Store<T> {
                 Optional.empty() :
                 Optional.of(serializer.fromBytes(bb));
     }
-
 
     public List<T> getByIndex(String indexName, Txn<ByteBuffer> txn, Key indexKey) {
         checkNotNull(indexKey, "Index key is null");
