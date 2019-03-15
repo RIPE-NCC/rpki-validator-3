@@ -233,8 +233,11 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
 
     @Override
     public void remove(long id) {
-        RpkiRepository rpkiRepository = super.get(id);
-        validationRuns.removeAllForRpkiRepository(rpkiRepository);
-        validationScheduler.removeRpkiRepository(rpkiRepository);
+        RpkiRepository repository = super.get(id);
+        validationRuns.removeAllForRpkiRepository(repository);
+        if (repository.getType() == RpkiRepository.Type.RRDP) {
+            validationScheduler.removeRpkiRepository(repository);
+        }
+        entityManager.remove(repository);
     }
 }
