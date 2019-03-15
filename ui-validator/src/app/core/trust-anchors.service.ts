@@ -4,6 +4,7 @@ import {Injectable} from '@angular/core';
 
 import {IValidationChecksResponse} from '../monitoring-ta/validation-details/validation-detail.model';
 import {IResponse} from '../shared/response.model';
+import {IRepository} from "../monitoring-ta/repositories/repositories.model";
 
 @Injectable()
 export class TrustAnchorsService {
@@ -14,6 +15,7 @@ export class TrustAnchorsService {
     private _trustAnchorByIdUrl = 'api/trust-anchors/{id}';
     private _trustAnchorByIdValidationChecksUrl = 'api/trust-anchors/{id}/validation-checks';
     private _repositoriesByTaId = 'api/rpki-repositories/';
+    private _repositoriesById = 'api/rpki-repositories/{id}';
     private _repositoriesStatusesByTaId = 'api/rpki-repositories/statuses/{taId}';
 
 
@@ -66,6 +68,10 @@ export class TrustAnchorsService {
         .set('sortDirection', sortDirection);
 
       return this._http.get<any>(this._repositoriesByTaId, { params: params });
+    }
+
+    deleteRepository(repo : IRepository) : Observable<any> {
+      return this._http.delete<IResponse>(this._repositoriesById.replace('{id}', repo.id));
     }
 
     getRepositoriesStatuses(trustAnchorId: string) {
