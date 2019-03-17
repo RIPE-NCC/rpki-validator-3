@@ -37,9 +37,6 @@ import javax.validation.ConstraintValidatorContext;
 public class AddIgnoreFilterValidator implements ConstraintValidator<ValidAddIgnoreFilter, AddIgnoreFilter> {
     @Override
     public boolean isValid(AddIgnoreFilter value, ConstraintValidatorContext context) {
-        if (value.getAsn() == null && value.getPrefix() == null) {
-            return false;
-        }
-        return true;
+        return value.getAsn() != null || value.getPrefix() != null;
     }
 }

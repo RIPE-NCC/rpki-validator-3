@@ -39,8 +39,10 @@ import net.ripe.rpki.commons.crypto.cms.ghostbuster.GhostbustersCms;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.crypto.cms.roa.RoaCms;
 import net.ripe.rpki.commons.crypto.crl.X509Crl;
+import net.ripe.rpki.commons.crypto.util.CertificateRepositoryObjectFactory;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificate;
+import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.storage.Binary;
 import net.ripe.rpki.validator3.util.Sha256;
@@ -53,6 +55,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -97,7 +100,7 @@ public class RpkiObject extends Base<RpkiObject> {
     private byte[] sha256;
 
     @NotNull
-    private EncodedRpkiObject encodedRpkiObject;
+    private byte[] encoded;
 
     @NotNull
     @Valid
@@ -116,7 +119,7 @@ public class RpkiObject extends Base<RpkiObject> {
         this.locations.add(location);
         byte[] encoded = object.getEncoded();
         this.sha256 = Sha256.hash(encoded);
-        this.encodedRpkiObject = new EncodedRpkiObject(this, encoded);
+        this.encoded = encoded;
         this.lastMarkedReachableAt = Instant.now();
         if (object instanceof X509ResourceCertificate) {
             this.serialNumber = ((X509ResourceCertificate) object).getSerialNumber();
@@ -156,6 +159,37 @@ public class RpkiObject extends Base<RpkiObject> {
         } else {
             throw new IllegalArgumentException("unsupported certificate repository object type " + object);
         }
+    }
+
+    public <T extends CertificateRepositoryObject> Optional<T> get(Class<T> clazz, ValidationResult validationResult) {
+        ValidationResult temporary = ValidationResult.withLocation(validationResult.getCurrentLocation());
+        try {
+            return get(clazz, validationResult.getCurrentLocation().getName());
+        } finally {
+            validationResult.addAll(temporary);
+        }
+    }
+
+    public <T extends CertificateRepositoryObject> Optional<T> get(final Class<T> clazz, final String location) {
+        ValidationResult temporary = ValidationResult.withLocation(location);
+
+        ValidationResult ignored = ValidationResult.withLocation(location);
+        CertificateRepositoryObject candidate = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(
+                encoded,
+                ignored // Ignore any parse errors, as all stored objects must be parsable
+        );
+
+        temporary.rejectIfNull(candidate, "rpki.object.parsable");
+        if (temporary.hasFailureForCurrentLocation()) {
+            return Optional.empty();
+        }
+
+        temporary.rejectIfFalse(clazz.isInstance(candidate), "rpki.object.type.matches", clazz.getSimpleName(), candidate.getClass().getSimpleName());
+        if (temporary.hasFailureForCurrentLocation()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(clazz.cast(candidate));
     }
 
     public void addLocation(String location) {

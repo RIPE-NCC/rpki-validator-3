@@ -41,6 +41,11 @@ import java.nio.ByteBuffer;
 public class Key {
     private final ByteBuffer key;
 
+    public Key(byte[] bytes) {
+        key = ByteBuffer.allocateDirect(bytes.length);
+        key.put(bytes).flip();
+    }
+
     public ByteBuffer toByteBuffer() {
         return key;
     }
