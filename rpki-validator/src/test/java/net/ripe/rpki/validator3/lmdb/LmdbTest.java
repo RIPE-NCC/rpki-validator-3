@@ -38,6 +38,7 @@ import com.jsoniter.output.JsonStream;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -121,6 +122,7 @@ public class LmdbTest {
     }
 
     @Test
+    @Ignore
     public void testLmdbSpeedForBinary() throws IOException {
         final Kryo kryo = new Kryo();
         kryo.register(Bla.class);
@@ -148,6 +150,7 @@ public class LmdbTest {
     }
 
     @Test
+    @Ignore
     public void testLmdbSpeedForFastBinary() throws IOException {
         final DefaultCoder coder = new DefaultCoder(true, Bla.class, Thingy.class);
         testTemplate(
@@ -169,6 +172,7 @@ public class LmdbTest {
     }
 
     @Test
+    @Ignore
     public void testLmdbSpeedForJson() throws IOException {
         testTemplate(
                 k -> {
@@ -188,8 +192,18 @@ public class LmdbTest {
         );
     }
 
+    @Test
+    public void testLmdbSpeedForTwoUUIDs() throws IOException {
+        testTemplate(
+                k -> uuidBB(),
+                (p, k) -> p.getLeft().get(p.getRight(), k)
+        );
+    }
+
     private <T> void testTemplate(Function<ByteBuffer, ByteBuffer> value,
                                   BiFunction<Pair<Dbi<ByteBuffer>, Txn<ByteBuffer>>, ByteBuffer, T> extract) throws IOException {
+
+        long begin = System.currentTimeMillis();
         File path = tmp.newFolder();
         final Env<ByteBuffer> env = create()
                 .setMapSize(1024 * 1024 * 1024L)
@@ -198,7 +212,7 @@ public class LmdbTest {
 
         final Dbi<ByteBuffer> db = env.openDbi(DB_NAME, MDB_CREATE);
 
-        int keyCount = 20_000;
+        int keyCount = 10_000_000;
 //        int keyCount = 2;
         final ByteBuffer[] keys = new ByteBuffer[keyCount];
         for (int k = 0; k < keyCount; k++) {
@@ -218,7 +232,9 @@ public class LmdbTest {
                     .forEach(Assert::assertNotNull);
         }
 
-        System.out.println("env = " + env.info());
+        long end = System.currentTimeMillis();
+
+        System.out.println("time = " + (end - begin) + "ms, env = " + env.info());
         StreamUtils.copy(Runtime.getRuntime().exec("du -sm " + path).getInputStream(), System.out);
         env.close();
     }

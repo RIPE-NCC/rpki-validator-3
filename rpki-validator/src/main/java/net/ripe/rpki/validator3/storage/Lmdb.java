@@ -64,7 +64,7 @@ public class Lmdb {
     private Store<RpkiObject> createRpkiObjectStore() throws Exception {
         return new Store<>(env,
                 RpkiObject.class.getName(),
-                new FSTSerializer<>(),
+                new FSTCoder<>(),
                 ImmutableMap.of(
                         "by-sha256", rpkiObject -> new Key(Bytes.toDirectBuffer(rpkiObject.getSha256())),
                         "by-aki", rpkiObject -> new Key(Bytes.toDirectBuffer(rpkiObject.getAuthorityKeyIdentifier()))

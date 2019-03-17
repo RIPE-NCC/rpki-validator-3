@@ -36,41 +36,73 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * Keep only one write LMDB transaction per thread.
+ * Keep only one LMDB transaction per thread. Also have type-level
+ * distinction between read-only and read-write transactions.
  *
  * @param <T>
  */
-public class Tx<T> {
+public abstract class Tx<T> implements AutoCloseable {
 
-    private Env<T> env;
+    protected final Env<T> env;
+    private final ThreadLocal<Txn<T>> localWriteTx = ThreadLocal.withInitial(this::makeTxn);
 
-    private final ThreadLocal<Txn<T>> localWriteTx = ThreadLocal.withInitial(() -> env.txnWrite());
+    protected abstract Txn<T> makeTxn();
 
     private Tx(Env<T> env) {
         this.env = env;
     }
 
-    public <R> R writeTx(Function<Tx<T>, R> f) {
-        try (Txn<T> txn = txn()) {
-            R r = f.apply(this);
-            txn.commit();
-            return r;
-        }
+    public static <R> Read<R> read(Env<R> e) {
+        return new Read<>(e);
     }
 
-    public void useWriteTx(Consumer<Tx<T>> f) {
-        try (Txn<T> txn = txn()) {
-            f.accept(this);
-            txn.commit();
-        }
-    }
-
-    public static <R> Tx<R> of(Env<R> e) {
-        return new Tx<>(e);
+    public static <R> Write<R> write(Env<R> e) {
+        return new Write<>(e);
     }
 
     public Txn<T> txn() {
         return localWriteTx.get();
     }
 
+    public static <R, T> R with(Write<T> wtx, Function<Write<T>, R> f) {
+        try (Txn<T> txn = wtx.txn()) {
+            R r = f.apply(wtx);
+            txn.commit();
+            return r;
+        }
+    }
+
+    public static <T> void use(Write<T> wtx, Consumer<Write<T>> c) {
+        try (Txn<T> txn = wtx.txn()) {
+            c.accept(wtx);
+            txn.commit();
+        }
+    }
+
+    public static class Write<T> extends Read<T> {
+        Write(Env<T> e) {
+            super(e);
+        }
+
+        @Override
+        protected Txn<T> makeTxn() {
+            return env.txnWrite();
+        }
+    }
+
+    public static class Read<T> extends Tx<T> {
+        @Override
+        protected Txn<T> makeTxn() {
+            return env.txnRead();
+        }
+
+        Read(Env<T> e) {
+            super(e);
+        }
+    }
+
+    @Override
+    public void close() {
+        txn().close();
+    }
 }

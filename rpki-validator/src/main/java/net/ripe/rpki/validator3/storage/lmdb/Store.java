@@ -29,7 +29,7 @@
  */
 package net.ripe.rpki.validator3.storage.lmdb;
 
-import net.ripe.rpki.validator3.storage.Serializer;
+import net.ripe.rpki.validator3.storage.Coder;
 import org.lmdbjava.Cursor;
 import org.lmdbjava.CursorIterator;
 import org.lmdbjava.Dbi;
@@ -60,16 +60,16 @@ import static org.lmdbjava.DbiFlags.MDB_DUPSORT;
 public class Store<T> {
     private final Env<ByteBuffer> env;
     private final Dbi<ByteBuffer> mainDb;
-    private final Serializer<T> serializer;
+    private final Coder<T> coder;
     private final Map<String, Dbi<ByteBuffer>> indexes;
     private final Map<String, Function<T, Key>> indexFunctions;
 
     public Store(final Env<ByteBuffer> env,
                  final String name,
-                 final Serializer<T> serializer,
+                 final Coder<T> coder,
                  final Map<String, Function<T, Key>> indexFunctions) {
         this.env = env;
-        this.serializer = serializer;
+        this.coder = coder;
         this.mainDb = env.openDbi(name + ":main", MDB_CREATE);
         this.indexFunctions = indexFunctions;
         this.indexes = new HashMap<>();
@@ -79,34 +79,51 @@ public class Store<T> {
                 indexes.put(n, env.openDbi(name + ":idx:" + n, MDB_CREATE, MDB_DUPSORT)));
     }
 
-    public void put(Key primaryKey, T value) {
+    public Optional<T> put(Key primaryKey, T value) {
         checkKeyAndValue(primaryKey, value);
-        Tx.of(env).useWriteTx(tx -> put(tx, primaryKey, value));
+        return Tx.with(Tx.write(env), tx -> put(tx, primaryKey, value));
     }
 
-    public void put(Tx<ByteBuffer> tx, Key primaryKey, T value) {
-        checkKeyAndValue(primaryKey, value);
+    public Optional<T> put(Tx.Write<ByteBuffer> tx, Key primaryKey, T value) {
         final ByteBuffer pkBuf = primaryKey.toByteBuffer();
         final Txn<ByteBuffer> txn = tx.txn();
-        mainDb.put(txn, pkBuf, serializer.toBytes(value));
-        indexFunctions.forEach((n, idxFun) -> {
-            final Key indexKey = idxFun.apply(value);
-            checkNotNull(indexKey, "Index key for value + " + value + " is null.");
-            try (Cursor<ByteBuffer> c = indexes.get(n).openCursor(txn)) {
-                c.put(indexKey.toByteBuffer(), pkBuf);
-            }
-        });
+        final Optional<T> oldValue = get(tx, primaryKey);
+        mainDb.put(txn, pkBuf, coder.toBytes(value));
+        if (oldValue.isPresent()) {
+            indexFunctions.forEach((n, idxFun) -> {
+                final Key oldIndexKey = idxFun.apply(oldValue.get());
+                final Key indexKey = idxFun.apply(value);
+                checkNotNull(indexKey, "Index key for value + " + value + " is null.");
+                final Dbi<ByteBuffer> index = indexes.get(n);
+                if (!oldIndexKey.equals(indexKey)) {
+                    index.delete(txn, oldIndexKey.toByteBuffer(), pkBuf);
+                }
+                try (Cursor<ByteBuffer> c = index.openCursor(txn)) {
+                    c.put(indexKey.toByteBuffer(), pkBuf);
+                }
+            });
+            return oldValue;
+        } else {
+            indexFunctions.forEach((n, idxFun) -> {
+                final Key indexKey = idxFun.apply(value);
+                checkNotNull(indexKey, "Index key for value + " + value + " is null.");
+                try (Cursor<ByteBuffer> c = indexes.get(n).openCursor(txn)) {
+                    c.put(indexKey.toByteBuffer(), pkBuf);
+                }
+            });
+            mainDb.put(txn, pkBuf, coder.toBytes(value));
+        }
+        return Optional.empty();
     }
 
     public void delete(Key primaryKey) {
         checkNotNull(primaryKey, "Key is null");
-        Tx.of(env).useWriteTx(tx -> delete(tx, primaryKey));
+        Tx.use(Tx.write(env), tx -> delete(tx, primaryKey));
     }
 
-    public void delete(Tx<ByteBuffer> tx, Key primaryKey) {
+    public void delete(Tx.Write<ByteBuffer> tx, Key primaryKey) {
         checkNotNull(primaryKey, "Key is null");
         final ByteBuffer pkBuf = primaryKey.toByteBuffer();
-
         final Txn<ByteBuffer> txn = tx.txn();
         if (indexFunctions.isEmpty()) {
             mainDb.delete(txn, pkBuf);
@@ -115,7 +132,7 @@ public class Store<T> {
             if (bb != null) {
                 // TODO probably avoid deserialization, just store the
                 //  index keys next to the serialized value
-                final T value = serializer.fromBytes(bb);
+                final T value = coder.fromBytes(bb);
                 mainDb.delete(txn, pkBuf);
                 indexFunctions.forEach((n, idxFun) -> {
                     final Key indexKey = idxFun.apply(value);
@@ -126,12 +143,12 @@ public class Store<T> {
         }
     }
 
-    public Optional<T> get(Txn<ByteBuffer> txn, Key primaryKey) {
+    public Optional<T> get(Tx.Read<ByteBuffer> txn, Key primaryKey) {
         checkNotNull(primaryKey, "Key is null");
-        ByteBuffer bb = mainDb.get(txn, primaryKey.toByteBuffer());
+        ByteBuffer bb = mainDb.get(txn.txn(), primaryKey.toByteBuffer());
         return bb == null ?
                 Optional.empty() :
-                Optional.of(serializer.fromBytes(bb));
+                Optional.of(coder.fromBytes(bb));
     }
 
     public List<T> getByIndex(String indexName, Txn<ByteBuffer> txn, Key indexKey) {
@@ -147,7 +164,7 @@ public class Store<T> {
         while (iterator.hasNext()) {
             final ByteBuffer bb = mainDb.get(txn, iterator.next().val());
             if (bb != null) {
-                values.add(serializer.fromBytes(bb));
+                values.add(coder.fromBytes(bb));
             }
         }
         return values;

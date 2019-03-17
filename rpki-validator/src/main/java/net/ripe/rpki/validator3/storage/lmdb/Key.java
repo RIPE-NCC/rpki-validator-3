@@ -30,12 +30,14 @@
 package net.ripe.rpki.validator3.storage.lmdb;
 
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.util.Hex;
 
 import java.nio.ByteBuffer;
 
 @AllArgsConstructor
+@EqualsAndHashCode
 public class Key {
     private final ByteBuffer key;
 
