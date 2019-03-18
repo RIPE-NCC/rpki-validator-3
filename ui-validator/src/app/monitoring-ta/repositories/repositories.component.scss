@@ -1,3 +1,5 @@
+@import "../../../styles";
+
 p {
   background-color: #f2f2f2;
   padding: .75rem;
@@ -28,6 +30,5 @@ table {
 
 .ban-icon {
   font-size: 1.25rem;
-  color: #c43c35;
-  text-align: center;
+  color: $red-rpki;
 }
