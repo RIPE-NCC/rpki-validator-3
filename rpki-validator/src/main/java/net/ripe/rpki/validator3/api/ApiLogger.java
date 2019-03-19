@@ -53,6 +53,6 @@ public class ApiLogger extends HandlerInterceptorAdapter {
 
         long endTime = System.currentTimeMillis();
         long time = endTime - startTime;
-        logger.info("Handle :{}, time: {}ms", handler, time);
+        logger.debug("Handle :{}, time: {}ms", handler, time);
     }
 }
