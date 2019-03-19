@@ -103,7 +103,7 @@ public class CertificateTreeValidationService {
         entityManager.setFlushMode(FlushModeType.COMMIT);
 
         TrustAnchor trustAnchor = trustAnchors.get(trustAnchorId);
-        log.info("starting tree validation for {}", trustAnchor);
+        log.info("Starting tree validation for {}", trustAnchor);
 
         CertificateTreeValidationRun validationRun = new CertificateTreeValidationRun(trustAnchor);
         validationRuns.add(validationRun);
@@ -151,7 +151,7 @@ public class CertificateTreeValidationService {
             validatedRpkiObjects.update(trustAnchor, validationRun.getValidatedObjects());
         } finally {
             validationRun.completeWith(validationResult);
-            log.info("tree validation {} for {}", validationRun.getStatus(), trustAnchor);
+            log.info("Tree validation {} for {}", validationRun.getStatus().toString().toLowerCase(), trustAnchor);
         }
     }
 
@@ -312,25 +312,4 @@ public class CertificateTreeValidationService {
         return result;
     }
 
-//    private Map<URI, RpkiObject> retrieveManifestEntries(ManifestCms manifest, URI manifestUri, ValidationResult validationResult) {
-//        final Map<byte[], RpkiObject> objectsInManifest = rpkiObjects.findObjectsInManifest(manifest.getFiles());
-//
-//        Map<URI, RpkiObject> result = new LinkedHashMap<>();
-//        for (Map.Entry<String, byte[]> entry : manifest.getFiles().entrySet()) {
-//            URI location = manifestUri.resolve(entry.getKey());
-//            validationResult.setLocation(new ValidationLocation(location));
-//
-//            RpkiObject object = objectsInManifest.get(entry.getValue());
-//            validationResult.rejectIfFalse(object != null, VALIDATOR_MANIFEST_ENTRY_FOUND, manifestUri.toASCIIString());
-//
-//            if (object != null) {
-//                boolean hashMatches = Arrays.equals(object.getSha256(), entry.getValue());
-//                validationResult.rejectIfFalse(hashMatches, VALIDATOR_MANIFEST_ENTRY_HASH_MATCHES, entry.getKey());
-//                if (hashMatches) {
-//                    result.put(location, object);
-//                }
-//            };
-//        }
-//        return result;
-//    }
 }
