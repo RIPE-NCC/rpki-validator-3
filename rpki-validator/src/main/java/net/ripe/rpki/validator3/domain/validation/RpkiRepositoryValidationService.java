@@ -106,7 +106,7 @@ public class RpkiRepositoryValidationService {
     }
 
     public void validateRpkiRepository(long rpkiRepositoryId) {
-        entityManager.setFlushMode(FlushModeType.AUTO);
+        entityManager.setFlushMode(FlushModeType.COMMIT);
 
         final RpkiRepository rpkiRepository = rpkiRepositories.get(rpkiRepositoryId);
         log.info("Starting RPKI repository validation for " + rpkiRepository);
