@@ -61,7 +61,10 @@ public class RpkiRepositoryService {
     public void scheduleRpkiRepositoryValidation() {
         log.info("Schedule RPKI validation for the existing repositories");
         new TransactionTemplate(transactionManager).execute(status -> {
-            rpkiRepositories.findRrdpRepositories().forEach(r -> validationScheduler.addRpkiRepository(r));
+            rpkiRepositories.findRrdpRepositories().forEach(r -> {
+                validationScheduler.addRpkiRepository(r);
+                log.info("Scheduled {} for validation.", r);
+            });
             return null;
         });
     }
