@@ -42,6 +42,8 @@ import net.ripe.rpki.validator3.domain.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.domain.ValidationCheck;
 import net.ripe.rpki.validator3.util.Hex;
 import net.ripe.rpki.validator3.util.Sha256;
+import net.ripe.rpki.validator3.util.Time;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -73,6 +75,7 @@ public class RrdpService {
         this.rpkiObjectRepository = rpkiObjectRepository;
     }
 
+    @Transactional(Transactional.TxType.REQUIRED)
     public void storeRepository(final RpkiRepository rpkiRepository, final RpkiRepositoryValidationRun validationRun) {
         try {
             doStoreRepository(rpkiRepository, validationRun);
@@ -130,14 +133,22 @@ public class RrdpService {
 
     private void readSnapshot(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun, Notification notification) {
         final byte[] snapshotBody = rrdpClient.getBody(notification.snapshotUri);
-        final byte[] snapshotHash = Sha256.hash(snapshotBody);
+        Pair<byte[], Long> timed = Time.timed(() -> Sha256.hash(snapshotBody));
+        final byte[] snapshotHash = timed.getLeft();
+        log.info("Calculating snapshot hash time {}ms", timed.getRight());
         if (!Arrays.equals(Hex.parse(notification.snapshotHash), snapshotHash)) {
             throw new RrdpException(ErrorCodes.RRDP_WRONG_SNAPSHOT_HASH, "Hash of the snapshot file " +
                     notification.snapshotUri + " is " + Hex.format(snapshotHash) + ", but notification file says " + notification.snapshotHash);
         }
 
-        final Snapshot snapshot = rrdpParser.snapshot(new ByteArrayInputStream(snapshotBody));
-        storeSnapshot(snapshot, validationRun);
+        Pair<Snapshot, Long> timedSnapshot = Time.timed(() -> rrdpParser.snapshot(new ByteArrayInputStream(snapshotBody)));
+        log.info("Parsing snapshot time {}ms", timedSnapshot.getRight());
+        Pair<Object, Long> timedStoreSnapshot = Time.timed(() -> {
+            storeSnapshot(timedSnapshot.getLeft(), validationRun);
+            return null;
+        });
+
+        log.info("Storing snapshot time {}ms", timedStoreSnapshot.getRight());
         rpkiRepository.setRrdpSessionId(notification.sessionId);
         rpkiRepository.setRrdpSerial(notification.serial);
     }
