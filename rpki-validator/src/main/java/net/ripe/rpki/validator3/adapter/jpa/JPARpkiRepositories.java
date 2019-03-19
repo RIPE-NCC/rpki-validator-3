@@ -168,13 +168,17 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
         for (RpkiRepository repository : select().where(rpkiRepository.trustAnchors.contains(trustAnchor)).fetch()) {
             repository.removeTrustAnchor(trustAnchor);
             if (repository.getTrustAnchors().isEmpty()) {
-                if (repository.getType() == RpkiRepository.Type.RRDP) {
-                    validationScheduler.removeRpkiRepository(repository);
-                }
-                validationRuns.removeAllForRpkiRepository(repository);
-                entityManager.remove(repository);
+                cleanUpRepository(repository);
             }
         }
+    }
+
+    private void cleanUpRepository(RpkiRepository repository) {
+        if (repository.getType() == RpkiRepository.Type.RRDP) {
+            validationScheduler.removeRpkiRepository(repository);
+        }
+        validationRuns.removeAllForRpkiRepository(repository);
+        entityManager.remove(repository);
     }
 
     private JPAQuery<RpkiRepository> applyFilters(JPAQuery<RpkiRepository> query, RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent, SearchTerm searchTerm) {
@@ -234,10 +238,6 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
     @Override
     public void remove(long id) {
         RpkiRepository repository = super.get(id);
-        validationRuns.removeAllForRpkiRepository(repository);
-        if (repository.getType() == RpkiRepository.Type.RRDP) {
-            validationScheduler.removeRpkiRepository(repository);
-        }
-        entityManager.remove(repository);
+        cleanUpRepository(repository);
     }
 }
