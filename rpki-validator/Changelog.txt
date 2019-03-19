@@ -1,3 +1,3 @@
-* 2019-03-19 Mikhail Puzanov <mpuzanov@ripe.net> - 3.0
+* Tue Mar 19 2019 Mikhail Puzanov <mpuzanov@ripe.net> - 3.0
 - fixed issue with very slow initial sync (https://github.com/RIPE-NCC/rpki-validator-3/issues/77)
 - fixed issues with too many messages in log from API logger (https://github.com/RIPE-NCC/rpki-validator-3/issues/75)
