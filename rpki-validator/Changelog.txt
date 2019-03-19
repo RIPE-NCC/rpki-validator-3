@@ -1,0 +1,3 @@
+2019-03-19
+ - fixed issue with very slow initial sync (https://github.com/RIPE-NCC/rpki-validator-3/issues/77)
+ - fixed issues with too many messages in log from API logger (https://github.com/RIPE-NCC/rpki-validator-3/issues/75)
