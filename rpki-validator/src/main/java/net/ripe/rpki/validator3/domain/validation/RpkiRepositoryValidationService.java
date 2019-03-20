@@ -106,7 +106,7 @@ public class RpkiRepositoryValidationService {
     }
 
     public void validateRpkiRepository(long rpkiRepositoryId) {
-        entityManager.setFlushMode(FlushModeType.AUTO);
+        entityManager.setFlushMode(FlushModeType.COMMIT);
 
         final RpkiRepository rpkiRepository = rpkiRepositories.get(rpkiRepositoryId);
         log.info("Starting RPKI repository validation for " + rpkiRepository);
@@ -170,11 +170,12 @@ public class RpkiRepositoryValidationService {
             );
 
         validationRun.completeWith(results);
-        affectedTrustAnchors.forEach(r -> {
-            log.info("The following repository was affected, validation will be triggered {}", r);
-            validationRunRepository.runCertificateTreeValidation(r);
+        affectedTrustAnchors.forEach(ta -> {
+            log.info("The following trust anchor was affected, validation will be triggered {}", ta);
+            validationRunRepository.runCertificateTreeValidation(ta);
         });
     }
+    
 
     protected ValidationResult processRsyncRepository(Set<TrustAnchor> affectedTrustAnchors,
                                                       RsyncRepositoryValidationRun validationRun,
@@ -204,8 +205,9 @@ public class RpkiRepositoryValidationService {
             if (repository.getType() == RpkiRepository.Type.RSYNC_PREFETCH ||
                     repository.getType() == RpkiRepository.Type.RSYNC &&
                             (parentRepository == null || parentRepository.getType() == RpkiRepository.Type.RSYNC_PREFETCH)) {
-                log.info("Storing object downloaded for {}", repository.getLocationUri());
+                log.info("Storing objects downloaded for {}", repository.getLocationUri());
                 storeObjects(targetDirectory, validationRun, validationResult, objectsBySha256, repository);
+                log.info("Stored {} objects from the repository {}", objectsBySha256.size(), repository);
             } else {
                 log.info("Not storing any objects for the repository {} because parent repository is {}",
                         repository.getLocationUri(), parentRepository == null ? null : parentRepository.getType());
@@ -238,7 +240,11 @@ public class RpkiRepositoryValidationService {
         return null;
     }
 
-    protected void storeObjects(File targetDirectory, RsyncRepositoryValidationRun validationRun, ValidationResult validationResult, Map<String, RpkiObject> objectsBySha256, RpkiRepository repository) throws IOException {
+    protected void storeObjects(File targetDirectory,
+                                RsyncRepositoryValidationRun validationRun,
+                                ValidationResult validationResult,
+                                Map<String, RpkiObject> objectsBySha256,
+                                RpkiRepository repository) throws IOException {
         Files.walkFileTree(targetDirectory.toPath(), new SimpleFileVisitor<Path>() {
             private URI currentLocation = URI.create(repository.getLocationUri());
 
