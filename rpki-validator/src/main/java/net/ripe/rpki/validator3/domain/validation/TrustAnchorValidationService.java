@@ -128,6 +128,7 @@ public class TrustAnchorValidationService {
 
             validationRun.completeWith(validationResult);
             if (updated) {
+                // TODO Do this part outside of this specific transaction
                 final Set<TrustAnchor> affectedTrustAnchors = Sets.newHashSet(trustAnchor);
                 if (trustAnchor.getRsyncPrefetchUri() != null) {
                     rpkiRepositories.findByURI(trustAnchor.getRsyncPrefetchUri())
