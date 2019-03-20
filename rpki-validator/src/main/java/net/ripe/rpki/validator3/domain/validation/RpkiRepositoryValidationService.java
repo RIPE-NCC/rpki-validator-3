@@ -149,8 +149,7 @@ public class RpkiRepositoryValidationService {
 
         Set<TrustAnchor> affectedTrustAnchors = new HashSet<>();
 
-        final RsyncRepositoryValidationRun validationRun = new RsyncRepositoryValidationRun();
-        validationRunRepository.add(validationRun);
+        final RsyncRepositoryValidationRun validationRun = makeRsyncValidationRun();
 
         final Map<String, RpkiObject> objectsBySha256 = new HashMap<>();
         final Map<URI, RpkiRepository> fetchedLocations = new HashMap<>();
@@ -175,9 +174,39 @@ public class RpkiRepositoryValidationService {
             validationRunRepository.runCertificateTreeValidation(ta);
         });
     }
-    
 
-    protected ValidationResult processRsyncRepository(Set<TrustAnchor> affectedTrustAnchors,
+    public Set<TrustAnchor> prefetchRepository(RpkiRepository repository) {
+        entityManager.setFlushMode(FlushModeType.COMMIT);
+
+        final Set<TrustAnchor> affectedTrustAnchors = new HashSet<>();
+        if (repository.isPending() && repository.getType() == RpkiRepository.Type.RSYNC_PREFETCH) {
+            log.info("Processing rsync-prefetch repository {}", repository);
+
+            final RsyncRepositoryValidationRun validationRun = makeRsyncValidationRun();
+
+            final ValidationResult validationResult = ValidationResult.withLocation(URI.create(repository.getRsyncRepositoryUri()));
+            validationRun.addRpkiRepository(repository);
+
+            final Map<String, RpkiObject> objectsBySha256 = new HashMap<>();
+            try {
+                final File targetDirectory = Rsync.localFileFromRsyncUri(rsyncLocalStorageDirectory, URI.create(repository.getRsyncRepositoryUri()));
+                fetchRsyncRepository(repository, targetDirectory, validationResult);
+
+                log.info("Storing objects downloaded for {}", repository.getLocationUri());
+                storeObjects(targetDirectory, validationRun, validationResult, objectsBySha256, repository);
+                log.info("Stored {} objects from the repository {}", objectsBySha256.size(), repository);
+            } catch (IOException e) {
+                repository.setFailed();
+                validationResult.error(ErrorCodes.RSYNC_REPOSITORY_IO, e.toString(), ExceptionUtils.getStackTrace(e));
+            }
+
+            affectedTrustAnchors.addAll(repository.getTrustAnchors());
+            repository.setDownloaded();
+        }
+        return affectedTrustAnchors;
+    }
+
+    private ValidationResult processRsyncRepository(Set<TrustAnchor> affectedTrustAnchors,
                                                       RsyncRepositoryValidationRun validationRun,
                                                       Map<URI, RpkiRepository> fetchedLocations,
                                                       Map<String, RpkiObject> objectsBySha256,
@@ -310,6 +339,12 @@ public class RpkiRepositoryValidationService {
                 return FileVisitResult.CONTINUE;
             }
         });
+    }
+
+    private RsyncRepositoryValidationRun makeRsyncValidationRun() {
+        final RsyncRepositoryValidationRun validationRun = new RsyncRepositoryValidationRun();
+        validationRunRepository.add(validationRun);
+        return validationRun;
     }
 
     private boolean isRrdpUri(final String uri) {

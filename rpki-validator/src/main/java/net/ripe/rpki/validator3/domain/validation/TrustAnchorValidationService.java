@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.domain.validation;
 
+import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
@@ -54,33 +55,31 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 @Slf4j
 public class TrustAnchorValidationService {
 
-    private final EntityManager entityManager;
     private final TrustAnchors trustAnchorRepository;
-    private final ValidationRuns validationRunRepository;
     private final RpkiRepositories rpkiRepositories;
+    private final ValidationRuns validationRunRepository;
     private final File localRsyncStorageDirectory;
-    private final RrdpService rrdpService;
+    private final RpkiRepositoryValidationService repositoryValidationService;
 
     @Autowired
     public TrustAnchorValidationService(
-        EntityManager entityManager,
-        TrustAnchors trustAnchorRepository,
-        ValidationRuns validationRunRepository,
-        RpkiRepositories rpkiRepositories,
-        @Value("${rpki.validator.rsync.local.storage.directory}") File localRsyncStorageDirectory,
-        RrdpService rrdpService
-    ) {
-        this.entityManager = entityManager;
+            TrustAnchors trustAnchorRepository,
+            RpkiRepositories rpkiRepositories, ValidationRuns validationRunRepository,
+            @Value("${rpki.validator.rsync.local.storage.directory}") File localRsyncStorageDirectory,
+            RpkiRepositoryValidationService repositoryValidationService) {
         this.trustAnchorRepository = trustAnchorRepository;
-        this.validationRunRepository = validationRunRepository;
         this.rpkiRepositories = rpkiRepositories;
+        this.validationRunRepository = validationRunRepository;
         this.localRsyncStorageDirectory = localRsyncStorageDirectory;
-        this.rrdpService = rrdpService;
+        this.repositoryValidationService = repositoryValidationService;
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
@@ -129,7 +128,12 @@ public class TrustAnchorValidationService {
 
             validationRun.completeWith(validationResult);
             if (updated) {
-                Transactions.afterCommit(() -> validationRunRepository.runCertificateTreeValidation(trustAnchor));
+                final Set<TrustAnchor> affectedTrustAnchors = Sets.newHashSet(trustAnchor);
+                if (trustAnchor.getRsyncPrefetchUri() != null) {
+                    rpkiRepositories.findByURI(trustAnchor.getRsyncPrefetchUri())
+                            .ifPresent(r -> affectedTrustAnchors.addAll(repositoryValidationService.prefetchRepository(r)));
+                }
+                Transactions.afterCommit(() -> affectedTrustAnchors.forEach(validationRunRepository::runCertificateTreeValidation));
             }
         } catch (CommandExecutionException | IOException e) {
             log.error("validation run for trust anchor {} failed", trustAnchor, e);

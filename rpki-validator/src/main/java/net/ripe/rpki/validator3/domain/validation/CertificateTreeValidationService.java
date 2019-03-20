@@ -273,7 +273,9 @@ public class CertificateTreeValidationService {
         return validatedObjects;
     }
 
-    private RpkiRepository registerRepository(TrustAnchor trustAnchor, Map<URI, RpkiRepository> registeredRepositories, CertificateRepositoryObjectValidationContext context) {
+    private RpkiRepository registerRepository(TrustAnchor trustAnchor,
+                                              Map<URI, RpkiRepository> registeredRepositories,
+                                              CertificateRepositoryObjectValidationContext context) {
         if (context.getRpkiNotifyURI() != null) {
             RpkiRepository rpkiRepository = registeredRepositories.computeIfAbsent(context.getRpkiNotifyURI(), (uri) -> rpkiRepositories.register(
                     trustAnchor,

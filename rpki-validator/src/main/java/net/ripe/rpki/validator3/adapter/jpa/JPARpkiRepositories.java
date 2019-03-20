@@ -93,6 +93,7 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
         if (result.getType() == RpkiRepository.Type.RSYNC) {
             RpkiRepository foundParent = findRsyncParentRepository(uri);
             if (foundParent != null) {
+                log.info("Found a parent {} to the repository {}", foundParent, uri);
                 result.setParentRepository(foundParent);
                 if (foundParent.isDownloaded()) {
                     result.setDownloaded(foundParent.getLastDownloadedAt());
