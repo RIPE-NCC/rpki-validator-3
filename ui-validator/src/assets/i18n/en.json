@@ -85,7 +85,9 @@
     "NO_RECORDS": "No repositories found",
     "URI": "URI",
     "REPO_TYPE": "Type",
-    "REPO_LAST_CHECKED": "Last checked"
+    "REPO_LAST_CHECKED": "Last checked",
+    "TOASTR_MSG_DELETED": "Repository has been removed.",
+    "TOASTR_MSG_DELETED_ERROR": "Unexpected issue. Repository has not been removed."
   },
   "ValidationDetails": {
     "TITLE": "Validation Issues",

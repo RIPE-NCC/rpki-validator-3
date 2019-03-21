@@ -5,6 +5,7 @@ import {TrustAnchorsService} from '../../core/trust-anchors.service';
 import {ColumnSortedEvent} from '../../shared/sortable-table/sort.service';
 import {PagingDetailsModel} from '../../shared/toolbar/paging-details.model';
 import {IResponse} from '../../shared/response.model';
+import {RpkiToastrService} from "../../core/rpki-toastr.service";
 
 @Component({
   selector: 'repositories',
@@ -21,8 +22,10 @@ export class RepositoriesComponent implements OnInit {
   response: IResponse;
   sortTable: ColumnSortedEvent = {sortColumn: '', sortDirection: 'asc'};
   pagingDetails: PagingDetailsModel;
+  deleting: boolean = false;
 
-  constructor(private _trustAnchorsService: TrustAnchorsService) {
+  constructor(private _trustAnchorsService: TrustAnchorsService,
+              private _toastr: RpkiToastrService) {
   }
 
   ngOnInit() {
@@ -56,4 +59,27 @@ export class RepositoriesComponent implements OnInit {
     this.sortTable = sort;
     this.loadData();
   }
+
+  hasFailedRepo(){
+    return this.repositories.filter((x => x.status === 'FAILED' )).length > 0;
+  }
+
+
+  deleteFilter(repo : IRepository){
+    if(!this.deleting){
+      this.deleting = true;
+      this._trustAnchorsService.deleteRepository(repo)
+        .subscribe(
+          response => {
+            this.loadData();
+            this._toastr.info('Repositories.TOASTR_MSG_DELETED');
+            this.deleting = false;
+          }, error => {
+            this._toastr.error('Repositories.TOASTR_MSG_DELETED_ERROR');
+            this.deleting = false;
+          }
+        );
+    }
+  }
+
 }
