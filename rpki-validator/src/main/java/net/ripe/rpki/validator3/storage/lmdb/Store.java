@@ -30,6 +30,7 @@
 package net.ripe.rpki.validator3.storage.lmdb;
 
 import net.ripe.rpki.validator3.storage.Coder;
+import net.ripe.rpki.validator3.storage.stores.LmdbRpkiObjects;
 import org.lmdbjava.Cursor;
 import org.lmdbjava.CursorIterator;
 import org.lmdbjava.Dbi;
@@ -41,12 +42,17 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
+import static org.lmdbjava.DbiFlags.MDB_DUPFIXED;
 import static org.lmdbjava.DbiFlags.MDB_DUPSORT;
 
 /**
@@ -76,7 +82,15 @@ public class Store<T> {
 
         // TODO Add index management, reindexing if the index set has changed
         indexFunctions.forEach((n, idxFun) ->
-                indexes.put(n, env.openDbi(name + ":idx:" + n, MDB_CREATE, MDB_DUPSORT)));
+                indexes.put(n, env.openDbi(name + ":idx:" + n, MDB_CREATE, MDB_DUPSORT, MDB_DUPFIXED)));
+    }
+
+    public Tx.Read<ByteBuffer> readTx() {
+        return Tx.read(env);
+    }
+
+    public Tx.Write<ByteBuffer> writeTx() {
+        return Tx.write(env);
     }
 
     public Optional<T> put(Key primaryKey, T value) {
@@ -143,6 +157,10 @@ public class Store<T> {
         }
     }
 
+    public Optional<T> get(Key primaryKey) {
+        return get(readTx(), primaryKey);
+    }
+
     public Optional<T> get(Tx.Read<ByteBuffer> txn, Key primaryKey) {
         checkNotNull(primaryKey, "Key is null");
         ByteBuffer bb = mainDb.get(txn.txn(), primaryKey.toByteBuffer());
@@ -151,7 +169,7 @@ public class Store<T> {
                 Optional.of(coder.fromBytes(bb));
     }
 
-    public List<T> getByIndex(String indexName, Txn<ByteBuffer> txn, Key indexKey) {
+    public List<T> getByIndex(String indexName, Tx.Read<ByteBuffer> tx, Key indexKey) {
         checkNotNull(indexKey, "Index key is null");
         final Dbi<ByteBuffer> index = indexes.get(indexName);
         if (index == null) {
@@ -159,6 +177,7 @@ public class Store<T> {
         }
 
         final ByteBuffer idxKey = indexKey.toByteBuffer();
+        final Txn<ByteBuffer> txn = tx.txn();
         final CursorIterator<ByteBuffer> iterator = index.iterate(txn, KeyRange.closed(idxKey, idxKey));
         final List<T> values = new ArrayList<>();
         while (iterator.hasNext()) {
@@ -179,5 +198,30 @@ public class Store<T> {
     private void checkKeyAndValue(Key primaryKey, T value) {
         checkNotNull(primaryKey, "Key is null");
         checkNotNull(value, "Value is null");
+    }
+
+    public List<T> getAll() {
+        try(Tx.Read<ByteBuffer> tx = readTx()) {
+            final CursorIterator<ByteBuffer> ci = mainDb.iterate(tx.txn());
+            return StreamSupport
+                    .stream(ci.iterable().spliterator(), false)
+                    .map(kv -> coder.fromBytes(kv.val()))
+                    .collect(Collectors.toList());
+
+        }
+    }
+
+    public void clear() {
+        try(Tx.Write<ByteBuffer> tx = writeTx()) {
+            erase(tx, mainDb);
+            indexes.forEach((name, db) -> erase(tx, db));
+        }
+    }
+
+    private void erase(Tx.Write<ByteBuffer> tx, Dbi<ByteBuffer> db) {
+        final Cursor<ByteBuffer> c = db.openCursor(tx.txn());
+        do {
+            c.delete();
+        } while (c.next());
     }
 }

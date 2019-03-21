@@ -30,6 +30,7 @@
 package net.ripe.rpki.validator3.storage.data;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import net.ripe.rpki.commons.crypto.util.CertificateRepositoryObjectFactory;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.validation.ValidationResult;
@@ -44,6 +45,7 @@ import javax.validation.constraints.Size;
 import java.util.ArrayList;
 import java.util.List;
 
+@EqualsAndHashCode(callSuper = true)
 @Binary
 @Data
 public class TrustAnchor extends Base<TrustAnchor> {

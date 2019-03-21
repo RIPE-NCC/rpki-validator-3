@@ -43,10 +43,14 @@ import static net.ripe.rpki.validator3.storage.Bytes.toDirectBuffer;
 @Component
 public class FSTCoder<T> implements Coder<T> {
 
-    private DefaultCoder coder;
+    private ThreadLocal<DefaultCoder> coder;
 
-    public FSTCoder() throws ClassNotFoundException {
-        registerSerializers();
+    public FSTCoder() {
+        try {
+            registerSerializers();
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void registerSerializers() throws ClassNotFoundException {
@@ -58,12 +62,12 @@ public class FSTCoder<T> implements Coder<T> {
         for (BeanDefinition bd : candidateComponents) {
             registered[i++] = Class.forName(bd.getBeanClassName());
         }
-        coder = new DefaultCoder(true, registered);
+        coder = ThreadLocal.withInitial(() -> new DefaultCoder(true, registered));
     }
 
     @Override
     public ByteBuffer toBytes(T t) {
-        return toDirectBuffer(coder.toByteArray(t));
+        return toDirectBuffer(coder.get().toByteArray(t));
     }
 
     @Override
@@ -71,6 +75,6 @@ public class FSTCoder<T> implements Coder<T> {
     public T fromBytes(ByteBuffer bb) {
         byte[] bytes = new byte[bb.remaining()];
         bb.get(bytes);
-        return (T) coder.toObject(bytes);
+        return (T) coder.get().toObject(bytes);
     }
 }

@@ -200,6 +200,15 @@ public class LmdbTest {
         );
     }
 
+    @Test
+    public void testSizes() throws IOException {
+        final DefaultCoder coder = new DefaultCoder(true, Bla.class, Thingy.class);
+        final Random r = new Random();
+        Bla bla = new Bla(randomBytes(r, 1000), "", 100000, null);
+        byte[] bytes = coder.toByteArray(bla);
+        System.out.println("bytes.length = " + bytes.length);
+    }
+
     private <T> void testTemplate(Function<ByteBuffer, ByteBuffer> value,
                                   BiFunction<Pair<Dbi<ByteBuffer>, Txn<ByteBuffer>>, ByteBuffer, T> extract) throws IOException {
 
@@ -277,8 +286,11 @@ public class LmdbTest {
     }
 
     private byte[] randomBytes(Random r) {
-        final int len = r.nextInt(1024);
-        byte[] b = new byte[len];
+        return randomBytes(r, r.nextInt(1024));
+    }
+
+    private byte[] randomBytes(Random r, int length) {
+        byte[] b = new byte[length];
         r.nextBytes(b);
         return b;
     }

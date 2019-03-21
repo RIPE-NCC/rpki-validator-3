@@ -29,12 +29,9 @@
  */
 package net.ripe.rpki.validator3.storage;
 
-import com.google.common.collect.ImmutableMap;
 import lombok.Getter;
-import net.ripe.rpki.validator3.storage.data.RpkiObject;
-import net.ripe.rpki.validator3.storage.lmdb.Key;
-import net.ripe.rpki.validator3.storage.lmdb.Store;
 import org.lmdbjava.Env;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -45,29 +42,14 @@ import static org.lmdbjava.Env.create;
 @Component
 public class Lmdb {
 
+    @Getter
     private final Env<ByteBuffer> env;
 
-    @Getter
-    private Store<RpkiObject> rpkiObjectStore;
-
-    public Lmdb() throws Exception {
-        // TODO make it configurable
-        String path = "/tmp/rpki-validator-3-lmdb";
+    public Lmdb(@Value("${rpki.validator.lmdb.path}") String lmdbPath) throws Exception {
         env = create()
                 .setMapSize(4 * 1024 * 1024 * 1024L)
                 .setMaxDbs(100)
-                .open(new File(path));
-
-        rpkiObjectStore = createRpkiObjectStore();
+                .open(new File(lmdbPath));
     }
 
-    private Store<RpkiObject> createRpkiObjectStore() throws Exception {
-        return new Store<>(env,
-                RpkiObject.class.getName(),
-                new FSTCoder<>(),
-                ImmutableMap.of(
-                        "by-sha256", rpkiObject -> new Key(Bytes.toDirectBuffer(rpkiObject.getSha256())),
-                        "by-aki", rpkiObject -> new Key(Bytes.toDirectBuffer(rpkiObject.getAuthorityKeyIdentifier()))
-                ));
-    }
 }

@@ -27,44 +27,38 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.lmdb;
+package net.ripe.rpki.validator3.storage.stores;
 
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import net.ripe.rpki.validator3.storage.Bytes;
-import net.ripe.rpki.validator3.util.Hex;
+import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
+import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
+import net.ripe.rpki.commons.validation.ValidationResult;
+import net.ripe.rpki.validator3.storage.data.RpkiObject;
 
-import java.nio.ByteBuffer;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Stream;
 
-@AllArgsConstructor
-@EqualsAndHashCode
-public class Key {
-    private final ByteBuffer key;
+public interface RpkiObjectsStore {
+    void add(RpkiObject rpkiObject);
 
-    private Key(byte[] bytes) {
-        key = ByteBuffer.allocateDirect(bytes.length);
-        key.put(bytes).flip();
-    }
+    void remove(RpkiObject o);
 
-    public Key(long long_) {
-        key = ByteBuffer.allocateDirect(Long.BYTES);
-        key.putLong(long_).flip();
-    }
+    <T extends CertificateRepositoryObject> Optional<T> findCertificateRepositoryObject(
+            byte[] sha256, Class<T> clazz, ValidationResult validationResult);
 
-    public static Key of(byte[] bytes) {
-        return new Key(bytes);
-    }
+    Optional<RpkiObject> findBySha256(byte[] sha256);
 
-    public static Key of(long l) {
-        return new Key(l);
-    }
+    Map<String, RpkiObject> findObjectsInManifest(ManifestCms manifestCms);
 
-    public ByteBuffer toByteBuffer() {
-        return key;
-    }
+    List<RpkiObject> all();
 
-    @Override
-    public String toString() {
-        return Hex.format(Bytes.toBytes(key));
-    }
+    Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type type, byte[] authorityKeyIdentifier);
+
+    long deleteUnreachableObjects(Instant unreachableSince);
+
+    void clear();
+
+    Stream<byte[]> streamObjects(RpkiObject.Type type);
 }

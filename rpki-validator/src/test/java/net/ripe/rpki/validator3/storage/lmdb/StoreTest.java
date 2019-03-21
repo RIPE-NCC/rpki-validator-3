@@ -44,6 +44,8 @@ import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -78,6 +80,10 @@ public class StoreTest {
         Key kab = putAndGet("ab");
         Key kbbb = putAndGet("bbb");
         Key kxxx = putAndGet("xxx");
+
+        assertEquals(
+                Sets.newHashSet("a", "aa", "ab", "bbb", "xxx"),
+                new HashSet<>(store.getAll()));
 
         try (Tx.Read<ByteBuffer> tx = Tx.read(env)) {
             assertEquals(Sets.newHashSet("a"), new HashSet<>(getByLength(tx, 1)));
@@ -145,7 +151,7 @@ public class StoreTest {
     }
 
     private List<String> getByLength(Tx.Read<ByteBuffer> tx, int i) {
-        return store.getByIndex(LENGTH_INDEX, tx.txn(), intKey(i));
+        return store.getByIndex(LENGTH_INDEX, tx, intKey(i));
     }
 
     @Test(expected = NullPointerException.class)

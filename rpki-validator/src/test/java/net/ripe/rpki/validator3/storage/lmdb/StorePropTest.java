@@ -1,3 +1,32 @@
+/**
+ * The BSD License
+ *
+ * Copyright (c) 2010-2018 RIPE NCC
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *   - Redistributions of source code must retain the above copyright notice,
+ *     this list of conditions and the following disclaimer.
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *   - Neither the name of the RIPE NCC nor the names of its contributors may be
+ *     used to endorse or promote products derived from this software without
+ *     specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 package net.ripe.rpki.validator3.storage.lmdb;
 
 import com.google.common.collect.ImmutableMap;
@@ -61,12 +90,12 @@ public class StorePropTest {
         Optional<String> oldValue = store.put(k, value);
         try (Tx.Read<ByteBuffer> tx = Tx.read(env)) {
             assertEquals(value, store.get(tx, k).get());
-            List<String> byIndex = store.getByIndex(LENGTH_INDEX, tx.txn(), intKey(value.length()));
+            List<String> byIndex = store.getByIndex(LENGTH_INDEX, tx, intKey(value.length()));
             assertTrue(byIndex.stream().anyMatch(s -> s.equals(value)));
             oldValue.ifPresent(s1 -> {
                 if (!s1.equals(value)) {
                     assertNotEquals(s1, store.get(tx, k).get());
-                    List<String> oldByIndex = store.getByIndex(LENGTH_INDEX, tx.txn(), intKey(s1.length()));
+                    List<String> oldByIndex = store.getByIndex(LENGTH_INDEX, tx, intKey(s1.length()));
                     assertFalse(oldByIndex.stream().anyMatch(s -> s.equals(s1)));
                 }
             });
