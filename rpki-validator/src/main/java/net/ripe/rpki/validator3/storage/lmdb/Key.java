@@ -63,6 +63,10 @@ public class Key {
         return key;
     }
 
+    public int size() {
+        return key.remaining();
+    }
+
     @Override
     public String toString() {
         return Hex.format(Bytes.toBytes(key));

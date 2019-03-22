@@ -37,7 +37,7 @@ import net.ripe.rpki.validator3.storage.FSTCoder;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.lmdb.Key;
-import net.ripe.rpki.validator3.storage.lmdb.Store;
+import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -54,7 +54,7 @@ public class LmdbRpkiObjects implements RpkiObjectsStore {
     public static final String BY_AKI_INDEX = "by-aki";
     public static final String BY_LAST_REACHABLE_INDEX = "by-last-reachable";
 
-    private final Store<RpkiObject> store;
+    private final IxMap<RpkiObject> ixMap;
 
     private Key lasMarkedReachableKey(RpkiObject rpkiObject) {
         return Key.of(rpkiObject.getLastMarkedReachableAt().toEpochMilli());
@@ -62,7 +62,7 @@ public class LmdbRpkiObjects implements RpkiObjectsStore {
 
     @Autowired
     public LmdbRpkiObjects(Lmdb lmdb) {
-        this.store = new Store<>(
+        this.ixMap = new IxMap<>(
                 lmdb.getEnv(),
                 RPKI_OBJECTS,
                 new FSTCoder<>(),
@@ -74,12 +74,12 @@ public class LmdbRpkiObjects implements RpkiObjectsStore {
 
     @Override
     public void add(RpkiObject o) {
-        store.put(Key.of(o.getSha256()), o);
+        ixMap.put(Key.of(o.getSha256()), o);
     }
 
     @Override
     public void remove(RpkiObject o) {
-        store.delete(Key.of(o.getSha256()));
+        ixMap.delete(Key.of(o.getSha256()));
     }
 
     @Override
@@ -90,7 +90,7 @@ public class LmdbRpkiObjects implements RpkiObjectsStore {
 
     @Override
     public Optional<RpkiObject> findBySha256(byte[] sha256) {
-        return store.get(store.readTx(), Key.of(sha256));
+        return ixMap.get(ixMap.readTx(), Key.of(sha256));
     }
 
     @Override
@@ -100,12 +100,12 @@ public class LmdbRpkiObjects implements RpkiObjectsStore {
 
     @Override
     public List<RpkiObject> all() {
-        return store.getAll();
+        return ixMap.getAll();
     }
 
     @Override
     public Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type type, byte[] authorityKeyIdentifier) {
-        return store.getByIndex(BY_AKI_INDEX, store.readTx(), Key.of(authorityKeyIdentifier))
+        return ixMap.getByIndex(BY_AKI_INDEX, ixMap.readTx(), Key.of(authorityKeyIdentifier))
                 .stream().findFirst();
     }
 
@@ -116,7 +116,7 @@ public class LmdbRpkiObjects implements RpkiObjectsStore {
 
     @Override
     public void clear() {
-        store.clear();
+        ixMap.clear();
     }
 
     @Override

@@ -38,14 +38,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.lmdbjava.Env;
-import org.lmdbjava.Txn;
 
 import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -53,13 +50,13 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.lmdbjava.Env.create;
 
-public class StoreTest {
+public class IxMapTest {
 
     @Rule
     public final TemporaryFolder tmp = new TemporaryFolder();
 
     private Env<ByteBuffer> env;
-    private Store<String> store;
+    private IxMap<String> ixMap;
 
     private static final String LENGTH_INDEX = "length-index";
 
@@ -70,7 +67,7 @@ public class StoreTest {
                 .setMaxDbs(100)
                 .open(tmp.newFolder());
 
-        store = new Store<>(env, "test", new FSTCoder<>(), ImmutableMap.of(LENGTH_INDEX, StoreTest::stringLen));
+        ixMap = new IxMap<>(env, "test", new FSTCoder<>(), ImmutableMap.of(LENGTH_INDEX, IxMapTest::stringLen));
     }
 
     @Test
@@ -83,7 +80,7 @@ public class StoreTest {
 
         assertEquals(
                 Sets.newHashSet("a", "aa", "ab", "bbb", "xxx"),
-                new HashSet<>(store.getAll()));
+                new HashSet<>(ixMap.getAll()));
 
         try (Tx.Read<ByteBuffer> tx = Tx.read(env)) {
             assertEquals(Sets.newHashSet("a"), new HashSet<>(getByLength(tx, 1)));
@@ -100,30 +97,30 @@ public class StoreTest {
         Key kbbb = putAndGet("bbb");
         putAndGet("xxx");
 
-        store.delete(ka);
+        ixMap.delete(ka);
 
         try (Tx.Read<ByteBuffer> tx = Tx.read(env)) {
-            assertFalse(store.get(tx, ka).isPresent());
-            assertTrue(store.get(tx, kaa).isPresent());
-            assertTrue(store.get(tx, kbbb).isPresent());
+            assertFalse(ixMap.get(tx, ka).isPresent());
+            assertTrue(ixMap.get(tx, kaa).isPresent());
+            assertTrue(ixMap.get(tx, kbbb).isPresent());
             assertEquals(Sets.newHashSet(), new HashSet<>(getByLength(tx, 1)));
             assertEquals(Sets.newHashSet("ab", "aa"), new HashSet<>(getByLength(tx, 2)));
             assertEquals(Sets.newHashSet("bbb", "xxx"), new HashSet<>(getByLength(tx, 3)));
         }
 
-        store.delete(kaa);
+        ixMap.delete(kaa);
 
         try (Tx.Read<ByteBuffer> tx = Tx.read(env)) {
-            assertFalse(store.get(tx, kaa).isPresent());
-            assertTrue(store.get(tx, kbbb).isPresent());
+            assertFalse(ixMap.get(tx, kaa).isPresent());
+            assertTrue(ixMap.get(tx, kbbb).isPresent());
             assertEquals(Sets.newHashSet("ab"), new HashSet<>(getByLength(tx, 2)));
             assertEquals(Sets.newHashSet("bbb", "xxx"), new HashSet<>(getByLength(tx, 3)));
         }
 
-        store.delete(kbbb);
+        ixMap.delete(kbbb);
 
         try (Tx.Read<ByteBuffer> tx = Tx.read(env)) {
-            assertFalse(store.get(tx, kbbb).isPresent());
+            assertFalse(ixMap.get(tx, kbbb).isPresent());
             assertEquals(Sets.newHashSet("ab"), new HashSet<>(getByLength(tx, 2)));
             assertEquals(Sets.newHashSet("xxx"), new HashSet<>(getByLength(tx, 3)));
         }
@@ -135,23 +132,23 @@ public class StoreTest {
         Key kbb = putAndGet("bb");
         Key kxxx = putAndGet("xxx");
 
-        store.put(kaa, "qqq");
+        ixMap.put(kaa, "qqq");
         try (Tx.Read<ByteBuffer> tx = Tx.read(env)) {
-            assertEquals("qqq", store.get(tx, kaa).get());
+            assertEquals("qqq", ixMap.get(tx, kaa).get());
             assertEquals(Sets.newHashSet("bb"), new HashSet<>(getByLength(tx, 2)));
             assertEquals(Sets.newHashSet("qqq", "xxx"), new HashSet<>(getByLength(tx, 3)));
         }
 
-        store.put(kaa, "zz");
+        ixMap.put(kaa, "zz");
         try (Tx.Read<ByteBuffer> tx = Tx.read(env)) {
-            assertEquals("zz", store.get(tx, kaa).get());
+            assertEquals("zz", ixMap.get(tx, kaa).get());
             assertEquals(Sets.newHashSet("zz", "bb"), new HashSet<>(getByLength(tx, 2)));
             assertEquals(Sets.newHashSet("xxx"), new HashSet<>(getByLength(tx, 3)));
         }
     }
 
     private List<String> getByLength(Tx.Read<ByteBuffer> tx, int i) {
-        return store.getByIndex(LENGTH_INDEX, tx, intKey(i));
+        return ixMap.getByIndex(LENGTH_INDEX, tx, intKey(i));
     }
 
     @Test(expected = NullPointerException.class)
@@ -161,14 +158,14 @@ public class StoreTest {
 
     @Test(expected = NullPointerException.class)
     public void putAndGetNullKey() {
-        store.put(null, "x");
+        ixMap.put(null, "x");
     }
 
     private Key putAndGet(String v) {
         final Key key = key(UUID.randomUUID());
-        store.put(key, v);
+        ixMap.put(key, v);
         try (Tx.Read<ByteBuffer> tx = Tx.read(env)) {
-            assertEquals(v, store.get(tx, key).get());
+            assertEquals(v, ixMap.get(tx, key).get());
         }
         return key;
     }
