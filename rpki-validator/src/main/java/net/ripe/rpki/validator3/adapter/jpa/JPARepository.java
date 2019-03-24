@@ -29,21 +29,31 @@
  */
 package net.ripe.rpki.validator3.adapter.jpa;
 
+import com.google.common.primitives.UnsignedBytes;
 import com.mysema.commons.lang.CloseableIterator;
 import com.querydsl.core.types.EntityPath;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.util.Dates;
+import net.ripe.rpki.validator3.domain.RpkiObject;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.persistence.EntityManager;
+import javax.persistence.LockModeType;
 import javax.persistence.Query;
 import java.sql.Timestamp;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import static net.ripe.rpki.validator3.domain.querydsl.QRpkiObject.rpkiObject;
 
 abstract class JPARepository<T> {
     @Autowired
@@ -126,5 +136,21 @@ abstract class JPARepository<T> {
             }
         }
         return query;
+    }
+
+    public Map<String, RpkiObject> findObjectsInManifest(Map<String, byte[]> files, LockModeType lockMode) {
+        SortedMap<byte[], String> hashes = new TreeMap<>(UnsignedBytes.lexicographicalComparator());
+        files.forEach((name, hash) -> hashes.put(hash, name));
+
+        List<RpkiObject> objects = queryFactory
+                .selectFrom(rpkiObject)
+                .setLockMode(lockMode)
+                .where(rpkiObject.sha256.in(hashes.keySet()))
+                .fetch();
+
+        return objects.stream().collect(Collectors.toMap(
+                x -> hashes.get(x.getSha256()),
+                x -> x
+        ));
     }
 }

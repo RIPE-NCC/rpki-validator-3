@@ -1,3 +1,5 @@
+@import "../../../styles";
+
 p {
   background-color: #f2f2f2;
   padding: .75rem;
@@ -14,7 +16,7 @@ table {
     th:nth-child(2) {
       width: 10%;
     }    th:nth-child(3) {
-      width: 10em;
+      width: 11em;
     }
     th:nth-child(4) {
       width: 13em;
@@ -24,4 +26,9 @@ table {
   tbody > tr > td {
     word-wrap: break-word;
   }
+}
+
+.ban-icon {
+  font-size: 1.25rem;
+  color: $red-rpki;
 }

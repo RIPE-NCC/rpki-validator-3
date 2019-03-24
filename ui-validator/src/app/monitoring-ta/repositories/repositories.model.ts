@@ -1,5 +1,6 @@
 export interface IRepository {
-  url: string;
+  id: string;
+  locationURI: string;
   type: string;
   status: string;
   lastDownloadedAt: string;

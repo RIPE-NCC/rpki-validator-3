@@ -44,7 +44,7 @@ public class TrustAnchorValidationJob implements Job {
     public static final String TRUST_ANCHOR_ID_KEY = "trustAnchorId";
 
     @Autowired
-    private TrustAnchorValidationService validationService;
+    private TrustAnchorValidationService trustAnchorValidationService;
 
     @Getter
     @Setter
@@ -52,7 +52,7 @@ public class TrustAnchorValidationJob implements Job {
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
-        validationService.validate(trustAnchorId);
+        trustAnchorValidationService.validate(trustAnchorId);
     }
 
     static JobDetail buildJob(TrustAnchor trustAnchor) {

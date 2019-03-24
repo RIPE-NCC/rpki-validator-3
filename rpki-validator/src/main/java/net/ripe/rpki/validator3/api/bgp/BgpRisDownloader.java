@@ -112,17 +112,18 @@ public class BgpRisDownloader {
     }
 
     public static List<BgpRisEntry> parse(final InputStream is) {
-        final BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-
         final IdentityMap id = new IdentityMap();
-        return reader.lines().map(s -> {
-            try {
-                return parseLine(s, id::unique);
-            } catch (Exception e) {
-                log.error("Unparseable line: " + s);
-                return null;
-            }
-        }).filter(Objects::nonNull).collect(Collectors.toList());
+        return new BufferedReader(new InputStreamReader(is)).lines()
+                .map(s -> {
+                    try {
+                        return parseLine(s, id::unique);
+                    } catch (Exception e) {
+                        log.error("Unparseable line: " + s);
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     private static Pattern regexp = Pattern.compile("^\\s*([0-9]+)\\s+([0-9a-fA-F.:/]+)\\s+([0-9]+)\\s*$");

@@ -60,6 +60,7 @@ import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityManager;
 import javax.persistence.FlushModeType;
+import javax.persistence.LockModeType;
 import javax.transaction.Transactional;
 import java.net.URI;
 import java.util.ArrayList;
@@ -102,7 +103,7 @@ public class CertificateTreeValidationService {
         entityManager.setFlushMode(FlushModeType.COMMIT);
 
         TrustAnchor trustAnchor = trustAnchors.get(trustAnchorId);
-        log.info("starting tree validation for {}", trustAnchor);
+        log.info("Starting tree validation for {}", trustAnchor);
 
         CertificateTreeValidationRun validationRun = new CertificateTreeValidationRun(trustAnchor);
         validationRuns.add(validationRun);
@@ -141,7 +142,6 @@ public class CertificateTreeValidationService {
 
             if (isValidationRunCompleted(validationResult)) {
                 trustAnchor.markInitialCertificateTreeValidationRunCompleted();
-                entityManager.persist(trustAnchor);
                 if (!settings.isInitialValidationRunCompleted() && trustAnchors.allInitialCertificateTreeValidationRunsCompleted()) {
                     settings.markInitialValidationRunCompleted();
                     log.info("All trust anchors have completed their initial certificate tree validation run, validator is now ready");
@@ -151,7 +151,7 @@ public class CertificateTreeValidationService {
             validatedRpkiObjects.update(trustAnchor, validationRun.getValidatedObjects());
         } finally {
             validationRun.completeWith(validationResult);
-            log.info("tree validation {} for {}", validationRun.getStatus(), trustAnchor);
+            log.info("Tree validation {} for {}", validationRun.getStatus().toString().toLowerCase(), trustAnchor);
         }
     }
 
@@ -273,7 +273,9 @@ public class CertificateTreeValidationService {
         return validatedObjects;
     }
 
-    private RpkiRepository registerRepository(TrustAnchor trustAnchor, Map<URI, RpkiRepository> registeredRepositories, CertificateRepositoryObjectValidationContext context) {
+    private RpkiRepository registerRepository(TrustAnchor trustAnchor,
+                                              Map<URI, RpkiRepository> registeredRepositories,
+                                              CertificateRepositoryObjectValidationContext context) {
         if (context.getRpkiNotifyURI() != null) {
             RpkiRepository rpkiRepository = registeredRepositories.computeIfAbsent(context.getRpkiNotifyURI(), (uri) -> rpkiRepositories.register(
                     trustAnchor,
@@ -306,10 +308,10 @@ public class CertificateTreeValidationService {
                 if (!hashMatches) {
                     return;
                 }
-
                 result.put(location, obj);
             });
         }
         return result;
     }
+
 }

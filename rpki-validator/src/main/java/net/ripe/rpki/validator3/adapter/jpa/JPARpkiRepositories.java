@@ -168,13 +168,17 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
         for (RpkiRepository repository : select().where(rpkiRepository.trustAnchors.contains(trustAnchor)).fetch()) {
             repository.removeTrustAnchor(trustAnchor);
             if (repository.getTrustAnchors().isEmpty()) {
-                if (repository.getType() == RpkiRepository.Type.RRDP) {
-                    validationScheduler.removeRpkiRepository(repository);
-                }
-                validationRuns.removeAllForRpkiRepository(repository);
-                entityManager.remove(repository);
+                cleanUpRepository(repository);
             }
         }
+    }
+
+    private void cleanUpRepository(RpkiRepository repository) {
+        if (repository.getType() == RpkiRepository.Type.RRDP) {
+            validationScheduler.removeRpkiRepository(repository);
+        }
+        validationRuns.removeAllForRpkiRepository(repository);
+        entityManager.remove(repository);
     }
 
     private JPAQuery<RpkiRepository> applyFilters(JPAQuery<RpkiRepository> query, RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent, SearchTerm searchTerm) {
@@ -229,5 +233,11 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
 
         Order order = sorting.getDirection() == Sorting.Direction.DESC ? Order.DESC : Order.ASC;
         return new OrderSpecifier<>(order, column);
+    }
+
+    @Override
+    public void remove(long id) {
+        RpkiRepository repository = super.get(id);
+        cleanUpRepository(repository);
     }
 }

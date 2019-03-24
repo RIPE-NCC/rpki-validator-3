@@ -10,6 +10,7 @@
         <th sortable-column='type'>{{'Repositories.REPO_TYPE' | translate}}</th>
         <th sortable-column='status'>{{'STATUS' | translate}}</th>
         <th sortable-column='lastChecked'>{{'Repositories.REPO_LAST_CHECKED' | translate}}</th>
+        <th *ngIf="hasFailedRepo()"> </th>
       </tr>
     </thead>
     <tbody>
@@ -18,6 +19,11 @@
         <td>{{repo.type}}</td>
         <td><flag [value]='repo.status'></flag></td>
         <td>{{repo.lastDownloadedAt}}</td>
+        <td *ngIf="hasFailedRepo()" >
+          <span *ngIf='repo.status === "FAILED"' class='fa fa-ban ban-icon'
+                [ngbTooltip]='"DELETE" | translate:{value:"info"}'
+                (click)='deleteFilter(repo)'></span>
+        </td>
       </tr>
       <tr *ngIf='repositories.length === 0'>
         <td colspan='4'>{{'NO_RECORDS' | translate}}</td>

@@ -42,6 +42,8 @@ import net.ripe.rpki.validator3.domain.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.domain.ValidationCheck;
 import net.ripe.rpki.validator3.util.Hex;
 import net.ripe.rpki.validator3.util.Sha256;
+import net.ripe.rpki.validator3.util.Time;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -89,7 +91,8 @@ public class RrdpService {
     private void doStoreRepository(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun) {
         final Notification notification = rrdpClient.readStream(rpkiRepository.getRrdpNotifyUri(), rrdpParser::notification);
 
-        log.info("The local serial is '{}' and the latest serial is {}", rpkiRepository.getRrdpSerial(), notification.serial);
+        log.info("Repository {} has local serial is '{}' and the latest serial is {}",
+                rpkiRepository.getRrdpNotifyUri(), rpkiRepository.getRrdpSerial(), notification.serial);
 
         if (notification.sessionId.equals(rpkiRepository.getRrdpSessionId())) {
             if (rpkiRepository.getRrdpSerial().compareTo(notification.serial) <= 0) {
@@ -101,10 +104,10 @@ public class RrdpService {
                             collect(Collectors.toList());
 
                     verifyDeltaSerials(deltas, notification, rpkiRepository);
-                    verifyIfDeltasAreApplicable(deltas);
 
                     deltas.forEach(d -> {
-                        storeDelta(d, validationRun);
+                        verifyDeltaIsApplicable(d);
+                        storeDelta(d, validationRun, rpkiRepository);
                         rpkiRepository.setRrdpSerial(rpkiRepository.getRrdpSerial().add(BigInteger.ONE));
                     });
 
@@ -130,14 +133,22 @@ public class RrdpService {
 
     private void readSnapshot(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun, Notification notification) {
         final byte[] snapshotBody = rrdpClient.getBody(notification.snapshotUri);
-        final byte[] snapshotHash = Sha256.hash(snapshotBody);
+        Pair<byte[], Long> timed = Time.timed(() -> Sha256.hash(snapshotBody));
+        final byte[] snapshotHash = timed.getLeft();
+        log.info("Calculating snapshot hash time {}ms", timed.getRight());
         if (!Arrays.equals(Hex.parse(notification.snapshotHash), snapshotHash)) {
             throw new RrdpException(ErrorCodes.RRDP_WRONG_SNAPSHOT_HASH, "Hash of the snapshot file " +
                     notification.snapshotUri + " is " + Hex.format(snapshotHash) + ", but notification file says " + notification.snapshotHash);
         }
 
-        final Snapshot snapshot = rrdpParser.snapshot(new ByteArrayInputStream(snapshotBody));
-        storeSnapshot(snapshot, validationRun);
+        Pair<Snapshot, Long> timedSnapshot = Time.timed(() -> rrdpParser.snapshot(new ByteArrayInputStream(snapshotBody)));
+        log.info("Parsing snapshot time {}ms", timedSnapshot.getRight());
+        Pair<Object, Long> timedStoreSnapshot = Time.timed(() -> {
+            storeSnapshot(timedSnapshot.getLeft(), validationRun);
+            return null;
+        });
+
+        log.info("Storing snapshot time {}ms", timedStoreSnapshot.getRight());
         rpkiRepository.setRrdpSessionId(notification.sessionId);
         rpkiRepository.setRrdpSerial(notification.serial);
     }
@@ -187,6 +198,7 @@ public class RrdpService {
         }
     }
 
+    @Transactional(Transactional.TxType.REQUIRED)
     void storeSnapshot(final Snapshot snapshot, final RpkiRepositoryValidationRun validationRun) {
         final AtomicInteger counter = new AtomicInteger();
         snapshot.asMap().forEach((objUri, value) -> {
@@ -211,7 +223,8 @@ public class RrdpService {
         log.info("Added (or updated locations for) {} new objects", counter.get());
     }
 
-    private void storeDelta(final Delta delta, final RpkiRepositoryValidationRun validationRun) {
+    @Transactional(Transactional.TxType.REQUIRED)
+    void storeDelta(final Delta delta, final RpkiRepositoryValidationRun validationRun, final RpkiRepository rpkiRepository) {
         final AtomicInteger added = new AtomicInteger();
         final AtomicInteger deleted = new AtomicInteger();
         delta.asMap().forEach((uri, deltaElement) -> {
@@ -225,8 +238,8 @@ public class RrdpService {
                 }
             }
         });
-        log.info("Added (or updated locations for) {} new objects, delete (or removed locations) for {} objects",
-                added.get(), deleted.get());
+        log.info("Repository {}: added (or updated locations for) {} new objects, delete (or removed locations) for {} objects",
+                rpkiRepository.getRrdpNotifyUri(), added.get(), deleted.get());
     }
 
     private boolean applyDeltaWithdraw(RpkiRepositoryValidationRun validationRun, String uri, DeltaWithdraw deltaWithdraw) {
@@ -243,6 +256,26 @@ public class RrdpService {
         return false;
     }
 
+    private void verifyDeltaIsApplicable(Delta d) {
+        d.asMap().forEach((uri, deltaElement) -> {
+                    if (deltaElement instanceof DeltaPublish) {
+                        ((DeltaPublish) deltaElement).getHash().ifPresent(sha ->
+                                checkObjectExists(deltaElement, ErrorCodes.RRDP_REPLACE_NONEXISTENT_OBJECT, sha));
+                    } else if (deltaElement instanceof DeltaWithdraw) {
+                        checkObjectExists(deltaElement, ErrorCodes.RRDP_WITHDRAW_NONEXISTENT_OBJECT, ((DeltaWithdraw) deltaElement).getHash());
+                    }
+                }
+        );
+    }
+
+    private void checkObjectExists(DeltaElement deltaElement, String errorCode, byte[] sha) {
+        final Optional<RpkiObject> objectByHash = rpkiObjectRepository.findBySha256(sha);
+        if (!objectByHash.isPresent()) {
+            throw new RrdpException(errorCode, "Couldn't find an object with location '" +
+                    deltaElement.uri + "' with hash " + Hex.format(sha));
+        }
+    }
+
     private boolean applyDeltaPublish(RpkiRepositoryValidationRun validationRun, String uri, DeltaPublish deltaPublish) {
         if (deltaPublish.getHash().isPresent()) {
             final byte[] sha256 = deltaPublish.getHash().get();
@@ -255,44 +288,33 @@ public class RrdpService {
                 validationRun.addCheck(validationCheck);
                 return false;
             }
-        }
-        return addRpkiObject(validationRun, uri, deltaPublish, null);
-    }
-
-    private void verifyIfDeltasAreApplicable(List<Delta> deltas) {
-        deltas.parallelStream().forEach(d ->
-                d.asMap().forEach((uri, deltaElement) -> {
-                            if (deltaElement instanceof DeltaPublish) {
-                                ((DeltaPublish) deltaElement).getHash().ifPresent(sha ->
-                                        checkObjectExists(deltaElement, ErrorCodes.RRDP_REPLACE_NONEXISTENT_OBJECT, sha));
-                            } else if (deltaElement instanceof DeltaWithdraw) {
-                                checkObjectExists(deltaElement, ErrorCodes.RRDP_WITHDRAW_NONEXISTENT_OBJECT, ((DeltaWithdraw) deltaElement).getHash());
-                            }
-                        }
-                )
-        );
-    }
-
-    private void checkObjectExists(DeltaElement deltaElement, String errorCode, byte[] sha) {
-        final Optional<RpkiObject> objectByHash = rpkiObjectRepository.findBySha256(sha);
-        if (!objectByHash.isPresent()) {
-            throw new RrdpException(errorCode, "Couldn't find an object with location '" +
-                    deltaElement.uri + "' with hash " + Hex.format(sha));
+        } else {
+            return addRpkiObject(validationRun, uri, deltaPublish, null);
         }
     }
 
     private boolean addRpkiObject(RpkiRepositoryValidationRun validationRun, String uri, DeltaPublish deltaPublish, final byte[] existingHash) {
-        final Either<ValidationResult, RpkiObject> maybeRpkiObject = createRpkiObject(uri, deltaPublish.getContent());
+        final byte[] content = deltaPublish.getContent();
+        final Either<ValidationResult, RpkiObject> maybeRpkiObject = createRpkiObject(uri, content);
         if (maybeRpkiObject.isLeft()) {
             validationRun.addChecks(maybeRpkiObject.left().value());
         } else {
-            RpkiObject object = maybeRpkiObject.right().value();
-            if (existingHash == null || !Arrays.equals(object.getSha256(), existingHash)) {
+            final RpkiObject object = maybeRpkiObject.right().value();
+            if (existingHash == null) {
+                final Optional<RpkiObject> bySha256 = rpkiObjectRepository.findBySha256(Sha256.hash(content));
+                if (bySha256.isPresent()) {
+                    log.info("The object will not be added, there's one already existing {}", object);
+                } else {
+                    validationRun.addRpkiObject(object);
+                    rpkiObjectRepository.merge(object);
+                    return true;
+                }
+            } else if (!Arrays.equals(object.getSha256(), existingHash)) {
                 validationRun.addRpkiObject(object);
-                rpkiObjectRepository.add(object);
+                rpkiObjectRepository.merge(object);
                 return true;
             } else {
-                log.debug("The object added is the same {}", object);
+                log.info("The object added is the same {}", object);
             }
         }
         return false;

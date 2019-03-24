@@ -278,19 +278,20 @@ public class RrdpServiceTest {
         final Objects.SnapshotInfo emptySnapshot = new Objects.SnapshotInfo("https://host/path/snapshot.xml", Sha256.hash(emptySnapshotXml));
         rrdpClient.add(emptySnapshot.uri, emptySnapshotXml);
 
-        final Objects.DeltaPublish publishCert = new Objects.DeltaPublish("rsync://host/path/cert.cer", certificate);
+        final Objects.DeltaPublish publishCert = new Objects.DeltaPublish("rsync://host/path/cert1.cer", certificate);
         final byte[] deltaXml1 = Objects.deltaXml(2, sessionId, publishCert);
 
-        final Objects.DeltaPublish republishCert = new Objects.DeltaPublish("rsync://host/path/cert.cer", Sha256.hash(publishCert.content), certificate);
+        // republish without hash
+        final Objects.DeltaPublish republishCert = new Objects.DeltaPublish("rsync://host/path/cert2.cer", certificate);
         final byte[] deltaXml2 = Objects.deltaXml(3, sessionId, republishCert);
 
-        final Objects.DeltaInfo deltaInfo1 = new Objects.DeltaInfo("https://host/path/delta1.xml", Sha256.hash(deltaXml1), 2);
-        final Objects.DeltaInfo deltaInfo2 = new Objects.DeltaInfo("https://host/path/delta2.xml", Sha256.hash(deltaXml2), 3);
-        rrdpClient.add(deltaInfo1.uri, deltaXml1);
-        rrdpClient.add(deltaInfo2.uri, deltaXml2);
+        final Objects.DeltaInfo deltaInfo2 = new Objects.DeltaInfo("https://host/path/delta2.xml", Sha256.hash(deltaXml1), 2);
+        final Objects.DeltaInfo deltaInfo3 = new Objects.DeltaInfo("https://host/path/delta3.xml", Sha256.hash(deltaXml2), 3);
+        rrdpClient.add(deltaInfo2.uri, deltaXml1);
+        rrdpClient.add(deltaInfo3.uri, deltaXml2);
 
         final String notificationUri = "https://rrdp.ripe.net/notification.xml";
-        rrdpClient.add(notificationUri, Objects.notificationXml(3, sessionId, emptySnapshot, deltaInfo1, deltaInfo2));
+        rrdpClient.add(notificationUri, Objects.notificationXml(3, sessionId, emptySnapshot, deltaInfo2, deltaInfo3));
 
         final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
         entityManager.persist(trustAnchor);
@@ -298,21 +299,17 @@ public class RrdpServiceTest {
         // make current serial lower to trigger delta download
         final RpkiRepository rpkiRepository = makeRpkiRepository(sessionId, notificationUri, trustAnchor);
 
-        // do the first run to get the snapshot
         RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepository);
         subject.storeRepository(rpkiRepository, validationRun);
-        assertEquals(1, validationRun.getValidationChecks().size());
-
-        final ValidationCheck validationCheck = validationRun.getValidationChecks().get(0);
-        assertEquals(ErrorCodes.RRDP_REPLACE_NONEXISTENT_OBJECT, validationCheck.getKey());
-        assertEquals(ValidationCheck.Status.WARNING, validationCheck.getStatus());
+        assertEquals(0, validationRun.getValidationChecks().size());
 
         final List<RpkiObject> objects = rpkiObjects.all().collect(Collectors.toList());
-        assertEquals(0, objects.size());
+        assertEquals(Sets.newHashSet("rsync://host/path/cert1.cer"), objects.get(0).getLocations());
+        assertEquals(1, objects.size());
     }
 
     @Test
-    public void should_parse_notification_use_delta_and_fall_back_to_snapshot() {
+    public void should_parse_notification_use_delta_and_republish_object() {
         final byte[] certificate = Objects.aParseableCertificate();
         final String sessionId = UUID.randomUUID().toString();
         final long serial = 3;
@@ -347,11 +344,7 @@ public class RrdpServiceTest {
         // do the first run to get the snapshot
         RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepository);
         subject.storeRepository(rpkiRepository, validationRun);
-        assertEquals(1, validationRun.getValidationChecks().size());
-
-        final ValidationCheck validationCheck = validationRun.getValidationChecks().get(0);
-        assertEquals(ErrorCodes.RRDP_REPLACE_NONEXISTENT_OBJECT, validationCheck.getKey());
-        assertEquals(ValidationCheck.Status.WARNING, validationCheck.getStatus());
+        assertEquals(0, validationRun.getValidationChecks().size());
 
         final List<RpkiObject> objects = rpkiObjects.all().collect(Collectors.toList());
         assertEquals(1, objects.size());
