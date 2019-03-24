@@ -31,7 +31,6 @@ package net.ripe.rpki.validator3.storage.lmdb;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.FSTCoder;
 import org.junit.Before;
 import org.junit.Rule;
@@ -78,11 +77,11 @@ public class IxMapTest {
         Key kbbb = putAndGet("bbb");
         Key kxxx = putAndGet("xxx");
 
-        assertEquals(
-                Sets.newHashSet("a", "aa", "ab", "bbb", "xxx"),
-                new HashSet<>(ixMap.getAll()));
-
         try (Tx.Read<ByteBuffer> tx = Tx.read(env)) {
+            assertEquals(
+                    Sets.newHashSet("a", "aa", "ab", "bbb", "xxx"),
+                    new HashSet<>(ixMap.values(tx)));
+
             assertEquals(Sets.newHashSet("a"), new HashSet<>(getByLength(tx, 1)));
             assertEquals(Sets.newHashSet("aa", "ab"), new HashSet<>(getByLength(tx, 2)));
             assertEquals(Sets.newHashSet("bbb", "xxx"), new HashSet<>(getByLength(tx, 3)));
@@ -181,7 +180,7 @@ public class IxMapTest {
     }
 
     static Key key(Object o) {
-        return new Key(Bytes.toDirectBuffer(o.toString().getBytes()));
+        return Key.of(o.toString().getBytes());
     }
 
 }

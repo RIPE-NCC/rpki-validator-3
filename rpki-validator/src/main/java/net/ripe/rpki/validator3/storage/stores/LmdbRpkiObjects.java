@@ -100,7 +100,7 @@ public class LmdbRpkiObjects implements RpkiObjectsStore {
 
     @Override
     public List<RpkiObject> all() {
-        return ixMap.getAll();
+        return ixMap.values(ixMap.readTx());
     }
 
     @Override

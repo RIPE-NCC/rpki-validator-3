@@ -41,6 +41,7 @@ import org.lmdbjava.Txn;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -59,15 +60,42 @@ import static org.lmdbjava.DbiFlags.MDB_DUPSORT;
  */
 public class IxMap<T> extends IxBase<T> {
 
+    protected final Map<String, Dbi<ByteBuffer>> indexes;
+    protected final Map<String, Function<T, Key>> indexFunctions;
+
     public IxMap(final Env<ByteBuffer> env,
                  final String name,
                  final Coder<T> coder,
                  final Map<String, Function<T, Key>> indexFunctions) {
-        super(env, name, coder, indexFunctions);
+        super(env, name, coder);
+        this.indexFunctions = indexFunctions;
 
         // TODO Add index management, reindexing if the index set has changed
+        indexes = new HashMap<>();
         indexFunctions.forEach((n, idxFun) ->
                 indexes.put(n, env.openDbi(name + ":idx:" + n, getIndexDbiFlags())));
+    }
+
+    public void reindex() {
+        try (Tx.Write<ByteBuffer> tx = writeTx()) {
+            dropIndexes(tx);
+            try (final Cursor<ByteBuffer> cursor = mainDb.openCursor(tx.txn())) {
+                do {
+                    final T value = coder.fromBytes(cursor.val());
+                    indexFunctions.forEach((n, idxFun) -> {
+                        final Key indexKey = idxFun.apply(value);
+                        try (Cursor<ByteBuffer> c = indexes.get(n).openCursor(tx.txn())) {
+                            c.put(indexKey.toByteBuffer(), indexKey.toByteBuffer());
+                        }
+                    });
+                }
+                while (cursor.next());
+            }
+        }
+    }
+
+    private void dropIndexes(Tx.Write<ByteBuffer> tx) {
+        indexes.forEach((name, db) -> db.drop(tx.txn()));
     }
 
     protected DbiFlags[] getMainDbCreateFlags() {
@@ -145,6 +173,40 @@ public class IxMap<T> extends IxBase<T> {
             mainDb.put(txn, pkBuf, coder.toBytes(value));
         }
         return Optional.empty();
+    }
+
+    public void delete(Key primaryKey) {
+        checkNotNull(primaryKey, "Key is null");
+        Tx.use(writeTx(), tx -> delete(tx, primaryKey));
+    }
+
+    public void delete(Tx.Write<ByteBuffer> tx, Key primaryKey) {
+        checkNotNull(primaryKey, "Key is null");
+        final ByteBuffer pkBuf = primaryKey.toByteBuffer();
+        final Txn<ByteBuffer> txn = tx.txn();
+        if (indexFunctions.isEmpty()) {
+            mainDb.delete(txn, pkBuf);
+        } else {
+            final ByteBuffer bb = mainDb.get(txn, pkBuf);
+            if (bb != null) {
+                // TODO probably avoid deserialization, just store the
+                //  index keys next to the serialized value
+                final T value = coder.fromBytes(bb);
+                mainDb.delete(txn, pkBuf);
+                indexFunctions.forEach((n, idxFun) -> {
+                    final Key indexKey = idxFun.apply(value);
+                    checkNotNull(indexKey, "Index key for value + " + value + " is null.");
+                    indexes.get(n).delete(txn, indexKey.toByteBuffer(), pkBuf);
+                });
+            }
+        }
+    }
+
+    public void clear() {
+        try(Tx.Write<ByteBuffer> tx = writeTx()) {
+            mainDb.drop(tx.txn());
+            dropIndexes(tx);
+        }
     }
 
 }
