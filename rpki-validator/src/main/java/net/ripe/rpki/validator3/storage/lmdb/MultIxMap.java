@@ -56,6 +56,24 @@ public class MultIxMap<T> extends IxBase<T> {
         mainDb.put(tx.txn(), primaryKey.toByteBuffer(), coder.toBytes(value));
     }
 
+    public void delete(Key primaryKey) {
+        verifyKey(primaryKey);
+        Tx.use(writeTx(), tx -> delete(tx, primaryKey));
+    }
+
+    public void delete(Tx.Write<ByteBuffer> tx, Key primaryKey) {
+        mainDb.delete(tx.txn(), primaryKey.toByteBuffer());
+    }
+
+    public void delete(Key primaryKey, T value) {
+        verifyKey(primaryKey);
+        Tx.use(writeTx(), tx -> delete(tx, primaryKey, value));
+    }
+
+    public void delete(Tx.Write<ByteBuffer> tx, Key primaryKey, T value) {
+        mainDb.delete(tx.txn(), primaryKey.toByteBuffer(), coder.toBytes(value));
+    }
+
     @Override
     public void clear() {
         Tx.use(writeTx(), tx -> mainDb.drop(tx.txn()));

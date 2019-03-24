@@ -9,6 +9,7 @@ import org.junit.rules.TemporaryFolder;
 import org.lmdbjava.Env;
 
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.UUID;
 
@@ -22,9 +23,7 @@ public class MultIxMapTest {
     public final TemporaryFolder tmp = new TemporaryFolder();
 
     private Env<ByteBuffer> env;
-    private MultIxMap<String> ixMap;
-
-    private static final String LENGTH_INDEX = "length-index";
+    private MultIxMap<String> multIxMap;
 
     @Before
     public void setUp() throws Exception {
@@ -33,36 +32,75 @@ public class MultIxMapTest {
                 .setMaxDbs(100)
                 .open(tmp.newFolder());
 
-        ixMap = new MultIxMap<>(env, "test", new FSTCoder<>());
+        multIxMap = new MultIxMap<>(env, "test", new FSTCoder<>());
     }
 
     @Test
-    public void putAndGetByIndex() {
+    public void putAndGetBack() {
         final Key k1 = key(UUID.randomUUID());
         final Key k2 = key(UUID.randomUUID());
         final Key k3 = key(UUID.randomUUID());
-        ixMap.put(k1, "a");
+        multIxMap.put(k1, "a");
 
         try (Tx.Read<ByteBuffer> tx = Tx.read(env)) {
-            assertEquals(Sets.newHashSet("a"), new HashSet<>(ixMap.get(tx, k1)));
-            assertEquals(Sets.newHashSet("a"), new HashSet<>(ixMap.values(tx)));
+            assertEquals(Sets.newHashSet("a"), new HashSet<>(multIxMap.get(tx, k1)));
+            assertEquals(Sets.newHashSet("a"), new HashSet<>(multIxMap.values(tx)));
         }
 
-        ixMap.put(k1, "b");
+        multIxMap.put(k1, "b");
 
         try (Tx.Read<ByteBuffer> tx = Tx.read(env)) {
-            assertEquals(Sets.newHashSet("a", "b"), new HashSet<>(ixMap.get(tx, k1)));
-            assertEquals(Sets.newHashSet("a", "b"), new HashSet<>(ixMap.values(tx)));
+            assertEquals(Sets.newHashSet("a", "b"), new HashSet<>(multIxMap.get(tx, k1)));
+            assertEquals(Sets.newHashSet("a", "b"), new HashSet<>(multIxMap.values(tx)));
         }
 
-        ixMap.put(k2, "aa");
-        ixMap.put(k2, "bbb");
-        ixMap.put(k2, "xxx");
+        multIxMap.put(k2, "aa");
+        multIxMap.put(k2, "bbb");
+        multIxMap.put(k2, "xxx");
 
         try (Tx.Read<ByteBuffer> tx = Tx.read(env)) {
-            assertEquals(Sets.newHashSet("a", "b"), new HashSet<>(ixMap.get(tx, k1)));
-            assertEquals(Sets.newHashSet("aa", "bbb", "xxx"), new HashSet<>(ixMap.get(tx, k2)));
-            assertEquals(Sets.newHashSet("a", "b", "aa", "bbb", "xxx"), new HashSet<>(ixMap.values(tx)));
+            assertEquals(Sets.newHashSet("a", "b"), new HashSet<>(multIxMap.get(tx, k1)));
+            assertEquals(Sets.newHashSet("aa", "bbb", "xxx"), new HashSet<>(multIxMap.get(tx, k2)));
+            assertEquals(Sets.newHashSet("a", "b", "aa", "bbb", "xxx"), new HashSet<>(multIxMap.values(tx)));
+        }
+    }
+
+    @Test
+    public void putAndDelete() {
+        final Key k1 = key(UUID.randomUUID());
+        final Key k2 = key(UUID.randomUUID());
+        final Key k3 = key(UUID.randomUUID());
+        multIxMap.put(k1, "a");
+
+        try (Tx.Read<ByteBuffer> tx = Tx.read(env)) {
+            assertEquals(Sets.newHashSet("a"), new HashSet<>(multIxMap.get(tx, k1)));
+            assertEquals(Sets.newHashSet("a"), new HashSet<>(multIxMap.values(tx)));
+        }
+
+        multIxMap.delete(k1);
+        try (Tx.Read<ByteBuffer> tx = Tx.read(env)) {
+            assertEquals(Collections.emptySet(), new HashSet<>(multIxMap.get(tx, k1)));
+            assertEquals(Collections.emptySet(), new HashSet<>(multIxMap.values(tx)));
+        }
+
+        multIxMap.put(k1, "a");
+        multIxMap.put(k1, "b");
+
+        multIxMap.delete(k1, "b");
+        try (Tx.Read<ByteBuffer> tx = Tx.read(env)) {
+            assertEquals(Sets.newHashSet("a"), new HashSet<>(multIxMap.get(tx, k1)));
+            assertEquals(Sets.newHashSet("a"), new HashSet<>(multIxMap.values(tx)));
+        }
+
+        multIxMap.put(k1, "a");
+        multIxMap.put(k1, "b");
+        multIxMap.put(k2, "aa");
+        multIxMap.put(k2, "bb");
+
+        multIxMap.delete(k1, "b");
+        try (Tx.Read<ByteBuffer> tx = Tx.read(env)) {
+            assertEquals(Sets.newHashSet("a"), new HashSet<>(multIxMap.get(tx, k1)));
+            assertEquals(Sets.newHashSet("a", "aa", "bb"), new HashSet<>(multIxMap.values(tx)));
         }
     }
 
