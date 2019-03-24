@@ -30,6 +30,7 @@
 package net.ripe.rpki.validator3.storage;
 
 import lombok.Getter;
+import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import org.lmdbjava.Env;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -50,6 +51,14 @@ public class Lmdb {
                 .setMapSize(4 * 1024 * 1024 * 1024L)
                 .setMaxDbs(100)
                 .open(new File(lmdbPath));
+    }
+
+    public Tx.Read<ByteBuffer> readTx() {
+        return Tx.read(env);
+    }
+
+    public Tx.Write<ByteBuffer> writeTx() {
+        return Tx.write(env);
     }
 
 }

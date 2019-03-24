@@ -1,20 +1,20 @@
 /**
  * The BSD License
- *
+ * <p>
  * Copyright (c) 2010-2018 RIPE NCC
  * All rights reserved.
- *
+ * <p>
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *   - Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimer.
- *   - Redistributions in binary form must reproduce the above copyright notice,
- *     this list of conditions and the following disclaimer in the documentation
- *     and/or other materials provided with the distribution.
- *   - Neither the name of the RIPE NCC nor the names of its contributors may be
- *     used to endorse or promote products derived from this software without
- *     specific prior written permission.
- *
+ * - Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * - Neither the name of the RIPE NCC nor the names of its contributors may be
+ * used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * <p>
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -32,11 +32,11 @@ package net.ripe.rpki.validator3.storage.lmdb;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import net.ripe.rpki.validator3.storage.FSTCoder;
+import net.ripe.rpki.validator3.storage.Lmdb;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.lmdbjava.Env;
 
 import java.nio.ByteBuffer;
 import java.util.HashSet;
@@ -45,28 +45,22 @@ import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.lmdbjava.Env.create;
 
 public class IxMapTest {
 
     @Rule
     public final TemporaryFolder tmp = new TemporaryFolder();
 
-    private Env<ByteBuffer> env;
+    private Lmdb lmdb;
     private IxMap<String> ixMap;
 
     private static final String LENGTH_INDEX = "length-index";
 
     @Before
     public void setUp() throws Exception {
-        env = create()
-                .setMapSize(1024 * 1024 * 1024L)
-                .setMaxDbs(100)
-                .open(tmp.newFolder());
-
-        ixMap = new IxMap<>(env, "test", new FSTCoder<>(), ImmutableMap.of(LENGTH_INDEX, IxMapTest::stringLen));
+        lmdb = LmdbTests.makeLmdb(tmp.newFolder().getAbsolutePath());
+        ixMap = new IxMap<>(lmdb.getEnv(), "test", new FSTCoder<>(), ImmutableMap.of(LENGTH_INDEX, IxMapTest::stringLen));
     }
 
     @Test
@@ -77,7 +71,7 @@ public class IxMapTest {
         Key kbbb = putAndGet("bbb");
         Key kxxx = putAndGet("xxx");
 
-        try (Tx.Read<ByteBuffer> tx = Tx.read(env)) {
+        try (Tx.Read<ByteBuffer> tx = lmdb.readTx()) {
             assertEquals(
                     Sets.newHashSet("a", "aa", "ab", "bbb", "xxx"),
                     new HashSet<>(ixMap.values(tx)));
@@ -98,7 +92,7 @@ public class IxMapTest {
 
         ixMap.delete(ka);
 
-        try (Tx.Read<ByteBuffer> tx = Tx.read(env)) {
+        try (Tx.Read<ByteBuffer> tx = lmdb.readTx()) {
             assertFalse(ixMap.get(tx, ka).isPresent());
             assertTrue(ixMap.get(tx, kaa).isPresent());
             assertTrue(ixMap.get(tx, kbbb).isPresent());
@@ -109,7 +103,7 @@ public class IxMapTest {
 
         ixMap.delete(kaa);
 
-        try (Tx.Read<ByteBuffer> tx = Tx.read(env)) {
+        try (Tx.Read<ByteBuffer> tx = lmdb.readTx()) {
             assertFalse(ixMap.get(tx, kaa).isPresent());
             assertTrue(ixMap.get(tx, kbbb).isPresent());
             assertEquals(Sets.newHashSet("ab"), new HashSet<>(getByLength(tx, 2)));
@@ -118,7 +112,7 @@ public class IxMapTest {
 
         ixMap.delete(kbbb);
 
-        try (Tx.Read<ByteBuffer> tx = Tx.read(env)) {
+        try (Tx.Read<ByteBuffer> tx = lmdb.readTx()) {
             assertFalse(ixMap.get(tx, kbbb).isPresent());
             assertEquals(Sets.newHashSet("ab"), new HashSet<>(getByLength(tx, 2)));
             assertEquals(Sets.newHashSet("xxx"), new HashSet<>(getByLength(tx, 3)));
@@ -132,14 +126,14 @@ public class IxMapTest {
         Key kxxx = putAndGet("xxx");
 
         ixMap.put(kaa, "qqq");
-        try (Tx.Read<ByteBuffer> tx = Tx.read(env)) {
+        try (Tx.Read<ByteBuffer> tx = lmdb.readTx()) {
             assertEquals("qqq", ixMap.get(tx, kaa).get());
             assertEquals(Sets.newHashSet("bb"), new HashSet<>(getByLength(tx, 2)));
             assertEquals(Sets.newHashSet("qqq", "xxx"), new HashSet<>(getByLength(tx, 3)));
         }
 
         ixMap.put(kaa, "zz");
-        try (Tx.Read<ByteBuffer> tx = Tx.read(env)) {
+        try (Tx.Read<ByteBuffer> tx = lmdb.readTx()) {
             assertEquals("zz", ixMap.get(tx, kaa).get());
             assertEquals(Sets.newHashSet("zz", "bb"), new HashSet<>(getByLength(tx, 2)));
             assertEquals(Sets.newHashSet("xxx"), new HashSet<>(getByLength(tx, 3)));
@@ -163,7 +157,7 @@ public class IxMapTest {
     private Key putAndGet(String v) {
         final Key key = key(UUID.randomUUID());
         ixMap.put(key, v);
-        try (Tx.Read<ByteBuffer> tx = Tx.read(env)) {
+        try (Tx.Read<ByteBuffer> tx = lmdb.readTx()) {
             assertEquals(v, ixMap.get(tx, key).get());
         }
         return key;

@@ -39,6 +39,8 @@ import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.RrdpRepositoryValidationRun;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.ValidationCheck;
+import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.stores.RpkiObjectsStore;
 import net.ripe.rpki.validator3.util.Hex;
 import net.ripe.rpki.validator3.util.Sha256;
 import org.junit.Before;
@@ -71,13 +73,19 @@ public class RrdpServiceTest {
     @Autowired
     private RpkiObjects rpkiObjectRepository;
 
+    @Autowired
+    private RpkiObjectsStore rpkiObjectsStore;
+
+    @Autowired
+    private Lmdb lmdb;
+
     private RrdpClientStub rrdpClient = new RrdpClientStub();
 
     private RrdpService subject;
 
     @Before
     public void setUp() throws Exception {
-        subject = new RrdpService(rrdpClient, rpkiObjectRepository);
+        subject = new RrdpService(rrdpClient, rpkiObjectRepository, rpkiObjectsStore, lmdb);
     }
 
     @Test

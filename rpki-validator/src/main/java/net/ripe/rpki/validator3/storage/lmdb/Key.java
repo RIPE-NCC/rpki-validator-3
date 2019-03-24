@@ -36,6 +36,8 @@ import net.ripe.rpki.validator3.util.Hex;
 
 import java.nio.ByteBuffer;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 @AllArgsConstructor
 @EqualsAndHashCode
 public class Key {
@@ -57,6 +59,10 @@ public class Key {
 
     public static Key of(long l) {
         return new Key(l);
+    }
+
+    public static Key of(String s) {
+        return new Key(s.getBytes(UTF_8));
     }
 
     public ByteBuffer toByteBuffer() {

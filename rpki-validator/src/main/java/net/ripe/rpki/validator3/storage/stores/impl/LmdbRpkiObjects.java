@@ -27,7 +27,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.stores;
+package net.ripe.rpki.validator3.storage.stores.impl;
 
 import com.google.common.collect.ImmutableMap;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
@@ -38,9 +38,12 @@ import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.lmdb.Key;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
+import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.stores.RpkiObjectsStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -73,8 +76,8 @@ public class LmdbRpkiObjects implements RpkiObjectsStore {
     }
 
     @Override
-    public void add(RpkiObject o) {
-        ixMap.put(Key.of(o.getSha256()), o);
+    public void add(Tx.Write<ByteBuffer> tx, RpkiObject o) {
+        ixMap.put(tx, Key.of(o.getSha256()), o);
     }
 
     @Override

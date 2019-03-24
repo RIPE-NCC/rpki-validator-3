@@ -38,6 +38,7 @@ import org.lmdbjava.Env;
 import org.lmdbjava.KeyRange;
 import org.lmdbjava.Txn;
 
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -74,6 +75,10 @@ public class IxMap<T> extends IxBase<T> {
         indexes = new HashMap<>();
         indexFunctions.forEach((n, idxFun) ->
                 indexes.put(n, env.openDbi(name + ":idx:" + n, getIndexDbiFlags())));
+    }
+
+    public IxMap(Env<ByteBuffer> env, String name, Coder<T> coder) {
+        this(env, name, coder, Collections.emptyMap());
     }
 
     public void reindex() {
