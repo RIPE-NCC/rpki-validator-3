@@ -34,6 +34,7 @@ import lombok.Data;
 import org.lmdbjava.Env;
 import org.lmdbjava.Txn;
 
+import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -42,31 +43,30 @@ import java.util.function.Supplier;
  * This is to have type-level distinction between
  * read-only and read-write transactions.
  *
- * @param <T>
  */
-public abstract class Tx<T> implements AutoCloseable {
+public abstract class Tx implements AutoCloseable {
 
-    protected final Env<T> env;
-    private final Txn<T> txn;
+    protected final Env<ByteBuffer> env;
+    private final Txn<ByteBuffer> txn;
     private final long threadId;
 
-    private Tx(Env<T> env) {
+    private Tx(Env<ByteBuffer> env) {
         threadId = Thread.currentThread().getId();
         this.env = env;
         txn = makeTxn();
     }
 
-    protected abstract Txn<T> makeTxn();
+    protected abstract Txn<ByteBuffer> makeTxn();
 
-    public static <R> Read<R> read(Env<R> e) {
-        return new Read<>(e);
+    public static Read read(Env<ByteBuffer> e) {
+        return new Read(e);
     }
 
-    public static <R> Write<R> write(Env<R> e) {
-        return new Write<>(e);
+    public static Write write(Env<ByteBuffer> e) {
+        return new Write(e);
     }
 
-    public Txn<T> txn() {
+    public Txn<ByteBuffer> txn() {
         verifyThread();
         return txn;
     }
@@ -78,39 +78,39 @@ public abstract class Tx<T> implements AutoCloseable {
         }
     }
 
-    public static <R, T> R with(Write<T> wtx, Function<Write<T>, R> f) {
-        try (Txn<T> txn = wtx.txn()) {
+    public static <R, T> R with(Write wtx, Function<Write, R> f) {
+        try (Txn<ByteBuffer> txn = wtx.txn()) {
             final R r = f.apply(wtx);
             txn.commit();
             return r;
         }
     }
 
-    public static <T> void use(Write<T> wtx, Consumer<Write<T>> c) {
-        try (Txn<T> txn = wtx.txn()) {
+    public static <T> void use(Write wtx, Consumer<Write> c) {
+        try (Txn<ByteBuffer> txn = wtx.txn()) {
             c.accept(wtx);
             txn.commit();
         }
     }
 
-    public static class Write<T> extends Read<T> {
-        Write(Env<T> e) {
+    public static class Write extends Read {
+        Write(Env<ByteBuffer> e) {
             super(e);
         }
 
         @Override
-        protected Txn<T> makeTxn() {
+        protected Txn<ByteBuffer> makeTxn() {
             return env.txnWrite();
         }
     }
 
-    public static class Read<T> extends Tx<T> {
-        Read(Env<T> e) {
+    public static class Read extends Tx {
+        Read(Env<ByteBuffer> e) {
             super(e);
         }
 
         @Override
-        protected Txn<T> makeTxn() {
+        protected Txn<ByteBuffer> makeTxn() {
             return env.txnRead();
         }
     }

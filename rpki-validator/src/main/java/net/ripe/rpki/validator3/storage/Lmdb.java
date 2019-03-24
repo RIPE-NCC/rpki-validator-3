@@ -53,11 +53,11 @@ public class Lmdb {
                 .open(new File(lmdbPath));
     }
 
-    public Tx.Read<ByteBuffer> readTx() {
+    public Tx.Read readTx() {
         return Tx.read(env);
     }
 
-    public Tx.Write<ByteBuffer> writeTx() {
+    public Tx.Write writeTx() {
         return Tx.write(env);
     }
 

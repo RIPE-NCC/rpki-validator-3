@@ -30,12 +30,12 @@ public class MultIxMap<T> extends IxBase<T> {
     }
 
     public List<T> get(Key primaryKey) {
-        try (Tx.Read<ByteBuffer> tx = readTx()) {
+        try (Tx.Read tx = readTx()) {
             return get(tx, primaryKey);
         }
     }
 
-    public List<T> get(Tx.Read<ByteBuffer> txn, Key primaryKey) {
+    public List<T> get(Tx.Read txn, Key primaryKey) {
         verifyKey(primaryKey);
         final ByteBuffer pkBuf = primaryKey.toByteBuffer();
         final CursorIterator<ByteBuffer> iterate = mainDb.iterate(txn.txn(), KeyRange.closed(pkBuf, pkBuf));
@@ -52,7 +52,7 @@ public class MultIxMap<T> extends IxBase<T> {
         Tx.use(writeTx(), tx -> put(tx, primaryKey, value));
     }
 
-    public void put(Tx.Write<ByteBuffer> tx, Key primaryKey, T value) {
+    public void put(Tx.Write tx, Key primaryKey, T value) {
         mainDb.put(tx.txn(), primaryKey.toByteBuffer(), coder.toBytes(value));
     }
 
@@ -61,7 +61,7 @@ public class MultIxMap<T> extends IxBase<T> {
         Tx.use(writeTx(), tx -> delete(tx, primaryKey));
     }
 
-    public void delete(Tx.Write<ByteBuffer> tx, Key primaryKey) {
+    public void delete(Tx.Write tx, Key primaryKey) {
         mainDb.delete(tx.txn(), primaryKey.toByteBuffer());
     }
 
@@ -70,7 +70,7 @@ public class MultIxMap<T> extends IxBase<T> {
         Tx.use(writeTx(), tx -> delete(tx, primaryKey, value));
     }
 
-    public void delete(Tx.Write<ByteBuffer> tx, Key primaryKey, T value) {
+    public void delete(Tx.Write tx, Key primaryKey, T value) {
         mainDb.delete(tx.txn(), primaryKey.toByteBuffer(), coder.toBytes(value));
     }
 

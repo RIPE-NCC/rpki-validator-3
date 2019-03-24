@@ -38,7 +38,7 @@ public class Sequences {
     }
 
 
-    public BigInteger next(Tx.Write<ByteBuffer> tx, String name) {
+    public BigInteger next(Tx.Write tx, String name) {
         final Key key = Key.of(name);
         final Optional<BigInteger> seqValue = ixMap.get(tx, key);
         if (seqValue.isPresent()) {

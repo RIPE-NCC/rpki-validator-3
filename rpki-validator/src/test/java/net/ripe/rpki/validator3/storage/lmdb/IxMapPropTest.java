@@ -86,7 +86,7 @@ public class IxMapPropTest {
 
         Key k = IxMapTest.key(key);
         Optional<String> oldValue = ixMap.put(k, value);
-        try (Tx.Read<ByteBuffer> tx = Tx.read(env)) {
+        try (Tx.Read tx = Tx.read(env)) {
             assertEquals(value, ixMap.get(tx, k).get());
             List<String> byIndex = ixMap.getByIndex(LENGTH_INDEX, tx, intKey(value.length()));
             assertTrue(byIndex.stream().anyMatch(s -> s.equals(value)));

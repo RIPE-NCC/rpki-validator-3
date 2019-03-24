@@ -82,7 +82,7 @@ public class IxMap<T> extends IxBase<T> {
     }
 
     public void reindex() {
-        try (Tx.Write<ByteBuffer> tx = writeTx()) {
+        try (Tx.Write tx = writeTx()) {
             dropIndexes(tx);
             try (final Cursor<ByteBuffer> cursor = mainDb.openCursor(tx.txn())) {
                 do {
@@ -99,7 +99,7 @@ public class IxMap<T> extends IxBase<T> {
         }
     }
 
-    private void dropIndexes(Tx.Write<ByteBuffer> tx) {
+    private void dropIndexes(Tx.Write tx) {
         indexes.forEach((name, db) -> db.drop(tx.txn()));
     }
 
@@ -115,7 +115,7 @@ public class IxMap<T> extends IxBase<T> {
         return get(readTx(), primaryKey);
     }
 
-    public Optional<T> get(Tx.Read<ByteBuffer> txn, Key primaryKey) {
+    public Optional<T> get(Tx.Read txn, Key primaryKey) {
         verifyKey(primaryKey);
         ByteBuffer bb = mainDb.get(txn.txn(), primaryKey.toByteBuffer());
         return bb == null ?
@@ -123,7 +123,7 @@ public class IxMap<T> extends IxBase<T> {
                 Optional.of(coder.fromBytes(bb));
     }
 
-    public List<T> getByIndex(String indexName, Tx.Read<ByteBuffer> tx, Key indexKey) {
+    public List<T> getByIndex(String indexName, Tx.Read tx, Key indexKey) {
         checkNotNull(indexKey, "Index key is null");
         final Dbi<ByteBuffer> index = indexes.get(indexName);
         if (index == null) {
@@ -148,7 +148,7 @@ public class IxMap<T> extends IxBase<T> {
         return Tx.with(writeTx(), tx -> put(tx, primaryKey, value));
     }
 
-    public Optional<T> put(Tx.Write<ByteBuffer> tx, Key primaryKey, T value) {
+    public Optional<T> put(Tx.Write tx, Key primaryKey, T value) {
         final ByteBuffer pkBuf = primaryKey.toByteBuffer();
         final Txn<ByteBuffer> txn = tx.txn();
         final Optional<T> oldValue = get(tx, primaryKey);
@@ -185,7 +185,7 @@ public class IxMap<T> extends IxBase<T> {
         Tx.use(writeTx(), tx -> delete(tx, primaryKey));
     }
 
-    public void delete(Tx.Write<ByteBuffer> tx, Key primaryKey) {
+    public void delete(Tx.Write tx, Key primaryKey) {
         checkNotNull(primaryKey, "Key is null");
         final ByteBuffer pkBuf = primaryKey.toByteBuffer();
         final Txn<ByteBuffer> txn = tx.txn();
@@ -208,7 +208,7 @@ public class IxMap<T> extends IxBase<T> {
     }
 
     public void clear() {
-        try(Tx.Write<ByteBuffer> tx = writeTx()) {
+        try(Tx.Write tx = writeTx()) {
             mainDb.drop(tx.txn());
             dropIndexes(tx);
         }

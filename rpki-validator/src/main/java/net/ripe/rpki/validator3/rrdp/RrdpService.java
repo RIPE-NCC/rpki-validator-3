@@ -238,7 +238,7 @@ public class RrdpService {
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
-    void storeDelta(final Delta delta, final RpkiRepositoryValidationRun validationRun, final RpkiRepository rpkiRepository, Tx.Write<ByteBuffer> tx) {
+    void storeDelta(final Delta delta, final RpkiRepositoryValidationRun validationRun, final RpkiRepository rpkiRepository, Tx.Write tx) {
         final AtomicInteger added = new AtomicInteger();
         final AtomicInteger deleted = new AtomicInteger();
         delta.asMap().forEach((uri, deltaElement) -> {
@@ -256,7 +256,7 @@ public class RrdpService {
                 rpkiRepository.getRrdpNotifyUri(), added.get(), deleted.get());
     }
 
-    private boolean applyDeltaWithdraw(RpkiRepositoryValidationRun validationRun, String uri, DeltaWithdraw deltaWithdraw, Tx.Write<ByteBuffer> tx) {
+    private boolean applyDeltaWithdraw(RpkiRepositoryValidationRun validationRun, String uri, DeltaWithdraw deltaWithdraw, Tx.Write tx) {
         final byte[] sha256 = deltaWithdraw.getHash();
         final Optional<RpkiObject> maybeObject = rpkiObjectRepository.findBySha256(sha256);
         if (maybeObject.isPresent()) {
@@ -293,7 +293,7 @@ public class RrdpService {
     private boolean applyDeltaPublish(final RpkiRepositoryValidationRun validationRun,
                                       final String uri,
                                       final DeltaPublish deltaPublish,
-                                      final Tx.Write<ByteBuffer> tx) {
+                                      final Tx.Write tx) {
 //        if (deltaPublish.getHash().isPresent()) {
 //            final byte[] sha256 = deltaPublish.getHash().get();
 //            final Optional<RpkiObject> existing = rpkiObjectRepository.findBySha256(sha256);
@@ -311,7 +311,7 @@ public class RrdpService {
 
         if (deltaPublish.getHash().isPresent()) {
             final byte[] sha256 = deltaPublish.getHash().get();
-            final Optional<net.ripe.rpki.validator3.storage.data.RpkiObject> existing = rpkiObjectsStore.findBySha256(sha256);
+            final Optional<net.ripe.rpki.validator3.storage.data.RpkiObject> existing = rpkiObjectsStore.findBySha256(tx, sha256);
             if (existing.isPresent()) {
                 final byte[] content = deltaPublish.getContent();
                 final Either<ValidationResult, net.ripe.rpki.validator3.storage.data.RpkiObject> maybeRpkiObject =
@@ -341,7 +341,7 @@ public class RrdpService {
                 validationRun.addChecks(maybeRpkiObject.left().value());
             } else {
                 final net.ripe.rpki.validator3.storage.data.RpkiObject object = maybeRpkiObject.right().value();
-                final Optional<net.ripe.rpki.validator3.storage.data.RpkiObject> bySha256 = rpkiObjectsStore.findBySha256(Sha256.hash(content));
+                final Optional<net.ripe.rpki.validator3.storage.data.RpkiObject> bySha256 = rpkiObjectsStore.findBySha256(tx, Sha256.hash(content));
                 if (bySha256.isPresent()) {
                     log.info("The object will not be added, there's one already existing {}", object);
                 } else {

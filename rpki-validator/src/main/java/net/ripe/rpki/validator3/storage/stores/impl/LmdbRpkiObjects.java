@@ -76,7 +76,7 @@ public class LmdbRpkiObjects implements RpkiObjectsStore {
     }
 
     @Override
-    public void add(Tx.Write<ByteBuffer> tx, RpkiObject o) {
+    public void add(Tx.Write tx, RpkiObject o) {
         ixMap.put(tx, Key.of(o.getSha256()), o);
     }
 
@@ -87,12 +87,12 @@ public class LmdbRpkiObjects implements RpkiObjectsStore {
 
     @Override
     public <T extends CertificateRepositoryObject> Optional<T> findCertificateRepositoryObject(
-            byte[] sha256, Class<T> clazz, ValidationResult validationResult) {
-        return findBySha256(sha256).flatMap(o -> o.get(clazz, validationResult));
+            Tx.Read tx, byte[] sha256, Class<T> clazz, ValidationResult validationResult) {
+        return findBySha256(tx, sha256).flatMap(o -> o.get(clazz, validationResult));
     }
 
     @Override
-    public Optional<RpkiObject> findBySha256(byte[] sha256) {
+    public Optional<RpkiObject> findBySha256(Tx.Read tx, byte[] sha256) {
         return ixMap.get(ixMap.readTx(), Key.of(sha256));
     }
 

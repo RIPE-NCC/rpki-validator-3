@@ -71,7 +71,7 @@ public class IxMapTest {
         Key kbbb = putAndGet("bbb");
         Key kxxx = putAndGet("xxx");
 
-        try (Tx.Read<ByteBuffer> tx = lmdb.readTx()) {
+        try (Tx.Read tx = lmdb.readTx()) {
             assertEquals(
                     Sets.newHashSet("a", "aa", "ab", "bbb", "xxx"),
                     new HashSet<>(ixMap.values(tx)));
@@ -92,7 +92,7 @@ public class IxMapTest {
 
         ixMap.delete(ka);
 
-        try (Tx.Read<ByteBuffer> tx = lmdb.readTx()) {
+        try (Tx.Read tx = lmdb.readTx()) {
             assertFalse(ixMap.get(tx, ka).isPresent());
             assertTrue(ixMap.get(tx, kaa).isPresent());
             assertTrue(ixMap.get(tx, kbbb).isPresent());
@@ -103,7 +103,7 @@ public class IxMapTest {
 
         ixMap.delete(kaa);
 
-        try (Tx.Read<ByteBuffer> tx = lmdb.readTx()) {
+        try (Tx.Read tx = lmdb.readTx()) {
             assertFalse(ixMap.get(tx, kaa).isPresent());
             assertTrue(ixMap.get(tx, kbbb).isPresent());
             assertEquals(Sets.newHashSet("ab"), new HashSet<>(getByLength(tx, 2)));
@@ -112,7 +112,7 @@ public class IxMapTest {
 
         ixMap.delete(kbbb);
 
-        try (Tx.Read<ByteBuffer> tx = lmdb.readTx()) {
+        try (Tx.Read tx = lmdb.readTx()) {
             assertFalse(ixMap.get(tx, kbbb).isPresent());
             assertEquals(Sets.newHashSet("ab"), new HashSet<>(getByLength(tx, 2)));
             assertEquals(Sets.newHashSet("xxx"), new HashSet<>(getByLength(tx, 3)));
@@ -126,21 +126,21 @@ public class IxMapTest {
         Key kxxx = putAndGet("xxx");
 
         ixMap.put(kaa, "qqq");
-        try (Tx.Read<ByteBuffer> tx = lmdb.readTx()) {
+        try (Tx.Read tx = lmdb.readTx()) {
             assertEquals("qqq", ixMap.get(tx, kaa).get());
             assertEquals(Sets.newHashSet("bb"), new HashSet<>(getByLength(tx, 2)));
             assertEquals(Sets.newHashSet("qqq", "xxx"), new HashSet<>(getByLength(tx, 3)));
         }
 
         ixMap.put(kaa, "zz");
-        try (Tx.Read<ByteBuffer> tx = lmdb.readTx()) {
+        try (Tx.Read tx = lmdb.readTx()) {
             assertEquals("zz", ixMap.get(tx, kaa).get());
             assertEquals(Sets.newHashSet("zz", "bb"), new HashSet<>(getByLength(tx, 2)));
             assertEquals(Sets.newHashSet("xxx"), new HashSet<>(getByLength(tx, 3)));
         }
     }
 
-    private List<String> getByLength(Tx.Read<ByteBuffer> tx, int i) {
+    private List<String> getByLength(Tx.Read tx, int i) {
         return ixMap.getByIndex(LENGTH_INDEX, tx, intKey(i));
     }
 
@@ -157,7 +157,7 @@ public class IxMapTest {
     private Key putAndGet(String v) {
         final Key key = key(UUID.randomUUID());
         ixMap.put(key, v);
-        try (Tx.Read<ByteBuffer> tx = lmdb.readTx()) {
+        try (Tx.Read tx = lmdb.readTx()) {
             assertEquals(v, ixMap.get(tx, key).get());
         }
         return key;

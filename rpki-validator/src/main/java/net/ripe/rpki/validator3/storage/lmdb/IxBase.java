@@ -38,11 +38,11 @@ public abstract class IxBase<T> {
         }
     }
 
-    public Tx.Read<ByteBuffer> readTx() {
+    public Tx.Read readTx() {
         return Tx.read(env);
     }
 
-    public Tx.Write<ByteBuffer> writeTx() {
+    public Tx.Write writeTx() {
         return Tx.write(env);
     }
 
@@ -55,7 +55,7 @@ public abstract class IxBase<T> {
         checkNotNull(value, "Value is null");
     }
 
-    public List<T> values(Tx.Read<ByteBuffer> tx) {
+    public List<T> values(Tx.Read tx) {
         final List<T> result = new ArrayList<>();
         final CursorIterator<ByteBuffer> ci = mainDb.iterate(tx.txn());
         while (ci.hasNext()) {

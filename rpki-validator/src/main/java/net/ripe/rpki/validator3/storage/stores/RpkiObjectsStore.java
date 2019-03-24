@@ -43,14 +43,14 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 public interface RpkiObjectsStore {
-    void add(Tx.Write<ByteBuffer> tx, RpkiObject rpkiObject);
+    void add(Tx.Write tx, RpkiObject rpkiObject);
 
     void remove(RpkiObject o);
 
     <T extends CertificateRepositoryObject> Optional<T> findCertificateRepositoryObject(
-            byte[] sha256, Class<T> clazz, ValidationResult validationResult);
+            Tx.Read tx, byte[] sha256, Class<T> clazz, ValidationResult validationResult);
 
-    Optional<RpkiObject> findBySha256(byte[] sha256);
+    Optional<RpkiObject> findBySha256(Tx.Read tx, byte[] sha256);
 
     Map<String, RpkiObject> findObjectsInManifest(ManifestCms manifestCms);
 
