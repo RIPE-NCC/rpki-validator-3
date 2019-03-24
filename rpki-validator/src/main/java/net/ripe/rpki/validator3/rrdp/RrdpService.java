@@ -40,6 +40,9 @@ import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.domain.ValidationCheck;
+import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.stores.RpkiObjectsStore;
 import net.ripe.rpki.validator3.util.Hex;
 import net.ripe.rpki.validator3.util.Sha256;
 import net.ripe.rpki.validator3.util.Time;
@@ -50,12 +53,12 @@ import org.springframework.stereotype.Service;
 import javax.transaction.Transactional;
 import java.io.ByteArrayInputStream;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 
@@ -69,10 +72,19 @@ public class RrdpService {
 
     private final RpkiObjects rpkiObjectRepository;
 
+    private final RpkiObjectsStore rpkiObjectsStore;
+
+    private final Lmdb lmdb;
+
     @Autowired
-    public RrdpService(final RrdpClient rrdpClient, final RpkiObjects rpkiObjectRepository) {
+    public RrdpService(final RrdpClient rrdpClient,
+                       final RpkiObjects rpkiObjectRepository,
+                       final RpkiObjectsStore rpkiObjectsStore,
+                       final Lmdb lmdb) {
         this.rrdpClient = rrdpClient;
         this.rpkiObjectRepository = rpkiObjectRepository;
+        this.rpkiObjectsStore = rpkiObjectsStore;
+        this.lmdb = lmdb;
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
@@ -107,8 +119,10 @@ public class RrdpService {
 
                     deltas.forEach(d -> {
                         verifyDeltaIsApplicable(d);
-                        storeDelta(d, validationRun, rpkiRepository);
-                        rpkiRepository.setRrdpSerial(rpkiRepository.getRrdpSerial().add(BigInteger.ONE));
+                        Tx.use(lmdb.writeTx(), tx -> {
+                            storeDelta(d, validationRun, rpkiRepository, tx);
+                            rpkiRepository.setRrdpSerial(rpkiRepository.getRrdpSerial().add(BigInteger.ONE));
+                        });
                     });
 
                 } catch (RrdpException e) {
@@ -224,16 +238,16 @@ public class RrdpService {
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
-    void storeDelta(final Delta delta, final RpkiRepositoryValidationRun validationRun, final RpkiRepository rpkiRepository) {
+    void storeDelta(final Delta delta, final RpkiRepositoryValidationRun validationRun, final RpkiRepository rpkiRepository, Tx.Write<ByteBuffer> tx) {
         final AtomicInteger added = new AtomicInteger();
         final AtomicInteger deleted = new AtomicInteger();
         delta.asMap().forEach((uri, deltaElement) -> {
             if (deltaElement instanceof DeltaPublish) {
-                if (applyDeltaPublish(validationRun, uri, (DeltaPublish) deltaElement)) {
+                if (applyDeltaPublish(validationRun, uri, (DeltaPublish) deltaElement, tx)) {
                     added.incrementAndGet();
                 }
             } else if (deltaElement instanceof DeltaWithdraw) {
-                if (applyDeltaWithdraw(validationRun, uri, (DeltaWithdraw) deltaElement)) {
+                if (applyDeltaWithdraw(validationRun, uri, (DeltaWithdraw) deltaElement, tx)) {
                     deleted.incrementAndGet();
                 }
             }
@@ -242,7 +256,7 @@ public class RrdpService {
                 rpkiRepository.getRrdpNotifyUri(), added.get(), deleted.get());
     }
 
-    private boolean applyDeltaWithdraw(RpkiRepositoryValidationRun validationRun, String uri, DeltaWithdraw deltaWithdraw) {
+    private boolean applyDeltaWithdraw(RpkiRepositoryValidationRun validationRun, String uri, DeltaWithdraw deltaWithdraw, Tx.Write<ByteBuffer> tx) {
         final byte[] sha256 = deltaWithdraw.getHash();
         final Optional<RpkiObject> maybeObject = rpkiObjectRepository.findBySha256(sha256);
         if (maybeObject.isPresent()) {
@@ -276,45 +290,65 @@ public class RrdpService {
         }
     }
 
-    private boolean applyDeltaPublish(RpkiRepositoryValidationRun validationRun, String uri, DeltaPublish deltaPublish) {
+    private boolean applyDeltaPublish(final RpkiRepositoryValidationRun validationRun,
+                                      final String uri,
+                                      final DeltaPublish deltaPublish,
+                                      final Tx.Write<ByteBuffer> tx) {
+//        if (deltaPublish.getHash().isPresent()) {
+//            final byte[] sha256 = deltaPublish.getHash().get();
+//            final Optional<RpkiObject> existing = rpkiObjectRepository.findBySha256(sha256);
+//            if (existing.isPresent()) {
+//                return addRpkiObject(validationRun, uri, deltaPublish, sha256);
+//            } else {
+//                ValidationCheck validationCheck = new ValidationCheck(validationRun, uri,
+//                        ValidationCheck.Status.ERROR, ErrorCodes.RRDP_REPLACE_NONEXISTENT_OBJECT, Hex.format(sha256));
+//                validationRun.addCheck(validationCheck);
+//                return false;
+//            }
+//        } else {
+//            return addRpkiObject(validationRun, uri, deltaPublish, null);
+//        }
+
         if (deltaPublish.getHash().isPresent()) {
             final byte[] sha256 = deltaPublish.getHash().get();
-            final Optional<RpkiObject> existing = rpkiObjectRepository.findBySha256(sha256);
+            final Optional<net.ripe.rpki.validator3.storage.data.RpkiObject> existing = rpkiObjectsStore.findBySha256(sha256);
             if (existing.isPresent()) {
-                return addRpkiObject(validationRun, uri, deltaPublish, sha256);
+                final byte[] content = deltaPublish.getContent();
+                final Either<ValidationResult, net.ripe.rpki.validator3.storage.data.RpkiObject> maybeRpkiObject =
+                        createRpkiObject2(uri, content);
+                if (maybeRpkiObject.isLeft()) {
+                    validationRun.addChecks(maybeRpkiObject.left().value());
+                } else {
+                    final net.ripe.rpki.validator3.storage.data.RpkiObject object = maybeRpkiObject.right().value();
+                    if (!Arrays.equals(object.getSha256(), sha256)) {
+//                        validationRun.addRpkiObject(object);
+                        rpkiObjectsStore.add(tx, object);
+                        return true;
+                    } else {
+                        log.info("The object added is the same {}", object);
+                    }
+                }
             } else {
                 ValidationCheck validationCheck = new ValidationCheck(validationRun, uri,
                         ValidationCheck.Status.ERROR, ErrorCodes.RRDP_REPLACE_NONEXISTENT_OBJECT, Hex.format(sha256));
                 validationRun.addCheck(validationCheck);
-                return false;
             }
         } else {
-            return addRpkiObject(validationRun, uri, deltaPublish, null);
-        }
-    }
-
-    private boolean addRpkiObject(RpkiRepositoryValidationRun validationRun, String uri, DeltaPublish deltaPublish, final byte[] existingHash) {
-        final byte[] content = deltaPublish.getContent();
-        final Either<ValidationResult, RpkiObject> maybeRpkiObject = createRpkiObject(uri, content);
-        if (maybeRpkiObject.isLeft()) {
-            validationRun.addChecks(maybeRpkiObject.left().value());
-        } else {
-            final RpkiObject object = maybeRpkiObject.right().value();
-            if (existingHash == null) {
-                final Optional<RpkiObject> bySha256 = rpkiObjectRepository.findBySha256(Sha256.hash(content));
+            final byte[] content = deltaPublish.getContent();
+            final Either<ValidationResult, net.ripe.rpki.validator3.storage.data.RpkiObject> maybeRpkiObject =
+                    createRpkiObject2(uri, content);
+            if (maybeRpkiObject.isLeft()) {
+                validationRun.addChecks(maybeRpkiObject.left().value());
+            } else {
+                final net.ripe.rpki.validator3.storage.data.RpkiObject object = maybeRpkiObject.right().value();
+                final Optional<net.ripe.rpki.validator3.storage.data.RpkiObject> bySha256 = rpkiObjectsStore.findBySha256(Sha256.hash(content));
                 if (bySha256.isPresent()) {
                     log.info("The object will not be added, there's one already existing {}", object);
                 } else {
-                    validationRun.addRpkiObject(object);
-                    rpkiObjectRepository.merge(object);
+//                    validationRun.addRpkiObject(object);
+                    rpkiObjectsStore.add(tx, object);
                     return true;
                 }
-            } else if (!Arrays.equals(object.getSha256(), existingHash)) {
-                validationRun.addRpkiObject(object);
-                rpkiObjectRepository.merge(object);
-                return true;
-            } else {
-                log.info("The object added is the same {}", object);
             }
         }
         return false;
@@ -327,6 +361,16 @@ public class RrdpService {
             return Either.left(validationResult);
         } else {
             return Either.right(new RpkiObject(uri, repositoryObject));
+        }
+    }
+
+    private Either<ValidationResult, net.ripe.rpki.validator3.storage.data.RpkiObject> createRpkiObject2(final String uri, final byte[] content) {
+        ValidationResult validationResult = ValidationResult.withLocation(uri);
+        CertificateRepositoryObject repositoryObject = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(content, validationResult);
+        if (validationResult.hasFailures()) {
+            return Either.left(validationResult);
+        } else {
+            return Either.right(new net.ripe.rpki.validator3.storage.data.RpkiObject(uri, repositoryObject));
         }
     }
 }
