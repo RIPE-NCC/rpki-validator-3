@@ -29,28 +29,34 @@
  */
 package net.ripe.rpki.validator3.storage.lmdb;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.lmdbjava.Env;
 import org.lmdbjava.Txn;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
- * Keep only one LMDB transaction per thread. Also have type-level
- * distinction between read-only and read-write transactions.
+ * This is to have type-level distinction between
+ * read-only and read-write transactions.
  *
  * @param <T>
  */
 public abstract class Tx<T> implements AutoCloseable {
 
     protected final Env<T> env;
-    private final ThreadLocal<Txn<T>> localWriteTx = ThreadLocal.withInitial(this::makeTxn);
-
-    protected abstract Txn<T> makeTxn();
+    private final Txn<T> txn;
+    private final long threadId;
 
     private Tx(Env<T> env) {
+        threadId = Thread.currentThread().getId();
         this.env = env;
+        txn = makeTxn();
     }
+
+    protected abstract Txn<T> makeTxn();
 
     public static <R> Read<R> read(Env<R> e) {
         return new Read<>(e);
@@ -61,12 +67,20 @@ public abstract class Tx<T> implements AutoCloseable {
     }
 
     public Txn<T> txn() {
-        return localWriteTx.get();
+        verifyThread();
+        return txn;
+    }
+
+    private void verifyThread() {
+        if (Thread.currentThread().getId() != threadId) {
+            throw new RuntimeException("This transaction was created in another " +
+                    "thread and cannot be used in the thread " + Thread.currentThread());
+        }
     }
 
     public static <R, T> R with(Write<T> wtx, Function<Write<T>, R> f) {
         try (Txn<T> txn = wtx.txn()) {
-            R r = f.apply(wtx);
+            final R r = f.apply(wtx);
             txn.commit();
             return r;
         }
@@ -91,13 +105,13 @@ public abstract class Tx<T> implements AutoCloseable {
     }
 
     public static class Read<T> extends Tx<T> {
+        Read(Env<T> e) {
+            super(e);
+        }
+
         @Override
         protected Txn<T> makeTxn() {
             return env.txnRead();
-        }
-
-        Read(Env<T> e) {
-            super(e);
         }
     }
 
