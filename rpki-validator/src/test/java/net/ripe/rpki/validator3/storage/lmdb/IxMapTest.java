@@ -40,12 +40,14 @@ import org.junit.rules.TemporaryFolder;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -60,11 +62,16 @@ public class IxMapTest {
     private IxMap<String> ixMap;
 
     private static final String LENGTH_INDEX = "length-index";
+    private static final String PAIRS_INDEX = "pairs-index";
 
     @Before
     public void setUp() throws Exception {
         lmdb = LmdbTests.makeLmdb(tmp.newFolder().getAbsolutePath());
-        ixMap = new IxMap<>(lmdb.getEnv(), "test", new FSTCoder<>(), ImmutableMap.of(LENGTH_INDEX, IxMapTest::stringLen));
+        ixMap = new IxMap<>(lmdb.getEnv(), "test", new FSTCoder<>(),
+                ImmutableMap.of(
+                        LENGTH_INDEX, IxMapTest::stringLen,
+                        PAIRS_INDEX, s -> charPairSet(s).stream().map(Key::of).collect(Collectors.toSet()))
+        );
     }
 
     @Test
@@ -144,10 +151,6 @@ public class IxMapTest {
         }
     }
 
-    private List<String> getByLength(Tx.Read tx, int i) {
-        return ixMap.getByIndex(LENGTH_INDEX, tx, intKey(i));
-    }
-
     @Test(expected = NullPointerException.class)
     public void putAndGetNull() {
         putAndGet(null);
@@ -218,9 +221,29 @@ public class IxMapTest {
         }
     }
 
+    @Test
+    public void testMultiIndex() {
+        putAndGet("xab");
+        putAndGet("abx");
+        putAndGet("zabx");
+
+        try (Tx.Read tx = lmdb.readTx()) {
+            assertEquals(Sets.newHashSet("xab"), new HashSet<>(getByPair(tx, "xa")));
+            assertEquals(Sets.newHashSet("xab", "abx", "zabx"), new HashSet<>(getByPair(tx, "ab")));
+            assertEquals(Sets.newHashSet("abx", "zabx"), new HashSet<>(getByPair(tx, "bx")));
+        }
+    }
+
+    private List<String> getByLength(Tx.Read tx, int i) {
+        return ixMap.getByIndex(LENGTH_INDEX, tx, intKey(i));
+    }
+
+    private List<String> getByPair(Tx.Read tx, String charPair) {
+        return ixMap.getByIndex(PAIRS_INDEX, tx, Key.of(charPair));
+    }
 
     public List<Long> positiveLongList() {
-        Random r = new Random();
+        final Random r = new Random();
         final List<Long> s = new ArrayList<>();
         for (int i = 0; i < 10000; i++) {
             long z = r.nextLong();
@@ -263,6 +286,15 @@ public class IxMapTest {
             s.append(r.nextInt(10));
         }
         return s.toString();
+    }
+
+    static Set<String> charPairSet(String s) {
+        if (s.length() < 2) {
+            return Collections.emptySet();
+        }
+        return IntStream.range(0, s.length() - 1)
+                .mapToObj(i -> s.substring(i, i + 2))
+                .collect(Collectors.toSet());
     }
 
 }
