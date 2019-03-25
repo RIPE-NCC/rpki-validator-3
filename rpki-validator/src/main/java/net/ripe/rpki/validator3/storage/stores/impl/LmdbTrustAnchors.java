@@ -61,8 +61,8 @@ public class LmdbTrustAnchors implements TrustAnchorStore {
                 TRUST_ANCHORS,
                 new FSTCoder<>(),
                 ImmutableMap.of(
-                        BY_NAME, ta -> Key.of(ta.getName()),
-                        BY_SUBJECT_KEY_INFO, ta -> Key.of(ta.getSubjectPublicKeyInfo()))
+                        BY_NAME, ta -> Key.keys(Key.of(ta.getName())),
+                        BY_SUBJECT_KEY_INFO, ta -> Key.keys(Key.of(ta.getSubjectPublicKeyInfo())))
         );
         sequences = new Sequences(lmdb);
     }
@@ -80,8 +80,8 @@ public class LmdbTrustAnchors implements TrustAnchorStore {
     }
 
     @Override
-    public TrustAnchor get(long id) {
-        return null;
+    public Optional<TrustAnchor> get(Tx.Read tx, Key id) {
+        return ixMap.get(tx, id);
     }
 
     @Override
@@ -105,7 +105,7 @@ public class LmdbTrustAnchors implements TrustAnchorStore {
     }
 
     @Override
-    public List<TaStatus> getStatuses() {
+    public List<TaStatus> getStatuses(Tx.Read tx) {
         // TODO Implement
         return null;
     }

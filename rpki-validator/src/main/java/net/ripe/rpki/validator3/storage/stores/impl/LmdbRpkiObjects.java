@@ -49,6 +49,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 @Component
@@ -60,8 +61,8 @@ public class LmdbRpkiObjects implements RpkiObjectsStore {
 
     private final IxMap<RpkiObject> ixMap;
 
-    private Key lasMarkedReachableKey(RpkiObject rpkiObject) {
-        return Key.of(rpkiObject.getLastMarkedReachableAt().toEpochMilli());
+    private Set<Key> lasMarkedReachableKey(RpkiObject rpkiObject) {
+        return Key.keys(Key.of(rpkiObject.getLastMarkedReachableAt().toEpochMilli()));
     }
 
     @Autowired
@@ -71,7 +72,7 @@ public class LmdbRpkiObjects implements RpkiObjectsStore {
                 RPKI_OBJECTS,
                 new FSTCoder<>(),
                 ImmutableMap.of(
-                        BY_AKI_INDEX, rpkiObject -> Key.of(rpkiObject.getAuthorityKeyIdentifier()),
+                        BY_AKI_INDEX, rpkiObject -> Key.keys(Key.of(rpkiObject.getAuthorityKeyIdentifier())),
                         BY_LAST_REACHABLE_INDEX, this::lasMarkedReachableKey)
         );
     }
@@ -119,7 +120,11 @@ public class LmdbRpkiObjects implements RpkiObjectsStore {
 
     @Override
     public long deleteUnreachableObjects(Instant unreachableSince) {
-        return 0;
+        return Tx.with(ixMap.writeTx(), tx -> {
+            final List<Key> tooOldPks = ixMap.getByIndexLessPk(BY_LAST_REACHABLE_INDEX, tx, Key.of(unreachableSince.toEpochMilli()));
+            tooOldPks.forEach(pk -> ixMap.delete(tx, pk));
+            return (long)tooOldPks.size();
+        });
     }
 
     @Override
@@ -127,6 +132,7 @@ public class LmdbRpkiObjects implements RpkiObjectsStore {
         ixMap.clear();
     }
 
+    // TODO Don't do that
     @Override
     public Stream<byte[]> streamObjects(RpkiObject.Type type) {
         return null;

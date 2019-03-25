@@ -63,7 +63,7 @@ public class IxMapPropTest {
     private static File lmdbDir;
 
     @BeforeClass
-    public static void setUp() throws Exception {
+    public static void setUp() {
         lmdbDir = Files.temporaryFolder();
 
         env = create()
@@ -71,7 +71,8 @@ public class IxMapPropTest {
                 .setMaxDbs(100)
                 .open(lmdbDir);
 
-        ixMap = new IxMap<>(env, "test", new FSTCoder<>(), ImmutableMap.of(LENGTH_INDEX, s -> intKey(s.length())));
+        ixMap = new IxMap<>(env, "test", new FSTCoder<>(),
+                ImmutableMap.of(LENGTH_INDEX, s -> Key.keys(intKey(s.length()))));
     }
 
 

@@ -35,6 +35,7 @@ import org.lmdbjava.Env;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
@@ -49,7 +50,7 @@ public class SameSizeKeyIxMap<T> extends IxMap<T> {
                             Env<ByteBuffer> env,
                             String name,
                             Coder<T> coder,
-                            Map<String, Function<T, Key>> indexFunctions) {
+                            Map<String, Function<T, Set<Key>>> indexFunctions) {
         super(env, name, coder, indexFunctions);
         this.keySizeInBytes = keySizeInBytes;
     }

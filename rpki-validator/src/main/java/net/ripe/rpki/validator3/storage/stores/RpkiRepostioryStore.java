@@ -32,12 +32,12 @@ package net.ripe.rpki.validator3.storage.stores;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
-import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.lmdb.Key;
+import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import org.springframework.web.bind.annotation.PathVariable;
 
-import javax.validation.constraints.NotNull;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -46,9 +46,11 @@ public interface RpkiRepostioryStore {
 
     RpkiRepository register(TrustAnchor trustAnchor, String uri, RpkiRepository.Type type);
 
-    Optional<RpkiRepository> findByURI(@NotNull @ValidLocationURI String uri);
+    Optional<RpkiRepository> findByURI(Tx.Read tx, String uri);
 
-    RpkiRepository get(long id);
+    Optional<RpkiRepository> get(Tx.Read tx, Key id);
+
+    void update(Tx.Write tx, RpkiRepository rpkiRepository);
 
     Stream<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent,
                                    SearchTerm searchTerm, Sorting sorting, Paging paging);
@@ -65,9 +67,9 @@ public interface RpkiRepostioryStore {
         return findAll(null, taId, false, null, null, null);
     }
 
-    Stream<RpkiRepository> findRsyncRepositories();
+    Stream<RpkiRepository> findRsyncRepositories(Tx.Read tx);
 
-    Stream<RpkiRepository> findRrdpRepositories();
+    Stream<RpkiRepository> findRrdpRepositories(Tx.Read tx);
 
     void removeAllForTrustAnchor(TrustAnchor trustAnchor);
 

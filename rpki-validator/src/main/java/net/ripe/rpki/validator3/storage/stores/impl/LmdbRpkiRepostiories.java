@@ -33,25 +33,29 @@ import com.google.common.collect.ImmutableMap;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
-import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.storage.FSTCoder;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
+import net.ripe.rpki.validator3.storage.lmdb.Key;
+import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepostioryStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.validation.constraints.NotNull;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
 public class LmdbRpkiRepostiories implements RpkiRepostioryStore {
 
     private static final String RPKI_REPOSITORIES = "rpki-repositories";
+    private static final String BY_URI = "by-uri";
+    private static final String BY_TA = "by-ta";
 
     private final IxMap<RpkiRepository> ixMap;
 
@@ -61,7 +65,11 @@ public class LmdbRpkiRepostiories implements RpkiRepostioryStore {
                 lmdb.getEnv(),
                 RPKI_REPOSITORIES,
                 new FSTCoder<>(),
-                ImmutableMap.of());
+                ImmutableMap.of(
+                        BY_URI, r -> Key.keys(Key.of(r.getLocationUri())),
+                        BY_TA, r -> r.getTrustAnchors().stream().map(ta -> Key.of(ta.getId())).collect(Collectors.toSet())
+                )
+        );
     }
 
     @Override
@@ -70,22 +78,29 @@ public class LmdbRpkiRepostiories implements RpkiRepostioryStore {
     }
 
     @Override
-    public Optional<RpkiRepository> findByURI(@NotNull @ValidLocationURI String uri) {
-        return Optional.empty();
+    public Optional<RpkiRepository> findByURI(Tx.Read tx, String uri) {
+        return ixMap.getByIndex(BY_URI, tx, Key.of(uri)).stream().findFirst();
     }
 
     @Override
-    public RpkiRepository get(long id) {
+    public Optional<RpkiRepository> get(Tx.Read tx, Key id) {
+        return ixMap.get(tx, id);
+    }
+
+    @Override
+    public void update(Tx.Write tx, RpkiRepository rpkiRepository) {
+        ixMap.put(tx, rpkiRepository.getId(), rpkiRepository);
+    }
+
+    @Override
+    public Stream<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Long taId,
+                                          boolean hideChildrenOfDownloadedParent, SearchTerm searchTerm, Sorting sorting, Paging paging) {
         return null;
     }
 
     @Override
-    public Stream<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent, SearchTerm searchTerm, Sorting sorting, Paging paging) {
-        return null;
-    }
-
-    @Override
-    public long countAll(RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent, SearchTerm searchTerm) {
+    public long countAll(RpkiRepository.Status optionalStatus, Long taId,
+                         boolean hideChildrenOfDownloadedParent, SearchTerm searchTerm) {
         return 0;
     }
 
@@ -95,13 +110,25 @@ public class LmdbRpkiRepostiories implements RpkiRepostioryStore {
     }
 
     @Override
-    public Stream<RpkiRepository> findRsyncRepositories() {
+    public Stream<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Long taId) {
         return null;
     }
 
     @Override
-    public Stream<RpkiRepository> findRrdpRepositories() {
+    public Stream<RpkiRepository> findAll(Long taId) {
         return null;
+    }
+
+    @Override
+    public Stream<RpkiRepository> findRsyncRepositories(Tx.Read tx) {
+        return ixMap.values(tx).stream()
+                .filter(r -> r.getType() == RpkiRepository.Type.RSYNC || r.getType() == RpkiRepository.Type.RSYNC_PREFETCH);
+    }
+
+    @Override
+    public Stream<RpkiRepository> findRrdpRepositories(Tx.Read tx) {
+        return ixMap.values(tx).stream()
+                .filter(r -> r.getType() == RpkiRepository.Type.RRDP);
     }
 
     @Override

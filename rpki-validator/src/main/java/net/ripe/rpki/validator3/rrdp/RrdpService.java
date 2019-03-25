@@ -43,6 +43,7 @@ import net.ripe.rpki.validator3.domain.ValidationCheck;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjectsStore;
+import net.ripe.rpki.validator3.storage.stores.RpkiRepostioryStore;
 import net.ripe.rpki.validator3.util.Hex;
 import net.ripe.rpki.validator3.util.Sha256;
 import net.ripe.rpki.validator3.util.Time;
@@ -74,16 +75,20 @@ public class RrdpService {
 
     private final RpkiObjectsStore rpkiObjectsStore;
 
+    private final RpkiRepostioryStore rpkiRepostioryStore;
+
     private final Lmdb lmdb;
 
     @Autowired
     public RrdpService(final RrdpClient rrdpClient,
                        final RpkiObjects rpkiObjectRepository,
                        final RpkiObjectsStore rpkiObjectsStore,
+                       final RpkiRepostioryStore rpkiRepostioryStore,
                        final Lmdb lmdb) {
         this.rrdpClient = rrdpClient;
         this.rpkiObjectRepository = rpkiObjectRepository;
         this.rpkiObjectsStore = rpkiObjectsStore;
+        this.rpkiRepostioryStore = rpkiRepostioryStore;
         this.lmdb = lmdb;
     }
 

@@ -38,7 +38,6 @@ import org.lmdbjava.Env;
 import org.lmdbjava.KeyRange;
 import org.lmdbjava.Txn;
 
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -46,6 +45,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
@@ -61,13 +61,13 @@ import static org.lmdbjava.DbiFlags.MDB_DUPSORT;
  */
 public class IxMap<T> extends IxBase<T> {
 
-    protected final Map<String, Dbi<ByteBuffer>> indexes;
-    protected final Map<String, Function<T, Key>> indexFunctions;
+    private final Map<String, Dbi<ByteBuffer>> indexes;
+    private final Map<String, Function<T, Set<Key>>> indexFunctions;
 
     public IxMap(final Env<ByteBuffer> env,
                  final String name,
                  final Coder<T> coder,
-                 final Map<String, Function<T, Key>> indexFunctions) {
+                 final Map<String, Function<T, Set<Key>>> indexFunctions) {
         super(env, name, coder);
         this.indexFunctions = indexFunctions;
 
@@ -88,9 +88,9 @@ public class IxMap<T> extends IxBase<T> {
                 do {
                     final T value = coder.fromBytes(cursor.val());
                     indexFunctions.forEach((n, idxFun) -> {
-                        final Key indexKey = idxFun.apply(value);
+                        final Set<Key> indexKeys = idxFun.apply(value);
                         try (Cursor<ByteBuffer> c = indexes.get(n).openCursor(tx.txn())) {
-                            c.put(indexKey.toByteBuffer(), indexKey.toByteBuffer());
+                            indexKeys.forEach(ik -> c.put(ik.toByteBuffer(), cursor.key()));
                         }
                     });
                 }
@@ -129,21 +129,10 @@ public class IxMap<T> extends IxBase<T> {
         return getByIndexKeyRange(indexName, tx, KeyRange.closed(idxKey, idxKey));
     }
 
-    public List<T> getByIndexKeyRange(String indexName, Tx.Read tx, KeyRange keyRange) {
-        final Dbi<ByteBuffer> index = indexes.get(indexName);
-        if (index == null) {
-            return Collections.emptyList();
-        }
-        final Txn<ByteBuffer> txn = tx.txn();
-        final CursorIterator<ByteBuffer> iterator = index.iterate(txn, keyRange);
-        final List<T> values = new ArrayList<>();
-        while (iterator.hasNext()) {
-            final ByteBuffer bb = mainDb.get(txn, iterator.next().val());
-            if (bb != null) {
-                values.add(coder.fromBytes(bb));
-            }
-        }
-        return values;
+    public List<Key> getByIndexPk(String indexName, Tx.Read tx, Key indexKey) {
+        checkNotNull(indexKey, "Index key is null");
+        final ByteBuffer idxKey = indexKey.toByteBuffer();
+        return getByIndexKeyRangePk(indexName, tx, KeyRange.closed(idxKey, idxKey));
     }
 
     public List<T> getByIndexLess(String indexName, Tx.Read tx, Key indexKey) {
@@ -154,6 +143,16 @@ public class IxMap<T> extends IxBase<T> {
     public List<T> getByIndexGreater(String indexName, Tx.Read tx, Key indexKey) {
         final ByteBuffer idxKey = indexKey.toByteBuffer();
         return getByIndexKeyRange(indexName, tx, KeyRange.greaterThan(idxKey));
+    }
+
+    public List<Key> getByIndexLessPk(String indexName, Tx.Read tx, Key indexKey) {
+        final ByteBuffer idxKey = indexKey.toByteBuffer();
+        return getByIndexKeyRangePk(indexName, tx, KeyRange.lessThan(idxKey));
+    }
+
+    public List<Key> getByIndexGreaterPk(String indexName, Tx.Read tx, Key indexKey) {
+        final ByteBuffer idxKey = indexKey.toByteBuffer();
+        return getByIndexKeyRangePk(indexName, tx, KeyRange.greaterThan(idxKey));
     }
 
     public Optional<T> put(Key primaryKey, T value) {
@@ -168,24 +167,27 @@ public class IxMap<T> extends IxBase<T> {
         mainDb.put(txn, pkBuf, coder.toBytes(value));
         if (oldValue.isPresent()) {
             indexFunctions.forEach((n, idxFun) -> {
-                final Key oldIndexKey = idxFun.apply(oldValue.get());
-                final Key indexKey = idxFun.apply(value);
-                checkNotNull(indexKey, "Index key for value + " + value + " is null.");
+                final Set<Key> oldIndexKeys = idxFun.apply(oldValue.get());
+                final Set<Key> indexKeys = idxFun.apply(value);
+                indexKeys.forEach(ik -> checkNotNull(ik, "Index key for value + " + value + " is null."));
                 final Dbi<ByteBuffer> index = indexes.get(n);
-                if (!oldIndexKey.equals(indexKey)) {
-                    index.delete(txn, oldIndexKey.toByteBuffer(), pkBuf);
-                }
+                oldIndexKeys.stream()
+                        .filter(oik -> !indexKeys.contains(oik))
+                        .forEach(oik -> index.delete(txn, oik.toByteBuffer(), pkBuf));
+
                 try (Cursor<ByteBuffer> c = index.openCursor(txn)) {
-                    c.put(indexKey.toByteBuffer(), pkBuf);
+                    indexKeys.stream()
+                            .filter(ik -> !oldIndexKeys.contains(ik))
+                            .forEach(ik -> c.put(ik.toByteBuffer(), pkBuf));
                 }
             });
             return oldValue;
         } else {
             indexFunctions.forEach((n, idxFun) -> {
-                final Key indexKey = idxFun.apply(value);
-                checkNotNull(indexKey, "Index key for value + " + value + " is null.");
+                final Set<Key> indexKeys = idxFun.apply(value);
+                indexKeys.forEach(ix -> checkNotNull(ix, "Index key for value + " + value + " is null."));
                 try (Cursor<ByteBuffer> c = indexes.get(n).openCursor(txn)) {
-                    c.put(indexKey.toByteBuffer(), pkBuf);
+                    indexKeys.forEach(ik -> c.put(ik.toByteBuffer(), pkBuf));
                 }
             });
             mainDb.put(txn, pkBuf, coder.toBytes(value));
@@ -211,20 +213,52 @@ public class IxMap<T> extends IxBase<T> {
                 //  index keys next to the serialized value
                 final T value = coder.fromBytes(bb);
                 mainDb.delete(txn, pkBuf);
-                indexFunctions.forEach((n, idxFun) -> {
-                    final Key indexKey = idxFun.apply(value);
-                    checkNotNull(indexKey, "Index key for value + " + value + " is null.");
-                    indexes.get(n).delete(txn, indexKey.toByteBuffer(), pkBuf);
-                });
+                indexFunctions.forEach((n, idxFun) ->
+                        idxFun.apply(value).forEach(ix ->
+                                indexes.get(n).delete(txn, ix.toByteBuffer(), pkBuf)));
             }
         }
     }
 
     public void clear() {
-        try(Tx.Write tx = writeTx()) {
+        try (Tx.Write tx = writeTx()) {
             mainDb.drop(tx.txn());
             dropIndexes(tx);
         }
+    }
+
+    private List<T> getByIndexKeyRange(String indexName, Tx.Read tx, KeyRange keyRange) {
+        final Dbi<ByteBuffer> index = indexes.get(indexName);
+        if (index == null) {
+            return Collections.emptyList();
+        }
+        final Txn<ByteBuffer> txn = tx.txn();
+        final CursorIterator<ByteBuffer> iterator = index.iterate(txn, keyRange);
+        final List<T> values = new ArrayList<>();
+        while (iterator.hasNext()) {
+            final ByteBuffer bb = mainDb.get(txn, iterator.next().val());
+            if (bb != null) {
+                values.add(coder.fromBytes(bb));
+            }
+        }
+        return values;
+    }
+
+    private List<Key> getByIndexKeyRangePk(String indexName, Tx.Read tx, KeyRange keyRange) {
+        final Dbi<ByteBuffer> index = indexes.get(indexName);
+        if (index == null) {
+            return Collections.emptyList();
+        }
+        final Txn<ByteBuffer> txn = tx.txn();
+        final CursorIterator<ByteBuffer> iterator = index.iterate(txn, keyRange);
+        final List<Key> values = new ArrayList<>();
+        while (iterator.hasNext()) {
+            final ByteBuffer bb = mainDb.get(txn, iterator.next().val());
+            if (bb != null) {
+                values.add(new Key(bb));
+            }
+        }
+        return values;
     }
 
 }

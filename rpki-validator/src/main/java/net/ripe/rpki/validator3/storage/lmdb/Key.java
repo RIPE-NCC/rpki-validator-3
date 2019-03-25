@@ -36,7 +36,12 @@ import net.ripe.rpki.validator3.util.Hex;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -79,6 +84,19 @@ public class Key {
         bb.flip();
         return new Key(bb);
     }
+
+    public static Set<Key> keys(Collection<Key> ks) {
+        return ks.stream().collect(Collectors.toSet());
+    }
+
+    public static Set<Key> keys(Key... ks) {
+        return Stream.of(ks).collect(Collectors.toSet());
+    }
+
+    public static Set<Key> keys(Key k) {
+        return Collections.singleton(k);
+    }
+
 
     public ByteBuffer toByteBuffer() {
         return key;

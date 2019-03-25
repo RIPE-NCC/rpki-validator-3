@@ -43,6 +43,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -241,8 +242,8 @@ public class IxMapTest {
         return key;
     }
 
-    public static Key stringLen(String s) {
-        return intKey(s.length());
+    public static Set<Key> stringLen(String s) {
+        return Key.keys(intKey(s.length()));
     }
 
     public static Key intKey(int length) {
