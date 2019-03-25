@@ -27,28 +27,28 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.data;
+package net.ripe.rpki.validator3.storage.data.validation;
 
-import com.fasterxml.uuid.Generators;
-import lombok.Value;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.ToString;
+import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.storage.Binary;
+import net.ripe.rpki.validator3.storage.lmdb.Ref;
 
-import java.nio.ByteBuffer;
-import java.util.UUID;
-
-import static java.nio.ByteBuffer.allocateDirect;
-
-@Value
+@Data
+@ToString
+@EqualsAndHashCode(callSuper = true)
 @Binary
-public class Id<T> {
-    private final byte[] id;
+public class RrdpRepositoryValidationRun extends RpkiRepositoryValidationRun {
+    @Getter
+    private Ref<RpkiRepository> rpkiRepository;
 
-    public static <T> Id<T> generate() {
-        UUID uuid = Generators.timeBasedGenerator().generate();
-        final ByteBuffer key = allocateDirect(16);
-        key.putLong(uuid.getMostSignificantBits());
-        key.putLong(uuid.getLeastSignificantBits());
-        key.flip();
-        return new Id<>(key.array());
-    }
+//    TODO Do something about it
+//    @Override
+//    public void visit(Visitor visitor) {
+//        visitor.accept(this);
+//    }
+
 }

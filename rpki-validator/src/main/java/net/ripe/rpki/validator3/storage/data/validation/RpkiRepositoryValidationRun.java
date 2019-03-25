@@ -27,28 +27,32 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.data;
+package net.ripe.rpki.validator3.storage.data.validation;
 
-import com.fasterxml.uuid.Generators;
-import lombok.Value;
-import net.ripe.rpki.validator3.storage.Binary;
+import lombok.Getter;
+import net.ripe.rpki.validator3.storage.data.RpkiObject;
 
-import java.nio.ByteBuffer;
-import java.util.UUID;
+public abstract class RpkiRepositoryValidationRun extends ValidationRun {
 
-import static java.nio.ByteBuffer.allocateDirect;
+    public final static String TYPE = "rpki-repository-validation-run";
 
-@Value
-@Binary
-public class Id<T> {
-    private final byte[] id;
+    @Getter
+    private int addedObjectCount;
 
-    public static <T> Id<T> generate() {
-        UUID uuid = Generators.timeBasedGenerator().generate();
-        final ByteBuffer key = allocateDirect(16);
-        key.putLong(uuid.getMostSignificantBits());
-        key.putLong(uuid.getLeastSignificantBits());
-        key.flip();
-        return new Id<>(key.array());
+    @Override
+    public String getType() {
+        return TYPE;
     }
+
+    public void objectAdded() {
+        ++this.addedObjectCount;
+    }
+
+    // TODO Implement somehow
+    public void addRpkiObject(RpkiObject rpkiObject) {
+//        if (rpkiObjects.add(rpkiObject)) {
+//            objectAdded();
+//        }
+    }
+
 }

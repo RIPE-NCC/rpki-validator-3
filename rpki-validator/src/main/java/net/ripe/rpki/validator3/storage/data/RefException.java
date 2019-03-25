@@ -29,26 +29,11 @@
  */
 package net.ripe.rpki.validator3.storage.data;
 
-import com.fasterxml.uuid.Generators;
-import lombok.Value;
-import net.ripe.rpki.validator3.storage.Binary;
+import net.ripe.rpki.validator3.storage.lmdb.IxMap;
+import net.ripe.rpki.validator3.storage.lmdb.Key;
 
-import java.nio.ByteBuffer;
-import java.util.UUID;
-
-import static java.nio.ByteBuffer.allocateDirect;
-
-@Value
-@Binary
-public class Id<T> {
-    private final byte[] id;
-
-    public static <T> Id<T> generate() {
-        UUID uuid = Generators.timeBasedGenerator().generate();
-        final ByteBuffer key = allocateDirect(16);
-        key.putLong(uuid.getMostSignificantBits());
-        key.putLong(uuid.getLeastSignificantBits());
-        key.flip();
-        return new Id<>(key.array());
+public class RefException extends RuntimeException {
+    public <T> RefException(IxMap<T> ix, Key key) {
+        super("Referential integrity violation: map " + ix.getName() + " doesn't have key " + key);
     }
 }

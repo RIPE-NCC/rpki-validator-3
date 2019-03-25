@@ -27,28 +27,29 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.data;
+package net.ripe.rpki.validator3.storage.stores;
 
-import com.fasterxml.uuid.Generators;
-import lombok.Value;
-import net.ripe.rpki.validator3.storage.Binary;
+import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.lmdb.Tx;
 
-import java.nio.ByteBuffer;
-import java.util.UUID;
+import java.util.List;
+import java.util.Optional;
 
-import static java.nio.ByteBuffer.allocateDirect;
+public interface TrustAnchorStore {
+    void add(Tx.Write tx, TrustAnchor trustAnchor);
 
-@Value
-@Binary
-public class Id<T> {
-    private final byte[] id;
+    void remove(Tx.Write tx, TrustAnchor trustAnchor);
 
-    public static <T> Id<T> generate() {
-        UUID uuid = Generators.timeBasedGenerator().generate();
-        final ByteBuffer key = allocateDirect(16);
-        key.putLong(uuid.getMostSignificantBits());
-        key.putLong(uuid.getLeastSignificantBits());
-        key.flip();
-        return new Id<>(key.array());
-    }
+    TrustAnchor get(long id);
+
+    List<TrustAnchor> findAll(Tx.Read tx);
+
+    List<TrustAnchor> findByName(Tx.Read tx, String name);
+
+    Optional<TrustAnchor> findBySubjectPublicKeyInfo(Tx.Read tx, String subjectPublicKeyInfo);
+
+    boolean allInitialCertificateTreeValidationRunsCompleted(Tx.Read tx);
+
+    List<TaStatus> getStatuses();
 }

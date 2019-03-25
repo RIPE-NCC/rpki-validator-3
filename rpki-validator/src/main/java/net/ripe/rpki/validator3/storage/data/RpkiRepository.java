@@ -35,6 +35,7 @@ import lombok.EqualsAndHashCode;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.storage.Binary;
+import net.ripe.rpki.validator3.storage.lmdb.Ref;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
@@ -80,7 +81,7 @@ public class RpkiRepository extends Base<RpkiRepository> {
     private String rrdpSessionId;
     private BigInteger rrdpSerial;
 
-    private RpkiRepository parentRepository;
+    private Ref<RpkiRepository> parentRepository;
 
     public RpkiRepository(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String location, Type type) {
         addTrustAnchor(trustAnchor);

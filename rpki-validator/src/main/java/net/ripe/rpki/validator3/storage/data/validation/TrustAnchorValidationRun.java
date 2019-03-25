@@ -27,28 +27,35 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.data;
+package net.ripe.rpki.validator3.storage.data.validation;
 
-import com.fasterxml.uuid.Generators;
-import lombok.Value;
+import lombok.Getter;
 import net.ripe.rpki.validator3.storage.Binary;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 
-import java.nio.ByteBuffer;
-import java.util.UUID;
-
-import static java.nio.ByteBuffer.allocateDirect;
-
-@Value
 @Binary
-public class Id<T> {
-    private final byte[] id;
+public class TrustAnchorValidationRun extends ValidationRun {
+    public static final String TYPE = "trust-anchor-validation-run";
 
-    public static <T> Id<T> generate() {
-        UUID uuid = Generators.timeBasedGenerator().generate();
-        final ByteBuffer key = allocateDirect(16);
-        key.putLong(uuid.getMostSignificantBits());
-        key.putLong(uuid.getLeastSignificantBits());
-        key.flip();
-        return new Id<>(key.array());
+    @Getter
+    private TrustAnchor trustAnchor;
+
+    @Getter
+    private String trustAnchorCertificateURI;
+
+    public TrustAnchorValidationRun(TrustAnchor trustAnchor) {
+        this.trustAnchor = trustAnchor;
+        this.trustAnchorCertificateURI = trustAnchor.getLocations().get(0);
     }
+
+    @Override
+    public String getType() {
+        return TYPE;
+    }
+
+// TODO Do something here as well
+//    @Override
+//    public void visit(Visitor visitor) {
+//        visitor.accept(this);
+//    }
 }

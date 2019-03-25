@@ -30,87 +30,83 @@
 package net.ripe.rpki.validator3.storage.stores.impl;
 
 import com.google.common.collect.ImmutableMap;
-import net.ripe.rpki.validator3.api.Paging;
-import net.ripe.rpki.validator3.api.SearchTerm;
-import net.ripe.rpki.validator3.api.Sorting;
-import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
+import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
 import net.ripe.rpki.validator3.storage.FSTCoder;
 import net.ripe.rpki.validator3.storage.Lmdb;
-import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
-import net.ripe.rpki.validator3.storage.stores.RpkiRepostioryStore;
+import net.ripe.rpki.validator3.storage.lmdb.Key;
+import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.validation.constraints.NotNull;
-import java.util.Map;
+import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 @Component
-public class LmdbRpkiRepostiories implements RpkiRepostioryStore {
+public class LmdbTrustAnchors implements TrustAnchorStore {
 
-    private static final String RPKI_REPOSITORIES = "rpki-repositories";
+    private static final String TRUST_ANCHORS = "trust-anchors";
+    private static final String BY_NAME = "by-name";
+    private static final String BY_SUBJECT_KEY_INFO = "by-ski";
 
-    private final IxMap<RpkiRepository> ixMap;
+    private final IxMap<TrustAnchor> ixMap;
+    private final Sequences sequences;
 
     @Autowired
-    public LmdbRpkiRepostiories(Lmdb lmdb) {
+    public LmdbTrustAnchors(Lmdb lmdb) {
         this.ixMap = new IxMap<>(
                 lmdb.getEnv(),
-                RPKI_REPOSITORIES,
+                TRUST_ANCHORS,
                 new FSTCoder<>(),
-                ImmutableMap.of());
+                ImmutableMap.of(
+                        BY_NAME, ta -> Key.of(ta.getName()),
+                        BY_SUBJECT_KEY_INFO, ta -> Key.of(ta.getSubjectPublicKeyInfo()))
+        );
+        sequences = new Sequences(lmdb);
     }
 
     @Override
-    public RpkiRepository register(TrustAnchor trustAnchor, String uri, RpkiRepository.Type type) {
+    public void add(Tx.Write tx, TrustAnchor trustAnchor) {
+        final Key primaryKey = Key.of(sequences.next(tx, TRUST_ANCHORS + ":pk"));
+        trustAnchor.setId(primaryKey);
+        ixMap.put(tx, primaryKey, trustAnchor);
+    }
+
+    @Override
+    public void remove(Tx.Write tx, TrustAnchor trustAnchor) {
+        ixMap.delete(tx, trustAnchor.getId());
+    }
+
+    @Override
+    public TrustAnchor get(long id) {
         return null;
     }
 
     @Override
-    public Optional<RpkiRepository> findByURI(@NotNull @ValidLocationURI String uri) {
-        return Optional.empty();
+    public List<TrustAnchor> findAll(Tx.Read tx) {
+        return ixMap.values(tx);
     }
 
     @Override
-    public RpkiRepository get(long id) {
+    public List<TrustAnchor> findByName(Tx.Read tx, String name) {
+        return ixMap.getByIndex(BY_NAME, tx, Key.of(name));
+    }
+
+    @Override
+    public Optional<TrustAnchor> findBySubjectPublicKeyInfo(Tx.Read tx, String subjectPublicKeyInfo) {
+        return ixMap.getByIndex(BY_SUBJECT_KEY_INFO, tx, Key.of(subjectPublicKeyInfo)).stream().findFirst();
+    }
+
+    @Override
+    public boolean allInitialCertificateTreeValidationRunsCompleted(Tx.Read tx) {
+        return ixMap.values(tx).stream().anyMatch(ta -> !ta.isInitialCertificateTreeValidationRunCompleted());
+    }
+
+    @Override
+    public List<TaStatus> getStatuses() {
+        // TODO Implement
         return null;
-    }
-
-    @Override
-    public Stream<RpkiRepository> findAll(RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent, SearchTerm searchTerm, Sorting sorting, Paging paging) {
-        return null;
-    }
-
-    @Override
-    public long countAll(RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent, SearchTerm searchTerm) {
-        return 0;
-    }
-
-    @Override
-    public Map<RpkiRepository.Status, Long> countByStatus(Long taId, boolean hideChildrenOfDownloadedParent) {
-        return null;
-    }
-
-    @Override
-    public Stream<RpkiRepository> findRsyncRepositories() {
-        return null;
-    }
-
-    @Override
-    public Stream<RpkiRepository> findRrdpRepositories() {
-        return null;
-    }
-
-    @Override
-    public void removeAllForTrustAnchor(TrustAnchor trustAnchor) {
-
-    }
-
-    @Override
-    public void remove(long id) {
-
     }
 }

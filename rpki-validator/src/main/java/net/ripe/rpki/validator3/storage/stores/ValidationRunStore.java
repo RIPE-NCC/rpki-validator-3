@@ -27,28 +27,45 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.data;
+package net.ripe.rpki.validator3.storage.stores;
 
-import com.fasterxml.uuid.Generators;
-import lombok.Value;
-import net.ripe.rpki.validator3.storage.Binary;
+import net.ripe.rpki.validator3.api.Paging;
+import net.ripe.rpki.validator3.api.SearchTerm;
+import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.storage.data.RpkiRepository;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
+import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
+import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
+import net.ripe.rpki.validator3.storage.lmdb.Tx;
 
-import java.nio.ByteBuffer;
-import java.util.UUID;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 
-import static java.nio.ByteBuffer.allocateDirect;
+public interface ValidationRunStore {
+    void add(Tx.Write tx, ValidationRun validationRun);
 
-@Value
-@Binary
-public class Id<T> {
-    private final byte[] id;
+    void removeAllForTrustAnchor(TrustAnchor trustAnchor);
 
-    public static <T> Id<T> generate() {
-        UUID uuid = Generators.timeBasedGenerator().generate();
-        final ByteBuffer key = allocateDirect(16);
-        key.putLong(uuid.getMostSignificantBits());
-        key.putLong(uuid.getLeastSignificantBits());
-        key.flip();
-        return new Id<>(key.array());
-    }
+    <T extends ValidationRun> T get(Class<T> type, long id);
+
+    <T extends ValidationRun> List<T> findAll(Class<T> type);
+
+    <T extends ValidationRun> List<T> findLatestSuccessful(Class<T> type);
+
+    Optional<TrustAnchorValidationRun> findLatestCompletedForTrustAnchor(TrustAnchor trustAnchor);
+
+    void runCertificateTreeValidation(TrustAnchor trustAnchor);
+
+    void removeAllForRpkiRepository(RpkiRepository repository);
+
+    long removeOldValidationRuns(Instant completedBefore);
+
+    Stream<ValidationCheck> findValidationChecksForValidationRun(long validationRunId, Paging paging, SearchTerm searchTerm, Sorting sorting);
+
+    int countValidationChecksForValidationRun(long validationRunId, SearchTerm searchTerm);
+
+    long clear();
 }

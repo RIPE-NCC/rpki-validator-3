@@ -27,28 +27,33 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.data;
+package net.ripe.rpki.validator3.storage.lmdb;
 
-import com.fasterxml.uuid.Generators;
-import lombok.Value;
-import net.ripe.rpki.validator3.storage.Binary;
+import lombok.Getter;
+import net.ripe.rpki.validator3.storage.data.RefException;
 
-import java.nio.ByteBuffer;
-import java.util.UUID;
+import java.io.Serializable;
 
-import static java.nio.ByteBuffer.allocateDirect;
+public class Ref<T> implements Serializable {
+    @Getter
+    private final IxMap<T> ix;
+    @Getter
+    private final Key key;
 
-@Value
-@Binary
-public class Id<T> {
-    private final byte[] id;
+    private Ref(IxMap<T> ix, Key key) {
+        this.ix = ix;
+        this.key = key;
+    }
 
-    public static <T> Id<T> generate() {
-        UUID uuid = Generators.timeBasedGenerator().generate();
-        final ByteBuffer key = allocateDirect(16);
-        key.putLong(uuid.getMostSignificantBits());
-        key.putLong(uuid.getLeastSignificantBits());
-        key.flip();
-        return new Id<>(key.array());
+    public Ref<T> of(Tx.Read tx, IxMap<T> ix, Key key) {
+        if (ix.exists(tx, key)) {
+            return new Ref<>(ix, key);
+        }
+        throw new RefException(ix, key);
+    }
+
+    @Override
+    public String toString() {
+        return "Ref(" + ix.getName() + ", '" + key + "')";
     }
 }

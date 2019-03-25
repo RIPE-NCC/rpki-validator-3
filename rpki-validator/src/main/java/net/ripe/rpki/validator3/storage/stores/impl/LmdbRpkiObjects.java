@@ -45,6 +45,7 @@ import org.springframework.stereotype.Component;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -93,7 +94,7 @@ public class LmdbRpkiObjects implements RpkiObjectsStore {
 
     @Override
     public Optional<RpkiObject> findBySha256(Tx.Read tx, byte[] sha256) {
-        return ixMap.get(ixMap.readTx(), Key.of(sha256));
+        return ixMap.get(tx, Key.of(sha256));
     }
 
     @Override
@@ -109,7 +110,11 @@ public class LmdbRpkiObjects implements RpkiObjectsStore {
     @Override
     public Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type type, byte[] authorityKeyIdentifier) {
         return ixMap.getByIndex(BY_AKI_INDEX, ixMap.readTx(), Key.of(authorityKeyIdentifier))
-                .stream().findFirst();
+                .stream()
+                .filter(o -> o.getType() == type)
+                .max(Comparator
+                        .comparing((RpkiObject o) -> o.getSerialNumber()).reversed()
+                        .thenComparing(o -> o.getSigningTime()).reversed());
     }
 
     @Override
