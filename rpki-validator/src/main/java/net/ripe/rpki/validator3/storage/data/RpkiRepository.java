@@ -32,7 +32,6 @@ package net.ripe.rpki.validator3.storage.data;
 import com.google.common.base.Objects;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.storage.Binary;
 import net.ripe.rpki.validator3.storage.lmdb.Ref;
