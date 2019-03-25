@@ -39,9 +39,12 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -154,6 +157,81 @@ public class IxMapTest {
         ixMap.put(null, "x");
     }
 
+
+    @Test
+    public void testLongOrdering() {
+        final List<Long> s = positiveLongList();
+
+        Tx.use(ixMap.writeTx(), tx ->
+                s.forEach(z -> ixMap.put(tx, Key.of(z), "" + z)));
+
+        List<String> values = ixMap.values(ixMap.readTx());
+        assertEquals(s.stream().map(Object::toString).collect(Collectors.toList()), values);
+    }
+
+    private final Random random = new Random();
+
+    @Test
+    public void testLessThan() {
+        final int n = 1000;
+        final List<String> strings = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            strings.add(randomString(random));
+        }
+
+        Tx.use(ixMap.writeTx(), tx ->
+                strings.forEach(z -> ixMap.put(tx, Key.of(UUID.randomUUID()), z)));
+
+        try (Tx.Read tx = lmdb.readTx()) {
+            for (int len = 1; len < 50; len++) {
+                List<String> byIndexLess = ixMap.getByIndexLess(LENGTH_INDEX, tx, intKey(len));
+                int finalLen = len;
+                assertEquals(strings.stream()
+                                .filter(s -> s.length() < finalLen)
+                                .collect(Collectors.toSet()),
+                        new HashSet<>(byIndexLess));
+            }
+        }
+    }
+
+    @Test
+    public void testGreaterThan() {
+        final int n = 1000;
+        final List<String> strings = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            strings.add(randomString(random));
+        }
+
+        Tx.use(ixMap.writeTx(), tx ->
+                strings.forEach(z -> ixMap.put(tx, Key.of(UUID.randomUUID()), z)));
+
+        try (Tx.Read tx = lmdb.readTx()) {
+            for (int len = 1; len < 50; len++) {
+                List<String> byIndexLess = ixMap.getByIndexGreater(LENGTH_INDEX, tx, intKey(len));
+                int finalLen = len;
+                assertEquals(strings.stream()
+                                .filter(s -> s.length() > finalLen)
+                                .collect(Collectors.toSet()),
+                        new HashSet<>(byIndexLess));
+            }
+        }
+    }
+
+
+    public List<Long> positiveLongList() {
+        Random r = new Random();
+        final List<Long> s = new ArrayList<>();
+        for (int i = 0; i < 10000; i++) {
+            long z = r.nextLong();
+            if (z > 0) {
+                s.add(z);
+            }
+        }
+        s.sort(Long::compareTo);
+        return s;
+    }
+
+
     private Key putAndGet(String v) {
         final Key key = key(UUID.randomUUID());
         ixMap.put(key, v);
@@ -175,6 +253,15 @@ public class IxMapTest {
 
     static Key key(Object o) {
         return Key.of(o.toString().getBytes());
+    }
+
+    private String randomString(Random r) {
+        final int len = r.nextInt(50);
+        StringBuilder s = new StringBuilder(len);
+        for (int i = 0; i < len; i++) {
+            s.append(r.nextInt(10));
+        }
+        return s.toString();
     }
 
 }

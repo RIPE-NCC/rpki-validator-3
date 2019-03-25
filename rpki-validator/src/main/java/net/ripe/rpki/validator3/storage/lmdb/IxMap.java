@@ -125,14 +125,17 @@ public class IxMap<T> extends IxBase<T> {
 
     public List<T> getByIndex(String indexName, Tx.Read tx, Key indexKey) {
         checkNotNull(indexKey, "Index key is null");
+        final ByteBuffer idxKey = indexKey.toByteBuffer();
+        return getByIndexKeyRange(indexName, tx, KeyRange.closed(idxKey, idxKey));
+    }
+
+    public List<T> getByIndexKeyRange(String indexName, Tx.Read tx, KeyRange keyRange) {
         final Dbi<ByteBuffer> index = indexes.get(indexName);
         if (index == null) {
             return Collections.emptyList();
         }
-
-        final ByteBuffer idxKey = indexKey.toByteBuffer();
         final Txn<ByteBuffer> txn = tx.txn();
-        final CursorIterator<ByteBuffer> iterator = index.iterate(txn, KeyRange.closed(idxKey, idxKey));
+        final CursorIterator<ByteBuffer> iterator = index.iterate(txn, keyRange);
         final List<T> values = new ArrayList<>();
         while (iterator.hasNext()) {
             final ByteBuffer bb = mainDb.get(txn, iterator.next().val());
@@ -141,6 +144,16 @@ public class IxMap<T> extends IxBase<T> {
             }
         }
         return values;
+    }
+
+    public List<T> getByIndexLess(String indexName, Tx.Read tx, Key indexKey) {
+        final ByteBuffer idxKey = indexKey.toByteBuffer();
+        return getByIndexKeyRange(indexName, tx, KeyRange.lessThan(idxKey));
+    }
+
+    public List<T> getByIndexGreater(String indexName, Tx.Read tx, Key indexKey) {
+        final ByteBuffer idxKey = indexKey.toByteBuffer();
+        return getByIndexKeyRange(indexName, tx, KeyRange.greaterThan(idxKey));
     }
 
     public Optional<T> put(Key primaryKey, T value) {

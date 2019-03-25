@@ -36,7 +36,9 @@ import net.ripe.rpki.validator3.util.Hex;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.util.UUID;
 
+import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @AllArgsConstructor
@@ -63,11 +65,19 @@ public class Key {
     }
 
     public static Key of(String s) {
-        return new Key(s.getBytes(UTF_8));
+        return of(s.getBytes(UTF_8));
     }
 
     public static Key of(BigInteger bi) {
         return of(bi.toByteArray());
+    }
+
+    public static Key of(UUID uuid) {
+        final ByteBuffer bb = ByteBuffer.allocateDirect(16);
+        bb.putLong(uuid.getMostSignificantBits());
+        bb.putLong(uuid.getLeastSignificantBits());
+        bb.flip();
+        return new Key(bb);
     }
 
     public ByteBuffer toByteBuffer() {
