@@ -45,7 +45,7 @@ public class Ref<T> implements Serializable {
         this.key = key;
     }
 
-    public Ref<T> of(Tx.Read tx, IxMap<T> ix, Key key) {
+    public static <R> Ref<R> of(Tx.Read tx, IxMap<R> ix, Key key) {
         if (ix.exists(tx, key)) {
             return new Ref<>(ix, key);
         }

@@ -52,13 +52,10 @@ import javax.validation.constraints.NotNull;
 import java.net.URI;
 import java.util.Comparator;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static net.ripe.rpki.validator3.domain.querydsl.QRpkiRepository.rpkiRepository;
 
 @Component
 @Slf4j
@@ -106,7 +103,7 @@ public class LmdbRpkiRepostiories implements RpkiRepostioryStore {
 
         if (registered.getType() == RpkiRepository.Type.RSYNC) {
             findRsyncParentRepository(tx, uri).ifPresent(parent -> {
-                registered.setParentRepository(new Ref<>(ixMap, parent.getId()));
+                registered.setParentRepository(Ref.of(tx, ixMap, parent.getId()));
                 if (parent.isDownloaded()) {
                     registered.setDownloaded(parent.getLastDownloadedAt());
                 }
@@ -161,7 +158,7 @@ public class LmdbRpkiRepostiories implements RpkiRepostioryStore {
             final String stringTerm = searchTerm.asString().toLowerCase();
             stream = stream.filter(r ->
                     r.getRrdpNotifyUri().toLowerCase().contains(stringTerm) ||
-                    r.getStatus().toString().toLowerCase().contains(stringTerm));
+                            r.getStatus().toString().toLowerCase().contains(stringTerm));
         }
 
         if (hideChildrenOfDownloadedParent) {
@@ -170,7 +167,7 @@ public class LmdbRpkiRepostiories implements RpkiRepostioryStore {
                 final Optional<RpkiRepository> parent = parentRef.getIx().get(tx, parentRef.getKey());
                 return !parent.isPresent() ||
                         parent.get().getStatus() == RpkiRepository.Status.FAILED &&
-                        parent.get().getLastDownloadedAt() == null;
+                                parent.get().getLastDownloadedAt() == null;
             });
         }
         return stream;

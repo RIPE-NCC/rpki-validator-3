@@ -30,6 +30,7 @@
 package net.ripe.rpki.validator3.storage.data.validation;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
@@ -38,6 +39,7 @@ import net.ripe.rpki.validator3.storage.lmdb.Ref;
 import java.util.HashSet;
 import java.util.Set;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class CertificateTreeValidationRun extends ValidationRun {
     public static final String TYPE = "certificate-tree-validation-run";
