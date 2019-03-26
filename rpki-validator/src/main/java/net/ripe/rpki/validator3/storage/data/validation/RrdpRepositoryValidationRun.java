@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.storage.data.validation;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -41,6 +42,7 @@ import net.ripe.rpki.validator3.storage.data.Ref;
 @ToString
 @EqualsAndHashCode(callSuper = true)
 @Binary
+@AllArgsConstructor
 public class RrdpRepositoryValidationRun extends RpkiRepositoryValidationRun {
     @Getter
     private Ref<RpkiRepository> rpkiRepository;

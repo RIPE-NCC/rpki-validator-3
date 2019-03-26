@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.storage.stores;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.Key;
@@ -71,4 +72,6 @@ public interface RpkiRepositoryStore {
     void removeAllForTrustAnchor(Tx.Write tx, TrustAnchor trustAnchor);
 
     void remove(Tx.Write tx, Key key);
+
+    Ref<RpkiRepository> makeRef(Tx.Read tx, Key key);
 }

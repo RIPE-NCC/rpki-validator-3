@@ -35,6 +35,7 @@ import net.ripe.rpki.validator3.storage.Binary;
 import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.util.Hex;
 
+import java.io.Serializable;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -49,7 +50,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 @AllArgsConstructor
 @EqualsAndHashCode
 @Binary
-public class Key {
+public class Key implements Serializable {
     private final ByteBuffer key;
 
     private Key(byte[] bytes) {

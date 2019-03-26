@@ -131,8 +131,8 @@ public class TrustAnchorValidationService {
                 // TODO Do this part outside of this specific transaction
                 final Set<TrustAnchor> affectedTrustAnchors = Sets.newHashSet(trustAnchor);
                 if (trustAnchor.getRsyncPrefetchUri() != null) {
-                    rpkiRepositories.findByURI(trustAnchor.getRsyncPrefetchUri())
-                            .ifPresent(r -> affectedTrustAnchors.addAll(repositoryValidationService.prefetchRepository(r)));
+//                    rpkiRepositories.findByURI(trustAnchor.getRsyncPrefetchUri())
+//                            .ifPresent(r -> affectedTrustAnchors.addAll(repositoryValidationService.prefetchRepository(r)));
                 }
                 Transactions.afterCommit(() -> affectedTrustAnchors.forEach(validationRunRepository::runCertificateTreeValidation));
             }

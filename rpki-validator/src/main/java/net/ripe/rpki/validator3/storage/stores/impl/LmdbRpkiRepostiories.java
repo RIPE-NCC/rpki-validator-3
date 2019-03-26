@@ -253,4 +253,9 @@ public class LmdbRpkiRepostiories implements RpkiRepositoryStore {
     public void remove(Tx.Write tx, Key key) {
         ixMap.delete(tx, key);
     }
+
+    @Override
+    public Ref<RpkiRepository> makeRef(Tx.Read tx, Key key) {
+        return Ref.of(tx, ixMap, key);
+    }
 }

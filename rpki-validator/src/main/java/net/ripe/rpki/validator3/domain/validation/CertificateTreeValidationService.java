@@ -95,32 +95,15 @@ import static net.ripe.rpki.validator3.storage.data.RpkiRepository.Type.RSYNC;
 public class CertificateTreeValidationService {
     private static final ValidationOptions VALIDATION_OPTIONS = new ValidationOptions();
 
-//    @Autowired
-//    private EntityManager entityManager;
-//    @Autowired
-//    private RpkiObjects rpkiObjects;
-
     @Autowired
     private RpkiObjectStore rpkiObjectStore;
-
-    //    @Autowired
-//    private TrustAnchors trustAnchors;
-    @Autowired
-    private RpkiRepositories rpkiRepositories;
 
     @Autowired
     private RpkiRepositoryStore rpkiRepositoriStore;
 
     @Autowired
-    private ValidationRuns validationRuns;
-    @Autowired
-    private Settings settings;
-
-    @Autowired
     private SettingsStore settingsStore;
 
-    @Autowired
-    private ValidatedRpkiObjects validatedRpkiObjects;
     @Autowired
     private ValidationScheduler validationScheduler;
 

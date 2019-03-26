@@ -45,9 +45,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.DbiFlags.MDB_DUPSORT;
@@ -169,8 +171,9 @@ public class IxMap<T> extends IxBase<T> {
         if (oldValue.isPresent()) {
             indexFunctions.forEach((n, idxFun) -> {
                 final Set<Key> oldIndexKeys = idxFun.apply(oldValue.get());
-                final Set<Key> indexKeys = idxFun.apply(value);
-                indexKeys.forEach(ik -> checkNotNull(ik, "Index key for value + " + value + " is null."));
+                final Set<Key> indexKeys = idxFun.apply(value).stream()
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
                 final Dbi<ByteBuffer> index = indexes.get(n);
                 oldIndexKeys.stream()
                         .filter(oik -> !indexKeys.contains(oik))
@@ -185,8 +188,9 @@ public class IxMap<T> extends IxBase<T> {
             return oldValue;
         } else {
             indexFunctions.forEach((n, idxFun) -> {
-                final Set<Key> indexKeys = idxFun.apply(value);
-                indexKeys.forEach(ix -> checkNotNull(ix, "Index key for value + " + value + " is null."));
+                final Set<Key> indexKeys = idxFun.apply(value).stream()
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
                 try (Cursor<ByteBuffer> c = indexes.get(n).openCursor(txn)) {
                     indexKeys.forEach(ik -> c.put(ik.toByteBuffer(), pkBuf));
                 }
