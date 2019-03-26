@@ -30,8 +30,9 @@
 package net.ripe.rpki.validator3.storage.stores;
 
 import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
+import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.lmdb.Key;
+import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 
 import java.util.List;
@@ -53,4 +54,8 @@ public interface TrustAnchorStore {
     boolean allInitialCertificateTreeValidationRunsCompleted(Tx.Read tx);
 
     List<TaStatus> getStatuses(Tx.Read tx);
+
+    Ref<TrustAnchor> makeRef(Tx.Read tx, Key key);
+
+    void markInitialCertificateTreeValidationRunCompleted(Tx.Write tx, TrustAnchor trustAnchor);
 }

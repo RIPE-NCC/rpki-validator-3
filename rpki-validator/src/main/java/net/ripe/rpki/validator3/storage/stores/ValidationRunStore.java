@@ -32,8 +32,10 @@ package net.ripe.rpki.validator3.storage.stores;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
@@ -47,7 +49,7 @@ import java.util.stream.Stream;
 public interface ValidationRunStore {
     void add(Tx.Write tx, ValidationRun validationRun);
 
-    void removeAllForTrustAnchor(TrustAnchor trustAnchor);
+    void removeAllForTrustAnchor(Tx.Write tx, TrustAnchor trustAnchor);
 
     <T extends ValidationRun> T get(Class<T> type, long id);
 
@@ -68,4 +70,6 @@ public interface ValidationRunStore {
     int countValidationChecksForValidationRun(long validationRunId, SearchTerm searchTerm);
 
     long clear();
+
+    void associate(Tx.Write writeTx, CertificateTreeValidationRun validationRun, RpkiObject o);
 }

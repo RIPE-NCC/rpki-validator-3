@@ -30,7 +30,6 @@
 package net.ripe.rpki.validator3.storage.data;
 
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
-import net.ripe.rpki.validator3.storage.lmdb.Key;
 
 public class RefException extends RuntimeException {
     public <T> RefException(IxMap<T> ix, Key key) {

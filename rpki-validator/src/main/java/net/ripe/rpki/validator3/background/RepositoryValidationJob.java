@@ -31,9 +31,10 @@ package net.ripe.rpki.validator3.background;
 
 import lombok.Getter;
 import lombok.Setter;
-import net.ripe.rpki.validator3.domain.RpkiRepository;
-import net.ripe.rpki.validator3.domain.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.domain.validation.RpkiRepositoryValidationService;
+import net.ripe.rpki.validator3.storage.data.RpkiRepository;
+import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidationRun;
+import net.ripe.rpki.validator3.storage.stores.Id;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
 import org.quartz.JobBuilder;
@@ -63,11 +64,12 @@ public class RepositoryValidationJob implements Job {
     static JobDetail buildJob(RpkiRepository rpkiRepository) {
         return JobBuilder.newJob(RepositoryValidationJob.class)
             .withIdentity(getJobKey(rpkiRepository))
-            .usingJobData(RPKI_REPOSITORY_ID, rpkiRepository.getId())
+            .usingJobData(RPKI_REPOSITORY_ID, Id.asLong(rpkiRepository.getId()))
             .build();
     }
 
     static JobKey getJobKey(RpkiRepository rpkiRepository) {
-        return new JobKey(String.format("%s#%s#%d", RpkiRepositoryValidationRun.TYPE, rpkiRepository.getRrdpNotifyUri(), rpkiRepository.getId()));
+        return new JobKey(String.format("%s#%s#%d", RpkiRepositoryValidationRun.TYPE,
+                rpkiRepository.getRrdpNotifyUri(), Id.asLong(rpkiRepository.getId())));
     }
 }

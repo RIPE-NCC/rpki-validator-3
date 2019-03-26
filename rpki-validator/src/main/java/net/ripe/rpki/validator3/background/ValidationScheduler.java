@@ -32,8 +32,9 @@ package net.ripe.rpki.validator3.background;
 import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
-import net.ripe.rpki.validator3.domain.RpkiRepository;
-import net.ripe.rpki.validator3.domain.TrustAnchor;
+import net.ripe.rpki.validator3.storage.data.RpkiRepository;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.stores.Id;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -55,7 +56,7 @@ public class ValidationScheduler {
 
     public void addTrustAnchor(TrustAnchor trustAnchor) {
         Preconditions.checkArgument(
-            trustAnchor.getId() >= Api.MINIMUM_VALID_ID,
+            Id.asLong(trustAnchor.getId()) >= Api.MINIMUM_VALID_ID,
             "trustAnchor id %s is not valid",
             trustAnchor.getId()
         );
@@ -97,7 +98,7 @@ public class ValidationScheduler {
 
     public synchronized void addRpkiRepository(RpkiRepository rpkiRepository) {
         Preconditions.checkArgument(
-            rpkiRepository.getId() >= Api.MINIMUM_VALID_ID,
+            Id.asLong(rpkiRepository.getId()) >= Api.MINIMUM_VALID_ID,
             "rpkiRepository id %s is not valid",
             rpkiRepository.getId()
         );

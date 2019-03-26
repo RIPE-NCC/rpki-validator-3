@@ -31,10 +31,10 @@ package net.ripe.rpki.validator3.background;
 
 import lombok.Getter;
 import lombok.Setter;
-import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
-import net.ripe.rpki.validator3.domain.ValidationRuns;
 import net.ripe.rpki.validator3.domain.validation.TrustAnchorValidationService;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
+import net.ripe.rpki.validator3.storage.stores.Id;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -58,11 +58,11 @@ public class TrustAnchorValidationJob implements Job {
     static JobDetail buildJob(TrustAnchor trustAnchor) {
         return JobBuilder.newJob(TrustAnchorValidationJob.class)
             .withIdentity(getJobKey(trustAnchor))
-            .usingJobData(TRUST_ANCHOR_ID_KEY, trustAnchor.getId())
+            .usingJobData(TRUST_ANCHOR_ID_KEY, Id.asLong(trustAnchor.getId()))
             .build();
     }
 
     static JobKey getJobKey(TrustAnchor trustAnchor) {
-        return new JobKey(String.format("%s#%s#%d", TrustAnchorValidationRun.TYPE, trustAnchor.getName(), trustAnchor.getId()));
+        return new JobKey(String.format("%s#%s#%d", TrustAnchorValidationRun.TYPE, trustAnchor.getName(), Id.asLong(trustAnchor.getId())));
     }
 }

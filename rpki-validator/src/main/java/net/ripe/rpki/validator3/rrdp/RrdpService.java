@@ -42,8 +42,8 @@ import net.ripe.rpki.validator3.domain.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.domain.ValidationCheck;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
-import net.ripe.rpki.validator3.storage.stores.RpkiObjectsStore;
-import net.ripe.rpki.validator3.storage.stores.RpkiRepostioryStore;
+import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
+import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
 import net.ripe.rpki.validator3.util.Hex;
 import net.ripe.rpki.validator3.util.Sha256;
 import net.ripe.rpki.validator3.util.Time;
@@ -54,7 +54,6 @@ import org.springframework.stereotype.Service;
 import javax.transaction.Transactional;
 import java.io.ByteArrayInputStream;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -73,22 +72,22 @@ public class RrdpService {
 
     private final RpkiObjects rpkiObjectRepository;
 
-    private final RpkiObjectsStore rpkiObjectsStore;
+    private final RpkiObjectStore rpkiObjectStore;
 
-    private final RpkiRepostioryStore rpkiRepostioryStore;
+    private final RpkiRepositoryStore rpkiRepositoryStore;
 
     private final Lmdb lmdb;
 
     @Autowired
     public RrdpService(final RrdpClient rrdpClient,
                        final RpkiObjects rpkiObjectRepository,
-                       final RpkiObjectsStore rpkiObjectsStore,
-                       final RpkiRepostioryStore rpkiRepostioryStore,
+                       final RpkiObjectStore rpkiObjectStore,
+                       final RpkiRepositoryStore rpkiRepositoryStore,
                        final Lmdb lmdb) {
         this.rrdpClient = rrdpClient;
         this.rpkiObjectRepository = rpkiObjectRepository;
-        this.rpkiObjectsStore = rpkiObjectsStore;
-        this.rpkiRepostioryStore = rpkiRepostioryStore;
+        this.rpkiObjectStore = rpkiObjectStore;
+        this.rpkiRepositoryStore = rpkiRepositoryStore;
         this.lmdb = lmdb;
     }
 
@@ -316,7 +315,7 @@ public class RrdpService {
 
         if (deltaPublish.getHash().isPresent()) {
             final byte[] sha256 = deltaPublish.getHash().get();
-            final Optional<net.ripe.rpki.validator3.storage.data.RpkiObject> existing = rpkiObjectsStore.findBySha256(tx, sha256);
+            final Optional<net.ripe.rpki.validator3.storage.data.RpkiObject> existing = rpkiObjectStore.findBySha256(tx, sha256);
             if (existing.isPresent()) {
                 final byte[] content = deltaPublish.getContent();
                 final Either<ValidationResult, net.ripe.rpki.validator3.storage.data.RpkiObject> maybeRpkiObject =
@@ -327,7 +326,7 @@ public class RrdpService {
                     final net.ripe.rpki.validator3.storage.data.RpkiObject object = maybeRpkiObject.right().value();
                     if (!Arrays.equals(object.getSha256(), sha256)) {
 //                        validationRun.addRpkiObject(object);
-                        rpkiObjectsStore.add(tx, object);
+                        rpkiObjectStore.add(tx, object);
                         return true;
                     } else {
                         log.info("The object added is the same {}", object);
@@ -346,12 +345,12 @@ public class RrdpService {
                 validationRun.addChecks(maybeRpkiObject.left().value());
             } else {
                 final net.ripe.rpki.validator3.storage.data.RpkiObject object = maybeRpkiObject.right().value();
-                final Optional<net.ripe.rpki.validator3.storage.data.RpkiObject> bySha256 = rpkiObjectsStore.findBySha256(tx, Sha256.hash(content));
+                final Optional<net.ripe.rpki.validator3.storage.data.RpkiObject> bySha256 = rpkiObjectStore.findBySha256(tx, Sha256.hash(content));
                 if (bySha256.isPresent()) {
                     log.info("The object will not be added, there's one already existing {}", object);
                 } else {
 //                    validationRun.addRpkiObject(object);
-                    rpkiObjectsStore.add(tx, object);
+                    rpkiObjectStore.add(tx, object);
                     return true;
                 }
             }

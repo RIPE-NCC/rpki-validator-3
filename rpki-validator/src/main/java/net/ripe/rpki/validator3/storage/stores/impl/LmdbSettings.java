@@ -29,54 +29,74 @@
  */
 package net.ripe.rpki.validator3.storage.stores.impl;
 
+import com.google.common.collect.ImmutableMap;
 import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.Coder;
 import net.ripe.rpki.validator3.storage.Lmdb;
-import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.data.Key;
+import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.stores.SettingsStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.util.Optional;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Component
-public class Sequences {
+public class LmdbSettings implements SettingsStore {
 
-    private final String SEQUENCES = "sequences";
-    private final IxMap<BigInteger> ixMap;
+    private static final String PRECONFIGURED_TAL_SETTINGS_KEY = "internal.preconfigured.tals.loaded";
+    private static final String INITIAL_VALIDATION_RUN_COMPLETED = "internal.initial.validation.run.completed";
+    private static final String SETTINGS = "settings";
+
+    private final IxMap<String> ixMap;
 
     @Autowired
-    public Sequences(Lmdb lmdb) {
+    public LmdbSettings(Lmdb lmdb) {
         this.ixMap = new IxMap<>(
                 lmdb.getEnv(),
-                SEQUENCES,
-                new Coder<BigInteger>() {
+                SETTINGS,
+                new Coder<String>() {
                     @Override
-                    public ByteBuffer toBytes(BigInteger bigInteger) {
-                        return Bytes.toDirectBuffer(bigInteger.toByteArray());
+                    public ByteBuffer toBytes(String s) {
+                        return Bytes.toDirectBuffer(s.getBytes(UTF_8));
                     }
 
                     @Override
-                    public BigInteger fromBytes(ByteBuffer bb) {
-                        return new BigInteger(Bytes.toBytes(bb));
+                    public String fromBytes(ByteBuffer bb) {
+                        return new String(Bytes.toBytes(bb), UTF_8);
                     }
-                });
+                },
+                ImmutableMap.of());
     }
 
-
-    public BigInteger next(Tx.Write tx, String name) {
-        final Key key = Key.of(name);
-        final Optional<BigInteger> seqValue = ixMap.get(tx, key);
-        if (seqValue.isPresent()) {
-            final BigInteger nextValue = seqValue.get().add(BigInteger.ONE);
-            ixMap.put(tx, key, nextValue);
-            return nextValue;
-        }
-        ixMap.put(tx, key, BigInteger.ONE);
-        return BigInteger.ONE;
+    @Override
+    public void markPreconfiguredTalsLoaded(Tx.Write tx) {
+        setTrue(tx, PRECONFIGURED_TAL_SETTINGS_KEY);
     }
 
+    @Override
+    public boolean isPreconfiguredTalsLoaded(Tx.Read tx) {
+        return isTrue(tx, PRECONFIGURED_TAL_SETTINGS_KEY);
+    }
+
+    @Override
+    public void markInitialValidationRunCompleted(Tx.Write tx) {
+        setTrue(tx, INITIAL_VALIDATION_RUN_COMPLETED);
+    }
+
+    @Override
+    public boolean isInitialValidationRunCompleted(Tx.Read tx) {
+        return isTrue(tx, INITIAL_VALIDATION_RUN_COMPLETED);
+    }
+
+    public void setTrue(Tx.Write tx, String preconfiguredTalSettingsKey) {
+        ixMap.put(tx, Key.of(preconfiguredTalSettingsKey), "true");
+    }
+
+    private boolean isTrue(Tx.Read tx, String initialValidationRunCompleted) {
+        return ixMap.get(tx, Key.of(initialValidationRunCompleted)).filter("true"::equals).isPresent();
+    }
 }

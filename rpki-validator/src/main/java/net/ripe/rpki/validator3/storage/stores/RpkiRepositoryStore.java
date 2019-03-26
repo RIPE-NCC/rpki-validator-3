@@ -27,56 +27,48 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.stores.impl;
+package net.ripe.rpki.validator3.storage.stores;
 
-import net.ripe.rpki.validator3.storage.Bytes;
-import net.ripe.rpki.validator3.storage.Coder;
-import net.ripe.rpki.validator3.storage.Lmdb;
-import net.ripe.rpki.validator3.storage.lmdb.IxMap;
+import net.ripe.rpki.validator3.api.Paging;
+import net.ripe.rpki.validator3.api.SearchTerm;
+import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.storage.data.RpkiRepository;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
-@Component
-public class Sequences {
+public interface RpkiRepositoryStore {
 
-    private final String SEQUENCES = "sequences";
-    private final IxMap<BigInteger> ixMap;
+    RpkiRepository register(Tx.Write tx, TrustAnchor trustAnchor, String uri, RpkiRepository.Type type);
 
-    @Autowired
-    public Sequences(Lmdb lmdb) {
-        this.ixMap = new IxMap<>(
-                lmdb.getEnv(),
-                SEQUENCES,
-                new Coder<BigInteger>() {
-                    @Override
-                    public ByteBuffer toBytes(BigInteger bigInteger) {
-                        return Bytes.toDirectBuffer(bigInteger.toByteArray());
-                    }
+    Optional<RpkiRepository> findByURI(Tx.Read tx, String uri);
 
-                    @Override
-                    public BigInteger fromBytes(ByteBuffer bb) {
-                        return new BigInteger(Bytes.toBytes(bb));
-                    }
-                });
+    Optional<RpkiRepository> get(Tx.Read tx, Key id);
+
+    Stream<RpkiRepository> findAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent,
+                                   SearchTerm searchTerm, Sorting sorting, Paging paging);
+
+    long countAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent, SearchTerm searchTerm);
+
+    Map<RpkiRepository.Status, Long> countByStatus(Tx.Read tx, Long taId, boolean hideChildrenOfDownloadedParent);
+
+    default Stream<RpkiRepository> findAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Long taId) {
+        return findAll(tx, optionalStatus, taId, false, null, null, null);
     }
 
-
-    public BigInteger next(Tx.Write tx, String name) {
-        final Key key = Key.of(name);
-        final Optional<BigInteger> seqValue = ixMap.get(tx, key);
-        if (seqValue.isPresent()) {
-            final BigInteger nextValue = seqValue.get().add(BigInteger.ONE);
-            ixMap.put(tx, key, nextValue);
-            return nextValue;
-        }
-        ixMap.put(tx, key, BigInteger.ONE);
-        return BigInteger.ONE;
+    default Stream<RpkiRepository> findAll(Tx.Read tx, Long taId) {
+        return findAll(tx, null, taId, false, null, null, null);
     }
 
+    Stream<RpkiRepository> findRsyncRepositories(Tx.Read tx);
+
+    Stream<RpkiRepository> findRrdpRepositories(Tx.Read tx);
+
+    void removeAllForTrustAnchor(Tx.Write tx, TrustAnchor trustAnchor);
+
+    void remove(Tx.Write tx, Key key);
 }

@@ -34,15 +34,19 @@ import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.storage.FSTCoder;
 import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
+import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
+import net.ripe.rpki.validator3.storage.data.validation.RrdpRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.RsyncRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
-import net.ripe.rpki.validator3.storage.lmdb.Key;
+import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.lmdb.MultIxMap;
+import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
@@ -52,8 +56,12 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
+/**
+ * TODO Implement missing methods here
+ */
 @Component
 public class LmdbValidationRuns implements ValidationRunStore {
 
@@ -84,19 +92,33 @@ public class LmdbValidationRuns implements ValidationRunStore {
         final Key vrId = Key.of(sequences.next(tx, RPKI_VALIDATION_RUNS + ":pk"));
         validationRun.setId(vrId);
         ixMap.put(tx, vrId, validationRun);
-        if (validationRun instanceof TrustAnchorValidationRun) {
-            TrustAnchorValidationRun taValidationRun = (TrustAnchorValidationRun) validationRun;
-            final Key taId = taValidationRun.getTrustAnchor().getId();
+        if (validationRun instanceof CertificateTreeValidationRun) {
+            CertificateTreeValidationRun vr = (CertificateTreeValidationRun) validationRun;
+
+            // don't do anything here as Set<RpkiObject> validatedObjects will be associated
+            // with the validation run separately
+            Set<RpkiObject> validatedObjects = vr.getValidatedObjects();
+
+            // don't do anything here as Ref<TrustAnchor> will be serialised
+            Ref<TrustAnchor> trustAnchor = vr.getTrustAnchor();
+
+        } else if (validationRun instanceof TrustAnchorValidationRun) {
+            TrustAnchorValidationRun vr = (TrustAnchorValidationRun) validationRun;
+            final Key taId = vr.getTrustAnchor().getId();
             vr2ta.put(tx, vrId, taId);
             ta2vr.put(tx, taId, vrId);
         } else if (validationRun instanceof RsyncRepositoryValidationRun) {
-
+            RsyncRepositoryValidationRun vr = (RsyncRepositoryValidationRun) validationRun;
+            Set<Ref<RpkiRepository>> rpkiRepositories = vr.getRpkiRepositories();
+        } else if (validationRun instanceof RrdpRepositoryValidationRun) {
+            RrdpRepositoryValidationRun vr = (RrdpRepositoryValidationRun) validationRun;
+            Ref<RpkiRepository> rpkiRepository = vr.getRpkiRepository();
         }
     }
 
     @Override
-    public void removeAllForTrustAnchor(TrustAnchor trustAnchor) {
-
+    public void removeAllForTrustAnchor(Tx.Write tx, TrustAnchor trustAnchor) {
+        // TODO Implement
     }
 
     @Override
@@ -147,5 +169,10 @@ public class LmdbValidationRuns implements ValidationRunStore {
     @Override
     public long clear() {
         return 0;
+    }
+
+    @Override
+    public void associate(Tx.Write writeTx, CertificateTreeValidationRun validationRun, RpkiObject rpkiObject) {
+
     }
 }

@@ -129,7 +129,7 @@ public class JPAValidationRuns extends JPARepository<ValidationRun> implements V
 
     @Override
     public void runCertificateTreeValidation(TrustAnchor trustAnchor) {
-        validationScheduler.triggerCertificateTreeValidation(trustAnchor);
+//        validationScheduler.triggerCertificateTreeValidation(trustAnchor);
     }
 
     @Override

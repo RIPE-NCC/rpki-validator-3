@@ -27,40 +27,36 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.stores;
+package net.ripe.rpki.validator3.storage.data;
 
-import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
-import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
-import net.ripe.rpki.commons.validation.ValidationResult;
-import net.ripe.rpki.validator3.storage.data.RpkiObject;
+import lombok.Getter;
+import net.ripe.rpki.validator3.storage.Binary;
+import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 
-import java.nio.ByteBuffer;
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Stream;
+import java.io.Serializable;
 
-public interface RpkiObjectsStore {
-    void add(Tx.Write tx, RpkiObject rpkiObject);
+@Binary
+public class Ref<T> implements Serializable {
+    @Getter
+    private final String mapName;
+    @Getter
+    private final Key key;
 
-    void remove(RpkiObject o);
+    private Ref(String mapName, Key key) {
+        this.mapName = mapName;
+        this.key = key;
+    }
 
-    <T extends CertificateRepositoryObject> Optional<T> findCertificateRepositoryObject(
-            Tx.Read tx, byte[] sha256, Class<T> clazz, ValidationResult validationResult);
+    public static <R> Ref<R> of(Tx.Read tx, IxMap<R> ix, Key key) {
+        if (ix.exists(tx, key)) {
+            return new Ref<>(ix.getName(), key);
+        }
+        throw new RefException(ix, key);
+    }
 
-    Optional<RpkiObject> findBySha256(Tx.Read tx, byte[] sha256);
-
-    Map<String, RpkiObject> findObjectsInManifest(ManifestCms manifestCms);
-
-    List<RpkiObject> all();
-
-    Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type type, byte[] authorityKeyIdentifier);
-
-    long deleteUnreachableObjects(Instant unreachableSince);
-
-    void clear();
-
-    Stream<byte[]> streamObjects(RpkiObject.Type type);
+    @Override
+    public String toString() {
+        return "Ref(" + mapName + ", '" + key + "')";
+    }
 }

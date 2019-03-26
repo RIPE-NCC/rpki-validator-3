@@ -62,12 +62,12 @@ public class JPATrustAnchors extends JPARepository<TrustAnchor> implements Trust
     @Override
     public void add(TrustAnchor trustAnchor) {
         super.add(trustAnchor);
-        validationScheduler.addTrustAnchor(trustAnchor);
+//        validationScheduler.addTrustAnchor(trustAnchor);
     }
 
     @Override
     public void remove(TrustAnchor trustAnchor) {
-        validationScheduler.removeTrustAnchor(trustAnchor);
+//        validationScheduler.removeTrustAnchor(trustAnchor);
         super.remove(trustAnchor);
     }
 

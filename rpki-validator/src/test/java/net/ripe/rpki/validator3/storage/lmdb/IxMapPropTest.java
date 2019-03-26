@@ -33,6 +33,7 @@ import com.google.common.collect.ImmutableMap;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import net.ripe.rpki.validator3.storage.FSTCoder;
+import net.ripe.rpki.validator3.storage.data.Key;
 import org.assertj.core.util.Files;
 import org.hamcrest.CoreMatchers;
 import org.junit.BeforeClass;

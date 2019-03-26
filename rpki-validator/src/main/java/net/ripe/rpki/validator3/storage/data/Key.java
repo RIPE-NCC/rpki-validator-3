@@ -27,10 +27,11 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.lmdb;
+package net.ripe.rpki.validator3.storage.data;
 
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
+import net.ripe.rpki.validator3.storage.Binary;
 import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.util.Hex;
 
@@ -43,11 +44,11 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @AllArgsConstructor
 @EqualsAndHashCode
+@Binary
 public class Key {
     private final ByteBuffer key;
 

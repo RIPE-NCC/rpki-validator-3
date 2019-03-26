@@ -29,8 +29,10 @@
  */
 package net.ripe.rpki.validator3.storage.data;
 
+import com.google.common.collect.ImmutableList;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import net.ripe.rpki.commons.crypto.util.CertificateRepositoryObjectFactory;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.validation.ValidationResult;
@@ -53,17 +55,14 @@ public class TrustAnchor extends Base<TrustAnchor> {
     public static final String TYPE = "trust-anchor";
 
     private boolean preconfigured;
+
     private boolean initialCertificateTreeValidationRunCompleted;
 
     @NotNull
     @Size(min = 1, max = 1000)
     private String name;
 
-    @NotNull
-    @NotEmpty
-    @Size(max = 1)
-    @Valid
-    private List<@NotNull @ValidLocationURI String> locations = new ArrayList<>();
+    private ImmutableList<@NotNull @ValidLocationURI String> locations = ImmutableList.of();
 
     @NotNull
     @ValidPublicKeyInfo

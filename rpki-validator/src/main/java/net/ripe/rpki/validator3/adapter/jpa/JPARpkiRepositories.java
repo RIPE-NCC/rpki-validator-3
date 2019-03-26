@@ -175,7 +175,7 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
 
     private void cleanUpRepository(RpkiRepository repository) {
         if (repository.getType() == RpkiRepository.Type.RRDP) {
-            validationScheduler.removeRpkiRepository(repository);
+//            validationScheduler.removeRpkiRepository(repository);
         }
         validationRuns.removeAllForRpkiRepository(repository);
         entityManager.remove(repository);

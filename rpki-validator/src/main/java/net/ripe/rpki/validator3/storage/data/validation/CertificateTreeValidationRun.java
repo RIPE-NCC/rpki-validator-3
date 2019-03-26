@@ -34,7 +34,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.lmdb.Ref;
+import net.ripe.rpki.validator3.storage.data.Ref;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -45,13 +45,13 @@ public class CertificateTreeValidationRun extends ValidationRun {
     public static final String TYPE = "certificate-tree-validation-run";
 
     @Getter
-    private Ref<TrustAnchor> trustAnchor;
+    private final Ref<TrustAnchor> trustAnchor;
 
     private Set<RpkiObject> validatedObjects = new HashSet<>();
 
-//    public CertificateTreeValidationRun(TrustAnchor trustAnchor) {
-//        this.trustAnchor = trustAnchor;
-//    }
+    public CertificateTreeValidationRun(Ref<TrustAnchor> trustAnchor) {
+        this.trustAnchor = trustAnchor;
+    }
 
     @Override
     public String getType() {

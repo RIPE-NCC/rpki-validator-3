@@ -34,7 +34,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.storage.Binary;
-import net.ripe.rpki.validator3.storage.lmdb.Ref;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;

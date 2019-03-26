@@ -27,33 +27,13 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.lmdb;
+package net.ripe.rpki.validator3.storage.stores;
 
-import lombok.Getter;
-import net.ripe.rpki.validator3.storage.data.RefException;
+import net.ripe.rpki.validator3.storage.lmdb.Tx;
 
-import java.io.Serializable;
-
-public class Ref<T> implements Serializable {
-    @Getter
-    private final IxMap<T> ix;
-    @Getter
-    private final Key key;
-
-    private Ref(IxMap<T> ix, Key key) {
-        this.ix = ix;
-        this.key = key;
-    }
-
-    public static <R> Ref<R> of(Tx.Read tx, IxMap<R> ix, Key key) {
-        if (ix.exists(tx, key)) {
-            return new Ref<>(ix, key);
-        }
-        throw new RefException(ix, key);
-    }
-
-    @Override
-    public String toString() {
-        return "Ref(" + ix.getName() + ", '" + key + "')";
-    }
+public interface SettingsStore {
+    void markPreconfiguredTalsLoaded(Tx.Write tx);
+    boolean isPreconfiguredTalsLoaded(Tx.Read tx);
+    void markInitialValidationRunCompleted(Tx.Write tx);
+    boolean isInitialValidationRunCompleted(Tx.Read tx);
 }

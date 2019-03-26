@@ -31,6 +31,7 @@ package net.ripe.rpki.validator3.storage.lmdb;
 
 import lombok.Getter;
 import net.ripe.rpki.validator3.storage.Coder;
+import net.ripe.rpki.validator3.storage.data.Key;
 import org.lmdbjava.CursorIterator;
 import org.lmdbjava.Dbi;
 import org.lmdbjava.DbiFlags;

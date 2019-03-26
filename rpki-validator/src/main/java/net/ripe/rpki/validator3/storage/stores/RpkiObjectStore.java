@@ -29,46 +29,39 @@
  */
 package net.ripe.rpki.validator3.storage.stores;
 
-import net.ripe.rpki.validator3.api.Paging;
-import net.ripe.rpki.validator3.api.SearchTerm;
-import net.ripe.rpki.validator3.api.Sorting;
-import net.ripe.rpki.validator3.storage.data.RpkiRepository;
-import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.lmdb.Key;
+import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
+import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
+import net.ripe.rpki.commons.validation.ValidationResult;
+import net.ripe.rpki.validator3.storage.data.Key;
+import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 
+import java.nio.ByteBuffer;
+import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-public interface RpkiRepostioryStore {
+public interface RpkiObjectStore {
+    void add(Tx.Write tx, RpkiObject rpkiObject);
 
-    RpkiRepository register(Tx.Write tx, TrustAnchor trustAnchor, String uri, RpkiRepository.Type type);
+    void remove(RpkiObject o);
 
-    Optional<RpkiRepository> findByURI(Tx.Read tx, String uri);
+    <T extends CertificateRepositoryObject> Optional<T> findCertificateRepositoryObject(
+            Tx.Read tx, Key sha256, Class<T> clazz, ValidationResult validationResult);
 
-    Optional<RpkiRepository> get(Tx.Read tx, Key id);
+    Optional<RpkiObject> findBySha256(Tx.Read tx, byte[] sha256);
 
-    Stream<RpkiRepository> findAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent,
-                                   SearchTerm searchTerm, Sorting sorting, Paging paging);
+    Map<String, RpkiObject> findObjectsInManifest(ManifestCms manifestCms);
 
-    long countAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent, SearchTerm searchTerm);
+    List<RpkiObject> all();
 
-    Map<RpkiRepository.Status, Long> countByStatus(Tx.Read tx, Long taId, boolean hideChildrenOfDownloadedParent);
+    Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(Tx.Read tx, RpkiObject.Type type, byte[] authorityKeyIdentifier);
 
-    default Stream<RpkiRepository> findAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Long taId) {
-        return findAll(tx, optionalStatus, taId, false, null, null, null);
-    }
+    long deleteUnreachableObjects(Instant unreachableSince);
 
-    default Stream<RpkiRepository> findAll(Tx.Read tx, Long taId) {
-        return findAll(tx, null, taId, false, null, null, null);
-    }
+    void clear();
 
-    Stream<RpkiRepository> findRsyncRepositories(Tx.Read tx);
-
-    Stream<RpkiRepository> findRrdpRepositories(Tx.Read tx);
-
-    void removeAllForTrustAnchor(Tx.Write tx, TrustAnchor trustAnchor);
-
-    void remove(Tx.Write tx, Key key);
+    Stream<byte[]> streamObjects(RpkiObject.Type type);
 }

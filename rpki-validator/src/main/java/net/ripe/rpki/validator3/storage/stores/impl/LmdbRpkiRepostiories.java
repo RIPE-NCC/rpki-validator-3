@@ -40,10 +40,10 @@ import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
-import net.ripe.rpki.validator3.storage.lmdb.Key;
-import net.ripe.rpki.validator3.storage.lmdb.Ref;
+import net.ripe.rpki.validator3.storage.data.Key;
+import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
-import net.ripe.rpki.validator3.storage.stores.RpkiRepostioryStore;
+import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
 import net.ripe.rpki.validator3.util.Rsync;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -59,7 +59,7 @@ import java.util.stream.Stream;
 
 @Component
 @Slf4j
-public class LmdbRpkiRepostiories implements RpkiRepostioryStore {
+public class LmdbRpkiRepostiories implements RpkiRepositoryStore {
 
     private static final String RPKI_REPOSITORIES = "rpki-repositories";
     private static final String BY_URI = "by-uri";
@@ -164,7 +164,7 @@ public class LmdbRpkiRepostiories implements RpkiRepostioryStore {
         if (hideChildrenOfDownloadedParent) {
             stream = stream.filter(r -> {
                 final Ref<RpkiRepository> parentRef = r.getParentRepository();
-                final Optional<RpkiRepository> parent = parentRef.getIx().get(tx, parentRef.getKey());
+                final Optional<RpkiRepository> parent = ixMap.get(tx, parentRef.getKey());
                 return !parent.isPresent() ||
                         parent.get().getStatus() == RpkiRepository.Status.FAILED &&
                                 parent.get().getLastDownloadedAt() == null;

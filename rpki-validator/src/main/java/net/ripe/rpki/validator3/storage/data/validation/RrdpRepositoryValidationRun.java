@@ -33,9 +33,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
-import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.storage.Binary;
-import net.ripe.rpki.validator3.storage.lmdb.Ref;
+import net.ripe.rpki.validator3.storage.data.RpkiRepository;
+import net.ripe.rpki.validator3.storage.data.Ref;
 
 @Data
 @ToString

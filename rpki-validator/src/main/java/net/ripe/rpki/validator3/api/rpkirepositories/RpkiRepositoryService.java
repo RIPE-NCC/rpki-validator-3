@@ -32,6 +32,12 @@ package net.ripe.rpki.validator3.api.rpkirepositories;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.RpkiRepositories;
+import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
+import net.ripe.rpki.validator3.storage.stores.SettingsStore;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
+import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -49,23 +55,34 @@ import javax.transaction.Transactional;
 public class RpkiRepositoryService {
 
     @Autowired
+    private TrustAnchorStore trustAnchorStore;
+
+    @Autowired
+    private RpkiRepositoryStore rpkiRepositoriStore;
+
+    @Autowired
+    private ValidationRunStore validationRunStore;
+
+    @Autowired
+    private SettingsStore settingsStore;
+
+    @Autowired
     private RpkiRepositories rpkiRepositories;
 
     @Autowired
     private ValidationScheduler validationScheduler;
 
     @Autowired
-    private PlatformTransactionManager transactionManager;
+    private Lmdb lmdb;
 
     @PostConstruct
     public void scheduleRpkiRepositoryValidation() {
         log.info("Schedule RPKI validation for the existing repositories");
-        new TransactionTemplate(transactionManager).execute(status -> {
-            rpkiRepositories.findRrdpRepositories().forEach(r -> {
+        Tx.use(lmdb.writeTx(), tx -> {
+            rpkiRepositoriStore.findRrdpRepositories(tx).forEach(r -> {
                 validationScheduler.addRpkiRepository(r);
                 log.info("Scheduled {} for validation.", r);
             });
-            return null;
         });
     }
 }

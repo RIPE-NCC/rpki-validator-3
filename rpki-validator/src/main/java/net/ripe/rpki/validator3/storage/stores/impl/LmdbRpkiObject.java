@@ -36,14 +36,13 @@ import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.storage.FSTCoder;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
-import net.ripe.rpki.validator3.storage.lmdb.Key;
+import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
-import net.ripe.rpki.validator3.storage.stores.RpkiObjectsStore;
+import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -53,7 +52,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 @Component
-public class LmdbRpkiObjects implements RpkiObjectsStore {
+public class LmdbRpkiObject implements RpkiObjectStore {
 
     public static final String RPKI_OBJECTS = "rpki-objects";
     public static final String BY_AKI_INDEX = "by-aki";
@@ -66,7 +65,7 @@ public class LmdbRpkiObjects implements RpkiObjectsStore {
     }
 
     @Autowired
-    public LmdbRpkiObjects(Lmdb lmdb) {
+    public LmdbRpkiObject(Lmdb lmdb) {
         this.ixMap = new IxMap<>(
                 lmdb.getEnv(),
                 RPKI_OBJECTS,
@@ -89,8 +88,8 @@ public class LmdbRpkiObjects implements RpkiObjectsStore {
 
     @Override
     public <T extends CertificateRepositoryObject> Optional<T> findCertificateRepositoryObject(
-            Tx.Read tx, byte[] sha256, Class<T> clazz, ValidationResult validationResult) {
-        return findBySha256(tx, sha256).flatMap(o -> o.get(clazz, validationResult));
+            Tx.Read tx, Key sha256, Class<T> clazz, ValidationResult validationResult) {
+        return ixMap.get(tx, sha256).flatMap(o -> o.get(clazz, validationResult));
     }
 
     @Override
@@ -109,8 +108,8 @@ public class LmdbRpkiObjects implements RpkiObjectsStore {
     }
 
     @Override
-    public Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type type, byte[] authorityKeyIdentifier) {
-        return ixMap.getByIndex(BY_AKI_INDEX, ixMap.readTx(), Key.of(authorityKeyIdentifier))
+    public Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(Tx.Read tx, RpkiObject.Type type, byte[] authorityKeyIdentifier) {
+        return ixMap.getByIndex(BY_AKI_INDEX, tx, Key.of(authorityKeyIdentifier))
                 .stream()
                 .filter(o -> o.getType() == type)
                 .max(Comparator

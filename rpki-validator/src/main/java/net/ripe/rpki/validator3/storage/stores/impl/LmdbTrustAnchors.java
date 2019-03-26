@@ -33,9 +33,10 @@ import com.google.common.collect.ImmutableMap;
 import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
 import net.ripe.rpki.validator3.storage.FSTCoder;
 import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
-import net.ripe.rpki.validator3.storage.lmdb.Key;
+import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,6 +70,10 @@ public class LmdbTrustAnchors implements TrustAnchorStore {
 
     @Override
     public void add(Tx.Write tx, TrustAnchor trustAnchor) {
+        if (trustAnchor.getId() != null) {
+            // TODO Probably don't be so strict
+            throw new RuntimeException("Already there!");
+        }
         final Key primaryKey = Key.of(sequences.next(tx, TRUST_ANCHORS + ":pk"));
         trustAnchor.setId(primaryKey);
         ixMap.put(tx, primaryKey, trustAnchor);
@@ -101,12 +106,22 @@ public class LmdbTrustAnchors implements TrustAnchorStore {
 
     @Override
     public boolean allInitialCertificateTreeValidationRunsCompleted(Tx.Read tx) {
-        return ixMap.values(tx).stream().anyMatch(ta -> !ta.isInitialCertificateTreeValidationRunCompleted());
+        return ixMap.values(tx).stream().allMatch(TrustAnchor::isInitialCertificateTreeValidationRunCompleted);
     }
 
     @Override
     public List<TaStatus> getStatuses(Tx.Read tx) {
         // TODO Implement
         return null;
+    }
+
+    @Override
+    public Ref<TrustAnchor> makeRef(Tx.Read tx, Key key) {
+        return Ref.of(tx, ixMap, key);
+    }
+
+    @Override
+    public void markInitialCertificateTreeValidationRunCompleted(Tx.Write tx, TrustAnchor trustAnchor) {
+//        ixMap.
     }
 }

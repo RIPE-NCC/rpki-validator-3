@@ -29,12 +29,24 @@
  */
 package net.ripe.rpki.validator3.storage.stores;
 
-import net.ripe.rpki.validator3.storage.lmdb.Key;
+import net.ripe.rpki.validator3.storage.Bytes;
+import net.ripe.rpki.validator3.storage.data.Key;
+import net.ripe.rpki.validator3.util.Hex;
 
 import java.math.BigInteger;
 
 public class Id {
     public static Key key(long id) {
         return Key.of(BigInteger.valueOf(id));
+    }
+
+    public static Long asLong(Key key) {
+        return key == null ? null :
+                new BigInteger(Bytes.toBytes(key.toByteBuffer())).longValue();
+    }
+
+    public static String asString(Key key) {
+        return key == null ? null :
+                Hex.format(Bytes.toBytes(key.toByteBuffer()));
     }
 }

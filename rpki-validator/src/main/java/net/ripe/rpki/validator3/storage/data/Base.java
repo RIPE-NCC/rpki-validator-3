@@ -30,7 +30,6 @@
 package net.ripe.rpki.validator3.storage.data;
 
 import lombok.Data;
-import net.ripe.rpki.validator3.storage.lmdb.Key;
 
 import java.io.Serializable;
 import java.time.Instant;
