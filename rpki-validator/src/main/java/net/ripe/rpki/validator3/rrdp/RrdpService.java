@@ -35,7 +35,6 @@ import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.util.CertificateRepositoryObjectFactory;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
-import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
@@ -44,6 +43,7 @@ import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
+import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import net.ripe.rpki.validator3.util.Hex;
 import net.ripe.rpki.validator3.util.Sha256;
 import net.ripe.rpki.validator3.util.Time;
@@ -73,16 +73,20 @@ public class RrdpService {
 
     private final RpkiRepositoryStore rpkiRepositoryStore;
 
+    private final ValidationRunStore validationRunStore;
+
     private final Lmdb lmdb;
 
     @Autowired
     public RrdpService(final RrdpClient rrdpClient,
                        final RpkiObjectStore rpkiObjectStore,
                        final RpkiRepositoryStore rpkiRepositoryStore,
+                       final ValidationRunStore validationRunStore,
                        final Lmdb lmdb) {
         this.rrdpClient = rrdpClient;
         this.rpkiObjectStore = rpkiObjectStore;
         this.rpkiRepositoryStore = rpkiRepositoryStore;
+        this.validationRunStore = validationRunStore;
         this.lmdb = lmdb;
     }
 
@@ -157,7 +161,6 @@ public class RrdpService {
         log.info("Parsing snapshot time {}ms", timedSnapshot.getRight());
         Long timedStoreSnapshot = Time.timed(() ->
                 Tx.use(lmdb.writeTx(), tx -> {
-                    rpkiRepositoryStore.get(tx, rpkiRepository.key());
                     storeSnapshot(tx, timedSnapshot.getLeft(), validationRun);
                     rpkiRepository.setRrdpSessionId(notification.sessionId);
                     rpkiRepository.setRrdpSerial(notification.serial);
@@ -212,7 +215,6 @@ public class RrdpService {
         }
     }
 
-//    @Transactional(Transactional.TxType.REQUIRED)
     void storeSnapshot(final Tx.Write tx, final Snapshot snapshot, final RpkiRepositoryValidationRun validationRun) {
         final AtomicInteger counter = new AtomicInteger();
         snapshot.asMap().forEach((objUri, value) -> {
@@ -226,9 +228,9 @@ public class RrdpService {
                     validationRun.addChecks(maybeRpkiObject.left().value());
                     return null;
                 } else {
-                    RpkiObject object = maybeRpkiObject.right().value();
-//                    rpkiObjectRepository.add(object);
-                    validationRun.addRpkiObject(object);
+                    final RpkiObject object = maybeRpkiObject.right().value();
+                    rpkiObjectStore.add(tx, object);
+                    validationRunStore.associate(tx, validationRun, object);
                     counter.incrementAndGet();
                     return object;
                 }
@@ -323,9 +325,8 @@ public class RrdpService {
                 } else {
                     final RpkiObject object = maybeRpkiObject.right().value();
                     if (!Arrays.equals(object.getSha256(), sha256)) {
-                        // TODO Fix it
-//                        validationRun.addRpkiObject(object);
                         rpkiObjectStore.add(tx, object);
+                        validationRunStore.associate(tx, validationRun, object);
                         return true;
                     } else {
                         log.info("The object added is the same {}", object);
@@ -347,9 +348,8 @@ public class RrdpService {
                 if (bySha256.isPresent()) {
                     log.info("The object will not be added, there's one already existing {}", object);
                 } else {
-                    // TODO Fix it
-//                    validationRun.addRpkiObject(object);
                     rpkiObjectStore.add(tx, object);
+                    validationRunStore.associate(tx, validationRun, object);
                     return true;
                 }
             }

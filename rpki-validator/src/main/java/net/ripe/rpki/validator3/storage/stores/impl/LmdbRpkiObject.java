@@ -38,6 +38,7 @@ import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
+import net.ripe.rpki.validator3.storage.lmdb.SameSizeKeyIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
@@ -55,9 +56,11 @@ import java.util.stream.Stream;
 @Component
 public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements RpkiObjectStore {
 
-    public static final String RPKI_OBJECTS = "rpki-objects";
-    public static final String BY_AKI_INDEX = "by-aki";
-    public static final String BY_LAST_REACHABLE_INDEX = "by-last-reachable";
+    private static final String RPKI_OBJECTS = "rpki-objects";
+    private static final String BY_AKI_INDEX = "by-aki";
+    private static final String BY_LAST_REACHABLE_INDEX = "by-last-reachable";
+
+    private static final int SHA256_SIZE_IN_BYTES = 32;
 
     private final IxMap<RpkiObject> ixMap;
 
@@ -67,7 +70,8 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
 
     @Autowired
     public LmdbRpkiObject(Lmdb lmdb) {
-        this.ixMap = new IxMap<>(
+        this.ixMap = new SameSizeKeyIxMap<>(
+                SHA256_SIZE_IN_BYTES,
                 lmdb.getEnv(),
                 RPKI_OBJECTS,
                 new FSTCoder<>(),
@@ -114,8 +118,8 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
                 .stream()
                 .filter(o -> o.getType() == type)
                 .max(Comparator
-                        .comparing((RpkiObject o) -> o.getSerialNumber()).reversed()
-                        .thenComparing(o -> o.getSigningTime()).reversed());
+                        .comparing(RpkiObject::getSerialNumber)
+                        .thenComparing(RpkiObject::getSigningTime));
     }
 
     @Override

@@ -70,7 +70,7 @@ public class GenericStorageTest {
         rpkiObjectStore = new LmdbRpkiObject(lmdb);
         rpkiRepositoryStore = new LmdbRpkiRepostiories(lmdb);
         trustAnchorStore = new LmdbTrustAnchors(lmdb);
-        validationRunStore = new LmdbValidationRuns(lmdb, trustAnchorStore);
+        validationRunStore = new LmdbValidationRuns(lmdb, trustAnchorStore, rpkiObjectStore);
     }
 
     protected <T> T rtx(Function<Tx.Read, T> f) {

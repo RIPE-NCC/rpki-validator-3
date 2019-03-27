@@ -47,4 +47,6 @@ public interface GenericStore<T> {
     void forEach(Tx.Read tx, BiConsumer<Key, T> c);
 
     void clear(Tx.Write tx);
+
+    void onDelete(BiConsumer<Tx.Write, Key> bf);
 }

@@ -63,8 +63,6 @@ public interface ValidationRunStore extends GenericStore<ValidationRun> {
 
     Optional<TrustAnchorValidationRun> findLatestCompletedForTrustAnchor(TrustAnchor trustAnchor);
 
-    void runCertificateTreeValidation(TrustAnchor trustAnchor);
-
     void removeAllForRpkiRepository(RpkiRepository repository);
 
     long removeOldValidationRuns(Instant completedBefore);

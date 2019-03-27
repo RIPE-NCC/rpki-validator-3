@@ -43,6 +43,9 @@ import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.DbiFlags.MDB_DUPFIXED;
 import static org.lmdbjava.DbiFlags.MDB_DUPSORT;
 
+/**
+ * Special optimised case when primary keys are of the same size: i.e. Longs or SHA256.
+ */
 public class SameSizeKeyIxMap<T> extends IxMap<T> {
 
     private final int keySizeInBytes;

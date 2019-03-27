@@ -35,6 +35,7 @@ import net.ripe.rpki.validator3.util.Hex;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -98,13 +99,19 @@ public class Key {
         return Collections.singleton(k);
     }
 
-
     public ByteBuffer toByteBuffer() {
         return key;
     }
 
     public int size() {
         return key.remaining();
+    }
+
+    public static Key concat(final Key... keys) {
+        final int size = Arrays.stream(keys).mapToInt(k -> k.key.remaining()).sum();
+        final ByteBuffer combined = ByteBuffer.allocate(size);
+        Arrays.stream(keys).forEach(k -> combined.put(k.key.duplicate()));
+        return new Key(combined);
     }
 
     @Override

@@ -51,6 +51,7 @@ import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.MultIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
+import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,23 +71,33 @@ public class LmdbValidationRuns extends GenericStoreImpl<ValidationRun> implemen
 
     private static final String RPKI_VALIDATION_RUNS = "validation-runs";
     private static final String RPKI_VALIDATION_RUNS_TO_TRUST_ANCHORS = "validation-runs-to-trust-anchors";
-    private static final String RPKI_TRUST_ANCHORS_TO_VALIDATION_RUNS_= "trust-anchors-to-validation-runs";
+    private static final String RPKI_TRUST_ANCHORS_TO_VALIDATION_RUNS_ = "trust-anchors-to-validation-runs";
 
     private final IxMap<ValidationRun> ixMap;
     private final Sequences sequences;
 
     private final IxMap<Key> vr2ta;
+
     private final MultIxMap<SId<ValidationRun>> ta2vr;
 
-    private final TrustAnchorStore trustAnchors;
+    private final TrustAnchorStore trustAnchorStore;
+
+    private final RpkiObjectStore rpkiObjectStore;
 
     @Autowired
-    public LmdbValidationRuns(Lmdb lmdb, TrustAnchorStore trustAnchors) {
+    public LmdbValidationRuns(Lmdb lmdb, TrustAnchorStore trustAnchorStore, RpkiObjectStore rpkiObjectStore) {
         sequences = new Sequences(lmdb);
         ixMap = new IxMap<>(lmdb.getEnv(), RPKI_VALIDATION_RUNS, new FSTCoder<>());
         vr2ta = new IxMap<>(lmdb.getEnv(), RPKI_VALIDATION_RUNS_TO_TRUST_ANCHORS, new FSTCoder<>());
         ta2vr = new MultIxMap<>(lmdb.getEnv(), RPKI_TRUST_ANCHORS_TO_VALIDATION_RUNS_, new FSTCoder<>());
-        this.trustAnchors = trustAnchors;
+        this.trustAnchorStore = trustAnchorStore;
+        this.rpkiObjectStore = rpkiObjectStore;
+        this.rpkiObjectStore.onDelete((tx, roKey) -> {
+            // delete associations
+        });
+        this.trustAnchorStore.onDelete((tx, roKey) -> {
+            // delete associations
+        });
     }
 
 
@@ -95,38 +106,11 @@ public class LmdbValidationRuns extends GenericStoreImpl<ValidationRun> implemen
         final SId<ValidationRun> vrId = SId.of(sequences.next(tx, RPKI_VALIDATION_RUNS + ":pk"));
         validationRun.setId(vrId);
         ixMap.put(tx, vrId.key(), validationRun);
-        if (validationRun instanceof CertificateTreeValidationRun) {
-            CertificateTreeValidationRun vr = (CertificateTreeValidationRun) validationRun;
-
-            // don't do anything here as Set<RpkiObject> validatedObjects will be associated
-            // with the validation run separately
-            Set<RpkiObject> validatedObjects = vr.getValidatedObjects();
-
-            // don't do anything here as Ref<TrustAnchor> will be serialised
-            Ref<TrustAnchor> trustAnchor = vr.getTrustAnchor();
-
-        } else if (validationRun instanceof TrustAnchorValidationRun) {
-            TrustAnchorValidationRun vr = (TrustAnchorValidationRun) validationRun;
-            final Key taId = vr.getTrustAnchor().getId().key();
-            vr2ta.put(tx, vrId.key(), taId);
-            ta2vr.put(tx, taId, vrId);
-        } else if (validationRun instanceof RsyncRepositoryValidationRun) {
-            RsyncRepositoryValidationRun vr = (RsyncRepositoryValidationRun) validationRun;
-            Set<Ref<RpkiRepository>> rpkiRepositories = vr.getRpkiRepositories();
-        } else if (validationRun instanceof RrdpRepositoryValidationRun) {
-            RrdpRepositoryValidationRun vr = (RrdpRepositoryValidationRun) validationRun;
-            Ref<RpkiRepository> rpkiRepository = vr.getRpkiRepository();
-        }
     }
 
     @Override
     public void update(Tx.Write tx, ValidationRun validationRun) {
         ixMap.put(tx, validationRun.key(), validationRun);
-    }
-
-    @Override
-    public void removeAllForTrustAnchor(Tx.Write tx, TrustAnchor trustAnchor) {
-        // TODO Implement
     }
 
     @Override
@@ -150,8 +134,8 @@ public class LmdbValidationRuns extends GenericStoreImpl<ValidationRun> implemen
     }
 
     @Override
-    public void runCertificateTreeValidation(TrustAnchor trustAnchor) {
-
+    public void removeAllForTrustAnchor(Tx.Write tx, TrustAnchor trustAnchor) {
+        // TODO Implement
     }
 
     @Override

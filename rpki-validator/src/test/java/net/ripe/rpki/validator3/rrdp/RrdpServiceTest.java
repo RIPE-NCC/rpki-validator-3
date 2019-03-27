@@ -70,7 +70,7 @@ public class RrdpServiceTest extends GenericStorageTest {
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        subject = new RrdpService(rrdpClient, getRpkiObjectStore(), getRpkiRepositoryStore(), getLmdb());
+        subject = new RrdpService(rrdpClient, getRpkiObjectStore(), getRpkiRepositoryStore(), getValidationRunStore(), getLmdb());
     }
 
     @Test
@@ -86,7 +86,7 @@ public class RrdpServiceTest extends GenericStorageTest {
         final RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepositoryRef);
 
         final Snapshot snapshot = new RrdpParser().snapshot(Objects.fileIS("rrdp/snapshot2.xml"));
-        subject.storeSnapshot(getLmdb().writeTx(), snapshot, validationRun);
+        wtx0(tx -> subject.storeSnapshot(tx, snapshot, validationRun));
 
         final List<RpkiObject> objects = getRpkiObjectStore().all();
         assertEquals(3, objects.size());
@@ -297,17 +297,15 @@ public class RrdpServiceTest extends GenericStorageTest {
         final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
         wtx0(tx -> getTrustAnchorStore().add(tx, trustAnchor));
 
-        RpkiRepository rpkiRepository = wtx(tx -> getRpkiRepositoryStore().register(tx,
-                trustAnchor, RRDP_RIPE_NET_NOTIFICATION_XML, RpkiRepository.Type.RRDP));
-
-        Ref<RpkiRepository> rpkiRepositoryRef = rtx(tx ->
-                getRpkiRepositoryStore().makeRef(tx, rpkiRepository.getId()));
+        RpkiRepository rpkiRepository = makeRpkiRepository(sessionId, RRDP_RIPE_NET_NOTIFICATION_XML, trustAnchor);
+        Ref<RpkiRepository> rpkiRepositoryRef = rtx(tx -> getRpkiRepositoryStore().makeRef(tx, rpkiRepository.getId()));
 
         RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepositoryRef);
         subject.storeRepository(rpkiRepository, validationRun);
         assertEquals(0, validationRun.getValidationChecks().size());
 
         final List<RpkiObject> objects = getRpkiObjectStore().all();
+        assertEquals(1, objects.size());
         assertEquals(Sets.newHashSet("rsync://host/path/cert1.cer"), objects.get(0).getLocations());
         assertEquals(1, objects.size());
     }
