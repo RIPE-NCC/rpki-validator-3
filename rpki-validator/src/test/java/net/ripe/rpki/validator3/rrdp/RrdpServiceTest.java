@@ -68,7 +68,8 @@ public class RrdpServiceTest extends GenericStorageTest {
     private RrdpService subject;
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
+        super.setUp();
         subject = new RrdpService(rrdpClient, getRpkiObjectStore(), getRpkiRepositoryStore(), getLmdb());
     }
 

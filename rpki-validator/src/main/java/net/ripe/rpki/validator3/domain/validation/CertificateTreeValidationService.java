@@ -238,7 +238,7 @@ public class CertificateTreeValidationService {
             }
 
             Optional<ManifestCms> maybeManifest = manifestObject.flatMap(x ->
-                    rpkiObjectStore.findCertificateRepositoryObject(tx, x.getId(), ManifestCms.class, temporary));
+                    rpkiObjectStore.findCertificateRepositoryObject(tx, x.key(), ManifestCms.class, temporary));
 
             temporary.rejectIfTrue(manifestObject.isPresent() &&
                             rpkiRepository.getStatus() == RpkiRepository.Status.FAILED &&
@@ -269,7 +269,7 @@ public class CertificateTreeValidationService {
             }
 
             temporary.setLocation(new ValidationLocation(crlUri));
-            Optional<X509Crl> crl = crlObject.flatMap(x -> rpkiObjectStore.findCertificateRepositoryObject(tx, x.getId(), X509Crl.class, temporary));
+            Optional<X509Crl> crl = crlObject.flatMap(x -> rpkiObjectStore.findCertificateRepositoryObject(tx, x.key(), X509Crl.class, temporary));
             if (temporary.hasFailureForCurrentLocation()) {
                 return validatedObjects;
             }
@@ -292,7 +292,7 @@ public class CertificateTreeValidationService {
                 temporary.setLocation(new ValidationLocation(location));
 
                 Optional<CertificateRepositoryObject> maybeCertificateRepositoryObject =
-                        rpkiObjectStore.findCertificateRepositoryObject(tx, obj.getId(), CertificateRepositoryObject.class, temporary);
+                        rpkiObjectStore.findCertificateRepositoryObject(tx, obj.key(), CertificateRepositoryObject.class, temporary);
                 if (temporary.hasFailureForCurrentLocation()) {
                     return;
                 }

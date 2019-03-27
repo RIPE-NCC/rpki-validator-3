@@ -29,29 +29,35 @@
  */
 package net.ripe.rpki.validator3.storage.stores;
 
-import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
-import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.data.SId;
+import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.function.BiConsumer;
 
-public interface TrustAnchorStore extends GenericStore<TrustAnchor> {
-    void add(Tx.Write tx, TrustAnchor trustAnchor);
+public abstract class GenericStoreImpl<T> {
+    public Ref<T> makeRef(Tx.Read tx, SId<T> sid) {
+        return Ref.of(tx, ixMap(), sid);
+    }
 
-    void remove(Tx.Write tx, TrustAnchor trustAnchor);
+    public List<T> values(Tx.Read tx) {
+        return ixMap().values(tx);
+    }
 
-    Optional<TrustAnchor> get(Tx.Read tx, Key id);
+    public long size(Tx.Read tx) {
+        return ixMap().size(tx);
+    }
 
-    List<TrustAnchor> findAll(Tx.Read tx);
+    public void forEach(Tx.Read tx, BiConsumer<Key, T> c) {
+        ixMap().forEach(tx, c);
+    }
 
-    List<TrustAnchor> findByName(Tx.Read tx, String name);
+    public void clear(Tx.Write tx) {
+        ixMap().clear(tx);
+    }
 
-    Optional<TrustAnchor> findBySubjectPublicKeyInfo(Tx.Read tx, String subjectPublicKeyInfo);
-
-    boolean allInitialCertificateTreeValidationRunsCompleted(Tx.Read tx);
-
-    List<TaStatus> getStatuses(Tx.Read tx);
+    protected abstract IxMap<T> ixMap();
 }

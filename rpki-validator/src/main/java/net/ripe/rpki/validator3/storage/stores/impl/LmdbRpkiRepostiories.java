@@ -40,10 +40,11 @@ import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
+import net.ripe.rpki.validator3.storage.data.SId;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
-import net.ripe.rpki.validator3.storage.stores.GenericStore;
+import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
 import net.ripe.rpki.validator3.util.Rsync;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,7 +64,7 @@ import java.util.stream.Stream;
 
 @Component
 @Slf4j
-public class LmdbRpkiRepostiories extends GenericStore<RpkiRepository> implements RpkiRepositoryStore {
+public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> implements RpkiRepositoryStore {
 
     private static final String RPKI_REPOSITORIES = "rpki-repositories";
     private static final String BY_URI = "by-uri";
@@ -80,7 +81,7 @@ public class LmdbRpkiRepostiories extends GenericStore<RpkiRepository> implement
                 new FSTCoder<>(),
                 ImmutableMap.of(
                         BY_URI, r -> Key.keys(Key.of(r.getLocationUri())),
-                        BY_TA, r -> r.getTrustAnchors().stream().map(ta -> ta.getId()).collect(Collectors.toSet())
+                        BY_TA, r -> r.getTrustAnchors().stream().map(ta -> ta.key()).collect(Collectors.toSet())
                 )
         );
         sequences = new Sequences(lmdb);
@@ -96,7 +97,7 @@ public class LmdbRpkiRepostiories extends GenericStore<RpkiRepository> implement
             registered = existing.get();
         } else {
             registered = new RpkiRepository(trustAnchor, uri, type);
-            final Key primaryKey = Key.of(sequences.next(tx, RPKI_REPOSITORIES + ":pk"));
+            final SId<RpkiRepository> primaryKey = SId.of(sequences.next(tx, RPKI_REPOSITORIES + ":pk"));
             registered.setId(primaryKey);
         }
         registered.addTrustAnchor(trustAnchor);
@@ -113,7 +114,7 @@ public class LmdbRpkiRepostiories extends GenericStore<RpkiRepository> implement
                 }
             });
         }
-        ixMap.put(tx, registered.getId(), registered);
+        ixMap.put(tx, registered.key(), registered);
         return registered;
     }
 
@@ -127,7 +128,7 @@ public class LmdbRpkiRepostiories extends GenericStore<RpkiRepository> implement
 
     @Override
     public void update(Tx.Write tx, RpkiRepository rpkiRepository) {
-        ixMap.put(tx, rpkiRepository.getId(), rpkiRepository);
+        ixMap.put(tx, rpkiRepository.key(), rpkiRepository);
     }
 
     @Override
@@ -174,7 +175,7 @@ public class LmdbRpkiRepostiories extends GenericStore<RpkiRepository> implement
         if (hideChildrenOfDownloadedParent) {
             stream = stream.filter(r -> {
                 final Ref<RpkiRepository> parentRef = r.getParentRepository();
-                final Optional<RpkiRepository> parent = ixMap.get(tx, parentRef.getKey());
+                final Optional<RpkiRepository> parent = ixMap.get(tx, parentRef.key());
                 return !parent.isPresent() ||
                         parent.get().getStatus() == RpkiRepository.Status.FAILED &&
                                 parent.get().getLastDownloadedAt() == null;
@@ -265,7 +266,7 @@ public class LmdbRpkiRepostiories extends GenericStore<RpkiRepository> implement
 
     @Override
     public void removeAllForTrustAnchor(Tx.Write tx, TrustAnchor trustAnchor) {
-        ixMap.getByIndexPk(BY_TA, tx, trustAnchor.getId())
+        ixMap.getByIndexPk(BY_TA, tx, trustAnchor.key())
                 .forEach(pk -> ixMap.delete(tx, pk));
     }
 

@@ -50,17 +50,19 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 @AllArgsConstructor
 @EqualsAndHashCode
 @Binary
-public class Key implements Serializable {
+public class Key {
     private final ByteBuffer key;
 
     private Key(byte[] bytes) {
         key = ByteBuffer.allocateDirect(bytes.length);
-        key.put(bytes).flip();
+        key.put(bytes);
+        key.flip();
     }
 
     public Key(long long_) {
         key = ByteBuffer.allocateDirect(Long.BYTES);
-        key.putLong(long_).flip();
+        key.putLong(long_);
+        key.flip();
     }
 
     public static Key of(byte[] bytes) {

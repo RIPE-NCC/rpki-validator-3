@@ -34,7 +34,8 @@ import java.nio.ByteBuffer;
 public class Bytes {
     public static ByteBuffer toDirectBuffer(byte[] bytes) {
         ByteBuffer bb = ByteBuffer.allocateDirect(bytes.length);
-        bb.put(bytes).flip();
+        bb.put(bytes);
+        bb.flip();
         return bb;
     }
 

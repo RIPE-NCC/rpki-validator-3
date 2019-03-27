@@ -65,12 +65,12 @@ public class CertificateTreeValidationJob implements Job {
         return JobBuilder.newJob(CertificateTreeValidationJob.class)
                 .storeDurably()
                 .withIdentity(getJobKey(trustAnchor))
-                .usingJobData(TRUST_ANCHOR_ID_KEY, Id.asLong(trustAnchor.getId()))
+                .usingJobData(TRUST_ANCHOR_ID_KEY, trustAnchor.getId().asLong())
                 .build();
     }
 
     static JobKey getJobKey(TrustAnchor trustAnchor) {
         return new JobKey(String.format("%s#%s#%d", CertificateTreeValidationRun.TYPE,
-                trustAnchor.getName(), Id.asLong(trustAnchor.getId())));
+                trustAnchor.getName(), trustAnchor.getId().asLong()));
     }
 }

@@ -32,17 +32,16 @@ package net.ripe.rpki.validator3.storage.stores;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
-import net.ripe.rpki.validator3.storage.data.Ref;
+import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-public interface RpkiRepositoryStore {
+public interface RpkiRepositoryStore extends GenericStore<RpkiRepository> {
 
     RpkiRepository register(Tx.Write tx, TrustAnchor trustAnchor, String uri, RpkiRepository.Type type);
 
@@ -74,6 +73,4 @@ public interface RpkiRepositoryStore {
     void removeAllForTrustAnchor(Tx.Write tx, TrustAnchor trustAnchor);
 
     void remove(Tx.Write tx, Key key);
-
-    Ref<RpkiRepository> makeRef(Tx.Read tx, Key key);
 }

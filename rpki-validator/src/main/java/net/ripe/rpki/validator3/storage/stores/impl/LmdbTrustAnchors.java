@@ -34,10 +34,11 @@ import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
 import net.ripe.rpki.validator3.storage.FSTCoder;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Key;
+import net.ripe.rpki.validator3.storage.data.SId;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
-import net.ripe.rpki.validator3.storage.stores.GenericStore;
+import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -46,7 +47,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Component
-public class LmdbTrustAnchors extends GenericStore<TrustAnchor> implements TrustAnchorStore {
+public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements TrustAnchorStore {
 
     private static final String TRUST_ANCHORS = "trust-anchors";
     private static final String BY_NAME = "by-name";
@@ -75,13 +76,13 @@ public class LmdbTrustAnchors extends GenericStore<TrustAnchor> implements Trust
             throw new RuntimeException("Already there!");
         }
         final Key primaryKey = Key.of(sequences.next(tx, TRUST_ANCHORS + ":pk"));
-        trustAnchor.setId(primaryKey);
+        trustAnchor.setId(SId.of(primaryKey));
         ixMap.put(tx, primaryKey, trustAnchor);
     }
 
     @Override
     public void remove(Tx.Write tx, TrustAnchor trustAnchor) {
-        ixMap.delete(tx, trustAnchor.getId());
+        ixMap.delete(tx, trustAnchor.key());
     }
 
     @Override

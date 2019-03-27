@@ -58,11 +58,12 @@ public class TrustAnchorValidationJob implements Job {
     static JobDetail buildJob(TrustAnchor trustAnchor) {
         return JobBuilder.newJob(TrustAnchorValidationJob.class)
             .withIdentity(getJobKey(trustAnchor))
-            .usingJobData(TRUST_ANCHOR_ID_KEY, Id.asLong(trustAnchor.getId()))
+            .usingJobData(TRUST_ANCHOR_ID_KEY, trustAnchor.getId().asLong())
             .build();
     }
 
     static JobKey getJobKey(TrustAnchor trustAnchor) {
-        return new JobKey(String.format("%s#%s#%d", TrustAnchorValidationRun.TYPE, trustAnchor.getName(), Id.asLong(trustAnchor.getId())));
+        return new JobKey(String.format("%s#%s#%d", TrustAnchorValidationRun.TYPE,
+                trustAnchor.getName(), trustAnchor.getId().asLong()));
     }
 }

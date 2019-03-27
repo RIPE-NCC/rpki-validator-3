@@ -36,7 +36,11 @@ import java.time.Instant;
 
 @Data
 public class Base<T extends Base> implements Serializable {
-    private Key id;
+    private SId<T> id;
     private Instant createdAt;
     private Instant updatedAt;
+
+    public Key key() {
+        return id.key();
+    }
 }

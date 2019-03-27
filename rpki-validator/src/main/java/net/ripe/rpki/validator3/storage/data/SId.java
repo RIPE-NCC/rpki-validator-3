@@ -27,31 +27,35 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.stores;
+package net.ripe.rpki.validator3.storage.data;
 
-import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
-import net.ripe.rpki.validator3.storage.data.Key;
-import net.ripe.rpki.validator3.storage.data.Ref;
-import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import lombok.Value;
+import net.ripe.rpki.validator3.storage.Bytes;
 
-import java.util.List;
-import java.util.Optional;
+import java.io.Serializable;
+import java.math.BigInteger;
 
-public interface TrustAnchorStore extends GenericStore<TrustAnchor> {
-    void add(Tx.Write tx, TrustAnchor trustAnchor);
+@Value
+public class SId<T> implements Serializable {
+    byte[] id;
 
-    void remove(Tx.Write tx, TrustAnchor trustAnchor);
+    public static SId of(byte[] id) {
+        return new SId(id);
+    }
 
-    Optional<TrustAnchor> get(Tx.Read tx, Key id);
+    public static SId of(Key key) {
+        return new SId(Bytes.toBytes(key.toByteBuffer()));
+    }
 
-    List<TrustAnchor> findAll(Tx.Read tx);
+    public static SId of(BigInteger bi) {
+        return new SId(bi.toByteArray());
+    }
 
-    List<TrustAnchor> findByName(Tx.Read tx, String name);
+    public Key key() {
+        return Key.of(id);
+    }
 
-    Optional<TrustAnchor> findBySubjectPublicKeyInfo(Tx.Read tx, String subjectPublicKeyInfo);
-
-    boolean allInitialCertificateTreeValidationRunsCompleted(Tx.Read tx);
-
-    List<TaStatus> getStatuses(Tx.Read tx);
+    public Long asLong() {
+        return new BigInteger(id).longValue();
+    }
 }

@@ -56,7 +56,7 @@ public class ValidationScheduler {
 
     public void addTrustAnchor(TrustAnchor trustAnchor) {
         Preconditions.checkArgument(
-            Id.asLong(trustAnchor.getId()) >= Api.MINIMUM_VALID_ID,
+            trustAnchor.getId().asLong() >= Api.MINIMUM_VALID_ID,
             "trustAnchor id %s is not valid",
             trustAnchor.getId()
         );
@@ -98,7 +98,7 @@ public class ValidationScheduler {
 
     public synchronized void addRpkiRepository(RpkiRepository rpkiRepository) {
         Preconditions.checkArgument(
-            Id.asLong(rpkiRepository.getId()) >= Api.MINIMUM_VALID_ID,
+            rpkiRepository.getId().asLong() >= Api.MINIMUM_VALID_ID,
             "rpkiRepository id %s is not valid",
             rpkiRepository.getId()
         );

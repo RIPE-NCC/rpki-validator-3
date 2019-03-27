@@ -31,32 +31,20 @@ package net.ripe.rpki.validator3.storage.stores;
 
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
-import net.ripe.rpki.validator3.storage.lmdb.IxMap;
+import net.ripe.rpki.validator3.storage.data.SId;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 
 import java.util.List;
 import java.util.function.BiConsumer;
 
-public abstract class GenericStore<T> {
-    public Ref<T> makeRef(Tx.Read tx, Key key) {
-        return Ref.of(tx, ixMap(), key);
-    }
+public interface GenericStore<T> {
+    Ref<T> makeRef(Tx.Read tx, SId<T> sid);
 
-    public List<T> values(Tx.Read tx) {
-        return ixMap().values(tx);
-    }
+    List<T> values(Tx.Read tx);
 
-    public long size(Tx.Read tx) {
-        return ixMap().size(tx);
-    }
+    long size(Tx.Read tx);
 
-    public void forEach(Tx.Read tx, BiConsumer<Key, T> c) {
-        ixMap().forEach(tx, c);
-    }
+    void forEach(Tx.Read tx, BiConsumer<Key, T> c);
 
-    public void clear(Tx.Write tx) {
-        ixMap().clear(tx);
-    }
-
-    protected abstract IxMap<T> ixMap();
+    void clear(Tx.Write tx);
 }

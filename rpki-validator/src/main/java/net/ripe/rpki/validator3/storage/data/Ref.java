@@ -41,22 +41,26 @@ public class Ref<T> implements Serializable {
     @Getter
     private final String mapName;
     @Getter
-    private final Key key;
+    private final SId<T> sid;
 
-    private Ref(String mapName, Key key) {
+    private Ref(String mapName, SId<T> sid) {
         this.mapName = mapName;
-        this.key = key;
+        this.sid = sid;
     }
 
-    public static <R> Ref<R> of(Tx.Read tx, IxMap<R> ix, Key key) {
-        if (ix.exists(tx, key)) {
-            return new Ref<>(ix.getName(), key);
+    public static <R> Ref<R> of(Tx.Read tx, IxMap<R> ix, SId<R> sid) {
+        if (ix.exists(tx, sid.key())) {
+            return new Ref<>(ix.getName(), sid);
         }
-        throw new RefException(ix, key);
+        throw new RefException(ix, sid);
+    }
+
+    public Key key() {
+        return sid.key();
     }
 
     @Override
     public String toString() {
-        return "Ref(" + mapName + ", '" + key + "')";
+        return "Ref(" + mapName + ", '" + sid + "')";
     }
 }

@@ -157,7 +157,7 @@ public class RrdpService {
         log.info("Parsing snapshot time {}ms", timedSnapshot.getRight());
         Long timedStoreSnapshot = Time.timed(() ->
                 Tx.use(lmdb.writeTx(), tx -> {
-                    rpkiRepositoryStore.get(tx, rpkiRepository.getId());
+                    rpkiRepositoryStore.get(tx, rpkiRepository.key());
                     storeSnapshot(tx, timedSnapshot.getLeft(), validationRun);
                     rpkiRepository.setRrdpSessionId(notification.sessionId);
                     rpkiRepository.setRrdpSerial(notification.serial);

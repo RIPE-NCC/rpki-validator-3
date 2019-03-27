@@ -66,13 +66,13 @@ public class LmdbRpkiRepostioriesTest extends GenericStorageTest {
     @Test
     public void after_setup_there_is_one_rpki_repository() {
         long countAll = rtx(tx -> getRpkiRepositoryStore().countAll(tx, RpkiRepository.Status.PENDING,
-                trustAnchor.getId(), true, new SearchTerm("some")));
+                trustAnchor.key(), true, new SearchTerm("some")));
         assertEquals(1, countAll);
     }
 
     @Test
     public void after_setup_there_is_one_pending() {
-        Map<RpkiRepository.Status, Long> statuses = rtx(tx -> getRpkiRepositoryStore().countByStatus(tx, trustAnchor.getId(), true));
+        Map<RpkiRepository.Status, Long> statuses = rtx(tx -> getRpkiRepositoryStore().countByStatus(tx, trustAnchor.key(), true));
         long countPending = statuses.get(RpkiRepository.Status.PENDING);
         assertEquals(1, countPending);
     }
@@ -81,7 +81,7 @@ public class LmdbRpkiRepostioriesTest extends GenericStorageTest {
     public void after_remove_count_should_be_zero() {
         long countAll = wtx(tx -> {
             getRpkiRepositoryStore().removeAllForTrustAnchor(tx, trustAnchor);
-            return getRpkiRepositoryStore().countAll(tx, RpkiRepository.Status.PENDING, trustAnchor.getId(), true, new SearchTerm("some"));
+            return getRpkiRepositoryStore().countAll(tx, RpkiRepository.Status.PENDING, trustAnchor.key(), true, new SearchTerm("some"));
         });
         assertEquals(0, countAll);
     }
@@ -89,8 +89,8 @@ public class LmdbRpkiRepostioriesTest extends GenericStorageTest {
     @Test
     public void after_remove_repository_count_should_be_zero() {
         long countAll = wtx(tx -> {
-            getRpkiRepositoryStore().remove(tx, rsyncRepo.getId());
-            return getRpkiRepositoryStore().countAll(tx, RpkiRepository.Status.PENDING, trustAnchor.getId(), true, new SearchTerm("some"));
+            getRpkiRepositoryStore().remove(tx, rsyncRepo.key());
+            return getRpkiRepositoryStore().countAll(tx, RpkiRepository.Status.PENDING, trustAnchor.key(), true, new SearchTerm("some"));
         });
         assertEquals(0, countAll);
     }

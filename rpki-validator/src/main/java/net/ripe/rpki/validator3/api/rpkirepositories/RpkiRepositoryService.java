@@ -49,31 +49,22 @@ import javax.transaction.TransactionManager;
 import javax.transaction.Transactional;
 
 @Component
-@Transactional
 @Validated
 @Slf4j
 public class RpkiRepositoryService {
 
-    @Autowired
-    private TrustAnchorStore trustAnchorStore;
+    private final RpkiRepositoryStore rpkiRepositoriStore;
+
+    private final ValidationScheduler validationScheduler;
+
+    private final Lmdb lmdb;
 
     @Autowired
-    private RpkiRepositoryStore rpkiRepositoriStore;
-
-    @Autowired
-    private ValidationRunStore validationRunStore;
-
-    @Autowired
-    private SettingsStore settingsStore;
-
-    @Autowired
-    private RpkiRepositories rpkiRepositories;
-
-    @Autowired
-    private ValidationScheduler validationScheduler;
-
-    @Autowired
-    private Lmdb lmdb;
+    public RpkiRepositoryService(RpkiRepositoryStore rpkiRepositoriStore, ValidationScheduler validationScheduler, Lmdb lmdb) {
+        this.rpkiRepositoriStore = rpkiRepositoriStore;
+        this.validationScheduler = validationScheduler;
+        this.lmdb = lmdb;
+    }
 
     @PostConstruct
     public void scheduleRpkiRepositoryValidation() {

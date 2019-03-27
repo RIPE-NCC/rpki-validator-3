@@ -36,6 +36,7 @@ import net.ripe.rpki.validator3.storage.FSTCoder;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
+import net.ripe.rpki.validator3.storage.data.SId;
 import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.RrdpRepositoryValidationRun;
@@ -49,7 +50,7 @@ import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.lmdb.MultIxMap;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
-import net.ripe.rpki.validator3.storage.stores.GenericStore;
+import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,7 +66,7 @@ import java.util.stream.Stream;
  * TODO Implement missing methods here
  */
 @Component
-public class LmdbValidationRuns extends GenericStore<ValidationRun> implements ValidationRunStore {
+public class LmdbValidationRuns extends GenericStoreImpl<ValidationRun> implements ValidationRunStore {
 
     private static final String RPKI_VALIDATION_RUNS = "validation-runs";
     private static final String RPKI_VALIDATION_RUNS_TO_TRUST_ANCHORS = "validation-runs-to-trust-anchors";
@@ -75,7 +76,7 @@ public class LmdbValidationRuns extends GenericStore<ValidationRun> implements V
     private final Sequences sequences;
 
     private final IxMap<Key> vr2ta;
-    private final MultIxMap<Key> ta2vr;
+    private final MultIxMap<SId<ValidationRun>> ta2vr;
 
     private final TrustAnchorStore trustAnchors;
 
@@ -91,9 +92,9 @@ public class LmdbValidationRuns extends GenericStore<ValidationRun> implements V
 
     @Override
     public void add(Tx.Write tx, ValidationRun validationRun) {
-        final Key vrId = Key.of(sequences.next(tx, RPKI_VALIDATION_RUNS + ":pk"));
+        final SId<ValidationRun> vrId = SId.of(sequences.next(tx, RPKI_VALIDATION_RUNS + ":pk"));
         validationRun.setId(vrId);
-        ixMap.put(tx, vrId, validationRun);
+        ixMap.put(tx, vrId.key(), validationRun);
         if (validationRun instanceof CertificateTreeValidationRun) {
             CertificateTreeValidationRun vr = (CertificateTreeValidationRun) validationRun;
 
@@ -106,8 +107,8 @@ public class LmdbValidationRuns extends GenericStore<ValidationRun> implements V
 
         } else if (validationRun instanceof TrustAnchorValidationRun) {
             TrustAnchorValidationRun vr = (TrustAnchorValidationRun) validationRun;
-            final Key taId = vr.getTrustAnchor().getId();
-            vr2ta.put(tx, vrId, taId);
+            final Key taId = vr.getTrustAnchor().getId().key();
+            vr2ta.put(tx, vrId.key(), taId);
             ta2vr.put(tx, taId, vrId);
         } else if (validationRun instanceof RsyncRepositoryValidationRun) {
             RsyncRepositoryValidationRun vr = (RsyncRepositoryValidationRun) validationRun;
@@ -120,7 +121,7 @@ public class LmdbValidationRuns extends GenericStore<ValidationRun> implements V
 
     @Override
     public void update(Tx.Write tx, ValidationRun validationRun) {
-        ixMap.put(tx, validationRun.getId(), validationRun);
+        ixMap.put(tx, validationRun.key(), validationRun);
     }
 
     @Override
