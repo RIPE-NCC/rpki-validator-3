@@ -48,6 +48,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -66,6 +67,7 @@ public class IxMap<T> extends IxBase<T> {
 
     private final Map<String, Dbi<ByteBuffer>> indexes;
     private final Map<String, Function<T, Set<Key>>> indexFunctions;
+    private final List<BiConsumer<Tx.Write, Key>> onDeleteTriggers = new ArrayList<>();
 
     public IxMap(final Env<ByteBuffer> env,
                  final String name,
@@ -223,6 +225,11 @@ public class IxMap<T> extends IxBase<T> {
                                 indexes.get(n).delete(txn, ix.toByteBuffer(), pkBuf)));
             }
         }
+        try {
+            onDeleteTriggers.stream().forEach(bf -> bf.accept(tx, primaryKey));
+        } catch (OnDeleteRestrict o) {
+            tx.abort();
+        }
     }
 
     @Override
@@ -266,5 +273,7 @@ public class IxMap<T> extends IxBase<T> {
     }
 
 
-
+    public void onDelete(BiConsumer<Tx.Write, Key> bf) {
+        onDeleteTriggers.add(bf);
+    }
 }

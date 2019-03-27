@@ -47,8 +47,8 @@ public abstract class IxBase<T> {
     @Getter
     private final String name;
 
-    protected final Dbi<ByteBuffer> mainDb;
-    protected final Coder<T> coder;
+    final Dbi<ByteBuffer> mainDb;
+    final Coder<T> coder;
 
     public IxBase(final Env<ByteBuffer> env,
                   final String name,
@@ -120,4 +120,5 @@ public abstract class IxBase<T> {
         }
         return s;
     }
+
 }

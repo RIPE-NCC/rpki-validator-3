@@ -46,6 +46,7 @@ public abstract class Tx implements AutoCloseable {
     protected final Env<ByteBuffer> env;
     private final Txn<ByteBuffer> txn;
     private final long threadId;
+    private boolean aborted = false;
 
     private Tx(Env<ByteBuffer> env) {
         threadId = Thread.currentThread().getId();
@@ -64,11 +65,14 @@ public abstract class Tx implements AutoCloseable {
     }
 
     public Txn<ByteBuffer> txn() {
-        verifyThread();
+        verifyState();
         return txn;
     }
 
-    private void verifyThread() {
+    private void verifyState() {
+        if (aborted) {
+            throw new RuntimeException("Transaction " + txn.getId() + " was aborted.");
+        }
         if (Thread.currentThread().getId() != threadId) {
             throw new RuntimeException("This transaction was created in another " +
                     "thread and cannot be used in the thread " + Thread.currentThread());
@@ -100,6 +104,11 @@ public abstract class Tx implements AutoCloseable {
         try (Read tx = rtx) {
             c.accept(tx);
         }
+    }
+
+    public void abort() {
+        txn.abort();
+        aborted = true;
     }
 
     public static class Write extends Read {

@@ -39,11 +39,14 @@ import org.lmdbjava.KeyRange;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.DbiFlags.MDB_DUPSORT;
 
 public class MultIxMap<T> extends IxBase<T> {
+
+    final List<BiConsumer<Tx.Write, Key>> onDeleteTriggers = new ArrayList<>();
 
     public MultIxMap(final Env<ByteBuffer> env,
                      final String name,
@@ -102,5 +105,9 @@ public class MultIxMap<T> extends IxBase<T> {
 
     public void delete(Tx.Write tx, Key primaryKey, T value) {
         mainDb.delete(tx.txn(), primaryKey.toByteBuffer(), coder.toBytes(value));
+    }
+
+    public void onDelete(BiConsumer<Tx.Write, Key> bf) {
+        onDeleteTriggers.add(bf);
     }
 }

@@ -27,41 +27,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.stores;
+package net.ripe.rpki.validator3.storage.lmdb;
 
-import net.ripe.rpki.validator3.storage.Key;
-import net.ripe.rpki.validator3.storage.data.Ref;
-import net.ripe.rpki.validator3.storage.data.SId;
-import net.ripe.rpki.validator3.storage.lmdb.IxMap;
-import net.ripe.rpki.validator3.storage.lmdb.Tx;
-
-import java.util.List;
-import java.util.function.BiConsumer;
-
-public abstract class GenericStoreImpl<T> implements GenericStore<T> {
-    public Ref<T> makeRef(Tx.Read tx, SId<T> sid) {
-        return Ref.of(tx, ixMap(), sid);
-    }
-
-    public List<T> values(Tx.Read tx) {
-        return ixMap().values(tx);
-    }
-
-    public long size(Tx.Read tx) {
-        return ixMap().size(tx);
-    }
-
-    public void forEach(Tx.Read tx, BiConsumer<Key, T> c) {
-        ixMap().forEach(tx, c);
-    }
-
-    public void clear(Tx.Write tx) {
-        ixMap().clear(tx);
-    }
-
-    public void onDelete(BiConsumer<Tx.Write, Key> bf) {
-        ixMap().onDelete(bf);
-    }
-
-    protected abstract IxMap<T> ixMap();
+public class OnDeleteRestrict extends RuntimeException {
 }
