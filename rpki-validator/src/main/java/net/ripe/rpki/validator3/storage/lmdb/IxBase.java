@@ -31,19 +31,16 @@ package net.ripe.rpki.validator3.storage.lmdb;
 
 import lombok.Getter;
 import net.ripe.rpki.validator3.storage.Coder;
-import net.ripe.rpki.validator3.storage.data.Key;
-import org.apache.commons.lang3.tuple.Pair;
+import net.ripe.rpki.validator3.storage.Key;
 import org.lmdbjava.CursorIterator;
 import org.lmdbjava.Dbi;
 import org.lmdbjava.DbiFlags;
 import org.lmdbjava.Env;
-import org.lmdbjava.Stat;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 public abstract class IxBase<T> {
     private final Env<ByteBuffer> env;

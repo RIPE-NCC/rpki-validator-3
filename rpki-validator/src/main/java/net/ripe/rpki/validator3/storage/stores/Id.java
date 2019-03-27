@@ -30,7 +30,7 @@
 package net.ripe.rpki.validator3.storage.stores;
 
 import net.ripe.rpki.validator3.storage.Bytes;
-import net.ripe.rpki.validator3.storage.data.Key;
+import net.ripe.rpki.validator3.storage.Key;
 import net.ripe.rpki.validator3.util.Hex;
 
 import java.math.BigInteger;

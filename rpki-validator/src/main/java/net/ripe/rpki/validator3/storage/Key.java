@@ -27,15 +27,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.data;
+package net.ripe.rpki.validator3.storage;
 
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
-import net.ripe.rpki.validator3.storage.Binary;
-import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.util.Hex;
 
-import java.io.Serializable;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Collection;

@@ -32,9 +32,9 @@ package net.ripe.rpki.validator3.storage.data.validation;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.data.Ref;
 
 import java.util.HashSet;
 import java.util.Set;

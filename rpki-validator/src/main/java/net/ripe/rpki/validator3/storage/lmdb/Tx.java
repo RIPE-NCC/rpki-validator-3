@@ -29,15 +29,12 @@
  */
 package net.ripe.rpki.validator3.storage.lmdb;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import org.lmdbjava.Env;
 import org.lmdbjava.Txn;
 
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * This is to have type-level distinction between

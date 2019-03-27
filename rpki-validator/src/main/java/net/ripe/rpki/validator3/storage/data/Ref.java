@@ -31,6 +31,7 @@ package net.ripe.rpki.validator3.storage.data;
 
 import lombok.Getter;
 import net.ripe.rpki.validator3.storage.Binary;
+import net.ripe.rpki.validator3.storage.Key;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 

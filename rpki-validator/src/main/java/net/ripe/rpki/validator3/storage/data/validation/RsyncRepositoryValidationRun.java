@@ -31,8 +31,8 @@ package net.ripe.rpki.validator3.storage.data.validation;
 
 import lombok.Getter;
 import net.ripe.rpki.validator3.storage.Binary;
-import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.Ref;
+import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 
 import java.util.HashSet;
 import java.util.Set;

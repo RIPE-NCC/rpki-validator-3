@@ -31,6 +31,7 @@ package net.ripe.rpki.validator3.storage.data;
 
 import lombok.Value;
 import net.ripe.rpki.validator3.storage.Bytes;
+import net.ripe.rpki.validator3.storage.Key;
 
 import java.io.Serializable;
 import java.math.BigInteger;

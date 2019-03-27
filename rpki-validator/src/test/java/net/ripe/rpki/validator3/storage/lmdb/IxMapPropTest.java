@@ -33,7 +33,7 @@ import com.google.common.collect.ImmutableMap;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import net.ripe.rpki.validator3.storage.FSTCoder;
-import net.ripe.rpki.validator3.storage.data.Key;
+import net.ripe.rpki.validator3.storage.Key;
 import org.assertj.core.util.Files;
 import org.hamcrest.CoreMatchers;
 import org.junit.BeforeClass;
@@ -46,7 +46,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static net.ripe.rpki.validator3.storage.lmdb.IxMapTest.intKey;
-import static org.assertj.core.api.Assertions.not;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

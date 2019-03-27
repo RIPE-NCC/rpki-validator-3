@@ -30,8 +30,7 @@
 package net.ripe.rpki.validator3.storage.stores;
 
 import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
-import net.ripe.rpki.validator3.storage.data.Key;
-import net.ripe.rpki.validator3.storage.data.Ref;
+import net.ripe.rpki.validator3.storage.Key;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 

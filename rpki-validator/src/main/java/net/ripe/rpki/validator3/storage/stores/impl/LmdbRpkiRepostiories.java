@@ -37,7 +37,7 @@ import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.storage.FSTCoder;
 import net.ripe.rpki.validator3.storage.Lmdb;
-import net.ripe.rpki.validator3.storage.data.Key;
+import net.ripe.rpki.validator3.storage.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.SId;
@@ -153,10 +153,10 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
     }
 
     // TODO Optimize it with forEach
-    public Stream<RpkiRepository> filteredStream(Tx.Read tx,
-                                                 RpkiRepository.Status optionalStatus,
-                                                 Key taId, boolean hideChildrenOfDownloadedParent,
-                                                 SearchTerm searchTerm) {
+    private Stream<RpkiRepository> filteredStream(Tx.Read tx,
+                                                  RpkiRepository.Status optionalStatus,
+                                                  Key taId, boolean hideChildrenOfDownloadedParent,
+                                                  SearchTerm searchTerm) {
         Stream<RpkiRepository> stream = taId != null ?
                 ixMap.getByIndex(BY_TA, tx, taId).stream() :
                 ixMap.values(tx).stream();
@@ -168,13 +168,16 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
         if (searchTerm != null) {
             final String stringTerm = searchTerm.asString().toLowerCase();
             stream = stream.filter(r ->
-                    r.getRrdpNotifyUri().toLowerCase().contains(stringTerm) ||
-                            r.getStatus().toString().toLowerCase().contains(stringTerm));
+                    r.getLocationUri() != null && r.getLocationUri().toLowerCase().contains(stringTerm) ||
+                    r.getStatus() != null && r.getStatus().toString().toLowerCase().contains(stringTerm));
         }
 
         if (hideChildrenOfDownloadedParent) {
             stream = stream.filter(r -> {
                 final Ref<RpkiRepository> parentRef = r.getParentRepository();
+                if (parentRef == null) {
+                    return true;
+                }
                 final Optional<RpkiRepository> parent = ixMap.get(tx, parentRef.key());
                 return !parent.isPresent() ||
                         parent.get().getStatus() == RpkiRepository.Status.FAILED &&
