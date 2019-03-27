@@ -83,7 +83,7 @@ public abstract class ValidationRun extends Base<ValidationRun> {
         for (ValidationLocation location : validationResult.getValidatedLocations()) {
             for (net.ripe.rpki.commons.validation.ValidationCheck check : validationResult.getAllValidationChecksForLocation(location)) {
                 if (check.getStatus() != ValidationStatus.PASSED) {
-                    ValidationCheck validationCheck = new ValidationCheck(this, location.getName(), check);
+                    ValidationCheck validationCheck = new ValidationCheck(location.getName(), check);
                     addCheck(validationCheck);
                 }
             }
@@ -102,7 +102,7 @@ public abstract class ValidationRun extends Base<ValidationRun> {
         validationResult.getAllValidationChecksForCurrentLocation().forEach(c -> {
             if (c.getStatus() != ValidationStatus.PASSED) {
                 final ValidationCheck.Status status = ValidationCheck.mapStatus(c.getStatus());
-                addCheck(new ValidationCheck(this, validationResult.getCurrentLocation().getName(), status, c.getKey(), c.getParams()));
+                addCheck(new ValidationCheck(validationResult.getCurrentLocation().getName(), status, c.getKey(), c.getParams()));
             }
         });
     }

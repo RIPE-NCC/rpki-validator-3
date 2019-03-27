@@ -61,7 +61,5 @@ public interface RpkiObjectStore {
 
     long deleteUnreachableObjects(Instant unreachableSince);
 
-    void clear();
-
     Stream<byte[]> streamObjects(RpkiObject.Type type);
 }

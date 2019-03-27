@@ -225,11 +225,10 @@ public class IxMap<T> extends IxBase<T> {
         }
     }
 
-    public void clear() {
-        try (Tx.Write tx = writeTx()) {
-            mainDb.drop(tx.txn());
-            dropIndexes(tx);
-        }
+    @Override
+    public void clear(Tx.Write tx) {
+        mainDb.drop(tx.txn());
+        dropIndexes(tx);
     }
 
     private List<T> getByIndexKeyRange(String indexName, Tx.Read tx, KeyRange keyRange) {
@@ -265,5 +264,7 @@ public class IxMap<T> extends IxBase<T> {
         }
         return values;
     }
+
+
 
 }

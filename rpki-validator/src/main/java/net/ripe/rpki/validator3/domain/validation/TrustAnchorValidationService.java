@@ -40,8 +40,19 @@ import net.ripe.rpki.commons.rsync.CommandExecutionException;
 import net.ripe.rpki.commons.validation.ValidationLocation;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.commons.validation.ValidationString;
-import net.ripe.rpki.validator3.domain.*;
-import net.ripe.rpki.validator3.rrdp.RrdpService;
+import net.ripe.rpki.validator3.background.ValidationScheduler;
+import net.ripe.rpki.validator3.domain.ErrorCodes;
+import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.data.RpkiObject;
+import net.ripe.rpki.validator3.storage.data.RpkiRepository;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
+import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
+import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.stores.Id;
+import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
+import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import net.ripe.rpki.validator3.util.Rsync;
 import net.ripe.rpki.validator3.util.Transactions;
 import org.apache.commons.lang3.ArrayUtils;
@@ -63,33 +74,48 @@ import java.util.Set;
 @Slf4j
 public class TrustAnchorValidationService {
 
-    private final TrustAnchors trustAnchorRepository;
-    private final RpkiRepositories rpkiRepositories;
-    private final ValidationRuns validationRunRepository;
+    private final TrustAnchorStore trustAnchorStore;
+    private final RpkiRepositoryStore rpkiRepositoryStore;
+    private final ValidationRunStore validationRunStore;
+    private final ValidationScheduler validationScheduler;
+
+//    private final TrustAnchors trustAnchorRepository;
+//    private final ValidationRuns validationRunRepository;
     private final File localRsyncStorageDirectory;
     private final RpkiRepositoryValidationService repositoryValidationService;
+    private final Lmdb lmdb;
 
     @Autowired
     public TrustAnchorValidationService(
-            TrustAnchors trustAnchorRepository,
-            RpkiRepositories rpkiRepositories, ValidationRuns validationRunRepository,
+            TrustAnchorStore trustAnchorStore,
+            RpkiRepositoryStore rpkiRepositoryStore,
+            ValidationRunStore validationRunStore,
+            ValidationScheduler validationScheduler,
             @Value("${rpki.validator.rsync.local.storage.directory}") File localRsyncStorageDirectory,
-            RpkiRepositoryValidationService repositoryValidationService) {
-        this.trustAnchorRepository = trustAnchorRepository;
-        this.rpkiRepositories = rpkiRepositories;
-        this.validationRunRepository = validationRunRepository;
+            RpkiRepositoryValidationService repositoryValidationService,
+            Lmdb lmdb) {
+        this.trustAnchorStore = trustAnchorStore;
+        this.rpkiRepositoryStore = rpkiRepositoryStore;
+        this.validationRunStore = validationRunStore;
+        this.validationScheduler = validationScheduler;
         this.localRsyncStorageDirectory = localRsyncStorageDirectory;
         this.repositoryValidationService = repositoryValidationService;
+        this.lmdb = lmdb;
     }
 
-    @Transactional(Transactional.TxType.REQUIRED)
+//    @Transactional(Transactional.TxType.REQUIRED)
     public void validate(long trustAnchorId) {
-        TrustAnchor trustAnchor = trustAnchorRepository.get(trustAnchorId);
+        Optional<TrustAnchor> maybeTrustAnchor = Tx.rwith(lmdb.readTx(), tx -> trustAnchorStore.get(tx, Id.key(trustAnchorId)));
+        if (!maybeTrustAnchor.isPresent()) {
+            log.error("Trust anchor {} doesn't exist.", trustAnchorId);
+            return;
+        }
 
+        TrustAnchor trustAnchor = maybeTrustAnchor.get();
         log.info("trust anchor {} located at {} with subject public key info {}", trustAnchor.getName(), trustAnchor.getLocations(), trustAnchor.getSubjectPublicKeyInfo());
 
         TrustAnchorValidationRun validationRun = new TrustAnchorValidationRun(trustAnchor);
-        validationRunRepository.add(validationRun);
+        Tx.use(lmdb.writeTx(), tx -> validationRunStore.add(tx, validationRun));
 
         try {
             boolean updated = false;
@@ -131,16 +157,18 @@ public class TrustAnchorValidationService {
                 // TODO Do this part outside of this specific transaction
                 final Set<TrustAnchor> affectedTrustAnchors = Sets.newHashSet(trustAnchor);
                 if (trustAnchor.getRsyncPrefetchUri() != null) {
-//                    rpkiRepositories.findByURI(trustAnchor.getRsyncPrefetchUri())
-//                            .ifPresent(r -> affectedTrustAnchors.addAll(repositoryValidationService.prefetchRepository(r)));
+                    Optional<RpkiRepository> byURI = Tx.rwith(lmdb.readTx(), tx ->
+                            rpkiRepositoryStore.findByURI(tx, trustAnchor.getRsyncPrefetchUri()));
+                    byURI.ifPresent(r -> affectedTrustAnchors.addAll(repositoryValidationService.prefetchRepository(r)));
                 }
-                Transactions.afterCommit(() -> affectedTrustAnchors.forEach(validationRunRepository::runCertificateTreeValidation));
+                Transactions.afterCommit(() -> affectedTrustAnchors.forEach(validationScheduler::triggerCertificateTreeValidation));
             }
         } catch (CommandExecutionException | IOException e) {
             log.error("validation run for trust anchor {} failed", trustAnchor, e);
-            validationRun.addCheck(new ValidationCheck(validationRun, validationRun.getTrustAnchorCertificateURI(), ValidationCheck.Status.ERROR, ErrorCodes.UNHANDLED_EXCEPTION, e.toString()));
+            validationRun.addCheck(new ValidationCheck(validationRun.getTrustAnchorCertificateURI(), ValidationCheck.Status.ERROR, ErrorCodes.UNHANDLED_EXCEPTION, e.toString()));
             validationRun.setFailed();
         }
+
     }
 
     private X509ResourceCertificate parseCertificate(TrustAnchor trustAnchor, File certificateFile, ValidationResult validationResult) throws IOException {

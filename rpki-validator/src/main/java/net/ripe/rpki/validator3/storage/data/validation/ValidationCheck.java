@@ -52,9 +52,6 @@ public class ValidationCheck extends Base<ValidationCheck> implements MessageSou
     }
 
     @Getter
-    private ValidationRun validationRun;
-
-    @Getter
     private String location;
 
     @Getter
@@ -69,16 +66,14 @@ public class ValidationCheck extends Base<ValidationCheck> implements MessageSou
     protected ValidationCheck() {
     }
 
-    public ValidationCheck(ValidationRun validationRun, String location, net.ripe.rpki.commons.validation.ValidationCheck check) {
-        this.validationRun = validationRun;
+    public ValidationCheck(String location, net.ripe.rpki.commons.validation.ValidationCheck check) {
         this.location = location;
         this.status = mapStatus(check.getStatus());
         this.key = check.getKey();
         this.parameters = Arrays.asList(check.getParams());
     }
 
-    public ValidationCheck(ValidationRun validationRun, String location, Status status, String key, String... parameters) {
-        this.validationRun = validationRun;
+    public ValidationCheck(String location, Status status, String key, String... parameters) {
         this.location = location;
         this.status = status;
         this.key = key;

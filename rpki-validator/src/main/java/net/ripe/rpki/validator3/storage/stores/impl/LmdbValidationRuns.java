@@ -37,6 +37,7 @@ import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
+import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.RrdpRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.RsyncRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
@@ -48,6 +49,7 @@ import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.lmdb.MultIxMap;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.stores.GenericStore;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,7 +65,7 @@ import java.util.stream.Stream;
  * TODO Implement missing methods here
  */
 @Component
-public class LmdbValidationRuns implements ValidationRunStore {
+public class LmdbValidationRuns extends GenericStore<ValidationRun> implements ValidationRunStore {
 
     private static final String RPKI_VALIDATION_RUNS = "validation-runs";
     private static final String RPKI_VALIDATION_RUNS_TO_TRUST_ANCHORS = "validation-runs-to-trust-anchors";
@@ -117,6 +119,11 @@ public class LmdbValidationRuns implements ValidationRunStore {
     }
 
     @Override
+    public void update(Tx.Write tx, ValidationRun validationRun) {
+        ixMap.put(tx, validationRun.getId(), validationRun);
+    }
+
+    @Override
     public void removeAllForTrustAnchor(Tx.Write tx, TrustAnchor trustAnchor) {
         // TODO Implement
     }
@@ -167,12 +174,22 @@ public class LmdbValidationRuns implements ValidationRunStore {
     }
 
     @Override
-    public long clear() {
-        return 0;
+    public void associate(Tx.Write writeTx, CertificateTreeValidationRun validationRun, RpkiObject rpkiObject) {
+        // TODO Implement
     }
 
     @Override
-    public void associate(Tx.Write writeTx, CertificateTreeValidationRun validationRun, RpkiObject rpkiObject) {
+    public void associate(Tx.Write writeTx, RsyncRepositoryValidationRun validationRun, RpkiRepository r) {
+        // TODO Implement
+    }
 
+    @Override
+    public void associate(Tx.Write writeTx, RpkiRepositoryValidationRun validationRun, RpkiObject rpkiObject) {
+        // TODO Implement
+    }
+
+    @Override
+    protected IxMap<ValidationRun> ixMap() {
+        return ixMap;
     }
 }

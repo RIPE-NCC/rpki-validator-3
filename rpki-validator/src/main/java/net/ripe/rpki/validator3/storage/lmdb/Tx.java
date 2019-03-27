@@ -78,7 +78,7 @@ public abstract class Tx implements AutoCloseable {
         }
     }
 
-    public static <R, T> R with(Write wtx, Function<Write, R> f) {
+    public static <R> R with(Write wtx, Function<Write, R> f) {
         try (Txn<ByteBuffer> txn = wtx.txn()) {
             final R r = f.apply(wtx);
             txn.commit();
@@ -86,10 +86,22 @@ public abstract class Tx implements AutoCloseable {
         }
     }
 
+    public static <R> R rwith(Read rtx, Function<Read, R> f) {
+        try (Read tx = rtx) {
+            return f.apply(tx);
+        }
+    }
+
     public static <T> void use(Write wtx, Consumer<Write> c) {
         try (Txn<ByteBuffer> txn = wtx.txn()) {
             c.accept(wtx);
             txn.commit();
+        }
+    }
+
+    public static void ruse(Read rtx, Consumer<Read> c) {
+        try (Read tx = rtx) {
+            c.accept(tx);
         }
     }
 

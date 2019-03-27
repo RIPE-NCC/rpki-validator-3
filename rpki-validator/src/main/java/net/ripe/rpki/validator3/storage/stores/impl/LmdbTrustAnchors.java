@@ -33,11 +33,11 @@ import com.google.common.collect.ImmutableMap;
 import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
 import net.ripe.rpki.validator3.storage.FSTCoder;
 import net.ripe.rpki.validator3.storage.Lmdb;
-import net.ripe.rpki.validator3.storage.data.Ref;
+import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
-import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.stores.GenericStore;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -46,7 +46,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Component
-public class LmdbTrustAnchors implements TrustAnchorStore {
+public class LmdbTrustAnchors extends GenericStore<TrustAnchor> implements TrustAnchorStore {
 
     private static final String TRUST_ANCHORS = "trust-anchors";
     private static final String BY_NAME = "by-name";
@@ -116,12 +116,7 @@ public class LmdbTrustAnchors implements TrustAnchorStore {
     }
 
     @Override
-    public Ref<TrustAnchor> makeRef(Tx.Read tx, Key key) {
-        return Ref.of(tx, ixMap, key);
-    }
-
-    @Override
-    public void markInitialCertificateTreeValidationRunCompleted(Tx.Write tx, TrustAnchor trustAnchor) {
-//        ixMap.
+    protected IxMap<TrustAnchor> ixMap() {
+        return ixMap;
     }
 }

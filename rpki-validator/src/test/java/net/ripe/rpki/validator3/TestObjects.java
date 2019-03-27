@@ -29,9 +29,8 @@
  */
 package net.ripe.rpki.validator3;
 
-import net.ripe.rpki.validator3.domain.TrustAnchor;
-
-import java.util.Arrays;
+import com.google.common.collect.ImmutableList;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 
 public class TestObjects {
 
@@ -40,7 +39,7 @@ public class TestObjects {
     public static TrustAnchor newTrustAnchor() {
         TrustAnchor trustAnchor = new TrustAnchor(false);
         trustAnchor.setName("trust anchor");
-        trustAnchor.setLocations(Arrays.asList("rsync://rpki.test/trust-anchor.cer"));
+        trustAnchor.setLocations(ImmutableList.of("rsync://rpki.test/trust-anchor.cer"));
         trustAnchor.setSubjectPublicKeyInfo(RIPE_NCC_TRUST_ANCHOR_SUBJECT_PUBLIC_KEY_INFO);
         return trustAnchor;
     }

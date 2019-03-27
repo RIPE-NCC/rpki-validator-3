@@ -35,11 +35,14 @@ import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.storage.FSTCoder;
 import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.stores.GenericStore;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -49,10 +52,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 @Component
-public class LmdbRpkiObject implements RpkiObjectStore {
+public class LmdbRpkiObject extends GenericStore<RpkiObject> implements RpkiObjectStore {
 
     public static final String RPKI_OBJECTS = "rpki-objects";
     public static final String BY_AKI_INDEX = "by-aki";
@@ -126,14 +131,14 @@ public class LmdbRpkiObject implements RpkiObjectStore {
         });
     }
 
-    @Override
-    public void clear() {
-        ixMap.clear();
-    }
-
     // TODO Don't do that
     @Override
     public Stream<byte[]> streamObjects(RpkiObject.Type type) {
         return null;
+    }
+
+    @Override
+    protected IxMap<RpkiObject> ixMap() {
+        return ixMap;
     }
 }

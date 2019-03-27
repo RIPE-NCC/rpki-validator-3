@@ -46,22 +46,24 @@ public interface RpkiRepositoryStore {
 
     RpkiRepository register(Tx.Write tx, TrustAnchor trustAnchor, String uri, RpkiRepository.Type type);
 
+    void update(Tx.Write tx, RpkiRepository rpkiRepository);
+
     Optional<RpkiRepository> findByURI(Tx.Read tx, String uri);
 
     Optional<RpkiRepository> get(Tx.Read tx, Key id);
 
-    Stream<RpkiRepository> findAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent,
+    Stream<RpkiRepository> findAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Key taId, boolean hideChildrenOfDownloadedParent,
                                    SearchTerm searchTerm, Sorting sorting, Paging paging);
 
-    long countAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Long taId, boolean hideChildrenOfDownloadedParent, SearchTerm searchTerm);
+    long countAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Key taId, boolean hideChildrenOfDownloadedParent, SearchTerm searchTerm);
 
-    Map<RpkiRepository.Status, Long> countByStatus(Tx.Read tx, Long taId, boolean hideChildrenOfDownloadedParent);
+    Map<RpkiRepository.Status, Long> countByStatus(Tx.Read tx, Key taId, boolean hideChildrenOfDownloadedParent);
 
-    default Stream<RpkiRepository> findAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Long taId) {
+    default Stream<RpkiRepository> findAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Key taId) {
         return findAll(tx, optionalStatus, taId, false, null, null, null);
     }
 
-    default Stream<RpkiRepository> findAll(Tx.Read tx, Long taId) {
+    default Stream<RpkiRepository> findAll(Tx.Read tx, Key taId) {
         return findAll(tx, null, taId, false, null, null, null);
     }
 

@@ -37,12 +37,13 @@ import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.storage.FSTCoder;
 import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.data.Key;
+import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
-import net.ripe.rpki.validator3.storage.data.Key;
-import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.stores.GenericStore;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
 import net.ripe.rpki.validator3.util.Rsync;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,16 +51,19 @@ import org.springframework.stereotype.Component;
 
 import javax.validation.constraints.NotNull;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
 @Slf4j
-public class LmdbRpkiRepostiories implements RpkiRepositoryStore {
+public class LmdbRpkiRepostiories extends GenericStore<RpkiRepository> implements RpkiRepositoryStore {
 
     private static final String RPKI_REPOSITORIES = "rpki-repositories";
     private static final String BY_URI = "by-uri";
@@ -90,12 +94,12 @@ public class LmdbRpkiRepostiories implements RpkiRepositoryStore {
         final RpkiRepository registered;
         if (existing.isPresent()) {
             registered = existing.get();
-            registered.addTrustAnchor(trustAnchor);
         } else {
             registered = new RpkiRepository(trustAnchor, uri, type);
             final Key primaryKey = Key.of(sequences.next(tx, RPKI_REPOSITORIES + ":pk"));
             registered.setId(primaryKey);
         }
+        registered.addTrustAnchor(trustAnchor);
 
         if (type == RpkiRepository.Type.RSYNC && registered.getType() == RpkiRepository.Type.RSYNC_PREFETCH) {
             registered.setType(RpkiRepository.Type.RSYNC);
@@ -122,6 +126,11 @@ public class LmdbRpkiRepostiories implements RpkiRepositoryStore {
     }
 
     @Override
+    public void update(Tx.Write tx, RpkiRepository rpkiRepository) {
+        ixMap.put(tx, rpkiRepository.getId(), rpkiRepository);
+    }
+
+    @Override
     public Optional<RpkiRepository> findByURI(Tx.Read tx, String uri) {
         return ixMap.getByIndex(BY_URI, tx, Key.of(uri)).stream().findFirst();
     }
@@ -132,7 +141,7 @@ public class LmdbRpkiRepostiories implements RpkiRepositoryStore {
     }
 
     @Override
-    public Stream<RpkiRepository> findAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Long taId,
+    public Stream<RpkiRepository> findAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Key taId,
                                           boolean hideChildrenOfDownloadedParent,
                                           SearchTerm searchTerm, Sorting sorting, Paging paging) {
         return pagedStream(
@@ -142,12 +151,13 @@ public class LmdbRpkiRepostiories implements RpkiRepositoryStore {
                 paging);
     }
 
+    // TODO Optimize it with forEach
     public Stream<RpkiRepository> filteredStream(Tx.Read tx,
                                                  RpkiRepository.Status optionalStatus,
-                                                 Long taId, boolean hideChildrenOfDownloadedParent,
+                                                 Key taId, boolean hideChildrenOfDownloadedParent,
                                                  SearchTerm searchTerm) {
         Stream<RpkiRepository> stream = taId != null ?
-                ixMap.getByIndex(BY_TA, tx, Key.of(taId)).stream() :
+                ixMap.getByIndex(BY_TA, tx, taId).stream() :
                 ixMap.values(tx).stream();
 
         if (optionalStatus != null) {
@@ -209,38 +219,48 @@ public class LmdbRpkiRepostiories implements RpkiRepositoryStore {
     }
 
     @Override
-    public long countAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Long taId,
+    public long countAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Key taId,
                          boolean hideChildrenOfDownloadedParent, SearchTerm searchTerm) {
         return filteredStream(tx, optionalStatus, taId, hideChildrenOfDownloadedParent, searchTerm).count();
     }
 
     @Override
-    public Stream<RpkiRepository> findAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Long taId) {
+    public Stream<RpkiRepository> findAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Key taId) {
         final Stream<RpkiRepository> all = findAll(tx, taId);
         return optionalStatus == null ? all : all.filter(r -> r.getStatus() == optionalStatus);
     }
 
     @Override
-    public Stream<RpkiRepository> findAll(Tx.Read tx, Long taId) {
-        return ixMap.getByIndex(BY_TA, tx, Key.of(taId)).stream();
+    public Stream<RpkiRepository> findAll(Tx.Read tx, Key taId) {
+        return ixMap.getByIndex(BY_TA, tx, taId).stream();
     }
 
     @Override
-    public Map<RpkiRepository.Status, Long> countByStatus(Tx.Read tx, Long taId, boolean hideChildrenOfDownloadedParent) {
+    public Map<RpkiRepository.Status, Long> countByStatus(Tx.Read tx, Key taId, boolean hideChildrenOfDownloadedParent) {
         return findAll(tx, null, taId, hideChildrenOfDownloadedParent, null, null, null)
-                .collect(Collectors.groupingBy(r -> r.getStatus(), Collectors.counting()));
+                .collect(Collectors.groupingBy(RpkiRepository::getStatus, Collectors.counting()));
     }
 
     @Override
     public Stream<RpkiRepository> findRsyncRepositories(Tx.Read tx) {
-        return ixMap.values(tx).stream()
-                .filter(r -> r.getType() == RpkiRepository.Type.RSYNC || r.getType() == RpkiRepository.Type.RSYNC_PREFETCH);
+        return findRepositoriesByPredicate(tx, r ->
+                r.getType() == RpkiRepository.Type.RSYNC ||
+                r.getType() == RpkiRepository.Type.RSYNC_PREFETCH);
     }
 
     @Override
     public Stream<RpkiRepository> findRrdpRepositories(Tx.Read tx) {
-        return ixMap.values(tx).stream()
-                .filter(r -> r.getType() == RpkiRepository.Type.RRDP);
+        return findRepositoriesByPredicate(tx, r -> r.getType() == RpkiRepository.Type.RRDP);
+    }
+
+    private Stream<RpkiRepository> findRepositoriesByPredicate(Tx.Read tx, Predicate<RpkiRepository> p) {
+        final List<RpkiRepository> result = new ArrayList<>();
+        ixMap.forEach(tx, (k, r) -> {
+            if (p.test(r)) {
+                result.add(r);
+            }
+        });
+        return result.stream();
     }
 
     @Override
@@ -255,7 +275,7 @@ public class LmdbRpkiRepostiories implements RpkiRepositoryStore {
     }
 
     @Override
-    public Ref<RpkiRepository> makeRef(Tx.Read tx, Key key) {
-        return Ref.of(tx, ixMap, key);
+    protected IxMap<RpkiRepository> ixMap() {
+        return ixMap;
     }
 }

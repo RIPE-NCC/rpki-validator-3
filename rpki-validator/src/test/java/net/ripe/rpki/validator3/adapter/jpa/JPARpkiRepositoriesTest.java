@@ -55,46 +55,46 @@ import static org.junit.Assert.assertEquals;
 @Slf4j
 public class JPARpkiRepositoriesTest {
 
-    @Autowired
-    private EntityManager entityManager;
-
-    @Autowired
-    private RpkiRepositories repositories;
-
-    final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
-    final RpkiRepository rsyncRepo = new RpkiRepository(trustAnchor, "rsync://some.rsync.repo", RpkiRepository.Type.RSYNC);
-
-    @Before
-    public void setup(){
-
-        entityManager.persist(trustAnchor);
-        entityManager.persist(rsyncRepo);
-    }
-
-    @Test
-    public void after_setup_there_is_one_rpki_repository() {
-        long countAll = repositories.countAll(RpkiRepository.Status.PENDING, trustAnchor.getId(), true, new SearchTerm("some"));
-        assertEquals(1, countAll);
-    }
-
-    @Test
-    public void after_setup_there_is_one_pending() {
-        Map<RpkiRepository.Status, Long> statuses = repositories.countByStatus(trustAnchor.getId(), true);
-        long countPending = statuses.get(RpkiRepository.Status.PENDING);
-        assertEquals(1, countPending);
-    }
-
-    @Test
-    public void after_remove_count_should_be_zero() {
-        repositories.removeAllForTrustAnchor(trustAnchor);
-        long countAll = repositories.countAll(RpkiRepository.Status.PENDING, trustAnchor.getId(), true, new SearchTerm("some"));
-        assertEquals(0, countAll);
-    }
-
-    @Test
-    public void after_remove_repository_count_should_be_zero() {
-        repositories.remove(rsyncRepo.getId());
-        long countAll = repositories.countAll(RpkiRepository.Status.PENDING, trustAnchor.getId(), true, new SearchTerm("some"));
-        assertEquals(0, countAll);
-    }
+//    @Autowired
+//    private EntityManager entityManager;
+//
+//    @Autowired
+//    private RpkiRepositories repositories;
+//
+//    final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
+//    final RpkiRepository rsyncRepo = new RpkiRepository(trustAnchor, "rsync://some.rsync.repo", RpkiRepository.Type.RSYNC);
+//
+//    @Before
+//    public void setup(){
+//
+//        entityManager.persist(trustAnchor);
+//        entityManager.persist(rsyncRepo);
+//    }
+//
+//    @Test
+//    public void after_setup_there_is_one_rpki_repository() {
+//        long countAll = repositories.countAll(RpkiRepository.Status.PENDING, trustAnchor.getId(), true, new SearchTerm("some"));
+//        assertEquals(1, countAll);
+//    }
+//
+//    @Test
+//    public void after_setup_there_is_one_pending() {
+//        Map<RpkiRepository.Status, Long> statuses = repositories.countByStatus(trustAnchor.getId(), true);
+//        long countPending = statuses.get(RpkiRepository.Status.PENDING);
+//        assertEquals(1, countPending);
+//    }
+//
+//    @Test
+//    public void after_remove_count_should_be_zero() {
+//        repositories.removeAllForTrustAnchor(trustAnchor);
+//        long countAll = repositories.countAll(RpkiRepository.Status.PENDING, trustAnchor.getId(), true, new SearchTerm("some"));
+//        assertEquals(0, countAll);
+//    }
+//
+//    @Test
+//    public void after_remove_repository_count_should_be_zero() {
+//        repositories.remove(rsyncRepo.getId());
+//        long countAll = repositories.countAll(RpkiRepository.Status.PENDING, trustAnchor.getId(), true, new SearchTerm("some"));
+//        assertEquals(0, countAll);
+//    }
 }

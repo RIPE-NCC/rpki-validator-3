@@ -103,9 +103,4 @@ public class MultIxMap<T> extends IxBase<T> {
     public void delete(Tx.Write tx, Key primaryKey, T value) {
         mainDb.delete(tx.txn(), primaryKey.toByteBuffer(), coder.toBytes(value));
     }
-
-    @Override
-    public void clear() {
-        Tx.use(writeTx(), tx -> mainDb.drop(tx.txn()));
-    }
 }
