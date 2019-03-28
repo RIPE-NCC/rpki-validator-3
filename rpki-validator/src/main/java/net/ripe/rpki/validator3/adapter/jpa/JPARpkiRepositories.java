@@ -156,7 +156,7 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
     public Stream<RpkiRepository> findRsyncRepositories() {
         return stream(
             select()
-                .where(rpkiRepository.type.in(RpkiRepository.Type.RSYNC, RpkiRepository.Type.RSYNC_PREFETCH))
+                .where(rpkiRepository.type.in(RpkiRepository.Type.RSYNC))
                 .orderBy(rpkiRepository.rsyncRepositoryUri.asc(), rpkiRepository.id.asc())
         );
     }
@@ -165,7 +165,7 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
     public Stream<RpkiRepository> findRrdpRepositories() {
         return stream(
                 select()
-                        .where(rpkiRepository.type.in(RpkiRepository.Type.RRDP, RpkiRepository.Type.RSYNC_PREFETCH))
+                        .where(rpkiRepository.type.in(RpkiRepository.Type.RRDP))
                         .orderBy(rpkiRepository.rsyncRepositoryUri.asc(), rpkiRepository.id.asc())
         );
     }
