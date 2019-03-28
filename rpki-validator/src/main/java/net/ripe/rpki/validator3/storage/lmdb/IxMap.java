@@ -43,6 +43,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -160,6 +161,40 @@ public class IxMap<T> extends IxBase<T> {
         return getPkByIndexKeyRange(indexName, tx, KeyRange.greaterThan(idxKey));
     }
 
+    public Set<Key> getMaxByIndex(String indexName, Tx.Read tx) {
+        return getKeyAtTheMinOrMaxOfIndex(indexName, tx, KeyRange.allBackward());
+    }
+
+    public Set<Key> getMinByIndex(String indexName, Tx.Read tx) {
+        return getKeyAtTheMinOrMaxOfIndex(indexName, tx, KeyRange.all());
+    }
+
+    private Set<Key> getKeyAtTheMinOrMaxOfIndex(String indexName, Tx.Read tx, KeyRange<ByteBuffer> objectKeyRange) {
+        final Dbi<ByteBuffer> index = indexes.get(indexName);
+        if (index != null) {
+            final Txn<ByteBuffer> txn = tx.txn();
+            try (final CursorIterator<ByteBuffer> iterator = index.iterate(txn, objectKeyRange)) {
+                final Set<Key> primaryKeys = new HashSet<>();
+                ByteBuffer currentIndexKey = null;
+                while (iterator.hasNext()) {
+                    final CursorIterator.KeyVal<ByteBuffer> next = iterator.next();
+                    final ByteBuffer indexKey = next.key();
+                    if (currentIndexKey != null) {
+                        if (!currentIndexKey.equals(indexKey)) {
+                            return primaryKeys;
+                        }
+                        primaryKeys.add(new Key(next.val()));
+                    } else {
+                        primaryKeys.add(new Key(next.val()));
+                        currentIndexKey = indexKey.duplicate();
+                    }
+                }
+                return primaryKeys;
+            }
+        }
+        return Collections.emptySet();
+    }
+
     public Optional<T> put(Key primaryKey, T value) {
         checkKeyAndValue(primaryKey, value);
         return Tx.with(writeTx(), tx -> put(tx, primaryKey, value));
@@ -243,12 +278,13 @@ public class IxMap<T> extends IxBase<T> {
             return Collections.emptyList();
         }
         final Txn<ByteBuffer> txn = tx.txn();
-        final CursorIterator<ByteBuffer> iterator = index.iterate(txn, keyRange);
         final List<T> values = new ArrayList<>();
-        while (iterator.hasNext()) {
-            final ByteBuffer bb = mainDb.get(txn, iterator.next().val());
-            if (bb != null) {
-                values.add(coder.fromBytes(bb));
+        try (final CursorIterator<ByteBuffer> iterator = index.iterate(txn, keyRange)) {
+            while (iterator.hasNext()) {
+                final ByteBuffer bb = mainDb.get(txn, iterator.next().val());
+                if (bb != null) {
+                    values.add(coder.fromBytes(bb));
+                }
             }
         }
         return values;
@@ -260,10 +296,11 @@ public class IxMap<T> extends IxBase<T> {
             return Collections.emptyList();
         }
         final Txn<ByteBuffer> txn = tx.txn();
-        final CursorIterator<ByteBuffer> iterator = index.iterate(txn, keyRange);
         final List<Key> values = new ArrayList<>();
-        while (iterator.hasNext()) {
-            values.add(new Key(iterator.next().val()));
+        try (final CursorIterator<ByteBuffer> iterator = index.iterate(txn, keyRange)) {
+            while (iterator.hasNext()) {
+                values.add(new Key(iterator.next().val()));
+            }
         }
         return values;
     }

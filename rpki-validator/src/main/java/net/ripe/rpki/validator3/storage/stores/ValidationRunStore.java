@@ -55,21 +55,21 @@ public interface ValidationRunStore extends GenericStore<ValidationRun> {
 
     void removeAllForTrustAnchor(Tx.Write tx, TrustAnchor trustAnchor);
 
-    <T extends ValidationRun> T get(Class<T> type, long id);
+    <T extends ValidationRun> T get(Tx.Read tx, Class<T> type, long id);
 
-    <T extends ValidationRun> List<T> findAll(Class<T> type);
+    <T extends ValidationRun> List<T> findAll(Tx.Read tx, Class<T> type);
 
-    <T extends ValidationRun> List<T> findLatestSuccessful(Class<T> type);
+    <T extends ValidationRun> List<T> findLatestSuccessful(Tx.Read tx, Class<T> type);
 
-    Optional<TrustAnchorValidationRun> findLatestCompletedForTrustAnchor(TrustAnchor trustAnchor);
+    Optional<TrustAnchorValidationRun> findLatestCompletedForTrustAnchor(Tx.Read tx, TrustAnchor trustAnchor);
 
-    void removeAllForRpkiRepository(RpkiRepository repository);
+    void removeAllForRpkiRepository(Tx.Write tx, RpkiRepository repository);
 
-    long removeOldValidationRuns(Instant completedBefore);
+    long removeOldValidationRuns(Tx.Write tx, Instant completedBefore);
 
-    Stream<ValidationCheck> findValidationChecksForValidationRun(long validationRunId, Paging paging, SearchTerm searchTerm, Sorting sorting);
+    Stream<ValidationCheck> findValidationChecksForValidationRun(Tx.Read tx, long validationRunId, Paging paging, SearchTerm searchTerm, Sorting sorting);
 
-    int countValidationChecksForValidationRun(long validationRunId, SearchTerm searchTerm);
+    int countValidationChecksForValidationRun(Tx.Read tx, long validationRunId, SearchTerm searchTerm);
 
     void associate(Tx.Write writeTx, CertificateTreeValidationRun validationRun, RpkiObject o);
 

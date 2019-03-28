@@ -93,10 +93,10 @@ public class LmdbValidationRuns extends GenericStoreImpl<ValidationRun> implemen
         this.trustAnchorStore = trustAnchorStore;
         this.rpkiObjectStore = rpkiObjectStore;
         this.rpkiObjectStore.onDelete((tx, roKey) -> {
-            // delete associations
+            // TODO delete associations
         });
         this.trustAnchorStore.onDelete((tx, roKey) -> {
-            // delete associations
+            // TODO delete associations
         });
     }
 
@@ -114,22 +114,22 @@ public class LmdbValidationRuns extends GenericStoreImpl<ValidationRun> implemen
     }
 
     @Override
-    public <T extends ValidationRun> T get(Class<T> type, long id) {
+    public <T extends ValidationRun> T get(Tx.Read tx, Class<T> type, long id) {
         return null;
     }
 
     @Override
-    public <T extends ValidationRun> List<T> findAll(Class<T> type) {
+    public <T extends ValidationRun> List<T> findAll(Tx.Read tx, Class<T> type) {
+        return (List<T>) ixMap.values(tx);
+    }
+
+    @Override
+    public <T extends ValidationRun> List<T> findLatestSuccessful(Tx.Read tx, Class<T> type) {
         return null;
     }
 
     @Override
-    public <T extends ValidationRun> List<T> findLatestSuccessful(Class<T> type) {
-        return null;
-    }
-
-    @Override
-    public Optional<TrustAnchorValidationRun> findLatestCompletedForTrustAnchor(TrustAnchor trustAnchor) {
+    public Optional<TrustAnchorValidationRun> findLatestCompletedForTrustAnchor(Tx.Read tx, TrustAnchor trustAnchor) {
         return Optional.empty();
     }
 
@@ -139,22 +139,22 @@ public class LmdbValidationRuns extends GenericStoreImpl<ValidationRun> implemen
     }
 
     @Override
-    public void removeAllForRpkiRepository(RpkiRepository repository) {
+    public void removeAllForRpkiRepository(Tx.Write tx, RpkiRepository repository) {
 
     }
 
     @Override
-    public long removeOldValidationRuns(Instant completedBefore) {
+    public long removeOldValidationRuns(Tx.Write tx, Instant completedBefore) {
         return 0;
     }
 
     @Override
-    public Stream<ValidationCheck> findValidationChecksForValidationRun(long validationRunId, Paging paging, SearchTerm searchTerm, Sorting sorting) {
+    public Stream<ValidationCheck> findValidationChecksForValidationRun(Tx.Read tx, long validationRunId, Paging paging, SearchTerm searchTerm, Sorting sorting) {
         return null;
     }
 
     @Override
-    public int countValidationChecksForValidationRun(long validationRunId, SearchTerm searchTerm) {
+    public int countValidationChecksForValidationRun(Tx.Read tx, long validationRunId, SearchTerm searchTerm) {
         return 0;
     }
 

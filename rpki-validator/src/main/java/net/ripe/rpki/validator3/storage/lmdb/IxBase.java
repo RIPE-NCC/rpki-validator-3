@@ -94,19 +94,21 @@ public abstract class IxBase<T> {
 
     public List<T> values(Tx.Read tx) {
         final List<T> result = new ArrayList<>();
-        final CursorIterator<ByteBuffer> ci = mainDb.iterate(tx.txn());
-        while (ci.hasNext()) {
-            result.add(coder.fromBytes(ci.next().val()));
+        try (final CursorIterator<ByteBuffer> ci = mainDb.iterate(tx.txn())) {
+            while (ci.hasNext()) {
+                result.add(coder.fromBytes(ci.next().val()));
+            }
         }
         return result;
     }
 
     public Map<Key, T> all(Tx.Read tx) {
         final Map<Key, T> result = new HashMap<>();
-        final CursorIterator<ByteBuffer> ci = mainDb.iterate(tx.txn());
-        while (ci.hasNext()) {
-            CursorIterator.KeyVal<ByteBuffer> next = ci.next();
-            result.put(new Key(next.key()), coder.fromBytes(next.val()));
+        try (final CursorIterator<ByteBuffer> ci = mainDb.iterate(tx.txn())) {
+            while (ci.hasNext()) {
+                CursorIterator.KeyVal<ByteBuffer> next = ci.next();
+                result.put(new Key(next.key()), coder.fromBytes(next.val()));
+            }
         }
         return result;
     }
@@ -116,19 +118,21 @@ public abstract class IxBase<T> {
     }
 
     public void forEach(Tx.Read tx, BiConsumer<Key, T> c) {
-        final CursorIterator<ByteBuffer> ci = mainDb.iterate(tx.txn());
-        while (ci.hasNext()) {
-            final CursorIterator.KeyVal<ByteBuffer> next = ci.next();
-            c.accept(new Key(next.key()), coder.fromBytes(next.val()));
+        try (final CursorIterator<ByteBuffer> ci = mainDb.iterate(tx.txn())) {
+            while (ci.hasNext()) {
+                final CursorIterator.KeyVal<ByteBuffer> next = ci.next();
+                c.accept(new Key(next.key()), coder.fromBytes(next.val()));
+            }
         }
     }
 
     // TODO Optimize
     public long size(Tx.Read tx) {
         long s = 0;
-        final CursorIterator<ByteBuffer> ci = mainDb.iterate(tx.txn());
-        while (ci.hasNext()) {
-            s++;
+        try (final CursorIterator<ByteBuffer> ci = mainDb.iterate(tx.txn())) {
+            while (ci.hasNext()) {
+                s++;
+            }
         }
         return s;
     }

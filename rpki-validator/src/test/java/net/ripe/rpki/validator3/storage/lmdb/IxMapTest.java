@@ -34,6 +34,7 @@ import com.google.common.collect.Sets;
 import net.ripe.rpki.validator3.storage.FSTCoder;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.Key;
+import net.ripe.rpki.validator3.util.Time;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -41,9 +42,11 @@ import org.junit.rules.TemporaryFolder;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -178,14 +181,17 @@ public class IxMapTest {
 
     @Test
     public void testLessThan() {
-        final int n = 1000;
+        final int n = 100;
         final List<String> strings = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
             strings.add(randomString(random));
         }
 
-        Tx.use(ixMap.writeTx(), tx ->
-                strings.forEach(z -> ixMap.put(tx, Key.of(UUID.randomUUID()), z)));
+        Long time = Time.timed(() ->
+                Tx.use(ixMap.writeTx(), tx ->
+                        strings.forEach(z -> ixMap.put(tx, Key.of(UUID.randomUUID()), z))));
+
+        System.out.println("Tx time = " + time + "ms");
 
         try (Tx.Read tx = lmdb.readTx()) {
             for (int len = 1; len < 50; len++) {
@@ -201,7 +207,7 @@ public class IxMapTest {
 
     @Test
     public void testGreaterThan() {
-        final int n = 1000;
+        final int n = 100;
         final List<String> strings = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
             strings.add(randomString(random));
@@ -233,6 +239,37 @@ public class IxMapTest {
             assertEquals(Sets.newHashSet("xab", "abx", "zabx"), new HashSet<>(getByPair(tx, "ab")));
             assertEquals(Sets.newHashSet("abx", "zabx"), new HashSet<>(getByPair(tx, "bx")));
         }
+    }
+
+    @Test
+    public void testGetMinMaxByIndex() {
+        putAndGet("a");
+        putAndGet("b");
+        putAndGet("xab");
+        putAndGet("abx");
+        putAndGet("zabx");
+        putAndGet("1111");
+
+        try (Tx.Read tx = lmdb.readTx()) {
+            assertEquals(Sets.newHashSet("zabx", "1111"), getLongestStrings(tx));
+            assertEquals(Sets.newHashSet("a", "b"), getShortestStrings(tx));
+        }
+    }
+
+    private Set<String> getLongestStrings(Tx.Read tx) {
+        return getValues(tx, ixMap.getMaxByIndex(LENGTH_INDEX, tx));
+    }
+
+    private Set<String> getShortestStrings(Tx.Read tx) {
+        return getValues(tx, ixMap.getMinByIndex(LENGTH_INDEX, tx));
+    }
+
+    private Set<String> getValues(Tx.Read tx, Collection<Key> maxByIndex) {
+        return maxByIndex.stream()
+                .map(k -> ixMap.get(tx, k))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toSet());
     }
 
     private List<String> getByLength(Tx.Read tx, int i) {
