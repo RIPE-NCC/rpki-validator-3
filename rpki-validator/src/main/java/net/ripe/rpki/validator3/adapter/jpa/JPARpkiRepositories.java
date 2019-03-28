@@ -80,12 +80,19 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
     @Override
     public RpkiRepository register(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String uri, RpkiRepository.Type type) {
         log.info("Registering repository {} of type {}", uri, type);
-        RpkiRepository result = findByURI(uri).orElseGet(() -> {
+        Optional<RpkiRepository> byURI = findByURI(uri);
+        if(byURI.isPresent()){
+            log.info("  => existing repo: {} ", byURI.get());
+        }
+        RpkiRepository result = byURI.orElseGet(() -> {
             RpkiRepository repository = new RpkiRepository(trustAnchor, uri, type);
             entityManager.persist(repository);
+            log.info("  => registered fresh new repo: {}", repository);
             return repository;
         });
-        result.addTrustAnchor(trustAnchor);
+        if(!result.hasTrustAnchor(trustAnchor)) {
+            result.addTrustAnchor(trustAnchor);
+        }
         if (type == RpkiRepository.Type.RSYNC && result.getType() == RpkiRepository.Type.RSYNC_PREFETCH) {
             result.setType(RpkiRepository.Type.RSYNC);
         }

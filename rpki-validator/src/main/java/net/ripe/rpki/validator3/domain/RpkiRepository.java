@@ -141,6 +141,10 @@ public class RpkiRepository extends AbstractEntity {
         this.trustAnchors.add(trustAnchor);
     }
 
+    public boolean hasTrustAnchor(TrustAnchor trustAnchor){
+        return this.trustAnchors.contains(trustAnchor);
+    }
+
     public void removeTrustAnchor(@NotNull @Valid TrustAnchor trustAnchor) {
         this.trustAnchors.remove(trustAnchor);
     }
