@@ -58,7 +58,7 @@ public class LmdbRpkiRepostioriesTest extends GenericStorageTest {
         trustAnchor = TestObjects.newTrustAnchor();
         wtx0(tx -> getTrustAnchorStore().add(tx, trustAnchor));
 
-        rsyncRepo = Tx.with(getLmdb().writeTx(), tx -> getRpkiRepositoryStore().register(tx,
+        rsyncRepo = wtx(tx -> getRpkiRepositoryStore().register(tx,
                 trustAnchor, "rsync://some.rsync.repo", RpkiRepository.Type.RSYNC));
     }
 

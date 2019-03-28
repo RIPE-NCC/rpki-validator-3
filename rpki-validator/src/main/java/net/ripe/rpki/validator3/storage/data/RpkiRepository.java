@@ -66,8 +66,7 @@ public class RpkiRepository extends Base<RpkiRepository> {
 
     private Instant lastDownloadedAt;
 
-    @NotNull
-    @NotEmpty
+    // TODO Remove it and replace with some sort of association
     private Set<TrustAnchor> trustAnchors = new HashSet<>();
 
     @ValidLocationURI

@@ -38,6 +38,7 @@ import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.storage.FSTCoder;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.Key;
+import net.ripe.rpki.validator3.storage.data.Base;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.SId;
@@ -81,7 +82,7 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
                 new FSTCoder<>(),
                 ImmutableMap.of(
                         BY_URI, r -> Key.keys(Key.of(r.getLocationUri())),
-                        BY_TA, r -> r.getTrustAnchors().stream().map(ta -> ta.key()).collect(Collectors.toSet())
+                        BY_TA, r -> r.getTrustAnchors().stream().map(Base::key).collect(Collectors.toSet())
                 )
         );
         sequences = new Sequences(lmdb);
@@ -95,12 +96,12 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
         final RpkiRepository registered;
         if (existing.isPresent()) {
             registered = existing.get();
+            registered.addTrustAnchor(trustAnchor);
         } else {
             registered = new RpkiRepository(trustAnchor, uri, type);
             final SId<RpkiRepository> primaryKey = SId.of(sequences.next(tx, RPKI_REPOSITORIES + ":pk"));
             registered.setId(primaryKey);
         }
-        registered.addTrustAnchor(trustAnchor);
 
         if (type == RpkiRepository.Type.RSYNC && registered.getType() == RpkiRepository.Type.RSYNC_PREFETCH) {
             registered.setType(RpkiRepository.Type.RSYNC);
@@ -267,9 +268,9 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
         return result.stream();
     }
 
-    @Override
+    @Override // 747275737420616E63686F72
     public void removeAllForTrustAnchor(Tx.Write tx, TrustAnchor trustAnchor) {
-        ixMap.getByIndexPk(BY_TA, tx, trustAnchor.key())
+        ixMap.getPkByIndex(BY_TA, tx, trustAnchor.key())
                 .forEach(pk -> ixMap.delete(tx, pk));
     }
 

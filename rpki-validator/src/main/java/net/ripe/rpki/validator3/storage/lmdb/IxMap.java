@@ -134,10 +134,10 @@ public class IxMap<T> extends IxBase<T> {
         return getByIndexKeyRange(indexName, tx, KeyRange.closed(idxKey, idxKey));
     }
 
-    public List<Key> getByIndexPk(String indexName, Tx.Read tx, Key indexKey) {
+    public List<Key> getPkByIndex(String indexName, Tx.Read tx, Key indexKey) {
         checkNotNull(indexKey, "Index key is null");
         final ByteBuffer idxKey = indexKey.toByteBuffer();
-        return getByIndexKeyRangePk(indexName, tx, KeyRange.closed(idxKey, idxKey));
+        return getPkByIndexKeyRange(indexName, tx, KeyRange.closed(idxKey, idxKey));
     }
 
     public List<T> getByIndexLess(String indexName, Tx.Read tx, Key indexKey) {
@@ -152,12 +152,12 @@ public class IxMap<T> extends IxBase<T> {
 
     public List<Key> getByIndexLessPk(String indexName, Tx.Read tx, Key indexKey) {
         final ByteBuffer idxKey = indexKey.toByteBuffer();
-        return getByIndexKeyRangePk(indexName, tx, KeyRange.lessThan(idxKey));
+        return getPkByIndexKeyRange(indexName, tx, KeyRange.lessThan(idxKey));
     }
 
     public List<Key> getByIndexGreaterPk(String indexName, Tx.Read tx, Key indexKey) {
         final ByteBuffer idxKey = indexKey.toByteBuffer();
-        return getByIndexKeyRangePk(indexName, tx, KeyRange.greaterThan(idxKey));
+        return getPkByIndexKeyRange(indexName, tx, KeyRange.greaterThan(idxKey));
     }
 
     public Optional<T> put(Key primaryKey, T value) {
@@ -197,7 +197,6 @@ public class IxMap<T> extends IxBase<T> {
                     indexKeys.forEach(ik -> c.put(ik.toByteBuffer(), pkBuf));
                 }
             });
-            mainDb.put(txn, pkBuf, coder.toBytes(value));
         }
         return Optional.empty();
     }
@@ -226,7 +225,7 @@ public class IxMap<T> extends IxBase<T> {
             }
         }
         try {
-            onDeleteTriggers.stream().forEach(bf -> bf.accept(tx, primaryKey));
+            onDeleteTriggers.forEach(bf -> bf.accept(tx, primaryKey));
         } catch (OnDeleteRestrict o) {
             tx.abort();
         }
@@ -255,7 +254,7 @@ public class IxMap<T> extends IxBase<T> {
         return values;
     }
 
-    private List<Key> getByIndexKeyRangePk(String indexName, Tx.Read tx, KeyRange keyRange) {
+    private List<Key> getPkByIndexKeyRange(String indexName, Tx.Read tx, KeyRange keyRange) {
         final Dbi<ByteBuffer> index = indexes.get(indexName);
         if (index == null) {
             return Collections.emptyList();
@@ -264,10 +263,7 @@ public class IxMap<T> extends IxBase<T> {
         final CursorIterator<ByteBuffer> iterator = index.iterate(txn, keyRange);
         final List<Key> values = new ArrayList<>();
         while (iterator.hasNext()) {
-            final ByteBuffer bb = mainDb.get(txn, iterator.next().val());
-            if (bb != null) {
-                values.add(new Key(bb));
-            }
+            values.add(new Key(iterator.next().val()));
         }
         return values;
     }

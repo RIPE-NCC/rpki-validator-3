@@ -39,7 +39,9 @@ import org.lmdbjava.Env;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 
 public abstract class IxBase<T> {
@@ -95,6 +97,16 @@ public abstract class IxBase<T> {
         final CursorIterator<ByteBuffer> ci = mainDb.iterate(tx.txn());
         while (ci.hasNext()) {
             result.add(coder.fromBytes(ci.next().val()));
+        }
+        return result;
+    }
+
+    public Map<Key, T> all(Tx.Read tx) {
+        final Map<Key, T> result = new HashMap<>();
+        final CursorIterator<ByteBuffer> ci = mainDb.iterate(tx.txn());
+        while (ci.hasNext()) {
+            CursorIterator.KeyVal<ByteBuffer> next = ci.next();
+            result.put(new Key(next.key()), coder.fromBytes(next.val()));
         }
         return result;
     }
