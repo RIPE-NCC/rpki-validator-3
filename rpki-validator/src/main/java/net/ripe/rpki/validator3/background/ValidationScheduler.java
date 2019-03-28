@@ -43,7 +43,6 @@ import org.springframework.stereotype.Component;
 import javax.transaction.Transactional;
 
 @Component
-@Transactional(Transactional.TxType.MANDATORY)
 @Slf4j
 public class ValidationScheduler {
 
