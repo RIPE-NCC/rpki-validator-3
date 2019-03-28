@@ -34,6 +34,7 @@ import lombok.EqualsAndHashCode;
 import net.ripe.rpki.validator3.util.Hex;
 
 import java.math.BigInteger;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
@@ -54,13 +55,13 @@ public class Key {
     private Key(byte[] bytes) {
         key = ByteBuffer.allocateDirect(bytes.length);
         key.put(bytes);
-        key.flip();
+        ((Buffer)key).flip();
     }
 
     public Key(long long_) {
         key = ByteBuffer.allocateDirect(Long.BYTES);
         key.putLong(long_);
-        key.flip();
+        ((Buffer)key).flip();
     }
 
     public static Key of(byte[] bytes) {
