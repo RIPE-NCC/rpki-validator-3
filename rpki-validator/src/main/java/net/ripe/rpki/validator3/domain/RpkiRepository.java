@@ -179,4 +179,21 @@ public class RpkiRepository extends AbstractEntity {
         this.status = Status.DOWNLOADED;
         this.lastDownloadedAt = lastDownloadedAt;
     }
+
+    @Override
+    public String toString() {
+        String s = !type.equals(Type.RRDP) ? " " :
+                ", '" + rrdpNotifyUri + '\'' +
+                        ", '" + rrdpSessionId + '\'' +
+                        ", " + rrdpSerial;
+        return "{" +
+                "" + type +
+                ", " + status +
+                ", " + lastDownloadedAt +
+                ", " + trustAnchors +
+                ", '" + rsyncRepositoryUri + '\'' +
+                s +
+                ", " + parentRepository +
+                '}';
+    }
 }
