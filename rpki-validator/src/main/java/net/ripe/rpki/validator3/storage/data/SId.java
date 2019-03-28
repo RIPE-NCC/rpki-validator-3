@@ -52,6 +52,11 @@ public class SId<T> implements Serializable {
         return new SId(bi.toByteArray());
     }
 
+    // TODO Optmize it
+    public static SId of(long long_) {
+        return SId.of(Key.of(long_));
+    }
+
     public Key key() {
         return Key.of(id);
     }

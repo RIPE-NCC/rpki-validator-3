@@ -51,6 +51,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
@@ -127,6 +128,14 @@ public class IxMap<T> extends IxBase<T> {
         return bb == null ?
                 Optional.empty() :
                 Optional.of(coder.fromBytes(bb));
+    }
+
+    public List<T> get(Tx.Read txn, Set<Key> primaryKeys) {
+        return primaryKeys.stream()
+                .map(pk -> get(txn, pk))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
     }
 
     public List<T> getByIndex(String indexName, Tx.Read tx, Key indexKey) {

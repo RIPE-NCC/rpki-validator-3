@@ -50,6 +50,7 @@ import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.Id;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import net.ripe.rpki.validator3.util.Hex;
 import net.ripe.rpki.validator3.util.Rsync;
@@ -75,7 +76,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -87,6 +90,7 @@ public class RpkiRepositoryValidationService {
     private final ValidationRunStore validationRunStore;
     private final RpkiRepositoryStore rpkiRepositoryStore;
     private final RpkiObjectStore rpkiObjectStore;
+    private final TrustAnchorStore trustAnchorStore;
     private final ValidationScheduler validationScheduler;
     private final Lmdb lmdb;
 
@@ -96,6 +100,7 @@ public class RpkiRepositoryValidationService {
             RpkiRepositoryStore rpkiRepositoryStore,
             RpkiObjectStore rpkiObjectStore,
             RrdpService rrdpService,
+            TrustAnchorStore trustAnchorStore,
             Lmdb lmdb,
             @Value("${rpki.validator.rsync.local.storage.directory}") File rsyncLocalStorageDirectory,
             @Value("${rpki.validator.rsync.repository.download.interval}") String rsyncRepositoryDownloadInterval,
@@ -104,6 +109,7 @@ public class RpkiRepositoryValidationService {
         this.rpkiRepositoryStore = rpkiRepositoryStore;
         this.rpkiObjectStore = rpkiObjectStore;
         this.rrdpService = rrdpService;
+        this.trustAnchorStore = trustAnchorStore;
         this.rsyncLocalStorageDirectory = rsyncLocalStorageDirectory;
         this.rsyncRepositoryDownloadInterval = Duration.parse(rsyncRepositoryDownloadInterval);
         this.lmdb = lmdb;
@@ -151,9 +157,13 @@ public class RpkiRepositoryValidationService {
             validationRunStore.update(tx, validationRun);
         });
 
-        if (validationRun.isSucceeded() && validationRun.getAddedObjectCount() > 0) {
-            rpkiRepository.getTrustAnchors().forEach(validationScheduler::triggerCertificateTreeValidation);
-        }
+        Tx.ruse(lmdb.readTx(), tx -> {
+            if (validationRun.isSucceeded() && validationRun.getAddedObjectCount() > 0) {
+                rpkiRepository.getTrustAnchors().forEach(taRef ->
+                        trustAnchorStore.get(tx, taRef.key())
+                                .ifPresent(validationScheduler::triggerCertificateTreeValidation));
+            }
+        });
     }
 
     public void validateRsyncRepositories() {
@@ -219,7 +229,9 @@ public class RpkiRepositoryValidationService {
                 repository.setFailed();
                 validationResult.error(ErrorCodes.RSYNC_REPOSITORY_IO, e.toString(), ExceptionUtils.getStackTrace(e));
             }
-            affectedTrustAnchors.addAll(repository.getTrustAnchors());
+            Tx.ruse(lmdb.readTx(), tx ->
+                    repository.getTrustAnchors().forEach(taRef ->
+                            trustAnchorStore.get(tx, taRef.key()).ifPresent(affectedTrustAnchors::add)));
         }
         return affectedTrustAnchors;
     }
@@ -265,7 +277,9 @@ public class RpkiRepositoryValidationService {
             validationResult.error(ErrorCodes.RSYNC_REPOSITORY_IO, e.toString(), ExceptionUtils.getStackTrace(e));
         }
 
-        affectedTrustAnchors.addAll(repository.getTrustAnchors());
+        Tx.ruse(lmdb.readTx(), tx ->
+                repository.getTrustAnchors().forEach(taRef ->
+                        trustAnchorStore.get(tx, taRef.key()).ifPresent(affectedTrustAnchors::add)));
         fetchedLocations.put(URI.create(repository.getRsyncRepositoryUri()), repository);
 
         return validationResult;

@@ -110,7 +110,11 @@ public class Key {
         return key.remaining();
     }
 
-    public static Key concat(final Key... keys) {
+    public Key concat(Key key) {
+        return concatAll(this, key);
+    }
+
+    public static Key concatAll(final Key... keys) {
         final int size = Arrays.stream(keys).mapToInt(k -> k.key.remaining()).sum();
         final ByteBuffer combined = ByteBuffer.allocate(size);
         Arrays.stream(keys).forEach(k -> combined.put(k.key.duplicate()));

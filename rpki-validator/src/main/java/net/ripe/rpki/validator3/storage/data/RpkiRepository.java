@@ -67,7 +67,7 @@ public class RpkiRepository extends Base<RpkiRepository> {
     private Instant lastDownloadedAt;
 
     // TODO Remove it and replace with some sort of association
-    private Set<TrustAnchor> trustAnchors = new HashSet<>();
+    private Set<Ref<TrustAnchor>> trustAnchors = new HashSet<>();
 
     @ValidLocationURI
     private String rsyncRepositoryUri;
@@ -80,7 +80,7 @@ public class RpkiRepository extends Base<RpkiRepository> {
 
     private Ref<RpkiRepository> parentRepository;
 
-    public RpkiRepository(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String location, Type type) {
+    public RpkiRepository(Ref<TrustAnchor> trustAnchor, @NotNull @ValidLocationURI String location, Type type) {
         addTrustAnchor(trustAnchor);
         this.status = Status.PENDING;
         switch (type) {
@@ -100,13 +100,13 @@ public class RpkiRepository extends Base<RpkiRepository> {
         return Objects.firstNonNull(rrdpNotifyUri, rsyncRepositoryUri);
     }
 
-    public void addTrustAnchor(@NotNull @Valid TrustAnchor trustAnchor) {
+    public void addTrustAnchor(Ref<TrustAnchor> trustAnchor) {
         this.trustAnchors.add(trustAnchor);
     }
 
-    public void removeTrustAnchor(@NotNull @Valid TrustAnchor trustAnchor) {
-        this.trustAnchors.remove(trustAnchor);
-    }
+//    public void removeTrustAnchor(@NotNull @Valid TrustAnchor trustAnchor) {
+//        this.trustAnchors.remove(trustAnchor);
+//    }
 
     public boolean isPending() {
         return status == Status.PENDING;

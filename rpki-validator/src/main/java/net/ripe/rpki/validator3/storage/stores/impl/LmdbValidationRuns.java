@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.storage.stores.impl;
 
+import com.google.common.collect.ImmutableMap;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
@@ -54,13 +55,17 @@ import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
+import net.ripe.rpki.validator3.util.Rsync;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -70,8 +75,15 @@ import java.util.stream.Stream;
 public class LmdbValidationRuns extends GenericStoreImpl<ValidationRun> implements ValidationRunStore {
 
     private static final String RPKI_VALIDATION_RUNS = "validation-runs";
+    private static final String CT_RPKI_VALIDATION_RUNS = "ct-validation-runs";
+    private static final String RR_RPKI_VALIDATION_RUNS = "rr-validation-runs";
+    private static final String RS_RPKI_VALIDATION_RUNS = "rs-validation-runs";
+    private static final String TA_RPKI_VALIDATION_RUNS = "ta-validation-runs";
     private static final String RPKI_VALIDATION_RUNS_TO_TRUST_ANCHORS = "validation-runs-to-trust-anchors";
     private static final String RPKI_TRUST_ANCHORS_TO_VALIDATION_RUNS_ = "trust-anchors-to-validation-runs";
+    private static final String BY_TIME_SUCCESSFUL_INDEX = "by-time-successful";
+    private static final String BY_TA_INDEX = "by-ta";
+    private static final String BY_REPOSITORY_INDEX = "by-repository";
 
     private final IxMap<ValidationRun> ixMap;
     private final Sequences sequences;
@@ -84,6 +96,11 @@ public class LmdbValidationRuns extends GenericStoreImpl<ValidationRun> implemen
 
     private final RpkiObjectStore rpkiObjectStore;
 
+    private final IxMap<CertificateTreeValidationRun> ctIxMap;
+    private final IxMap<RrdpRepositoryValidationRun> rrIxMap;
+    private final IxMap<RsyncRepositoryValidationRun> rsIxMap;
+    private final IxMap<TrustAnchorValidationRun> taIxMap;
+
     @Autowired
     public LmdbValidationRuns(Lmdb lmdb, TrustAnchorStore trustAnchorStore, RpkiObjectStore rpkiObjectStore) {
         sequences = new Sequences(lmdb);
@@ -92,55 +109,107 @@ public class LmdbValidationRuns extends GenericStoreImpl<ValidationRun> implemen
         ta2vr = new MultIxMap<>(lmdb.getEnv(), RPKI_TRUST_ANCHORS_TO_VALIDATION_RUNS_, new FSTCoder<>());
         this.trustAnchorStore = trustAnchorStore;
         this.rpkiObjectStore = rpkiObjectStore;
+
+        ctIxMap = new IxMap<>(lmdb.getEnv(), CT_RPKI_VALIDATION_RUNS, new FSTCoder<>(),
+                ImmutableMap.of(
+                        BY_TIME_SUCCESSFUL_INDEX, LmdbValidationRuns::successfulByTimeIndex,
+                        BY_TA_INDEX, vr -> Key.keys(vr.getTrustAnchor().key())));
+
+        rrIxMap = new IxMap<>(lmdb.getEnv(), RR_RPKI_VALIDATION_RUNS, new FSTCoder<>(),
+                ImmutableMap.of(
+                        BY_TIME_SUCCESSFUL_INDEX, LmdbValidationRuns::successfulByTimeIndex,
+                        BY_REPOSITORY_INDEX, vr -> Key.keys(vr.getRpkiRepository().key())));
+
+        rsIxMap = new IxMap<>(lmdb.getEnv(), RS_RPKI_VALIDATION_RUNS, new FSTCoder<>(),
+                ImmutableMap.of(BY_TIME_SUCCESSFUL_INDEX, LmdbValidationRuns::successfulByTimeIndex));
+
+        taIxMap = new IxMap<>(lmdb.getEnv(), TA_RPKI_VALIDATION_RUNS, new FSTCoder<>(),
+                ImmutableMap.of(
+                        BY_TIME_SUCCESSFUL_INDEX, LmdbValidationRuns::successfulByTimeIndex,
+                        BY_TA_INDEX, vr -> Key.keys(vr.getTrustAnchor().key())));
+
         this.rpkiObjectStore.onDelete((tx, roKey) -> {
             // TODO delete associations
         });
-        this.trustAnchorStore.onDelete((tx, roKey) -> {
+        this.trustAnchorStore.onDelete((tx, taKey) -> {
             // TODO delete associations
         });
     }
 
-
-    @Override
-    public void add(Tx.Write tx, ValidationRun validationRun) {
-        final SId<ValidationRun> vrId = SId.of(sequences.next(tx, RPKI_VALIDATION_RUNS + ":pk"));
-        validationRun.setId(vrId);
-        ixMap.put(tx, vrId.key(), validationRun);
+    // Index function for indexing "last successful" queries
+    private static Set<Key> successfulByTimeIndex(ValidationRun vr) {
+        if (vr.isFailed()) {
+            return Collections.emptySet();
+        }
+        return Key.keys(Key.of(vr.getCompletedAt().toEpochMilli()));
     }
 
     @Override
-    public void update(Tx.Write tx, ValidationRun validationRun) {
+    @SuppressWarnings("unchecked")
+    public <T extends ValidationRun> void add(Tx.Write tx, T validationRun) {
+        final SId<ValidationRun> vrId = SId.of(sequences.next(tx, RPKI_VALIDATION_RUNS + ":pk"));
+        validationRun.setId(vrId);
+        IxMap<T> ixMap = (IxMap<T>) pickIxMap(validationRun.getClass());
+        ixMap.put(tx, vrId.key(), validationRun);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T extends ValidationRun> IxMap<T> pickIxMap(Class<T> c) {
+        if (CertificateTreeValidationRun.class.equals(c)) {
+            return (IxMap<T>) ctIxMap;
+        }
+        if (RrdpRepositoryValidationRun.class.equals(c)) {
+            return (IxMap<T>) rrIxMap;
+        }
+        if (RsyncRepositoryValidationRun.class.equals(c)) {
+            return (IxMap<T>) rsIxMap;
+        }
+        if (TrustAnchorValidationRun.class.equals(c)) {
+            return (IxMap<T>) taIxMap;
+        }
+        throw new RuntimeException("Oops, you are looking for the " + c + " which is not here.");
+    }
+
+    @Override
+    public <T extends ValidationRun> void update(Tx.Write tx, T validationRun) {
+        IxMap<T> ixMap = (IxMap<T>) pickIxMap(validationRun.getClass());
         ixMap.put(tx, validationRun.key(), validationRun);
     }
 
     @Override
     public <T extends ValidationRun> T get(Tx.Read tx, Class<T> type, long id) {
-        return null;
+        return pickIxMap(type).get(tx, Key.of(id)).orElse(null);
     }
 
     @Override
     public <T extends ValidationRun> List<T> findAll(Tx.Read tx, Class<T> type) {
-        return (List<T>) ixMap.values(tx);
+        return pickIxMap(type).values(tx);
     }
 
     @Override
     public <T extends ValidationRun> List<T> findLatestSuccessful(Tx.Read tx, Class<T> type) {
-        return null;
+        final IxMap<T> ixMap = pickIxMap(type);
+        return ixMap.get(tx, ixMap.getMaxByIndex(BY_TIME_SUCCESSFUL_INDEX, tx));
     }
 
     @Override
     public Optional<TrustAnchorValidationRun> findLatestCompletedForTrustAnchor(Tx.Read tx, TrustAnchor trustAnchor) {
-        return Optional.empty();
+        return taIxMap.getByIndex(BY_TA_INDEX, tx, trustAnchor.key()).stream()
+                .filter(vr -> vr.getCompletedAt() != null)
+                .max(Comparator.comparing(ValidationRun::getCompletedAt));
     }
 
     @Override
     public void removeAllForTrustAnchor(Tx.Write tx, TrustAnchor trustAnchor) {
-        // TODO Implement
+        Stream.of(taIxMap, ctIxMap).forEach(ixMap ->
+                ixMap.getPkByIndex(BY_TA_INDEX, tx, trustAnchor.key())
+                        .forEach(pk -> ixMap.delete(tx, pk)));
     }
 
     @Override
     public void removeAllForRpkiRepository(Tx.Write tx, RpkiRepository repository) {
-
+        rrIxMap.getPkByIndex(BY_TA_INDEX, tx, repository.key())
+                .forEach(pk -> ixMap.delete(tx, pk));
     }
 
     @Override

@@ -49,9 +49,9 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 public interface ValidationRunStore extends GenericStore<ValidationRun> {
-    void add(Tx.Write tx, ValidationRun validationRun);
+    <T extends ValidationRun> void add(Tx.Write tx, T validationRun);
 
-    void update(Tx.Write tx, ValidationRun validationRun);
+    <T extends ValidationRun> void update(Tx.Write tx, T validationRun);
 
     void removeAllForTrustAnchor(Tx.Write tx, TrustAnchor trustAnchor);
 

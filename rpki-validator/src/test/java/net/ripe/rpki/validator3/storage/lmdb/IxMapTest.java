@@ -249,9 +249,10 @@ public class IxMapTest {
         putAndGet("abx");
         putAndGet("zabx");
         putAndGet("1111");
+        putAndGet("qqqq");
 
         try (Tx.Read tx = lmdb.readTx()) {
-            assertEquals(Sets.newHashSet("zabx", "1111"), getLongestStrings(tx));
+            assertEquals(Sets.newHashSet("qqqq", "zabx", "1111"), getLongestStrings(tx));
             assertEquals(Sets.newHashSet("a", "b"), getShortestStrings(tx));
         }
     }

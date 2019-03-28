@@ -34,6 +34,7 @@ import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.SId;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.function.BiConsumer;
 
@@ -44,7 +45,7 @@ public interface GenericStore<T> {
 
     long size(Tx.Read tx);
 
-    void forEach(Tx.Read tx, BiConsumer<Key, T> c);
+    void forEach(Tx.Read tx, BiConsumer<Key, ByteBuffer> c);
 
     void clear(Tx.Write tx);
 

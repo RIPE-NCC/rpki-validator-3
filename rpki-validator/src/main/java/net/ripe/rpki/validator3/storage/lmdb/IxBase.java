@@ -117,11 +117,15 @@ public abstract class IxBase<T> {
         mainDb.drop(tx.txn());
     }
 
-    public void forEach(Tx.Read tx, BiConsumer<Key, T> c) {
+    public T toValue(ByteBuffer bb) {
+        return coder.fromBytes(bb);
+    }
+
+    public void forEach(Tx.Read tx, BiConsumer<Key, ByteBuffer> c) {
         try (final CursorIterator<ByteBuffer> ci = mainDb.iterate(tx.txn())) {
             while (ci.hasNext()) {
                 final CursorIterator.KeyVal<ByteBuffer> next = ci.next();
-                c.accept(new Key(next.key()), coder.fromBytes(next.val()));
+                c.accept(new Key(next.key()), next.val());
             }
         }
     }

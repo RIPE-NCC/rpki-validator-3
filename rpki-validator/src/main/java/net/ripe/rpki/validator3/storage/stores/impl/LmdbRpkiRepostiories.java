@@ -47,6 +47,7 @@ import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.util.Rsync;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -73,19 +74,21 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
 
     private final IxMap<RpkiRepository> ixMap;
     private final Sequences sequences;
+    private final TrustAnchorStore trustAnchorStore;
 
     @Autowired
-    public LmdbRpkiRepostiories(Lmdb lmdb) {
+    public LmdbRpkiRepostiories(Lmdb lmdb, TrustAnchorStore trustAnchorStore) {
         ixMap = new IxMap<>(
                 lmdb.getEnv(),
                 RPKI_REPOSITORIES,
                 new FSTCoder<>(),
                 ImmutableMap.of(
                         BY_URI, r -> Key.keys(Key.of(r.getLocationUri())),
-                        BY_TA, r -> r.getTrustAnchors().stream().map(Base::key).collect(Collectors.toSet())
+                        BY_TA, r -> r.getTrustAnchors().stream().map(Ref::key).collect(Collectors.toSet())
                 )
         );
         sequences = new Sequences(lmdb);
+        this.trustAnchorStore = trustAnchorStore;
     }
 
 
@@ -93,12 +96,16 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
     public RpkiRepository register(Tx.Write tx, TrustAnchor trustAnchor, String uri, RpkiRepository.Type type) {
         log.info("Registering repository {} of type {}", uri, type);
         final Optional<RpkiRepository> existing = findByURI(tx, uri);
+
+        // TODO Add `onDelete` for it
+        final Ref taRef = trustAnchorStore.makeRef(tx, SId.of(trustAnchor.key()));
+
         final RpkiRepository registered;
         if (existing.isPresent()) {
             registered = existing.get();
-            registered.addTrustAnchor(trustAnchor);
+            registered.addTrustAnchor(taRef);
         } else {
-            registered = new RpkiRepository(trustAnchor, uri, type);
+            registered = new RpkiRepository(taRef, uri, type);
             final SId<RpkiRepository> primaryKey = SId.of(sequences.next(tx, RPKI_REPOSITORIES + ":pk"));
             registered.setId(primaryKey);
         }
@@ -260,7 +267,8 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
 
     private Stream<RpkiRepository> findRepositoriesByPredicate(Tx.Read tx, Predicate<RpkiRepository> p) {
         final List<RpkiRepository> result = new ArrayList<>();
-        ixMap.forEach(tx, (k, r) -> {
+        ixMap.forEach(tx, (k, bb) -> {
+            final RpkiRepository r = ixMap.toValue(bb);
             if (p.test(r)) {
                 result.add(r);
             }
@@ -268,7 +276,7 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
         return result.stream();
     }
 
-    @Override // 747275737420616E63686F72
+    @Override
     public void removeAllForTrustAnchor(Tx.Write tx, TrustAnchor trustAnchor) {
         ixMap.getPkByIndex(BY_TA, tx, trustAnchor.key())
                 .forEach(pk -> ixMap.delete(tx, pk));

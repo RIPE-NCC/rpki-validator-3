@@ -68,8 +68,8 @@ public class GenericStorageTest {
     public void setUp() throws Exception {
         lmdb = LmdbTests.makeLmdb(tmp.newFolder().getAbsolutePath());
         rpkiObjectStore = new LmdbRpkiObject(lmdb);
-        rpkiRepositoryStore = new LmdbRpkiRepostiories(lmdb);
         trustAnchorStore = new LmdbTrustAnchors(lmdb);
+        rpkiRepositoryStore = new LmdbRpkiRepostiories(lmdb, trustAnchorStore);
         validationRunStore = new LmdbValidationRuns(lmdb, trustAnchorStore, rpkiObjectStore);
     }
 

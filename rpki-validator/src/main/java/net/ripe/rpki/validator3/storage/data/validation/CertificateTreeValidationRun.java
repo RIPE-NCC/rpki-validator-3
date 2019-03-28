@@ -47,8 +47,6 @@ public class CertificateTreeValidationRun extends ValidationRun {
     @Getter
     private final Ref<TrustAnchor> trustAnchor;
 
-    private Set<RpkiObject> validatedObjects = new HashSet<>();
-
     public CertificateTreeValidationRun(Ref<TrustAnchor> trustAnchor) {
         this.trustAnchor = trustAnchor;
     }
@@ -57,6 +55,7 @@ public class CertificateTreeValidationRun extends ValidationRun {
     public String getType() {
         return TYPE;
     }
+
 
 //    @Override
 //    public void visit(Visitor visitor) {

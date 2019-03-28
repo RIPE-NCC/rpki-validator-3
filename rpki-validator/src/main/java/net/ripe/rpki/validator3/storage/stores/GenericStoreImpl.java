@@ -35,6 +35,7 @@ import net.ripe.rpki.validator3.storage.data.SId;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.function.BiConsumer;
 
@@ -51,8 +52,8 @@ public abstract class GenericStoreImpl<T> implements GenericStore<T> {
         return ixMap().size(tx);
     }
 
-    public void forEach(Tx.Read tx, BiConsumer<Key, T> c) {
-        ixMap().forEach(tx, c);
+    public void forEach(Tx.Read tx, BiConsumer<Key, ByteBuffer> bb) {
+        ixMap().forEach(tx, bb);
     }
 
     public void clear(Tx.Write tx) {

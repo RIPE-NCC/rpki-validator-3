@@ -43,8 +43,10 @@ import net.ripe.rpki.commons.validation.ValidationString;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
 import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
+import net.ripe.rpki.validator3.storage.data.SId;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
@@ -103,7 +105,6 @@ public class TrustAnchorValidationService {
         this.lmdb = lmdb;
     }
 
-//    @Transactional(Transactional.TxType.REQUIRED)
     public void validate(long trustAnchorId) {
         Optional<TrustAnchor> maybeTrustAnchor = Tx.rwith(lmdb.readTx(), tx -> trustAnchorStore.get(tx, Id.key(trustAnchorId)));
         if (!maybeTrustAnchor.isPresent()) {
@@ -114,7 +115,10 @@ public class TrustAnchorValidationService {
         TrustAnchor trustAnchor = maybeTrustAnchor.get();
         log.info("trust anchor {} located at {} with subject public key info {}", trustAnchor.getName(), trustAnchor.getLocations(), trustAnchor.getSubjectPublicKeyInfo());
 
-        TrustAnchorValidationRun validationRun = new TrustAnchorValidationRun(trustAnchor);
+        TrustAnchorValidationRun validationRun = Tx.rwith(lmdb.readTx(), tx -> {
+            final Ref trustAnchorRef = trustAnchorStore.makeRef(tx, SId.of(trustAnchorId));
+            return new TrustAnchorValidationRun(trustAnchorRef, trustAnchor.getLocations().get(0));
+        });
         Tx.use(lmdb.writeTx(), tx -> validationRunStore.add(tx, validationRun));
 
         try {
@@ -154,7 +158,6 @@ public class TrustAnchorValidationService {
 
             validationRun.completeWith(validationResult);
             if (updated) {
-                // TODO Do this part outside of this specific transaction
                 final Set<TrustAnchor> affectedTrustAnchors = Sets.newHashSet(trustAnchor);
                 if (trustAnchor.getRsyncPrefetchUri() != null) {
                     Optional<RpkiRepository> byURI = Tx.rwith(lmdb.readTx(), tx ->

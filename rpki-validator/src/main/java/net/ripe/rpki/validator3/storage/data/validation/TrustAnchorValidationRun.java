@@ -31,6 +31,7 @@ package net.ripe.rpki.validator3.storage.data.validation;
 
 import lombok.Getter;
 import net.ripe.rpki.validator3.storage.Binary;
+import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 
 @Binary
@@ -38,14 +39,14 @@ public class TrustAnchorValidationRun extends ValidationRun {
     public static final String TYPE = "trust-anchor-validation-run";
 
     @Getter
-    private TrustAnchor trustAnchor;
+    private Ref<TrustAnchor> trustAnchor;
 
     @Getter
     private String trustAnchorCertificateURI;
 
-    public TrustAnchorValidationRun(TrustAnchor trustAnchor) {
+    public TrustAnchorValidationRun(Ref<TrustAnchor> trustAnchor, String trustAnchorCertificateURI) {
         this.trustAnchor = trustAnchor;
-        this.trustAnchorCertificateURI = trustAnchor.getLocations().get(0);
+        this.trustAnchorCertificateURI = trustAnchorCertificateURI;
     }
 
     @Override
