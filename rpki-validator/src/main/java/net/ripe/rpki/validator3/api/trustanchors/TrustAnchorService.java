@@ -102,6 +102,7 @@ public class TrustAnchorService {
         }
 
         trustAnchors.add(trustAnchor);
+        validationScheduler.addTrustAnchor(trustAnchor);
 
         log.info("added trust anchor '{}'", trustAnchor);
 
@@ -112,6 +113,7 @@ public class TrustAnchorService {
         TrustAnchor trustAnchor = trustAnchors.get(trustAnchorId);
         validationRunRepository.removeAllForTrustAnchor(trustAnchor);
         rpkiRepositories.removeAllForTrustAnchor(trustAnchor);
+        validationScheduler.removeTrustAnchor(trustAnchor);
         trustAnchors.remove(trustAnchor);
         validatedRpkiObjects.remove(trustAnchor);
     }
