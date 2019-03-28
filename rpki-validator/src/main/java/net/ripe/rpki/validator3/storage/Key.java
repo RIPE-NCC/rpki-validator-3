@@ -29,7 +29,6 @@
  */
 package net.ripe.rpki.validator3.storage;
 
-import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import net.ripe.rpki.validator3.util.Hex;
 
@@ -46,11 +45,14 @@ import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-@AllArgsConstructor
 @EqualsAndHashCode
 @Binary
 public class Key {
     private final ByteBuffer key;
+
+    public Key(ByteBuffer bb) {
+        key = bb.duplicate();
+    }
 
     private Key(byte[] bytes) {
         key = ByteBuffer.allocateDirect(bytes.length);
