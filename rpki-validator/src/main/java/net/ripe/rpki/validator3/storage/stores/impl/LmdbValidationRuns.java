@@ -214,6 +214,7 @@ public class LmdbValidationRuns extends GenericStoreImpl<ValidationRun> implemen
 
     @Override
     public long removeOldValidationRuns(Tx.Write tx, Instant completedBefore) {
+        // TODO Don't delete the last one!
         return 0;
     }
 
