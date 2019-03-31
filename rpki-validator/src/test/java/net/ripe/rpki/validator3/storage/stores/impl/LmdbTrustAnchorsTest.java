@@ -33,11 +33,11 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.IntegrationTest;
 import net.ripe.rpki.validator3.TestObjects;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,7 +52,7 @@ public class LmdbTrustAnchorsTest extends GenericStorageTest {
         final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
         wtx0(tx -> getTrustAnchorStore().add(tx, trustAnchor));
 
-        List<TrustAnchor> byName = rtx(tx -> getTrustAnchorStore().findByName(tx, "trust anchor"));
+        List<TrustAnchor> byName = new ArrayList<>(rtx(tx -> getTrustAnchorStore().findByName(tx, "trust anchor")));
         assertThat(byName).isNotEmpty();
         assertThat(byName.get(0)).isEqualTo(trustAnchor);
     }

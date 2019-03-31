@@ -139,38 +139,37 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
                 .collect(Collectors.toList());
     }
 
-    public List<T> getByIndex(String indexName, Tx.Read tx, Key indexKey) {
+    public Map<Key, T> getByIndex(String indexName, Tx.Read tx, Key indexKey) {
         checkNotNull(indexKey, "Index key is null");
         final ByteBuffer idxKey = indexKey.toByteBuffer();
         return getByIndexKeyRange(indexName, tx, KeyRange.closed(idxKey, idxKey));
     }
 
-    public List<Key> getPkByIndex(String indexName, Tx.Read tx, Key indexKey) {
+    public Set<Key> getPkByIndex(String indexName, Tx.Read tx, Key indexKey) {
         checkNotNull(indexKey, "Index key is null");
         final ByteBuffer idxKey = indexKey.toByteBuffer();
         return getPkByIndexKeyRange(indexName, tx, KeyRange.closed(idxKey, idxKey));
     }
 
-    public List<T> getByIndexLess(String indexName, Tx.Read tx, Key indexKey) {
+    public Map<Key, T> getByIndexLess(String indexName, Tx.Read tx, Key indexKey) {
         final ByteBuffer idxKey = indexKey.toByteBuffer();
         return getByIndexKeyRange(indexName, tx, KeyRange.lessThan(idxKey));
     }
 
-    public List<T> getByIndexGreater(String indexName, Tx.Read tx, Key indexKey) {
+    public Map<Key, T> getByIndexGreater(String indexName, Tx.Read tx, Key indexKey) {
         final ByteBuffer idxKey = indexKey.toByteBuffer();
         return getByIndexKeyRange(indexName, tx, KeyRange.greaterThan(idxKey));
     }
 
-    public List<Key> getByIndexLessPk(String indexName, Tx.Read tx, Key indexKey) {
+    public Set<Key> getByIndexLessPk(String indexName, Tx.Read tx, Key indexKey) {
         final ByteBuffer idxKey = indexKey.toByteBuffer();
         return getPkByIndexKeyRange(indexName, tx, KeyRange.lessThan(idxKey));
     }
 
-    public List<Key> getByIndexGreaterPk(String indexName, Tx.Read tx, Key indexKey) {
+    public Set<Key> getByIndexGreaterPk(String indexName, Tx.Read tx, Key indexKey) {
         final ByteBuffer idxKey = indexKey.toByteBuffer();
         return getPkByIndexKeyRange(indexName, tx, KeyRange.greaterThan(idxKey));
     }
-
 
     public Map<Key, T> getByIndexMax(String indexName, Tx.Read tx, Predicate<T> p) {
         return getKeyAtTheMinOrMaxOfIndex(indexName, tx, KeyRange.allBackward(), p);
@@ -269,31 +268,34 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
         dropIndexes(tx);
     }
 
-    private List<T> getByIndexKeyRange(String indexName, Tx.Read tx, KeyRange keyRange) {
+    private Map<Key, T> getByIndexKeyRange(String indexName, Tx.Read tx, KeyRange keyRange) {
         final Dbi<ByteBuffer> index = indexes.get(indexName);
         if (index == null) {
-            return Collections.emptyList();
+            return Collections.emptyMap();
         }
         final Txn<ByteBuffer> txn = tx.txn();
-        final List<T> values = new ArrayList<>();
+        final Map<Key, T> m = new HashMap<>();
         try (final CursorIterator<ByteBuffer> iterator = index.iterate(txn, keyRange)) {
             while (iterator.hasNext()) {
-                final ByteBuffer bb = mainDb.get(txn, iterator.next().val());
-                if (bb != null) {
-                    values.add(coder.fromBytes(bb));
+                final Key pk = new Key(iterator.next().val());
+                if (!m.containsKey(pk)) {
+                    final ByteBuffer bb = mainDb.get(txn, pk.toByteBuffer());
+                    if (bb != null) {
+                        m.put(pk, coder.fromBytes(bb));
+                    }
                 }
             }
         }
-        return values;
+        return m;
     }
 
-    private List<Key> getPkByIndexKeyRange(String indexName, Tx.Read tx, KeyRange keyRange) {
+    private Set<Key> getPkByIndexKeyRange(String indexName, Tx.Read tx, KeyRange keyRange) {
         final Dbi<ByteBuffer> index = indexes.get(indexName);
         if (index == null) {
-            return Collections.emptyList();
+            return Collections.emptySet();
         }
         final Txn<ByteBuffer> txn = tx.txn();
-        final List<Key> values = new ArrayList<>();
+        final Set<Key> values = new HashSet<>();
         try (final CursorIterator<ByteBuffer> iterator = index.iterate(txn, keyRange)) {
             while (iterator.hasNext()) {
                 values.add(new Key(iterator.next().val()));

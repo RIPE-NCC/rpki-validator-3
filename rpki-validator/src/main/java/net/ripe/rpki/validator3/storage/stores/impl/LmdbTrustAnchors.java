@@ -43,6 +43,7 @@ import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -70,14 +71,10 @@ public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements T
     }
 
     @Override
-    public void add(Tx.Write tx, TrustAnchor trustAnchor) {
-        if (trustAnchor.getId() != null) {
-            // TODO Probably don't be so strict
-            throw new RuntimeException("Already there!");
-        }
-        final Key primaryKey = Key.of(sequences.next(tx, TRUST_ANCHORS + ":pk"));
-        trustAnchor.setId(SId.of(primaryKey));
-        ixMap.put(tx, primaryKey, trustAnchor);
+    public TrustAnchor add(Tx.Write tx, TrustAnchor trustAnchor) {
+        trustAnchor.setId(SId.of(Key.of(sequences.next(tx, TRUST_ANCHORS + ":pk"))));
+        ixMap.put(tx, trustAnchor.key(), trustAnchor);
+        return trustAnchor;
     }
 
     @Override
@@ -96,13 +93,13 @@ public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements T
     }
 
     @Override
-    public List<TrustAnchor> findByName(Tx.Read tx, String name) {
-        return ixMap.getByIndex(BY_NAME, tx, Key.of(name));
+    public Collection<TrustAnchor> findByName(Tx.Read tx, String name) {
+        return ixMap.getByIndex(BY_NAME, tx, Key.of(name)).values();
     }
 
     @Override
     public Optional<TrustAnchor> findBySubjectPublicKeyInfo(Tx.Read tx, String subjectPublicKeyInfo) {
-        return ixMap.getByIndex(BY_SUBJECT_KEY_INFO, tx, Key.of(subjectPublicKeyInfo)).stream().findFirst();
+        return ixMap.getByIndex(BY_SUBJECT_KEY_INFO, tx, Key.of(subjectPublicKeyInfo)).values().stream().findFirst();
     }
 
     @Override

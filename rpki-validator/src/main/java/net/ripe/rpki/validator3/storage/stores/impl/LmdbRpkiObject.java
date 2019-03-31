@@ -37,6 +37,7 @@ import net.ripe.rpki.validator3.storage.FSTCoder;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
+import net.ripe.rpki.validator3.storage.data.SId;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.SameSizeKeyIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
@@ -82,13 +83,15 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     }
 
     @Override
-    public void add(Tx.Write tx, RpkiObject o) {
-        ixMap.put(tx, Key.of(o.getSha256()), o);
+    public RpkiObject add(Tx.Write tx, RpkiObject o) {
+        o.setId(SId.of(o.getSha256()));
+        ixMap.put(tx, o.key(), o);
+        return o;
     }
 
     @Override
     public void remove(RpkiObject o) {
-        ixMap.delete(Key.of(o.getSha256()));
+        ixMap.delete(o.key());
     }
 
     @Override
@@ -104,6 +107,7 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
 
     @Override
     public Map<String, RpkiObject> findObjectsInManifest(ManifestCms manifestCms) {
+        // TODO Implement
         return null;
     }
 
@@ -115,6 +119,7 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     @Override
     public Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(Tx.Read tx, RpkiObject.Type type, byte[] authorityKeyIdentifier) {
         return ixMap.getByIndex(BY_AKI_INDEX, tx, Key.of(authorityKeyIdentifier))
+                .values()
                 .stream()
                 .filter(o -> o.getType() == type)
                 .max(Comparator
@@ -125,7 +130,7 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     @Override
     public long deleteUnreachableObjects(Instant unreachableSince) {
         return Tx.with(ixMap.writeTx(), tx -> {
-            final List<Key> tooOldPks = ixMap.getByIndexLessPk(BY_LAST_REACHABLE_INDEX, tx, Key.of(unreachableSince.toEpochMilli()));
+            final Set<Key> tooOldPks = ixMap.getByIndexLessPk(BY_LAST_REACHABLE_INDEX, tx, Key.of(unreachableSince.toEpochMilli()));
             tooOldPks.forEach(pk -> ixMap.delete(tx, pk));
             return (long)tooOldPks.size();
         });

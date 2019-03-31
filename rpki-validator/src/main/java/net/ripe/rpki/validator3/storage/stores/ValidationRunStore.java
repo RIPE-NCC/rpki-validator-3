@@ -49,7 +49,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 public interface ValidationRunStore {
-    <T extends ValidationRun> void add(Tx.Write tx, T validationRun);
+    <T extends ValidationRun> T add(Tx.Write tx, T validationRun);
 
     <T extends ValidationRun> void update(Tx.Write tx, T validationRun);
 

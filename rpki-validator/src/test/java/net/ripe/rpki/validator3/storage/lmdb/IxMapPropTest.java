@@ -43,6 +43,7 @@ import org.lmdbjava.Env;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static net.ripe.rpki.validator3.storage.lmdb.IxMapTest.intKey;
@@ -89,13 +90,13 @@ public class IxMapPropTest {
         Optional<String> oldValue = ixMap.put(k, value);
         try (Tx.Read tx = Tx.read(env)) {
             assertEquals(value, ixMap.get(tx, k).get());
-            List<String> byIndex = ixMap.getByIndex(LENGTH_INDEX, tx, intKey(value.length()));
-            assertTrue(byIndex.stream().anyMatch(s -> s.equals(value)));
+            Map<Key, String> byIndex = ixMap.getByIndex(LENGTH_INDEX, tx, intKey(value.length()));
+            assertTrue(byIndex.values().stream().anyMatch(s -> s.equals(value)));
             oldValue.ifPresent(s1 -> {
                 if (!s1.equals(value)) {
                     assertNotEquals(s1, ixMap.get(tx, k).get());
-                    List<String> oldByIndex = ixMap.getByIndex(LENGTH_INDEX, tx, intKey(s1.length()));
-                    assertFalse(oldByIndex.stream().anyMatch(s -> s.equals(s1)));
+                    Map<Key, String> oldByIndex = ixMap.getByIndex(LENGTH_INDEX, tx, intKey(s1.length()));
+                    assertFalse(oldByIndex.values().stream().anyMatch(s -> s.equals(s1)));
                 }
             });
         }

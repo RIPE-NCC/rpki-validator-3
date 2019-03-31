@@ -43,7 +43,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 public interface RpkiObjectStore extends GenericStore<RpkiObject> {
-    void add(Tx.Write tx, RpkiObject rpkiObject);
+    RpkiObject add(Tx.Write tx, RpkiObject rpkiObject);
 
     void remove(RpkiObject o);
 

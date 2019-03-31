@@ -34,11 +34,12 @@ import net.ripe.rpki.validator3.storage.Key;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 public interface TrustAnchorStore extends GenericStore<TrustAnchor> {
-    void add(Tx.Write tx, TrustAnchor trustAnchor);
+    TrustAnchor add(Tx.Write tx, TrustAnchor trustAnchor);
 
     void remove(Tx.Write tx, TrustAnchor trustAnchor);
 
@@ -46,7 +47,7 @@ public interface TrustAnchorStore extends GenericStore<TrustAnchor> {
 
     List<TrustAnchor> findAll(Tx.Read tx);
 
-    List<TrustAnchor> findByName(Tx.Read tx, String name);
+    Collection<TrustAnchor> findByName(Tx.Read tx, String name);
 
     Optional<TrustAnchor> findBySubjectPublicKeyInfo(Tx.Read tx, String subjectPublicKeyInfo);
 

@@ -83,7 +83,9 @@ public class RrdpServiceTest extends GenericStorageTest {
 
         Ref<RpkiRepository> rpkiRepositoryRef = rtx(tx ->
                 getRpkiRepositoryStore().makeRef(tx, rpkiRepository.getId()));
-        final RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepositoryRef);
+
+        final RrdpRepositoryValidationRun validationRun = wtx(tx ->
+                getValidationRunStore().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
 
         final Snapshot snapshot = new RrdpParser().snapshot(Objects.fileIS("rrdp/snapshot2.xml"));
         wtx0(tx -> subject.storeSnapshot(tx, snapshot, validationRun));
@@ -124,9 +126,10 @@ public class RrdpServiceTest extends GenericStorageTest {
         RpkiRepository rpkiRepository = wtx(tx -> getRpkiRepositoryStore().register(tx,
                 trustAnchor, RRDP_RIPE_NET_NOTIFICATION_XML, RpkiRepository.Type.RRDP));
 
-        Ref<RpkiRepository> rpkiRepositoryRef = rtx(tx ->
-                getRpkiRepositoryStore().makeRef(tx, rpkiRepository.getId()));
-        final RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepositoryRef);
+        final RrdpRepositoryValidationRun validationRun = wtx(tx -> {
+            Ref<RpkiRepository> ref = getRpkiRepositoryStore().makeRef(tx, rpkiRepository.getId());
+            return getValidationRunStore().add(tx, new RrdpRepositoryValidationRun(ref));
+        });
 
         subject.storeRepository(rpkiRepository, validationRun);
 
@@ -209,7 +212,8 @@ public class RrdpServiceTest extends GenericStorageTest {
         wtx0(tx -> getRpkiRepositoryStore().update(tx, rpkiRepository));
 
         // do the first run to get the snapshot
-        RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepositoryRef);
+        final RrdpRepositoryValidationRun validationRun = wtx(tx ->
+                getValidationRunStore().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
         subject.storeRepository(rpkiRepository, validationRun);
         assertEquals(0, validationRun.getValidationChecks().size());
 
@@ -253,7 +257,8 @@ public class RrdpServiceTest extends GenericStorageTest {
         wtx0(tx -> getRpkiRepositoryStore().update(tx, rpkiRepository));
 
         // do the first run to get the snapshot
-        final RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepositoryRef);
+        final RrdpRepositoryValidationRun validationRun = wtx(tx ->
+                getValidationRunStore().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
         subject.storeRepository(rpkiRepository, validationRun);
 
         assertEquals(1, validationRun.getValidationChecks().size());
@@ -300,7 +305,9 @@ public class RrdpServiceTest extends GenericStorageTest {
         RpkiRepository rpkiRepository = makeRpkiRepository(sessionId, RRDP_RIPE_NET_NOTIFICATION_XML, trustAnchor);
         Ref<RpkiRepository> rpkiRepositoryRef = rtx(tx -> getRpkiRepositoryStore().makeRef(tx, rpkiRepository.getId()));
 
-        RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepositoryRef);
+        final RrdpRepositoryValidationRun validationRun = wtx(tx ->
+                getValidationRunStore().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
+
         subject.storeRepository(rpkiRepository, validationRun);
         assertEquals(0, validationRun.getValidationChecks().size());
 
@@ -347,7 +354,8 @@ public class RrdpServiceTest extends GenericStorageTest {
                 getRpkiRepositoryStore().makeRef(tx, rpkiRepository.getId()));
 
         // do the first run to get the snapshot
-        RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepositoryRef);
+        final RrdpRepositoryValidationRun validationRun = wtx(tx ->
+                getValidationRunStore().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
         subject.storeRepository(rpkiRepository, validationRun);
         assertEquals(0, validationRun.getValidationChecks().size());
 
@@ -392,7 +400,8 @@ public class RrdpServiceTest extends GenericStorageTest {
                 getRpkiRepositoryStore().makeRef(tx, rpkiRepository.getId()));
 
         // do the first run to get the snapshot
-        final RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepositoryRef);
+        final RrdpRepositoryValidationRun validationRun = wtx(tx ->
+                getValidationRunStore().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
         subject.storeRepository(rpkiRepository, validationRun);
         assertEquals(1, validationRun.getValidationChecks().size());
 
@@ -446,7 +455,8 @@ public class RrdpServiceTest extends GenericStorageTest {
                 getRpkiRepositoryStore().makeRef(tx, rpkiRepository.getId()));
 
         // do the first run to get the snapshot
-        final RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepositoryRef);
+        final RrdpRepositoryValidationRun validationRun = wtx(tx ->
+                getValidationRunStore().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
         subject.storeRepository(rpkiRepository, validationRun);
         assertEquals(1, validationRun.getValidationChecks().size());
 
@@ -495,7 +505,8 @@ public class RrdpServiceTest extends GenericStorageTest {
                 getRpkiRepositoryStore().makeRef(tx, rpkiRepository.getId()));
 
         // do the first run to get the snapshot
-        RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepositoryRef);
+        final RrdpRepositoryValidationRun validationRun = wtx(tx ->
+                getValidationRunStore().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
         subject.storeRepository(rpkiRepository, validationRun);
         assertEquals(1, validationRun.getValidationChecks().size());
         final ValidationCheck validationCheck = validationRun.getValidationChecks().get(0);

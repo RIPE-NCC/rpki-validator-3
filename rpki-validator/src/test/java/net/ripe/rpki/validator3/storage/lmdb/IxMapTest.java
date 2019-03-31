@@ -197,12 +197,12 @@ public class IxMapTest {
 
         try (Tx.Read tx = lmdb.readTx()) {
             for (int len = 1; len < 50; len++) {
-                List<String> byIndexLess = ixMap.getByIndexLess(LENGTH_INDEX, tx, intKey(len));
+                Map<Key, String> byIndexLess = ixMap.getByIndexLess(LENGTH_INDEX, tx, intKey(len));
                 int finalLen = len;
                 assertEquals(strings.stream()
                                 .filter(s -> s.length() < finalLen)
                                 .collect(Collectors.toSet()),
-                        new HashSet<>(byIndexLess));
+                        new HashSet<>(byIndexLess.values()));
             }
         }
     }
@@ -220,12 +220,12 @@ public class IxMapTest {
 
         try (Tx.Read tx = lmdb.readTx()) {
             for (int len = 1; len < 50; len++) {
-                List<String> byIndexLess = ixMap.getByIndexGreater(LENGTH_INDEX, tx, intKey(len));
+                Map<Key, String> byIndexLess = ixMap.getByIndexGreater(LENGTH_INDEX, tx, intKey(len));
                 int finalLen = len;
                 assertEquals(strings.stream()
                                 .filter(s -> s.length() > finalLen)
                                 .collect(Collectors.toSet()),
-                        new HashSet<>(byIndexLess));
+                        new HashSet<>(byIndexLess.values()));
             }
         }
     }
@@ -308,14 +308,14 @@ public class IxMapTest {
     }
 
     private List<String> getByLength(Tx.Read tx, int i) {
-        return ixMap.getByIndex(LENGTH_INDEX, tx, intKey(i));
+        return new ArrayList<>(ixMap.getByIndex(LENGTH_INDEX, tx, intKey(i)).values());
     }
 
     private List<String> getByPair(Tx.Read tx, String charPair) {
-        return ixMap.getByIndex(PAIRS_INDEX, tx, Key.of(charPair));
+        return new ArrayList<>(ixMap.getByIndex(PAIRS_INDEX, tx, Key.of(charPair)).values());
     }
 
-    public List<Long> positiveLongList() {
+    private List<Long> positiveLongList() {
         final Random r = new Random();
         final List<Long> s = new ArrayList<>();
         for (int i = 0; i < 10000; i++) {

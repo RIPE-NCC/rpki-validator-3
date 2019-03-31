@@ -140,7 +140,7 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
 
     @Override
     public Optional<RpkiRepository> findByURI(Tx.Read tx, String uri) {
-        return ixMap.getByIndex(BY_URI, tx, Key.of(uri)).stream().findFirst();
+        return ixMap.getByIndex(BY_URI, tx, Key.of(uri)).values().stream().findFirst();
     }
 
     @Override
@@ -165,7 +165,7 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
                                                  Key taId, boolean hideChildrenOfDownloadedParent,
                                                  SearchTerm searchTerm) {
         Stream<RpkiRepository> stream = taId != null ?
-                ixMap.getByIndex(BY_TA, tx, taId).stream() :
+                ixMap.getByIndex(BY_TA, tx, taId).values().stream() :
                 ixMap.values(tx).stream();
 
         if (optionalStatus != null) {
@@ -241,7 +241,7 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
 
     @Override
     public Stream<RpkiRepository> findAll(Tx.Read tx, Key taId) {
-        return ixMap.getByIndex(BY_TA, tx, taId).stream();
+        return ixMap.getByIndex(BY_TA, tx, taId).values().stream();
     }
 
     @Override

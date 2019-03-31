@@ -35,6 +35,7 @@ import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.roa.RoaCms;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.validator3.IntegrationTest;
+import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.util.Hex;
@@ -56,7 +57,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import static net.ripe.rpki.validator3.domain.RpkiObject.Type.CER;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -65,7 +68,7 @@ import static org.junit.Assert.assertTrue;
 @IntegrationTest
 @Transactional
 @Slf4j
-@Ignore
+//@Ignore
 public class JPARpkiObjectsTest {
 
     @Autowired
@@ -73,6 +76,11 @@ public class JPARpkiObjectsTest {
 
     @Autowired
     private RpkiObjects rpkiObjects;
+
+    @Test
+    public void should_something() {
+        rpkiObjects.findCurrentlyValidated(CER);
+    }
 
     @Test
     public void should_not_throw_exceptions_and_get_objects() {
