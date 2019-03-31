@@ -171,38 +171,21 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
         return getPkByIndexKeyRange(indexName, tx, KeyRange.greaterThan(idxKey));
     }
 
-    public Set<Key> getMaxByIndex(String indexName, Tx.Read tx) {
+
+    public Map<Key, T> getByIndexMax(String indexName, Tx.Read tx, Predicate<T> p) {
+        return getKeyAtTheMinOrMaxOfIndex(indexName, tx, KeyRange.allBackward(), p);
+    }
+
+    public Map<Key, T> getByIndexMin(String indexName, Tx.Read tx, Predicate<T> p) {
+        return getKeyAtTheMinOrMaxOfIndex(indexName, tx, KeyRange.all(), p);
+    }
+
+    Set<Key> getPkByIndexMax(String indexName, Tx.Read tx) {
         return getKeyAtTheMinOrMaxOfIndex(indexName, tx, KeyRange.allBackward());
     }
 
-    public Set<Key> getMinByIndex(String indexName, Tx.Read tx) {
+    Set<Key> getPkByIndexMin(String indexName, Tx.Read tx) {
         return getKeyAtTheMinOrMaxOfIndex(indexName, tx, KeyRange.all());
-    }
-
-    private Set<Key> getKeyAtTheMinOrMaxOfIndex(String indexName, Tx.Read tx, KeyRange<ByteBuffer> objectKeyRange) {
-        final Dbi<ByteBuffer> index = indexes.get(indexName);
-        if (index != null) {
-            final Txn<ByteBuffer> txn = tx.txn();
-            try (final CursorIterator<ByteBuffer> iterator = index.iterate(txn, objectKeyRange)) {
-                final Set<Key> primaryKeys = new HashSet<>();
-                ByteBuffer currentIndexKey = null;
-                while (iterator.hasNext()) {
-                    final CursorIterator.KeyVal<ByteBuffer> next = iterator.next();
-                    final ByteBuffer indexKey = next.key();
-                    if (currentIndexKey != null) {
-                        if (!currentIndexKey.equals(indexKey)) {
-                            return primaryKeys;
-                        }
-                        primaryKeys.add(new Key(next.val()));
-                    } else {
-                        primaryKeys.add(new Key(next.val()));
-                        currentIndexKey = indexKey.duplicate();
-                    }
-                }
-                return primaryKeys;
-            }
-        }
-        return Collections.emptySet();
     }
 
     public Optional<T> put(Key primaryKey, T value) {
@@ -276,6 +259,10 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
         }
     }
 
+    public void onDelete(BiConsumer<Tx.Write, Key> bf) {
+        onDeleteTriggers.add(bf);
+    }
+
     @Override
     public void clear(Tx.Write tx) {
         mainDb.drop(tx.txn());
@@ -315,8 +302,63 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
         return values;
     }
 
-
-    public void onDelete(BiConsumer<Tx.Write, Key> bf) {
-        onDeleteTriggers.add(bf);
+    private Set<Key> getKeyAtTheMinOrMaxOfIndex(String indexName, Tx.Read tx, KeyRange<ByteBuffer> objectKeyRange) {
+        final Dbi<ByteBuffer> index = indexes.get(indexName);
+        if (index != null) {
+            final Txn<ByteBuffer> txn = tx.txn();
+            try (final CursorIterator<ByteBuffer> iterator = index.iterate(txn, objectKeyRange)) {
+                final Set<Key> primaryKeys = new HashSet<>();
+                ByteBuffer currentIndexKey = null;
+                while (iterator.hasNext()) {
+                    final CursorIterator.KeyVal<ByteBuffer> next = iterator.next();
+                    final ByteBuffer indexKey = next.key();
+                    if (currentIndexKey != null) {
+                        if (!currentIndexKey.equals(indexKey)) {
+                            return primaryKeys;
+                        }
+                        primaryKeys.add(new Key(next.val()));
+                    } else {
+                        primaryKeys.add(new Key(next.val()));
+                        currentIndexKey = indexKey.duplicate();
+                    }
+                }
+                return primaryKeys;
+            }
+        }
+        return Collections.emptySet();
     }
+
+    private Map<Key, T> getKeyAtTheMinOrMaxOfIndex(String indexName, Tx.Read tx, KeyRange<ByteBuffer> keyRange, Predicate<T> p) {
+        final Dbi<ByteBuffer> index = indexes.get(indexName);
+        if (index != null) {
+            final Txn<ByteBuffer> txn = tx.txn();
+            try (final CursorIterator<ByteBuffer> iterator = index.iterate(txn, keyRange)) {
+                final Map<Key, T> m = new HashMap<>();
+                ByteBuffer currentIndexKey = null;
+                while (iterator.hasNext()) {
+                    final CursorIterator.KeyVal<ByteBuffer> next = iterator.next();
+                    final ByteBuffer indexKey = next.key();
+                    ByteBuffer pkBuf = next.val();
+                    if (currentIndexKey != null) {
+                        if (!currentIndexKey.equals(indexKey)) {
+                            return m;
+                        }
+                        final T value = toValue(mainDb.get(txn, pkBuf));
+                        if (p.test(value)) {
+                            m.put(new Key(pkBuf), value);
+                        }
+                    } else {
+                        final T value = toValue(mainDb.get(txn, pkBuf));
+                        if (p.test(value)) {
+                            m.put(new Key(pkBuf), value);
+                            currentIndexKey = indexKey.duplicate();
+                        }
+                    }
+                }
+                return m;
+            }
+        }
+        return Collections.emptyMap();
+    }
+
 }

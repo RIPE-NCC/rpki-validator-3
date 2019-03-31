@@ -46,10 +46,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -257,12 +259,44 @@ public class IxMapTest {
         }
     }
 
+    @Test
+    public void testGetMinMaxByIndexWithPredicate() {
+        putAndGet("a");
+        putAndGet("b");
+        putAndGet("xab");
+        putAndGet("ttt");
+        putAndGet("zabx");
+        putAndGet("1111");
+        putAndGet("qqqq");
+
+        try (Tx.Read tx = lmdb.readTx()) {
+            assertEquals(Sets.newHashSet("zabx"), getLongestStrings(tx, s -> s.contains("z")));
+            assertEquals(Sets.newHashSet("1111"), getLongestStrings(tx, s -> s.contains("1")));
+            assertEquals(Sets.newHashSet("qqqq"), getLongestStrings(tx, s -> s.contains("q")));
+            assertEquals(Sets.newHashSet("ttt"), getLongestStrings(tx, s -> s.contains("t")));
+
+            assertEquals(Sets.newHashSet("b"), getShortestStrings(tx, s -> s.contains("b")));
+            assertEquals(Sets.newHashSet("a"), getShortestStrings(tx, s -> s.contains("a")));
+            assertEquals(Sets.newHashSet("xab"), getShortestStrings(tx, s -> s.contains("xa")));
+            assertEquals(Sets.newHashSet("ttt"), getShortestStrings(tx, s -> s.contains("t")));
+            assertEquals(Sets.newHashSet("zabx"), getShortestStrings(tx, s -> s.contains("z")));
+        }
+    }
+
     private Set<String> getLongestStrings(Tx.Read tx) {
-        return getValues(tx, ixMap.getMaxByIndex(LENGTH_INDEX, tx));
+        return getValues(tx, ixMap.getPkByIndexMax(LENGTH_INDEX, tx));
     }
 
     private Set<String> getShortestStrings(Tx.Read tx) {
-        return getValues(tx, ixMap.getMinByIndex(LENGTH_INDEX, tx));
+        return getValues(tx, ixMap.getPkByIndexMin(LENGTH_INDEX, tx));
+    }
+
+    private Set<String> getLongestStrings(Tx.Read tx, Predicate<String> p) {
+        return new HashSet<>(ixMap.getByIndexMax(LENGTH_INDEX, tx, p).values());
+    }
+
+    private Set<String> getShortestStrings(Tx.Read tx, Predicate<String> p) {
+        return new HashSet<>(ixMap.getByIndexMin(LENGTH_INDEX, tx, p).values());
     }
 
     private Set<String> getValues(Tx.Read tx, Collection<Key> maxByIndex) {
