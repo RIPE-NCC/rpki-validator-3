@@ -176,7 +176,7 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
                 .from(rpkiObject, encodedRpkiObject, certificateTreeValidationRun)
                 .where(
                         rpkiObject.type.eq(type)
-                                .and(certificateTreeValidationRun.id.in(JPAValidationRuns.latestSuccessfulValidationRuns()))
+                        .and(certificateTreeValidationRun.id.in(JPAValidationRuns.latestSuccessfulValidationRuns()))
                         .and(rpkiObject.encodedRpkiObject.id.eq(encodedRpkiObject.id))
                 );
 

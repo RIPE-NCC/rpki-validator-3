@@ -157,7 +157,7 @@ public class TrustAnchorController {
 
     @GetMapping(path = "/{id}/validation-checks")
     public ResponseEntity<ApiResponse<Stream<ValidationCheckResource>>> validationChecks(
-        @PathVariable long id,
+        @PathVariable long trustAnchorId,
         @RequestParam(name = "startFrom", defaultValue = "0") long startFrom,
         @RequestParam(name = "pageSize", defaultValue = "20") long pageSize,
         @RequestParam(name = "search", required = false) String searchString,
@@ -169,13 +169,13 @@ public class TrustAnchorController {
         final Sorting sorting = Sorting.parse(sortBy, sortDirection);
         final Paging paging = Paging.of(startFrom, pageSize);
 
-        int totalCount = validationRunRepository.countValidationChecksForValidationRun(id, searchTerm);
+        int totalCount = validationRunRepository.countValidationChecksForValidationRun(trustAnchorId, searchTerm);
 
-        Stream<ValidationCheckResource> checks = validationRunRepository.findValidationChecksForValidationRun(id, paging, searchTerm, sorting)
+        Stream<ValidationCheckResource> checks = validationRunRepository.findValidationChecksForValidationRun(trustAnchorId, paging, searchTerm, sorting)
             .map(check -> ValidationCheckResource.of(check, messageSource.getMessage(check, locale)));
 
         Links links = Paging.links(startFrom, pageSize, totalCount,
-                (sf, ps) -> methodOn(TrustAnchorController.class).validationChecks(id, sf, ps, searchString, sortBy, sortDirection, locale));
+                (sf, ps) -> methodOn(TrustAnchorController.class).validationChecks(trustAnchorId, sf, ps, searchString, sortBy, sortDirection, locale));
 
         return ResponseEntity.ok(ApiResponse.<Stream<ValidationCheckResource>>builder()
             .links(links)

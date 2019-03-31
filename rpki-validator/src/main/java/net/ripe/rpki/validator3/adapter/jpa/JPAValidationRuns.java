@@ -152,23 +152,23 @@ public class JPAValidationRuns extends JPARepository<ValidationRun> implements V
     }
 
     @Override
-    public Stream<ValidationCheck> findValidationChecksForValidationRun(long validationRunId, Paging paging, SearchTerm searchTerm, Sorting sorting) {
+    public Stream<ValidationCheck> findValidationChecksForValidationRun(long trustAnchorId, Paging paging, SearchTerm searchTerm, Sorting sorting) {
         return stream(applyPaging(
-            validationChecksQuery(validationRunId, searchTerm).orderBy(toOrderSpecifier(sorting)),
+            validationChecksQuery(trustAnchorId, searchTerm).orderBy(toOrderSpecifier(sorting)),
             paging
         ));
     }
 
     @Override
-    public int countValidationChecksForValidationRun(long validationRunId, SearchTerm searchTerm) {
-        return (int) validationChecksQuery(validationRunId, searchTerm).fetchCount();
+    public int countValidationChecksForValidationRun(long trustAnchorId, SearchTerm searchTerm) {
+        return (int) validationChecksQuery(trustAnchorId, searchTerm).fetchCount();
     }
 
-    private JPAQuery<ValidationCheck> validationChecksQuery(long validationRunId, SearchTerm searchTerm) {
+    private JPAQuery<ValidationCheck> validationChecksQuery(long trustAnchorId, SearchTerm searchTerm) {
         QValidationRun latest = new QValidationRun("latest");
         JPQLQuery<Long> validationRunIds = JPAExpressions
             .select(latest.id.max())
-            .where(latest.status.eq(ValidationRun.Status.SUCCEEDED).and(latest.as(QCertificateTreeValidationRun.class).trustAnchor.id.eq(validationRunId)))
+            .where(latest.status.eq(ValidationRun.Status.SUCCEEDED).and(latest.as(QCertificateTreeValidationRun.class).trustAnchor.id.eq(trustAnchorId)))
             .groupBy(
                 JPAExpressions.type(latest),
                 latest.as(QTrustAnchorValidationRun.class).trustAnchor,
