@@ -39,6 +39,7 @@ import org.lmdbjava.Env;
 import org.lmdbjava.KeyRange;
 import org.lmdbjava.Txn;
 
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -65,7 +66,7 @@ import static org.lmdbjava.DbiFlags.MDB_DUPSORT;
  *
  * @param <T>
  */
-public class IxMap<T> extends IxBase<T> {
+public class IxMap<T extends Serializable> extends IxBase<T> {
 
     private final Map<String, Dbi<ByteBuffer>> indexes;
     private final Map<String, Function<T, Set<Key>>> indexFunctions;

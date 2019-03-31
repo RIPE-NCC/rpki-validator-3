@@ -35,6 +35,7 @@ import org.springframework.hateoas.Links;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.function.BiFunction;
+import java.util.stream.Stream;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 
@@ -68,5 +69,10 @@ public class Paging {
                 linkTo(linkConstructor.apply(realTotal, pageSize)).withRel(Link.REL_LAST)
         );
     }
+
+    public <T> Stream<T> apply(Stream<T> stream) {
+        return stream.skip(getStartFrom()).limit(getPageSize());
+    }
+
 
 }

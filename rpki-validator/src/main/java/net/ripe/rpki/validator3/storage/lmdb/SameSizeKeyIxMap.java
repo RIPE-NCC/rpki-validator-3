@@ -34,6 +34,7 @@ import net.ripe.rpki.validator3.storage.Key;
 import org.lmdbjava.DbiFlags;
 import org.lmdbjava.Env;
 
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.Set;
@@ -46,7 +47,7 @@ import static org.lmdbjava.DbiFlags.MDB_DUPSORT;
 /**
  * Special optimised case when primary keys are of the same size: i.e. Longs or SHA256.
  */
-public class SameSizeKeyIxMap<T> extends IxMap<T> {
+public class SameSizeKeyIxMap<T extends Serializable> extends IxMap<T> {
 
     private final int keySizeInBytes;
 

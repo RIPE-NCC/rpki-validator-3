@@ -34,11 +34,12 @@ import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.SId;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-public interface GenericStore<T> {
+public interface GenericStore<T extends Serializable> {
     Ref<T> makeRef(Tx.Read tx, SId<T> sid);
 
     List<T> values(Tx.Read tx);

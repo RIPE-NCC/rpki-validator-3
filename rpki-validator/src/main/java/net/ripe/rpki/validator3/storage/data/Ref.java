@@ -38,7 +38,7 @@ import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import java.io.Serializable;
 
 @Binary
-public class Ref<T> implements Serializable {
+public class Ref<T extends Serializable> implements Serializable {
     @Getter
     private final String mapName;
     @Getter
@@ -49,7 +49,7 @@ public class Ref<T> implements Serializable {
         this.sid = sid;
     }
 
-    public static <R> Ref<R> of(Tx.Read tx, IxMap<R> ix, SId<R> sid) {
+    public static <R extends Serializable> Ref<R> of(Tx.Read tx, IxMap<R> ix, SId<R> sid) {
         if (ix.exists(tx, sid.key())) {
             return new Ref<>(ix.getName(), sid);
         }

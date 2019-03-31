@@ -36,14 +36,12 @@ import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.storage.FSTCoder;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.Key;
-import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.SId;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidationRun;
-import net.ripe.rpki.validator3.storage.data.validation.RrdpRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.RsyncRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
@@ -51,20 +49,19 @@ import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.MultIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
-import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
-import net.ripe.rpki.validator3.util.Rsync;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -72,108 +69,77 @@ import java.util.stream.Stream;
  * TODO Implement missing methods here
  */
 @Component
-public class LmdbValidationRuns extends GenericStoreImpl<ValidationRun> implements ValidationRunStore {
+public class LmdbValidationRuns implements ValidationRunStore {
 
     private static final String RPKI_VALIDATION_RUNS = "validation-runs";
     private static final String CT_RPKI_VALIDATION_RUNS = "ct-validation-runs";
-    private static final String RR_RPKI_VALIDATION_RUNS = "rr-validation-runs";
     private static final String RS_RPKI_VALIDATION_RUNS = "rs-validation-runs";
     private static final String TA_RPKI_VALIDATION_RUNS = "ta-validation-runs";
-    private static final String RPKI_VALIDATION_RUNS_TO_TRUST_ANCHORS = "validation-runs-to-trust-anchors";
-    private static final String RPKI_TRUST_ANCHORS_TO_VALIDATION_RUNS_ = "trust-anchors-to-validation-runs";
-    private static final String BY_TIME_SUCCESSFUL_INDEX = "by-time-successful";
+    private static final String LAST_RUNS = "last-runs";
+    private static final String RPKI_VALIDATION_RUNS_TO_RPKI_OBJECTS = "validation-runs-to-trust-anchors";
+    private static final String RPKI_RPKI_OBJECTS_TO_VALIDATION_RUNS = "trust-anchors-to-validation-runs";
     private static final String BY_TA_INDEX = "by-ta";
     private static final String BY_REPOSITORY_INDEX = "by-repository";
 
-    private final IxMap<ValidationRun> ixMap;
     private final Sequences sequences;
 
-    private final IxMap<Key> vr2ta;
+    private final IxMap<SId<RpkiObject>> vr2ro;
 
-    private final MultIxMap<SId<ValidationRun>> ta2vr;
+    private final MultIxMap<SId<ValidationRun>> ro2vr;
 
     private final TrustAnchorStore trustAnchorStore;
 
     private final RpkiObjectStore rpkiObjectStore;
 
     private final IxMap<CertificateTreeValidationRun> ctIxMap;
-    private final IxMap<RrdpRepositoryValidationRun> rrIxMap;
-    private final IxMap<RsyncRepositoryValidationRun> rsIxMap;
+    private final IxMap<RsyncRepositoryValidationRun> repoIxMap;
     private final IxMap<TrustAnchorValidationRun> taIxMap;
+
+    private final Map<String, IxMap<? extends ValidationRun>> maps = new HashMap<>();
 
     @Autowired
     public LmdbValidationRuns(Lmdb lmdb, TrustAnchorStore trustAnchorStore, RpkiObjectStore rpkiObjectStore) {
-        sequences = new Sequences(lmdb);
-        ixMap = new IxMap<>(lmdb.getEnv(), RPKI_VALIDATION_RUNS, new FSTCoder<>());
-        vr2ta = new IxMap<>(lmdb.getEnv(), RPKI_VALIDATION_RUNS_TO_TRUST_ANCHORS, new FSTCoder<>());
-        ta2vr = new MultIxMap<>(lmdb.getEnv(), RPKI_TRUST_ANCHORS_TO_VALIDATION_RUNS_, new FSTCoder<>());
         this.trustAnchorStore = trustAnchorStore;
         this.rpkiObjectStore = rpkiObjectStore;
 
+        sequences = new Sequences(lmdb);
+
         ctIxMap = new IxMap<>(lmdb.getEnv(), CT_RPKI_VALIDATION_RUNS, new FSTCoder<>(),
-                ImmutableMap.of(
-                        BY_TIME_SUCCESSFUL_INDEX, LmdbValidationRuns::successfulByTimeIndex,
-                        BY_TA_INDEX, vr -> Key.keys(vr.getTrustAnchor().key())));
-
-        rrIxMap = new IxMap<>(lmdb.getEnv(), RR_RPKI_VALIDATION_RUNS, new FSTCoder<>(),
-                ImmutableMap.of(
-                        BY_TIME_SUCCESSFUL_INDEX, LmdbValidationRuns::successfulByTimeIndex,
-                        BY_REPOSITORY_INDEX, vr -> Key.keys(vr.getRpkiRepository().key())));
-
-        rsIxMap = new IxMap<>(lmdb.getEnv(), RS_RPKI_VALIDATION_RUNS, new FSTCoder<>(),
-                ImmutableMap.of(BY_TIME_SUCCESSFUL_INDEX, LmdbValidationRuns::successfulByTimeIndex));
+                ImmutableMap.of(BY_TA_INDEX, vr -> Key.keys(vr.getTrustAnchor().key())));
 
         taIxMap = new IxMap<>(lmdb.getEnv(), TA_RPKI_VALIDATION_RUNS, new FSTCoder<>(),
-                ImmutableMap.of(
-                        BY_TIME_SUCCESSFUL_INDEX, LmdbValidationRuns::successfulByTimeIndex,
-                        BY_TA_INDEX, vr -> Key.keys(vr.getTrustAnchor().key())));
+                ImmutableMap.of(BY_TA_INDEX, vr -> Key.keys(vr.getTrustAnchor().key())));
+
+        repoIxMap = new IxMap<>(lmdb.getEnv(), RS_RPKI_VALIDATION_RUNS, new FSTCoder<>());
+
+        maps.put(CertificateTreeValidationRun.TYPE, ctIxMap);
+        maps.put(TrustAnchorValidationRun.TYPE, taIxMap);
+        maps.put(RpkiRepositoryValidationRun.TYPE, repoIxMap);
+
+        vr2ro = new IxMap<>(lmdb.getEnv(), RPKI_VALIDATION_RUNS_TO_RPKI_OBJECTS, new FSTCoder<>());
+        ro2vr = new MultIxMap<>(lmdb.getEnv(), RPKI_RPKI_OBJECTS_TO_VALIDATION_RUNS, new FSTCoder<>());
 
         this.rpkiObjectStore.onDelete((tx, roKey) -> {
-            // TODO delete associations
+            ro2vr.get(tx, roKey).forEach(vrId -> {
+                Stream.of(ctIxMap, repoIxMap).forEach(ixMap -> ixMap.delete(tx, vrId.key()));
+                vr2ro.delete(tx, vrId.key());
+            });
+            ro2vr.delete(tx, roKey);
         });
-        this.trustAnchorStore.onDelete((tx, taKey) -> {
-            // TODO delete associations
-        });
-    }
-
-    // Index function for indexing "last successful" queries
-    private static Set<Key> successfulByTimeIndex(ValidationRun vr) {
-        if (vr.isFailed()) {
-            return Collections.emptySet();
-        }
-        return Key.keys(Key.of(vr.getCompletedAt().toEpochMilli()));
+        this.trustAnchorStore.onDelete(this::removeAllForTrustAnchor);
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T extends ValidationRun> void add(Tx.Write tx, T validationRun) {
+    public <T extends ValidationRun> void add(Tx.Write tx, T vr) {
         final SId<ValidationRun> vrId = SId.of(sequences.next(tx, RPKI_VALIDATION_RUNS + ":pk"));
-        validationRun.setId(vrId);
-        IxMap<T> ixMap = (IxMap<T>) pickIxMap(validationRun.getClass());
-        ixMap.put(tx, vrId.key(), validationRun);
-    }
-
-    @SuppressWarnings("unchecked")
-    private <T extends ValidationRun> IxMap<T> pickIxMap(Class<T> c) {
-        if (CertificateTreeValidationRun.class.equals(c)) {
-            return (IxMap<T>) ctIxMap;
-        }
-        if (RrdpRepositoryValidationRun.class.equals(c)) {
-            return (IxMap<T>) rrIxMap;
-        }
-        if (RsyncRepositoryValidationRun.class.equals(c)) {
-            return (IxMap<T>) rsIxMap;
-        }
-        if (TrustAnchorValidationRun.class.equals(c)) {
-            return (IxMap<T>) taIxMap;
-        }
-        throw new RuntimeException("Oops, you are looking for the " + c + " which is not here.");
+        vr.setId(vrId);
+        pickIxMap(vr.getType()).put(tx, vr.key(), vr);
     }
 
     @Override
-    public <T extends ValidationRun> void update(Tx.Write tx, T validationRun) {
-        IxMap<T> ixMap = (IxMap<T>) pickIxMap(validationRun.getClass());
-        ixMap.put(tx, validationRun.key(), validationRun);
+    public <T extends ValidationRun> void update(Tx.Write tx, T vr) {
+        pickIxMap(vr.getType()).put(tx, vr.key(), vr);
     }
 
     @Override
@@ -181,15 +147,31 @@ public class LmdbValidationRuns extends GenericStoreImpl<ValidationRun> implemen
         return pickIxMap(type).get(tx, Key.of(id)).orElse(null);
     }
 
+
+
     @Override
     public <T extends ValidationRun> List<T> findAll(Tx.Read tx, Class<T> type) {
         return pickIxMap(type).values(tx);
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T extends ValidationRun> List<T> findLatestSuccessful(Tx.Read tx, Class<T> type) {
-        final IxMap<T> ixMap = pickIxMap(type);
-        return ixMap.get(tx, ixMap.getMaxByIndex(BY_TIME_SUCCESSFUL_INDEX, tx));
+        // TODO Implement using the 'by-completed-at' index with filtering on 'isSuccessful()'
+//
+//        // TODO Compare it with the original, it's pretty hard to say if
+//        //  it's going to return the same result
+//        return (List<T>) Stream.of(
+//                TrustAnchorValidationRun.TYPE,
+//                CertificateTreeValidationRun.TYPE,
+//                RpkiRepositoryValidationRun.TYPE)
+//                .map(vrType -> lastRunMax.get(tx, Key.of(vrType).concat(Key.of("-successful")))
+//                        .flatMap(pk -> maps.get(vrType).get(tx, pk.key())))
+//                .filter(Optional::isPresent)
+//                .map(Optional::get)
+//                .collect(Collectors.toList());
+
+        return Collections.emptyList();
     }
 
     @Override
@@ -201,37 +183,105 @@ public class LmdbValidationRuns extends GenericStoreImpl<ValidationRun> implemen
 
     @Override
     public void removeAllForTrustAnchor(Tx.Write tx, TrustAnchor trustAnchor) {
+        removeAllForTrustAnchor(tx, trustAnchor.key());
+    }
+
+    public void removeAllForTrustAnchor(Tx.Write tx, Key trustAnchorKey) {
         Stream.of(taIxMap, ctIxMap).forEach(ixMap ->
-                ixMap.getPkByIndex(BY_TA_INDEX, tx, trustAnchor.key())
+                ixMap.getPkByIndex(BY_TA_INDEX, tx, trustAnchorKey)
                         .forEach(pk -> ixMap.delete(tx, pk)));
     }
 
     @Override
     public void removeAllForRpkiRepository(Tx.Write tx, RpkiRepository repository) {
-        rrIxMap.getPkByIndex(BY_TA_INDEX, tx, repository.key())
-                .forEach(pk -> ixMap.delete(tx, pk));
+        repoIxMap.getPkByIndex(BY_REPOSITORY_INDEX, tx, repository.key())
+                .forEach(pk -> repoIxMap.delete(tx, pk));
     }
 
     @Override
     public long removeOldValidationRuns(Tx.Write tx, Instant completedBefore) {
-        // TODO Don't delete the last one!
+        // TODO Don't delete the most recent one!
+
         return 0;
     }
 
     @Override
-    public Stream<ValidationCheck> findValidationChecksForValidationRun(Tx.Read tx, long validationRunId, Paging paging, SearchTerm searchTerm, Sorting sorting) {
-        return null;
+    public Stream<ValidationCheck> findValidationChecksForValidationRun(Tx.Read tx, long trustAnchorId, Paging paging, SearchTerm searchTerm, Sorting sorting) {
+        return applyPaging(paging,
+                applySorting(sorting,
+                        applySearchTerm(searchTerm, Stream.concat(
+                                streamValidationChecks(taIxMap, tx, trustAnchorId),
+                                streamValidationChecks(ctIxMap, tx, trustAnchorId)))));
     }
 
     @Override
-    public int countValidationChecksForValidationRun(Tx.Read tx, long validationRunId, SearchTerm searchTerm) {
-        return 0;
+    public int countValidationChecksForValidationRun(Tx.Read tx, long trustAnchorId, SearchTerm searchTerm) {
+        return (int) applySearchTerm(searchTerm, Stream.concat(
+                streamValidationChecks(taIxMap, tx, trustAnchorId),
+                streamValidationChecks(ctIxMap, tx, trustAnchorId))).count();
     }
+
+    private <T extends ValidationRun> Stream<ValidationCheck> streamValidationChecks(IxMap<T> ixMap, Tx.Read tx, long trustAnchorId) {
+        return ixMap.getByIndex(BY_TA_INDEX, tx, Key.of(trustAnchorId))
+                .stream()
+                .filter(ValidationRun::isSucceeded)
+                .max(Comparator.comparing(ValidationRun::getCompletedAt))
+                .map(ValidationRun::getValidationChecks)
+                .orElse(Collections.emptyList())
+                .stream();
+    }
+
+    private Stream<ValidationCheck> applyPaging(Paging paging, Stream<ValidationCheck> validationChecks) {
+        if (paging != null) {
+            validationChecks = paging.apply(validationChecks);
+        }
+        return validationChecks;
+    }
+
+    private Stream<ValidationCheck> applySearchTerm(SearchTerm searchTerm, Stream<ValidationCheck> validationChecks) {
+        if (searchTerm != null) {
+            validationChecks = validationChecks.filter(vc -> {
+                String term = searchTerm.asString().toLowerCase();
+                return vc.getKey().toLowerCase().contains(term) ||
+                        vc.getStatus().toString().toLowerCase().contains(term) ||
+                        vc.getParameters().stream().anyMatch(p -> p.toLowerCase().contains(term));
+            });
+        }
+        return validationChecks;
+    }
+
+
+    private Stream<ValidationCheck> applySorting(Sorting sorting, Stream<ValidationCheck> validationChecks) {
+        if (sorting == null) {
+            sorting = Sorting.of(Sorting.By.LOCATION, Sorting.Direction.ASC);
+        }
+        Comparator<ValidationCheck> comparator;
+        switch (sorting.getBy()) {
+            case KEY:
+                comparator = Comparator.comparing(ValidationCheck::getKey);
+                break;
+            case STATUS:
+                comparator = Comparator.comparing(ValidationCheck::getStatus);
+                break;
+            case LOCATION:
+                comparator = Comparator.comparing(ValidationCheck::getLocation);
+                break;
+            default:
+                comparator = Comparator.comparing(ValidationCheck::getCreatedAt);
+                break;
+        }
+        return validationChecks.sorted(
+                sorting.getDirection() == Sorting.Direction.DESC ?
+                        comparator :
+                        comparator.reversed());
+    }
+
 
     @Override
     public void associate(Tx.Write writeTx, CertificateTreeValidationRun validationRun, RpkiObject rpkiObject) {
-        // TODO Implement
+        associateVrAndRo(writeTx, validationRun, rpkiObject);
     }
+
 
     @Override
     public void associate(Tx.Write writeTx, RsyncRepositoryValidationRun validationRun, RpkiRepository r) {
@@ -240,11 +290,34 @@ public class LmdbValidationRuns extends GenericStoreImpl<ValidationRun> implemen
 
     @Override
     public void associate(Tx.Write writeTx, RpkiRepositoryValidationRun validationRun, RpkiObject rpkiObject) {
-        // TODO Implement
+        associateVrAndRo(writeTx, validationRun, rpkiObject);
     }
 
-    @Override
-    protected IxMap<ValidationRun> ixMap() {
-        return ixMap;
+    private void associateVrAndRo(Tx.Write writeTx, ValidationRun validationRun, RpkiObject rpkiObject) {
+        vr2ro.put(writeTx, validationRun.key(), rpkiObject.getId());
+        ro2vr.put(writeTx, rpkiObject.key(), validationRun.getId());
     }
+
+    @SuppressWarnings("unchecked")
+    private <T extends ValidationRun> IxMap<T> pickIxMap(String vrType) {
+        final IxMap<? extends ValidationRun> ixMap = maps.get(vrType);
+        if (ixMap == null) {
+            throw new RuntimeException("Oops, you are looking for the " + vrType + " which is not here.");
+        }
+        return (IxMap<T>) ixMap;
+    }
+
+    private <T extends ValidationRun> IxMap<T> pickIxMap(Class<T> c) {
+        if (CertificateTreeValidationRun.class.equals(c)) {
+            return pickIxMap(CertificateTreeValidationRun.TYPE);
+        }
+        if (TrustAnchorValidationRun.class.equals(c)) {
+            return pickIxMap(TrustAnchorValidationRun.TYPE);
+        }
+        if (RpkiRepositoryValidationRun.class.isAssignableFrom(c)) {
+            return pickIxMap(RpkiRepositoryValidationRun.TYPE);
+        }
+        throw new RuntimeException("Oops, you are looking for the " + c + " which is not here.");
+    }
+
 }

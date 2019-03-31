@@ -48,7 +48,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-public interface ValidationRunStore extends GenericStore<ValidationRun> {
+public interface ValidationRunStore {
     <T extends ValidationRun> void add(Tx.Write tx, T validationRun);
 
     <T extends ValidationRun> void update(Tx.Write tx, T validationRun);

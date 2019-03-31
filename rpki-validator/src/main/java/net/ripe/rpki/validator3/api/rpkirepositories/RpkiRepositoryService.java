@@ -69,11 +69,10 @@ public class RpkiRepositoryService {
     @PostConstruct
     public void scheduleRpkiRepositoryValidation() {
         log.info("Schedule RPKI validation for the existing repositories");
-        Tx.use(lmdb.writeTx(), tx -> {
-            rpkiRepositoriStore.findRrdpRepositories(tx).forEach(r -> {
-                validationScheduler.addRpkiRepository(r);
-                log.info("Scheduled {} for validation.", r);
-            });
-        });
+        Tx.use(lmdb.writeTx(), tx ->
+                rpkiRepositoriStore.findRrdpRepositories(tx).forEach(r -> {
+                    validationScheduler.addRpkiRepository(r);
+                    log.info("Scheduled {} for validation.", r);
+                }));
     }
 }

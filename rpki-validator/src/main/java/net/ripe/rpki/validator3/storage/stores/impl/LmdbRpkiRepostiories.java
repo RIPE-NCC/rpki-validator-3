@@ -38,7 +38,6 @@ import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.storage.FSTCoder;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.Key;
-import net.ripe.rpki.validator3.storage.data.Base;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.SId;
@@ -153,18 +152,18 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
     public Stream<RpkiRepository> findAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Key taId,
                                           boolean hideChildrenOfDownloadedParent,
                                           SearchTerm searchTerm, Sorting sorting, Paging paging) {
-        return pagedStream(
-                sortedStream(
-                        filteredStream(tx, optionalStatus, taId, hideChildrenOfDownloadedParent, searchTerm),
+        return applyPaged(
+                applySorting(
+                        applyFiltered(tx, optionalStatus, taId, hideChildrenOfDownloadedParent, searchTerm),
                         sorting),
                 paging);
     }
 
     // TODO Optimize it with forEach
-    private Stream<RpkiRepository> filteredStream(Tx.Read tx,
-                                                  RpkiRepository.Status optionalStatus,
-                                                  Key taId, boolean hideChildrenOfDownloadedParent,
-                                                  SearchTerm searchTerm) {
+    private Stream<RpkiRepository> applyFiltered(Tx.Read tx,
+                                                 RpkiRepository.Status optionalStatus,
+                                                 Key taId, boolean hideChildrenOfDownloadedParent,
+                                                 SearchTerm searchTerm) {
         Stream<RpkiRepository> stream = taId != null ?
                 ixMap.getByIndex(BY_TA, tx, taId).stream() :
                 ixMap.values(tx).stream();
@@ -195,11 +194,10 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
         return stream;
     }
 
-    private Stream<RpkiRepository> sortedStream(Stream<RpkiRepository> stream, Sorting sorting) {
+    private Stream<RpkiRepository> applySorting(Stream<RpkiRepository> stream, Sorting sorting) {
         if (sorting == null) {
             sorting = Sorting.of(Sorting.By.LOCATION, Sorting.Direction.ASC);
         }
-
         Comparator<RpkiRepository> comparator;
         switch (sorting.getBy()) {
             case TYPE:
@@ -216,16 +214,15 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
                 comparator = Comparator.comparing(RpkiRepository::getLocationUri);
                 break;
         }
-
-        stream = stream.sorted(comparator);
-        return sorting.getDirection() == Sorting.Direction.DESC ?
-                stream.sorted(comparator) :
-                stream.sorted(comparator.reversed());
+        return stream.sorted(
+                sorting.getDirection() == Sorting.Direction.DESC ?
+                        comparator :
+                        comparator.reversed());
     }
 
-    private Stream<RpkiRepository> pagedStream(Stream<RpkiRepository> stream, Paging paging) {
+    private Stream<RpkiRepository> applyPaged(Stream<RpkiRepository> stream, Paging paging) {
         if (paging != null) {
-            return stream.skip(paging.getStartFrom()).limit(paging.getPageSize());
+            return paging.apply(stream);
         }
         return stream;
     }
@@ -233,7 +230,7 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
     @Override
     public long countAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Key taId,
                          boolean hideChildrenOfDownloadedParent, SearchTerm searchTerm) {
-        return filteredStream(tx, optionalStatus, taId, hideChildrenOfDownloadedParent, searchTerm).count();
+        return applyFiltered(tx, optionalStatus, taId, hideChildrenOfDownloadedParent, searchTerm).count();
     }
 
     @Override

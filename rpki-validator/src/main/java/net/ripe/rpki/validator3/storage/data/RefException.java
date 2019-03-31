@@ -31,8 +31,10 @@ package net.ripe.rpki.validator3.storage.data;
 
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 
+import java.io.Serializable;
+
 public class RefException extends RuntimeException {
-    public <T> RefException(IxMap<T> ix, SId<T> sid) {
+    public <T extends Serializable> RefException(IxMap<T> ix, SId<T> sid) {
         super("Referential integrity violation: map " + ix.getName() + " doesn't have sid " + sid);
     }
 }

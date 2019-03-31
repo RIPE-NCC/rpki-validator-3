@@ -35,11 +35,12 @@ import net.ripe.rpki.validator3.storage.data.SId;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-public abstract class GenericStoreImpl<T> implements GenericStore<T> {
+public abstract class GenericStoreImpl<T extends Serializable> implements GenericStore<T> {
     public Ref<T> makeRef(Tx.Read tx, SId<T> sid) {
         return Ref.of(tx, ixMap(), sid);
     }

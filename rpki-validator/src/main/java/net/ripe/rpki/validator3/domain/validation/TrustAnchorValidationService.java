@@ -164,14 +164,15 @@ public class TrustAnchorValidationService {
                             rpkiRepositoryStore.findByURI(tx, trustAnchor.getRsyncPrefetchUri()));
                     byURI.ifPresent(r -> affectedTrustAnchors.addAll(repositoryValidationService.prefetchRepository(r)));
                 }
-                Transactions.afterCommit(() -> affectedTrustAnchors.forEach(validationScheduler::triggerCertificateTreeValidation));
+                affectedTrustAnchors.forEach(validationScheduler::triggerCertificateTreeValidation);
             }
         } catch (CommandExecutionException | IOException e) {
             log.error("validation run for trust anchor {} failed", trustAnchor, e);
             validationRun.addCheck(new ValidationCheck(validationRun.getTrustAnchorCertificateURI(), ValidationCheck.Status.ERROR, ErrorCodes.UNHANDLED_EXCEPTION, e.toString()));
             validationRun.setFailed();
+        } finally {
+            Tx.use(lmdb.writeTx(), tx -> validationRunStore.update(tx, validationRun));
         }
-
     }
 
     private X509ResourceCertificate parseCertificate(TrustAnchor trustAnchor, File certificateFile, ValidationResult validationResult) throws IOException {

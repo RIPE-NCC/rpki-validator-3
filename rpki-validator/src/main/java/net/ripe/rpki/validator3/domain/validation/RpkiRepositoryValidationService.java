@@ -167,8 +167,6 @@ public class RpkiRepositoryValidationService {
     }
 
     public void validateRsyncRepositories() {
-//        entityManager.setFlushMode(FlushModeType.COMMIT);
-
         Instant cutoffTime = Instant.now().minus(rsyncRepositoryDownloadInterval);
         log.info("updating all rsync repositories that have not been downloaded since {}", cutoffTime);
 
@@ -179,34 +177,35 @@ public class RpkiRepositoryValidationService {
         final Map<String, RpkiObject> objectsBySha256 = new HashMap<>();
         final Map<URI, RpkiRepository> fetchedLocations = new HashMap<>();
 
-        ValidationResult results = Tx.rwith(lmdb.readTx(), tx ->
-                rpkiRepositoryStore.findRsyncRepositories(tx)
-        ).filter(repository -> {
-            boolean needsUpdate = repository.isPending() || repository.getLastDownloadedAt() == null || repository.getLastDownloadedAt().isBefore(cutoffTime);
-            if (!needsUpdate) {
-                fetchedLocations.put(URI.create(repository.getRsyncRepositoryUri()), repository);
-            }
-            return needsUpdate;
-        }).map(repository -> {
-                    Tx.use(lmdb.writeTx(), tx -> validationRunStore.associate(tx, validationRun, repository));
-                    ValidationResult validationResult = processRsyncRepository(
-                            affectedTrustAnchors, validationRun, fetchedLocations, objectsBySha256, repository);
-                    return validationResult;
-                }
-        ).collect(
-                () -> ValidationResult.withLocation("placeholder"),
-                ValidationResult::addAll,
-                ValidationResult::addAll
-        );
+        try {
+            ValidationResult results = Tx.rwith(lmdb.readTx(), rpkiRepositoryStore::findRsyncRepositories)
+                    .filter(repository -> {
+                        boolean needsUpdate = repository.isPending() || repository.getLastDownloadedAt() == null || repository.getLastDownloadedAt().isBefore(cutoffTime);
+                        if (!needsUpdate) {
+                            fetchedLocations.put(URI.create(repository.getRsyncRepositoryUri()), repository);
+                        }
+                        return needsUpdate;
+                    }).map(repository -> {
+                                Tx.use(lmdb.writeTx(), tx -> validationRunStore.associate(tx, validationRun, repository));
+                                return processRsyncRepository(affectedTrustAnchors, validationRun, fetchedLocations, objectsBySha256, repository);
+                            }
+                    ).collect(
+                            () -> ValidationResult.withLocation("placeholder"),
+                            ValidationResult::addAll,
+                            ValidationResult::addAll
+                    );
 
-        validationRun.completeWith(results);
-        affectedTrustAnchors.forEach(ta -> {
-            log.info("The following trust anchor was affected, validation will be triggered {}", ta);
-            validationScheduler.triggerCertificateTreeValidation(ta);
-        });
+            validationRun.completeWith(results);
+            affectedTrustAnchors.forEach(ta -> {
+                log.info("The following trust anchor was affected, validation will be triggered {}", ta);
+                validationScheduler.triggerCertificateTreeValidation(ta);
+            });
+        } finally {
+            Tx.use(lmdb.writeTx(), tx -> validationRunStore.add(tx, validationRun));
+        }
     }
 
-    public Set<TrustAnchor> prefetchRepository(RpkiRepository repository) {
+    Set<TrustAnchor> prefetchRepository(RpkiRepository repository) {
         final Set<TrustAnchor> affectedTrustAnchors = new HashSet<>();
         if (repository.isPending() && repository.getType() == RpkiRepository.Type.RSYNC_PREFETCH) {
             log.info("Processing rsync-prefetch repository {}", repository);
@@ -228,6 +227,8 @@ public class RpkiRepositoryValidationService {
             } catch (IOException e) {
                 repository.setFailed();
                 validationResult.error(ErrorCodes.RSYNC_REPOSITORY_IO, e.toString(), ExceptionUtils.getStackTrace(e));
+            } finally {
+                Tx.use(lmdb.writeTx(), tx -> validationRunStore.add(tx, validationRun));
             }
             Tx.ruse(lmdb.readTx(), tx ->
                     repository.getTrustAnchors().forEach(taRef ->

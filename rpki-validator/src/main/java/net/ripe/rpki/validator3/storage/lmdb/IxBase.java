@@ -37,6 +37,7 @@ import org.lmdbjava.Dbi;
 import org.lmdbjava.DbiFlags;
 import org.lmdbjava.Env;
 
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,7 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
-public abstract class IxBase<T> {
+public abstract class IxBase<T extends Serializable> {
     private final Env<ByteBuffer> env;
     @Getter
     private final String name;

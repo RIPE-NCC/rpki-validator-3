@@ -57,6 +57,7 @@ public abstract class ValidationRun extends Base<ValidationRun> {
     @Getter
     private Status status = Status.RUNNING;
 
+    // TODO make ValidationCheck a separate storable thing and associate with a validation run
     @Getter
     private List<ValidationCheck> validationChecks = new ArrayList<>();
 
@@ -80,14 +81,11 @@ public abstract class ValidationRun extends Base<ValidationRun> {
     }
 
     public void completeWith(ValidationResult validationResult) {
-        for (ValidationLocation location : validationResult.getValidatedLocations()) {
-            for (net.ripe.rpki.commons.validation.ValidationCheck check : validationResult.getAllValidationChecksForLocation(location)) {
-                if (check.getStatus() != ValidationStatus.PASSED) {
-                    ValidationCheck validationCheck = new ValidationCheck(location.getName(), check);
-                    addCheck(validationCheck);
-                }
-            }
-        }
+        validationResult.getValidatedLocations().forEach(location ->
+                validationResult.getAllValidationChecksForLocation(location).stream()
+                        .filter(check -> check.getStatus() != ValidationStatus.PASSED)
+                        .map(check -> new ValidationCheck(location.getName(), check))
+                        .forEachOrdered(this::addCheck));
 
         if (!isFailed()) {
             setSucceeded();

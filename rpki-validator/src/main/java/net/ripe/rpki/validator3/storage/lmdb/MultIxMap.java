@@ -36,6 +36,7 @@ import org.lmdbjava.DbiFlags;
 import org.lmdbjava.Env;
 import org.lmdbjava.KeyRange;
 
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +45,7 @@ import java.util.function.BiConsumer;
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.DbiFlags.MDB_DUPSORT;
 
-public class MultIxMap<T> extends IxBase<T> {
+public class MultIxMap<T extends Serializable> extends IxBase<T> {
 
     final List<BiConsumer<Tx.Write, Key>> onDeleteTriggers = new ArrayList<>();
 
