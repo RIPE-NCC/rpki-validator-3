@@ -34,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.storage.FSTCoder;
 import net.ripe.rpki.validator3.storage.Lmdb;
@@ -74,9 +75,13 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
     private final IxMap<RpkiRepository> ixMap;
     private final Sequences sequences;
     private final TrustAnchorStore trustAnchorStore;
+    private final ValidationScheduler validationScheduler;
 
     @Autowired
-    public LmdbRpkiRepostiories(Lmdb lmdb, TrustAnchorStore trustAnchorStore) {
+    public LmdbRpkiRepostiories(Lmdb lmdb, TrustAnchorStore trustAnchorStore, ValidationScheduler validationScheduler) {
+        this.trustAnchorStore = trustAnchorStore;
+        this.validationScheduler = validationScheduler;
+
         ixMap = new IxMap<>(
                 lmdb.getEnv(),
                 RPKI_REPOSITORIES,
@@ -87,7 +92,6 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
                 )
         );
         sequences = new Sequences(lmdb);
-        this.trustAnchorStore = trustAnchorStore;
     }
 
 
@@ -96,7 +100,6 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
         log.info("Registering repository {} of type {}", uri, type);
         final Optional<RpkiRepository> existing = findByURI(tx, uri);
 
-        // TODO Add `onDelete` for it
         final Ref taRef = trustAnchorStore.makeRef(tx, SId.of(trustAnchor.key()));
 
         final RpkiRepository registered;
@@ -275,8 +278,19 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
 
     @Override
     public void removeAllForTrustAnchor(Tx.Write tx, TrustAnchor trustAnchor) {
-        ixMap.getPkByIndex(BY_TA, tx, trustAnchor.key())
-                .forEach(pk -> ixMap.delete(tx, pk));
+        ixMap.getByIndex(BY_TA, tx, trustAnchor.key()).forEach((pk, rpkiRepository) -> {
+            final Ref<TrustAnchor> taRef = Ref.unsafe(TrustAnchorStore.TRUST_ANCHORS, trustAnchor.getId());
+            rpkiRepository.removeTrustAnchor(taRef);
+            if (rpkiRepository.getTrustAnchors().isEmpty()) {
+                if (rpkiRepository.getType() == RpkiRepository.Type.RRDP) {
+                    // TODO Move it outside form here
+                    validationScheduler.removeRpkiRepository(rpkiRepository);
+                }
+                ixMap.delete(tx, pk);
+            } else {
+                ixMap.put(tx, pk, rpkiRepository);
+            }
+        });
     }
 
     @Override

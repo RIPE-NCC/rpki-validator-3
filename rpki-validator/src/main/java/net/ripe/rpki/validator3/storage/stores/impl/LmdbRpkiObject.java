@@ -30,9 +30,11 @@
 package net.ripe.rpki.validator3.storage.stores.impl;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.primitives.UnsignedBytes;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.validation.ValidationResult;
+import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.FSTCoder;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.Key;
@@ -47,11 +49,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
@@ -106,9 +112,17 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     }
 
     @Override
-    public Map<String, RpkiObject> findObjectsInManifest(ManifestCms manifestCms) {
-        // TODO Implement
-        return null;
+    public Map<String, RpkiObject> findObjectsInManifest(Tx.Read tx, ManifestCms manifestCms) {
+        final SortedMap<byte[], String> hashes = new TreeMap<>(UnsignedBytes.lexicographicalComparator());
+        manifestCms.getFiles().forEach((name, hash) -> hashes.put(hash, name));
+        return hashes.keySet().stream()
+                .map(sha256 -> findBySha256(tx, sha256))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toMap(
+                        x -> hashes.get(x.getSha256()),
+                        x -> x
+                ));
     }
 
     @Override
@@ -136,10 +150,18 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
         });
     }
 
-    // TODO Don't do that
     @Override
-    public Stream<byte[]> streamObjects(RpkiObject.Type type) {
-        return null;
+    public Stream<byte[]> streamObjects(Tx.Read tx, RpkiObject.Type type) {
+        // TODO Add index if it makes it faster and not too heavy
+        //  but better just optimise the caller
+        final List<byte[]> objectBytes = new ArrayList<>();
+        ixMap.forEach(tx, (key, val) -> {
+            RpkiObject rpkiObject = ixMap.toValue(val);
+            if (type.equals(rpkiObject.getType())) {
+                objectBytes.add(Bytes.toBytes(val));
+            }
+        });
+        return objectBytes.stream();
     }
 
     @Override

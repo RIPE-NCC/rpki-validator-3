@@ -57,7 +57,6 @@ public abstract class ValidationRun extends Base<ValidationRun> {
     @Getter
     private Status status = Status.RUNNING;
 
-    // TODO make ValidationCheck a separate storable thing and associate with a validation run
     @Getter
     private List<ValidationCheck> validationChecks = new ArrayList<>();
 

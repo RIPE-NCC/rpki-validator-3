@@ -66,7 +66,7 @@ public class RpkiRepository extends Base<RpkiRepository> {
 
     private Instant lastDownloadedAt;
 
-    // TODO Remove it and replace with some sort of association
+    @NotEmpty
     private Set<Ref<TrustAnchor>> trustAnchors = new HashSet<>();
 
     @ValidLocationURI
@@ -104,9 +104,9 @@ public class RpkiRepository extends Base<RpkiRepository> {
         this.trustAnchors.add(trustAnchor);
     }
 
-//    public void removeTrustAnchor(@NotNull @Valid TrustAnchor trustAnchor) {
-//        this.trustAnchors.remove(trustAnchor);
-//    }
+    public void removeTrustAnchor(Ref<TrustAnchor> trustAnchor) {
+        this.trustAnchors.remove(trustAnchor);
+    }
 
     public boolean isPending() {
         return status == Status.PENDING;

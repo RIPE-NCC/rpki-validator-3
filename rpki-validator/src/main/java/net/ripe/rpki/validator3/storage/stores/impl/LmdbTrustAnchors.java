@@ -50,7 +50,6 @@ import java.util.Optional;
 @Component
 public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements TrustAnchorStore {
 
-    private static final String TRUST_ANCHORS = "trust-anchors";
     private static final String BY_NAME = "by-name";
     private static final String BY_SUBJECT_KEY_INFO = "by-ski";
 
@@ -61,7 +60,7 @@ public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements T
     public LmdbTrustAnchors(Lmdb lmdb) {
         this.ixMap = new IxMap<>(
                 lmdb.getEnv(),
-                TRUST_ANCHORS,
+                TrustAnchorStore.TRUST_ANCHORS,
                 new FSTCoder<>(),
                 ImmutableMap.of(
                         BY_NAME, ta -> Key.keys(Key.of(ta.getName())),
@@ -72,7 +71,7 @@ public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements T
 
     @Override
     public TrustAnchor add(Tx.Write tx, TrustAnchor trustAnchor) {
-        trustAnchor.setId(SId.of(Key.of(sequences.next(tx, TRUST_ANCHORS + ":pk"))));
+        trustAnchor.setId(SId.of(Key.of(sequences.next(tx, TrustAnchorStore.TRUST_ANCHORS + ":pk"))));
         ixMap.put(tx, trustAnchor.key(), trustAnchor);
         return trustAnchor;
     }

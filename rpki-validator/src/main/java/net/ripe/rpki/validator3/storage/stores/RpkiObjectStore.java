@@ -52,7 +52,7 @@ public interface RpkiObjectStore extends GenericStore<RpkiObject> {
 
     Optional<RpkiObject> findBySha256(Tx.Read tx, byte[] sha256);
 
-    Map<String, RpkiObject> findObjectsInManifest(ManifestCms manifestCms);
+    Map<String, RpkiObject> findObjectsInManifest(Tx.Read tx, ManifestCms manifestCms);
 
     List<RpkiObject> all();
 
@@ -60,5 +60,5 @@ public interface RpkiObjectStore extends GenericStore<RpkiObject> {
 
     long deleteUnreachableObjects(Instant unreachableSince);
 
-    Stream<byte[]> streamObjects(RpkiObject.Type type);
+    Stream<byte[]> streamObjects(Tx.Read tx, RpkiObject.Type type);
 }

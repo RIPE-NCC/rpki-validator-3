@@ -53,8 +53,6 @@ public interface ValidationRunStore {
 
     <T extends ValidationRun> void update(Tx.Write tx, T validationRun);
 
-    void removeAllForTrustAnchor(Tx.Write tx, TrustAnchor trustAnchor);
-
     <T extends ValidationRun> T get(Tx.Read tx, Class<T> type, long id);
 
     <T extends ValidationRun> List<T> findAll(Tx.Read tx, Class<T> type);
@@ -62,8 +60,6 @@ public interface ValidationRunStore {
     <T extends ValidationRun> List<T> findLatestSuccessful(Tx.Read tx, Class<T> type);
 
     Optional<TrustAnchorValidationRun> findLatestCompletedForTrustAnchor(Tx.Read tx, TrustAnchor trustAnchor);
-
-    void removeAllForRpkiRepository(Tx.Write tx, RpkiRepository repository);
 
     long removeOldValidationRuns(Tx.Write tx, Instant completedBefore);
 

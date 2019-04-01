@@ -29,14 +29,19 @@
  */
 package net.ripe.rpki.validator3.storage.data;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.ToString;
 import net.ripe.rpki.validator3.storage.Binary;
 import net.ripe.rpki.validator3.storage.Key;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import org.apache.commons.lang3.builder.HashCodeExclude;
 
 import java.io.Serializable;
 
+@EqualsAndHashCode
+@ToString
 @Binary
 public class Ref<T extends Serializable> implements Serializable {
     @Getter
@@ -54,6 +59,10 @@ public class Ref<T extends Serializable> implements Serializable {
             return new Ref<>(ix.getName(), sid);
         }
         throw new RefException(ix, sid);
+    }
+
+    public static <R extends Serializable> Ref<R> unsafe(String name, SId<R> sid) {
+        return new Ref<>(name, sid);
     }
 
     public Key key() {

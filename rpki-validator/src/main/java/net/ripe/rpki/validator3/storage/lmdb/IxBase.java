@@ -136,6 +136,7 @@ public abstract class IxBase<T extends Serializable> {
         long s = 0;
         try (final CursorIterator<ByteBuffer> ci = mainDb.iterate(tx.txn())) {
             while (ci.hasNext()) {
+                ci.next();
                 s++;
             }
         }

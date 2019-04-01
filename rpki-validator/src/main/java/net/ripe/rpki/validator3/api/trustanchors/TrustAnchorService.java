@@ -119,7 +119,6 @@ public class TrustAnchorService {
         Tx.use(lmdb.writeTx(), tx -> {
             Optional<TrustAnchor> trustAnchor1 = trustAnchorStore.get(tx, Id.key(trustAnchorId));
             trustAnchor1.ifPresent(trustAnchor -> {
-                validationRunStore.removeAllForTrustAnchor(tx, trustAnchor);
                 rpkiRepositoryStore.removeAllForTrustAnchor(tx, trustAnchor);
                 trustAnchorStore.remove(tx, trustAnchor);
                 // TODO Fix that

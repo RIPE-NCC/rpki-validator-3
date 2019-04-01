@@ -30,6 +30,8 @@
 package net.ripe.rpki.validator3.storage.stores.impl;
 
 import lombok.Getter;
+import net.ripe.rpki.validator3.IntegrationTest;
+import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbTests;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
@@ -40,10 +42,16 @@ import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.quartz.Scheduler;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+@RunWith(SpringRunner.class)
+@IntegrationTest
 public class GenericStorageTest {
 
     @Rule
@@ -61,6 +69,9 @@ public class GenericStorageTest {
     @Getter
     private ValidationRunStore validationRunStore;
 
+    @Autowired
+    private ValidationScheduler validationScheduler;
+
     @Getter
     private Lmdb lmdb;
 
@@ -69,8 +80,8 @@ public class GenericStorageTest {
         lmdb = LmdbTests.makeLmdb(tmp.newFolder().getAbsolutePath());
         rpkiObjectStore = new LmdbRpkiObject(lmdb);
         trustAnchorStore = new LmdbTrustAnchors(lmdb);
-        rpkiRepositoryStore = new LmdbRpkiRepostiories(lmdb, trustAnchorStore);
-        validationRunStore = new LmdbValidationRuns(lmdb, trustAnchorStore, rpkiObjectStore);
+        rpkiRepositoryStore = new LmdbRpkiRepostiories(lmdb, trustAnchorStore, validationScheduler);
+        validationRunStore = new LmdbValidationRuns(lmdb, trustAnchorStore, rpkiObjectStore, rpkiRepositoryStore);
     }
 
     protected <T> T rtx(Function<Tx.Read, T> f) {

@@ -29,21 +29,12 @@
  */
 package net.ripe.rpki.validator3.storage.data.validation;
 
-import lombok.Getter;
 import net.ripe.rpki.validator3.storage.Binary;
-import net.ripe.rpki.validator3.storage.data.Ref;
-import net.ripe.rpki.validator3.storage.data.RpkiRepository;
-
-import java.util.HashSet;
-import java.util.Set;
 
 @Binary
 public class RsyncRepositoryValidationRun extends RpkiRepositoryValidationRun {
 
-    // TODO Do something
-    @Getter
-    private Set<Ref<RpkiRepository>> rpkiRepositories = new HashSet<>();
-
+// TODO Do something with it
 //    @Override
 //    public void visit(Visitor visitor) {
 //        visitor.accept(this);

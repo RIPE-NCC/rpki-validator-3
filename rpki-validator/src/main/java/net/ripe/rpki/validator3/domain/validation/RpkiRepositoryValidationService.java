@@ -392,9 +392,7 @@ public class RpkiRepositoryValidationService {
     }
 
     private RsyncRepositoryValidationRun makeRsyncValidationRun() {
-        final RsyncRepositoryValidationRun validationRun = new RsyncRepositoryValidationRun();
-        Tx.use(lmdb.writeTx(), tx -> validationRunStore.add(tx, validationRun));
-        return validationRun;
+        return Tx.with(lmdb.writeTx(), tx -> validationRunStore.add(tx, new RsyncRepositoryValidationRun()));
     }
 
     private boolean isRrdpUri(final String uri) {
