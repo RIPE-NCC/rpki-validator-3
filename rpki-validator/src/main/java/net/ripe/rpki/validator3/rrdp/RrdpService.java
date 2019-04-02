@@ -29,6 +29,9 @@
  */
 package net.ripe.rpki.validator3.rrdp;
 
+import com.google.common.hash.HashCode;
+import com.google.common.hash.Hashing;
+import com.google.common.hash.HashingInputStream;
 import fj.data.Either;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
@@ -55,6 +58,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 
@@ -131,17 +135,19 @@ public class RrdpService {
     }
 
     private void readSnapshot(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun, Notification notification) {
-        final byte[] snapshotBody = rrdpClient.getBody(notification.snapshotUri);
-        Pair<byte[], Long> timed = Time.timed(() -> Sha256.hash(snapshotBody));
-        final byte[] snapshotHash = timed.getLeft();
-        log.info("Calculating snapshot hash time {}ms", timed.getRight());
+        final AtomicReference<HashingInputStream> hashingStream = new AtomicReference<>();
+        final Pair<Snapshot, Long> timedSnapshot = Time.timed(() ->
+                rrdpClient.readStream(notification.snapshotUri, is -> {
+                    hashingStream.set(new HashingInputStream(Hashing.sha256(), is));
+                    return rrdpParser.snapshot(hashingStream.get());
+                }));
+
+        byte[] snapshotHash = hashingStream.get().hash().asBytes();
         if (!Arrays.equals(Hex.parse(notification.snapshotHash), snapshotHash)) {
             throw new RrdpException(ErrorCodes.RRDP_WRONG_SNAPSHOT_HASH, "Hash of the snapshot file " +
                     notification.snapshotUri + " is " + Hex.format(snapshotHash) + ", but notification file says " + notification.snapshotHash);
         }
-
-        Pair<Snapshot, Long> timedSnapshot = Time.timed(() -> rrdpParser.snapshot(new ByteArrayInputStream(snapshotBody)));
-        log.info("Parsing snapshot time {}ms", timedSnapshot.getRight());
+        log.info("Downloading/hashing/parsing snapshot time {}ms", timedSnapshot.getRight());
         Pair<Object, Long> timedStoreSnapshot = Time.timed(() -> {
             storeSnapshot(timedSnapshot.getLeft(), validationRun);
             return null;
