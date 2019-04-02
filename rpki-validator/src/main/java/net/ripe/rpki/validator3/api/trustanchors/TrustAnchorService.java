@@ -101,12 +101,14 @@ public class TrustAnchorService {
         if(trustAnchor.getRsyncPrefetchUri()!= null) {
             log.info("Register and schedule prefetch trust anchor '{}'", trustAnchor);
             RpkiRepository prefetchRepo = rpkiRepositories.register(trustAnchor, trustAnchor.getRsyncPrefetchUri(), RpkiRepository.Type.RSYNC_PREFETCH);
-            entityManager.flush();
-            entityManager.clear();
             validationScheduler.schedulePrefetchRsync(prefetchRepo);
         }
 
         long trustAnchorId = addAndScheduleTA(trustAnchor);
+
+        entityManager.flush();
+        entityManager.clear();
+
         return trustAnchorId;
     }
 
