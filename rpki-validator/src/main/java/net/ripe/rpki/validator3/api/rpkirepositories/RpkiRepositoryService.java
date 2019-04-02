@@ -39,7 +39,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.PostConstruct;
-import javax.transaction.TransactionManager;
 import javax.transaction.Transactional;
 
 @Component
@@ -62,8 +61,8 @@ public class RpkiRepositoryService {
         log.info("Schedule RPKI validation for the existing repositories");
         new TransactionTemplate(transactionManager).execute(status -> {
             rpkiRepositories.findRrdpRepositories().forEach(r -> {
-                validationScheduler.addRpkiRepository(r);
-                log.info("Scheduled {} for validation.", r);
+                validationScheduler.scheduleRRDPValidation(r);
+                log.info("Scheduled RRDP repo {} for validation.", r);
             });
             return null;
         });

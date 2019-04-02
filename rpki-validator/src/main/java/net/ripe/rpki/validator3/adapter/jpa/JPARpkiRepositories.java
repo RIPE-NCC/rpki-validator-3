@@ -77,6 +77,19 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
         this.trustAnchors = trustAnchors;
     }
 
+    /**
+     * This function is used either in CAT validation to register repo with it's URI or on TA Service to register
+     * prefetch URI. It will either lookup existing repository by URI, or persist a new one.
+     *
+     * When it found a stored RSYNC_PREFETCH repository, it will turn it into RSYNC, so that it can be picked up by
+     * later every 5 minutes background validation for RSYNC repository.
+     *
+     * There is some interesting logic looking up parent by checking the path going up.
+     * @param trustAnchor
+     * @param uri
+     * @param type
+     * @return
+     */
     @Override
     public RpkiRepository register(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String uri, RpkiRepository.Type type) {
         log.info("Registering repository {} of type {}", uri, type);

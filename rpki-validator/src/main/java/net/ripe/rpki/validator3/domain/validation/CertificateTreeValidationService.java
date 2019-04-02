@@ -138,12 +138,10 @@ public class CertificateTreeValidationService {
                 return;
             }
 
-            log.info("Starting main  recursive CAT validation");
             validationRun.getValidatedObjects().addAll(
                 validateCertificateAuthority(trustAnchor, registeredRepositories, context, validationResult)
             );
 
-            log.info("Done main CAT validation back on AUTO mode");
             entityManager.setFlushMode(FlushModeType.AUTO);
 
             if (isValidationRunCompleted(validationResult)) {
@@ -152,6 +150,8 @@ public class CertificateTreeValidationService {
                     settings.markInitialValidationRunCompleted();
                     log.info("All trust anchors have completed their initial certificate tree validation run, validator is now ready");
                 }
+            } else {
+                log.info("Tree validation INCOMPLETE for {}  ", trustAnchor.getName());
             }
 
             validatedRpkiObjects.update(trustAnchor, validationRun.getValidatedObjects());
@@ -288,7 +288,7 @@ public class CertificateTreeValidationService {
                     uri.toASCIIString(),
                     RpkiRepository.Type.RRDP
             ));
-            validationScheduler.addRpkiRepository(rpkiRepository);
+            validationScheduler.scheduleRRDPValidation(rpkiRepository);
             return rpkiRepository;
         } else {
             return registeredRepositories.computeIfAbsent(context.getRepositoryURI(), (uri) -> rpkiRepositories.register(

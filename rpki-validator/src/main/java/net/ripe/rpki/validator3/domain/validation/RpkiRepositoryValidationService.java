@@ -104,7 +104,7 @@ public class RpkiRepositoryValidationService {
         this.rsyncRepositoryDownloadInterval = Duration.parse(rsyncRepositoryDownloadInterval);
     }
 
-    public void validateRpkiRepository(long rpkiRepositoryId) {
+    public void validateRRDPRepository(long rpkiRepositoryId) {
         entityManager.setFlushMode(FlushModeType.COMMIT);
 
         final RpkiRepository rpkiRepository = rpkiRepositories.get(rpkiRepositoryId);
@@ -137,7 +137,7 @@ public class RpkiRepositoryValidationService {
         }
 
         if (validationRun.isSucceeded() && validationRun.getAddedObjectCount() > 0) {
-            log.info("SUCCESFUL validation of RRDP Repo, kicking tree validation after flush");
+            log.info("Succesful validation of RRDP Repo, kicking tree validation after flush");
             entityManager.flush();
             entityManager.clear();
             log.info("Ready to kick validation tree involving this repo {}", rpkiRepository);

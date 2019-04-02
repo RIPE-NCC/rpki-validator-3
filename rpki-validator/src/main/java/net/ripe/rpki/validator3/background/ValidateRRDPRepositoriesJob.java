@@ -39,12 +39,11 @@ import org.quartz.Job;
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
 import org.quartz.JobKey;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @DisallowConcurrentExecution
-public class RepositoryValidationJob implements Job {
+public class ValidateRRDPRepositoriesJob implements Job {
 
     public static final String RPKI_REPOSITORY_ID = "rpkiRepositoryId";
 
@@ -56,12 +55,12 @@ public class RepositoryValidationJob implements Job {
     private long rpkiRepositoryId;
 
     @Override
-    public void execute(JobExecutionContext context) throws JobExecutionException {
-        validationService.validateRpkiRepository(rpkiRepositoryId);
+    public void execute(JobExecutionContext context) {
+        validationService.validateRRDPRepository(rpkiRepositoryId);
     }
 
     static JobDetail buildJob(RpkiRepository rpkiRepository) {
-        return JobBuilder.newJob(RepositoryValidationJob.class)
+        return JobBuilder.newJob(ValidateRRDPRepositoriesJob.class)
             .withIdentity(getJobKey(rpkiRepository))
             .usingJobData(RPKI_REPOSITORY_ID, rpkiRepository.getId())
             .build();
