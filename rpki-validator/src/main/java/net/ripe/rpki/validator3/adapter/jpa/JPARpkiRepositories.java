@@ -81,8 +81,10 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
      * This function is used either in CAT validation to register repo with it's URI or on TA Service to register
      * prefetch URI. It will either lookup existing repository by URI, or persist a new one.
      *
-     * When it found a stored RSYNC_PREFETCH repository, it will turn it into RSYNC, so that it can be picked up by
-     * later every 5 minutes background validation for RSYNC repository.
+     * When it try to register RSYNC but found (by URI) an existing RSYNC_PREFETCH repository, 
+     * the prefetch will be transformed into RSYNC. 
+     * 
+     * This way, single dispatch on API upload RSYNC_PREFETCH jobs would not clash regular 5 minutes RSYNC background job.
      *
      * There is some interesting logic looking up parent by checking the path going up.
      * @param trustAnchor
