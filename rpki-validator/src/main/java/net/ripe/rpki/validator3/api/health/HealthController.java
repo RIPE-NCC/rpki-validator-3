@@ -69,7 +69,7 @@ public class HealthController {
     private BuildInformation buildInformation;
 
 
-    @GetMapping(path = "/")
+    @GetMapping
     public ResponseEntity<ApiResponse<Health>> health() {
 
         final Map<String, Boolean> trustAnchorReady = trustAnchorRepository.getStatuses().stream().
