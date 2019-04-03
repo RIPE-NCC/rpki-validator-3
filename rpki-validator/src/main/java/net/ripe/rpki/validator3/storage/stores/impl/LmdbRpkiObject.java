@@ -107,6 +107,11 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     }
 
     @Override
+    public Optional<RpkiObject> get(Tx.Read tx, Key key) {
+        return findBySha256(tx, Bytes.toBytes(key.toByteBuffer()));
+    }
+
+    @Override
     public Optional<RpkiObject> findBySha256(Tx.Read tx, byte[] sha256) {
         return ixMap.get(tx, Key.of(sha256));
     }
@@ -123,11 +128,6 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
                         x -> hashes.get(x.getSha256()),
                         x -> x
                 ));
-    }
-
-    @Override
-    public List<RpkiObject> all() {
-        return ixMap.values(ixMap.readTx());
     }
 
     @Override

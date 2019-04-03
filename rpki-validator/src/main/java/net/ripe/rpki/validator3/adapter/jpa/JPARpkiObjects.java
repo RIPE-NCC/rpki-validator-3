@@ -140,21 +140,6 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
         entityManager.merge(object);
     }
 
-//    @Override
-//    public void merge(RpkiObject object) {
-//        queryFactory.update(rpkiObject)
-//                .set(rpkiObject.type, object.getType())
-//                .set(rpkiObject.encodedRpkiObject, object.getEncodedRpkiObject())
-//                .set(rpkiObject.authorityKeyIdentifier, object.getAuthorityKeyIdentifier())
-//                .set(rpkiObject.serialNumber, object.getSerialNumber())
-//                .set(rpkiObject.signingTime, object.getSigningTime())
-//                .set(rpkiObject.createdAt, object.getCreatedAt())
-//                .set(rpkiObject.roaPrefixes, object.getRoaPrefixes())
-//                .set(rpkiObject.locations, object.getLocations())
-//                .where(rpkiObject.sha256.eq(object.getSha256()))
-//                .execute();
-//    }
-
     @Override
     public <T extends CertificateRepositoryObject> Optional<T> findCertificateRepositoryObject(long rpkiObjectId, Class<T> clazz, ValidationResult validationResult) {
         // Do not query the EncodedRpkiObject entity here to avoid having it stored in the JPA session,

@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.storage.stores;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.storage.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
@@ -42,10 +43,13 @@ import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 public interface ValidationRunStore {
@@ -72,4 +76,8 @@ public interface ValidationRunStore {
     void associate(Tx.Write writeTx, RpkiRepositoryValidationRun validationRun, RpkiObject o);
 
     void associate(Tx.Write writeTx, RsyncRepositoryValidationRun validationRun, RpkiRepository r);
+
+    Set<Key> findAssociatedObjects(Tx.Read tx, CertificateTreeValidationRun validationRun);
+
+    Stream<Pair<CertificateTreeValidationRun, RpkiObject>> findCurrentlyValidated(Tx.Read tx, RpkiObject.Type cer);
 }

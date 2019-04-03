@@ -53,6 +53,7 @@ import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -85,7 +86,7 @@ public class LmdbValidationRuns implements ValidationRunStore {
 
     private final Sequences sequences;
 
-    private final IxMap<SId<RpkiObject>> vr2ro;
+    private final MultIxMap<SId<RpkiObject>> vr2ro;
     private final MultIxMap<SId<ValidationRun>> ro2vr;
 
     private final IxMap<SId<RpkiRepository>> vr2repo;
@@ -96,10 +97,13 @@ public class LmdbValidationRuns implements ValidationRunStore {
     private final IxMap<TrustAnchorValidationRun> taIxMap;
 
     private final Map<String, IxMap<? extends ValidationRun>> maps = new HashMap<>();
+    private final RpkiObjectStore rpkiObjectStore;
 
     @Autowired
     public LmdbValidationRuns(Lmdb lmdb, TrustAnchorStore trustAnchorStore, RpkiObjectStore rpkiObjectStore, RpkiRepositoryStore rpkiRepositoryStore) {
 
+        this.rpkiObjectStore = rpkiObjectStore;
+        
         sequences = new Sequences(lmdb);
 
         ctIxMap = new IxMap<>(lmdb.getEnv(), CT_RPKI_VALIDATION_RUNS, new FSTCoder<>(),
@@ -117,7 +121,7 @@ public class LmdbValidationRuns implements ValidationRunStore {
         maps.put(TrustAnchorValidationRun.TYPE, taIxMap);
         maps.put(RpkiRepositoryValidationRun.TYPE, repoIxMap);
 
-        vr2ro = new IxMap<>(lmdb.getEnv(), RPKI_VALIDATION_RUNS_TO_RPKI_OBJECTS, new FSTCoder<>());
+        vr2ro = new MultIxMap<>(lmdb.getEnv(), RPKI_VALIDATION_RUNS_TO_RPKI_OBJECTS, new FSTCoder<>());
         ro2vr = new MultIxMap<>(lmdb.getEnv(), RPKI_RPKI_OBJECTS_TO_VALIDATION_RUNS, new FSTCoder<>());
 
         vr2repo = new IxMap<>(lmdb.getEnv(), RPKI_VALIDATION_RUNS_TO_RPKI_REPOSITORIES, new FSTCoder<>());
@@ -167,7 +171,8 @@ public class LmdbValidationRuns implements ValidationRunStore {
 
     @Override
     public <T extends ValidationRun> List<T> findAll(Tx.Read tx, Class<T> type) {
-        return pickIxMap(type).values(tx);
+        IxMap<T> tIxMap = pickIxMap(type);
+        return tIxMap.values(tx);
     }
 
     @Override
@@ -296,9 +301,25 @@ public class LmdbValidationRuns implements ValidationRunStore {
         repo2vr.put(writeTx, rpkiRepository.key(), validationRun.getId());
     }
 
+    @Override
+    public Set<Key> findAssociatedObjects(Tx.Read tx, CertificateTreeValidationRun validationRun) {
+        return vr2ro.get(tx, validationRun.key()).stream().map(SId::key).collect(Collectors.toSet());
+    }
+
     private void associateVrAndRo(Tx.Write writeTx, ValidationRun validationRun, RpkiObject rpkiObject) {
         vr2ro.put(writeTx, validationRun.key(), rpkiObject.getId());
         ro2vr.put(writeTx, rpkiObject.key(), validationRun.getId());
+    }
+
+    @Override
+    public Stream<Pair<CertificateTreeValidationRun, RpkiObject>> findCurrentlyValidated(Tx.Read tx, RpkiObject.Type type) {
+        return findLatestSuccessful(tx, CertificateTreeValidationRun.class).stream().flatMap(ct ->
+                vr2ro.get(tx, ct.key()).stream()
+                        .map(roId -> rpkiObjectStore.get(tx, roId.key()))
+                        .filter(Optional::isPresent)
+                        .map(Optional::get)
+                        .filter(ro -> ro.getType() == type)
+                        .map(ro -> Pair.of(ct, ro)));
     }
 
     @SuppressWarnings("unchecked")

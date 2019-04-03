@@ -36,10 +36,12 @@ import net.ripe.rpki.commons.crypto.ValidityPeriod;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificateBuilder;
 import net.ripe.rpki.validator3.IntegrationTest;
 import net.ripe.rpki.validator3.domain.RoaPrefix;
-import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
-import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.TrustAnchorsFactory;
+import net.ripe.rpki.validator3.domain.ta.TrustAnchorsFactory;
+import net.ripe.rpki.validator3.storage.data.RpkiObject;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
+import net.ripe.rpki.validator3.storage.stores.impl.GenericStorageTest;
 import org.joda.time.DateTime;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -53,13 +55,13 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 
-import static net.ripe.rpki.validator3.domain.TrustAnchorsFactory.KEY_PAIR_FACTORY;
+import static net.ripe.rpki.validator3.domain.ta.TrustAnchorsFactory.KEY_PAIR_FACTORY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(SpringRunner.class)
 @IntegrationTest
 @Transactional
-public class RpkiObjectCleanupServiceTest {
+public class RpkiObjectCleanupServiceTest extends GenericStorageTest {
 
     @Autowired
     private TrustAnchorsFactory factory;
@@ -68,16 +70,17 @@ public class RpkiObjectCleanupServiceTest {
     private RpkiObjectCleanupService subject;
 
     @Autowired
-    private RpkiObjects rpkiObjects;
+    private RpkiObjectStore rpkiObjects;
 
     @Autowired
     private EntityManager entityManager;
 
     @Test
     public void should_delete_objects_not_reachable_from_manifest() {
-        TrustAnchor trustAnchor = factory.createTrustAnchor(ta -> {
+
+        TrustAnchor trustAnchor = wtx(tx -> factory.createTrustAnchor(tx, ta -> {
             ta.roaPrefixes(Arrays.asList(RoaPrefix.of(IpRange.parse("127.0.0.0/8"), null, Asn.parse("123"))));
-        });
+        }));
 
         // No orphans, so nothing to delete
         assertThat(subject.cleanupRpkiObjects()).isEqualTo(0);
@@ -94,7 +97,7 @@ public class RpkiObjectCleanupServiceTest {
                 .withValidityPeriod(new ValidityPeriod(DateTime.now(), DateTime.now().plusYears(1)))
                 .build()
         );
-        rpkiObjects.add(orphan);
+        wtx0(tx -> rpkiObjects.add(tx, orphan));
         entityManager.flush();
 
         // Orphan is still new, so nothing to delete

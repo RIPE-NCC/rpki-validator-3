@@ -34,15 +34,20 @@ import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.storage.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
+import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 public interface RpkiObjectStore extends GenericStore<RpkiObject> {
+    Optional<RpkiObject> get(Tx.Read tx, Key key);
+
     RpkiObject add(Tx.Write tx, RpkiObject rpkiObject);
 
     void remove(RpkiObject o);
@@ -53,8 +58,6 @@ public interface RpkiObjectStore extends GenericStore<RpkiObject> {
     Optional<RpkiObject> findBySha256(Tx.Read tx, byte[] sha256);
 
     Map<String, RpkiObject> findObjectsInManifest(Tx.Read tx, ManifestCms manifestCms);
-
-    List<RpkiObject> all();
 
     Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(Tx.Read tx, RpkiObject.Type type, byte[] authorityKeyIdentifier);
 

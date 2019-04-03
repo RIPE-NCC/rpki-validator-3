@@ -118,9 +118,7 @@ public class CertificateTreeValidationService {
 
     @Transactional(Transactional.TxType.REQUIRED)
     public void validate(long trustAnchorId) {
-//        entityManager.setFlushMode(FlushModeType.COMMIT);
         Tx.use(Tx.write(lmdb.getEnv()), tx -> {
-//        TrustAnchor maybeTrustAnchor = trustAnchors.get(trustAnchorId);
             Optional<TrustAnchor> maybeTrustAnchor = trustAnchorStore.get(tx, Id.key(trustAnchorId));
             if (!maybeTrustAnchor.isPresent()) {
                 log.error("Couldn't find trust anchor {}", trustAnchorId);
@@ -144,8 +142,6 @@ public class CertificateTreeValidationService {
 
         final Ref<TrustAnchor> trustAnchorRef = trustAnchorStore.makeRef(tx, trustAnchor.getId());
         CertificateTreeValidationRun validationRun = new CertificateTreeValidationRun(trustAnchorRef);
-        validationRunStore.add(tx, validationRun);
-//        validationRuns.add(validationRun);
 
         String trustAnchorLocation = trustAnchor.getLocations().get(0);
         ValidationResult validationResult = ValidationResult.withLocation(trustAnchorLocation);
@@ -196,6 +192,7 @@ public class CertificateTreeValidationService {
 //            validatedRpkiObjects.update(trustAnchor, validationRun.getValidatedObjects());
         } finally {
             validationRun.completeWith(validationResult);
+            validationRunStore.add(tx, validationRun);
             log.info("Tree validation {} for {}", validationRun.getStatus().toString().toLowerCase(), trustAnchor);
         }
     }

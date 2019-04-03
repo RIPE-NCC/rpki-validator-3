@@ -69,7 +69,7 @@ public class TrustAnchor extends Base<TrustAnchor> {
     @Size(max = RpkiObject.MAX_SIZE)
     private byte[] encodedCertificate;
 
-    protected TrustAnchor() {
+    public TrustAnchor() {
     }
 
     public TrustAnchor(boolean preconfigured) {
