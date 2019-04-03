@@ -43,8 +43,6 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobKey;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.persistence.EntityManager;
-
 @Slf4j
 public class PrefetchRsyncRepositoryJob implements Job {
 
@@ -60,15 +58,10 @@ public class PrefetchRsyncRepositoryJob implements Job {
     @Setter
     private long rpkiRepositoryId;
 
-    @Autowired
-    private EntityManager entityManager;
-
     @Override
     public void execute(JobExecutionContext context) {
         RpkiRepository repository = repositories.get(rpkiRepositoryId);
         validationService.prefetchRepository(repository);
-        entityManager.flush();
-        entityManager.clear();
     }
 
     static JobDetail buildJob(RpkiRepository rpkiRepository) {
