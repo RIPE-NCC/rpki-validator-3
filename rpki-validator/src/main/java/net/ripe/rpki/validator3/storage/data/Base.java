@@ -38,7 +38,7 @@ import java.time.Instant;
 @Data
 public class Base<T extends Base> implements Serializable {
     private SId<T> id;
-    private Instant createdAt;
+    private Instant createdAt = Instant.now();
     private Instant updatedAt;
 
     public Key key() {
