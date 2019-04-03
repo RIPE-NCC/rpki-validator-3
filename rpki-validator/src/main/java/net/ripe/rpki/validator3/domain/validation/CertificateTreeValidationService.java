@@ -44,10 +44,7 @@ import net.ripe.rpki.commons.validation.ValidationString;
 import net.ripe.rpki.commons.validation.objectvalidators.CertificateRepositoryObjectValidationContext;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
-import net.ripe.rpki.validator3.domain.RpkiRepositories;
-import net.ripe.rpki.validator3.domain.Settings;
-import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
-import net.ripe.rpki.validator3.domain.ValidationRuns;
+import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
@@ -55,7 +52,6 @@ import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
-import net.ripe.rpki.validator3.storage.stores.Id;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
 import net.ripe.rpki.validator3.storage.stores.SettingsStore;
@@ -65,7 +61,6 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.transaction.Transactional;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -95,31 +90,36 @@ import static net.ripe.rpki.validator3.storage.data.RpkiRepository.Type.RSYNC;
 public class CertificateTreeValidationService {
     private static final ValidationOptions VALIDATION_OPTIONS = new ValidationOptions();
 
-    @Autowired
-    private RpkiObjectStore rpkiObjectStore;
+    private final RpkiObjectStore rpkiObjectStore;
+    private final RpkiRepositoryStore rpkiRepositoriStore;
+    private final SettingsStore settingsStore;
+    private final ValidationScheduler validationScheduler;
+    private final ValidationRunStore validationRunStore;
+    private final TrustAnchorStore trustAnchorStore;
+    private final Lmdb lmdb;
 
     @Autowired
-    private RpkiRepositoryStore rpkiRepositoriStore;
+    public CertificateTreeValidationService(RpkiObjectStore rpkiObjectStore,
+                                            RpkiRepositoryStore rpkiRepositoriStore,
+                                            SettingsStore settingsStore,
+                                            ValidationScheduler validationScheduler,
+                                            ValidationRunStore validationRunStore,
+                                            TrustAnchorStore trustAnchorStore,
+                                            Lmdb lmdb) {
+        this.rpkiObjectStore = rpkiObjectStore;
+        this.rpkiRepositoriStore = rpkiRepositoriStore;
+        this.settingsStore = settingsStore;
+        this.validationScheduler = validationScheduler;
+        this.validationRunStore = validationRunStore;
+        this.trustAnchorStore = trustAnchorStore;
+        this.lmdb = lmdb;
+    }
 
-    @Autowired
-    private SettingsStore settingsStore;
+//    private ExecutorService async = Executors.newSingleThreadExecutor();
 
-    @Autowired
-    private ValidationScheduler validationScheduler;
-
-    @Autowired
-    private ValidationRunStore validationRunStore;
-
-    @Autowired
-    private TrustAnchorStore trustAnchorStore;
-
-    @Autowired
-    private Lmdb lmdb;
-
-    @Transactional(Transactional.TxType.REQUIRED)
     public void validate(long trustAnchorId) {
-        Tx.use(Tx.write(lmdb.getEnv()), tx -> {
-            Optional<TrustAnchor> maybeTrustAnchor = trustAnchorStore.get(tx, Id.key(trustAnchorId));
+        Tx.use(lmdb.writeTx(), tx -> {
+            Optional<TrustAnchor> maybeTrustAnchor = trustAnchorStore.get(tx, Key.of(trustAnchorId));
             if (!maybeTrustAnchor.isPresent()) {
                 log.error("Couldn't find trust anchor {}", trustAnchorId);
                 return;
@@ -142,6 +142,7 @@ public class CertificateTreeValidationService {
 
         final Ref<TrustAnchor> trustAnchorRef = trustAnchorStore.makeRef(tx, trustAnchor.getId());
         CertificateTreeValidationRun validationRun = new CertificateTreeValidationRun(trustAnchorRef);
+        validationRunStore.add(tx, validationRun);
 
         String trustAnchorLocation = trustAnchor.getLocations().get(0);
         ValidationResult validationResult = ValidationResult.withLocation(trustAnchorLocation);
@@ -174,7 +175,7 @@ public class CertificateTreeValidationService {
 //            );
 
             List<RpkiObject> rpkiObjects = validateCertificateAuthority(tx, trustAnchor, registeredRepositories, context, validationResult);
-            rpkiObjects.forEach(o -> validationRunStore.associate(lmdb.writeTx(), validationRun, o));
+            rpkiObjects.forEach(o -> validationRunStore.associate(tx, validationRun, o));
 
 //            entityManager.setFlushMode(FlushModeType.AUTO);
 
@@ -192,7 +193,7 @@ public class CertificateTreeValidationService {
 //            validatedRpkiObjects.update(trustAnchor, validationRun.getValidatedObjects());
         } finally {
             validationRun.completeWith(validationResult);
-            validationRunStore.add(tx, validationRun);
+            validationRunStore.update(tx, validationRun);
             log.info("Tree validation {} for {}", validationRun.getStatus().toString().toLowerCase(), trustAnchor);
         }
     }
@@ -223,7 +224,6 @@ public class CertificateTreeValidationService {
             URI manifestUri = certificate.getManifestUri();
             temporary.setLocation(new ValidationLocation(manifestUri));
 
-//            Optional<RpkiObject> manifestObject = rpkiObjects.findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type.MFT, context.getSubjectKeyIdentifier());
             Optional<RpkiObject> manifestObject = rpkiObjectStore.findLatestByTypeAndAuthorityKeyIdentifier(tx, RpkiObject.Type.MFT, context.getSubjectKeyIdentifier());
 
             if (!manifestObject.isPresent()) {

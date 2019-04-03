@@ -33,8 +33,7 @@ import com.google.common.collect.ImmutableMap;
 import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
 import net.ripe.rpki.validator3.storage.FSTCoder;
 import net.ripe.rpki.validator3.storage.Lmdb;
-import net.ripe.rpki.validator3.storage.Key;
-import net.ripe.rpki.validator3.storage.data.SId;
+import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
@@ -71,7 +70,7 @@ public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements T
 
     @Override
     public TrustAnchor add(Tx.Write tx, TrustAnchor trustAnchor) {
-        trustAnchor.setId(SId.of(Key.of(sequences.next(tx, TrustAnchorStore.TRUST_ANCHORS + ":pk"))));
+        trustAnchor.setId(Key.of(sequences.next(tx, TrustAnchorStore.TRUST_ANCHORS + ":pk")));
         ixMap.put(tx, trustAnchor.key(), trustAnchor);
         return trustAnchor;
     }

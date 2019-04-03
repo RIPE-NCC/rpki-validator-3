@@ -30,15 +30,15 @@
 package net.ripe.rpki.validator3.storage.stores.impl;
 
 import com.google.common.collect.ImmutableMap;
+import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.storage.FSTCoder;
-import net.ripe.rpki.validator3.storage.Key;
 import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
-import net.ripe.rpki.validator3.storage.data.SId;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidationRun;
@@ -46,6 +46,7 @@ import net.ripe.rpki.validator3.storage.data.validation.RsyncRepositoryValidatio
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
+import net.ripe.rpki.validator3.storage.lmdb.IxBase;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.MultIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
@@ -62,6 +63,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -71,6 +73,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
+@Slf4j
 public class LmdbValidationRuns implements ValidationRunStore {
 
     private static final String RPKI_VALIDATION_RUNS = "validation-runs";
@@ -86,11 +89,11 @@ public class LmdbValidationRuns implements ValidationRunStore {
 
     private final Sequences sequences;
 
-    private final MultIxMap<SId<RpkiObject>> vr2ro;
-    private final MultIxMap<SId<ValidationRun>> ro2vr;
+    private final MultIxMap<Key> vr2ro;
+    private final MultIxMap<Key> ro2vr;
 
-    private final IxMap<SId<RpkiRepository>> vr2repo;
-    private final MultIxMap<SId<ValidationRun>> repo2vr;
+    private final IxMap<Key> vr2repo;
+    private final MultIxMap<Key> repo2vr;
 
     private final IxMap<CertificateTreeValidationRun> ctIxMap;
     private final IxMap<RpkiRepositoryValidationRun> repoIxMap;
@@ -100,7 +103,10 @@ public class LmdbValidationRuns implements ValidationRunStore {
     private final RpkiObjectStore rpkiObjectStore;
 
     @Autowired
-    public LmdbValidationRuns(Lmdb lmdb, TrustAnchorStore trustAnchorStore, RpkiObjectStore rpkiObjectStore, RpkiRepositoryStore rpkiRepositoryStore) {
+    public LmdbValidationRuns(Lmdb lmdb,
+                              TrustAnchorStore trustAnchorStore,
+                              RpkiObjectStore rpkiObjectStore,
+                              RpkiRepositoryStore rpkiRepositoryStore) {
 
         this.rpkiObjectStore = rpkiObjectStore;
         
@@ -128,17 +134,11 @@ public class LmdbValidationRuns implements ValidationRunStore {
         repo2vr = new MultIxMap<>(lmdb.getEnv(), RPKI_RPKI_REPOSITORIES_TO_VALIDATION_RUNS, new FSTCoder<>());
 
         rpkiObjectStore.onDelete((tx, rpkiObjectKey) -> {
-            ro2vr.get(tx, rpkiObjectKey).forEach(validationRunId -> {
-                Stream.of(ctIxMap, repoIxMap).forEach(ixMap -> ixMap.delete(tx, validationRunId.key()));
-                vr2ro.delete(tx, validationRunId.key());
-            });
+            ro2vr.get(tx, rpkiObjectKey).forEach(validationRunId -> vr2ro.delete(tx, validationRunId));
             ro2vr.delete(tx, rpkiObjectKey);
         });
         rpkiRepositoryStore.onDelete((tx, repoKey) -> {
-            repo2vr.get(tx, repoKey).forEach(vrId -> {
-                repoIxMap.delete(tx, vrId.key());
-                vr2repo.delete(tx, vrId.key());
-            });
+            repo2vr.get(tx, repoKey).forEach(vrId -> vr2repo.delete(tx, vrId));
             repo2vr.delete(tx, repoKey);
         });
         trustAnchorStore.onDelete(this::removeAllForTrustAnchor);
@@ -152,9 +152,13 @@ public class LmdbValidationRuns implements ValidationRunStore {
     @Override
     @SuppressWarnings("unchecked")
     public <T extends ValidationRun> T add(Tx.Write tx, T vr) {
-        vr.setId(SId.of(sequences.next(tx, RPKI_VALIDATION_RUNS + ":pk")));
+        vr.setId(Key.of(sequences.next(tx, RPKI_VALIDATION_RUNS + ":pk")));
         IxMap<ValidationRun> validationRunIxMap = pickIxMap(vr.getType());
+        List<CertificateTreeValidationRun> all1 = findAll(tx, CertificateTreeValidationRun.class);
+        log.info("all1 = " + all1);
         validationRunIxMap.put(tx, vr.key(), vr);
+        List<CertificateTreeValidationRun> all2 = findAll(tx, CertificateTreeValidationRun.class);
+        log.info("all2 = " + all2);
         return vr;
     }
 
@@ -303,23 +307,31 @@ public class LmdbValidationRuns implements ValidationRunStore {
 
     @Override
     public Set<Key> findAssociatedObjects(Tx.Read tx, CertificateTreeValidationRun validationRun) {
-        return vr2ro.get(tx, validationRun.key()).stream().map(SId::key).collect(Collectors.toSet());
+        return new HashSet<>(vr2ro.get(tx, validationRun.key()));
     }
 
     private void associateVrAndRo(Tx.Write writeTx, ValidationRun validationRun, RpkiObject rpkiObject) {
-        vr2ro.put(writeTx, validationRun.key(), rpkiObject.getId());
-        ro2vr.put(writeTx, rpkiObject.key(), validationRun.getId());
+        vr2ro.put(writeTx, validationRun.key(), rpkiObject.key());
+        ro2vr.put(writeTx, rpkiObject.key(), validationRun.key());
     }
 
     @Override
     public Stream<Pair<CertificateTreeValidationRun, RpkiObject>> findCurrentlyValidated(Tx.Read tx, RpkiObject.Type type) {
-        return findLatestSuccessful(tx, CertificateTreeValidationRun.class).stream().flatMap(ct ->
-                vr2ro.get(tx, ct.key()).stream()
-                        .map(roId -> rpkiObjectStore.get(tx, roId.key()))
+        return findLatestSuccessful(tx, CertificateTreeValidationRun.class)
+                .stream()
+                .flatMap(ct -> vr2ro.get(tx, ct.key())
+                        .stream()
+                        .map(roId -> rpkiObjectStore.get(tx, roId))
                         .filter(Optional::isPresent)
                         .map(Optional::get)
                         .filter(ro -> ro.getType() == type)
                         .map(ro -> Pair.of(ct, ro)));
+    }
+
+    @Override
+    public void clear(Tx.Write tx) {
+        Stream.of(ro2vr, vr2ro, repo2vr, vr2repo, ctIxMap, taIxMap, repoIxMap)
+                .forEach(ixMap -> ixMap.clear(tx));
     }
 
     @SuppressWarnings("unchecked")

@@ -31,22 +31,14 @@ package net.ripe.rpki.validator3.api.rpkirepositories;
 
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
-import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
-import net.ripe.rpki.validator3.storage.stores.SettingsStore;
-import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
-import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.PostConstruct;
-import javax.transaction.TransactionManager;
-import javax.transaction.Transactional;
 
 @Component
 @Validated

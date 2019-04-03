@@ -30,7 +30,7 @@
 package net.ripe.rpki.validator3.storage.lmdb;
 
 import net.ripe.rpki.validator3.storage.Coder;
-import net.ripe.rpki.validator3.storage.Key;
+import net.ripe.rpki.validator3.storage.data.Key;
 import org.lmdbjava.CursorIterator;
 import org.lmdbjava.DbiFlags;
 import org.lmdbjava.Env;
@@ -40,7 +40,6 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiConsumer;
 
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.DbiFlags.MDB_DUPSORT;

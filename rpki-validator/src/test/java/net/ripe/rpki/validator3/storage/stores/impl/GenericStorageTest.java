@@ -30,7 +30,6 @@
 package net.ripe.rpki.validator3.storage.stores.impl;
 
 import lombok.Getter;
-import net.ripe.rpki.validator3.IntegrationTest;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbTests;
@@ -42,46 +41,48 @@ import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.quartz.Scheduler;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-@RunWith(SpringRunner.class)
-@IntegrationTest
 public class GenericStorageTest {
 
-    @Rule
-    public final TemporaryFolder tmp = new TemporaryFolder();
+//    @Rule
+//    public final TemporaryFolder tmp = new TemporaryFolder();
 
+    @Autowired
     @Getter
     private RpkiObjectStore rpkiObjectStore;
 
+    @Autowired
     @Getter
     private RpkiRepositoryStore rpkiRepositoryStore;
 
+    @Autowired
     @Getter
     private TrustAnchorStore trustAnchorStore;
 
+    @Autowired
     @Getter
     private ValidationRunStore validationRunStore;
 
     @Autowired
+    @Getter
     private ValidationScheduler validationScheduler;
 
     @Getter
+    @Autowired
     private Lmdb lmdb;
 
     @Before
     public void setUp() throws Exception {
-        lmdb = LmdbTests.makeLmdb(tmp.newFolder().getAbsolutePath());
-        rpkiObjectStore = new LmdbRpkiObject(lmdb);
-        trustAnchorStore = new LmdbTrustAnchors(lmdb);
-        rpkiRepositoryStore = new LmdbRpkiRepostiories(lmdb, trustAnchorStore, validationScheduler);
-        validationRunStore = new LmdbValidationRuns(lmdb, trustAnchorStore, rpkiObjectStore, rpkiRepositoryStore);
+        wtx0(tx -> {
+            rpkiObjectStore.clear(tx);
+            trustAnchorStore.clear(tx);
+            rpkiRepositoryStore.clear(tx);
+            validationRunStore.clear(tx);
+        });
     }
 
     protected <T> T rtx(Function<Tx.Read, T> f) {

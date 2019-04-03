@@ -32,7 +32,7 @@ package net.ripe.rpki.validator3.storage.stores;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
-import net.ripe.rpki.validator3.storage.Key;
+import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
@@ -49,7 +49,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 public interface ValidationRunStore {
@@ -80,4 +79,6 @@ public interface ValidationRunStore {
     Set<Key> findAssociatedObjects(Tx.Read tx, CertificateTreeValidationRun validationRun);
 
     Stream<Pair<CertificateTreeValidationRun, RpkiObject>> findCurrentlyValidated(Tx.Read tx, RpkiObject.Type cer);
+
+    void clear(Tx.Write tx);
 }

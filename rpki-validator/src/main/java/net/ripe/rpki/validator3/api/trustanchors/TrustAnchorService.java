@@ -33,11 +33,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.io.PatternFilenameFilter;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
+import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
-import net.ripe.rpki.validator3.storage.stores.Id;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
 import net.ripe.rpki.validator3.storage.stores.SettingsStore;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
@@ -117,7 +117,7 @@ public class TrustAnchorService {
 
     public void remove(long trustAnchorId) {
         Tx.use(lmdb.writeTx(), tx -> {
-            Optional<TrustAnchor> trustAnchor1 = trustAnchorStore.get(tx, Id.key(trustAnchorId));
+            Optional<TrustAnchor> trustAnchor1 = trustAnchorStore.get(tx, Key.of(trustAnchorId));
             trustAnchor1.ifPresent(trustAnchor -> {
                 rpkiRepositoryStore.removeAllForTrustAnchor(tx, trustAnchor);
                 trustAnchorStore.remove(tx, trustAnchor);

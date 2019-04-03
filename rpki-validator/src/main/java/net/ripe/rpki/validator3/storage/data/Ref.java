@@ -33,10 +33,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import net.ripe.rpki.validator3.storage.Binary;
-import net.ripe.rpki.validator3.storage.Key;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
-import org.apache.commons.lang3.builder.HashCodeExclude;
 
 import java.io.Serializable;
 
@@ -46,31 +44,25 @@ import java.io.Serializable;
 public class Ref<T extends Serializable> implements Serializable {
     @Getter
     private final String mapName;
-    @Getter
-    private final SId<T> sid;
+    private final Key key;
 
-    private Ref(String mapName, SId<T> sid) {
+    private Ref(String mapName, Key key) {
         this.mapName = mapName;
-        this.sid = sid;
+        this.key = key;
     }
 
-    public static <R extends Serializable> Ref<R> of(Tx.Read tx, IxMap<R> ix, SId<R> sid) {
-        if (ix.exists(tx, sid.key())) {
+    public static <R extends Serializable> Ref<R> of(Tx.Read tx, IxMap<R> ix, Key sid) {
+        if (ix.exists(tx, sid)) {
             return new Ref<>(ix.getName(), sid);
         }
         throw new RefException(ix, sid);
     }
 
-    public static <R extends Serializable> Ref<R> unsafe(String name, SId<R> sid) {
+    public static <R extends Serializable> Ref<R> unsafe(String name, Key sid) {
         return new Ref<>(name, sid);
     }
 
     public Key key() {
-        return sid.key();
-    }
-
-    @Override
-    public String toString() {
-        return "Ref(" + mapName + ", '" + sid + "')";
+        return key;
     }
 }

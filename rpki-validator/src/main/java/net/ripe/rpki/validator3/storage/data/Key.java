@@ -27,13 +27,16 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage;
+package net.ripe.rpki.validator3.storage.data;
 
+import com.google.common.primitives.Longs;
 import lombok.EqualsAndHashCode;
+import net.ripe.rpki.validator3.storage.Binary;
+import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.util.Hex;
 
+import java.io.Serializable;
 import java.math.BigInteger;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
@@ -47,23 +50,19 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 @EqualsAndHashCode
 @Binary
-public class Key {
-    private final ByteBuffer key;
+public class Key implements Serializable {
+    private final byte[] key;
 
     public Key(ByteBuffer bb) {
-        key = bb.duplicate();
+        key = Bytes.toBytes(bb);
     }
 
     private Key(byte[] bytes) {
-        key = ByteBuffer.allocateDirect(bytes.length);
-        key.put(bytes);
-        ((Buffer)key).flip();
+        key = Arrays.copyOf(bytes, bytes.length);
     }
 
     public Key(long long_) {
-        key = ByteBuffer.allocateDirect(Long.BYTES);
-        key.putLong(long_);
-        ((Buffer)key).flip();
+        key = Longs.toByteArray(long_);
     }
 
     public static Key of(byte[] bytes) {
@@ -103,11 +102,11 @@ public class Key {
     }
 
     public ByteBuffer toByteBuffer() {
-        return key;
+        return Bytes.toDirectBuffer(key);
     }
 
     public int size() {
-        return key.remaining();
+        return key.length;
     }
 
     public Key concat(Key key) {
@@ -115,14 +114,18 @@ public class Key {
     }
 
     public static Key concatAll(final Key... keys) {
-        final int size = Arrays.stream(keys).mapToInt(k -> k.key.remaining()).sum();
+        final int size = Arrays.stream(keys).mapToInt(Key::size).sum();
         final ByteBuffer combined = ByteBuffer.allocate(size);
-        Arrays.stream(keys).forEach(k -> combined.put(k.key.duplicate()));
+        Arrays.stream(keys).forEach(k -> combined.put(k.key));
         return new Key(combined);
     }
 
     @Override
     public String toString() {
-        return Hex.format(Bytes.toBytes(key));
+        return Hex.format(key);
+    }
+
+    public long asLong() {
+        return Longs.fromByteArray(key);
     }
 }

@@ -34,8 +34,13 @@ import lombok.Setter;
 import net.ripe.rpki.validator3.domain.validation.TrustAnchorValidationService;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
-import net.ripe.rpki.validator3.storage.stores.Id;
-import org.quartz.*;
+import org.quartz.DisallowConcurrentExecution;
+import org.quartz.Job;
+import org.quartz.JobBuilder;
+import org.quartz.JobDetail;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+import org.quartz.JobKey;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @DisallowConcurrentExecution

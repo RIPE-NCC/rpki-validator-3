@@ -42,33 +42,28 @@ import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.commons.validation.ValidationString;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
+import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
-import net.ripe.rpki.validator3.storage.data.SId;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
-import net.ripe.rpki.validator3.storage.stores.Id;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import net.ripe.rpki.validator3.util.Rsync;
-import net.ripe.rpki.validator3.util.Transactions;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.EntityManager;
-import javax.transaction.Transactional;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
@@ -106,7 +101,7 @@ public class TrustAnchorValidationService {
     }
 
     public void validate(long trustAnchorId) {
-        Optional<TrustAnchor> maybeTrustAnchor = Tx.rwith(lmdb.readTx(), tx -> trustAnchorStore.get(tx, Id.key(trustAnchorId)));
+        Optional<TrustAnchor> maybeTrustAnchor = Tx.rwith(lmdb.readTx(), tx -> trustAnchorStore.get(tx, Key.of(trustAnchorId)));
         if (!maybeTrustAnchor.isPresent()) {
             log.error("Trust anchor {} doesn't exist.", trustAnchorId);
             return;
@@ -116,7 +111,7 @@ public class TrustAnchorValidationService {
         log.info("trust anchor {} located at {} with subject public key info {}", trustAnchor.getName(), trustAnchor.getLocations(), trustAnchor.getSubjectPublicKeyInfo());
 
         TrustAnchorValidationRun validationRun = Tx.rwith(lmdb.readTx(), tx -> {
-            final Ref trustAnchorRef = trustAnchorStore.makeRef(tx, SId.of(trustAnchorId));
+            final Ref trustAnchorRef = trustAnchorStore.makeRef(tx, Key.of(trustAnchorId));
             return new TrustAnchorValidationRun(trustAnchorRef, trustAnchor.getLocations().get(0));
         });
         Tx.use(lmdb.writeTx(), tx -> validationRunStore.add(tx, validationRun));

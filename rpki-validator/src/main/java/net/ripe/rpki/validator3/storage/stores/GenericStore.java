@@ -29,9 +29,8 @@
  */
 package net.ripe.rpki.validator3.storage.stores;
 
-import net.ripe.rpki.validator3.storage.Key;
+import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
-import net.ripe.rpki.validator3.storage.data.SId;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 
 import java.io.Serializable;
@@ -40,7 +39,7 @@ import java.util.List;
 import java.util.function.BiConsumer;
 
 public interface GenericStore<T extends Serializable> {
-    Ref<T> makeRef(Tx.Read tx, SId<T> sid);
+    Ref<T> makeRef(Tx.Read tx, Key key);
 
     List<T> values(Tx.Read tx);
 

@@ -54,6 +54,7 @@ import javax.transaction.Transactional;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collections;
 
 import static net.ripe.rpki.validator3.domain.ta.TrustAnchorsFactory.KEY_PAIR_FACTORY;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -78,9 +79,8 @@ public class RpkiObjectCleanupServiceTest extends GenericStorageTest {
     @Test
     public void should_delete_objects_not_reachable_from_manifest() {
 
-        TrustAnchor trustAnchor = wtx(tx -> factory.createTrustAnchor(tx, ta -> {
-            ta.roaPrefixes(Arrays.asList(RoaPrefix.of(IpRange.parse("127.0.0.0/8"), null, Asn.parse("123"))));
-        }));
+        TrustAnchor trustAnchor = wtx(tx -> factory.createTrustAnchor(tx, ta ->
+                ta.roaPrefixes(Collections.singletonList(RoaPrefix.of(IpRange.parse("127.0.0.0/8"), null, Asn.parse("123"))))));
 
         // No orphans, so nothing to delete
         assertThat(subject.cleanupRpkiObjects()).isEqualTo(0);
@@ -91,7 +91,7 @@ public class RpkiObjectCleanupServiceTest extends GenericStorageTest {
                 .withResources(IpResourceSet.parse("10.0.0.0/8"))
                 .withIssuerDN(trustAnchor.getCertificate().getSubject())
                 .withSubjectDN(new X500Principal("CN=orphan"))
-                .withSerial(factory.nextSerial())
+                .withSerial(TrustAnchorsFactory.nextSerial())
                 .withPublicKey(KEY_PAIR_FACTORY.generate().getPublic())
                 .withSigningKeyPair(KEY_PAIR_FACTORY.generate())
                 .withValidityPeriod(new ValidityPeriod(DateTime.now(), DateTime.now().plusYears(1)))

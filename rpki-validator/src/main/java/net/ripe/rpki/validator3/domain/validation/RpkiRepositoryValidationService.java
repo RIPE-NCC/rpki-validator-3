@@ -37,8 +37,8 @@ import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
 import net.ripe.rpki.validator3.rrdp.RrdpService;
+import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.Lmdb;
-import net.ripe.rpki.validator3.storage.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
@@ -47,7 +47,6 @@ import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidation
 import net.ripe.rpki.validator3.storage.data.validation.RrdpRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.RsyncRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
-import net.ripe.rpki.validator3.storage.stores.Id;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
@@ -76,9 +75,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -118,7 +115,7 @@ public class RpkiRepositoryValidationService {
 
     public void validateRpkiRepository(long rpkiRepositoryId) {
         Triple<RpkiRepository, RpkiRepositoryValidationRun, ValidationResult> triple = Tx.with(lmdb.writeTx(), tx -> {
-            final Key key = Id.key(rpkiRepositoryId);
+            final Key key = Key.of(rpkiRepositoryId);
             final RpkiRepository rpkiRepository = rpkiRepositoryStore.get(tx, key).orElse(null);
             ValidationResult validationResult = ValidationResult.withLocation(rpkiRepository.getRrdpNotifyUri());
             log.info("Starting RPKI repository validation for " + rpkiRepository);

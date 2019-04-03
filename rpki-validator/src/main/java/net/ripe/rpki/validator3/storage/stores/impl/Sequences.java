@@ -29,16 +29,16 @@
  */
 package net.ripe.rpki.validator3.storage.stores.impl;
 
+import com.google.common.primitives.Longs;
 import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.Coder;
+import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.Lmdb;
-import net.ripe.rpki.validator3.storage.Key;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Optional;
 
@@ -46,37 +46,37 @@ import java.util.Optional;
 public class Sequences {
 
     private final String SEQUENCES = "sequences";
-    private final IxMap<BigInteger> ixMap;
+    private final IxMap<Long> ixMap;
 
     @Autowired
     public Sequences(Lmdb lmdb) {
         this.ixMap = new IxMap<>(
                 lmdb.getEnv(),
                 SEQUENCES,
-                new Coder<BigInteger>() {
+                new Coder<Long>() {
                     @Override
-                    public ByteBuffer toBytes(BigInteger bigInteger) {
-                        return Bytes.toDirectBuffer(bigInteger.toByteArray());
+                    public ByteBuffer toBytes(Long bigInteger) {
+                        return Bytes.toDirectBuffer(Longs.toByteArray(bigInteger));
                     }
 
                     @Override
-                    public BigInteger fromBytes(ByteBuffer bb) {
-                        return new BigInteger(Bytes.toBytes(bb));
+                    public Long fromBytes(ByteBuffer bb) {
+                        return Longs.fromByteArray(Bytes.toBytes(bb));
                     }
                 });
     }
 
 
-    public BigInteger next(Tx.Write tx, String name) {
+    public long next(Tx.Write tx, String name) {
         final Key key = Key.of(name);
-        final Optional<BigInteger> seqValue = ixMap.get(tx, key);
+        final Optional<Long> seqValue = ixMap.get(tx, key);
         if (seqValue.isPresent()) {
-            final BigInteger nextValue = seqValue.get().add(BigInteger.ONE);
+            final long nextValue = seqValue.get() + 1;
             ixMap.put(tx, key, nextValue);
             return nextValue;
         }
-        ixMap.put(tx, key, BigInteger.ONE);
-        return BigInteger.ONE;
+        ixMap.put(tx, key, 1L);
+        return 1L;
     }
 
 }

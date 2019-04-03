@@ -30,18 +30,19 @@
 package net.ripe.rpki.validator3.storage.data;
 
 import lombok.Data;
-import net.ripe.rpki.validator3.storage.Key;
+import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
 import java.time.Instant;
 
 @Data
+@EqualsAndHashCode
 public class Base<T extends Base> implements Serializable {
-    private SId<T> id;
+    private Key id;
     private Instant createdAt = Instant.now();
     private Instant updatedAt;
 
     public Key key() {
-        return id.key();
+        return id;
     }
 }

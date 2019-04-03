@@ -47,10 +47,6 @@ import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
-import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
-import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
-import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
-import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import net.ripe.rpki.validator3.storage.stores.impl.GenericStorageTest;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joda.time.Duration;
@@ -61,7 +57,6 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import javax.persistence.EntityManager;
 import javax.security.auth.x500.X500Principal;
 import javax.transaction.Transactional;
 import java.net.URI;
@@ -74,11 +69,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
-import static net.ripe.rpki.validator3.domain.ValidationRun.Status.SUCCEEDED;
 import static net.ripe.rpki.validator3.domain.ta.TrustAnchorsFactory.CertificateAuthority;
 import static net.ripe.rpki.validator3.domain.ta.TrustAnchorsFactory.KEY_PAIR_FACTORY;
 import static net.ripe.rpki.validator3.domain.ta.TrustAnchorsFactory.TA_CA_REPOSITORY_URI;
 import static net.ripe.rpki.validator3.domain.ta.TrustAnchorsFactory.TA_RRDP_NOTIFY_URI;
+import static net.ripe.rpki.validator3.storage.data.validation.ValidationRun.Status.SUCCEEDED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(SpringRunner.class)
@@ -90,25 +85,10 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
     private TrustAnchorsFactory factory;
 
     @Autowired
-    private EntityManager entityManager;
-
-    @Autowired
-    private TrustAnchorStore trustAnchors;
-
-    @Autowired
     private CertificateTreeValidationService subject;
 
     @Autowired
-    private ValidationRunStore validationRuns;
-
-    @Autowired
-    private RpkiRepositoryStore rpkiRepositories;
-
-    @Autowired
     private ValidationScheduler validationScheduler;
-
-    @Autowired
-    private RpkiObjectStore rpkiObjects;
 
     @Autowired
     private Settings settings;
@@ -116,23 +96,23 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
     @Test
     public void should_register_rpki_repositories() {
         TrustAnchor ta = factory.createRipeNccTrustAnchor();
-        wtx(tx -> trustAnchors.add(tx, ta));
+        wtx(tx -> getTrustAnchorStore().add(tx, ta));
 
         subject.validate(ta.getId().asLong());
 
-        List<CertificateTreeValidationRun> completed = rtx(tx -> validationRuns.findAll(tx, CertificateTreeValidationRun.class));
+        List<CertificateTreeValidationRun> completed = rtx(tx -> getValidationRunStore().findAll(tx, CertificateTreeValidationRun.class));
         assertThat(completed).hasSize(1);
 
         CertificateTreeValidationRun result = completed.get(0);
         assertThat(result.getStatus()).isEqualTo(SUCCEEDED);
 
-        assertThat(rpkiRepositories.findAll(null, null)).first().extracting(
-            RpkiRepository::getStatus,
-            RpkiRepository::getLocationUri
+        rtx0(tx -> assertThat(getRpkiRepositoryStore().findAll(tx, ta.key())).first().extracting(
+                RpkiRepository::getStatus,
+                RpkiRepository::getLocationUri
         ).containsExactly(
-            RpkiRepository.Status.PENDING,
-            "https://rrdp.ripe.net/notification.xml"
-        );
+                RpkiRepository.Status.PENDING,
+                "https://rrdp.ripe.net/notification.xml"
+        ));
 
         assertThat(ta.isInitialCertificateTreeValidationRunCompleted()).as("trust anchor initial validation run completed").isFalse();
         assertThat(settings.isInitialValidationRunCompleted()).as("validator initial validation run completed").isFalse();
@@ -145,25 +125,25 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
                 x.notifyURI(null);
                 x.repositoryURI(TA_CA_REPOSITORY_URI);
             });
-            trustAnchors.add(tx, trustAnchor);
+            getTrustAnchorStore().add(tx, trustAnchor);
             return trustAnchor;
         });
 
         subject.validate(ta.getId().asLong());
 
-        List<CertificateTreeValidationRun> completed = rtx(tx -> validationRuns.findAll(tx, CertificateTreeValidationRun.class));
+        List<CertificateTreeValidationRun> completed = rtx(tx -> getValidationRunStore().findAll(tx, CertificateTreeValidationRun.class));
         assertThat(completed).hasSize(1);
 
         CertificateTreeValidationRun result = completed.get(0);
         assertThat(result.getStatus()).isEqualTo(SUCCEEDED);
 
-        assertThat(rpkiRepositories.findAll(null, null)).first().extracting(
-            RpkiRepository::getStatus,
-            RpkiRepository::getLocationUri
+        rtx0(tx -> assertThat(getRpkiRepositoryStore().findAll(tx, ta.getId())).first().extracting(
+                RpkiRepository::getStatus,
+                RpkiRepository::getLocationUri
         ).containsExactly(
-            RpkiRepository.Status.PENDING,
-            TA_CA_REPOSITORY_URI
-        );
+                RpkiRepository.Status.PENDING,
+                TA_CA_REPOSITORY_URI
+        ));
 
         assertThat(ta.isInitialCertificateTreeValidationRunCompleted()).as("trust anchor initial validation run completed").isFalse();
         assertThat(settings.isInitialValidationRunCompleted()).as("validator initial validation run completed").isFalse();
@@ -177,14 +157,14 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
                 x.notifyURI(null);
                 x.repositoryURI(TA_CA_REPOSITORY_URI);
             });
-            RpkiRepository repository = rpkiRepositories.register(tx, trustAnchor, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
+            RpkiRepository repository = getRpkiRepositoryStore().register(tx, trustAnchor, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
             repository.setDownloaded();
-            trustAnchors.add(tx, trustAnchor);
+            getTrustAnchorStore().add(tx, trustAnchor);
             subject.validate(trustAnchor.getId().asLong());
             return trustAnchor;
         });
 
-        List<CertificateTreeValidationRun> completed = rtx(tx -> validationRuns.findAll(tx, CertificateTreeValidationRun.class));
+        List<CertificateTreeValidationRun> completed = rtx(tx -> getValidationRunStore().findAll(tx, CertificateTreeValidationRun.class));
         assertThat(completed).hasSize(1);
 
         CertificateTreeValidationRun result = completed.get(0);
@@ -192,9 +172,9 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
         assertThat(result.getStatus()).isEqualTo(SUCCEEDED);
 
         Set<RpkiObject> validatedObjects = rtx(tx ->
-                validationRuns.findAssociatedObjects(tx, result)
+                getValidationRunStore().findAssociatedObjects(tx, result)
                         .stream()
-                        .map(pk -> rpkiObjects.get(tx, pk))
+                        .map(pk -> getRpkiObjectStore().get(tx, pk))
                         .filter(Optional::isPresent)
                         .map(Optional::get)
                         .collect(Collectors.toSet()));
@@ -230,27 +210,26 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
         }));
 
         wtx0(tx -> {
-            trustAnchors.add(tx, ta);
-            RpkiRepository repository = rpkiRepositories.register(tx, ta, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
+            getTrustAnchorStore().add(tx, ta);
+            RpkiRepository repository = getRpkiRepositoryStore().register(tx, ta, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
             repository.setDownloaded();
-            rpkiRepositories.update(tx, repository);
+            getRpkiRepositoryStore().update(tx, repository);
         });
 
         subject.validate(ta.getId().asLong());
-        entityManager.flush();
 
-        List<CertificateTreeValidationRun> completed = rtx(tx -> validationRuns.findAll(tx, CertificateTreeValidationRun.class));
+        List<CertificateTreeValidationRun> completed = rtx(tx -> getValidationRunStore().findAll(tx, CertificateTreeValidationRun.class));
         assertThat(completed).hasSize(1);
 
         assertThat(ta.isInitialCertificateTreeValidationRunCompleted()).as("trust anchor initial validation run completed").isTrue();
         assertThat(settings.isInitialValidationRunCompleted()).as("validator initial validation run completed").isFalse();
 
         List<Pair<CertificateTreeValidationRun, RpkiObject>> validated = rtx(tx ->
-                validationRuns.findCurrentlyValidated(tx, RpkiObject.Type.CER).collect(toList()));
+                getValidationRunStore().findCurrentlyValidated(tx, RpkiObject.Type.CER).collect(toList()));
         assertThat(validated).hasSize(1);
         assertThat(validated.get(0).getLeft()).isEqualTo(completed.get(0));
-        Optional<X509RouterCertificate> cro = rtx(tx -> rpkiObjects.findCertificateRepositoryObject(tx,
-                validated.get(0).getRight().getId().key(), X509RouterCertificate.class, ValidationResult.withLocation("ignored.cer")));
+        Optional<X509RouterCertificate> cro = rtx(tx -> getRpkiObjectStore().findCertificateRepositoryObject(tx,
+                validated.get(0).getRight().getId(), X509RouterCertificate.class, ValidationResult.withLocation("ignored.cer")));
         assertThat(cro).isPresent().hasValueSatisfying(x -> assertThat(x.getSubject()).isEqualTo(new X500Principal("CN=child-ca")));
     }
 
@@ -258,25 +237,25 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
     public void should_report_proper_error_when_repository_is_unavailable() {
         TrustAnchor trustAnchor = wtx(tx -> {
             TrustAnchor ta = factory.createTypicalTa(tx, KEY_PAIR_FACTORY.generate());
-            trustAnchors.add(tx, ta);
+            getTrustAnchorStore().add(tx, ta);
             return ta;
         });
 
         RpkiRepository repository = wtx(tx -> {
-            RpkiRepository r = rpkiRepositories.register(tx, trustAnchor, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
+            RpkiRepository r = getRpkiRepositoryStore().register(tx, trustAnchor, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
             r.setFailed();
-            rpkiRepositories.update(tx, r);
+            getRpkiRepositoryStore().update(tx, r);
 
             final URI manifestUri = trustAnchor.getCertificate().getManifestUri();
-            final Optional<RpkiObject> mft = rpkiObjects.values(tx).stream().filter(o -> o.getLocations().contains(manifestUri.toASCIIString())).findFirst();
-            mft.ifPresent(m -> rpkiObjects.remove(m));
+            final Optional<RpkiObject> mft = getRpkiObjectStore().values(tx).stream().filter(o -> o.getLocations().contains(manifestUri.toASCIIString())).findFirst();
+            mft.ifPresent(m -> getRpkiObjectStore().remove(tx, m));
             return r;
         });
 
         subject.validate(trustAnchor.getId().asLong());
 
         rtx0(tx -> {
-            List<CertificateTreeValidationRun> completed = validationRuns.findAll(tx, CertificateTreeValidationRun.class);
+            List<CertificateTreeValidationRun> completed = getValidationRunStore().findAll(tx, CertificateTreeValidationRun.class);
             assertThat(completed).hasSize(1);
             final List<net.ripe.rpki.validator3.storage.data.validation.ValidationCheck> checks = completed.get(0).getValidationChecks();
             assertThat(checks.get(0).getKey()).isEqualTo(ValidationString.VALIDATOR_NO_MANIFEST_REPOSITORY_FAILED);
@@ -288,26 +267,26 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
     public void should_report_proper_error_when_repository_is_available_but_no_manifest() {
         TrustAnchor trustAnchor = wtx(tx -> {
             TrustAnchor ta = factory.createTypicalTa(tx, KEY_PAIR_FACTORY.generate());
-            trustAnchors.add(tx, ta);
+            getTrustAnchorStore().add(tx, ta);
             return ta;
         });
 
         RpkiRepository repository = wtx(tx -> {
-            RpkiRepository r = rpkiRepositories.register(tx, trustAnchor, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
-            r.setFailed();
-            rpkiRepositories.update(tx, r);
+            RpkiRepository r = getRpkiRepositoryStore().register(tx, trustAnchor, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
+            r.setDownloaded();
+            getRpkiRepositoryStore().update(tx, r);
 
             final URI manifestUri = trustAnchor.getCertificate().getManifestUri();
-            final Optional<RpkiObject> mft = rpkiObjects.values(tx).stream()
+            final Optional<RpkiObject> mft = getRpkiObjectStore().values(tx).stream()
                     .filter(o -> o.getLocations().contains(manifestUri.toASCIIString())).findFirst();
-            mft.ifPresent(m -> rpkiObjects.remove(m));
+            mft.ifPresent(m -> getRpkiObjectStore().remove(tx, m));
             return r;
         });
 
         subject.validate(trustAnchor.getId().asLong());
 
         rtx0(tx -> {
-            List<CertificateTreeValidationRun> completed = validationRuns.findAll(tx, CertificateTreeValidationRun.class);
+            List<CertificateTreeValidationRun> completed = getValidationRunStore().findAll(tx, CertificateTreeValidationRun.class);
             assertThat(completed).hasSize(1);
             final List<ValidationCheck> checks = completed.get(0).getValidationChecks();
             assertThat(checks.get(0).getKey()).isEqualTo(ValidationString.VALIDATOR_NO_LOCAL_MANIFEST_NO_MANIFEST_IN_REPOSITORY);
@@ -338,22 +317,22 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
                         .build();
                 x.children(Collections.singletonList(child));
             }, mftValidityPeriod);
-            trustAnchors.add(tx, ta1);
+            getTrustAnchorStore().add(tx, ta1);
             return ta1;
         });
 
 
         RpkiRepository repository = wtx(tx -> {
-            RpkiRepository r = rpkiRepositories.register(tx, ta, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
+            RpkiRepository r = getRpkiRepositoryStore().register(tx, ta, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
             r.setFailed();
-            rpkiRepositories.update(tx, r);
+            getRpkiRepositoryStore().update(tx, r);
             return r;
         });
 
         subject.validate(ta.getId().asLong());
 
         rtx0(tx -> {
-            List<CertificateTreeValidationRun> completed = validationRuns.findAll(tx, CertificateTreeValidationRun.class);
+            List<CertificateTreeValidationRun> completed = getValidationRunStore().findAll(tx, CertificateTreeValidationRun.class);
             assertThat(completed).hasSize(1);
             final List<ValidationCheck> checks = completed.get(0).getValidationChecks();
             assertThat(checks.get(0).getKey()).isEqualTo(ValidationString.VALIDATOR_OLD_LOCAL_MANIFEST_REPOSITORY_FAILED);
@@ -368,21 +347,22 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
             TrustAnchor ta1 = factory.createTrustAnchor(tx, x -> x.roaPrefixes(Collections.singletonList(
                     RoaPrefix.of(IpRange.prefix(IpAddress.parse("192.168.0.0"), 16), 24, Asn.parse("64512"))
             )));
-            trustAnchors.add(tx, ta1);
-            RpkiRepository repository = rpkiRepositories.register(tx, ta1, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
+            getTrustAnchorStore().add(tx, ta1);
+            RpkiRepository repository = getRpkiRepositoryStore().register(tx, ta1, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
             validationScheduler.addRpkiRepository(repository);
             repository.setDownloaded();
+            getRpkiRepositoryStore().update(tx, repository);
             return ta1;
         });
 
         subject.validate(ta.getId().asLong());
 
-        List<CertificateTreeValidationRun> completed = rtx(tx -> validationRuns.findAll(tx, CertificateTreeValidationRun.class));
+        List<CertificateTreeValidationRun> completed = rtx(tx -> getValidationRunStore().findAll(tx, CertificateTreeValidationRun.class));
         assertThat(completed).hasSize(1);
 
         CertificateTreeValidationRun result = completed.get(0);
 
-        List<Pair<CertificateTreeValidationRun, RpkiObject>> validatedRoas = rtx(tx -> validationRuns
+        List<Pair<CertificateTreeValidationRun, RpkiObject>> validatedRoas = rtx(tx -> getValidationRunStore()
                 .findCurrentlyValidated(tx, RpkiObject.Type.ROA).collect(toList()));
         assertThat(validatedRoas).hasSize(1);
         assertThat(validatedRoas.get(0).getLeft()).isEqualTo(result);

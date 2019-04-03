@@ -33,7 +33,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import net.ripe.rpki.validator3.storage.FSTCoder;
 import net.ripe.rpki.validator3.storage.Lmdb;
-import net.ripe.rpki.validator3.storage.Key;
+import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.util.Time;
 import org.junit.Before;
 import org.junit.Rule;

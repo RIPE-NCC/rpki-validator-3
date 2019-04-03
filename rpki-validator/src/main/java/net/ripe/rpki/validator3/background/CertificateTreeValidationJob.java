@@ -34,7 +34,6 @@ import lombok.Setter;
 import net.ripe.rpki.validator3.domain.validation.CertificateTreeValidationService;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
-import net.ripe.rpki.validator3.storage.stores.Id;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
 import org.quartz.JobBuilder;

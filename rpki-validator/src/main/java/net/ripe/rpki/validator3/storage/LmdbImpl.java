@@ -27,41 +27,49 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.data;
+package net.ripe.rpki.validator3.storage;
 
-import lombok.Value;
-import net.ripe.rpki.validator3.storage.Bytes;
-import net.ripe.rpki.validator3.storage.Key;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.lmdbjava.Env;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Component;
 
-import java.io.Serializable;
-import java.math.BigInteger;
+import javax.annotation.PreDestroy;
+import java.io.File;
+import java.nio.ByteBuffer;
 
-@Value
-public class SId<T> implements Serializable {
-    byte[] id;
+import static org.lmdbjava.Env.create;
 
-    public static SId of(byte[] id) {
-        return new SId(id);
+@Profile("!test")
+@Component
+@Slf4j
+public class LmdbImpl extends Lmdb {
+
+    @Getter
+    private final Env<ByteBuffer> env;
+
+    public LmdbImpl(
+            @Value("${rpki.validator.lmdb.path}") String lmdbPath,
+            @Value("${rpki.validator.lmdb.size.mb:8192}") long dbSizeInMb) {
+        try {
+            env = create()
+                    .setMapSize(dbSizeInMb * 1024 * 1024L)
+                    .setMaxDbs(100)
+                    .open(new File(lmdbPath));
+        } catch (Exception e) {
+            log.error("Couldn't open LMDB", e);
+            throw e;
+        }
     }
 
-    public static SId of(Key key) {
-        return new SId(Bytes.toBytes(key.toByteBuffer()));
-    }
-
-    public static SId of(BigInteger bi) {
-        return new SId(bi.toByteArray());
-    }
-
-    // TODO Optmize it
-    public static SId of(long long_) {
-        return SId.of(Key.of(long_));
-    }
-
-    public Key key() {
-        return Key.of(id);
-    }
-
-    public Long asLong() {
-        return new BigInteger(id).longValue();
+    @PreDestroy
+    public void close() {
+        try {
+            env.close();
+        } catch (Exception e) {
+            log.error("Couldn't close LMDB", e);
+        }
     }
 }

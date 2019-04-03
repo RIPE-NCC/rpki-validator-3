@@ -32,17 +32,13 @@ package net.ripe.rpki.validator3.storage.stores;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.validation.ValidationResult;
-import net.ripe.rpki.validator3.storage.Key;
+import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
-import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 public interface RpkiObjectStore extends GenericStore<RpkiObject> {
@@ -50,7 +46,7 @@ public interface RpkiObjectStore extends GenericStore<RpkiObject> {
 
     RpkiObject add(Tx.Write tx, RpkiObject rpkiObject);
 
-    void remove(RpkiObject o);
+    void remove(Tx.Write tx, RpkiObject o);
 
     <T extends CertificateRepositoryObject> Optional<T> findCertificateRepositoryObject(
             Tx.Read tx, Key sha256, Class<T> clazz, ValidationResult validationResult);

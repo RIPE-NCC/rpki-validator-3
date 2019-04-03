@@ -57,11 +57,11 @@ public class SequencesTest {
 
     @Test
     public void testNext() {
-        assertEquals(new BigInteger("1"), Tx.with(env.writeTx(), tx -> sequences.next(tx, "seq1")));
-        assertEquals(new BigInteger("2"), Tx.with(env.writeTx(), tx -> sequences.next(tx, "seq1")));
-        assertEquals(new BigInteger("1"), Tx.with(env.writeTx(), tx -> sequences.next(tx, "seq2")));
-        assertEquals(new BigInteger("2"), Tx.with(env.writeTx(), tx -> sequences.next(tx, "seq2")));
-        assertEquals(new BigInteger("3"), Tx.with(env.writeTx(), tx -> sequences.next(tx, "seq2")));
+        assertEquals(new Long(1L), Tx.with(env.writeTx(), tx -> sequences.next(tx, "seq1")));
+        assertEquals(new Long(2L), Tx.with(env.writeTx(), tx -> sequences.next(tx, "seq1")));
+        assertEquals(new Long(1L), Tx.with(env.writeTx(), tx -> sequences.next(tx, "seq2")));
+        assertEquals(new Long(2L), Tx.with(env.writeTx(), tx -> sequences.next(tx, "seq2")));
+        assertEquals(new Long(3L), Tx.with(env.writeTx(), tx -> sequences.next(tx, "seq2")));
     }
 
 }

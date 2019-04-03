@@ -38,10 +38,9 @@ import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.storage.FSTCoder;
 import net.ripe.rpki.validator3.storage.Lmdb;
-import net.ripe.rpki.validator3.storage.Key;
+import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
-import net.ripe.rpki.validator3.storage.data.SId;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
@@ -100,15 +99,14 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
         log.info("Registering repository {} of type {}", uri, type);
         final Optional<RpkiRepository> existing = findByURI(tx, uri);
 
-        final Ref taRef = trustAnchorStore.makeRef(tx, SId.of(trustAnchor.key()));
-
+        final Ref<TrustAnchor> taRef = trustAnchorStore.makeRef(tx, trustAnchor.key());
         final RpkiRepository registered;
         if (existing.isPresent()) {
             registered = existing.get();
             registered.addTrustAnchor(taRef);
         } else {
             registered = new RpkiRepository(taRef, uri, type);
-            final SId<RpkiRepository> primaryKey = SId.of(sequences.next(tx, RPKI_REPOSITORIES + ":pk"));
+            final Key primaryKey = Key.of(sequences.next(tx, RPKI_REPOSITORIES + ":pk"));
             registered.setId(primaryKey);
         }
 
