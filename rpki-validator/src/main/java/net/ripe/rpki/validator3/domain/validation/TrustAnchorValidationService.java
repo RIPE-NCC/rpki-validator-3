@@ -75,9 +75,6 @@ public class TrustAnchorValidationService {
     private final RpkiRepositoryStore rpkiRepositoryStore;
     private final ValidationRunStore validationRunStore;
     private final ValidationScheduler validationScheduler;
-
-//    private final TrustAnchors trustAnchorRepository;
-//    private final ValidationRuns validationRunRepository;
     private final File localRsyncStorageDirectory;
     private final RpkiRepositoryValidationService repositoryValidationService;
     private final Lmdb lmdb;
