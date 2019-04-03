@@ -95,7 +95,7 @@ public class ValidationScheduler {
         }
     }
 
-    public synchronized void addRpkiRepository(RpkiRepository rpkiRepository) {
+    public synchronized void scheduleRRDPValidation(RpkiRepository rpkiRepository) {
         Preconditions.checkArgument(
             rpkiRepository.getId() >= Api.MINIMUM_VALID_ID,
             "rpkiRepository id %s is not valid",
@@ -103,11 +103,11 @@ public class ValidationScheduler {
         );
 
         try {
-            if (!scheduler.checkExists(RepositoryValidationJob.getJobKey(rpkiRepository))) {
-                log.info("Adding repository to the scheduler {}", rpkiRepository);
+            if (!scheduler.checkExists(ValidateRRDPRepositoriesJob.getJobKey(rpkiRepository))) {
+                log.info("Adding RRDP repository to the scheduler {}", rpkiRepository);
 
                 scheduler.scheduleJob(
-                        RepositoryValidationJob.buildJob(rpkiRepository),
+                        ValidateRRDPRepositoriesJob.buildJob(rpkiRepository),
                         TriggerBuilder.newTrigger()
                                 .startNow()
                                 .withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(1))
@@ -119,9 +119,32 @@ public class ValidationScheduler {
         }
     }
 
+    public synchronized void schedulePrefetchRsync(RpkiRepository rpkiRepository) {
+        Preconditions.checkArgument(
+                rpkiRepository.getId() >= Api.MINIMUM_VALID_ID,
+                "rpkiRepository id %s is not valid",
+                rpkiRepository.getId()
+        );
+
+        try {
+            if (!scheduler.checkExists(PrefetchRsyncRepositoryJob.getJobKey(rpkiRepository))) {
+                log.info("Scheduling prefetch for repository {}", rpkiRepository);
+
+                scheduler.scheduleJob(
+                        PrefetchRsyncRepositoryJob.buildJob(rpkiRepository),
+                        TriggerBuilder.newTrigger()
+                                .withPriority(10)
+                                .startNow().build()
+                );
+            }
+        } catch (SchedulerException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
     public void removeRpkiRepository(RpkiRepository repository) {
         try {
-            boolean jobDeleted = scheduler.deleteJob(RepositoryValidationJob.getJobKey(repository));
+            boolean jobDeleted = scheduler.deleteJob(ValidateRRDPRepositoriesJob.getJobKey(repository));
             if (!jobDeleted) {
                 throw new EmptyResultDataAccessException("validation job for RPKI repository not found", 1);
             }
@@ -132,6 +155,7 @@ public class ValidationScheduler {
 
     public void triggerCertificateTreeValidation(TrustAnchor trustAnchor) {
         try {
+            log.info("Triggering tree validation for {} ", trustAnchor.getName());
             scheduler.triggerJob(CertificateTreeValidationJob.getJobKey(trustAnchor));
         } catch (SchedulerException ex) {
             throw new RuntimeException(ex);

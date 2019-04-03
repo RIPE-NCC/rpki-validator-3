@@ -52,7 +52,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityManager;
@@ -105,11 +104,12 @@ public class RpkiRepositoryValidationService {
         this.rsyncRepositoryDownloadInterval = Duration.parse(rsyncRepositoryDownloadInterval);
     }
 
-    public void validateRpkiRepository(long rpkiRepositoryId) {
+    public void validateRRDPRepository(long rpkiRepositoryId) {
         entityManager.setFlushMode(FlushModeType.COMMIT);
 
         final RpkiRepository rpkiRepository = rpkiRepositories.get(rpkiRepositoryId);
-        log.info("Starting RPKI repository validation for " + rpkiRepository);
+        log.info("Starting repository validation for RRDP {} serial {} ", rpkiRepository.getRrdpNotifyUri(),
+                rpkiRepository.getRrdpSerial());
 
         ValidationResult validationResult = ValidationResult.withLocation(rpkiRepository.getRrdpNotifyUri());
 
@@ -137,6 +137,11 @@ public class RpkiRepositoryValidationService {
         }
 
         if (validationRun.isSucceeded() && validationRun.getAddedObjectCount() > 0) {
+            log.info("Succesful validation of RRDP Repo, kicking tree validation after flush");
+            entityManager.flush();
+            entityManager.clear();
+            log.info("Ready to kick validation tree involving this repo {}", rpkiRepository);
+
             rpkiRepository.getTrustAnchors().forEach(validationRunRepository::runCertificateTreeValidation);
         }
     }
@@ -169,6 +174,8 @@ public class RpkiRepositoryValidationService {
             );
 
         validationRun.completeWith(results);
+        entityManager.flush();
+        entityManager.clear();
         affectedTrustAnchors.forEach(ta -> {
             log.info("The following trust anchor was affected, validation will be triggered {}", ta);
             validationRunRepository.runCertificateTreeValidation(ta);

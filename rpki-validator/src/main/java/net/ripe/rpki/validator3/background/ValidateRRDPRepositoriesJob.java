@@ -27,44 +27,46 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.api.rpkirepositories;
+package net.ripe.rpki.validator3.background;
 
-import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.background.ValidationScheduler;
-import net.ripe.rpki.validator3.domain.RpkiRepositories;
+import lombok.Getter;
+import lombok.Setter;
+import net.ripe.rpki.validator3.domain.RpkiRepository;
+import net.ripe.rpki.validator3.domain.RpkiRepositoryValidationRun;
+import net.ripe.rpki.validator3.domain.validation.RpkiRepositoryValidationService;
+import org.quartz.DisallowConcurrentExecution;
+import org.quartz.Job;
+import org.quartz.JobBuilder;
+import org.quartz.JobDetail;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobKey;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.validation.annotation.Validated;
 
-import javax.annotation.PostConstruct;
-import javax.transaction.Transactional;
+@DisallowConcurrentExecution
+public class ValidateRRDPRepositoriesJob implements Job {
 
-@Component
-@Transactional
-@Validated
-@Slf4j
-public class RpkiRepositoryService {
+    public static final String RPKI_REPOSITORY_ID = "rpkiRepositoryId";
 
     @Autowired
-    private RpkiRepositories rpkiRepositories;
+    private RpkiRepositoryValidationService validationService;
 
-    @Autowired
-    private ValidationScheduler validationScheduler;
+    @Getter
+    @Setter
+    private long rpkiRepositoryId;
 
-    @Autowired
-    private PlatformTransactionManager transactionManager;
+    @Override
+    public void execute(JobExecutionContext context) {
+        validationService.validateRRDPRepository(rpkiRepositoryId);
+    }
 
-    @PostConstruct
-    public void scheduleRpkiRepositoryValidation() {
-        log.info("Schedule RPKI validation for the existing repositories");
-        new TransactionTemplate(transactionManager).execute(status -> {
-            rpkiRepositories.findRrdpRepositories().forEach(r -> {
-                validationScheduler.scheduleRRDPValidation(r);
-                log.info("Scheduled RRDP repo {} for validation.", r);
-            });
-            return null;
-        });
+    static JobDetail buildJob(RpkiRepository rpkiRepository) {
+        return JobBuilder.newJob(ValidateRRDPRepositoriesJob.class)
+            .withIdentity(getJobKey(rpkiRepository))
+            .usingJobData(RPKI_REPOSITORY_ID, rpkiRepository.getId())
+            .build();
+    }
+
+    static JobKey getJobKey(RpkiRepository rpkiRepository) {
+        return new JobKey(String.format("%s#%s#%d", RpkiRepositoryValidationRun.TYPE, rpkiRepository.getRrdpNotifyUri(), rpkiRepository.getId()));
     }
 }

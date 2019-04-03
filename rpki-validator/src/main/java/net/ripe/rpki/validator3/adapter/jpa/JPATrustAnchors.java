@@ -51,23 +51,18 @@ import static net.ripe.rpki.validator3.domain.querydsl.QTrustAnchor.trustAnchor;
 @Slf4j
 public class JPATrustAnchors extends JPARepository<TrustAnchor> implements TrustAnchors {
 
-    private final ValidationScheduler validationScheduler;
-
     @Autowired
     public JPATrustAnchors(ValidationScheduler validationScheduler) {
         super(trustAnchor);
-        this.validationScheduler = validationScheduler;
     }
 
     @Override
     public void add(TrustAnchor trustAnchor) {
         super.add(trustAnchor);
-        validationScheduler.addTrustAnchor(trustAnchor);
     }
 
     @Override
     public void remove(TrustAnchor trustAnchor) {
-        validationScheduler.removeTrustAnchor(trustAnchor);
         super.remove(trustAnchor);
     }
 

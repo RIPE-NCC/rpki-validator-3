@@ -40,8 +40,14 @@ import net.ripe.rpki.commons.rsync.CommandExecutionException;
 import net.ripe.rpki.commons.validation.ValidationLocation;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.commons.validation.ValidationString;
-import net.ripe.rpki.validator3.domain.*;
-import net.ripe.rpki.validator3.rrdp.RrdpService;
+import net.ripe.rpki.validator3.domain.ErrorCodes;
+import net.ripe.rpki.validator3.domain.RpkiObject;
+import net.ripe.rpki.validator3.domain.RpkiRepositories;
+import net.ripe.rpki.validator3.domain.TrustAnchor;
+import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
+import net.ripe.rpki.validator3.domain.TrustAnchors;
+import net.ripe.rpki.validator3.domain.ValidationCheck;
+import net.ripe.rpki.validator3.domain.ValidationRuns;
 import net.ripe.rpki.validator3.util.Rsync;
 import net.ripe.rpki.validator3.util.Transactions;
 import org.apache.commons.lang3.ArrayUtils;
@@ -49,14 +55,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
-import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 @Service

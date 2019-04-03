@@ -34,28 +34,22 @@ import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQuery;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
-import net.ripe.rpki.commons.crypto.util.CertificateRepositoryObjectFactory;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.domain.EncodedRpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.RpkiObjects;
-import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Repository;
 
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.LockModeType;
 import javax.transaction.Transactional;
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.SortedMap;
-import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -136,8 +130,8 @@ public class JPARpkiObjects extends JPARepository<RpkiObject> implements RpkiObj
     }
 
     @Override
-    public void merge(RpkiObject object) {
-        entityManager.merge(object);
+    public RpkiObject merge(RpkiObject object) {
+        return entityManager.merge(object);
     }
 
 //    @Override

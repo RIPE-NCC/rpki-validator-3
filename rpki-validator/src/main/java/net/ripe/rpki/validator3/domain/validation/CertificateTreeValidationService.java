@@ -60,12 +60,10 @@ import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityManager;
 import javax.persistence.FlushModeType;
-import javax.persistence.LockModeType;
 import javax.transaction.Transactional;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -73,7 +71,13 @@ import java.util.Map;
 import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
-import static net.ripe.rpki.commons.validation.ValidationString.*;
+import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_CRL_FOUND;
+import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_MANIFEST_CONTAINS_ONE_CRL_ENTRY;
+import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_MANIFEST_ENTRY_FOUND;
+import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_MANIFEST_ENTRY_HASH_MATCHES;
+import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_RPKI_REPOSITORY_PENDING;
+import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_TRUST_ANCHOR_CERTIFICATE_AVAILABLE;
+import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_TRUST_ANCHOR_CERTIFICATE_RRDP_NOTIFY_URI_OR_REPOSITORY_URI_PRESENT;
 
 @Service
 @Slf4j
@@ -146,6 +150,8 @@ public class CertificateTreeValidationService {
                     settings.markInitialValidationRunCompleted();
                     log.info("All trust anchors have completed their initial certificate tree validation run, validator is now ready");
                 }
+            } else {
+                log.info("Tree validation INCOMPLETE for {}  ", trustAnchor.getName());
             }
 
             validatedRpkiObjects.update(trustAnchor, validationRun.getValidatedObjects());
@@ -282,7 +288,7 @@ public class CertificateTreeValidationService {
                     uri.toASCIIString(),
                     RpkiRepository.Type.RRDP
             ));
-            validationScheduler.addRpkiRepository(rpkiRepository);
+            validationScheduler.scheduleRRDPValidation(rpkiRepository);
             return rpkiRepository;
         } else {
             return registeredRepositories.computeIfAbsent(context.getRepositoryURI(), (uri) -> rpkiRepositories.register(

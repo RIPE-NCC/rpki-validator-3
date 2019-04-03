@@ -49,6 +49,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.PostConstruct;
+import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 import javax.validation.Valid;
 import java.io.File;
@@ -87,34 +88,30 @@ public class TrustAnchorService {
     @Value("${rpki.validator.preconfigured.trust.anchors.directory}")
     private File preconfiguredTrustAnchorDirectory;
 
+    @Autowired
+    private EntityManager entityManager;
+
     public long execute(@Valid AddTrustAnchor command) {
         TrustAnchor trustAnchor = new TrustAnchor(false);
         trustAnchor.setName(command.getName());
         trustAnchor.setLocations(command.getLocations());
         trustAnchor.setSubjectPublicKeyInfo(command.getSubjectPublicKeyInfo());
         trustAnchor.setRsyncPrefetchUri(command.getRsyncPrefetchUri());
-        return add(trustAnchor);
-    }
 
-    long add(TrustAnchor trustAnchor) {
-        if (trustAnchor.getRsyncPrefetchUri() != null) {
-            rpkiRepositories.register(trustAnchor, trustAnchor.getRsyncPrefetchUri(), RpkiRepository.Type.RSYNC_PREFETCH);
+        if(trustAnchor.getRsyncPrefetchUri()!= null) {
+            log.info("Register and schedule prefetch trust anchor '{}'", trustAnchor);
+            RpkiRepository prefetchRepo = rpkiRepositories.register(trustAnchor, trustAnchor.getRsyncPrefetchUri(), RpkiRepository.Type.RSYNC_PREFETCH);
+            validationScheduler.schedulePrefetchRsync(prefetchRepo);
         }
 
-        trustAnchors.add(trustAnchor);
+        long trustAnchorId = addAndScheduleTA(trustAnchor);
 
-        log.info("added trust anchor '{}'", trustAnchor);
+        entityManager.flush();
+        entityManager.clear();
 
-        return trustAnchor.getId();
+        return trustAnchorId;
     }
 
-    public void remove(long trustAnchorId) {
-        TrustAnchor trustAnchor = trustAnchors.get(trustAnchorId);
-        validationRunRepository.removeAllForTrustAnchor(trustAnchor);
-        rpkiRepositories.removeAllForTrustAnchor(trustAnchor);
-        trustAnchors.remove(trustAnchor);
-        validatedRpkiObjects.remove(trustAnchor);
-    }
 
     @PostConstruct
     public void managePreconfiguredAndExistingTrustAnchors() {
@@ -151,7 +148,11 @@ public class TrustAnchorService {
                                     .map(URI::toASCIIString)
                                     .findFirst().orElse(null)
                     );
-                    add(trustAnchor);
+                    if(trustAnchor.getRsyncPrefetchUri()!= null) {
+                        log.info("Register only prefetch trust anchor '{}'", trustAnchor);
+                        rpkiRepositories.register(trustAnchor, trustAnchor.getRsyncPrefetchUri(), RpkiRepository.Type.RSYNC_PREFETCH);
+                    }
+                    addAndScheduleTA(trustAnchor);
                 }
                 return null;
             });
@@ -159,6 +160,24 @@ public class TrustAnchorService {
 
         scheduleTasValidation();
     }
+
+    public void remove(long trustAnchorId) {
+        TrustAnchor trustAnchor = trustAnchors.get(trustAnchorId);
+        validationRunRepository.removeAllForTrustAnchor(trustAnchor);
+        rpkiRepositories.removeAllForTrustAnchor(trustAnchor);
+        validationScheduler.removeTrustAnchor(trustAnchor);
+        trustAnchors.remove(trustAnchor);
+        validatedRpkiObjects.remove(trustAnchor);
+    }
+
+    private long addAndScheduleTA(TrustAnchor trustAnchor) {
+        trustAnchors.add(trustAnchor);
+        validationScheduler.addTrustAnchor(trustAnchor);
+
+        log.info("Add and schedule trust anchor '{}'", trustAnchor);
+        return trustAnchor.getId();
+    }
+
 
     private void scheduleTasValidation() {
         log.info("Schedule TA validation that were in the database already");

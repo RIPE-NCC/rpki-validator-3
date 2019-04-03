@@ -218,14 +218,14 @@ public class RrdpService {
                     return null;
                 } else {
                     RpkiObject object = maybeRpkiObject.right().value();
-                    rpkiObjectRepository.add(object);
-                    validationRun.addRpkiObject(object);
+                    RpkiObject merged = rpkiObjectRepository.merge(object);
+                    validationRun.addRpkiObject(merged);
                     counter.incrementAndGet();
                     return object;
                 }
             });
         });
-        log.info("Added (or updated locations for) {} new objects", counter.get());
+        log.info("Added snapshots (or updated locations for) {} new objects", counter.get());
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
@@ -310,13 +310,13 @@ public class RrdpService {
                 if (bySha256.isPresent()) {
                     log.info("The object will not be added, there's one already existing {}", object);
                 } else {
-                    validationRun.addRpkiObject(object);
-                    rpkiObjectRepository.merge(object);
+                    RpkiObject merged = rpkiObjectRepository.merge(object);
+                    validationRun.addRpkiObject(merged);
                     return true;
                 }
             } else if (!Arrays.equals(object.getSha256(), existingHash)) {
-                validationRun.addRpkiObject(object);
-                rpkiObjectRepository.merge(object);
+                RpkiObject merged = rpkiObjectRepository.merge(object);
+                validationRun.addRpkiObject(merged);
                 return true;
             } else {
                 log.info("The object added is the same {}", object);

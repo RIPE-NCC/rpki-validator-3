@@ -141,6 +141,10 @@ public class RpkiRepository extends AbstractEntity {
         this.trustAnchors.add(trustAnchor);
     }
 
+    public boolean hasTrustAnchor(TrustAnchor trustAnchor){
+        return this.trustAnchors.contains(trustAnchor);
+    }
+
     public void removeTrustAnchor(@NotNull @Valid TrustAnchor trustAnchor) {
         this.trustAnchors.remove(trustAnchor);
     }
@@ -174,5 +178,22 @@ public class RpkiRepository extends AbstractEntity {
     public void setDownloaded(Instant lastDownloadedAt) {
         this.status = Status.DOWNLOADED;
         this.lastDownloadedAt = lastDownloadedAt;
+    }
+
+    @Override
+    public String toString() {
+        String s = !type.equals(Type.RRDP) ? " " :
+                ", '" + rrdpNotifyUri + '\'' +
+                        ", '" + rrdpSessionId + '\'' +
+                        ", " + rrdpSerial;
+        return "{" +
+                "" + type +
+                ", " + status +
+                ", " + lastDownloadedAt +
+                ", " + trustAnchors +
+                ", '" + rsyncRepositoryUri + '\'' +
+                s +
+                ", " + parentRepository +
+                '}';
     }
 }

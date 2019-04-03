@@ -77,15 +77,37 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
         this.trustAnchors = trustAnchors;
     }
 
+    /**
+     * This function is used either in CAT validation to register repo with it's URI or on TA Service to register
+     * prefetch URI. It will either lookup existing repository by URI, or persist a new one.
+     *
+     * When it try to register RSYNC but found (by URI) an existing RSYNC_PREFETCH repository, 
+     * the prefetch will be transformed into RSYNC. 
+     * 
+     * This way, single dispatch on API upload RSYNC_PREFETCH jobs would not clash regular 5 minutes RSYNC background job.
+     *
+     * There is some interesting logic looking up parent by checking the path going up.
+     * @param trustAnchor
+     * @param uri
+     * @param type
+     * @return
+     */
     @Override
     public RpkiRepository register(@NotNull @Valid TrustAnchor trustAnchor, @NotNull @ValidLocationURI String uri, RpkiRepository.Type type) {
         log.info("Registering repository {} of type {}", uri, type);
-        RpkiRepository result = findByURI(uri).orElseGet(() -> {
+        Optional<RpkiRepository> byURI = findByURI(uri);
+        if(byURI.isPresent()){
+            log.info("  => existing repo: {} ", byURI.get());
+        }
+        RpkiRepository result = byURI.orElseGet(() -> {
             RpkiRepository repository = new RpkiRepository(trustAnchor, uri, type);
             entityManager.persist(repository);
+            log.info("  => registered fresh new repo: {}", repository);
             return repository;
         });
-        result.addTrustAnchor(trustAnchor);
+        if(!result.hasTrustAnchor(trustAnchor)) {
+            result.addTrustAnchor(trustAnchor);
+        }
         if (type == RpkiRepository.Type.RSYNC && result.getType() == RpkiRepository.Type.RSYNC_PREFETCH) {
             result.setType(RpkiRepository.Type.RSYNC);
         }
@@ -149,7 +171,7 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
     public Stream<RpkiRepository> findRsyncRepositories() {
         return stream(
             select()
-                .where(rpkiRepository.type.in(RpkiRepository.Type.RSYNC, RpkiRepository.Type.RSYNC_PREFETCH))
+                .where(rpkiRepository.type.in(RpkiRepository.Type.RSYNC))
                 .orderBy(rpkiRepository.rsyncRepositoryUri.asc(), rpkiRepository.id.asc())
         );
     }
@@ -158,7 +180,7 @@ public class JPARpkiRepositories extends JPARepository<RpkiRepository> implement
     public Stream<RpkiRepository> findRrdpRepositories() {
         return stream(
                 select()
-                        .where(rpkiRepository.type.in(RpkiRepository.Type.RRDP, RpkiRepository.Type.RSYNC_PREFETCH))
+                        .where(rpkiRepository.type.in(RpkiRepository.Type.RRDP))
                         .orderBy(rpkiRepository.rsyncRepositoryUri.asc(), rpkiRepository.id.asc())
         );
     }

@@ -31,43 +31,47 @@ package net.ripe.rpki.validator3.background;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.domain.validation.RpkiRepositoryValidationService;
-import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
 import org.quartz.JobKey;
 import org.springframework.beans.factory.annotation.Autowired;
 
-@DisallowConcurrentExecution
-public class RepositoryValidationJob implements Job {
+@Slf4j
+public class PrefetchRsyncRepositoryJob implements Job {
 
-    public static final String RPKI_REPOSITORY_ID = "rpkiRepositoryId";
+    public static final String RPKI_REPOSITORY_ID_PREFETCH = "rpkiRepositoryIdPrefetch";
 
     @Autowired
     private RpkiRepositoryValidationService validationService;
+
+    @Autowired
+    private RpkiRepositories repositories;
 
     @Getter
     @Setter
     private long rpkiRepositoryId;
 
     @Override
-    public void execute(JobExecutionContext context) throws JobExecutionException {
-        validationService.validateRpkiRepository(rpkiRepositoryId);
+    public void execute(JobExecutionContext context) {
+        RpkiRepository repository = repositories.get(rpkiRepositoryId);
+        validationService.prefetchRepository(repository);
     }
 
     static JobDetail buildJob(RpkiRepository rpkiRepository) {
-        return JobBuilder.newJob(RepositoryValidationJob.class)
+        return JobBuilder.newJob(PrefetchRsyncRepositoryJob.class)
             .withIdentity(getJobKey(rpkiRepository))
-            .usingJobData(RPKI_REPOSITORY_ID, rpkiRepository.getId())
+            .usingJobData(RPKI_REPOSITORY_ID_PREFETCH, rpkiRepository.getId())
             .build();
     }
 
     static JobKey getJobKey(RpkiRepository rpkiRepository) {
-        return new JobKey(String.format("%s#%s#%d", RpkiRepositoryValidationRun.TYPE, rpkiRepository.getRrdpNotifyUri(), rpkiRepository.getId()));
+        return new JobKey(String.format("%s#%s#%d", RpkiRepositoryValidationRun.TYPE, rpkiRepository.getRsyncRepositoryUri(), rpkiRepository.getId()));
     }
 }
