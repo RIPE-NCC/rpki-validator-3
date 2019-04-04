@@ -76,6 +76,11 @@ public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements T
     }
 
     @Override
+    public void update(Tx.Write tx, TrustAnchor trustAnchor) {
+        ixMap.put(tx, trustAnchor.key(), trustAnchor);
+    }
+
+    @Override
     public void remove(Tx.Write tx, TrustAnchor trustAnchor) {
         ixMap.delete(tx, trustAnchor.key());
     }

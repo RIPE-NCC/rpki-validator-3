@@ -43,6 +43,8 @@ public interface TrustAnchorStore extends GenericStore<TrustAnchor> {
 
     TrustAnchor add(Tx.Write tx, TrustAnchor trustAnchor);
 
+    void update(Tx.Write tx, TrustAnchor trustAnchor);
+
     void remove(Tx.Write tx, TrustAnchor trustAnchor);
 
     Optional<TrustAnchor> get(Tx.Read tx, Key id);
@@ -56,4 +58,5 @@ public interface TrustAnchorStore extends GenericStore<TrustAnchor> {
     boolean allInitialCertificateTreeValidationRunsCompleted(Tx.Read tx);
 
     List<TaStatus> getStatuses(Tx.Read tx);
+
 }

@@ -111,10 +111,9 @@ public class TrustAnchorValidationService {
             final Ref trustAnchorRef = trustAnchorStore.makeRef(tx, Key.of(trustAnchorId));
             return new TrustAnchorValidationRun(trustAnchorRef, trustAnchor.getLocations().get(0));
         });
-        Tx.use(lmdb.writeTx(), tx -> validationRunStore.add(tx, validationRun));
 
+        boolean updatedTrustAnchor = false;
         try {
-            boolean updated = false;
 
             URI trustAnchorCertificateURI = URI.create(validationRun.getTrustAnchorCertificateURI()).normalize();
             ValidationResult validationResult = ValidationResult.withLocation(trustAnchorCertificateURI);
@@ -137,7 +136,7 @@ public class TrustAnchorValidationService {
                         if (comparedSerial > 0) {
                             log.info("Setting certificate {} for the TA {}", trustAnchorCertificateURI, trustAnchor.getName());
                             trustAnchor.setCertificate(certificate);
-                            updated = true;
+                            updatedTrustAnchor = true;
                         }
                     }
                 }
@@ -149,8 +148,7 @@ public class TrustAnchorValidationService {
             }
 
             validationRun.completeWith(validationResult);
-            if (updated) {
-                Tx.use(lmdb.writeTx(), tx -> trustAnchorStore.update(tx, trustAnchor));
+            if (updatedTrustAnchor) {
                 final Set<TrustAnchor> affectedTrustAnchors = Sets.newHashSet(trustAnchor);
                 if (trustAnchor.getRsyncPrefetchUri() != null) {
                     Optional<RpkiRepository> byURI = Tx.rwith(lmdb.readTx(), tx ->
@@ -164,7 +162,13 @@ public class TrustAnchorValidationService {
             validationRun.addCheck(new ValidationCheck(validationRun.getTrustAnchorCertificateURI(), ValidationCheck.Status.ERROR, ErrorCodes.UNHANDLED_EXCEPTION, e.toString()));
             validationRun.setFailed();
         } finally {
-            Tx.use(lmdb.writeTx(), tx -> validationRunStore.update(tx, validationRun));
+            final boolean finalUpdatedTrustAnchor = updatedTrustAnchor;
+            Tx.use(lmdb.writeTx(), tx -> {
+                if (finalUpdatedTrustAnchor) {
+                    trustAnchorStore.update(tx, trustAnchor);
+                }
+                validationRunStore.add(tx, validationRun);
+            });
         }
     }
 

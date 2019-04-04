@@ -154,11 +154,7 @@ public class LmdbValidationRuns implements ValidationRunStore {
     public <T extends ValidationRun> T add(Tx.Write tx, T vr) {
         vr.setId(Key.of(sequences.next(tx, RPKI_VALIDATION_RUNS + ":pk")));
         IxMap<ValidationRun> validationRunIxMap = pickIxMap(vr.getType());
-        List<CertificateTreeValidationRun> all1 = findAll(tx, CertificateTreeValidationRun.class);
-        log.info("all1 = " + all1);
         validationRunIxMap.put(tx, vr.key(), vr);
-        List<CertificateTreeValidationRun> all2 = findAll(tx, CertificateTreeValidationRun.class);
-        log.info("all2 = " + all2);
         return vr;
     }
 

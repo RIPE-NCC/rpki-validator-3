@@ -68,19 +68,15 @@ public class TrustAnchorValidationServiceTest extends GenericStorageTest {
     @Autowired
     private ValidationRunStore validationRuns;
 
-    @Autowired
-    private RpkiRepositories rpkiRepositories;
-
     @Test
     public void test_success() {
         TrustAnchor ta = createRipeNccTrustAnchor();
         wtx0(tx -> trustAnchors.add(tx, ta));
 
         ta.setLocations(ImmutableList.of("src/test/resources/ripe-ncc-ta.cer"));
-        subject.validate(ta.getId().asLong());
-        ta.setLocations(ImmutableList.of(DUMMY_RSYNC_URI));
+        subject.validate(ta.key().asLong());
 
-        X509ResourceCertificate certificate = ta.getCertificate();
+        X509ResourceCertificate certificate = rtx(tx -> trustAnchors.get(tx, ta.key()).get().getCertificate());
         assertThat(certificate).isNotNull();
 
         Optional<TrustAnchorValidationRun> validationRun = rtx(tx -> validationRuns.findLatestCompletedForTrustAnchor(tx, ta));
@@ -114,10 +110,11 @@ public class TrustAnchorValidationServiceTest extends GenericStorageTest {
         wtx0(tx -> trustAnchors.add(tx, ta));
 
         ta.setLocations(ImmutableList.of("src/test/resources/empty-file.cer"));
+        wtx0(tx -> trustAnchors.update(tx, ta));
         subject.validate(ta.getId().asLong());
-        ta.setLocations(ImmutableList.of(DUMMY_RSYNC_URI));
 
-        assertThat(ta.getCertificate()).isNull();
+        X509ResourceCertificate certificate = rtx(tx -> trustAnchors.get(tx, ta.key()).get().getCertificate());
+        assertThat(certificate).isNull();
 
         Optional<TrustAnchorValidationRun> validationRun = rtx(tx -> validationRuns.findLatestCompletedForTrustAnchor(tx, ta));
         assertThat(validationRun).isPresent();
@@ -135,7 +132,6 @@ public class TrustAnchorValidationServiceTest extends GenericStorageTest {
 
         ta.setLocations(ImmutableList.of("src/test/resources/ripe-ncc-ta.cer"));
         subject.validate(ta.getId().asLong());
-        ta.setLocations(ImmutableList.of(DUMMY_RSYNC_URI));
 
         assertThat(ta.getCertificate()).isNull();
 
