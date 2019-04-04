@@ -98,21 +98,20 @@ public class TrustAnchorService {
         trustAnchor.setLocations(ImmutableList.copyOf(command.getLocations()));
         trustAnchor.setSubjectPublicKeyInfo(command.getSubjectPublicKeyInfo());
         trustAnchor.setRsyncPrefetchUri(command.getRsyncPrefetchUri());
-        return add(lmdb.writeTx(), trustAnchor);
+        return Tx.with(lmdb.writeTx(), tx -> add(tx, trustAnchor));
     }
 
     long add(Tx.Write tx, TrustAnchor trustAnchor) {
-        return Tx.with(tx, tx1 -> {
-            if (trustAnchor.getRsyncPrefetchUri() != null) {
-                rpkiRepositoryStore.register(tx1, trustAnchor,
-                        trustAnchor.getRsyncPrefetchUri(), RpkiRepository.Type.RSYNC_PREFETCH);
-            }
+        if (trustAnchor.getRsyncPrefetchUri() != null) {
+            rpkiRepositoryStore.register(tx, trustAnchor,
+                    trustAnchor.getRsyncPrefetchUri(), RpkiRepository.Type.RSYNC_PREFETCH);
+        }
 
-            trustAnchorStore.add(tx1, trustAnchor);
-            log.info("Added trust anchor '{}'", trustAnchor);
+        trustAnchorStore.add(tx, trustAnchor);
+        log.info("Added trust anchor '{}'", trustAnchor);
+        validationScheduler.addTrustAnchor(trustAnchor);
 
-            return trustAnchor.getId().asLong();
-        });
+        return trustAnchor.getId().asLong();
     }
 
     public void remove(long trustAnchorId) {
