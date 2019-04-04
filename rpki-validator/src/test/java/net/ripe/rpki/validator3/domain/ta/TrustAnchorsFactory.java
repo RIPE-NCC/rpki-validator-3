@@ -185,14 +185,14 @@ public class TrustAnchorsFactory {
             .withNumber(nextSerial())
             .build(ca.keyPair.getPrivate());
 
-        rpkiObjects.add(tx, new RpkiObject(ca.crlDistributionPoint, crl));
+        rpkiObjects.put(tx, new RpkiObject(ca.crlDistributionPoint, crl));
         manifestBuilder.addFile(ca.crlDistributionPoint.substring(ca.crlDistributionPoint.lastIndexOf('/') + 1), crl.getEncoded());
 
         if (ca.children != null) {
             for (CertificateAuthority child : ca.children) {
                 X509ResourceCertificate childCertificate = createCertificateAuthority(tx, child, ca);
 
-                rpkiObjects.add(tx, new RpkiObject(ca.repositoryURI + "/" + child.dn + ".cer", childCertificate));
+                rpkiObjects.put(tx, new RpkiObject(ca.repositoryURI + "/" + child.dn + ".cer", childCertificate));
                 manifestBuilder.addFile(child.dn + ".cer", childCertificate.getEncoded());
             }
         }
@@ -224,7 +224,7 @@ public class TrustAnchorsFactory {
                     .withSignatureProvider(BouncyCastleProvider.PROVIDER_NAME)
                     .build(roaKeyPair.getPrivate());
 
-                rpkiObjects.add(tx, new RpkiObject(ca.repositoryURI + "/" + "AS" + asn + ".roa", roaCms));
+                rpkiObjects.put(tx, new RpkiObject(ca.repositoryURI + "/" + "AS" + asn + ".roa", roaCms));
                 manifestBuilder.addFile("AS" + asn + ".roa", roaCms.getEncoded());
             });
         }
@@ -248,7 +248,7 @@ public class TrustAnchorsFactory {
             .withThisUpdateTime(DateTime.now())
             .withNextUpdateTime(DateTime.now().plusHours(8));
         ManifestCms manifest = manifestBuilder.build(manifestKeyPair.getPrivate());
-        rpkiObjects.add(tx, new RpkiObject(ca.manifestURI, manifest));
+        rpkiObjects.put(tx, new RpkiObject(ca.manifestURI, manifest));
         return caCertificate;
     }
 

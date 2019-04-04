@@ -377,7 +377,7 @@ public class RpkiRepositoryValidationService {
                         }
 
                         final RpkiObject object = new RpkiObject(validationResult.getCurrentLocation().getName(), obj);
-                        rpkiObjectStore.add(tx, object);
+                        rpkiObjectStore.put(tx, object);
                         validationRunStore.associate(tx, validationRun, object);
                         return object;
                     }

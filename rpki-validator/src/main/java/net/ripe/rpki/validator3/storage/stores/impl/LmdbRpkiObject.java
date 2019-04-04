@@ -88,7 +88,7 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     }
 
     @Override
-    public RpkiObject add(Tx.Write tx, RpkiObject o) {
+    public RpkiObject put(Tx.Write tx, RpkiObject o) {
         o.setId(Key.of(o.getSha256()));
         ixMap.put(tx, o.key(), o);
         return o;
@@ -141,12 +141,10 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     }
 
     @Override
-    public long deleteUnreachableObjects(Instant unreachableSince) {
-        return Tx.with(ixMap.writeTx(), tx -> {
-            final Set<Key> tooOldPks = ixMap.getByIndexLessPk(BY_LAST_REACHABLE_INDEX, tx, Key.of(unreachableSince.toEpochMilli()));
-            tooOldPks.forEach(pk -> ixMap.delete(tx, pk));
-            return (long)tooOldPks.size();
-        });
+    public long deleteUnreachableObjects(Tx.Write tx, Instant unreachableSince) {
+        final Set<Key> tooOldPks = ixMap.getByIndexLessPk(BY_LAST_REACHABLE_INDEX, tx, Key.of(unreachableSince.toEpochMilli()));
+        tooOldPks.forEach(pk -> ixMap.delete(tx, pk));
+        return (long) tooOldPks.size();
     }
 
     @Override

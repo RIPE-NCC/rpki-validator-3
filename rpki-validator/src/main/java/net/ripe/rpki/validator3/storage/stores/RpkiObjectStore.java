@@ -44,7 +44,7 @@ import java.util.stream.Stream;
 public interface RpkiObjectStore extends GenericStore<RpkiObject> {
     Optional<RpkiObject> get(Tx.Read tx, Key key);
 
-    RpkiObject add(Tx.Write tx, RpkiObject rpkiObject);
+    RpkiObject put(Tx.Write tx, RpkiObject rpkiObject);
 
     void remove(Tx.Write tx, RpkiObject o);
 
@@ -57,7 +57,7 @@ public interface RpkiObjectStore extends GenericStore<RpkiObject> {
 
     Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(Tx.Read tx, RpkiObject.Type type, byte[] authorityKeyIdentifier);
 
-    long deleteUnreachableObjects(Instant unreachableSince);
+    long deleteUnreachableObjects(Tx.Write tx, Instant unreachableSince);
 
     Stream<byte[]> streamObjects(Tx.Read tx, RpkiObject.Type type);
 }

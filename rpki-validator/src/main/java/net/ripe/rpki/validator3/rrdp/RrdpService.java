@@ -229,7 +229,7 @@ public class RrdpService {
                     return null;
                 } else {
                     final RpkiObject object = maybeRpkiObject.right().value();
-                    rpkiObjectStore.add(tx, object);
+                    rpkiObjectStore.put(tx, object);
                     validationRunStore.associate(tx, validationRun, object);
                     counter.incrementAndGet();
                     return object;
@@ -325,7 +325,7 @@ public class RrdpService {
                 } else {
                     final RpkiObject object = maybeRpkiObject.right().value();
                     if (!Arrays.equals(object.getSha256(), sha256)) {
-                        rpkiObjectStore.add(tx, object);
+                        rpkiObjectStore.put(tx, object);
                         validationRunStore.associate(tx, validationRun, object);
                         return true;
                     } else {
@@ -348,7 +348,7 @@ public class RrdpService {
                 if (bySha256.isPresent()) {
                     log.info("The object will not be added, there's one already existing {}", object);
                 } else {
-                    rpkiObjectStore.add(tx, object);
+                    rpkiObjectStore.put(tx, object);
                     validationRunStore.associate(tx, validationRun, object);
                     return true;
                 }
