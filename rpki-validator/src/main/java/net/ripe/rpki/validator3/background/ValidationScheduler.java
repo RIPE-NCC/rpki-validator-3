@@ -34,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import org.quartz.JobKey;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.SimpleScheduleBuilder;
@@ -132,7 +133,12 @@ public class ValidationScheduler {
 
     public void triggerCertificateTreeValidation(TrustAnchor trustAnchor) {
         try {
-            scheduler.triggerJob(CertificateTreeValidationJob.getJobKey(trustAnchor));
+            final JobKey jobKey = CertificateTreeValidationJob.getJobKey(trustAnchor);
+            if (scheduler.checkExists(jobKey)) {
+                scheduler.triggerJob(jobKey);
+            } else {
+                log.warn("Trying to trigger TA validation that wasn't registered before, job {}", jobKey);
+            }
         } catch (SchedulerException ex) {
             throw new RuntimeException(ex);
         }
