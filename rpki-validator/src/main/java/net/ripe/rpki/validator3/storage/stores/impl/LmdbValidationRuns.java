@@ -203,12 +203,16 @@ public class LmdbValidationRuns implements ValidationRunStore {
         Stream.of(ctIxMap, taIxMap, repoIxMap).forEach(ixMap -> {
             // Don't delete the most recent one
             final Set<Key> latestSuccessfulKeys = ixMap.getByIndexMax(BY_COMPLETED_AT_INDEX, tx, ValidationRun::isSucceeded).keySet();
-            final List<Key> pks = ixMap.getByIndexLessPk(BY_COMPLETED_AT_INDEX, tx, Key.of(completedBefore.toEpochMilli()))
-                    .stream()
-                    .filter(pk -> !latestSuccessfulKeys.contains(pk))
-                    .collect(Collectors.toList());
-            count.addAndGet(pks.size());
-            pks.forEach(pk -> ixMap.delete(tx, pk));
+            count.addAndGet(
+                    ixMap.getByIndexLessPk(BY_COMPLETED_AT_INDEX, tx, Key.of(completedBefore.toEpochMilli()))
+                            .stream()
+                            .filter(pk -> !latestSuccessfulKeys.contains(pk))
+                            .map(pk -> {
+                                ixMap.delete(tx, pk);
+                                return null;
+                            })
+                            .count()
+            );
         });
         return count.get();
     }

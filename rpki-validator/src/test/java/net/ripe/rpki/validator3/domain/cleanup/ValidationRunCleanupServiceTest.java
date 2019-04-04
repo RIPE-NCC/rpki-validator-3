@@ -46,7 +46,6 @@ public class ValidationRunCleanupServiceTest {
     @Autowired
     private ValidationRunCleanupService subject;
 
-
     @Test
     public void run() {
         subject.cleanupValidationRuns();

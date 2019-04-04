@@ -31,6 +31,9 @@ package net.ripe.rpki.validator3.domain.cleanup;
 
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.domain.ValidationRuns;
+import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -45,22 +48,24 @@ import java.time.Instant;
 public class ValidationRunCleanupService {
 
     @Autowired
-    private EntityManager entityManager;
-
-    @Autowired
-    private ValidationRuns validationRuns;
+    private ValidationRunStore validationRuns;
 
     private final Duration cleanupGraceDuration;
 
-    public ValidationRunCleanupService(@Value("${rpki.validator.validation.run.cleanup.grace.duration}") String cleanupGraceDuration) {
+    private final Lmdb lmdb;
+
+    public ValidationRunCleanupService(@Value("${rpki.validator.validation.run.cleanup.grace.duration}") String cleanupGraceDuration,
+                                       Lmdb lmdb) {
         this.cleanupGraceDuration = Duration.parse(cleanupGraceDuration);
+        this.lmdb = lmdb;
     }
 
     @Transactional
     public long cleanupValidationRuns() {
         // Delete all validation runs older than `cleanupGraceDuration` that have a later validation run.
         Instant completedBefore = Instant.now().minus(cleanupGraceDuration);
-        long removedCount = validationRuns.removeOldValidationRuns(completedBefore);
+        long removedCount = Tx.with(lmdb.writeTx(), tx ->
+                validationRuns.removeOldValidationRuns(tx, completedBefore));
         log.info("Removed {} old validation runs", removedCount);
         return removedCount;
     }

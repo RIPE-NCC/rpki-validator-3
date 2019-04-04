@@ -36,7 +36,6 @@ import net.ripe.rpki.commons.crypto.ValidityPeriod;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificateBuilder;
 import net.ripe.rpki.validator3.IntegrationTest;
 import net.ripe.rpki.validator3.domain.RoaPrefix;
-import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.ta.TrustAnchorsFactory;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
@@ -53,7 +52,6 @@ import javax.security.auth.x500.X500Principal;
 import javax.transaction.Transactional;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Collections;
 
 import static net.ripe.rpki.validator3.domain.ta.TrustAnchorsFactory.KEY_PAIR_FACTORY;
@@ -73,11 +71,8 @@ public class RpkiObjectCleanupServiceTest extends GenericStorageTest {
     @Autowired
     private RpkiObjectStore rpkiObjects;
 
-    @Autowired
-    private EntityManager entityManager;
-
     @Test
-    public void should_delete_objects_not_reachable_from_manifest() {
+    public void should_delete_objects_not_reachable_from_manifest() throws Exception {
 
         TrustAnchor trustAnchor = wtx(tx -> factory.createTrustAnchor(tx, ta ->
                 ta.roaPrefixes(Collections.singletonList(RoaPrefix.of(IpRange.parse("127.0.0.0/8"), null, Asn.parse("123"))))));
@@ -97,14 +92,13 @@ public class RpkiObjectCleanupServiceTest extends GenericStorageTest {
                 .withValidityPeriod(new ValidityPeriod(DateTime.now(), DateTime.now().plusYears(1)))
                 .build()
         );
-        wtx0(tx -> rpkiObjects.add(tx, orphan));
-        entityManager.flush();
+        wtx0(tx -> rpkiObjects.put(tx, orphan));
 
         // Orphan is still new, so nothing to delete
         assertThat(subject.cleanupRpkiObjects()).isEqualTo(0);
 
         orphan.markReachable(Instant.now().minus(Duration.ofDays(10)));
-        entityManager.flush();
+        wtx0(tx -> rpkiObjects.put(tx, orphan));
 
         // Orphan is now old, so should be deleted
         assertThat(subject.cleanupRpkiObjects()).isEqualTo(1);
