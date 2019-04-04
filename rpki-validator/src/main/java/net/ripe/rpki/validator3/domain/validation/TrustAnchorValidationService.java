@@ -150,6 +150,7 @@ public class TrustAnchorValidationService {
 
             validationRun.completeWith(validationResult);
             if (updated) {
+                Tx.use(lmdb.writeTx(), tx -> trustAnchorStore.update(tx, trustAnchor));
                 final Set<TrustAnchor> affectedTrustAnchors = Sets.newHashSet(trustAnchor);
                 if (trustAnchor.getRsyncPrefetchUri() != null) {
                     Optional<RpkiRepository> byURI = Tx.rwith(lmdb.readTx(), tx ->
