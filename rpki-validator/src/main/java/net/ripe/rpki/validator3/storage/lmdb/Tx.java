@@ -29,10 +29,15 @@
  */
 package net.ripe.rpki.validator3.storage.lmdb;
 
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.lmdbjava.Env;
 import org.lmdbjava.Txn;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -41,16 +46,23 @@ import java.util.function.Function;
  * read-only and read-write transactions.
  *
  */
+@Slf4j
 public abstract class Tx implements AutoCloseable {
 
     protected final Env<ByteBuffer> env;
     private final Txn<ByteBuffer> txn;
+    @Getter
     private final long threadId;
+    @Getter
+    private final long id;
     private boolean aborted = false;
+
+    private static AtomicLong idseq = new AtomicLong(1);
 
     private Tx(Env<ByteBuffer> env) {
         threadId = Thread.currentThread().getId();
         this.env = env;
+        id = idseq.getAndIncrement();
         txn = makeTxn();
     }
 
@@ -76,33 +88,6 @@ public abstract class Tx implements AutoCloseable {
         if (Thread.currentThread().getId() != threadId) {
             throw new RuntimeException("This transaction was created in another " +
                     "thread and cannot be used in the thread " + Thread.currentThread());
-        }
-    }
-
-    public static <R> R with(Write wtx, Function<Write, R> f) {
-        try (Txn<ByteBuffer> txn = wtx.txn()) {
-            final R r = f.apply(wtx);
-            txn.commit();
-            return r;
-        }
-    }
-
-    public static <R> R rwith(Read rtx, Function<Read, R> f) {
-        try (Read tx = rtx) {
-            return f.apply(tx);
-        }
-    }
-
-    public static <T> void use(Write wtx, Consumer<Write> c) {
-        try (Txn<ByteBuffer> txn = wtx.txn()) {
-            c.accept(wtx);
-            txn.commit();
-        }
-    }
-
-    public static void ruse(Read rtx, Consumer<Read> c) {
-        try (Read tx = rtx) {
-            c.accept(tx);
         }
     }
 

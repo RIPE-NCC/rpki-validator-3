@@ -79,10 +79,10 @@ public class RpkiObjectCleanupService {
      */
     public long cleanupRpkiObjects() throws Exception {
         Instant now = Instant.now();
-        final List<TrustAnchor> trustAnchors = Tx.rwith(lmdb.readTx(), tx -> this.trustAnchors.findAll(tx));
+        final List<TrustAnchor> trustAnchors = lmdb.readTx(tx -> this.trustAnchors.findAll(tx));
         final Set<Key> markThem = new HashSet<>();
         for (TrustAnchor trustAnchor : trustAnchors) {
-            Tx.ruse(lmdb.readTx(), tx -> {
+            lmdb.readTx0(tx -> {
                 log.debug("tracing objects for trust anchor {}", trustAnchor);
                 X509ResourceCertificate resourceCertificate = trustAnchor.getCertificate();
                 if (resourceCertificate != null) {
@@ -90,7 +90,7 @@ public class RpkiObjectCleanupService {
                 }
             });
         }
-        return Tx.with(lmdb.writeTx(), tx -> {
+        return lmdb.writeTx(tx -> {
             Long t = Time.timed(() ->
                     markThem.forEach(pk -> rpkiObjects.get(tx, pk)
                             .ifPresent(ro -> {

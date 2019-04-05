@@ -187,12 +187,8 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
         return getKeyAtTheMinOrMaxOfIndex(indexName, tx, KeyRange.all());
     }
 
-    public Optional<T> put(Key primaryKey, T value) {
-        checkKeyAndValue(primaryKey, value);
-        return Tx.with(writeTx(), tx -> put(tx, primaryKey, value));
-    }
-
     public Optional<T> put(Tx.Write tx, Key primaryKey, T value) {
+        checkKeyAndValue(primaryKey, value);
         final ByteBuffer pkBuf = primaryKey.toByteBuffer();
         final Txn<ByteBuffer> txn = tx.txn();
         final Optional<T> oldValue = get(tx, primaryKey);
@@ -226,11 +222,6 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
             });
         }
         return Optional.empty();
-    }
-
-    public void delete(Key primaryKey) {
-        checkNotNull(primaryKey, "Key is null");
-        Tx.use(writeTx(), tx -> delete(tx, primaryKey));
     }
 
     public void delete(Tx.Write tx, Key primaryKey) {

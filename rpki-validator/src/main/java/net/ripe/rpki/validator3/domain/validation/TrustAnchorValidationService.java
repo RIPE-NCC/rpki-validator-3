@@ -98,7 +98,7 @@ public class TrustAnchorValidationService {
     }
 
     public void validate(long trustAnchorId) {
-        Optional<TrustAnchor> maybeTrustAnchor = Tx.rwith(lmdb.readTx(), tx -> trustAnchorStore.get(tx, Key.of(trustAnchorId)));
+        Optional<TrustAnchor> maybeTrustAnchor = lmdb.readTx(tx -> trustAnchorStore.get(tx, Key.of(trustAnchorId)));
         if (!maybeTrustAnchor.isPresent()) {
             log.error("Trust anchor {} doesn't exist.", trustAnchorId);
             return;
@@ -107,7 +107,7 @@ public class TrustAnchorValidationService {
         TrustAnchor trustAnchor = maybeTrustAnchor.get();
         log.info("trust anchor {} located at {} with subject public key info {}", trustAnchor.getName(), trustAnchor.getLocations(), trustAnchor.getSubjectPublicKeyInfo());
 
-        TrustAnchorValidationRun validationRun = Tx.rwith(lmdb.readTx(), tx -> {
+        TrustAnchorValidationRun validationRun = lmdb.readTx(tx -> {
             final Ref trustAnchorRef = trustAnchorStore.makeRef(tx, Key.of(trustAnchorId));
             return new TrustAnchorValidationRun(trustAnchorRef, trustAnchor.getLocations().get(0));
         });
@@ -131,7 +131,8 @@ public class TrustAnchorValidationService {
 
                     if (!validationResult.hasFailureForCurrentLocation()) {
                         // validity time?
-                        int comparedSerial = trustAnchor.getCertificate() == null ? 1 : trustAnchor.getCertificate().getSerialNumber().compareTo(certificate.getSerialNumber());
+                        int comparedSerial = trustAnchor.getCertificate() == null ?
+                                1 : trustAnchor.getCertificate().getSerialNumber().compareTo(certificate.getSerialNumber());
                         validationResult.warnIfTrue(comparedSerial < 0, ValidationString.VALIDATOR_REPOSITORY_OBJECT_IS_OLDER_THAN_PREVIOUS_OBJECT, trustAnchorCertificateURI.toASCIIString());
                         if (comparedSerial > 0) {
                             log.info("Setting certificate {} for the TA {}", trustAnchorCertificateURI, trustAnchor.getName());
@@ -151,7 +152,7 @@ public class TrustAnchorValidationService {
             if (updatedTrustAnchor) {
                 final Set<TrustAnchor> affectedTrustAnchors = Sets.newHashSet(trustAnchor);
                 if (trustAnchor.getRsyncPrefetchUri() != null) {
-                    Optional<RpkiRepository> byURI = Tx.rwith(lmdb.readTx(), tx ->
+                    Optional<RpkiRepository> byURI = lmdb.readTx(tx ->
                             rpkiRepositoryStore.findByURI(tx, trustAnchor.getRsyncPrefetchUri()));
                     byURI.ifPresent(r -> affectedTrustAnchors.addAll(repositoryValidationService.prefetchRepository(r)));
                 }
@@ -163,7 +164,7 @@ public class TrustAnchorValidationService {
             validationRun.setFailed();
         } finally {
             final boolean finalUpdatedTrustAnchor = updatedTrustAnchor;
-            Tx.use(lmdb.writeTx(), tx -> {
+            lmdb.writeTx0(tx -> {
                 if (finalUpdatedTrustAnchor) {
                     trustAnchorStore.update(tx, trustAnchor);
                 }

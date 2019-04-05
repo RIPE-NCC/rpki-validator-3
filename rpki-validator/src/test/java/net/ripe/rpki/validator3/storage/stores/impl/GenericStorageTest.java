@@ -71,6 +71,10 @@ public class GenericStorageTest {
     @Getter
     private ValidationScheduler validationScheduler;
 
+    @Autowired
+    @Getter
+    private Sequences sequences;
+
     @Getter
     @Autowired
     private Lmdb lmdb;
@@ -82,22 +86,23 @@ public class GenericStorageTest {
             trustAnchorStore.clear(tx);
             rpkiRepositoryStore.clear(tx);
             validationRunStore.clear(tx);
+            sequences.clear(tx);
         });
     }
 
     protected <T> T rtx(Function<Tx.Read, T> f) {
-        return Tx.rwith(getLmdb().readTx(), f);
+        return getLmdb().readTx(f);
     }
 
     protected <T> T wtx(Function<Tx.Write, T> f) {
-        return Tx.with(getLmdb().writeTx(), f);
+        return getLmdb().writeTx(f);
     }
 
     protected void rtx0(Consumer<Tx.Read> f) {
-        Tx.ruse(getLmdb().readTx(), f);
+        getLmdb().readTx0(f);
     }
 
     protected void wtx0(Consumer<Tx.Write> f) {
-        Tx.use(getLmdb().writeTx(), f);
+        getLmdb().writeTx0(f);
     }
 }

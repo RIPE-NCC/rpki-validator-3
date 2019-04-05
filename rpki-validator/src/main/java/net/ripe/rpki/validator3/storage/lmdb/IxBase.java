@@ -59,7 +59,9 @@ public abstract class IxBase<T extends Serializable> {
         this.env = env;
         this.name = name;
         this.coder = coder;
-        this.mainDb = env.openDbi(name + ":main", getMainDbCreateFlags());
+        synchronized (env) {
+            this.mainDb = env.openDbi(name + ":main", getMainDbCreateFlags());
+        }
     }
 
     protected abstract DbiFlags[] getMainDbCreateFlags();

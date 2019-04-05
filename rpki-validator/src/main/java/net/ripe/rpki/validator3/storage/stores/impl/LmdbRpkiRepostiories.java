@@ -77,7 +77,8 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
     private final ValidationScheduler validationScheduler;
 
     @Autowired
-    public LmdbRpkiRepostiories(Lmdb lmdb, TrustAnchorStore trustAnchorStore, ValidationScheduler validationScheduler) {
+    public LmdbRpkiRepostiories(Lmdb lmdb, Sequences sequences, TrustAnchorStore trustAnchorStore, ValidationScheduler validationScheduler) {
+        this.sequences = sequences;
         this.trustAnchorStore = trustAnchorStore;
         this.validationScheduler = validationScheduler;
 
@@ -90,7 +91,6 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
                         BY_TA, r -> r.getTrustAnchors().stream().map(Ref::key).collect(Collectors.toSet())
                 )
         );
-        sequences = new Sequences(lmdb);
     }
 
 

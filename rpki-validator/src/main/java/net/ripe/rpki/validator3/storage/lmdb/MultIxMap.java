@@ -78,30 +78,17 @@ public class MultIxMap<T extends Serializable> extends IxBase<T> {
         return result;
     }
 
-    public void put(Key primaryKey, T value) {
-        checkKeyAndValue(primaryKey, value);
-        Tx.use(writeTx(), tx -> put(tx, primaryKey, value));
-    }
-
     public void put(Tx.Write tx, Key primaryKey, T value) {
+        checkKeyAndValue(primaryKey, value);
         mainDb.put(tx.txn(), primaryKey.toByteBuffer(), coder.toBytes(value));
-    }
-
-    public void delete(Key primaryKey) {
-        verifyKey(primaryKey);
-        Tx.use(writeTx(), tx -> delete(tx, primaryKey));
     }
 
     public void delete(Tx.Write tx, Key primaryKey) {
         mainDb.delete(tx.txn(), primaryKey.toByteBuffer());
     }
 
-    public void delete(Key primaryKey, T value) {
-        verifyKey(primaryKey);
-        Tx.use(writeTx(), tx -> delete(tx, primaryKey, value));
-    }
-
     public void delete(Tx.Write tx, Key primaryKey, T value) {
+        verifyKey(primaryKey);
         mainDb.delete(tx.txn(), primaryKey.toByteBuffer(), coder.toBytes(value));
     }
 }

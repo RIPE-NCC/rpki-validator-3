@@ -97,7 +97,7 @@ public class ObjectController {
 
     @GetMapping(path = "/validated")
     public ResponseEntity<ApiResponse<ValidatedObjects>> list(Locale locale) {
-        final Map<Long, TrustAnchorResource> trustAnchorsById = Tx.rwith(lmdb.readTx(), tx ->
+        final Map<Long, TrustAnchorResource> trustAnchorsById = lmdb.readTx(tx ->
                 trustAnchors.findAll(tx).stream()
                         .collect(Collectors.toMap(
                                 ta -> ta.key().asLong(),

@@ -120,8 +120,8 @@ public class RrdpService {
                     verifyDeltaSerials(deltas, notification, rpkiRepository);
 
                     deltas.forEach(d -> {
-                        Tx.ruse(lmdb.readTx(), tx -> verifyDeltaIsApplicable(tx, d));
-                        Tx.use(lmdb.writeTx(), tx -> {
+                        lmdb.readTx0(tx -> verifyDeltaIsApplicable(tx, d));
+                        lmdb.writeTx0(tx -> {
                             storeDelta(tx, d, validationRun, rpkiRepository);
                             rpkiRepository.setRrdpSerial(rpkiRepository.getRrdpSerial().add(BigInteger.ONE));
                         });
@@ -160,7 +160,7 @@ public class RrdpService {
         Pair<Snapshot, Long> timedSnapshot = Time.timed(() -> rrdpParser.snapshot(new ByteArrayInputStream(snapshotBody)));
         log.info("Parsing snapshot time {}ms", timedSnapshot.getRight());
         Long timedStoreSnapshot = Time.timed(() ->
-                Tx.use(lmdb.writeTx(), tx -> {
+                lmdb.writeTx0(tx -> {
                     storeSnapshot(tx, timedSnapshot.getLeft(), validationRun);
                     rpkiRepository.setRrdpSessionId(notification.sessionId);
                     rpkiRepository.setRrdpSerial(notification.serial);
@@ -299,20 +299,6 @@ public class RrdpService {
                                       final String uri,
                                       final DeltaPublish deltaPublish,
                                       final Tx.Write tx) {
-//        if (deltaPublish.getHash().isPresent()) {
-//            final byte[] sha256 = deltaPublish.getHash().get();
-//            final Optional<RpkiObject> existing = rpkiObjectRepository.findBySha256(sha256);
-//            if (existing.isPresent()) {
-//                return addRpkiObject(validationRun, uri, deltaPublish, sha256);
-//            } else {
-//                ValidationCheck validationCheck = new ValidationCheck(validationRun, uri,
-//                        ValidationCheck.Status.ERROR, ErrorCodes.RRDP_REPLACE_NONEXISTENT_OBJECT, Hex.format(sha256));
-//                validationRun.addCheck(validationCheck);
-//                return false;
-//            }
-//        } else {
-//            return addRpkiObject(validationRun, uri, deltaPublish, null);
-//        }
 
         if (deltaPublish.getHash().isPresent()) {
             final byte[] sha256 = deltaPublish.getHash().get();

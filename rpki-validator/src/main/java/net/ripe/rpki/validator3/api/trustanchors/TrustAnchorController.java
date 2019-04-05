@@ -100,7 +100,7 @@ public class TrustAnchorController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<TrustAnchorResource>>> list(Locale locale) {
-        return Tx.rwith(lmdb.readTx(), tx -> ResponseEntity.ok(ApiResponse.data(
+        return lmdb.readTx(tx -> ResponseEntity.ok(ApiResponse.data(
             new Links(linkTo(methodOn(TrustAnchorController.class).list(locale)).withSelfRel()),
             trustAnchorStore.findAll(tx)
                 .stream()
@@ -112,7 +112,7 @@ public class TrustAnchorController {
     @PostMapping(consumes = { Api.API_MIME_TYPE, "application/json" })
     public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@RequestBody @Valid ApiCommand<AddTrustAnchor> command, Locale locale) {
         long id = trustAnchorService.execute(command.getData());
-        return Tx.rwith(lmdb.readTx(), tx -> {
+        return lmdb.readTx(tx -> {
             TrustAnchor trustAnchor = trustAnchorStore.get(tx, Key.of(id)).get();
             Link selfRel = linkTo(methodOn(TrustAnchorController.class).get(id, locale)).withSelfRel();
             return ResponseEntity.created(URI.create(selfRel.getHref())).body(trustAnchorResource(tx, trustAnchor, locale));
@@ -136,7 +136,7 @@ public class TrustAnchorController {
                 .build();
 
             long id = trustAnchorService.execute(command);
-            return Tx.rwith(lmdb.readTx(), tx -> {
+            return lmdb.readTx(tx -> {
                 Optional<TrustAnchor> trustAnchor = trustAnchorStore.get(tx, Key.of(id));
                 Link selfRel = linkTo(methodOn(TrustAnchorController.class).get(id, locale)).withSelfRel();
                 return ResponseEntity.created(URI.create(selfRel.getHref())).body(trustAnchorResource(tx, trustAnchor.get(), locale));
@@ -151,7 +151,7 @@ public class TrustAnchorController {
 
     @GetMapping(path = "/{id}")
     public ResponseEntity<ApiResponse<TrustAnchorResource>> get(@PathVariable long id, Locale locale) {
-        return Tx.rwith(lmdb.readTx(), tx ->
+        return lmdb.readTx(tx ->
             trustAnchorStore.get(tx, Key.of(id))
                     .map(ta -> ResponseEntity.ok(trustAnchorResource(tx, ta, locale)))
                     .orElse(ResponseEntity.notFound().build()));
@@ -159,7 +159,7 @@ public class TrustAnchorController {
 
     @GetMapping(path = "/{id}/validation-run")
     public ResponseEntity<ApiResponse<ValidationRunResource>> validationResults(@PathVariable long id, HttpServletResponse response, Locale locale) throws IOException {
-        Optional<TrustAnchorValidationRun> validationRun = Tx.rwith(lmdb.readTx(), tx ->
+        Optional<TrustAnchorValidationRun> validationRun = lmdb.readTx(tx ->
                 trustAnchorStore.get(tx, Key.of(id))
                         .flatMap(trustAnchor ->
                                 validationRunStore.findLatestCompletedForTrustAnchor(tx, trustAnchor)));
@@ -185,7 +185,7 @@ public class TrustAnchorController {
         final Sorting sorting = Sorting.parse(sortBy, sortDirection);
         final Paging paging = Paging.of(startFrom, pageSize);
 
-        return Tx.rwith(lmdb.readTx(), tx -> {
+        return lmdb.readTx(tx -> {
             int totalCount = validationRunStore.countValidationChecksForValidationRun(tx, trustAnchorId, searchTerm);
 
             Stream<ValidationCheckResource> checks = validationRunStore.findValidationChecksForValidationRun(tx, trustAnchorId, paging, searchTerm, sorting)
@@ -205,7 +205,7 @@ public class TrustAnchorController {
 
     @GetMapping(path = "/statuses")
     public ApiResponse<List<TaStatus>> statuses(HttpServletResponse response) {
-        return Tx.rwith(lmdb.readTx(), tx -> ApiResponse.<List<TaStatus>>builder().data(trustAnchorStore.getStatuses(tx)).build());
+        return lmdb.readTx(tx -> ApiResponse.<List<TaStatus>>builder().data(trustAnchorStore.getStatuses(tx)).build());
     }
 
     @DeleteMapping(path = "/{id}")

@@ -118,7 +118,7 @@ public class CertificateTreeValidationService {
 //    private ExecutorService async = Executors.newSingleThreadExecutor();
 
     public void validate(long trustAnchorId) {
-        Tx.use(lmdb.writeTx(), tx -> {
+        lmdb.writeTx0(tx -> {
             Optional<TrustAnchor> maybeTrustAnchor = trustAnchorStore.get(tx, Key.of(trustAnchorId));
             if (!maybeTrustAnchor.isPresent()) {
                 log.error("Couldn't find trust anchor {}", trustAnchorId);

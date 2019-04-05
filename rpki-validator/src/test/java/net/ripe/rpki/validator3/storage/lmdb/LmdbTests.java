@@ -34,6 +34,8 @@ import net.ripe.rpki.validator3.storage.LmdbImpl;
 
 public class LmdbTests {
     public static Lmdb makeLmdb(String path) throws Exception {
-        return new LmdbImpl(path, 1024);
+        LmdbImpl lmdb = new LmdbImpl(path, 1024);
+        lmdb.initLmdb();
+        return lmdb;
     }
 }

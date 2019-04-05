@@ -59,7 +59,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -69,7 +68,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
@@ -106,11 +104,10 @@ public class LmdbValidationRuns implements ValidationRunStore {
     public LmdbValidationRuns(Lmdb lmdb,
                               TrustAnchorStore trustAnchorStore,
                               RpkiObjectStore rpkiObjectStore,
-                              RpkiRepositoryStore rpkiRepositoryStore) {
+                              RpkiRepositoryStore rpkiRepositoryStore,
+                              Sequences sequences) {
 
         this.rpkiObjectStore = rpkiObjectStore;
-        
-        sequences = new Sequences(lmdb);
 
         ctIxMap = new IxMap<>(lmdb.getEnv(), CT_RPKI_VALIDATION_RUNS, new FSTCoder<>(),
                 ImmutableMap.of(BY_TA_INDEX, vr -> Key.keys(vr.getTrustAnchor().key()),
@@ -122,6 +119,7 @@ public class LmdbValidationRuns implements ValidationRunStore {
 
         repoIxMap = new IxMap<>(lmdb.getEnv(), RS_RPKI_VALIDATION_RUNS, new FSTCoder<>(),
                 ImmutableMap.of(BY_COMPLETED_AT_INDEX, this::completedAtIndexKeys));
+        this.sequences = sequences;
 
         maps.put(CertificateTreeValidationRun.TYPE, ctIxMap);
         maps.put(TrustAnchorValidationRun.TYPE, taIxMap);

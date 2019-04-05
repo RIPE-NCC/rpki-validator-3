@@ -56,7 +56,7 @@ public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements T
     private final Sequences sequences;
 
     @Autowired
-    public LmdbTrustAnchors(Lmdb lmdb) {
+    public LmdbTrustAnchors(Lmdb lmdb, Sequences sequences) {
         this.ixMap = new IxMap<>(
                 lmdb.getEnv(),
                 TrustAnchorStore.TRUST_ANCHORS,
@@ -65,7 +65,7 @@ public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements T
                         BY_NAME, ta -> Key.keys(Key.of(ta.getName())),
                         BY_SUBJECT_KEY_INFO, ta -> Key.keys(Key.of(ta.getSubjectPublicKeyInfo())))
         );
-        sequences = new Sequences(lmdb);
+        this.sequences = sequences;
     }
 
     @Override

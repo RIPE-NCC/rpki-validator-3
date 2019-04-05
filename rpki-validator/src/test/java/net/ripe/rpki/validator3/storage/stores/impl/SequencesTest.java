@@ -37,8 +37,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.math.BigInteger;
-
 import static org.junit.Assert.assertEquals;
 
 public class SequencesTest {
@@ -46,22 +44,22 @@ public class SequencesTest {
     @Rule
     public final TemporaryFolder tmp = new TemporaryFolder();
 
-    private Lmdb env;
+    private Lmdb lmdb;
     private Sequences sequences;
 
     @Before
     public void setUp() throws Exception {
-        env = LmdbTests.makeLmdb(tmp.newFolder().getAbsolutePath());
-        this.sequences = new Sequences(env);
+        lmdb = LmdbTests.makeLmdb(tmp.newFolder().getAbsolutePath());
+        this.sequences = new Sequences(lmdb);
     }
 
     @Test
     public void testNext() {
-        assertEquals(new Long(1L), Tx.with(env.writeTx(), tx -> sequences.next(tx, "seq1")));
-        assertEquals(new Long(2L), Tx.with(env.writeTx(), tx -> sequences.next(tx, "seq1")));
-        assertEquals(new Long(1L), Tx.with(env.writeTx(), tx -> sequences.next(tx, "seq2")));
-        assertEquals(new Long(2L), Tx.with(env.writeTx(), tx -> sequences.next(tx, "seq2")));
-        assertEquals(new Long(3L), Tx.with(env.writeTx(), tx -> sequences.next(tx, "seq2")));
+        assertEquals(new Long(1L), lmdb.writeTx(tx ->sequences.next(tx, "seq1")));
+        assertEquals(new Long(2L), lmdb.writeTx(tx ->sequences.next(tx, "seq1")));
+        assertEquals(new Long(1L), lmdb.writeTx(tx ->sequences.next(tx, "seq2")));
+        assertEquals(new Long(2L), lmdb.writeTx(tx ->sequences.next(tx, "seq2")));
+        assertEquals(new Long(3L), lmdb.writeTx(tx ->sequences.next(tx, "seq2")));
     }
 
 }

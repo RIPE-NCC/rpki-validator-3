@@ -33,6 +33,7 @@ import com.google.common.collect.ImmutableMap;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import net.ripe.rpki.validator3.storage.FSTCoder;
+import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Key;
 import org.assertj.core.util.Files;
 import org.hamcrest.CoreMatchers;
@@ -57,21 +58,14 @@ import static org.lmdbjava.Env.create;
 @RunWith(JUnitQuickcheck.class)
 public class IxMapPropTest {
 
-    private static Env<ByteBuffer> env;
     private static IxMap<String> ixMap;
 
-    private static File lmdbDir;
+    private static Lmdb lmdb;
 
     @BeforeClass
-    public static void setUp() {
-        lmdbDir = Files.temporaryFolder();
-
-        env = create()
-                .setMapSize(1024 * 1024 * 1024L)
-                .setMaxDbs(100)
-                .open(lmdbDir);
-
-        ixMap = new IxMap<>(env, "test", new FSTCoder<>(),
+    public static void setUp() throws Exception {
+        lmdb = LmdbTests.makeLmdb(Files.temporaryFolder().getAbsolutePath());
+        ixMap = new IxMap<>(lmdb.getEnv(), "test", new FSTCoder<>(),
                 ImmutableMap.of(LENGTH_INDEX, s -> Key.keys(intKey(s.length()))));
     }
 
@@ -86,8 +80,8 @@ public class IxMapPropTest {
         assumeThat(value, CoreMatchers.not(equalTo(null)));
 
         Key k = IxMapTest.key(key);
-        Optional<String> oldValue = ixMap.put(k, value);
-        try (Tx.Read tx = Tx.read(env)) {
+        Optional<String> oldValue = lmdb.writeTx(tx -> ixMap.put(tx, k, value));
+        lmdb.readTx0(tx -> {
             assertEquals(value, ixMap.get(tx, k).get());
             Map<Key, String> byIndex = ixMap.getByIndex(LENGTH_INDEX, tx, intKey(value.length()));
             assertTrue(byIndex.values().stream().anyMatch(s -> s.equals(value)));
@@ -98,6 +92,6 @@ public class IxMapPropTest {
                     assertFalse(oldByIndex.values().stream().anyMatch(s -> s.equals(s1)));
                 }
             });
-        }
+        });
     }
 }

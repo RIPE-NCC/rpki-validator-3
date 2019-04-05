@@ -98,7 +98,7 @@ public class TrustAnchorService {
         trustAnchor.setLocations(ImmutableList.copyOf(command.getLocations()));
         trustAnchor.setSubjectPublicKeyInfo(command.getSubjectPublicKeyInfo());
         trustAnchor.setRsyncPrefetchUri(command.getRsyncPrefetchUri());
-        return Tx.with(lmdb.writeTx(), tx -> add(tx, trustAnchor));
+        return lmdb.writeTx(tx -> add(tx, trustAnchor));
     }
 
     long add(Tx.Write tx, TrustAnchor trustAnchor) {
@@ -115,7 +115,7 @@ public class TrustAnchorService {
     }
 
     public void remove(long trustAnchorId) {
-        Tx.use(lmdb.writeTx(), tx -> {
+        lmdb.writeTx0(tx -> {
             Optional<TrustAnchor> trustAnchor1 = trustAnchorStore.get(tx, Key.of(trustAnchorId));
             trustAnchor1.ifPresent(trustAnchor -> {
                 rpkiRepositoryStore.removeAllForTrustAnchor(tx, trustAnchor);
@@ -130,7 +130,7 @@ public class TrustAnchorService {
     public void managePreconfiguredAndExistingTrustAnchors() {
         log.info("Automatically adding preconfigured trust anchors");
 
-        final Boolean alreadyLoaded = Tx.with(lmdb.writeTx(), tx -> {
+        final Boolean alreadyLoaded = lmdb.writeTx(tx -> {
             if (settingsStore.isPreconfiguredTalsLoaded(tx)) {
                 log.info("Preconfigured trust anchors are already loaded, skipping");
                 scheduleTasValidation(tx);
@@ -152,7 +152,7 @@ public class TrustAnchorService {
 
         for (final File tal : tals) {
             final TrustAnchorLocator locator = TrustAnchorLocator.fromFile(tal);
-            Tx.use(lmdb.writeTx(), tx -> {
+            lmdb.writeTx0(tx -> {
                 Optional<TrustAnchor> ta = trustAnchorStore.findBySubjectPublicKeyInfo(tx, locator.getPublicKeyInfo());
                 if (ta.isPresent()) {
                     log.info("Preconfigured trust anchor '{}' already installed, skipping", locator.getCaName());
@@ -176,7 +176,7 @@ public class TrustAnchorService {
             });
         }
 
-        scheduleTasValidation(lmdb.writeTx());
+        lmdb.writeTx0(tx -> scheduleTasValidation(tx));
     }
 
     private void scheduleTasValidation(Tx.Write tx) {
