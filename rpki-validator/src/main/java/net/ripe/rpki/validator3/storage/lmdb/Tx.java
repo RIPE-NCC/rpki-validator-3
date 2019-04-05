@@ -35,7 +35,9 @@ import org.lmdbjava.Env;
 import org.lmdbjava.Txn;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -104,6 +106,16 @@ public abstract class Tx implements AutoCloseable {
         @Override
         protected Txn<ByteBuffer> makeTxn() {
             return env.txnWrite();
+        }
+
+        @Getter
+        private List<Runnable> onCommit = null;
+
+        public synchronized void onCommit(Runnable r) {
+            if (onCommit == null) {
+                onCommit = new ArrayList<>();
+            }
+            onCommit.add(r);
         }
     }
 

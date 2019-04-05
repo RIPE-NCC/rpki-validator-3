@@ -22,6 +22,9 @@ public abstract class Lmdb {
         try {
             final T r = f.apply(tx);
             tx.txn().commit();
+            if (tx.getOnCommit() != null) {
+                tx.getOnCommit().forEach(Runnable::run);
+            }
             return r;
         } finally {
             tx.close();
@@ -33,6 +36,9 @@ public abstract class Lmdb {
         try {
             c.accept(tx);
             tx.txn().commit();
+            if (tx.getOnCommit() != null) {
+                tx.getOnCommit().forEach(Runnable::run);
+            }
         } finally {
             tx.close();
         }
