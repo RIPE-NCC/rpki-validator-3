@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.rpki.validator3.domain.BgpSecFilter;
 import net.ripe.rpki.validator3.domain.BgpSecFilters;
-import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
+import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;

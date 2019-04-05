@@ -40,7 +40,7 @@ import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.api.roas.ObjectController;
 import net.ripe.rpki.validator3.domain.IgnoreFilters;
 import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
-import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
+import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.Link;

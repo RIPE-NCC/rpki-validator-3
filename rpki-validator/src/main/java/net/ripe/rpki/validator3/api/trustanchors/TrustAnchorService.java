@@ -33,6 +33,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.io.PatternFilenameFilter;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
+import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
@@ -41,7 +42,6 @@ import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
 import net.ripe.rpki.validator3.storage.stores.SettingsStore;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
-import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import net.ripe.rpki.validator3.util.TrustAnchorLocator;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,7 +66,7 @@ public class TrustAnchorService {
 
     private final RpkiRepositoryStore rpkiRepositoryStore;
 
-    private final ValidationRunStore validationRunStore;
+    private final ValidatedRpkiObjects validatedRpkiObjects;
 
     private final SettingsStore settingsStore;
 
@@ -80,13 +80,12 @@ public class TrustAnchorService {
     @Autowired
     public TrustAnchorService(TrustAnchorStore trustAnchorStore,
                               RpkiRepositoryStore rpkiRepositoryStore,
-                              ValidationRunStore validationRunStore,
-                              SettingsStore settingsStore,
+                              ValidatedRpkiObjects validatedRpkiObjects, SettingsStore settingsStore,
                               ValidationScheduler validationScheduler,
                               Lmdb lmdb) {
         this.trustAnchorStore = trustAnchorStore;
         this.rpkiRepositoryStore = rpkiRepositoryStore;
-        this.validationRunStore = validationRunStore;
+        this.validatedRpkiObjects = validatedRpkiObjects;
         this.settingsStore = settingsStore;
         this.validationScheduler = validationScheduler;
         this.lmdb = lmdb;
@@ -120,8 +119,7 @@ public class TrustAnchorService {
             trustAnchor1.ifPresent(trustAnchor -> {
                 rpkiRepositoryStore.removeAllForTrustAnchor(tx, trustAnchor);
                 trustAnchorStore.remove(tx, trustAnchor);
-                // TODO Fix that
-//                validatedRpkiObjects.remove(tx, trustAnchor);
+                validatedRpkiObjects.remove(trustAnchor);
             });
         });
     }
@@ -176,10 +174,10 @@ public class TrustAnchorService {
             });
         }
 
-        lmdb.writeTx0(tx -> scheduleTasValidation(tx));
+        lmdb.readTx0(tx -> scheduleTasValidation(tx));
     }
 
-    private void scheduleTasValidation(Tx.Write tx) {
+    private void scheduleTasValidation(Tx.Read tx) {
         log.info("Schedule TA validation that were in the database already");
         trustAnchorStore.findAll(tx).forEach(ta -> {
             if (!validationScheduler.scheduledTrustAnchor(ta)) {

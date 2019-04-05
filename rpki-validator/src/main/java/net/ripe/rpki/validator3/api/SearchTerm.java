@@ -32,7 +32,7 @@ package net.ripe.rpki.validator3.api;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpAddress;
 import net.ripe.ipresource.IpRange;
-import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
+import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 
 import java.util.function.Predicate;
 

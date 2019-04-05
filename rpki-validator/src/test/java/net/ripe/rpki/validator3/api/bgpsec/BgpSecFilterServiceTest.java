@@ -33,7 +33,7 @@ import com.google.common.collect.ImmutableList;
 import net.ripe.ipresource.Asn;
 import net.ripe.rpki.validator3.IntegrationTest;
 import net.ripe.rpki.validator3.domain.BgpSecFilter;
-import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
+import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -27,7 +27,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.domain;
+package net.ripe.rpki.validator3.domain.validation;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -42,6 +42,16 @@ import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.domain.RoaPrefixDefinition;
+import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.data.Ref;
+import net.ripe.rpki.validator3.storage.data.RoaPrefix;
+import net.ripe.rpki.validator3.storage.data.RpkiObject;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
+import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import net.ripe.rpki.validator3.util.Transactions;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,68 +78,67 @@ import java.util.stream.Stream;
 @Slf4j
 public class ValidatedRpkiObjects {
     private final Object listenerLock = new Object();
+
     private final List<Consumer<Collection<RoaPrefixesAndRouterCertificates>>> listeners = new ArrayList<>();
 
     private Map<Long, RoaPrefixesAndRouterCertificates> validatedObjectsByTrustAnchor = new HashMap<>();
 
     @Autowired
-    private RpkiObjects rpkiObjects;
+    private RpkiObjectStore rpkiObjects;
+
     @Autowired
-    private PlatformTransactionManager transactionManager;
+    private TrustAnchorStore trustAnchorStore;
+
+    @Autowired
+    private ValidationRunStore validationRunStore;
+
+    @Autowired
+    private Lmdb lmdb;
 
     @PostConstruct
     private synchronized void initialize() {
-        new TransactionTemplate(transactionManager).execute((status) -> {
-            Map<@NotNull @Valid TrustAnchor, List<RpkiObject>> grouped = Stream.concat(
-                rpkiObjects.findCurrentlyValidated(RpkiObject.Type.ROA),
-                rpkiObjects.findCurrentlyValidated(RpkiObject.Type.ROUTER_CER)
+        lmdb.readTx0(tx -> {
+            Map<Ref<TrustAnchor>, List<RpkiObject>> grouped = Stream.concat(
+                    validationRunStore.findCurrentlyValidated(tx, RpkiObject.Type.ROA),
+                    validationRunStore.findCurrentlyValidated(tx, RpkiObject.Type.ROUTER_CER)
                 )
                 .collect(Collectors.groupingBy(
                     pair -> pair.getLeft().getTrustAnchor(),
-                    Collectors.mapping(pair -> pair.getRight(), Collectors.toList())
+                    Collectors.mapping(Pair::getRight, Collectors.toList())
                 ));
-            grouped.forEach(this::update);
-            return null;
+            grouped.forEach((taRef, rpkibjects) -> update(tx, taRef, rpkibjects));
         });
     }
 
     @Transactional
-    public void update(TrustAnchor trustAnchor, Collection<RpkiObject> rpkiObjects) {
-        TrustAnchorData trustAnchorData = TrustAnchorData.of(trustAnchor.getId(), trustAnchor.getName());
-        RoaPrefixesAndRouterCertificates roaPrefixesAndRouterCertificates = RoaPrefixesAndRouterCertificates.of(
-            extractRoaPrefixes(trustAnchorData, rpkiObjects),
-            extractRouterCertificates(trustAnchorData, rpkiObjects)
-        );
-
-        // Only update the cache after the current transaction successfully commits.
-        Transactions.afterCommit(
-            () -> {
-                synchronized (listenerLock) {
-                    log.info("updating validation objects cache for trust anchor {} with {} ROA prefixes and {} router certificates",
-                        trustAnchor,
-                        roaPrefixesAndRouterCertificates.getRoaPrefixes().size(),
-                        roaPrefixesAndRouterCertificates.getRouterCertificates().size()
+    public void update(Tx.Read tx, Ref<TrustAnchor> trustAnchor, Collection<RpkiObject> rpkiObjects) {
+        trustAnchorStore.get(tx, trustAnchor.key())
+                .map(ta -> {
+                    TrustAnchorData trustAnchorData = TrustAnchorData.of(trustAnchor.key().asLong(), ta.getName());
+                    return RoaPrefixesAndRouterCertificates.of(
+                            extractRoaPrefixes(trustAnchorData, rpkiObjects),
+                            extractRouterCertificates(tx, trustAnchorData, rpkiObjects)
                     );
-
-                    validatedObjectsByTrustAnchor.put(trustAnchor.getId(), roaPrefixesAndRouterCertificates);
-
-                    notifyListeners();
-                }
-            }
-        );
+                })
+                .ifPresent(roaPrefixesAndRouterCertificates -> {
+                    synchronized (listenerLock) {
+                        log.info("updating validation objects cache for trust anchor {} with {} ROA prefixes and {} router certificates",
+                                trustAnchor,
+                                roaPrefixesAndRouterCertificates.getRoaPrefixes().size(),
+                                roaPrefixesAndRouterCertificates.getRouterCertificates().size()
+                        );
+                        validatedObjectsByTrustAnchor.put(trustAnchor.key().asLong(), roaPrefixesAndRouterCertificates);
+                        notifyListeners();
+                    }
+                });
     }
 
-    @Transactional
     public void remove(TrustAnchor trustAnchor) {
-        long trustAnchorId = trustAnchor.getId();
-        Transactions.afterCommit(
-            () -> {
-                synchronized (listenerLock) {
-                    validatedObjectsByTrustAnchor.remove(trustAnchorId);
-                    notifyListeners();
-                }
-            }
-        );
+        long trustAnchorId = trustAnchor.getId().asLong();
+        synchronized (listenerLock) {
+            validatedObjectsByTrustAnchor.remove(trustAnchorId);
+            notifyListeners();
+        }
     }
 
     public ValidatedObjects<RoaPrefix> findCurrentlyValidatedRoaPrefixes() {
@@ -200,13 +209,13 @@ public class ValidatedRpkiObjects {
         String subjectPublicKeyInfo;
     }
 
-    private ImmutableSet<RouterCertificate> extractRouterCertificates(TrustAnchorData trustAnchor, Collection<RpkiObject> rpkiObjects) {
+    private ImmutableSet<RouterCertificate> extractRouterCertificates(Tx.Read tx, TrustAnchorData trustAnchor, Collection<RpkiObject> rpkiObjects) {
         final Base64.Encoder encoder = Base64.getEncoder();
         ImmutableSet.Builder<RouterCertificate> builder = ImmutableSet.builder();
         rpkiObjects
             .stream()
             .filter(object -> object.getType() == RpkiObject.Type.ROUTER_CER)
-            .map(object -> this.rpkiObjects.findCertificateRepositoryObject(object.getId(), X509RouterCertificate.class, ValidationResult.withLocation("temporary")))
+            .map(object -> this.rpkiObjects.findCertificateRepositoryObject(tx, object.getId(), X509RouterCertificate.class, ValidationResult.withLocation("temporary")))
             .filter(Optional::isPresent).map(Optional::get)
             .forEach(certificate -> {
                     final ImmutableList<String> asns = ImmutableList.copyOf(X509CertificateUtil.getAsns(certificate.getCertificate()));
@@ -238,7 +247,7 @@ public class ValidatedRpkiObjects {
                 }
             )
             .forEach(data -> {
-                net.ripe.rpki.validator3.domain.RoaPrefix prefix = data.getRight();
+                net.ripe.rpki.validator3.storage.data.RoaPrefix prefix = data.getRight();
                 builder.add(RoaPrefix.of(
                     trustAnchor,
                     new Asn(prefix.getAsn()),

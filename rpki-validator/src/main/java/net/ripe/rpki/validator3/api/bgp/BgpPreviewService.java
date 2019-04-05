@@ -30,7 +30,6 @@
 package net.ripe.rpki.validator3.api.bgp;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
@@ -47,7 +46,7 @@ import net.ripe.rpki.validator3.domain.IgnoreFilter;
 import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
 import net.ripe.rpki.validator3.domain.RoaPrefixAssertion;
 import net.ripe.rpki.validator3.domain.RoaPrefixDefinition;
-import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
+import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joda.time.DateTime;

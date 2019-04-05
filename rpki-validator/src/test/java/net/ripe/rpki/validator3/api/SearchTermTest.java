@@ -32,8 +32,8 @@ package net.ripe.rpki.validator3.api;
 import com.google.common.collect.ImmutableSortedSet;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
-import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
-import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects.RoaPrefix;
+import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
+import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects.RoaPrefix;
 import org.junit.Test;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;

@@ -37,7 +37,7 @@ import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
 import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionsService;
 import net.ripe.rpki.validator3.domain.IgnoreFilter;
 import net.ripe.rpki.validator3.domain.RoaPrefixAssertion;
-import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
+import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import org.joda.time.DateTime;
 import org.junit.Test;
 

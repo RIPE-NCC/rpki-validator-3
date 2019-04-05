@@ -152,9 +152,10 @@ public class TrustAnchorValidationService {
             if (updatedTrustAnchor) {
                 final Set<TrustAnchor> affectedTrustAnchors = Sets.newHashSet(trustAnchor);
                 if (trustAnchor.getRsyncPrefetchUri() != null) {
-                    Optional<RpkiRepository> byURI = lmdb.readTx(tx ->
-                            rpkiRepositoryStore.findByURI(tx, trustAnchor.getRsyncPrefetchUri()));
-                    byURI.ifPresent(r -> affectedTrustAnchors.addAll(repositoryValidationService.prefetchRepository(r)));
+                    lmdb.readTx(tx ->
+                            rpkiRepositoryStore.findByURI(tx, trustAnchor.getRsyncPrefetchUri()))
+                            .ifPresent(r ->
+                                    affectedTrustAnchors.addAll(repositoryValidationService.prefetchRepository(r)));
                 }
                 affectedTrustAnchors.forEach(validationScheduler::triggerCertificateTreeValidation);
             }
