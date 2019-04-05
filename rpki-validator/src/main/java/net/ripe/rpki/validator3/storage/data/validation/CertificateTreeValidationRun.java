@@ -56,9 +56,8 @@ public class CertificateTreeValidationRun extends ValidationRun {
         return TYPE;
     }
 
-
-//    @Override
-//    public void visit(Visitor visitor) {
-//        visitor.accept(this);
-//    }
+    @Override
+    public void visit(Visitor visitor) {
+        visitor.accept(this);
+    }
 }

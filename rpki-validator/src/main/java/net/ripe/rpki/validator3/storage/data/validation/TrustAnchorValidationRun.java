@@ -54,9 +54,8 @@ public class TrustAnchorValidationRun extends ValidationRun {
         return TYPE;
     }
 
-// TODO Do something here as well
-//    @Override
-//    public void visit(Visitor visitor) {
-//        visitor.accept(this);
-//    }
+    @Override
+    public void visit(Visitor visitor) {
+        visitor.accept(this);
+    }
 }

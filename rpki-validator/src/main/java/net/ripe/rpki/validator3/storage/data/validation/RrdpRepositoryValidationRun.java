@@ -47,10 +47,8 @@ public class RrdpRepositoryValidationRun extends RpkiRepositoryValidationRun {
     @Getter
     private Ref<RpkiRepository> rpkiRepository;
 
-//    TODO Do something about it
-//    @Override
-//    public void visit(Visitor visitor) {
-//        visitor.accept(this);
-//    }
-
+    @Override
+    public void visit(Visitor visitor) {
+        visitor.accept(this);
+    }
 }

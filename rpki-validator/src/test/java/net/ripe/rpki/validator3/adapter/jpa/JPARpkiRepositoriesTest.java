@@ -37,6 +37,7 @@ import net.ripe.rpki.validator3.domain.RpkiRepositories;
 import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +54,7 @@ import static org.junit.Assert.assertEquals;
 @IntegrationTest
 @Transactional
 @Slf4j
+@Ignore
 public class JPARpkiRepositoriesTest {
 
 //    @Autowired

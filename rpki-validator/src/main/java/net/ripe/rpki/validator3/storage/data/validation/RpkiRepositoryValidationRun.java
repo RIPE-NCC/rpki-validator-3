@@ -29,30 +29,13 @@
  */
 package net.ripe.rpki.validator3.storage.data.validation;
 
-import lombok.Getter;
-import net.ripe.rpki.validator3.storage.data.RpkiObject;
-
 public abstract class RpkiRepositoryValidationRun extends ValidationRun {
 
     public final static String TYPE = "rpki-repository-validation-run";
 
-    @Getter
-    private int addedObjectCount;
-
     @Override
     public String getType() {
         return TYPE;
-    }
-
-    public void objectAdded() {
-        ++this.addedObjectCount;
-    }
-
-    // TODO Implement somehow
-    public void addRpkiObject(RpkiObject rpkiObject) {
-//        if (rpkiObjects.add(rpkiObject)) {
-//            objectAdded();
-//        }
     }
 
 }

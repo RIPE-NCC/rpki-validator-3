@@ -81,4 +81,6 @@ public interface ValidationRunStore {
     Stream<Pair<CertificateTreeValidationRun, RpkiObject>> findCurrentlyValidated(Tx.Read tx, RpkiObject.Type cer);
 
     void clear(Tx.Write tx);
+
+    int getObjectCount(Tx.Read tx, ValidationRun validationRun);
 }

@@ -155,7 +155,7 @@ public class RpkiRepositoryValidationService {
         });
 
         Tx.ruse(lmdb.readTx(), tx -> {
-            if (validationRun.isSucceeded() && validationRun.getAddedObjectCount() > 0) {
+            if (validationRun.isSucceeded() && validationRunStore.getObjectCount(tx, validationRun) > 0) {
                 rpkiRepository.getTrustAnchors().forEach(taRef ->
                         trustAnchorStore.get(tx, taRef.key())
                                 .ifPresent(validationScheduler::triggerCertificateTreeValidation));

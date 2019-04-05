@@ -34,20 +34,23 @@ import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
+import net.ripe.rpki.validator3.util.Time;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.Set;
 
 @Service
 @Slf4j
@@ -77,79 +80,74 @@ public class RpkiObjectCleanupService {
     public long cleanupRpkiObjects() throws Exception {
         Instant now = Instant.now();
         final List<TrustAnchor> trustAnchors = Tx.rwith(lmdb.readTx(), tx -> this.trustAnchors.findAll(tx));
+        final Set<Key> markThem = new HashSet<>();
         for (TrustAnchor trustAnchor : trustAnchors) {
-            Tx.use(lmdb.writeTx(), tx -> {
+            Tx.ruse(lmdb.readTx(), tx -> {
                 log.debug("tracing objects for trust anchor {}", trustAnchor);
                 X509ResourceCertificate resourceCertificate = trustAnchor.getCertificate();
                 if (resourceCertificate != null) {
-                    traceCertificateAuthority(tx, now, resourceCertificate);
+                    traceCertificateAuthority(tx, now, resourceCertificate, markThem);
                 }
             });
         }
-
-        // do it in async as well to guarantee that it's executed after all the markings
-        return async.submit(() ->
-                Tx.with(lmdb.writeTx(), tx -> deleteUnreachableObjects(tx, now))).get();
+        return Tx.with(lmdb.writeTx(), tx -> {
+            Long t = Time.timed(() ->
+                    markThem.forEach(pk -> rpkiObjects.get(tx, pk)
+                            .ifPresent(ro -> {
+                                ro.markReachable(now);
+                                rpkiObjects.put(tx, ro);
+                            })));
+            log.info("Marked reachable {} RPKI objects in {}ms", markThem.size(), t);
+            return deleteUnreachableObjects(tx, now);
+        });
     }
 
     private long deleteUnreachableObjects(Tx.Write tx, Instant now) {
         Instant unreachableSince = now.minus(cleanupGraceDuration);
-        long count = rpkiObjects.deleteUnreachableObjects(tx, unreachableSince);
-        log.info("Removed {} RPKI objects that have not been marked reachable since {}", count, unreachableSince);
-        return count;
+        final Pair<Long, Long> count = Time.timed(() -> rpkiObjects.deleteUnreachableObjects(tx, unreachableSince));
+        log.info("Removed {} RPKI objects that have not been marked reachable since {}, took {}ms", count.getLeft(), unreachableSince, count.getRight());
+        return count.getLeft();
     }
 
-    private void traceCertificateAuthority(Tx.Read tx, Instant now, X509ResourceCertificate resourceCertificate) {
+    private void traceCertificateAuthority(Tx.Read tx, Instant now, X509ResourceCertificate resourceCertificate, Set<Key> markThem) {
         if (resourceCertificate == null || resourceCertificate.getManifestUri() == null) {
             return;
         }
 
         rpkiObjects.findLatestByTypeAndAuthorityKeyIdentifier(tx,
                 RpkiObject.Type.MFT, resourceCertificate.getSubjectKeyIdentifier())
-                .ifPresent(manifest -> markAndTraceObject(tx, now, "manifest.mft", manifest));
+                .ifPresent(manifest -> markAndTraceObject(tx, now, "manifest.mft", manifest, markThem));
     }
 
-    private final ExecutorService async = Executors.newSingleThreadExecutor();
-
-    private void markAndTraceObject(Tx.Read tx, Instant now, String name, RpkiObject rpkiObject) {
-        // Compare object instance identity to see if we've already visited
-        // the `rpkiObject` in the current run.
-        if (now == rpkiObject.getLastMarkedReachableAt()) {
-            log.debug("Object already marked, skipping {}", rpkiObject);
-        }
-
-        async.submit(() -> {
-            rpkiObject.markReachable(now);
-            Tx.use(lmdb.writeTx(), tx1 -> rpkiObjects.put(tx1, rpkiObject));
-        });
-
+    private void markAndTraceObject(Tx.Read tx, Instant now, String name, RpkiObject rpkiObject, Set<Key> markThem) {
+        markThem.add(rpkiObject.key());
         switch (rpkiObject.getType()) {
             case MFT:
-                traceManifest(tx, now, name, rpkiObject);
+                traceManifest(tx, now, name, rpkiObject, markThem);
                 break;
             case CER:
-                traceCaCertificate(tx, now, name, rpkiObject);
+                traceCaCertificate(tx, now, name, rpkiObject, markThem);
                 break;
             default:
                 break;
         }
     }
 
-    private void traceManifest(Tx.Read tx, Instant now, String name, RpkiObject manifest) {
+    private void traceManifest(Tx.Read tx, Instant now, String name, RpkiObject manifest, Set<Key> markThem) {
         rpkiObjects.findCertificateRepositoryObject(tx,
                 manifest.getId(), ManifestCms.class, ValidationResult.withLocation(name))
                 .ifPresent(manifestCms ->
                         rpkiObjects.findObjectsInManifest(tx, manifestCms)
                                 .forEach((entry, rpkiObject) ->
-                                        markAndTraceObject(tx, now, entry, rpkiObject)));
+                                        markAndTraceObject(tx, now, entry, rpkiObject, markThem)));
     }
 
-    private void traceCaCertificate(Tx.Read tx, Instant now, String name, RpkiObject caCertificate) {
+    private void traceCaCertificate(Tx.Read tx, Instant now, String name, RpkiObject caCertificate, Set<Key> markThem) {
         rpkiObjects.findCertificateRepositoryObject(tx, caCertificate.getId(),
                 X509ResourceCertificate.class, ValidationResult.withLocation(name))
                 .ifPresent(certificate -> {
                     if (certificate.isCa() && certificate.getManifestUri() != null) {
-                        traceCertificateAuthority(tx, now, certificate);
+                        traceCertificateAuthority(tx, now, certificate, markThem);
                     }
                 });
     }

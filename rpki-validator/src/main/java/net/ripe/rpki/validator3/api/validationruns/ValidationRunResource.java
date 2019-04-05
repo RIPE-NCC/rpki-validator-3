@@ -34,13 +34,13 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Builder;
 import lombok.Data;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorController;
-import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
-import net.ripe.rpki.validator3.domain.RpkiRepositoryValidationRun;
-import net.ripe.rpki.validator3.domain.RrdpRepositoryValidationRun;
-import net.ripe.rpki.validator3.domain.RsyncRepositoryValidationRun;
-import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
-import net.ripe.rpki.validator3.domain.ValidationRun;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
+import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidationRun;
+import net.ripe.rpki.validator3.storage.data.validation.RrdpRepositoryValidationRun;
+import net.ripe.rpki.validator3.storage.data.validation.RsyncRepositoryValidationRun;
+import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
+import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
 import org.springframework.context.MessageSource;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
@@ -49,6 +49,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
@@ -75,9 +76,12 @@ public class ValidationRunResource {
 
     Links links;
 
-    public static ValidationRunResource of(ValidationRun validationRun, MessageSource messageSource, Locale locale) {
+    public static ValidationRunResource of(ValidationRun validationRun,
+                                           Function<ValidationRun, Integer> objectCounter,
+                                           MessageSource messageSource,
+                                           Locale locale) {
         List<Link> links = new ArrayList<>();
-        links.add(linkTo(methodOn(ValidationRunController.class).get(validationRun.getId(), locale)).withSelfRel());
+        links.add(linkTo(methodOn(ValidationRunController.class).get(validationRun.key().asLong(), locale)).withSelfRel());
 
         ValidationRunResourceBuilder builder = ValidationRunResource.builder()
             .type(validationRun.getType())
@@ -94,23 +98,23 @@ public class ValidationRunResource {
         validationRun.visit(new ValidationRun.Visitor() {
             @Override
             public void accept(CertificateTreeValidationRun validationRun) {
-                builder.validatedObjectCount(validationRun.getValidatedObjects().size());
-                links.add(linkTo(methodOn(TrustAnchorController.class).get(validationRun.getTrustAnchor().getId(), locale)).withRel(TrustAnchor.TYPE));
+                builder.validatedObjectCount(objectCounter.apply(validationRun));
+                links.add(linkTo(methodOn(TrustAnchorController.class).get(validationRun.getTrustAnchor().key().asLong(), locale)).withRel(TrustAnchor.TYPE));
             }
 
             @Override
             public void accept(RrdpRepositoryValidationRun validationRun) {
-                builder.addedObjectCount(validationRun.getAddedObjectCount());
+                builder.addedObjectCount(objectCounter.apply(validationRun));
             }
 
             @Override
             public void accept(RsyncRepositoryValidationRun validationRun) {
-                builder.addedObjectCount(validationRun.getAddedObjectCount());
+                builder.addedObjectCount(objectCounter.apply(validationRun));
             }
 
             @Override
             public void accept(TrustAnchorValidationRun validationRun) {
-                links.add(linkTo(methodOn(TrustAnchorController.class).get(validationRun.getTrustAnchor().getId(), locale)).withRel(TrustAnchor.TYPE));
+                links.add(linkTo(methodOn(TrustAnchorController.class).get(validationRun.getTrustAnchor().key().asLong(), locale)).withRel(TrustAnchor.TYPE));
             }
         });
 

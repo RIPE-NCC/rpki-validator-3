@@ -33,14 +33,8 @@ import net.ripe.rpki.validator3.storage.Binary;
 
 @Binary
 public class RsyncRepositoryValidationRun extends RpkiRepositoryValidationRun {
-
-// TODO Do something with it
-//    @Override
-//    public void visit(Visitor visitor) {
-//        visitor.accept(this);
-//    }
-
-//    public boolean addRpkiRepository(RpkiRepository repository) {
-//        return getRpkiRepositories().add(repository);
-//    }
+    @Override
+    public void visit(Visitor visitor) {
+        visitor.accept(this);
+    }
 }

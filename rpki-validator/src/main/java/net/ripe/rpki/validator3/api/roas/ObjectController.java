@@ -42,11 +42,13 @@ import net.ripe.rpki.validator3.domain.BgpSecAssertions;
 import net.ripe.rpki.validator3.domain.IgnoreFilters;
 import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
 import net.ripe.rpki.validator3.domain.RoaPrefixAssertions;
-import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.Settings;
-import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.TrustAnchors;
 import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
+import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
@@ -67,13 +69,13 @@ import java.util.stream.Stream;
 @Slf4j
 public class ObjectController {
     @Autowired
-    private RpkiObjects rpkiObjects;
+    private RpkiObjectStore rpkiObjects;
 
     @Autowired
     private ValidatedRpkiObjects validatedRpkiObjects;
 
     @Autowired
-    private TrustAnchors trustAnchors;
+    private TrustAnchorStore trustAnchors;
 
     @Autowired
     private IgnoreFilters ignoreFilters;
@@ -90,18 +92,22 @@ public class ObjectController {
     @Autowired
     private Settings settings;
 
+    @Autowired
+    private Lmdb lmdb;
+
     @GetMapping(path = "/validated")
     public ResponseEntity<ApiResponse<ValidatedObjects>> list(Locale locale) {
-        final Map<Long, TrustAnchorResource> trustAnchorsById = trustAnchors.findAll().stream()
-            .collect(Collectors.toMap(
-                TrustAnchor::getId,
-                ta -> TrustAnchorResource.of(ta, locale))
-            );
+        final Map<Long, TrustAnchorResource> trustAnchorsById = Tx.rwith(lmdb.readTx(), tx ->
+                trustAnchors.findAll(tx).stream()
+                        .collect(Collectors.toMap(
+                                ta -> ta.key().asLong(),
+                                ta -> TrustAnchorResource.of(ta, locale))
+                        ));
         final Map<Long, Links> trustAnchorLinks = trustAnchorsById.entrySet().stream()
-            .collect(Collectors.toMap(
-                entry -> entry.getKey(),
-                entry -> new Links(entry.getValue().getLinks().getLink("self").withRel(TrustAnchor.TYPE)))
-            );
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> new Links(entry.getValue().getLinks().getLink("self").withRel(TrustAnchor.TYPE)))
+                );
 
         final Stream<RoaPrefix> validatedPrefixes = validatedRpkiObjects
             .findCurrentlyValidatedRoaPrefixes(null, null, null)

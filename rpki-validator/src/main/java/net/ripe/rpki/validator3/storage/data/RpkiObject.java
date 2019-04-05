@@ -72,6 +72,11 @@ public class RpkiObject extends Base<RpkiObject> {
         CER, MFT, CRL, ROA, GBR, ROUTER_CER, OTHER
     }
 
+    @Override
+    public Key key() {
+        return Key.of(sha256);
+    }
+
     @NotNull
     @Getter
     private Type type;

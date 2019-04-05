@@ -46,7 +46,6 @@ import net.ripe.rpki.validator3.storage.data.validation.RsyncRepositoryValidatio
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
-import net.ripe.rpki.validator3.storage.lmdb.IxBase;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.MultIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
@@ -60,6 +59,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -165,23 +165,32 @@ public class LmdbValidationRuns implements ValidationRunStore {
 
     @Override
     public <T extends ValidationRun> T get(Tx.Read tx, Class<T> type, long id) {
-        return pickIxMap(type).get(tx, Key.of(id)).orElse(null);
+        return pickIxMaps(type).stream()
+                .map(ixMap -> ixMap.get(tx, Key.of(id)))
+                .filter(Optional::isPresent)
+                .findFirst()
+                .map(validationRun -> (T) validationRun.get())
+                .orElse(null);
     }
-
 
     @Override
     public <T extends ValidationRun> List<T> findAll(Tx.Read tx, Class<T> type) {
-        IxMap<T> tIxMap = pickIxMap(type);
-        return tIxMap.values(tx);
+        final List<T> result = new ArrayList<>();
+        pickIxMaps(type).forEach(ixMap ->
+                ixMap.forEach(tx, (k, bb) ->
+                        result.add((T) ixMap.toValue(bb))));
+        return result;
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public <T extends ValidationRun> List<T> findLatestSuccessful(Tx.Read tx, Class<T> type) {
 //        // TODO Compare it with the original, it's pretty hard to say if it's correct
-        final IxMap<T> ixMap = pickIxMap(type);
-        Map<Key, T> latestSuccessful = ixMap.getByIndexMax(BY_COMPLETED_AT_INDEX, tx, ValidationRun::isSucceeded);
-        return new ArrayList<>(latestSuccessful.values());
+        final List<T> result = new ArrayList<>();
+        pickIxMaps(type).forEach(ixMap ->
+                ixMap.getByIndexMax(BY_COMPLETED_AT_INDEX, tx, ValidationRun::isSucceeded)
+                        .forEach((k, v) -> result.add((T) v)));
+        return result;
     }
 
     @Override
@@ -334,6 +343,11 @@ public class LmdbValidationRuns implements ValidationRunStore {
                 .forEach(ixMap -> ixMap.clear(tx));
     }
 
+    @Override
+    public int getObjectCount(Tx.Read tx, ValidationRun validationRun) {
+        return vr2ro.get(validationRun.key()).size();
+    }
+
     @SuppressWarnings("unchecked")
     private <T extends ValidationRun> IxMap<T> pickIxMap(String vrType) {
         final IxMap<? extends ValidationRun> ixMap = maps.get(vrType);
@@ -343,17 +357,18 @@ public class LmdbValidationRuns implements ValidationRunStore {
         return (IxMap<T>) ixMap;
     }
 
-    private <T extends ValidationRun> IxMap<T> pickIxMap(Class<T> c) {
+    private List<IxMap<ValidationRun>> pickIxMaps(Class c) {
+        List<IxMap<ValidationRun>> ixMaps = new ArrayList<>();
         if (CertificateTreeValidationRun.class.equals(c)) {
-            return pickIxMap(CertificateTreeValidationRun.TYPE);
+            ixMaps.add(pickIxMap(CertificateTreeValidationRun.TYPE));
         }
         if (TrustAnchorValidationRun.class.equals(c)) {
-            return pickIxMap(TrustAnchorValidationRun.TYPE);
+            ixMaps.add(pickIxMap(TrustAnchorValidationRun.TYPE));
         }
         if (RpkiRepositoryValidationRun.class.isAssignableFrom(c)) {
-            return pickIxMap(RpkiRepositoryValidationRun.TYPE);
+            ixMaps.add(pickIxMap(RpkiRepositoryValidationRun.TYPE));
         }
-        throw new RuntimeException("Oops, you are looking for the " + c + " which is not here.");
+        return ixMaps;
     }
 
 }

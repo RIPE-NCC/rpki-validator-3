@@ -32,8 +32,7 @@ package net.ripe.rpki.validator3.api.validationruns;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
-import net.ripe.rpki.commons.validation.ValidationStatus;
-import net.ripe.rpki.validator3.domain.ValidationCheck;
+import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 
 import java.util.List;
 

@@ -30,7 +30,6 @@
 package net.ripe.rpki.validator3.domain.cleanup;
 
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.domain.ValidationRuns;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
@@ -38,8 +37,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.EntityManager;
-import javax.transaction.Transactional;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -60,7 +57,6 @@ public class ValidationRunCleanupService {
         this.lmdb = lmdb;
     }
 
-    @Transactional
     public long cleanupValidationRuns() {
         // Delete all validation runs older than `cleanupGraceDuration` that have a later validation run.
         Instant completedBefore = Instant.now().minus(cleanupGraceDuration);

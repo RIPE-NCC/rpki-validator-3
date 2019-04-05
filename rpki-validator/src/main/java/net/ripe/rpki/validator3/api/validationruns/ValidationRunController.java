@@ -32,8 +32,10 @@ package net.ripe.rpki.validator3.api.validationruns;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
-import net.ripe.rpki.validator3.domain.ValidationRun;
-import net.ripe.rpki.validator3.domain.ValidationRuns;
+import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
+import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.hateoas.Links;
@@ -56,35 +58,48 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 public class ValidationRunController {
 
     @Autowired
-    private ValidationRuns validationRunRepository;
+    private ValidationRunStore validationRunStore;
+
     @Autowired
     private MessageSource messageSource;
 
+    @Autowired
+    private Lmdb lmdb;
+
     @GetMapping
     public ResponseEntity<ApiResponse<List<ValidationRunResource>>> list(Locale locale) {
-        return ResponseEntity.ok(ApiResponse.data(
-            new Links(linkTo(methodOn(ValidationRunController.class).list(locale)).withSelfRel()),
-            validationRunRepository.findAll(ValidationRun.class)
-                .stream()
-                .map(check -> ValidationRunResource.of(check, messageSource, locale))
-                .collect(Collectors.toList())
-        ));
+        return Tx.rwith(lmdb.readTx(), tx ->
+                ResponseEntity.ok(ApiResponse.data(
+                        new Links(linkTo(methodOn(ValidationRunController.class).list(locale)).withSelfRel()),
+                        validationRunStore.findAll(tx, ValidationRun.class)
+                                .stream()
+                                .map(validationRun -> ValidationRunResource.of(validationRun,
+                                        vr -> validationRunStore.getObjectCount(tx, vr),
+                                        messageSource, locale))
+                                .collect(Collectors.toList())
+                )));
     }
 
     @GetMapping(path = "/latest")
     public ResponseEntity<ApiResponse<List<ValidationRunResource>>> listLatestSuccessful(Locale locale) {
-        return ResponseEntity.ok(ApiResponse.data(
-            new Links(linkTo(methodOn(ValidationRunController.class).listLatestSuccessful(locale)).withSelfRel()),
-            validationRunRepository.findLatestSuccessful(ValidationRun.class)
-                .stream()
-                .map(vr -> ValidationRunResource.of(vr, messageSource, locale))
-                .collect(Collectors.toList())
-        ));
+        return Tx.rwith(lmdb.readTx(), tx ->
+                ResponseEntity.ok(ApiResponse.data(
+                        new Links(linkTo(methodOn(ValidationRunController.class).listLatestSuccessful(locale)).withSelfRel()),
+                        validationRunStore.findLatestSuccessful(tx, ValidationRun.class)
+                                .stream()
+                                .map(validationRun -> ValidationRunResource.of(validationRun,
+                                        vr -> validationRunStore.getObjectCount(tx, vr),
+                                        messageSource, locale))
+                                .collect(Collectors.toList())
+                )));
     }
 
     @GetMapping(path = "/{id}")
     public ResponseEntity<ApiResponse<ValidationRunResource>> get(@PathVariable long id, Locale locale) {
-        ValidationRun validationRun = validationRunRepository.get(ValidationRun.class, id);
-        return ResponseEntity.ok(ApiResponse.data(ValidationRunResource.of(validationRun, messageSource, locale)));
+        return Tx.rwith(lmdb.readTx(), tx -> {
+            ValidationRun validationRun = validationRunStore.get(tx, ValidationRun.class, id);
+            return ResponseEntity.ok(ApiResponse.data(ValidationRunResource.of(validationRun,
+                    vr -> validationRunStore.getObjectCount(tx, vr), messageSource, locale)));
+        });
     }
 }

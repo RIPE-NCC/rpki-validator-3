@@ -68,7 +68,7 @@ import static org.junit.Assert.assertTrue;
 @IntegrationTest
 @Transactional
 @Slf4j
-//@Ignore
+@Ignore
 public class JPARpkiObjectsTest {
 
     @Autowired

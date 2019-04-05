@@ -33,7 +33,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Value;
 import net.ripe.rpki.validator3.api.Api;
-import net.ripe.rpki.validator3.domain.TrustAnchor;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import org.springframework.hateoas.Links;
 
 import java.util.List;
@@ -69,7 +69,7 @@ public class TrustAnchorResource {
     public static TrustAnchorResource of(TrustAnchor trustAnchor, Locale locale) {
         return of(
             "trust-anchor",
-            trustAnchor.getId(),
+            trustAnchor.getId().asLong(),
             trustAnchor.getName(),
             trustAnchor.getLocations(),
             trustAnchor.getSubjectPublicKeyInfo(),
@@ -78,7 +78,7 @@ public class TrustAnchorResource {
             trustAnchor.isInitialCertificateTreeValidationRunCompleted(),
             trustAnchor.getEncodedCertificate(),
             new Links(
-                linkTo(methodOn(TrustAnchorController.class).get(trustAnchor.getId(), locale)).withSelfRel()
+                linkTo(methodOn(TrustAnchorController.class).get(trustAnchor.getId().asLong(), locale)).withSelfRel()
             )
         );
     }
