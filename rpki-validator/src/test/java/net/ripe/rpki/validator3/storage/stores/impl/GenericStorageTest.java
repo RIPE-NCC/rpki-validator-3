@@ -48,9 +48,6 @@ import java.util.function.Function;
 
 public class GenericStorageTest {
 
-//    @Rule
-//    public final TemporaryFolder tmp = new TemporaryFolder();
-
     @Autowired
     @Getter
     private RpkiObjectStore rpkiObjectStore;
