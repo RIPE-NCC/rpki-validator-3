@@ -35,7 +35,6 @@ import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.storage.Bytes;
-import net.ripe.rpki.validator3.storage.FSTCoder;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
@@ -80,7 +79,7 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
                 SHA256_SIZE_IN_BYTES,
                 lmdb.getEnv(),
                 RPKI_OBJECTS,
-                new FSTCoder<>(),
+                lmdb.defaultCoder(),
                 ImmutableMap.of(
                         BY_AKI_INDEX, rpkiObject -> Key.keys(Key.of(rpkiObject.getAuthorityKeyIdentifier())),
                         BY_LAST_REACHABLE_INDEX, this::lasMarkedReachableKey)

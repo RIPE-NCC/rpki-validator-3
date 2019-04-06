@@ -1,5 +1,8 @@
 package net.ripe.rpki.validator3.storage;
 
+import net.ripe.rpki.validator3.storage.encoding.BsonCoder;
+import net.ripe.rpki.validator3.storage.encoding.Coder;
+import net.ripe.rpki.validator3.storage.encoding.FSTCoder;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import org.lmdbjava.Env;
 
@@ -63,4 +66,9 @@ public abstract class Lmdb {
     }
 
     public abstract Env<ByteBuffer> getEnv();
+
+    public <T> Coder<T> defaultCoder() {
+        return new FSTCoder<>();
+//        return new BsonCoder<>();
+    }
 }

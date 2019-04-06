@@ -53,6 +53,7 @@ import javax.annotation.PostConstruct;
 import javax.validation.Valid;
 import java.io.File;
 import java.net.URI;
+import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -132,10 +133,9 @@ public class TrustAnchorService {
             if (settingsStore.isPreconfiguredTalsLoaded(tx)) {
                 log.info("Preconfigured trust anchors are already loaded, skipping");
                 scheduleTasValidation(tx);
-                return false;
+                return true;
             }
-            settingsStore.markPreconfiguredTalsLoaded(tx);
-            return true;
+            return false;
         });
 
         if (alreadyLoaded) {
@@ -174,7 +174,8 @@ public class TrustAnchorService {
             });
         }
 
-        lmdb.readTx0(tx -> scheduleTasValidation(tx));
+        lmdb.writeTx0(settingsStore::markPreconfiguredTalsLoaded);
+        lmdb.readTx0(this::scheduleTasValidation);
     }
 
     private void scheduleTasValidation(Tx.Read tx) {

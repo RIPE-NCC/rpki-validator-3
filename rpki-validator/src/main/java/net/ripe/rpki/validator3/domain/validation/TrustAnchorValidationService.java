@@ -149,7 +149,7 @@ public class TrustAnchorValidationService {
             }
 
             validationRun.completeWith(validationResult);
-            if (updatedTrustAnchor) {
+//            if (updatedTrustAnchor) {
                 final Set<TrustAnchor> affectedTrustAnchors = Sets.newHashSet(trustAnchor);
                 if (trustAnchor.getRsyncPrefetchUri() != null) {
                     lmdb.readTx(tx ->
@@ -158,7 +158,7 @@ public class TrustAnchorValidationService {
                                     affectedTrustAnchors.addAll(repositoryValidationService.prefetchRepository(r)));
                 }
                 affectedTrustAnchors.forEach(validationScheduler::triggerCertificateTreeValidation);
-            }
+//            }
         } catch (CommandExecutionException | IOException e) {
             log.error("validation run for trust anchor {} failed", trustAnchor, e);
             validationRun.addCheck(new ValidationCheck(validationRun.getTrustAnchorCertificateURI(), ValidationCheck.Status.ERROR, ErrorCodes.UNHANDLED_EXCEPTION, e.toString()));

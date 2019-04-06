@@ -34,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
-import net.ripe.rpki.validator3.storage.FSTCoder;
+import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
@@ -57,6 +57,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -109,15 +110,15 @@ public class LmdbValidationRuns implements ValidationRunStore {
 
         this.rpkiObjectStore = rpkiObjectStore;
 
-        ctIxMap = new IxMap<>(lmdb.getEnv(), CT_RPKI_VALIDATION_RUNS, new FSTCoder<>(),
+        ctIxMap = new IxMap<>(lmdb.getEnv(), CT_RPKI_VALIDATION_RUNS, lmdb.defaultCoder(),
                 ImmutableMap.of(BY_TA_INDEX, vr -> Key.keys(vr.getTrustAnchor().key()),
                         BY_COMPLETED_AT_INDEX, this::completedAtIndexKeys));
 
-        taIxMap = new IxMap<>(lmdb.getEnv(), TA_RPKI_VALIDATION_RUNS, new FSTCoder<>(),
+        taIxMap = new IxMap<>(lmdb.getEnv(), TA_RPKI_VALIDATION_RUNS, lmdb.defaultCoder(),
                 ImmutableMap.of(BY_TA_INDEX, vr -> Key.keys(vr.getTrustAnchor().key()),
                         BY_COMPLETED_AT_INDEX, this::completedAtIndexKeys));
 
-        repoIxMap = new IxMap<>(lmdb.getEnv(), RS_RPKI_VALIDATION_RUNS, new FSTCoder<>(),
+        repoIxMap = new IxMap<>(lmdb.getEnv(), RS_RPKI_VALIDATION_RUNS, lmdb.defaultCoder(),
                 ImmutableMap.of(BY_COMPLETED_AT_INDEX, this::completedAtIndexKeys));
         this.sequences = sequences;
 
@@ -125,11 +126,22 @@ public class LmdbValidationRuns implements ValidationRunStore {
         maps.put(TrustAnchorValidationRun.TYPE, taIxMap);
         maps.put(RpkiRepositoryValidationRun.TYPE, repoIxMap);
 
-        vr2ro = new MultIxMap<>(lmdb.getEnv(), RPKI_VALIDATION_RUNS_TO_RPKI_OBJECTS, new FSTCoder<>());
-        ro2vr = new MultIxMap<>(lmdb.getEnv(), RPKI_RPKI_OBJECTS_TO_VALIDATION_RUNS, new FSTCoder<>());
+        Coder<Key> keyCoder = new Coder<Key>() {
+            @Override
+            public ByteBuffer toBytes(Key key) {
+                return key.toByteBuffer();
+            }
 
-        vr2repo = new IxMap<>(lmdb.getEnv(), RPKI_VALIDATION_RUNS_TO_RPKI_REPOSITORIES, new FSTCoder<>());
-        repo2vr = new MultIxMap<>(lmdb.getEnv(), RPKI_RPKI_REPOSITORIES_TO_VALIDATION_RUNS, new FSTCoder<>());
+            @Override
+            public Key fromBytes(ByteBuffer bb) {
+                return new Key(bb);
+            }
+        };
+        vr2ro = new MultIxMap<>(lmdb.getEnv(), RPKI_VALIDATION_RUNS_TO_RPKI_OBJECTS, keyCoder);
+        ro2vr = new MultIxMap<>(lmdb.getEnv(), RPKI_RPKI_OBJECTS_TO_VALIDATION_RUNS, keyCoder);
+
+        vr2repo = new IxMap<>(lmdb.getEnv(), RPKI_VALIDATION_RUNS_TO_RPKI_REPOSITORIES, keyCoder);
+        repo2vr = new MultIxMap<>(lmdb.getEnv(), RPKI_RPKI_REPOSITORIES_TO_VALIDATION_RUNS, keyCoder);
 
         rpkiObjectStore.onDelete((tx, rpkiObjectKey) -> {
             ro2vr.get(tx, rpkiObjectKey).forEach(validationRunId -> vr2ro.delete(tx, validationRunId));

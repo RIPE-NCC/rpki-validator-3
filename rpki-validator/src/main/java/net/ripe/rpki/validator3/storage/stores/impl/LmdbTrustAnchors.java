@@ -31,7 +31,6 @@ package net.ripe.rpki.validator3.storage.stores.impl;
 
 import com.google.common.collect.ImmutableMap;
 import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
-import net.ripe.rpki.validator3.storage.FSTCoder;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
@@ -60,7 +59,7 @@ public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements T
         this.ixMap = new IxMap<>(
                 lmdb.getEnv(),
                 TrustAnchorStore.TRUST_ANCHORS,
-                new FSTCoder<>(),
+                lmdb.defaultCoder(),
                 ImmutableMap.of(
                         BY_NAME, ta -> Key.keys(Key.of(ta.getName())),
                         BY_SUBJECT_KEY_INFO, ta -> Key.keys(Key.of(ta.getSubjectPublicKeyInfo())))

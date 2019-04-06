@@ -36,7 +36,6 @@ import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
-import net.ripe.rpki.validator3.storage.FSTCoder;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
@@ -85,7 +84,7 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
         ixMap = new IxMap<>(
                 lmdb.getEnv(),
                 RPKI_REPOSITORIES,
-                new FSTCoder<>(),
+                lmdb.defaultCoder(),
                 ImmutableMap.of(
                         BY_URI, r -> Key.keys(Key.of(r.getLocationUri())),
                         BY_TA, r -> r.getTrustAnchors().stream().map(Ref::key).collect(Collectors.toSet())

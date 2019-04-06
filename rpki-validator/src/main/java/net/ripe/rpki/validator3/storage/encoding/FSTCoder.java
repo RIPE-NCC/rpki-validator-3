@@ -27,8 +27,9 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage;
+package net.ripe.rpki.validator3.storage.encoding;
 
+import net.ripe.rpki.validator3.storage.Binary;
 import org.nustaq.serialization.simpleapi.DefaultCoder;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;

@@ -33,11 +33,21 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
 import com.esotericsoftware.kryo.io.Input;
 import com.fasterxml.uuid.Generators;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 import com.jsoniter.JsonIterator;
 import com.jsoniter.output.JsonStream;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import net.ripe.rpki.validator3.storage.Bytes;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -50,11 +60,14 @@ import org.lmdbjava.Txn;
 import org.nustaq.serialization.simpleapi.DefaultCoder;
 import org.springframework.util.StreamUtils;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
+import java.util.Base64;
 import java.util.Random;
 import java.util.UUID;
 import java.util.function.BiFunction;
@@ -65,6 +78,9 @@ import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.Env.create;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.undercouch.bson4jackson.BsonFactory;
 
 
 @Ignore
@@ -149,7 +165,7 @@ public class LmdbTest {
     }
 
     @Test
-    @Ignore
+//    @Ignore
     public void testLmdbSpeedForFastBinary() throws IOException {
         final DefaultCoder coder = new DefaultCoder(true, Bla.class, Thingy.class);
         testTemplate(
@@ -171,7 +187,7 @@ public class LmdbTest {
     }
 
     @Test
-    @Ignore
+//    @Ignore
     public void testLmdbSpeedForJson() throws IOException {
         testTemplate(
                 k -> {
@@ -187,6 +203,68 @@ public class LmdbTest {
                     byte[] data = new byte[buffer.remaining()];
                     buffer.get(data);
                     return JsonIterator.deserialize(data).as(Bla.class);
+                }
+        );
+    }
+
+    class ByteArraysAdapter implements JsonSerializer<byte[]>, JsonDeserializer<byte[]> {
+
+        @Override
+        public byte[] deserialize(JsonElement json, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+            return Base64.getDecoder().decode(json.getAsJsonPrimitive().getAsString());
+        }
+
+        @Override
+        public JsonElement serialize(byte[] bytes, Type type, JsonSerializationContext jsonSerializationContext) {
+            return new JsonPrimitive(Base64.getEncoder().encodeToString(bytes));
+        }
+    }
+
+    @Test
+//    @Ignore
+    public void testLmdbSpeedForGson() throws IOException {
+        Gson gson = new GsonBuilder()
+                .registerTypeAdapter(byte[].class, new ByteArraysAdapter())
+                .create();
+
+        testTemplate(
+                k -> {
+                    String json = gson.toJson(generateBla());
+                    return Bytes.toDirectBuffer(json.getBytes(UTF_8));
+                },
+                (p, k) -> {
+                    Dbi<ByteBuffer> db = p.getLeft();
+                    Txn<ByteBuffer> tx = p.getRight();
+                    ByteBuffer buffer = db.get(tx, k);
+                    String json = new String(Bytes.toBytes(buffer), UTF_8);
+                    return gson.fromJson(json, Bla.class);
+                }
+        );
+    }
+
+    @Test
+//    @Ignore
+    public void testLmdbSpeedForBson() throws IOException {
+        ObjectMapper mapper = new ObjectMapper(new BsonFactory());
+        testTemplate(
+                k -> {
+                    try {
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        mapper.writeValue(baos, generateBla());
+                        return Bytes.toDirectBuffer(baos.toByteArray());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                },
+                (p, k) -> {
+                    Dbi<ByteBuffer> db = p.getLeft();
+                    Txn<ByteBuffer> tx = p.getRight();
+                    ByteBuffer buffer = db.get(tx, k);
+                    try {
+                        return mapper.readValue(Bytes.toBytes(buffer), Bla.class);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
         );
     }
@@ -220,7 +298,7 @@ public class LmdbTest {
 
         final Dbi<ByteBuffer> db = env.openDbi(DB_NAME, MDB_CREATE);
 
-        int keyCount = 10_000_000;
+        int keyCount = 100_000;
 //        int keyCount = 2;
         final ByteBuffer[] keys = new ByteBuffer[keyCount];
         for (int k = 0; k < keyCount; k++) {
@@ -228,9 +306,7 @@ public class LmdbTest {
         }
 
         try (Txn<ByteBuffer> txn = env.txnWrite()) {
-            Stream.of(keys).forEach(k -> {
-                db.put(txn, k, value.apply(k));
-            });
+            Stream.of(keys).forEach(k -> db.put(txn, k, value.apply(k)));
             txn.commit();
         }
 
