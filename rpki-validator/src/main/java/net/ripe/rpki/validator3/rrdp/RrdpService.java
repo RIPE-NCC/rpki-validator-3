@@ -29,6 +29,8 @@
  */
 package net.ripe.rpki.validator3.rrdp;
 
+import com.google.common.hash.Hashing;
+import com.google.common.hash.HashingInputStream;
 import fj.data.Either;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
@@ -57,7 +59,10 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 
@@ -99,6 +104,9 @@ public class RrdpService {
                     ValidationCheck.Status.ERROR, ErrorCodes.RRDP_FETCH, e.getMessage());
             validationRun.addCheck(validationCheck);
             validationRun.setFailed();
+            lmdb.writeTx0(tx -> validationRunStore.update(tx, validationRun));
+        } catch (Throwable t) {
+            log.error("Oops", t);
         }
     }
 
@@ -148,17 +156,20 @@ public class RrdpService {
     }
 
     private void readSnapshot(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun, Notification notification) {
-        final byte[] snapshotBody = rrdpClient.getBody(notification.snapshotUri);
-        final Pair<byte[], Long> timed = Time.timed(() -> Sha256.hash(snapshotBody));
-        final byte[] snapshotHash = timed.getLeft();
-        log.info("Calculating snapshot hash time {}ms", timed.getRight());
+        final AtomicReference<HashingInputStream> hashingStream = new AtomicReference<>();
+        final Pair<Snapshot, Long> timedSnapshot = Time.timed(() ->
+                rrdpClient.readStream(notification.snapshotUri, is -> {
+                    hashingStream.set(new HashingInputStream(Hashing.sha256(), is));
+                    return rrdpParser.snapshot(hashingStream.get());
+                }));
+
+        byte[] snapshotHash = hashingStream.get().hash().asBytes();
         if (!Arrays.equals(Hex.parse(notification.snapshotHash), snapshotHash)) {
             throw new RrdpException(ErrorCodes.RRDP_WRONG_SNAPSHOT_HASH, "Hash of the snapshot file " +
                     notification.snapshotUri + " is " + Hex.format(snapshotHash) + ", but notification file says " + notification.snapshotHash);
         }
 
-        Pair<Snapshot, Long> timedSnapshot = Time.timed(() -> rrdpParser.snapshot(new ByteArrayInputStream(snapshotBody)));
-        log.info("Parsing snapshot time {}ms", timedSnapshot.getRight());
+        log.info("Downloading/hashing/parsing snapshot time {}ms", timedSnapshot.getRight());
         Long timedStoreSnapshot = Time.timed(() ->
                 lmdb.writeTx0(tx -> {
                     storeSnapshot(tx, timedSnapshot.getLeft(), validationRun);
@@ -215,35 +226,60 @@ public class RrdpService {
         }
     }
 
+    /*
+      Creating objects from byte arrays is CPU, so we do it in parallel to make
+      the writing transaction as short as possible.
+     */
+    private ExecutorCompletionService<Either<ValidationResult, RpkiObject>> asyncCreateObjects =
+            new ExecutorCompletionService<>(Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()));
+
     void storeSnapshot(final Tx.Write tx, final Snapshot snapshot, final RpkiRepositoryValidationRun validationRun) {
         final AtomicInteger counter = new AtomicInteger();
+        final AtomicInteger workCounter = new AtomicInteger(0);
+        final int threshold = 10;
         snapshot.asMap().forEach((objUri, value) -> {
             byte[] content = value.content;
-            rpkiObjectStore.findBySha256(tx, Sha256.hash(content)).map(existing -> {
-                existing.addLocation(objUri);
-                return existing;
-            }).orElseGet(() -> {
-                final Either<ValidationResult, RpkiObject> maybeRpkiObject = createRpkiObject(objUri, content);
-                if (maybeRpkiObject.isLeft()) {
-                    validationRun.addChecks(maybeRpkiObject.left().value());
-                    return null;
-                } else {
-                    final RpkiObject object = maybeRpkiObject.right().value();
-                    rpkiObjectStore.put(tx, object);
-                    validationRunStore.associate(tx, validationRun, object);
-                    counter.incrementAndGet();
-                    return object;
+            Optional<RpkiObject> bySha256 = rpkiObjectStore.findBySha256(tx, Sha256.hash(content));
+            if (bySha256.isPresent()) {
+                bySha256.get().addLocation(objUri);
+                rpkiObjectStore.put(tx, bySha256.get());
+            } else {
+                if (workCounter.get() > threshold) {
+                    storeSnapshotObject(tx, validationRun, counter);
+                    workCounter.decrementAndGet();
                 }
-            });
+                asyncCreateObjects.submit(() -> createRpkiObject(objUri, content));
+                workCounter.incrementAndGet();
+            }
         });
+
+        while (workCounter.getAndDecrement() > 0) {
+            storeSnapshotObject(tx, validationRun, counter);
+        }
+
         log.info("Added (or updated locations for) {} new objects", counter.get());
     }
 
-//    @Transactional(Transactional.TxType.REQUIRED)
-    void storeDelta(final Tx.Write wtx,
-                    final Delta delta,
-                    final RpkiRepositoryValidationRun validationRun,
-                    final RpkiRepository rpkiRepository) {
+    private void storeSnapshotObject(Tx.Write tx, RpkiRepositoryValidationRun validationRun, AtomicInteger counter) {
+        try {
+            final Either<ValidationResult, RpkiObject> maybeRpkiObject = asyncCreateObjects.take().get();
+            if (maybeRpkiObject.isLeft()) {
+                validationRun.addChecks(maybeRpkiObject.left().value());
+            } else {
+                final RpkiObject object = maybeRpkiObject.right().value();
+                rpkiObjectStore.put(tx, object);
+                validationRunStore.associate(tx, validationRun, object);
+                counter.incrementAndGet();
+            }
+        } catch (Exception e) {
+            log.error("Something strange happened here", e);
+        }
+    }
+
+    private void storeDelta(final Tx.Write wtx,
+                            final Delta delta,
+                            final RpkiRepositoryValidationRun validationRun,
+                            final RpkiRepository rpkiRepository) {
         final AtomicInteger added = new AtomicInteger();
         final AtomicInteger deleted = new AtomicInteger();
         delta.asMap().forEach((uri, deltaElement) -> {
