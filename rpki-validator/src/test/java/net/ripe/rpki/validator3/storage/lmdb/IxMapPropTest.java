@@ -63,11 +63,10 @@ public class IxMapPropTest {
         lmdb = LmdbTests.makeLmdb(Files.temporaryFolder().getAbsolutePath());
         ixMap = new IxMap<>(lmdb.getEnv(), "test", lmdb.defaultCoder(),
                 ImmutableMap.of(LENGTH_INDEX, s -> Key.keys(intKey(s.length()))));
+        lmdb.writeTx0(tx -> ixMap.clear(tx));
     }
 
-
     private static final String LENGTH_INDEX = "length-index";
-
 
     @Property
     public void storedIsThere(String key, String value) throws Exception {
