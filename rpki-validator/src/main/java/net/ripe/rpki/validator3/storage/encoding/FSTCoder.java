@@ -29,53 +29,56 @@
  */
 package net.ripe.rpki.validator3.storage.encoding;
 
+import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.storage.Binary;
+import net.ripe.rpki.validator3.storage.Bytes;
 import org.nustaq.serialization.simpleapi.DefaultCoder;
-import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
-import org.springframework.core.type.filter.AnnotationTypeFilter;
+import org.reflections.Reflections;
 import org.springframework.stereotype.Component;
 
 import java.nio.ByteBuffer;
 import java.util.Set;
 
-import static net.ripe.rpki.validator3.storage.Bytes.toDirectBuffer;
-
 @Component
+@Slf4j
 public class FSTCoder<T> implements Coder<T> {
 
     private ThreadLocal<DefaultCoder> coder;
 
     public FSTCoder() {
         try {
-            registerSerializers();
+            final Class[] registered = getRegisteredClasses();
+            coder = ThreadLocal.withInitial(() -> new DefaultCoder(true, registered));
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public void registerSerializers() throws ClassNotFoundException {
-        final ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
-        scanner.addIncludeFilter(new AnnotationTypeFilter(Binary.class));
-        Set<BeanDefinition> candidateComponents = scanner.findCandidateComponents("net.ripe.rpki.validator3.storage.data");
-        final Class[] registered = new Class[candidateComponents.size()];
-        int i = 0;
-        for (BeanDefinition bd : candidateComponents) {
-            registered[i++] = Class.forName(bd.getBeanClassName());
+    private static Class[] registeredClasses = null;
+
+    private static synchronized Class[] getRegisteredClasses() throws ClassNotFoundException {
+        if (registeredClasses == null) {
+            Reflections reflections = new Reflections("net.ripe.rpki.validator3.storage.data");
+            Set<Class<?>> annotated = reflections.getTypesAnnotatedWith(Binary.class);
+            final Class[] registered = new Class[annotated.size()];
+            int i = 0;
+            for (Class<?> bd : annotated) {
+                registered[i++] = bd;
+                log.info("bd.getBeanClassName() = {}", bd);
+            }
+            registeredClasses = registered;
         }
-        coder = ThreadLocal.withInitial(() -> new DefaultCoder(true, registered));
+        return registeredClasses;
     }
 
     @Override
     public ByteBuffer toBytes(T t) {
-        return toDirectBuffer(coder.get().toByteArray(t));
+        return Bytes.toDirectBuffer(coder.get().toByteArray(t));
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public T fromBytes(ByteBuffer bb) {
-        byte[] bytes = new byte[bb.remaining()];
-        bb.get(bytes);
-        return (T) coder.get().toObject(bytes);
+        return (T) coder.get().toObject(Bytes.toBytes(bb));
     }
 }
