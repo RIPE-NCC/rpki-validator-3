@@ -46,8 +46,10 @@ import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -70,7 +72,17 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     private final IxMap<RpkiObject> ixMap;
 
     private Set<Key> lasMarkedReachableKey(RpkiObject rpkiObject) {
-        return Key.keys(Key.of(rpkiObject.getLastMarkedReachableAt().toEpochMilli()));
+        Instant lastMarkedReachableAt = rpkiObject.getLastMarkedReachableAt();
+        return lastMarkedReachableAt == null ?
+                Collections.emptySet() :
+                Key.keys(Key.of(lastMarkedReachableAt.toEpochMilli()));
+    }
+
+    private Set<Key> akiKey(RpkiObject rpkiObject) {
+        byte[] authorityKeyIdentifier = rpkiObject.getAuthorityKeyIdentifier();
+        return authorityKeyIdentifier == null ?
+                Collections.emptySet() :
+                Key.keys(Key.of(authorityKeyIdentifier));
     }
 
     @Autowired
@@ -81,7 +93,7 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
                 RPKI_OBJECTS,
                 lmdb.defaultCoder(),
                 ImmutableMap.of(
-                        BY_AKI_INDEX, rpkiObject -> Key.keys(Key.of(rpkiObject.getAuthorityKeyIdentifier())),
+                        BY_AKI_INDEX, this::akiKey,
                         BY_LAST_REACHABLE_INDEX, this::lasMarkedReachableKey)
         );
     }
