@@ -97,21 +97,24 @@ public class CertificateTreeValidationService {
     private final ValidationRunStore validationRunStore;
     private final TrustAnchorStore trustAnchorStore;
     private final Lmdb lmdb;
+    private final ValidatedRpkiObjects validatedRpkiObjects;
 
     @Autowired
     public CertificateTreeValidationService(RpkiObjectStore rpkiObjectStore,
-                                            RpkiRepositoryStore rpkiRepositoriStore,
+                                            RpkiRepositoryStore rpkiRepositoryStore,
                                             SettingsStore settingsStore,
                                             ValidationScheduler validationScheduler,
                                             ValidationRunStore validationRunStore,
                                             TrustAnchorStore trustAnchorStore,
+                                            ValidatedRpkiObjects validatedRpkiObjects,
                                             Lmdb lmdb) {
         this.rpkiObjectStore = rpkiObjectStore;
-        this.rpkiRepositoriStore = rpkiRepositoriStore;
+        this.rpkiRepositoriStore = rpkiRepositoryStore;
         this.settingsStore = settingsStore;
         this.validationScheduler = validationScheduler;
         this.validationRunStore = validationRunStore;
         this.trustAnchorStore = trustAnchorStore;
+        this.validatedRpkiObjects = validatedRpkiObjects;
         this.lmdb = lmdb;
     }
 
@@ -177,20 +180,16 @@ public class CertificateTreeValidationService {
             List<RpkiObject> rpkiObjects = validateCertificateAuthority(tx, trustAnchor, registeredRepositories, context, validationResult);
             rpkiObjects.forEach(o -> validationRunStore.associate(tx, validationRun, o));
 
-//            entityManager.setFlushMode(FlushModeType.AUTO);
-
             if (isValidationRunCompleted(validationResult)) {
                 trustAnchor.markInitialCertificateTreeValidationRunCompleted();
-//                if (!settings.isInitialValidationRunCompleted() && trustAnchors.allInitialCertificateTreeValidationRunsCompleted()) {
-                if (!settingsStore.isInitialValidationRunCompleted(tx) &&
-                        trustAnchorStore.allInitialCertificateTreeValidationRunsCompleted(tx)) {
+                trustAnchorStore.update(tx, trustAnchor);
+                if (!settingsStore.isInitialValidationRunCompleted(tx) && trustAnchorStore.allInitialCertificateTreeValidationRunsCompleted(tx)) {
                     settingsStore.markInitialValidationRunCompleted(tx);
                     log.info("All trust anchors have completed their initial certificate tree validation run, validator is now ready");
                 }
             }
 
-// TODO Implement that
-//            validatedRpkiObjects.update(trustAnchor, validationRun.getValidatedObjects());
+            validatedRpkiObjects.update(tx, trustAnchorRef, rpkiObjects);
         } finally {
             validationRun.completeWith(validationResult);
             validationRunStore.update(tx, validationRun);
