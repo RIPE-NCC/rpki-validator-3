@@ -38,6 +38,7 @@ import org.springframework.stereotype.Component;
 
 import java.nio.ByteBuffer;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -46,27 +47,17 @@ public class FSTCoder<T> implements Coder<T> {
     private ThreadLocal<DefaultCoder> coder;
 
     public FSTCoder() {
-        try {
-            final Class[] registered = getRegisteredClasses();
-            coder = ThreadLocal.withInitial(() -> new DefaultCoder(true, registered));
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
+        final Class[] registered = getRegisteredClasses();
+        coder = ThreadLocal.withInitial(() -> new DefaultCoder(true, registered));
     }
 
     private static Class[] registeredClasses = null;
 
-    private static synchronized Class[] getRegisteredClasses() throws ClassNotFoundException {
+    private static synchronized Class[] getRegisteredClasses() {
         if (registeredClasses == null) {
-            Reflections reflections = new Reflections("net.ripe.rpki.validator3.storage.data");
-            Set<Class<?>> annotated = reflections.getTypesAnnotatedWith(Binary.class);
-            final Class[] registered = new Class[annotated.size()];
-            int i = 0;
-            for (Class<?> bd : annotated) {
-                registered[i++] = bd;
-                log.info("bd.getBeanClassName() = {}", bd);
-            }
-            registeredClasses = registered;
+            final Reflections reflections = new Reflections("net.ripe.rpki.validator3.storage.data");
+            final Set<Class<?>> annotated = reflections.getTypesAnnotatedWith(Binary.class);
+            registeredClasses = annotated.toArray(new Class[0]);
         }
         return registeredClasses;
     }
