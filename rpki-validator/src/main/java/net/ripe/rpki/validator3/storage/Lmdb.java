@@ -1,6 +1,5 @@
 package net.ripe.rpki.validator3.storage;
 
-import net.ripe.rpki.validator3.storage.encoding.BsonCoder;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.encoding.FSTCoder;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
@@ -35,16 +34,10 @@ public abstract class Lmdb {
     }
 
     public void writeTx0(Consumer<Tx.Write> c) {
-        Tx.Write tx = writeTx();
-        try {
+        writeTx(tx -> {
             c.accept(tx);
-            tx.txn().commit();
-            if (tx.getOnCommit() != null) {
-                tx.getOnCommit().forEach(Runnable::run);
-            }
-        } finally {
-            tx.close();
-        }
+            return null;
+        });
     }
 
     public <T> T readTx(Function<Tx.Read, T> f) {
@@ -57,12 +50,10 @@ public abstract class Lmdb {
     }
 
     public void readTx0(Consumer<Tx.Read> c) {
-        Tx.Read tx = readTx();
-        try {
+        readTx(tx -> {
             c.accept(tx);
-        } finally {
-            tx.close();
-        }
+            return null;
+        });
     }
 
     public abstract Env<ByteBuffer> getEnv();

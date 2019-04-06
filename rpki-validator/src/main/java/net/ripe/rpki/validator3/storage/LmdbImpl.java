@@ -29,7 +29,6 @@
  */
 package net.ripe.rpki.validator3.storage;
 
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.lmdbjava.Env;
 import org.springframework.beans.factory.annotation.Value;
