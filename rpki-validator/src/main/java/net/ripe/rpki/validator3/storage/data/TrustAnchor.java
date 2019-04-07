@@ -45,7 +45,7 @@ import javax.validation.constraints.Size;
 
 @EqualsAndHashCode(callSuper = true)
 @Binary
-@ToString(exclude = "encodedCertificate")
+@ToString(exclude = {"encodedCertificate", "subjectPublicKeyInfo"})
 @Data
 public class TrustAnchor extends Base<TrustAnchor> {
 

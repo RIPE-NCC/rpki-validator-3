@@ -355,7 +355,7 @@ public class LmdbValidationRuns implements ValidationRunStore {
 
     @Override
     public int getObjectCount(Tx.Read tx, ValidationRun validationRun) {
-        return vr2ro.get(validationRun.key()).size();
+        return vr2ro.get(tx, validationRun.key()).size();
     }
 
     @SuppressWarnings("unchecked")

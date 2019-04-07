@@ -104,8 +104,8 @@ public class RrdpService {
                     ValidationCheck.Status.ERROR, ErrorCodes.RRDP_FETCH, e.getMessage());
             validationRun.addCheck(validationCheck);
             validationRun.setFailed();
-            lmdb.writeTx0(tx -> validationRunStore.update(tx, validationRun));
         } catch (Throwable t) {
+            // TODO Remove it
             log.error("Oops", t);
         }
     }
@@ -227,8 +227,8 @@ public class RrdpService {
     }
 
     /*
-      Creating objects from byte arrays is CPU, so we do it in parallel to make
-      the writing transaction as short as possible.
+      Creating objects from byte arrays is CPU-bound, so we do it
+      in parallel to make the writing transaction as short as possible.
      */
     private ExecutorCompletionService<Either<ValidationResult, RpkiObject>> asyncCreateObjects =
             new ExecutorCompletionService<>(Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()));

@@ -223,7 +223,8 @@ public class CertificateTreeValidationService {
             URI manifestUri = certificate.getManifestUri();
             temporary.setLocation(new ValidationLocation(manifestUri));
 
-            Optional<RpkiObject> manifestObject = rpkiObjectStore.findLatestByTypeAndAuthorityKeyIdentifier(tx, RpkiObject.Type.MFT, context.getSubjectKeyIdentifier());
+            Optional<RpkiObject> manifestObject = rpkiObjectStore.findLatestByTypeAndAuthorityKeyIdentifier(tx,
+                    RpkiObject.Type.MFT, context.getSubjectKeyIdentifier());
 
             if (!manifestObject.isPresent()) {
                 if (rpkiRepository.getStatus() == RpkiRepository.Status.FAILED) {

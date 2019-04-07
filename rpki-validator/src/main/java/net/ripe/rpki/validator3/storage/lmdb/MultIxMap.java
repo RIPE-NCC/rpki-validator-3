@@ -60,12 +60,6 @@ public class MultIxMap<T extends Serializable> extends IxBase<T> {
         return new DbiFlags[]{MDB_CREATE, MDB_DUPSORT};
     }
 
-    public List<T> get(Key primaryKey) {
-        try (Tx.Read tx = readTx()) {
-            return get(tx, primaryKey);
-        }
-    }
-
     public List<T> get(Tx.Read txn, Key primaryKey) {
         verifyKey(primaryKey);
         final ByteBuffer pkBuf = primaryKey.toByteBuffer();

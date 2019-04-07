@@ -31,6 +31,7 @@ package net.ripe.rpki.validator3.storage.stores.impl;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.UnsignedBytes;
+import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.validation.ValidationResult;
@@ -61,6 +62,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
+@Slf4j
 public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements RpkiObjectStore {
 
     private static final String RPKI_OBJECTS = "rpki-objects";
@@ -145,7 +147,7 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
         return ixMap.getByIndex(BY_AKI_INDEX, tx, Key.of(authorityKeyIdentifier))
                 .values()
                 .stream()
-                .filter(o -> o.getType() == type)
+                .filter(o -> type.equals(o.getType()))
                 .max(Comparator
                         .comparing(RpkiObject::getSerialNumber)
                         .thenComparing(RpkiObject::getSigningTime));

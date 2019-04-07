@@ -32,6 +32,9 @@ package net.ripe.rpki.validator3.storage.data;
 import com.google.common.base.Objects;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.storage.Binary;
 
@@ -44,8 +47,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 @EqualsAndHashCode(callSuper = true)
-@Data
 @Binary
+@ToString
 public class RpkiRepository extends Base<RpkiRepository> {
 
     public static final String TYPE = "rpki-repository";
@@ -59,38 +62,49 @@ public class RpkiRepository extends Base<RpkiRepository> {
     }
 
     @NotNull
-    private Type type;
+    private String type;
 
     @NotNull
-    private Status status;
+    private String status;
 
+    @Getter
     private Instant lastDownloadedAt;
 
     @NotEmpty
+    @Getter
     private Set<Ref<TrustAnchor>> trustAnchors = new HashSet<>();
 
     @ValidLocationURI
+    @Getter
     private String rsyncRepositoryUri;
 
     @ValidLocationURI
+    @Getter
     private String rrdpNotifyUri;
 
+    @Getter
+    @Setter
     private String rrdpSessionId;
+
+    @Getter
+    @Setter
     private BigInteger rrdpSerial;
 
+    @Getter
+    @Setter
     private Ref<RpkiRepository> parentRepository;
 
     public RpkiRepository(Ref<TrustAnchor> trustAnchor, @NotNull @ValidLocationURI String location, Type type) {
         addTrustAnchor(trustAnchor);
-        this.status = Status.PENDING;
+        this.status = Status.PENDING.name();
         switch (type) {
             case RRDP:
-                this.type = Type.RRDP;
+                this.type = Type.RRDP.name();
                 this.rrdpNotifyUri = location;
                 break;
             case RSYNC:
             case RSYNC_PREFETCH:
-                this.type = type;
+                this.type = type.name();
                 this.rsyncRepositoryUri = location;
                 break;
         }
@@ -109,15 +123,15 @@ public class RpkiRepository extends Base<RpkiRepository> {
     }
 
     public boolean isPending() {
-        return status == Status.PENDING;
+        return Status.valueOf(status) == Status.PENDING;
     }
 
     public boolean isFailed() {
-        return status == Status.FAILED;
+        return Status.valueOf(status) == Status.FAILED;
     }
 
     public boolean isDownloaded() {
-        return status == Status.DOWNLOADED;
+        return Status.valueOf(status) == Status.DOWNLOADED;
     }
 
     public void setFailed() {
@@ -125,7 +139,7 @@ public class RpkiRepository extends Base<RpkiRepository> {
     }
 
     public void setFailed(Instant lastDownloadedAt) {
-        this.status = Status.FAILED;
+        this.status = Status.FAILED.name();
         this.lastDownloadedAt = lastDownloadedAt;
     }
 
@@ -135,7 +149,19 @@ public class RpkiRepository extends Base<RpkiRepository> {
     }
 
     public void setDownloaded(Instant lastDownloadedAt) {
-        this.status = Status.DOWNLOADED;
+        this.status = Status.DOWNLOADED.name();
         this.lastDownloadedAt = lastDownloadedAt;
+    }
+
+    public Type getType() {
+        return Type.valueOf(type);
+    }
+
+    public Status getStatus() {
+        return Status.valueOf(status);
+    }
+
+    public void setType(Type type) {
+        this.type = type.name();
     }
 }

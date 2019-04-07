@@ -54,8 +54,7 @@ public abstract class ValidationRun extends Base<ValidationRun> {
     @Getter
     private Instant completedAt;
 
-    @Getter
-    private Status status = Status.RUNNING;
+    private String status = Status.RUNNING.name();
 
     @Getter
     private List<ValidationCheck> validationChecks = new ArrayList<>();
@@ -63,20 +62,24 @@ public abstract class ValidationRun extends Base<ValidationRun> {
     public abstract String getType();
 
     public boolean isSucceeded() {
-        return this.status == Status.SUCCEEDED;
+        return Status.SUCCEEDED.name().equals(this.status);
     }
     public boolean isFailed() {
-        return this.status == Status.FAILED;
+        return Status.FAILED.name().equals(this.status);
     }
 
     public void setSucceeded() {
         this.completedAt = Instant.now();
-        this.status = Status.SUCCEEDED;
+        this.status = Status.SUCCEEDED.name();
     }
 
     public void setFailed() {
         this.completedAt = Instant.now();
-        this.status = Status.FAILED;
+        this.status = Status.FAILED.name();
+    }
+
+    public Status getStatus() {
+        return Status.valueOf(status);
     }
 
     public void completeWith(ValidationResult validationResult) {
