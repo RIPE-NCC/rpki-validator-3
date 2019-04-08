@@ -3,6 +3,7 @@ package net.ripe.rpki.validator3.storage.encoding;
 import com.google.common.collect.ImmutableList;
 import net.ripe.rpki.validator3.storage.data.Base;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -22,12 +23,13 @@ public class CoderTest {
 //            new RsyncRepositoryValidationRun(),
     );
 
-    public void testAll() {
-        data.forEach(b ->
-                makeCoders(b).forEach(c -> {
-            Base<?> b1 = c.fromBytes(c.toBytes(b));
-            assertEquals(b, b1);
-        }));
-    }
+//    public void testAll() {
+//        data.forEach(b ->
+//                makeCoders(b).forEach(c -> {
+//                    ByteBuffer bb = c.toBytes(b);
+//                    Base<?> b1 = c.fromBytes(bb);
+//            assertEquals(b, b1);
+//        }));
+//    }
 
 }
