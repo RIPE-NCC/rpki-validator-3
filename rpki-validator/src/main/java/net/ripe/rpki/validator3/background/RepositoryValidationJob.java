@@ -46,7 +46,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @DisallowConcurrentExecution
 public class RepositoryValidationJob implements Job {
 
-    public static final String RPKI_REPOSITORY_ID = "rpkiRepositoryId";
+    private static final String RPKI_REPOSITORY_ID = "rpkiRepositoryId";
 
     @Autowired
     private RpkiRepositoryValidationService validationService;
@@ -56,7 +56,7 @@ public class RepositoryValidationJob implements Job {
     private long rpkiRepositoryId;
 
     @Override
-    public void execute(JobExecutionContext context) throws JobExecutionException {
+    public void execute(JobExecutionContext context) {
         validationService.validateRpkiRepository(rpkiRepositoryId);
     }
 
@@ -68,7 +68,7 @@ public class RepositoryValidationJob implements Job {
     }
 
     static JobKey getJobKey(RpkiRepository rpkiRepository) {
-        return new JobKey(String.format("%s#%s#%d", RpkiRepositoryValidationRun.TYPE,
+        return new JobKey(String.format("%s#%s#%d", rpkiRepository.getType(),
                 rpkiRepository.getRrdpNotifyUri(), rpkiRepository.getId().asLong()));
     }
 }

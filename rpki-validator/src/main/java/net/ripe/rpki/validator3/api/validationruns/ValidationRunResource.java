@@ -59,7 +59,12 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 @Builder
 @ApiModel(value = "ValidationRun")
 public class ValidationRunResource {
-    @ApiModelProperty(allowableValues = TrustAnchorValidationRun.TYPE + "," + RpkiRepositoryValidationRun.TYPE, required = true, position = 1)
+    @ApiModelProperty(
+            allowableValues = TrustAnchorValidationRun.TYPE + "," +
+                    RrdpRepositoryValidationRun.TYPE + "," +
+                    RsyncRepositoryValidationRun.TYPE,
+            required = true,
+            position = 1)
     String type;
 
     Instant startedAt;

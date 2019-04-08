@@ -82,7 +82,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
         // TODO Add index management, reindexing if the index set has changed
         indexes = new HashMap<>();
         indexFunctions.forEach((n, idxFun) ->
-                indexes.put(n, env.openDbi(name + ":idx:" + n, getIndexDbiFlags())));
+                indexes.put(n, env.openDbi(name + "-idx-" + n, getIndexDbiFlags())));
     }
 
     public IxMap(Env<ByteBuffer> env, String name, Coder<T> coder) {
@@ -94,11 +94,12 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
             dropIndexes(tx);
             try (final Cursor<ByteBuffer> cursor = mainDb.openCursor(tx.txn())) {
                 do {
+                    final ByteBuffer pkBuf = cursor.key();
                     final T value = coder.fromBytes(cursor.val());
                     indexFunctions.forEach((n, idxFun) -> {
                         final Set<Key> indexKeys = idxFun.apply(value);
                         try (Cursor<ByteBuffer> c = indexes.get(n).openCursor(tx.txn())) {
-                            indexKeys.forEach(ik -> c.put(ik.toByteBuffer(), cursor.key()));
+                            indexKeys.forEach(ik -> c.put(ik.toByteBuffer(), pkBuf));
                         }
                     });
                 }
@@ -327,11 +328,11 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
             final Txn<ByteBuffer> txn = tx.txn();
             try (final CursorIterator<ByteBuffer> iterator = index.iterate(txn, keyRange)) {
                 final Map<Key, T> m = new HashMap<>();
-                ByteBuffer currentIndexKey = null;
+                Key currentIndexKey = null;
                 while (iterator.hasNext()) {
                     final CursorIterator.KeyVal<ByteBuffer> next = iterator.next();
-                    final ByteBuffer indexKey = next.key();
-                    ByteBuffer pkBuf = next.val();
+                    final Key indexKey = new Key(next.key());
+                    final ByteBuffer pkBuf = next.val();
                     if (currentIndexKey != null) {
                         if (!currentIndexKey.equals(indexKey)) {
                             return m;
@@ -344,7 +345,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
                         final T value = toValue(mainDb.get(txn, pkBuf));
                         if (p.test(value)) {
                             m.put(new Key(pkBuf), value);
-                            currentIndexKey = indexKey.duplicate();
+                            currentIndexKey = indexKey;
                         }
                     }
                 }

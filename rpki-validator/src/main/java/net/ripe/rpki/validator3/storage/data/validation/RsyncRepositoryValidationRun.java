@@ -33,6 +33,14 @@ import net.ripe.rpki.validator3.storage.Binary;
 
 @Binary
 public class RsyncRepositoryValidationRun extends RpkiRepositoryValidationRun {
+
+    public final static String TYPE = "rsync-repository-validation-run";
+
+    @Override
+    public String getType() {
+        return TYPE;
+    }
+
     @Override
     public void visit(Visitor visitor) {
         visitor.accept(this);

@@ -104,9 +104,6 @@ public class RrdpService {
                     ValidationCheck.Status.ERROR, ErrorCodes.RRDP_FETCH, e.getMessage());
             validationRun.addCheck(validationCheck);
             validationRun.setFailed();
-        } catch (Throwable t) {
-            // TODO Remove it
-            log.error("Oops", t);
         }
     }
 
@@ -231,7 +228,7 @@ public class RrdpService {
       in parallel to make the writing transaction as short as possible.
      */
     private ExecutorCompletionService<Either<ValidationResult, RpkiObject>> asyncCreateObjects =
-            new ExecutorCompletionService<>(Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()));
+            new ExecutorCompletionService<>(Executors.newFixedThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1)));
 
     void storeSnapshot(final Tx.Write tx, final Snapshot snapshot, final RpkiRepositoryValidationRun validationRun) {
         final AtomicInteger counter = new AtomicInteger();
@@ -244,6 +241,7 @@ public class RrdpService {
                 bySha256.get().addLocation(objUri);
                 rpkiObjectStore.put(tx, bySha256.get());
             } else {
+
                 if (workCounter.get() > threshold) {
                     storeSnapshotObject(tx, validationRun, counter);
                     workCounter.decrementAndGet();

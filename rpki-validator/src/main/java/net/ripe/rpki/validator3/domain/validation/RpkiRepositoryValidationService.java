@@ -56,6 +56,7 @@ import net.ripe.rpki.validator3.util.Rsync;
 import net.ripe.rpki.validator3.util.Sha256;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -114,53 +115,56 @@ public class RpkiRepositoryValidationService {
     }
 
     public void validateRpkiRepository(long rpkiRepositoryId) {
-        Triple<RpkiRepository, RpkiRepositoryValidationRun, ValidationResult> triple = lmdb.writeTx(tx -> {
-            final Key key = Key.of(rpkiRepositoryId);
-            final RpkiRepository rpkiRepository = rpkiRepositoryStore.get(tx, key).orElse(null);
-            ValidationResult validationResult = ValidationResult.withLocation(rpkiRepository.getRrdpNotifyUri());
-            log.info("Starting RPKI repository validation for " + rpkiRepository);
+        final Key key = Key.of(rpkiRepositoryId);
+        final RpkiRepository rpkiRepository = lmdb.readTx(tx -> rpkiRepositoryStore.get(tx, key).orElse(null));
+        if (rpkiRepository == null) {
+            log.info("RPKI repository with key {} doesn't exist ", rpkiRepositoryId);
+            return;
+        }
+        log.info("Starting RPKI repository validation for " + rpkiRepository);
+        final ValidationResult validationResult = ValidationResult.withLocation(rpkiRepository.getRrdpNotifyUri());
+
+        final RpkiRepositoryValidationRun validationRun = lmdb.writeTx(tx -> {
             Ref<RpkiRepository> rpkiRepositoryRef = rpkiRepositoryStore.makeRef(tx, rpkiRepository.getId());
-            final RpkiRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepositoryRef);
-            validationRunStore.add(tx, validationRun);
-            return Triple.of(rpkiRepository, validationRun, validationResult);
+            return validationRunStore.add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef));
         });
 
-        final RpkiRepository rpkiRepository = triple.getLeft();
-        final RpkiRepositoryValidationRun validationRun = triple.getMiddle();
-        final ValidationResult validationResult = triple.getRight();
-
-        final String uri = rpkiRepository.getRrdpNotifyUri();
-        if (isRrdpUri(uri)) {
-            rrdpService.storeRepository(rpkiRepository, validationRun);
-            if (validationRun.isFailed()) {
-                rpkiRepository.setFailed();
+        try {
+            final String uri = rpkiRepository.getRrdpNotifyUri();
+            if (isRrdpUri(uri)) {
+                rrdpService.storeRepository(rpkiRepository, validationRun);
+                if (validationRun.isFailed()) {
+                    rpkiRepository.setFailed();
+                } else {
+                    rpkiRepository.setDownloaded();
+                }
+            } else if (isRsyncUri(uri)) {
+                validationResult.error("rsync.repository.not.supported");
             } else {
-                rpkiRepository.setDownloaded();
+                log.error("Unsupported type of the URI " + uri);
             }
-        } else if (isRsyncUri(uri)) {
-            validationResult.error("rsync.repository.not.supported");
-        } else {
-            log.error("Unsupported type of the URI " + uri);
-        }
 
-        if (validationResult.hasFailures()) {
-            validationRun.setFailed();
-        } else {
-            validationRun.setSucceeded();
-        }
-
-        lmdb.writeTx0(tx -> {
-            rpkiRepositoryStore.update(tx, rpkiRepository);
-            validationRunStore.update(tx, validationRun);
-        });
-
-        lmdb.readTx0(tx -> {
-            if (validationRun.isSucceeded() && validationRunStore.getObjectCount(tx, validationRun) > 0) {
-                rpkiRepository.getTrustAnchors().forEach(taRef ->
-                        trustAnchorStore.get(tx, taRef.key())
-                                .ifPresent(validationScheduler::triggerCertificateTreeValidation));
+            if (validationResult.hasFailures()) {
+                validationRun.setFailed();
+            } else {
+                validationRun.setSucceeded();
+                lmdb.readTx0(tx -> {
+                    if (validationRunStore.getObjectCount(tx, validationRun) > 0) {
+                        rpkiRepository.getTrustAnchors().forEach(taRef ->
+                                trustAnchorStore.get(tx, taRef.key())
+                                        .ifPresent(validationScheduler::triggerCertificateTreeValidation));
+                    }
+                });
             }
-        });
+        } catch (Exception e) {
+            log.error("Error validating repository " + rpkiRepository, e);
+        }
+        finally {
+            lmdb.writeTx0(tx -> {
+                rpkiRepositoryStore.update(tx, rpkiRepository);
+                validationRunStore.update(tx, validationRun);
+            });
+        }
     }
 
     public void validateRsyncRepositories() {

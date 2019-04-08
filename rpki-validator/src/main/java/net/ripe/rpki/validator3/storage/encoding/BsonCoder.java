@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.undercouch.bson4jackson.BsonFactory;
-import lombok.Data;
 import net.ripe.rpki.validator3.storage.Bytes;
 
 import java.io.ByteArrayOutputStream;
@@ -20,18 +19,10 @@ public class BsonCoder<T> implements Coder<T> {
 
     private final ObjectMapper mapper;
 
-    @Data
-    private static class Wrap {
-        Object v;
-        String c;
+    private final Class<T> class_;
 
-        public Wrap(Object v) {
-            this.v = v;
-            c = v.getClass().getName();
-        }
-    }
-
-    public BsonCoder() {
+    public BsonCoder(Class<T> class_) {
+        this.class_ = class_;
         mapper = new ObjectMapper(new BsonFactory());
         mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
     }
@@ -40,7 +31,7 @@ public class BsonCoder<T> implements Coder<T> {
     public ByteBuffer toBytes(T t) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
-            mapper.writeValue(baos, new Wrap(t));
+            mapper.writeValue(baos, t);
             return Bytes.toDirectBuffer(baos.toByteArray());
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -50,10 +41,8 @@ public class BsonCoder<T> implements Coder<T> {
     @Override
     public T fromBytes(ByteBuffer bb) {
         try {
-            Wrap wrap = mapper.readValue(Bytes.toBytes(bb), Wrap.class);
-            Class<T> c = (Class<T>) Class.forName(wrap.c);
-            return c.cast(wrap.v);
-        } catch (IOException | ClassNotFoundException e) {
+            return mapper.readValue(Bytes.toBytes(bb), class_);
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

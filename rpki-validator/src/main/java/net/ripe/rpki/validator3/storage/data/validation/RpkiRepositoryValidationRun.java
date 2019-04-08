@@ -31,11 +31,4 @@ package net.ripe.rpki.validator3.storage.data.validation;
 
 public abstract class RpkiRepositoryValidationRun extends ValidationRun {
 
-    public final static String TYPE = "rpki-repository-validation-run";
-
-    @Override
-    public String getType() {
-        return TYPE;
-    }
-
 }

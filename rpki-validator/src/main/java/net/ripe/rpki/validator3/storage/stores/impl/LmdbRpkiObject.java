@@ -93,7 +93,7 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
                 SHA256_SIZE_IN_BYTES,
                 lmdb.getEnv(),
                 RPKI_OBJECTS,
-                lmdb.defaultCoder(),
+                lmdb.defaultCoder(RpkiObject.class),
                 ImmutableMap.of(
                         BY_AKI_INDEX, this::akiKey,
                         BY_LAST_REACHABLE_INDEX, this::lasMarkedReachableKey)

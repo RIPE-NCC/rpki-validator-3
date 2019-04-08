@@ -84,7 +84,7 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
         ixMap = new IxMap<>(
                 lmdb.getEnv(),
                 RPKI_REPOSITORIES,
-                lmdb.defaultCoder(),
+                lmdb.defaultCoder(RpkiRepository.class),
                 ImmutableMap.of(
                         BY_URI, r -> Key.keys(Key.of(r.getLocationUri())),
                         BY_TA, r -> r.getTrustAnchors().stream().map(Ref::key).collect(Collectors.toSet())

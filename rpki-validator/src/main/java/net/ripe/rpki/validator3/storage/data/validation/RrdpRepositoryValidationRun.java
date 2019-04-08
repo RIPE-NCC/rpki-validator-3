@@ -47,6 +47,13 @@ public class RrdpRepositoryValidationRun extends RpkiRepositoryValidationRun {
     @Getter
     private Ref<RpkiRepository> rpkiRepository;
 
+    public final static String TYPE = "rrdp-repository-validation-run";
+
+    @Override
+    public String getType() {
+        return TYPE;
+    }
+
     @Override
     public void visit(Visitor visitor) {
         visitor.accept(this);

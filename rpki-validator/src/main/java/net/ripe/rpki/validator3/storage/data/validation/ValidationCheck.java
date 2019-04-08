@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.storage.data.validation;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import net.ripe.rpki.commons.validation.ValidationStatus;
@@ -43,6 +44,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
+@EqualsAndHashCode(callSuper = true)
 @ToString
 @Binary
 public class ValidationCheck extends Base<ValidationCheck> implements MessageSourceResolvable {
@@ -54,8 +56,7 @@ public class ValidationCheck extends Base<ValidationCheck> implements MessageSou
     @Getter
     private String location;
 
-    @Getter
-    private Status status;
+    private String status;
 
     @Getter
     private String key;
@@ -68,21 +69,25 @@ public class ValidationCheck extends Base<ValidationCheck> implements MessageSou
 
     public ValidationCheck(String location, net.ripe.rpki.commons.validation.ValidationCheck check) {
         this.location = location;
-        this.status = mapStatus(check.getStatus());
+        this.status = mapStatus(check.getStatus()).name();
         this.key = check.getKey();
         this.parameters = Arrays.asList(check.getParams());
     }
 
     public ValidationCheck(String location, Status status, String key, String... parameters) {
         this.location = location;
-        this.status = status;
+        this.status = status.name();
         this.key = key;
         this.parameters = Arrays.asList(parameters);
     }
 
+    public Status getStatus() {
+        return Status.valueOf(status);
+    }
+
     @Override
     public String[] getCodes() {
-        return new String[] { key + "." + status.name().toLowerCase() };
+        return new String[] { key + "." + status.toLowerCase() };
     }
 
     @Override

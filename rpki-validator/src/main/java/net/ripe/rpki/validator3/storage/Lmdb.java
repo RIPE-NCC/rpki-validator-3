@@ -1,7 +1,9 @@
 package net.ripe.rpki.validator3.storage;
 
+import net.ripe.rpki.validator3.storage.encoding.BsonCoder;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.encoding.FSTCoder;
+import net.ripe.rpki.validator3.storage.encoding.GsonCoder;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import org.lmdbjava.Env;
 
@@ -11,16 +13,8 @@ import java.util.function.Function;
 
 public abstract class Lmdb {
 
-    public Tx.Read readTx() {
-        return Tx.read(getEnv());
-    }
-
-    public Tx.Write writeTx() {
-        return Tx.write(getEnv());
-    }
-
     public <T> T writeTx(Function<Tx.Write, T> f) {
-        Tx.Write tx = writeTx();
+        Tx.Write tx = Tx.write(getEnv());
         try {
             final T r = f.apply(tx);
             tx.txn().commit();
@@ -41,7 +35,7 @@ public abstract class Lmdb {
     }
 
     public <T> T readTx(Function<Tx.Read, T> f) {
-        Tx.Read tx = readTx();
+        Tx.Read tx = Tx.read(getEnv());
         try {
             return f.apply(tx);
         } finally {
@@ -60,6 +54,9 @@ public abstract class Lmdb {
 
     public <T> Coder<T> defaultCoder() {
         return new FSTCoder<>();
-//        return new BsonCoder<>();
+    }
+
+    public <T> Coder<T> defaultCoder(Class<T> c) {
+        return new BsonCoder<>(c);
     }
 }

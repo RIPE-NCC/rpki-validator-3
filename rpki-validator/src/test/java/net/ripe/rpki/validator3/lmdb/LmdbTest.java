@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.lmdb;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
 import com.esotericsoftware.kryo.io.Input;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.uuid.Generators;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -44,6 +45,7 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.jsoniter.JsonIterator;
 import com.jsoniter.output.JsonStream;
+import de.undercouch.bson4jackson.BsonFactory;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -60,7 +62,6 @@ import org.lmdbjava.Txn;
 import org.nustaq.serialization.simpleapi.DefaultCoder;
 import org.springframework.util.StreamUtils;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -78,9 +79,6 @@ import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.Env.create;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import de.undercouch.bson4jackson.BsonFactory;
 
 
 @Ignore

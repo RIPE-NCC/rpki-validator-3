@@ -59,7 +59,7 @@ public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements T
         this.ixMap = new IxMap<>(
                 lmdb.getEnv(),
                 TrustAnchorStore.TRUST_ANCHORS,
-                lmdb.defaultCoder(),
+                lmdb.defaultCoder(TrustAnchor.class),
                 ImmutableMap.of(
                         BY_NAME, ta -> Key.keys(Key.of(ta.getName())),
                         BY_SUBJECT_KEY_INFO, ta -> Key.keys(Key.of(ta.getSubjectPublicKeyInfo())))

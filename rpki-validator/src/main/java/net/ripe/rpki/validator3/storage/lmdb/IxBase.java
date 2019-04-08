@@ -60,7 +60,7 @@ public abstract class IxBase<T extends Serializable> {
         this.name = name;
         this.coder = coder;
         synchronized (env) {
-            this.mainDb = env.openDbi(name + ":main", getMainDbCreateFlags());
+            this.mainDb = env.openDbi(name + "-main", getMainDbCreateFlags());
         }
     }
 
