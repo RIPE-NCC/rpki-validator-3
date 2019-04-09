@@ -57,6 +57,6 @@ public abstract class Lmdb {
     }
 
     public <T> Coder<T> defaultCoder(Class<T> c) {
-        return new BsonCoder<>(c);
+        return new GsonCoder<>(c);
     }
 }
