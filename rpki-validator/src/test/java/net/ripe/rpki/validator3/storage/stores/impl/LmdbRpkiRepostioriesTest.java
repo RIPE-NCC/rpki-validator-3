@@ -33,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.IntegrationTest;
 import net.ripe.rpki.validator3.TestObjects;
 import net.ripe.rpki.validator3.api.SearchTerm;
+import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
@@ -58,8 +59,9 @@ public class LmdbRpkiRepostioriesTest extends GenericStorageTest {
         trustAnchor = TestObjects.newTrustAnchor();
         wtx0(tx -> getTrustAnchorStore().add(tx, trustAnchor));
 
+        final Ref<TrustAnchor> trustAnchorRef = rtx(tx -> getTrustAnchorStore().makeRef(tx, trustAnchor.key()));
         rsyncRepo = wtx(tx -> getRpkiRepositoryStore().register(tx,
-                trustAnchor, "rsync://some.rsync.repo", RpkiRepository.Type.RSYNC));
+                trustAnchorRef, "rsync://some.rsync.repo", RpkiRepository.Type.RSYNC));
     }
 
     @Test

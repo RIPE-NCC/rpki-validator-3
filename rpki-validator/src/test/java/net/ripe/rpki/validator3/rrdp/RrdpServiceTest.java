@@ -78,8 +78,9 @@ public class RrdpServiceTest extends GenericStorageTest {
         final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
         wtx0(tx -> getTrustAnchorStore().add(tx, trustAnchor));
 
+        final Ref<TrustAnchor> trustAnchorRef = rtx(tx -> getTrustAnchorStore().makeRef(tx, trustAnchor.key()));
         RpkiRepository rpkiRepository = wtx(tx -> getRpkiRepositoryStore().register(tx,
-                trustAnchor, RRDP_RIPE_NET_NOTIFICATION_XML, RpkiRepository.Type.RRDP));
+                trustAnchorRef, RRDP_RIPE_NET_NOTIFICATION_XML, RpkiRepository.Type.RRDP));
 
         Ref<RpkiRepository> rpkiRepositoryRef = rtx(tx ->
                 getRpkiRepositoryStore().makeRef(tx, rpkiRepository.getId()));
@@ -123,8 +124,9 @@ public class RrdpServiceTest extends GenericStorageTest {
         final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
         wtx0(tx -> getTrustAnchorStore().add(tx, trustAnchor));
 
+        final Ref<TrustAnchor> trustAnchorRef = rtx(tx -> getTrustAnchorStore().makeRef(tx, trustAnchor.key()));
         RpkiRepository rpkiRepository = wtx(tx -> getRpkiRepositoryStore().register(tx,
-                trustAnchor, RRDP_RIPE_NET_NOTIFICATION_XML, RpkiRepository.Type.RRDP));
+                trustAnchorRef, RRDP_RIPE_NET_NOTIFICATION_XML, RpkiRepository.Type.RRDP));
 
         final RrdpRepositoryValidationRun validationRun = wtx(tx -> {
             Ref<RpkiRepository> ref = getRpkiRepositoryStore().makeRef(tx, rpkiRepository.getId());
@@ -160,8 +162,9 @@ public class RrdpServiceTest extends GenericStorageTest {
         final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
         wtx0(tx -> getTrustAnchorStore().add(tx, trustAnchor));
 
+        final Ref<TrustAnchor> trustAnchorRef = rtx(tx -> getTrustAnchorStore().makeRef(tx, trustAnchor.key()));
         RpkiRepository rpkiRepository = wtx(tx -> getRpkiRepositoryStore().register(tx,
-                trustAnchor, RRDP_RIPE_NET_NOTIFICATION_XML, RpkiRepository.Type.RRDP));
+                trustAnchorRef, RRDP_RIPE_NET_NOTIFICATION_XML, RpkiRepository.Type.RRDP));
 
         Ref<RpkiRepository> rpkiRepositoryRef = rtx(tx ->
                 getRpkiRepositoryStore().makeRef(tx, rpkiRepository.getId()));
@@ -201,8 +204,9 @@ public class RrdpServiceTest extends GenericStorageTest {
         final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
         wtx0(tx -> getTrustAnchorStore().add(tx, trustAnchor));
 
+        final Ref<TrustAnchor> trustAnchorRef = rtx(tx -> getTrustAnchorStore().makeRef(tx, trustAnchor.key()));
         RpkiRepository rpkiRepository = wtx(tx -> getRpkiRepositoryStore().register(tx,
-                trustAnchor, RRDP_RIPE_NET_NOTIFICATION_XML, RpkiRepository.Type.RRDP));
+                trustAnchorRef, RRDP_RIPE_NET_NOTIFICATION_XML, RpkiRepository.Type.RRDP));
 
         Ref<RpkiRepository> rpkiRepositoryRef = rtx(tx -> getRpkiRepositoryStore().makeRef(tx, rpkiRepository.getId()));
 
@@ -245,8 +249,9 @@ public class RrdpServiceTest extends GenericStorageTest {
         final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
         wtx0(tx -> getTrustAnchorStore().add(tx, trustAnchor));
 
+        final Ref<TrustAnchor> trustAnchorRef = rtx(tx -> getTrustAnchorStore().makeRef(tx, trustAnchor.key()));
         RpkiRepository rpkiRepository = wtx(tx -> getRpkiRepositoryStore().register(tx,
-                trustAnchor, RRDP_RIPE_NET_NOTIFICATION_XML, RpkiRepository.Type.RRDP));
+                trustAnchorRef, RRDP_RIPE_NET_NOTIFICATION_XML, RpkiRepository.Type.RRDP));
 
         Ref<RpkiRepository> rpkiRepositoryRef = rtx(tx ->
                 getRpkiRepositoryStore().makeRef(tx, rpkiRepository.getId()));
@@ -527,8 +532,10 @@ public class RrdpServiceTest extends GenericStorageTest {
 
 
     private RpkiRepository makeRpkiRepository(String sessionId, String notificationUri, TrustAnchor trustAnchor) {
-        RpkiRepository rpkiRepository = wtx(tx ->
-                getRpkiRepositoryStore().register(tx, trustAnchor, notificationUri, RpkiRepository.Type.RRDP));
+        RpkiRepository rpkiRepository = wtx(tx -> {
+            final Ref<TrustAnchor> trustAnchorRef = getTrustAnchorStore().makeRef(tx, trustAnchor.key());
+            return getRpkiRepositoryStore().register(tx, trustAnchorRef, notificationUri, RpkiRepository.Type.RRDP);
+        });
 
         rpkiRepository.setRrdpSerial(BigInteger.valueOf(1L));
         rpkiRepository.setRrdpSessionId(sessionId);

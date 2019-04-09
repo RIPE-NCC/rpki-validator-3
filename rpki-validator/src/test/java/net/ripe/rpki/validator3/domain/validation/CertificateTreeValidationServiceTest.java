@@ -42,6 +42,7 @@ import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.RoaPrefix;
 import net.ripe.rpki.validator3.domain.Settings;
 import net.ripe.rpki.validator3.domain.ta.TrustAnchorsFactory;
+import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
@@ -157,7 +158,8 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
                 x.notifyURI(null);
                 x.repositoryURI(TA_CA_REPOSITORY_URI);
             });
-            RpkiRepository repository = getRpkiRepositoryStore().register(tx, trustAnchor, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
+            final Ref<TrustAnchor> trustAnchorRef = getTrustAnchorStore().makeRef(tx, trustAnchor.key());
+            RpkiRepository repository = getRpkiRepositoryStore().register(tx, trustAnchorRef, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
             repository.setDownloaded();
             getTrustAnchorStore().add(tx, trustAnchor);
             subject.validate(trustAnchor.getId().asLong());
@@ -211,7 +213,8 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
 
         wtx0(tx -> {
             getTrustAnchorStore().add(tx, ta);
-            RpkiRepository repository = getRpkiRepositoryStore().register(tx, ta, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
+            final Ref<TrustAnchor> trustAnchorRef = getTrustAnchorStore().makeRef(tx, ta.key());
+            RpkiRepository repository = getRpkiRepositoryStore().register(tx, trustAnchorRef, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
             repository.setDownloaded();
             getRpkiRepositoryStore().update(tx, repository);
         });
@@ -242,7 +245,8 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
         });
 
         RpkiRepository repository = wtx(tx -> {
-            RpkiRepository r = getRpkiRepositoryStore().register(tx, trustAnchor, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
+            final Ref<TrustAnchor> trustAnchorRef = getTrustAnchorStore().makeRef(tx, trustAnchor.key());
+            RpkiRepository r = getRpkiRepositoryStore().register(tx, trustAnchorRef, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
             r.setFailed();
             getRpkiRepositoryStore().update(tx, r);
 
@@ -272,7 +276,8 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
         });
 
         RpkiRepository repository = wtx(tx -> {
-            RpkiRepository r = getRpkiRepositoryStore().register(tx, trustAnchor, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
+            final Ref<TrustAnchor> trustAnchorRef = getTrustAnchorStore().makeRef(tx, trustAnchor.key());
+            RpkiRepository r = getRpkiRepositoryStore().register(tx, trustAnchorRef, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
             r.setDownloaded();
             getRpkiRepositoryStore().update(tx, r);
 
@@ -323,7 +328,8 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
 
 
         RpkiRepository repository = wtx(tx -> {
-            RpkiRepository r = getRpkiRepositoryStore().register(tx, ta, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
+            final Ref<TrustAnchor> trustAnchorRef = getTrustAnchorStore().makeRef(tx, ta.key());
+            RpkiRepository r = getRpkiRepositoryStore().register(tx, trustAnchorRef, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
             r.setFailed();
             getRpkiRepositoryStore().update(tx, r);
             return r;
@@ -348,7 +354,8 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
                     RoaPrefix.of(IpRange.prefix(IpAddress.parse("192.168.0.0"), 16), 24, Asn.parse("64512"))
             )));
             getTrustAnchorStore().add(tx, ta1);
-            RpkiRepository repository = getRpkiRepositoryStore().register(tx, ta1, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
+            final Ref<TrustAnchor> trustAnchorRef = getTrustAnchorStore().makeRef(tx, ta1.key());
+            RpkiRepository repository = getRpkiRepositoryStore().register(tx, trustAnchorRef, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
             validationScheduler.addRpkiRepository(repository);
             repository.setDownloaded();
             getRpkiRepositoryStore().update(tx, repository);

@@ -324,14 +324,15 @@ public class CertificateTreeValidationService {
                                               TrustAnchor trustAnchor,
                                               Map<URI, RpkiRepository> registeredRepositories,
                                               CertificateRepositoryObjectValidationContext context) {
+        final Ref<TrustAnchor> trustAnchorRef = trustAnchorStore.makeRef(tx, trustAnchor.key());
         if (context.getRpkiNotifyURI() != null) {
             RpkiRepository rpkiRepository = registeredRepositories.computeIfAbsent(context.getRpkiNotifyURI(),
-                    uri -> rpkiRepositoriStore.register(tx, trustAnchor, uri.toASCIIString(), RRDP));
+                    uri -> rpkiRepositoriStore.register(tx, trustAnchorRef, uri.toASCIIString(), RRDP));
             validationScheduler.addRpkiRepository(rpkiRepository);
             return rpkiRepository;
         } else {
             return registeredRepositories.computeIfAbsent(context.getRepositoryURI(),
-                    uri -> rpkiRepositoriStore.register(tx, trustAnchor, uri.toASCIIString(), RSYNC));
+                    uri -> rpkiRepositoriStore.register(tx, trustAnchorRef, uri.toASCIIString(), RSYNC));
         }
     }
 

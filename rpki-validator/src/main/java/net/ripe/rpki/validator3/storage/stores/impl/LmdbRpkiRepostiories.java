@@ -72,13 +72,11 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
 
     private final IxMap<RpkiRepository> ixMap;
     private final Sequences sequences;
-    private final TrustAnchorStore trustAnchorStore;
     private final ValidationScheduler validationScheduler;
 
     @Autowired
-    public LmdbRpkiRepostiories(Lmdb lmdb, Sequences sequences, TrustAnchorStore trustAnchorStore, ValidationScheduler validationScheduler) {
+    public LmdbRpkiRepostiories(Lmdb lmdb, Sequences sequences, ValidationScheduler validationScheduler) {
         this.sequences = sequences;
-        this.trustAnchorStore = trustAnchorStore;
         this.validationScheduler = validationScheduler;
 
         ixMap = new IxMap<>(
@@ -94,17 +92,16 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
 
 
     @Override
-    public RpkiRepository register(Tx.Write tx, TrustAnchor trustAnchor, String uri, RpkiRepository.Type type) {
+    public RpkiRepository register(Tx.Write tx, Ref<TrustAnchor> trustAnchorRef, String uri, RpkiRepository.Type type) {
         log.info("Registering repository {} of type {}", uri, type);
         final Optional<RpkiRepository> existing = findByURI(tx, uri);
 
-        final Ref<TrustAnchor> taRef = trustAnchorStore.makeRef(tx, trustAnchor.key());
         final RpkiRepository registered;
         if (existing.isPresent()) {
             registered = existing.get();
-            registered.addTrustAnchor(taRef);
+            registered.addTrustAnchor(trustAnchorRef);
         } else {
-            registered = new RpkiRepository(taRef, uri, type);
+            registered = new RpkiRepository(trustAnchorRef, uri, type);
             final Key primaryKey = Key.of(sequences.next(tx, RPKI_REPOSITORIES + ":pk"));
             registered.setId(primaryKey);
         }
