@@ -36,6 +36,7 @@ import java.time.format.DateTimeFormatter;
 
 public class Dates {
 
+    static final DateTimeFormatter UTCFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC);
     public static String formatUTC(Object o) {
         if (o == null) {
             return null;
@@ -47,6 +48,15 @@ public class Dates {
         if (i == null) {
             return null;
         }
-        return DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC).format(i);
+
+        return UTCFormatter.format(i);
+    }
+
+    public static Instant parseUTC(String formatted){
+        try {
+            return UTCFormatter.parse(formatted, Instant::from);
+        } catch(Exception e){
+            return Instant.MIN;
+        }
     }
 }
