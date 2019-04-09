@@ -34,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
 import net.ripe.rpki.validator3.storage.data.Base;
 import net.ripe.rpki.validator3.storage.data.validation.RrdpRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
@@ -57,8 +58,10 @@ import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -89,30 +92,30 @@ public class LmdbValidationRuns implements ValidationRunStore {
     private static final String BY_TA_INDEX = "by-ta";
     private static final String BY_COMPLETED_AT_INDEX = "by-time";
 
-    private final Sequences sequences;
+    private MultIxMap<Key> vr2ro;
+    private MultIxMap<Key> ro2vr;
 
-    private final MultIxMap<Key> vr2ro;
-    private final MultIxMap<Key> ro2vr;
+    private IxMap<Key> vr2repo;
+    private MultIxMap<Key> repo2vr;
 
-    private final IxMap<Key> vr2repo;
-    private final MultIxMap<Key> repo2vr;
-
-    private final IxMap<CertificateTreeValidationRun> ctIxMap;
-    private final IxMap<RsyncRepositoryValidationRun> rsIxMap;
-    private final IxMap<RrdpRepositoryValidationRun> rrIxMap;
-    private final IxMap<TrustAnchorValidationRun> taIxMap;
+    private IxMap<CertificateTreeValidationRun> ctIxMap;
+    private IxMap<RsyncRepositoryValidationRun> rsIxMap;
+    private IxMap<RrdpRepositoryValidationRun> rrIxMap;
+    private IxMap<TrustAnchorValidationRun> taIxMap;
 
     private final Map<String, IxMap<? extends ValidationRun>> maps = new HashMap<>();
+
     private final RpkiObjectStore rpkiObjectStore;
 
-    @Autowired
-    public LmdbValidationRuns(Lmdb lmdb,
-                              TrustAnchorStore trustAnchorStore,
-                              RpkiObjectStore rpkiObjectStore,
-                              RpkiRepositoryStore rpkiRepositoryStore,
-                              Sequences sequences) {
+    private final Sequences sequences;
 
+    public LmdbValidationRuns(RpkiObjectStore rpkiObjectStore,
+                              @Lazy TrustAnchorStore trustAnchorStore,
+                              RpkiRepositoryStore rpkiRepositoryStore,
+                              Sequences sequences,
+                              Lmdb lmdb) {
         this.rpkiObjectStore = rpkiObjectStore;
+        this.sequences = sequences;
 
         ctIxMap = new IxMap<>(
                 lmdb.getEnv(),
@@ -140,14 +143,12 @@ public class LmdbValidationRuns implements ValidationRunStore {
                 lmdb.defaultCoder(RrdpRepositoryValidationRun.class),
                 ImmutableMap.of(BY_COMPLETED_AT_INDEX, this::completedAtIndexKeys));
 
-        this.sequences = sequences;
-
         maps.put(CertificateTreeValidationRun.TYPE, ctIxMap);
         maps.put(TrustAnchorValidationRun.TYPE, taIxMap);
         maps.put(RsyncRepositoryValidationRun.TYPE, rsIxMap);
         maps.put(RrdpRepositoryValidationRun.TYPE, rrIxMap);
 
-        Coder<Key> keyCoder = new Coder<Key>() {
+        final Coder<Key> keyCoder = new Coder<Key>() {
             @Override
             public ByteBuffer toBytes(Key key) {
                 return key.toByteBuffer();
@@ -230,6 +231,13 @@ public class LmdbValidationRuns implements ValidationRunStore {
                 .max(Comparator.comparing(ValidationRun::getCompletedAt));
     }
 
+    // TODO Probably optimize it somehow
+    @Override
+    public Optional<CertificateTreeValidationRun> findLatestCaTreeValidationRun(Tx.Read tx, TrustAnchor trustAnchor) {
+        return ctIxMap.getByIndex(BY_TA_INDEX, tx, trustAnchor.key()).values().stream()
+                .max(Comparator.comparing(ValidationRun::getCompletedAt));
+    }
+
     public void removeAllForTrustAnchor(Tx.Write tx, Key trustAnchorKey) {
         Stream.of(taIxMap, ctIxMap).forEach(ixMap ->
                 ixMap.getPkByIndex(BY_TA_INDEX, tx, trustAnchorKey)
@@ -239,17 +247,14 @@ public class LmdbValidationRuns implements ValidationRunStore {
     @Override
     public long removeOldValidationRuns(Tx.Write tx, Instant completedBefore) {
         AtomicLong count = new AtomicLong();
-        maps.values().stream().forEach(ixMap -> {
+        maps.forEach((type, ixMap) -> {
             // Don't delete the most recent one
             final Set<Key> latestSuccessfulKeys = ixMap.getByIndexMax(BY_COMPLETED_AT_INDEX, tx, ValidationRun::isSucceeded).keySet();
             count.addAndGet(
                     ixMap.getByIndexLessPk(BY_COMPLETED_AT_INDEX, tx, Key.of(completedBefore.toEpochMilli()))
                             .stream()
                             .filter(pk -> !latestSuccessfulKeys.contains(pk))
-                            .map(pk -> {
-                                ixMap.delete(tx, pk);
-                                return null;
-                            })
+                            .peek(pk -> ixMap.delete(tx, pk))
                             .count()
             );
         });

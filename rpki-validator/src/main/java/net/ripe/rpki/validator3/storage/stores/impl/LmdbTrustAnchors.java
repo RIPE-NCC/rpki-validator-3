@@ -31,19 +31,26 @@ package net.ripe.rpki.validator3.storage.stores.impl;
 
 import com.google.common.collect.ImmutableMap;
 import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
+import net.ripe.rpki.validator3.api.util.Dates;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
+import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
+import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
+import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Component
 public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements TrustAnchorStore {
@@ -53,9 +60,12 @@ public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements T
 
     private final IxMap<TrustAnchor> ixMap;
     private final Sequences sequences;
+    private final ValidationRunStore validationRunStore;
 
     @Autowired
-    public LmdbTrustAnchors(Lmdb lmdb, Sequences sequences) {
+    public LmdbTrustAnchors(Lmdb lmdb,
+                            Sequences sequences,
+                            @Lazy ValidationRunStore validationRunStore) {
         this.ixMap = new IxMap<>(
                 lmdb.getEnv(),
                 TrustAnchorStore.TRUST_ANCHORS,
@@ -65,6 +75,7 @@ public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements T
                         BY_SUBJECT_KEY_INFO, ta -> Key.keys(Key.of(ta.getSubjectPublicKeyInfo())))
         );
         this.sequences = sequences;
+        this.validationRunStore = validationRunStore;
     }
 
     @Override
@@ -111,8 +122,22 @@ public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements T
 
     @Override
     public List<TaStatus> getStatuses(Tx.Read tx) {
-        // TODO Implement
-        return null;
+        return findAll(tx).stream().map(ta ->
+                validationRunStore.findLatestCaTreeValidationRun(tx, ta).map(vr -> {
+                    final List<ValidationCheck> validationChecks = vr.getValidationChecks();
+                    return TaStatus.of(
+                            String.valueOf(ta.key().asLong()),
+                            ta.getName(),
+                            Math.toIntExact(validationChecks.stream().filter(vc -> vc.getStatus() == ValidationCheck.Status.ERROR).count()),
+                            Math.toIntExact(validationChecks.stream().filter(vc1 -> vc1.getStatus() == ValidationCheck.Status.WARNING).count()),
+                            validationRunStore.getObjectCount(tx, vr),
+                            vr.getCompletedAt() == null ? null : Dates.formatUTC(vr.getCompletedAt()),
+                            ta.isInitialCertificateTreeValidationRunCompleted()
+                    );
+                }).orElse(TaStatus.of(
+                        String.valueOf(ta.key().asLong()),
+                        ta.getName(), 0, 0, 0, null, false
+                ))).collect(Collectors.toList());
     }
 
     @Override
