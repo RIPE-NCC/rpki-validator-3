@@ -117,14 +117,13 @@ public class TrustAnchorService {
     }
 
     public void remove(long trustAnchorId) {
-        lmdb.writeTx0(tx -> {
-            Optional<TrustAnchor> trustAnchor1 = trustAnchorStore.get(tx, Key.of(trustAnchorId));
-            trustAnchor1.ifPresent(trustAnchor -> {
-                rpkiRepositoryStore.removeAllForTrustAnchor(tx, trustAnchor);
-                trustAnchorStore.remove(tx, trustAnchor);
-                validatedRpkiObjects.remove(trustAnchor);
-            });
-        });
+        lmdb.writeTx0(tx ->
+                trustAnchorStore.get(tx, Key.of(trustAnchorId))
+                        .ifPresent(trustAnchor -> {
+                            rpkiRepositoryStore.removeAllForTrustAnchor(tx, trustAnchor);
+                            trustAnchorStore.remove(tx, trustAnchor);
+                            validatedRpkiObjects.remove(trustAnchor);
+                        }));
     }
 
     @PostConstruct
