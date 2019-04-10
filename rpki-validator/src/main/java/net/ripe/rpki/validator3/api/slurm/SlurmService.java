@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
 @Service
 public class SlurmService {
 
-    Autowired
+    @Autowired
     private RoaPrefixAssertionsService roaPrefixAssertionsService;
 
     @Autowired

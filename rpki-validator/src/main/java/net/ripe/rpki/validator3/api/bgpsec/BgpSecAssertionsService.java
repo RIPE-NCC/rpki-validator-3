@@ -33,16 +33,12 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.rpki.validator3.api.slurm.SlurmStore;
 import net.ripe.rpki.validator3.api.slurm.dtos.SlurmBgpSecAssertion;
-import net.ripe.rpki.validator3.api.slurm.dtos.SlurmPrefixAssertion;
 import net.ripe.rpki.validator3.domain.BgpSecAssertion;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
 import javax.validation.Valid;
-import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
@@ -55,37 +51,31 @@ public class BgpSecAssertionsService {
 
     public long execute(@Valid AddBgpSecAssertion command) {
         final long id = slurmStore.nextId();
-        return slurmStore.update(slurmExt -> {
+        return slurmStore.updateWith(slurmExt -> {
             final SlurmBgpSecAssertion slurmBgpSecAssertion = new SlurmBgpSecAssertion();
             slurmBgpSecAssertion.setAsn(command.getAsn());
             slurmBgpSecAssertion.setPublicKey(command.getPublicKey());
             slurmBgpSecAssertion.setSki(command.getSki());
             slurmBgpSecAssertion.setComment(command.getComment());
-            slurmExt.getBgpsecAssertions().add(Pair.of(id, slurmBgpSecAssertion));
+            slurmExt.getBgpsecAssertions().put(id, slurmBgpSecAssertion);
             return id;
         });
     }
 
-    public void remove(long roaPrefixAssertionId) {
-        slurmStore.update(slurmExt -> {
-            List<Pair<Long, SlurmPrefixAssertion>> collect = slurmExt.getPrefixAssertions().stream()
-                    .filter(p -> p.getLeft() != roaPrefixAssertionId)
-                    .collect(Collectors.toList());
-
-            if (collect.size() < slurmExt.getPrefixAssertions().size()) {
-                slurmExt.setPrefixAssertions(collect);
-            }
+    public void remove(long id) {
+        slurmStore.updateWith(slurmExt -> {
+            slurmExt.getPrefixAssertions().remove(id);
         });
     }
 
     public Stream<BgpSecAssertion> all() {
-        return slurmStore.read().getBgpsecAssertions().stream()
-                .map(Pair::getRight)
+        return slurmStore.read().getBgpsecAssertions()
+                .values().stream()
                 .map(v -> new BgpSecAssertion(Asn.parse(v.getAsn()).longValue(), v.getSki(), v.getPublicKey(), v.getComment()));
     }
 
     public void clear() {
-        slurmStore.update(slurmExt -> {
+        slurmStore.updateWith(slurmExt -> {
             slurmExt.getBgpsecAssertions().clear();
         });
     }

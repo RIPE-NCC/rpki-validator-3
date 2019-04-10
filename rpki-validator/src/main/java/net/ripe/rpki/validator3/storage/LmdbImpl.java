@@ -53,7 +53,7 @@ public class LmdbImpl extends Lmdb {
     private Env<ByteBuffer> env;
 
     public LmdbImpl(
-            @Value("${rpki.validator.lmdb.path}") String lmdbPath,
+            @Value("${rpki.validator.data.path}") String lmdbPath,
             @Value("${rpki.validator.lmdb.size.mb:8192}") long dbSizeInMb) {
         this.dbSizeInMb = dbSizeInMb;
         this.lmdbPath = lmdbPath;

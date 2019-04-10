@@ -37,7 +37,6 @@ import net.ripe.rpki.validator3.api.slurm.dtos.SlurmExt;
 import net.ripe.rpki.validator3.api.slurm.dtos.SlurmPrefixFilter;
 import net.ripe.rpki.validator3.domain.IgnoreFilter;
 import net.ripe.rpki.validator3.util.Transactions;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -71,14 +70,14 @@ public class IgnoreFilterService {
     }
 
     public long execute(@Valid AddIgnoreFilter command) {
-        return slurmStore.update(slurmExt -> {
+        return slurmStore.updateWith(slurmExt -> {
             final SlurmPrefixFilter ignoreFilter = new SlurmPrefixFilter();
             ignoreFilter.setAsn(command.getAsn());
             ignoreFilter.setPrefix(command.getPrefix());
             ignoreFilter.setComment(command.getComment());
 
             final long id = slurmStore.nextId();
-            slurmExt.getPrefixFilters().add(Pair.of(id, ignoreFilter));
+            slurmExt.getPrefixFilters().put(id, ignoreFilter);
 
             log.info("added ignore filter '{}'", ignoreFilter);
             return id;
@@ -86,26 +85,21 @@ public class IgnoreFilterService {
     }
 
     public void remove(long ignoreFilterId) {
-        slurmStore.update(slurmExt -> {
-            List<Pair<Long, SlurmPrefixFilter>> collect = slurmExt.getPrefixFilters().stream()
-                    .filter(p -> p.getLeft() != ignoreFilterId)
-                    .collect(Collectors.toList());
-
-            if (collect.size() < slurmExt.getPrefixFilters().size()) {
-                slurmExt.setPrefixFilters(collect);
+        slurmStore.updateWith(slurmExt -> {
+            if (slurmExt.getPrefixFilters().remove(ignoreFilterId) != null) {
                 notifyListeners();
             }
         });
     }
 
     public Stream<IgnoreFilter> all() {
-        return slurmStore.read().getPrefixFilters().stream()
-                .map(Pair::getRight)
+        return slurmStore.read().getPrefixFilters()
+                .values().stream()
                 .map(r -> new IgnoreFilter(Asn.parse(r.getAsn()), IpRange.parse(r.getPrefix()), r.getComment()));
     }
 
     public void clear() {
-        slurmStore.update(IgnoreFilterService::accept);
+        slurmStore.updateWith(IgnoreFilterService::accept);
         notifyListeners();
     }
 

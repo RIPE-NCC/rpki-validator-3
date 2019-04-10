@@ -35,7 +35,6 @@ import net.ripe.rpki.validator3.api.slurm.SlurmStore;
 import net.ripe.rpki.validator3.api.slurm.dtos.SlurmBgpSecFilter;
 import net.ripe.rpki.validator3.domain.BgpSecFilter;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -58,36 +57,30 @@ public class BgpSecFilterService {
 
     public long execute(@Valid AddBgpSecFilter command) {
         final long id = slurmStore.nextId();
-        return slurmStore.update(slurmExt -> {
+        return slurmStore.updateWith(slurmExt -> {
             final SlurmBgpSecFilter slurmBgpSecFilter = new SlurmBgpSecFilter();
             slurmBgpSecFilter.setAsn(command.getAsn());
             slurmBgpSecFilter.setSki(command.getSki());
             slurmBgpSecFilter.setComment(command.getComment());
-            slurmExt.getBgpsecFilters().add(Pair.of(id, slurmBgpSecFilter));
+            slurmExt.getBgpsecFilters().put(id, slurmBgpSecFilter);
             return id;
         });
     }
 
-    public void remove(long roaPrefixAssertionId) {
-        slurmStore.update(slurmExt -> {
-            List<Pair<Long, SlurmBgpSecFilter>> collect = slurmExt.getBgpsecFilters().stream()
-                    .filter(p -> p.getLeft() != roaPrefixAssertionId)
-                    .collect(Collectors.toList());
-
-            if (collect.size() < slurmExt.getBgpsecFilters().size()) {
-                slurmExt.setBgpsecFilters(collect);
-            }
+    public void remove(long id) {
+        slurmStore.updateWith(slurmExt -> {
+            slurmExt.getBgpsecFilters().remove(id);
         });
     }
 
     public Stream<BgpSecFilter> all() {
-        return slurmStore.read().getBgpsecFilters().stream()
-                .map(Pair::getRight)
+        return slurmStore.read().getBgpsecFilters()
+                .values().stream()
                 .map(v -> new BgpSecFilter(Asn.parse(v.getAsn()).longValue(), v.getSki(), v.getComment()));
     }
 
     public void clear() {
-        slurmStore.update(slurmExt -> {
+        slurmStore.updateWith(slurmExt -> {
             slurmExt.getBgpsecFilters().clear();
         });
     }
