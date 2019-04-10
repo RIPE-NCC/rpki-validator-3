@@ -30,10 +30,17 @@
 package net.ripe.rpki.validator3.adapter.jpa;
 
 import lombok.extern.slf4j.Slf4j;
+
+import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.IntegrationTest;
 import net.ripe.rpki.validator3.TestObjects;
+import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
+import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
+import net.ripe.rpki.validator3.domain.ErrorCodes;
+import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchors;
+import net.ripe.rpki.validator3.domain.ValidationCheck;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +51,7 @@ import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 import java.util.List;
 
+import static net.ripe.rpki.validator3.domain.TrustAnchorsFactory.RIPE_NCC_TA_CERTIFICATE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
@@ -75,4 +83,39 @@ public class JPATrustAnchorRepositoryTest {
         assertThat(byName.get(0)).isEqualTo(trustAnchor);
     }
 
+    @Test
+    public void should_get_statuses() {
+        TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
+        entityManager.persist(trustAnchor);
+
+        CertificateTreeValidationRun validationRun = new CertificateTreeValidationRun(trustAnchor);
+        String trustAnchorLocation = trustAnchor.getLocations().get(0);
+
+        ValidationResult validationResult = ValidationResult.withLocation(trustAnchorLocation);
+
+        RpkiObject validObject = new RpkiObject(trustAnchorLocation, RIPE_NCC_TA_CERTIFICATE);
+        entityManager.persist(validObject);
+        validationRun.getValidatedObjects().add(validObject);
+
+        ValidationCheck some_weird_error = new ValidationCheck(validationRun, trustAnchorLocation, ValidationCheck.Status.ERROR, ErrorCodes.UNHANDLED_EXCEPTION, "Some weird error");
+        validationRun.addCheck(some_weird_error);
+        entityManager.persist(some_weird_error);
+
+        ValidationCheck some_weird_warning  = new ValidationCheck(validationRun, trustAnchorLocation, ValidationCheck.Status.WARNING, ErrorCodes.UNHANDLED_EXCEPTION, "Some weird warning");
+        validationRun.addCheck(some_weird_warning);
+        entityManager.persist(some_weird_warning);
+
+        validationRun.addChecks(validationResult);
+        validationRun.completeWith(validationResult);
+        entityManager.persist(validationRun);
+
+        List<TaStatus> statuses = subject.getStatuses();
+
+        assertThat(statuses).size().isEqualTo(1);
+
+        assertThat(statuses.stream().map(TaStatus::getErrors).count()).isEqualTo(1);
+        assertThat(statuses.stream().map(TaStatus::getWarnings).count()).isEqualTo(1);
+        assertThat(statuses.stream().map(TaStatus::getSuccessful).count()).isEqualTo(1);
+
+    }
 }
