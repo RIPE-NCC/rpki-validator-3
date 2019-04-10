@@ -32,9 +32,12 @@ package net.ripe.rpki.validator3.api.ignorefilters;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
+import net.ripe.rpki.validator3.api.slurm.SlurmStore;
+import net.ripe.rpki.validator3.api.slurm.dtos.SlurmExt;
+import net.ripe.rpki.validator3.api.slurm.dtos.SlurmPrefixFilter;
 import net.ripe.rpki.validator3.domain.IgnoreFilter;
-import net.ripe.rpki.validator3.domain.IgnoreFilters;
 import net.ripe.rpki.validator3.util.Transactions;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -56,40 +59,53 @@ public class IgnoreFilterService {
     private final Object listenersLock = new Object();
     private final List<Consumer<Collection<IgnoreFilter>>> listeners = new ArrayList<>();
 
+    private final SlurmStore slurmStore;
+
     @Autowired
-    private IgnoreFilters ignoreFilters;
-
-    public long execute(@Valid AddIgnoreFilter command) {
-        IgnoreFilter ignoreFilter = new IgnoreFilter(
-            command.getAsn() != null ? Asn.parse(command.getAsn().trim()) : null,
-            command.getPrefix() != null ? IpRange.parse(command.getPrefix().trim()) : null,
-            command.getComment());
-
-        return add(ignoreFilter);
+    public IgnoreFilterService(SlurmStore slurmStore) {
+        this.slurmStore = slurmStore;
     }
 
-    long add(IgnoreFilter ignoreFilter) {
-        ignoreFilters.add(ignoreFilter);
-        notifyListeners();
+    private static void accept(SlurmExt slurmExt) {
+        slurmExt.getPrefixFilters().clear();
+    }
 
-        log.info("added ignore filter '{}'", ignoreFilter);
-        return ignoreFilter.getId();
+    public long execute(@Valid AddIgnoreFilter command) {
+        return slurmStore.update(slurmExt -> {
+            final SlurmPrefixFilter ignoreFilter = new SlurmPrefixFilter();
+            ignoreFilter.setAsn(command.getAsn());
+            ignoreFilter.setPrefix(command.getPrefix());
+            ignoreFilter.setComment(command.getComment());
+
+            final long id = slurmStore.nextId();
+            slurmExt.getPrefixFilters().add(Pair.of(id, ignoreFilter));
+
+            log.info("added ignore filter '{}'", ignoreFilter);
+            return id;
+        });
     }
 
     public void remove(long ignoreFilterId) {
-        IgnoreFilter ignoreFilter = ignoreFilters.get(ignoreFilterId);
-        if (ignoreFilter != null) {
-            ignoreFilters.remove(ignoreFilter);
-            notifyListeners();
-        }
+        slurmStore.update(slurmExt -> {
+            List<Pair<Long, SlurmPrefixFilter>> collect = slurmExt.getPrefixFilters().stream()
+                    .filter(p -> p.getLeft() != ignoreFilterId)
+                    .collect(Collectors.toList());
+
+            if (collect.size() < slurmExt.getPrefixFilters().size()) {
+                slurmExt.setPrefixFilters(collect);
+                notifyListeners();
+            }
+        });
     }
 
     public Stream<IgnoreFilter> all() {
-        return ignoreFilters.all();
+        return slurmStore.read().getPrefixFilters().stream()
+                .map(Pair::getRight)
+                .map(r -> new IgnoreFilter(Asn.parse(r.getAsn()), IpRange.parse(r.getPrefix()), r.getComment()));
     }
 
     public void clear() {
-        ignoreFilters.clear();
+        slurmStore.update(IgnoreFilterService::accept);
         notifyListeners();
     }
 
@@ -103,13 +119,13 @@ public class IgnoreFilterService {
 
     private void notifyListeners() {
         Transactions.afterCommitOnce(
-            listenersLock,
-            () -> {
-                synchronized (listenersLock) {
-                    List<IgnoreFilter> filters = all().collect(Collectors.toList());
-                    listeners.forEach(listener -> listener.accept(filters));
+                listenersLock,
+                () -> {
+                    synchronized (listenersLock) {
+                        List<IgnoreFilter> filters = all().collect(Collectors.toList());
+                        listeners.forEach(listener -> listener.accept(filters));
+                    }
                 }
-            }
         );
     }
 }

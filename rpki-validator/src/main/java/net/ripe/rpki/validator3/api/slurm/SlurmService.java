@@ -29,13 +29,9 @@
  */
 package net.ripe.rpki.validator3.api.slurm;
 
-import net.ripe.rpki.validator3.api.bgpsec.AddBgpSecAssertion;
-import net.ripe.rpki.validator3.api.bgpsec.AddBgpSecFilter;
 import net.ripe.rpki.validator3.api.bgpsec.BgpSecAssertionsService;
 import net.ripe.rpki.validator3.api.bgpsec.BgpSecFilterService;
-import net.ripe.rpki.validator3.api.ignorefilters.AddIgnoreFilter;
 import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
-import net.ripe.rpki.validator3.api.roaprefixassertions.AddRoaPrefixAssertion;
 import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionsService;
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 import net.ripe.rpki.validator3.api.slurm.dtos.SlurmBgpSecAssertion;
@@ -47,17 +43,15 @@ import net.ripe.rpki.validator3.api.slurm.dtos.SlurmPrefixFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.transaction.Transactional;
 import java.util.stream.Collectors;
 
-/*
-    TODO Add BGPSec-related functionality
+/**
+ TODO Add BGPSec-related functionality
  */
-
 @Service
 public class SlurmService {
 
-    @Autowired
+    Autowired
     private RoaPrefixAssertionsService roaPrefixAssertionsService;
 
     @Autowired
@@ -69,61 +63,20 @@ public class SlurmService {
     @Autowired
     private IgnoreFilterService ignoreFilterService;
 
-    @Transactional(Transactional.TxType.REQUIRED)
+    @Autowired
+    private SlurmStore slurmStore;
+
     public void process(final Slurm slurm) {
-        if (slurm.getLocallyAddedAssertions() != null && slurm.getLocallyAddedAssertions().getPrefixAssertions() != null) {
-            roaPrefixAssertionsService.clear();
-            slurm.getLocallyAddedAssertions().getPrefixAssertions().forEach(prefixAsertion -> {
-                final AddRoaPrefixAssertion add = AddRoaPrefixAssertion.builder()
-                        .asn(prefixAsertion.getAsn())
-                        .prefix(prefixAsertion.getPrefix())
-                        .maximumLength(prefixAsertion.getMaxPrefixLength())
-                        .comment(prefixAsertion.getComment())
-                        .build();
-                roaPrefixAssertionsService.execute(add);
-            });
-        }
-
-        if (slurm.getValidationOutputFilters() != null && slurm.getValidationOutputFilters().getPrefixFilters() != null) {
-            ignoreFilterService.clear();
-            slurm.getValidationOutputFilters().getPrefixFilters().forEach(prefixFilter -> {
-                final AddIgnoreFilter addIgnoreFilter = AddIgnoreFilter.builder()
-                        .asn(prefixFilter.getAsn())
-                        .prefix(prefixFilter.getPrefix())
-                        .comment(prefixFilter.getComment())
-                        .build();
-                ignoreFilterService.execute(addIgnoreFilter);
-            });
-        }
-
-        if (slurm.getLocallyAddedAssertions() != null && slurm.getLocallyAddedAssertions().getBgpsecAssertions() != null) {
-            bgpSecAssertionsService.clear();
-            slurm.getLocallyAddedAssertions().getBgpsecAssertions().forEach(bgpSecAssertion -> {
-                AddBgpSecAssertion add = AddBgpSecAssertion.builder()
-                        .asn(bgpSecAssertion.getAsn())
-                        .publicKey(bgpSecAssertion.getPublicKey())
-                        .ski(bgpSecAssertion.getSki())
-                        .comment(bgpSecAssertion.getComment())
-                        .build();
-                bgpSecAssertionsService.execute(add);
-            });
-        }
-
-        if (slurm.getValidationOutputFilters() != null && slurm.getValidationOutputFilters().getBgpsecFilters() != null) {
-            bgpSecFilterService.clear();
-            slurm.getValidationOutputFilters().getBgpsecFilters().forEach(bgpSecFilter -> {
-                AddBgpSecFilter add = AddBgpSecFilter.builder()
-                        .asn(bgpSecFilter.getAsn())
-                        .ski(bgpSecFilter.getSki())
-                        .comment(bgpSecFilter.getComment())
-                        .build();
-                bgpSecFilterService.execute(add);
-            });
-        }
-
+        slurmStore.importSlurm(slurm);
     }
 
     public Slurm get() {
+        return slurmStore.read().toSlurm();
+    }
+
+
+    // TODO It is to be used to migrate data from H2 to slurm.json
+    public Slurm getFromDatabase() {
         final Slurm slurm = new Slurm();
 
         final SlurmLocallyAddedAssertions slurmLocallyAddedAssertions = new SlurmLocallyAddedAssertions();
@@ -144,6 +97,7 @@ public class SlurmService {
             bgpSecAssertion.setComment(a.getComment());
             return bgpSecAssertion;
         }).collect(Collectors.toList()));
+
         slurm.setLocallyAddedAssertions(slurmLocallyAddedAssertions);
 
         final SlurmOutputFilters filters = new SlurmOutputFilters();
@@ -167,4 +121,7 @@ public class SlurmService {
 
         return slurm;
     }
+
+
+
 }

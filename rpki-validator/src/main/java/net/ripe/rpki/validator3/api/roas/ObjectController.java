@@ -47,6 +47,7 @@ import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
+import net.ripe.rpki.validator3.storage.stores.SettingsStore;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.Links;
@@ -67,8 +68,6 @@ import java.util.stream.Stream;
 @RequestMapping(path = "/api/objects", produces = { Api.API_MIME_TYPE, "application/json" })
 @Slf4j
 public class ObjectController {
-    @Autowired
-    private RpkiObjectStore rpkiObjects;
 
     @Autowired
     private ValidatedRpkiObjects validatedRpkiObjects;
@@ -89,7 +88,7 @@ public class ObjectController {
     private BgpSecFilterService bgpSecFilterService;
 
     @Autowired
-    private Settings settings;
+    private SettingsStore settings;
 
     @Autowired
     private Lmdb lmdb;
@@ -147,7 +146,7 @@ public class ObjectController {
 
         return ResponseEntity.ok(ApiResponse.<ValidatedObjects>builder()
                 .data(new ValidatedObjects(
-                        settings.isInitialValidationRunCompleted(),
+                        lmdb.readTx(settings::isInitialValidationRunCompleted),
                         trustAnchorsById.values(),
                         combinedPrefixes,
                         combinedAssertions))

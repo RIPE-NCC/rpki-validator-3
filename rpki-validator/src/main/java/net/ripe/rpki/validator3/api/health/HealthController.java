@@ -37,14 +37,14 @@ import net.ripe.rpki.validator3.api.bgp.BgpRisDump;
 import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
 import net.ripe.rpki.validator3.api.util.BuildInformation;
 import net.ripe.rpki.validator3.background.BackgroundJobs;
-import net.ripe.rpki.validator3.domain.TrustAnchors;
+import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.persistence.EntityManager;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -54,13 +54,10 @@ import java.util.stream.Collectors;
 public class HealthController {
 
     @Autowired
-    private TrustAnchors trustAnchorRepository;
+    private TrustAnchorStore trustAnchors;
 
     @Autowired
     private BgpPreviewService bgpPreviewService;
-
-    @Autowired
-    private EntityManager entityManager;
 
     @Autowired
     private BackgroundJobs backgroundJobs;
@@ -68,11 +65,13 @@ public class HealthController {
     @Autowired
     private BuildInformation buildInformation;
 
+    @Autowired
+    private Lmdb lmdb;
 
     @GetMapping
     public ResponseEntity<ApiResponse<Health>> health() {
 
-        final Map<String, Boolean> trustAnchorReady = trustAnchorRepository.getStatuses().stream().
+        final Map<String, Boolean> trustAnchorReady = lmdb.readTx(tx -> trustAnchors.getStatuses(tx)).stream().
                 collect(Collectors.toMap(
                         TaStatus::getTaName,
                         TaStatus::isCompletedValidation)
@@ -101,8 +100,7 @@ public class HealthController {
 
     private String databaseStatus() {
         try {
-            entityManager.createNativeQuery("SELECT 1").getSingleResult();
-            return "OK";
+            return lmdb.status();
         } catch (Exception e) {
             return e.getMessage();
         }

@@ -66,4 +66,9 @@ public abstract class Lmdb {
     public <T> Coder<T> defaultCoder(Class<T> c) {
         return new GsonCoder<>(c);
     }
+
+
+    public String status() {
+        return getEnv().stat().toString();
+    }
 }

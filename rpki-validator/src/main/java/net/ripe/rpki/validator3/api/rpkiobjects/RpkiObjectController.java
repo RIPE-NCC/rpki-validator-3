@@ -54,7 +54,6 @@ import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.storage.Lmdb;
-import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;

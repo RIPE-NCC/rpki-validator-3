@@ -113,7 +113,7 @@ public class IgnoreFiltersController {
     }
 
     @PostMapping(consumes = { Api.API_MIME_TYPE, "application/json" })
-    public ResponseEntity<ApiResponse<IgnoreFilter>> add(@RequestBody @Valid ApiCommand<AddIgnoreFilter> command) {
+    public ResponseEntity<ApiResponse<IgnoreFilter>> add(@RequestBody @Valid ApiCommand<AddIgnoreFilter> command) throws Exception {
         final long id = ignoreFilterService.execute(command.getData());
         final net.ripe.rpki.validator3.domain.IgnoreFilter ignoreFilter = ignoreFilters.get(id);
         final Link selfRel = linkTo(methodOn(IgnoreFiltersController.class).get(id)).withSelfRel();
@@ -131,7 +131,7 @@ public class IgnoreFiltersController {
         final Stream<ObjectController.RoaPrefix> affectedRoas = validatedRpkiObjects
                 .findCurrentlyValidatedRoaPrefixes(null, null, null)
                 .getObjects()
-                .filter(roa -> ignoreFiltersPredicate.test(roa))
+                .filter(ignoreFiltersPredicate)
                 .map(prefix -> new ObjectController.RoaPrefix(
                         String.valueOf(prefix.getAsn()),
                         prefix.getPrefix().toString(),

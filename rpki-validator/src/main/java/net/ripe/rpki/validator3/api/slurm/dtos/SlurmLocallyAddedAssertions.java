@@ -29,11 +29,15 @@
  */
 package net.ripe.rpki.validator3.api.slurm.dtos;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class SlurmLocallyAddedAssertions {
     private List<SlurmPrefixAssertion> prefixAssertions;
     private List<SlurmBgpSecAssertion> bgpsecAssertions;

@@ -37,7 +37,6 @@ import net.ripe.rpki.validator3.api.Metadata;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
-import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,8 +55,6 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 @RequestMapping(path = "/api/roas", produces = {Api.API_MIME_TYPE, "application/json"})
 @Slf4j
 public class ValidatedRoasController {
-    @Autowired
-    private RpkiObjects rpkiObjects;
     @Autowired
     private ValidatedRpkiObjects validatedRpkiObjects;
 

@@ -33,7 +33,7 @@ import lombok.Data;
 
 @Data
 public class SlurmPrefixFilter {
-    private String asn;
-    private String prefix;
-    private String comment;
+    String asn;
+    String prefix;
+    String comment;
 }

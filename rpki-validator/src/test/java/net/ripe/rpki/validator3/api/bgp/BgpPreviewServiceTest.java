@@ -35,12 +35,15 @@ import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
 import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionsService;
+import net.ripe.rpki.validator3.api.slurm.SlurmStore;
 import net.ripe.rpki.validator3.domain.IgnoreFilter;
 import net.ripe.rpki.validator3.domain.RoaPrefixAssertion;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import org.joda.time.DateTime;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.stream.Stream;
@@ -173,7 +176,7 @@ public class BgpPreviewServiceTest {
     }
 
     private BgpPreviewService createBgpPreviewService(final Collection<IgnoreFilter> ignoreFilters) {
-        return new BgpPreviewService(new String[0],5, null, new ValidatedRpkiObjects(), new IgnoreFilterService() {
+        return new BgpPreviewService(new String[0],5, null, new ValidatedRpkiObjects(), new IgnoreFilterService(createSlurmStore()) {
             @Override
             public Stream<IgnoreFilter> all() {
                 return ignoreFilters.stream();
@@ -184,6 +187,14 @@ public class BgpPreviewServiceTest {
                 return Stream.empty();
             }
         });
+    }
+
+    private SlurmStore createSlurmStore()  {
+        try {
+            return new SlurmStore(Files.createTempDirectory("slurm-").toFile().getAbsolutePath());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private IgnoreFilter ignoreFilter(Long asn, String prefix) {
