@@ -16,12 +16,19 @@ public abstract class Lmdb {
     public <T> T writeTx(Function<Tx.Write, T> f) {
         Tx.Write tx = Tx.write(getEnv());
         try {
-            final T r = f.apply(tx);
+            final T result = f.apply(tx);
             tx.txn().commit();
             if (tx.getOnCommit() != null) {
-                tx.getOnCommit().forEach(Runnable::run);
+                tx.getOnCommit().forEach(r -> {
+                    try {
+                        r.run();
+                    } catch (Exception ignored) {
+                        // this is just to keep the loop going, every Runnable
+                        // has to take care of exceptions themselves
+                    }
+                });
             }
-            return r;
+            return result;
         } finally {
             tx.close();
         }
