@@ -44,7 +44,7 @@ import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
 import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionsService;
 import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilter;
 import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
-import net.ripe.rpki.validator3.api.slurm.entities_tmp.RoaPrefixAssertion;
+import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertion;
 import net.ripe.rpki.validator3.domain.RoaPrefixDefinition;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.util.Time;

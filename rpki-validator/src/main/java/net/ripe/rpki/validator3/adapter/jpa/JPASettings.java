@@ -39,6 +39,7 @@ import java.util.Optional;
 
 import static net.ripe.rpki.validator3.adapter.jpa.querydsl.QSetting.setting;
 
+
 @Component
 @Transactional(Transactional.TxType.REQUIRED)
 public class JPASettings extends JPARepository<Setting> implements Settings {

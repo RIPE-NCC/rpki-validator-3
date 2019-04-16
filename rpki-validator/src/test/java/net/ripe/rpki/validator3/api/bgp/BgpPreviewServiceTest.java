@@ -37,7 +37,7 @@ import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
 import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionsService;
 import net.ripe.rpki.validator3.api.slurm.SlurmStore;
 import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilter;
-import net.ripe.rpki.validator3.api.slurm.entities_tmp.RoaPrefixAssertion;
+import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertion;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import org.joda.time.DateTime;
 import org.junit.Test;
@@ -181,7 +181,7 @@ public class BgpPreviewServiceTest {
             public Stream<IgnoreFilter> all() {
                 return ignoreFilters.stream();
             }
-        }, new RoaPrefixAssertionsService() {
+        }, new RoaPrefixAssertionsService(slurmStore) {
             @Override
             public Stream<RoaPrefixAssertion> all() {
                 return Stream.empty();

@@ -40,8 +40,6 @@ import org.springframework.stereotype.Repository;
 import javax.transaction.Transactional;
 import java.util.stream.Stream;
 
-import static net.ripe.rpki.validator3.domain.querydsl.QBgpSecAssertion.bgpSecAssertion;
-
 @Repository
 @Transactional(Transactional.TxType.REQUIRED)
 public class JPABgpSecAssertions extends JPARepository<BgpSecAssertion> implements BgpSecAssertions {

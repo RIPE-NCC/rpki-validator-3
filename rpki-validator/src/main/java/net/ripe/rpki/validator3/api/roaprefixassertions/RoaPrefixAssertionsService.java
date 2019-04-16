@@ -32,8 +32,11 @@ package net.ripe.rpki.validator3.api.roaprefixassertions;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
-import net.ripe.rpki.validator3.api.slurm.entities_tmp.RoaPrefixAssertion;
-import net.ripe.rpki.validator3.domain.RoaPrefixAssertions;
+import net.ripe.rpki.validator3.api.Paging;
+import net.ripe.rpki.validator3.api.SearchTerm;
+import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.api.slurm.SlurmStore;
+import net.ripe.rpki.validator3.api.slurm.dtos.SlurmPrefixAssertion;
 import net.ripe.rpki.validator3.util.Transactions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -43,7 +46,9 @@ import javax.transaction.Transactional;
 import javax.validation.Valid;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -56,42 +61,42 @@ public class RoaPrefixAssertionsService {
     private final Object listenerLock = new Object();
     private final List<Consumer<Collection<RoaPrefixAssertion>>> listeners = new ArrayList<>();
 
+    private final SlurmStore slurmStore;
+
     @Autowired
-    private RoaPrefixAssertions roaPrefixAssertions;
-
-    public long execute(@Valid AddRoaPrefixAssertion command) {
-        RoaPrefixAssertion entity = new RoaPrefixAssertion(
-            Asn.parse(command.getAsn().trim()),
-            IpRange.parse(command.getPrefix().trim()),
-            command.getMaximumLength(),
-            command.getComment()
-        );
-
-        return add(entity);
+    public RoaPrefixAssertionsService(SlurmStore slurmStore) {
+        this.slurmStore = slurmStore;
     }
 
-    long add(RoaPrefixAssertion entity) {
-        roaPrefixAssertions.add(entity);
-        notifyListeners();
+    public long execute(@Valid AddRoaPrefixAssertion command) {
+        return slurmStore.updateWith(slurmExt -> {
+            final SlurmPrefixAssertion prefixAssertion = new SlurmPrefixAssertion();
+            prefixAssertion.setAsn(Asn.parse(command.getAsn()));
+            prefixAssertion.setPrefix(IpRange.parse(command.getPrefix()));
+            prefixAssertion.setComment(command.getComment());
+            prefixAssertion.setMaxPrefixLength(command.getMaximumLength());
 
-        log.info("added ROA prefix assertion '{}'", entity);
-        return entity.getId();
+            final long id = slurmStore.nextId();
+            slurmExt.getPrefixAssertions().put(id, prefixAssertion);
+
+            notifyListeners();
+            log.info("added ignore filter '{}'", prefixAssertion);
+            return id;
+        });
     }
 
     public void remove(long roaPrefixAssertionId) {
-        RoaPrefixAssertion entity = roaPrefixAssertions.get(roaPrefixAssertionId);
-        if (entity != null) {
-            roaPrefixAssertions.remove(entity);
-            notifyListeners();
-        }
-    }
-
-    public Stream<RoaPrefixAssertion> all() {
-        return roaPrefixAssertions.all();
+        slurmStore.updateWith(slurmExt -> {
+            if (slurmExt.getPrefixAssertions().remove(roaPrefixAssertionId) != null) {
+                notifyListeners();
+            }
+        });
     }
 
     public void clear() {
-        roaPrefixAssertions.clear();
+        slurmStore.updateWith(slurmExt -> {
+            slurmExt.getPrefixAssertions().clear();
+        });
         notifyListeners();
     }
 
@@ -113,5 +118,72 @@ public class RoaPrefixAssertionsService {
                 }
             }
         );
+    }
+
+
+    public Stream<RoaPrefixAssertion> all() {
+        return slurmStore.read().getPrefixAssertions().entrySet().stream()
+                .map(e -> makeIgnoreFilter(e.getKey(), e.getValue()));
+    }
+
+    public Stream<RoaPrefixAssertion> find(SearchTerm searchTerm, Sorting sorting, Paging paging) {
+        Stream<Map.Entry<Long, SlurmPrefixAssertion>> all = slurmStore.read().getPrefixAssertions().entrySet().stream();
+        all = applySearch(searchTerm, all).sorted(toOrderSpecifier(sorting));
+        if (paging != null) {
+            all = paging.apply(all);
+        }
+        return all.map(e -> makeIgnoreFilter(e.getKey(), e.getValue()));
+    }
+
+    private RoaPrefixAssertion makeIgnoreFilter(Long id, SlurmPrefixAssertion value) {
+        return new RoaPrefixAssertion(id, value.getAsn(), value.getPrefix(), value.getMaxPrefixLength(), value.getComment());
+    }
+
+    public Stream<Map.Entry<Long, SlurmPrefixAssertion>> applySearch(SearchTerm searchTerm, Stream<Map.Entry<Long, SlurmPrefixAssertion>> all) {
+        if (searchTerm != null) {
+            if (searchTerm.asAsn() != null) {
+                all = all.filter(pf -> pf.getValue().getAsn().longValue() == searchTerm.asAsn().longValue());
+            } else if (searchTerm.asIpRange() != null) {
+                all = all.filter(pf -> pf.getValue().getPrefix().overlaps(searchTerm.asIpRange()));
+            } else {
+                all = all.filter(pf -> pf.getValue().getComment().toLowerCase().contains(searchTerm.asString().toLowerCase()));
+            }
+        }
+        return all;
+    }
+
+    public long count(SearchTerm searchTerm) {
+        return applySearch(searchTerm, slurmStore.read().getPrefixAssertions().entrySet().stream()).count();
+    }
+
+    public RoaPrefixAssertion get(long id) {
+        final SlurmPrefixAssertion prefixAssertion = slurmStore.read().getPrefixAssertions().get(id);
+        if (prefixAssertion == null) {
+            return null;
+        }
+        return makeIgnoreFilter(id, prefixAssertion);
+    }
+
+    private Comparator<Map.Entry<Long, SlurmPrefixAssertion>> toOrderSpecifier(Sorting sorting) {
+        if (sorting == null) {
+            sorting = Sorting.of(Sorting.By.ASN, Sorting.Direction.ASC);
+        }
+        Comparator<Map.Entry<Long, SlurmPrefixAssertion>> comparator;
+        switch (sorting.getBy()) {
+            case PREFIX:
+                comparator = Comparator.comparing(e -> e.getValue().getPrefix());
+                break;
+            case MAXIMUMLENGTH:
+                comparator = Comparator.comparing(e -> e.getValue().getMaxPrefixLength());
+                break;
+            case COMMENT:
+                comparator = Comparator.comparing(e -> e.getValue().getComment());
+                break;
+            case ASN:
+            default:
+                comparator = Comparator.comparing(e -> e.getValue().getAsn());
+                break;
+        }
+        return sorting.getDirection() == Sorting.Direction.DESC ? comparator.reversed() : comparator;
     }
 }

@@ -42,8 +42,6 @@ import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.api.bgp.BgpPreviewController;
 import net.ripe.rpki.validator3.api.bgp.BgpPreviewService;
-import net.ripe.rpki.validator3.api.slurm.entities_tmp.RoaPrefixAssertion;
-import net.ripe.rpki.validator3.domain.RoaPrefixAssertions;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.Link;
@@ -71,8 +69,6 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 @Slf4j
 @RequestMapping(path = "/api/roa-prefix-assertions", produces = { Api.API_MIME_TYPE, "application/json" })
 public class RoaPrefixAssertionsController {
-    @Autowired
-    private RoaPrefixAssertions roaPrefixAssertions;
 
     @Autowired
     private RoaPrefixAssertionsService roaPrefixAssertionsService;
@@ -92,9 +88,9 @@ public class RoaPrefixAssertionsController {
         final Sorting sorting = Sorting.parse(sortBy, sortDirection);
         final Paging paging = Paging.of(startFrom, pageSize);
 
-        final List<RoaPrefixAssertion> matching = roaPrefixAssertions.find(searchTerm, sorting, paging).collect(Collectors.toList());
+        final List<RoaPrefixAssertion> matching = roaPrefixAssertionsService.find(searchTerm, sorting, paging).collect(Collectors.toList());
 
-        long totalSize = (int) roaPrefixAssertions.count(searchTerm);
+        long totalSize = (int) roaPrefixAssertionsService.count(searchTerm);
 
         final Links links = Paging.links(
             startFrom, pageSize, totalSize,
@@ -111,13 +107,13 @@ public class RoaPrefixAssertionsController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<RoaPrefixAssertionResource>> get(@PathVariable long id) {
-        return ResponseEntity.ok(ApiResponse.data(toResource(roaPrefixAssertions.get(id))));
+        return ResponseEntity.ok(ApiResponse.data(toResource(roaPrefixAssertionsService.get(id))));
     }
 
     @PostMapping(consumes = { Api.API_MIME_TYPE, "application/json" })
     public ResponseEntity<ApiResponse<RoaPrefixAssertionResource>> add(@RequestBody @Valid ApiCommand<AddRoaPrefixAssertion> command) {
         final long id = roaPrefixAssertionsService.execute(command.getData());
-        final RoaPrefixAssertion ignoreFilter = roaPrefixAssertions.get(id);
+        final RoaPrefixAssertion ignoreFilter = roaPrefixAssertionsService.get(id);
         final Link selfRel = linkTo(methodOn(RoaPrefixAssertionsController.class).get(id)).withSelfRel();
         return ResponseEntity.created(URI.create(selfRel.getHref())).body(ApiResponse.data(toResource(ignoreFilter)));
     }
@@ -129,11 +125,11 @@ public class RoaPrefixAssertionsController {
     }
 
     private RoaPrefixAssertionResource toResource(RoaPrefixAssertion assertion) {
-        Asn asn = new Asn(assertion.getAsn());
+        Asn asn = assertion.getAsn();
         List<BgpPreviewService.BgpPreviewEntry> affected = bgpPreviewService.findAffected(
             asn,
-            IpRange.parse(assertion.getPrefix()),
-            assertion.getMaximumLength()
+            assertion.getPrefix(),
+            assertion.getMaxPrefixLength()
         );
         ImmutableList.Builder<BgpPreviewController.BgpPreview> validated = ImmutableList.builder();
         ImmutableList.Builder<BgpPreviewController.BgpPreview> invalidated = ImmutableList.builder();
@@ -151,9 +147,9 @@ public class RoaPrefixAssertionsController {
         });
         return RoaPrefixAssertionResource.of(
             assertion.getId(),
-            assertion.getAsn(),
-            assertion.getPrefix(),
-            assertion.getMaximumLength(),
+            assertion.getAsn().longValue(),
+            assertion.getPrefix().toString(),
+            assertion.getMaxPrefixLength(),
             assertion.getComment(),
             validated.build(),
             invalidated.build()

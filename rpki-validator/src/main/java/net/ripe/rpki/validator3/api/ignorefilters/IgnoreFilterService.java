@@ -119,7 +119,8 @@ public class IgnoreFilterService {
 
 
     public Stream<IgnoreFilter> all() {
-        return slurmStore.read().getPrefixFilters().entrySet().stream().map(e -> makeIgnoreFilter(e.getKey(), e.getValue()));
+        return slurmStore.read().getPrefixFilters().entrySet().stream()
+                .map(e -> makeIgnoreFilter(e.getKey(), e.getValue()));
     }
 
     public Stream<IgnoreFilter> find(SearchTerm searchTerm, Sorting sorting, Paging paging) {

@@ -29,11 +29,15 @@
  */
 package net.ripe.rpki.validator3.api.slurm.dtos;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class SlurmPrefixAssertion {
     private Asn asn;
     private IpRange prefix;

@@ -39,15 +39,13 @@ import net.ripe.ipresource.IpResourceType;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
-import net.ripe.rpki.validator3.api.slurm.entities_tmp.RoaPrefixAssertion;
+import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertion;
 import net.ripe.rpki.validator3.domain.RoaPrefixAssertions;
 import org.springframework.stereotype.Repository;
 
 import javax.transaction.Transactional;
 import java.math.BigDecimal;
 import java.util.stream.Stream;
-
-import static net.ripe.rpki.validator3.domain.querydsl.QRoaPrefixAssertion.roaPrefixAssertion;
 
 @Repository
 @Transactional(Transactional.TxType.REQUIRED)
