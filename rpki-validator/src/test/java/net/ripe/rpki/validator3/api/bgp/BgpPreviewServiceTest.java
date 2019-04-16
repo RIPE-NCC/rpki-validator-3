@@ -40,7 +40,9 @@ import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilter;
 import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertion;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import org.joda.time.DateTime;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -57,6 +59,9 @@ public class BgpPreviewServiceTest {
     private static final Asn AS_2222 = Asn.parse("AS2222");
 
     private BgpPreviewService subject = createBgpPreviewService();
+
+    @Rule
+    public final TemporaryFolder tmp = new TemporaryFolder();
 
     @Test
     public void should_mark_non_matching_bgp_entry_as_unknown() {
@@ -176,7 +181,8 @@ public class BgpPreviewServiceTest {
     }
 
     private BgpPreviewService createBgpPreviewService(final Collection<IgnoreFilter> ignoreFilters) {
-        return new BgpPreviewService(new String[0],5, null, new ValidatedRpkiObjects(), new IgnoreFilterService(createSlurmStore()) {
+        SlurmStore slurmStore = createSlurmStore();
+        return new BgpPreviewService(new String[0],5, null, new ValidatedRpkiObjects(), new IgnoreFilterService(slurmStore) {
             @Override
             public Stream<IgnoreFilter> all() {
                 return ignoreFilters.stream();
@@ -191,16 +197,13 @@ public class BgpPreviewServiceTest {
 
     private SlurmStore createSlurmStore()  {
         try {
-            return new SlurmStore(Files.createTempDirectory("slurm-").toFile().getAbsolutePath());
+            return new SlurmStore(tmp.newFolder().getAbsolutePath());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     private IgnoreFilter ignoreFilter(Long asn, String prefix) {
-        IgnoreFilter f = new IgnoreFilter();
-        f.setAsn(asn);
-        f.setPrefix(prefix);
-        return f;
+        return new IgnoreFilter(10L, new Asn(asn), IpRange.parse(prefix), "comment");
     }
 }

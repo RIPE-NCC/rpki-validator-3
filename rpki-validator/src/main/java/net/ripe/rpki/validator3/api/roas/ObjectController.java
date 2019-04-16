@@ -36,7 +36,10 @@ import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
+import net.ripe.rpki.validator3.api.bgpsec.BgpSecAssertionsService;
 import net.ripe.rpki.validator3.api.bgpsec.BgpSecFilterService;
+import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
+import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionsService;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
 import net.ripe.rpki.validator3.domain.BgpSecAssertions;
 import net.ripe.rpki.validator3.domain.IgnoreFilters;
@@ -76,13 +79,13 @@ public class ObjectController {
     private TrustAnchorStore trustAnchors;
 
     @Autowired
-    private IgnoreFilters ignoreFilters;
+    private IgnoreFilterService ignoreFilters;
 
     @Autowired
-    private RoaPrefixAssertions roaPrefixAssertions;
+    private RoaPrefixAssertionsService roaPrefixAssertions;
 
     @Autowired
-    private BgpSecAssertions bgpSecAssertions;
+    private BgpSecAssertionsService bgpSecAssertions;
 
     @Autowired
     private BgpSecFilterService bgpSecFilterService;
@@ -125,9 +128,9 @@ public class ObjectController {
         final Stream<RoaPrefix> assertions = roaPrefixAssertions
             .all()
             .map(assertion -> new RoaPrefix(
-                new Asn(assertion.getAsn()).toString(),
-                IpRange.parse(assertion.getPrefix()).toString(),
-                assertion.getMaximumLength() != null ? assertion.getMaximumLength() : IpRange.parse(assertion.getPrefix()).getPrefixLength(),
+                assertion.getAsn().toString(),
+                assertion.getPrefix().toString(),
+                assertion.getMaxPrefixLength() != null ? assertion.getMaxPrefixLength() : assertion.getPrefix().getPrefixLength(),
                 null
             ));
 

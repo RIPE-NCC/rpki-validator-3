@@ -87,7 +87,7 @@ public class SlurmService {
 
         slurmLocallyAddedAssertions.setBgpsecAssertions(bgpSecAssertionsService.all().map(a -> {
             final Slurm.SlurmBgpSecAssertion bgpSecAssertion = new Slurm.SlurmBgpSecAssertion();
-            bgpSecAssertion.setAsn(new Asn(a.getAsn()));
+            bgpSecAssertion.setAsn(a.getAsn());
             bgpSecAssertion.setSki(a.getSki());
             bgpSecAssertion.setPublicKey(a.getPublicKey());
             bgpSecAssertion.setComment(a.getComment());
@@ -107,7 +107,7 @@ public class SlurmService {
 
         filters.setBgpsecFilters(bgpSecFilterService.all().map(f -> {
             final Slurm.SlurmBgpSecFilter bgpSecFilter = new Slurm.SlurmBgpSecFilter();
-            bgpSecFilter.setAsn(new Asn(f.getAsn()));
+            bgpSecFilter.setAsn(f.getAsn());
             bgpSecFilter.setSki(f.getSki());
             bgpSecFilter.setComment(f.getComment());
             return bgpSecFilter;

@@ -34,6 +34,7 @@ import lombok.Setter;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.ipresource.IpResourceType;
+import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 import net.ripe.rpki.validator3.domain.AbstractEntity;
 
 import javax.persistence.Basic;
@@ -45,31 +46,12 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 
-@Entity
-public class BgpSecAssertion extends AbstractEntity {
-    @Basic
+public class BgpSecAssertion extends Slurm.SlurmBgpSecAssertion {
     @Getter
-    private long asn;
+    private Long id;
 
-    @Basic
-    @Getter
-    private String ski;
-
-    @Basic
-    @Getter
-    private String publicKey;
-
-    @Basic
-    @Getter
-    private String comment;
-
-    public BgpSecAssertion() {
-    }
-
-    public BgpSecAssertion(long asn, String ski, String publicKey, String comment) {
-        this.asn = asn;
-        this.ski = ski;
-        this.publicKey = publicKey;
-        this.comment = comment;
+    public BgpSecAssertion(Long id, Asn asn, String comment, String ski, String publicKey) {
+        super(asn, comment, ski, publicKey);
+        this.id = id;
     }
 }

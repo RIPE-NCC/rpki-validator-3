@@ -45,8 +45,12 @@ import java.util.stream.Stream;
 @Slf4j
 public class BgpSecAssertionsService {
 
+    private final SlurmStore slurmStore;
+
     @Autowired
-    private SlurmStore slurmStore;
+    public BgpSecAssertionsService(SlurmStore slurmStore) {
+        this.slurmStore = slurmStore;
+    }
 
     public long execute(@Valid AddBgpSecAssertion command) {
         final long id = slurmStore.nextId();
@@ -69,8 +73,11 @@ public class BgpSecAssertionsService {
 
     public Stream<BgpSecAssertion> all() {
         return slurmStore.read().getBgpsecAssertions()
-                .values().stream()
-                .map(v -> new BgpSecAssertion(v.getAsn().longValue(), v.getSki(), v.getPublicKey(), v.getComment()));
+                .entrySet().stream()
+                .map(e -> {
+                    Slurm.SlurmBgpSecAssertion v = e.getValue();
+                    return new BgpSecAssertion(e.getKey(), v.getAsn(), v.getComment(), v.getSki(), v.getPublicKey());
+                });
     }
 
     public void clear() {

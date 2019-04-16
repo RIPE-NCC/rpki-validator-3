@@ -434,10 +434,10 @@ public class BgpPreviewService {
                                     null,
                                     p.getId(),
                                     p.getComment(),
-                                    new Asn(p.getAsn()),
-                                    new PackedIpRange(IpRange.parse(p.getPrefix())),
-                                    p.getMaximumLength(),
-                                    p.getMaximumLength() == null ? IpRange.parse(p.getPrefix()).getPrefixLength() : p.getMaximumLength()
+                                    p.getAsn(),
+                                    new PackedIpRange(p.getPrefix()),
+                                    p.getMaxPrefixLength(),
+                                    p.getMaxPrefixLength() == null ? p.getPrefix().getPrefixLength() : p.getMaxPrefixLength()
                             ))
                             .iterator()
             );

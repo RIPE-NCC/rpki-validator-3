@@ -66,6 +66,8 @@ public class Slurm {
     }
 
     @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class SlurmBgpSecAssertion {
         private Asn asn;
         private String comment;
@@ -75,6 +77,8 @@ public class Slurm {
     }
 
     @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class SlurmBgpSecFilter {
         private Asn asn;
         @JsonProperty("SKI")

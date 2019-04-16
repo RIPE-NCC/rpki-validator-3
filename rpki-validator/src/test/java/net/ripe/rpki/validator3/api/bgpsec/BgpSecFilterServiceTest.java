@@ -79,7 +79,7 @@ public class BgpSecFilterServiceTest {
     @Test
     public void should_not_filter_out_unrelated_certificate() {
         final List<ValidatedRpkiObjects.RouterCertificate> certificates = Collections.singletonList(CERTIFICATE_1);
-        final List<BgpSecFilter> filters = Collections.singletonList(new BgpSecFilter(12L, null, null));
+        final List<BgpSecFilter> filters = Collections.singletonList(new BgpSecFilter(1L, new Asn(12L), null, null));
         final Stream<ValidatedRpkiObjects.RouterCertificate> s = bgpSecFilterService.filterCertificates(certificates.stream(), filters);
         assertEquals(certificates, s.collect(Collectors.toList()));
     }
@@ -87,7 +87,7 @@ public class BgpSecFilterServiceTest {
     @Test
     public void should_filter_out_one_certificate_by_asn() {
         final List<ValidatedRpkiObjects.RouterCertificate> certificates = Arrays.asList(CERTIFICATE_1, CERTIFICATE_2);
-        final List<BgpSecFilter> filters = Collections.singletonList(new BgpSecFilter(ASN_2.longValue(), null, null));
+        final List<BgpSecFilter> filters = Collections.singletonList(new BgpSecFilter(10L, ASN_2, null, null));
         final Stream<ValidatedRpkiObjects.RouterCertificate> s = bgpSecFilterService.filterCertificates(certificates.stream(), filters);
         assertEquals(Collections.singletonList(CERTIFICATE_1), s.collect(Collectors.toList()));
     }
@@ -95,7 +95,7 @@ public class BgpSecFilterServiceTest {
     @Test
     public void should_filter_out_one_certificate_by_ski() {
         final List<ValidatedRpkiObjects.RouterCertificate> certificates = Collections.singletonList(CERTIFICATE_1);
-        final List<BgpSecFilter> filters = Collections.singletonList(new BgpSecFilter(null, SKI_1, null));
+        final List<BgpSecFilter> filters = Collections.singletonList(new BgpSecFilter(10L, null, SKI_1, null));
         final Stream<ValidatedRpkiObjects.RouterCertificate> s = bgpSecFilterService.filterCertificates(certificates.stream(), filters);
         assertEquals(Collections.emptyList(), s.collect(Collectors.toList()));
     }
@@ -103,7 +103,7 @@ public class BgpSecFilterServiceTest {
     @Test
     public void should_filter_out_one_certificate_by_asn_and_ski() {
         final List<ValidatedRpkiObjects.RouterCertificate> certificates = Arrays.asList(CERTIFICATE_1, CERTIFICATE_3);
-        final List<BgpSecFilter> filters = Collections.singletonList(new BgpSecFilter(ASN_1.longValue(), SKI_3, null));
+        final List<BgpSecFilter> filters = Collections.singletonList(new BgpSecFilter(20L, ASN_1, SKI_3, null));
         final Stream<ValidatedRpkiObjects.RouterCertificate> s = bgpSecFilterService.filterCertificates(certificates.stream(), filters);
         assertEquals(Collections.singletonList(CERTIFICATE_1), s.collect(Collectors.toList()));
     }

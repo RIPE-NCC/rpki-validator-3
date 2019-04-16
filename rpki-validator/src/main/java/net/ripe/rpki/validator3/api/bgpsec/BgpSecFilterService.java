@@ -46,13 +46,16 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
-@Transactional
 @Validated
 @Slf4j
 public class BgpSecFilterService {
 
+    private final SlurmStore slurmStore;
+
     @Autowired
-    private SlurmStore slurmStore;
+    public BgpSecFilterService(SlurmStore slurmStore) {
+        this.slurmStore = slurmStore;
+    }
 
     public long execute(@Valid AddBgpSecFilter command) {
         final long id = slurmStore.nextId();
@@ -74,8 +77,11 @@ public class BgpSecFilterService {
 
     public Stream<BgpSecFilter> all() {
         return slurmStore.read().getBgpsecFilters()
-                .values().stream()
-                .map(v -> new BgpSecFilter(v.getAsn().longValue(), v.getSki(), v.getComment()));
+                .entrySet().stream()
+                .map(e -> {
+                    Slurm.SlurmBgpSecFilter v = e.getValue();
+                    return new BgpSecFilter(e.getKey(), v.getAsn(), v.getSki(), v.getComment());
+                });
     }
 
     public void clear() {
@@ -98,7 +104,7 @@ public class BgpSecFilterService {
 
             return filters.stream().noneMatch(f -> {
                 boolean keepIt = true;
-                final Long asn = f.getAsn();
+                final Asn asn = f.getAsn();
                 if (asn != null) {
                     keepIt = longAsns.stream().anyMatch(a -> a == asn.longValue());
                 }

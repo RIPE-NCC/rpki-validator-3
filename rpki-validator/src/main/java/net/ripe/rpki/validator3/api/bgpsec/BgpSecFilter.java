@@ -30,35 +30,15 @@
 package net.ripe.rpki.validator3.api.bgpsec;
 
 import lombok.Getter;
-import lombok.Setter;
-import net.ripe.rpki.validator3.domain.AbstractEntity;
+import net.ripe.ipresource.Asn;
+import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 
-import javax.persistence.Basic;
-import javax.persistence.Entity;
-
-@Entity
-public class BgpSecFilter extends AbstractEntity {
-    @Basic
+public class BgpSecFilter extends Slurm.SlurmBgpSecFilter {
     @Getter
-    @Setter
-    private Long asn;
+    private Long id;
 
-    @Basic
-    @Getter
-    @Setter
-    private String ski;
-
-    @Basic
-    @Getter
-    @Setter
-    private String comment;
-
-    public BgpSecFilter() {
-    }
-
-    public BgpSecFilter(Long asn, String ski, String comment) {
-        this.asn = asn;
-        this.ski = ski;
-        this.comment = comment;
+    public BgpSecFilter(Long id, Asn asn, String ski, String comment) {
+        super(asn, ski, comment);
+        this.id = id;
     }
 }
