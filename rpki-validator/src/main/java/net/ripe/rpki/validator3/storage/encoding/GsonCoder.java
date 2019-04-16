@@ -42,16 +42,12 @@ import com.google.gson.JsonSerializer;
 import lombok.AllArgsConstructor;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
-import net.ripe.ipresource.IpResourceSet;
-import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.validator3.storage.Bytes;
 import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
-import javax.security.auth.x500.X500Principal;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
-import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.List;
 import java.util.function.Function;
