@@ -40,6 +40,7 @@ import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilter;
 import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertion;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import org.joda.time.DateTime;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -58,10 +59,15 @@ public class BgpPreviewServiceTest {
     private static final Asn AS_3333 = Asn.parse("AS3333");
     private static final Asn AS_2222 = Asn.parse("AS2222");
 
-    private BgpPreviewService subject = createBgpPreviewService();
+    private BgpPreviewService subject;
 
     @Rule
     public final TemporaryFolder tmp = new TemporaryFolder();
+
+    @Before
+    public void setUp() {
+        subject = createBgpPreviewService();
+    }
 
     @Test
     public void should_mark_non_matching_bgp_entry_as_unknown() {
@@ -204,6 +210,9 @@ public class BgpPreviewServiceTest {
     }
 
     private IgnoreFilter ignoreFilter(Long asn, String prefix) {
-        return new IgnoreFilter(10L, new Asn(asn), IpRange.parse(prefix), "comment");
+        return new IgnoreFilter(10L,
+                asn == null ? null : new Asn(asn),
+                prefix == null ? null : IpRange.parse(prefix),
+                "comment");
     }
 }
