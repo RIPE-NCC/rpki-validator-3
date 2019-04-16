@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.api.slurm;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
+import net.ripe.rpki.validator3.storage.encoding.GsonCoder;
 import org.junit.Test;
 
 import java.io.BufferedReader;
@@ -48,7 +49,7 @@ public class SlurmParserTest {
 
     @Test
     public void parse() throws IOException {
-        final Slurm slurm = SlurmParser.parse(read("slurm/slurm1.json"));
+        final Slurm slurm = GsonCoder.getPrettyGson().fromJson(read("slurm/slurm1.json"), Slurm.class);
 
         final List<Slurm.SlurmPrefixFilter> prefixFilters = slurm.getValidationOutputFilters().getPrefixFilters();
         assertEquals(null, prefixFilters.get(0).getAsn());

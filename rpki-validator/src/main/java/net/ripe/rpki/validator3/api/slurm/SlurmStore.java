@@ -36,14 +36,18 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 import net.ripe.rpki.validator3.api.slurm.dtos.SlurmExt;
 import net.ripe.rpki.validator3.storage.encoding.GsonCoder;
+import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -151,5 +155,9 @@ public class SlurmStore {
 
     synchronized void importSlurm(Slurm slurm) {
         save(SlurmExt.fromSlurm(slurm, idSeq));
+    }
+
+    public void writeTo(OutputStream out) throws IOException {
+        IOUtils.copy(new FileInputStream(new File(slurmFileName)), out);
     }
 }

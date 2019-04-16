@@ -39,6 +39,8 @@ import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.stream.Collectors;
 
 /**
@@ -119,5 +121,11 @@ public class SlurmService {
     }
 
 
-
+    public void writeTo(OutputStream out) {
+        try {
+            slurmStore.writeTo(out);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

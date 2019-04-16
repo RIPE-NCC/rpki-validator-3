@@ -36,6 +36,7 @@ import net.ripe.rpki.validator3.api.ApiError;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
+import net.ripe.rpki.validator3.storage.encoding.GsonCoder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -45,7 +46,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Locale;
 
 @RestController
@@ -60,7 +64,7 @@ public class SlurmController {
     public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@RequestParam("file") MultipartFile trustAnchorLocator, Locale locale) {
         try {
             final String contents = new String(trustAnchorLocator.getBytes(), Charsets.UTF_8);
-            slurmService.process(SlurmParser.parse(contents));
+            slurmService.process(GsonCoder.getPrettyGson().fromJson(contents, Slurm.class));
             return ResponseEntity.noContent().build();
         } catch (Exception ex) {
             return ResponseEntity.badRequest().body(ApiResponse.error(ApiError.of(
@@ -77,7 +81,7 @@ public class SlurmController {
 
     // FIXME Do something to force browser's save file prompt instead of rendering JSON
     @GetMapping(path = "/download", produces = Api.API_MIME_TYPE)
-    public ResponseEntity<Slurm> download() {
-        return slurm();
+    public StreamingResponseBody download() {
+        return out -> slurmService.writeTo(out);
     }
 }
