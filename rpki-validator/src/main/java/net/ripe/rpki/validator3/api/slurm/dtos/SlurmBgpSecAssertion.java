@@ -31,10 +31,11 @@ package net.ripe.rpki.validator3.api.slurm.dtos;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import net.ripe.ipresource.Asn;
 
 @Data
 public class SlurmBgpSecAssertion {
-    private String asn;
+    private Asn asn;
     private String comment;
     @JsonProperty("SKI")
     private String ski;

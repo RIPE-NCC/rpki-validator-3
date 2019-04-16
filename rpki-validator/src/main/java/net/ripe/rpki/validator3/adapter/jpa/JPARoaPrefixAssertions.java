@@ -39,7 +39,7 @@ import net.ripe.ipresource.IpResourceType;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
-import net.ripe.rpki.validator3.domain.RoaPrefixAssertion;
+import net.ripe.rpki.validator3.api.slurm.entities_tmp.RoaPrefixAssertion;
 import net.ripe.rpki.validator3.domain.RoaPrefixAssertions;
 import org.springframework.stereotype.Repository;
 

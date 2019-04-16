@@ -37,6 +37,8 @@ import org.reflections.Reflections;
 import org.springframework.stereotype.Component;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Set;
 
 @Component
@@ -57,6 +59,7 @@ public class FSTCoder<T> implements Coder<T> {
             final Reflections reflections = new Reflections("net.ripe.rpki.validator3.storage.data");
             final Set<Class<?>> annotated = reflections.getTypesAnnotatedWith(Binary.class);
             registeredClasses = annotated.toArray(new Class[0]);
+            Arrays.sort(registeredClasses, Comparator.comparing(Class::getName));
         }
         return registeredClasses;
     }

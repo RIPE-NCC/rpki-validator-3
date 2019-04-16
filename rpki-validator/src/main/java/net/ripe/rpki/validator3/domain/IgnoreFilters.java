@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.domain;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilter;
 
 import java.util.stream.Stream;
 

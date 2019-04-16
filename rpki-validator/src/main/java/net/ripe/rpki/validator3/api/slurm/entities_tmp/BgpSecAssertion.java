@@ -27,13 +27,14 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.domain;
+package net.ripe.rpki.validator3.api.slurm.entities_tmp;
 
 import lombok.Getter;
 import lombok.Setter;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.ipresource.IpResourceType;
+import net.ripe.rpki.validator3.domain.AbstractEntity;
 
 import javax.persistence.Basic;
 import javax.persistence.Entity;

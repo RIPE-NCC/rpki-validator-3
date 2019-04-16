@@ -30,11 +30,13 @@
 package net.ripe.rpki.validator3.api.slurm.dtos;
 
 import lombok.Data;
+import net.ripe.ipresource.Asn;
+import net.ripe.ipresource.IpRange;
 
 @Data
 public class SlurmPrefixAssertion {
-    private String asn;
-    private String prefix;
+    private Asn asn;
+    private IpRange prefix;
     private Integer maxPrefixLength;
     private String comment;
 

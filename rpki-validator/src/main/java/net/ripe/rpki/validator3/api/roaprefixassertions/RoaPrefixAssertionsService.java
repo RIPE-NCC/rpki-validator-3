@@ -32,7 +32,7 @@ package net.ripe.rpki.validator3.api.roaprefixassertions;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
-import net.ripe.rpki.validator3.domain.RoaPrefixAssertion;
+import net.ripe.rpki.validator3.api.slurm.entities_tmp.RoaPrefixAssertion;
 import net.ripe.rpki.validator3.domain.RoaPrefixAssertions;
 import net.ripe.rpki.validator3.util.Transactions;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -29,6 +29,8 @@
  */
 package net.ripe.rpki.validator3.api.slurm;
 
+import net.ripe.ipresource.Asn;
+import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.api.bgpsec.BgpSecAssertionsService;
 import net.ripe.rpki.validator3.api.bgpsec.BgpSecFilterService;
 import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
@@ -82,8 +84,8 @@ public class SlurmService {
         final SlurmLocallyAddedAssertions slurmLocallyAddedAssertions = new SlurmLocallyAddedAssertions();
         slurmLocallyAddedAssertions.setPrefixAssertions(roaPrefixAssertionsService.all().map(a -> {
             final SlurmPrefixAssertion prefixAssertion = new SlurmPrefixAssertion();
-            prefixAssertion.setAsn(String.valueOf(a.getAsn()));
-            prefixAssertion.setPrefix(a.getPrefix());
+            prefixAssertion.setAsn(new Asn(a.getAsn()));
+            prefixAssertion.setPrefix(IpRange.parse(a.getPrefix()));
             prefixAssertion.setMaxPrefixLength(a.getMaximumLength());
             prefixAssertion.setComment(a.getComment());
             return prefixAssertion;
@@ -91,7 +93,7 @@ public class SlurmService {
 
         slurmLocallyAddedAssertions.setBgpsecAssertions(bgpSecAssertionsService.all().map(a -> {
             final SlurmBgpSecAssertion bgpSecAssertion = new SlurmBgpSecAssertion();
-            bgpSecAssertion.setAsn(String.valueOf(a.getAsn()));
+            bgpSecAssertion.setAsn(new Asn(a.getAsn()));
             bgpSecAssertion.setSki(a.getSki());
             bgpSecAssertion.setPublicKey(a.getPublicKey());
             bgpSecAssertion.setComment(a.getComment());
@@ -103,7 +105,7 @@ public class SlurmService {
         final SlurmOutputFilters filters = new SlurmOutputFilters();
         filters.setPrefixFilters(ignoreFilterService.all().map(f -> {
             final SlurmPrefixFilter prefixFilter = new SlurmPrefixFilter();
-            prefixFilter.setAsn(String.valueOf(f.getAsn()));
+            prefixFilter.setAsn(f.getAsn());
             prefixFilter.setPrefix(f.getPrefix());
             prefixFilter.setComment(f.getComment());
             return prefixFilter;
@@ -111,7 +113,7 @@ public class SlurmService {
 
         filters.setBgpsecFilters(bgpSecFilterService.all().map(f -> {
             final SlurmBgpSecFilter bgpSecFilter = new SlurmBgpSecFilter();
-            bgpSecFilter.setAsn(String.valueOf(f.getAsn()));
+            bgpSecFilter.setAsn(new Asn(f.getAsn()));
             bgpSecFilter.setSki(f.getSki());
             bgpSecFilter.setComment(f.getComment());
             return bgpSecFilter;

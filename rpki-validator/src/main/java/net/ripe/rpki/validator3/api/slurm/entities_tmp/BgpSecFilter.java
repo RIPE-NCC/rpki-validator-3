@@ -27,63 +27,38 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.domain;
+package net.ripe.rpki.validator3.api.slurm.entities_tmp;
 
 import lombok.Getter;
-import net.ripe.ipresource.Asn;
-import net.ripe.ipresource.IpRange;
-import net.ripe.ipresource.IpResourceType;
+import lombok.Setter;
+import net.ripe.rpki.validator3.domain.AbstractEntity;
 
 import javax.persistence.Basic;
 import javax.persistence.Entity;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
-import java.math.BigDecimal;
 
 @Entity
-public class RoaPrefixAssertion extends AbstractEntity {
+public class BgpSecFilter extends AbstractEntity {
     @Basic
     @Getter
-    private long asn;
-
-    @Basic
-    @NotNull
-    @NotEmpty
-    @Getter
-    private String prefix;
-
-    @Basic
-    byte prefixFamily;
-
-    @Basic
-    @NotNull
-    BigDecimal prefixBegin;
-
-    @Basic
-    @NotNull
-    BigDecimal prefixEnd;
+    @Setter
+    private Long asn;
 
     @Basic
     @Getter
-    private Integer maximumLength;
+    @Setter
+    private String ski;
 
     @Basic
     @Getter
+    @Setter
     private String comment;
 
-    public RoaPrefixAssertion() {
+    public BgpSecFilter() {
     }
 
-    public RoaPrefixAssertion(Asn asn, IpRange prefix, @Min(0) @Max(128) Integer maximumLength, @Size(max = 2000) String comment) {
-        this.asn = asn.longValue();
-        this.prefix = prefix.toString();
-        this.prefixFamily = (byte) (prefix.getType() == IpResourceType.IPv4 ? 4 : 6);
-        this.prefixBegin = new BigDecimal(prefix.getStart().getValue());
-        this.prefixEnd = new BigDecimal(prefix.getEnd().getValue());
-        this.maximumLength = maximumLength;
+    public BgpSecFilter(Long asn, String ski, String comment) {
+        this.asn = asn;
+        this.ski = ski;
         this.comment = comment;
     }
 }

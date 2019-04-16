@@ -32,10 +32,12 @@ package net.ripe.rpki.validator3.api.ignorefilters;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
+import net.ripe.rpki.validator3.api.Paging;
+import net.ripe.rpki.validator3.api.SearchTerm;
+import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.api.slurm.SlurmStore;
 import net.ripe.rpki.validator3.api.slurm.dtos.SlurmExt;
 import net.ripe.rpki.validator3.api.slurm.dtos.SlurmPrefixFilter;
-import net.ripe.rpki.validator3.domain.IgnoreFilter;
 import net.ripe.rpki.validator3.util.Transactions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -45,7 +47,9 @@ import javax.transaction.Transactional;
 import javax.validation.Valid;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -65,15 +69,11 @@ public class IgnoreFilterService {
         this.slurmStore = slurmStore;
     }
 
-    private static void accept(SlurmExt slurmExt) {
-        slurmExt.getPrefixFilters().clear();
-    }
-
     public long execute(@Valid AddIgnoreFilter command) {
         return slurmStore.updateWith(slurmExt -> {
             final SlurmPrefixFilter ignoreFilter = new SlurmPrefixFilter();
-            ignoreFilter.setAsn(command.getAsn());
-            ignoreFilter.setPrefix(command.getPrefix());
+            ignoreFilter.setAsn(Asn.parse(command.getAsn()));
+            ignoreFilter.setPrefix(IpRange.parse(command.getPrefix()));
             ignoreFilter.setComment(command.getComment());
 
             final long id = slurmStore.nextId();
@@ -92,14 +92,8 @@ public class IgnoreFilterService {
         });
     }
 
-    public Stream<IgnoreFilter> all() {
-        return slurmStore.read().getPrefixFilters()
-                .values().stream()
-                .map(r -> new IgnoreFilter(Asn.parse(r.getAsn()), IpRange.parse(r.getPrefix()), r.getComment()));
-    }
-
     public void clear() {
-        slurmStore.updateWith(IgnoreFilterService::accept);
+        slurmStore.updateWith(IgnoreFilterService::clearAll);
         notifyListeners();
     }
 
@@ -121,5 +115,72 @@ public class IgnoreFilterService {
                     }
                 }
         );
+    }
+
+
+    public Stream<IgnoreFilter> all() {
+        return slurmStore.read().getPrefixFilters().entrySet().stream().map(e -> makeIgnoreFilter(e.getKey(), e.getValue()));
+    }
+
+    public Stream<IgnoreFilter> find(SearchTerm searchTerm, Sorting sorting, Paging paging) {
+        Stream<Map.Entry<Long, SlurmPrefixFilter>> all = slurmStore.read().getPrefixFilters().entrySet().stream();
+        all = applySearch(searchTerm, all).sorted(toOrderSpecifier(sorting));
+        if (paging != null) {
+            all = paging.apply(all);
+        }
+        return all.map(e -> makeIgnoreFilter(e.getKey(), e.getValue()));
+    }
+
+    private IgnoreFilter makeIgnoreFilter(Long id, SlurmPrefixFilter value) {
+        return new IgnoreFilter(id, value.getAsn(), value.getPrefix(), value.getComment());
+    }
+
+    public Stream<Map.Entry<Long, SlurmPrefixFilter>> applySearch(SearchTerm searchTerm, Stream<Map.Entry<Long, SlurmPrefixFilter>> all) {
+        if (searchTerm != null) {
+            if (searchTerm.asAsn() != null) {
+                all = all.filter(pf -> pf.getValue().getAsn().longValue() == searchTerm.asAsn().longValue());
+            } else if (searchTerm.asIpRange() != null) {
+                all = all.filter(pf -> pf.getValue().getPrefix().overlaps(searchTerm.asIpRange()));
+            } else {
+                all = all.filter(pf -> pf.getValue().getComment().toLowerCase().contains(searchTerm.asString().toLowerCase()));
+            }
+        }
+        return all;
+    }
+
+    public long count(SearchTerm searchTerm) {
+        return applySearch(searchTerm, slurmStore.read().getPrefixFilters().entrySet().stream()).count();
+    }
+
+    public IgnoreFilter get(long id) {
+        final SlurmPrefixFilter slurmPrefixFilter = slurmStore.read().getPrefixFilters().get(id);
+        if (slurmPrefixFilter == null) {
+            return null;
+        }
+        return makeIgnoreFilter(id, slurmPrefixFilter);
+    }
+
+    private Comparator<Map.Entry<Long, SlurmPrefixFilter>> toOrderSpecifier(Sorting sorting) {
+        if (sorting == null) {
+            sorting = Sorting.of(Sorting.By.ASN, Sorting.Direction.ASC);
+        }
+        Comparator<Map.Entry<Long, SlurmPrefixFilter>> comparator;
+        switch (sorting.getBy()) {
+            case PREFIX:
+                comparator = Comparator.comparing(e -> e.getValue().getPrefix());
+                break;
+            case COMMENT:
+                comparator = Comparator.comparing(e -> e.getValue().getComment());
+                break;
+            case ASN:
+            default:
+                comparator = Comparator.comparing(e -> e.getValue().getAsn());
+                break;
+        }
+        return sorting.getDirection() == Sorting.Direction.DESC ? comparator.reversed() : comparator;
+    }
+
+    private static void clearAll(SlurmExt slurmExt) {
+        slurmExt.getPrefixFilters().clear();
     }
 }

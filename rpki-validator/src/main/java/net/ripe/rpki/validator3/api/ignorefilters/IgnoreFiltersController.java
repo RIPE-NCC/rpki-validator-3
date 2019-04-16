@@ -38,7 +38,6 @@ import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.api.roas.ObjectController;
-import net.ripe.rpki.validator3.domain.IgnoreFilters;
 import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import org.apache.commons.lang.StringUtils;
@@ -57,8 +56,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
 import java.net.URI;
-import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
@@ -68,9 +65,6 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 @Slf4j
 @RequestMapping(path = "/api/ignore-filters", produces = { Api.API_MIME_TYPE, "application/json" })
 public class IgnoreFiltersController {
-
-    @Autowired
-    private IgnoreFilters ignoreFilters;
 
     @Autowired
     private IgnoreFilterService ignoreFilterService;
@@ -90,9 +84,8 @@ public class IgnoreFiltersController {
         final Sorting sorting = Sorting.parse(sortBy, sortDirection);
         final Paging paging = Paging.of(startFrom, pageSize);
 
-        final List<net.ripe.rpki.validator3.domain.IgnoreFilter> matching = ignoreFilters.find(searchTerm, sorting, paging).collect(Collectors.toList());
-
-        int totalSize = (int) ignoreFilters.count(searchTerm);
+        final Stream<IgnoreFilter> matching = ignoreFilterService.find(searchTerm, sorting, paging);
+        int totalSize = (int) ignoreFilterService.count(searchTerm);
 
         final Links links = Paging.links(
                 startFrom, pageSize, totalSize,
@@ -102,20 +95,20 @@ public class IgnoreFiltersController {
                 ApiResponse.<Stream<IgnoreFilter>>builder()
                         .links(links)
                         .metadata(Metadata.of(totalSize))
-                        .data(matching.stream().map(this::toIgnoreFilter))
+                        .data(matching.map(this::toIgnoreFilter))
                         .build()
         );
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<IgnoreFilter>> get(@PathVariable long id) {
-        return ResponseEntity.ok(ignoreFilterResource(ignoreFilters.get(id)));
+        return ResponseEntity.ok(ignoreFilterResource(ignoreFilterService.get(id)));
     }
 
     @PostMapping(consumes = { Api.API_MIME_TYPE, "application/json" })
     public ResponseEntity<ApiResponse<IgnoreFilter>> add(@RequestBody @Valid ApiCommand<AddIgnoreFilter> command) throws Exception {
         final long id = ignoreFilterService.execute(command.getData());
-        final net.ripe.rpki.validator3.domain.IgnoreFilter ignoreFilter = ignoreFilters.get(id);
+        final IgnoreFilter ignoreFilter = ignoreFilterService.get(id);
         final Link selfRel = linkTo(methodOn(IgnoreFiltersController.class).get(id)).withSelfRel();
         return ResponseEntity.created(URI.create(selfRel.getHref())).body(ignoreFilterResource(ignoreFilter));
     }
@@ -126,7 +119,7 @@ public class IgnoreFiltersController {
         return ResponseEntity.noContent().build();
     }
 
-    private IgnoreFilter toIgnoreFilter(net.ripe.rpki.validator3.domain.IgnoreFilter f) {
+    private IgnoreFilter toIgnoreFilter(IgnoreFilter f) {
         final IgnoreFiltersPredicate ignoreFiltersPredicate = new IgnoreFiltersPredicate(Stream.of(f));
         final Stream<ObjectController.RoaPrefix> affectedRoas = validatedRpkiObjects
                 .findCurrentlyValidatedRoaPrefixes(null, null, null)
@@ -141,7 +134,7 @@ public class IgnoreFiltersController {
         return new IgnoreFilter(f.getId(), f.getAsn(), f.getPrefix(), f.getComment(), affectedRoas);
     }
 
-    private ApiResponse<IgnoreFilter> ignoreFilterResource(net.ripe.rpki.validator3.domain.IgnoreFilter ignoreFilter) {
-        return ApiResponse.<IgnoreFilter>builder().data(toIgnoreFilter(ignoreFilter)).build();
+    private ApiResponse<IgnoreFilter> ignoreFilterResource(IgnoreFilter ignoreFilter) {
+        return ApiResponse.<IgnoreFilter>builder().data(ignoreFilter).build();
     }
 }

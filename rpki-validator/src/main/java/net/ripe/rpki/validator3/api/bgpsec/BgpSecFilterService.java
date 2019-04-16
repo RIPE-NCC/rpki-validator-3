@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.rpki.validator3.api.slurm.SlurmStore;
 import net.ripe.rpki.validator3.api.slurm.dtos.SlurmBgpSecFilter;
-import net.ripe.rpki.validator3.domain.BgpSecFilter;
+import net.ripe.rpki.validator3.api.slurm.entities_tmp.BgpSecFilter;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -59,7 +59,7 @@ public class BgpSecFilterService {
         final long id = slurmStore.nextId();
         return slurmStore.updateWith(slurmExt -> {
             final SlurmBgpSecFilter slurmBgpSecFilter = new SlurmBgpSecFilter();
-            slurmBgpSecFilter.setAsn(command.getAsn());
+            slurmBgpSecFilter.setAsn(Asn.parse(command.getAsn()));
             slurmBgpSecFilter.setSki(command.getSki());
             slurmBgpSecFilter.setComment(command.getComment());
             slurmExt.getBgpsecFilters().put(id, slurmBgpSecFilter);
@@ -76,7 +76,7 @@ public class BgpSecFilterService {
     public Stream<BgpSecFilter> all() {
         return slurmStore.read().getBgpsecFilters()
                 .values().stream()
-                .map(v -> new BgpSecFilter(Asn.parse(v.getAsn()).longValue(), v.getSki(), v.getComment()));
+                .map(v -> new BgpSecFilter(v.getAsn().longValue(), v.getSki(), v.getComment()));
     }
 
     public void clear() {

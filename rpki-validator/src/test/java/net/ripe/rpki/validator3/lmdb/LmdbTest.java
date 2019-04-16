@@ -44,7 +44,11 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.jsoniter.JsonIterator;
+import com.jsoniter.any.Any;
 import com.jsoniter.output.JsonStream;
+import com.jsoniter.output.ReflectionEncoderFactory;
+import com.jsoniter.spi.Encoder;
+import com.jsoniter.spi.JsoniterSpi;
 import de.undercouch.bson4jackson.BsonFactory;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -147,17 +151,11 @@ public class LmdbTest {
                     final ByteBufferOutput bbo = new ByteBufferOutput(1024*1024);
                     Bla bla = generateBla();
                     kryo.writeObject(bbo, bla);
-                    byte[] bytes = bbo.toBytes();
-                    ByteBuffer bb = allocateDirect(bytes.length);
-                    bb.put(bytes).flip();
-                    return bb;
+                    return Bytes.toDirectBuffer(bbo.toBytes());
                 },
                 (p, k) -> {
-                    ByteBuffer buffer = p.getLeft().get(p.getRight(), k);
-                    byte[] data = new byte[buffer.remaining()];
-                    buffer.get(data);
-                    Bla bla = kryo.readObject(new Input(data), Bla.class);
-                    return bla;
+                    ByteBuffer bb = p.getLeft().get(p.getRight(), k);
+                    return kryo.readObject(new Input(Bytes.toBytes(bb)), Bla.class);
                 }
         );
     }
@@ -191,16 +189,11 @@ public class LmdbTest {
                 k -> {
                     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
                     JsonStream.serialize(generateBla(), bos);
-                    byte[] bytes = bos.toByteArray();
-                    ByteBuffer bb = allocateDirect(bytes.length);
-                    bb.put(bytes).flip();
-                    return bb;
+                    return Bytes.toDirectBuffer(bos.toByteArray());
                 },
                 (p, k) -> {
-                    ByteBuffer buffer = p.getLeft().get(p.getRight(), k);
-                    byte[] data = new byte[buffer.remaining()];
-                    buffer.get(data);
-                    return JsonIterator.deserialize(data).as(Bla.class);
+                    ByteBuffer bb = p.getLeft().get(p.getRight(), k);
+                    return JsonIterator.deserialize(Bytes.toBytes(bb)).as(Bla.class);
                 }
         );
     }

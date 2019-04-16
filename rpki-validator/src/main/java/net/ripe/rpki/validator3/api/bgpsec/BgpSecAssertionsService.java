@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.rpki.validator3.api.slurm.SlurmStore;
 import net.ripe.rpki.validator3.api.slurm.dtos.SlurmBgpSecAssertion;
-import net.ripe.rpki.validator3.domain.BgpSecAssertion;
+import net.ripe.rpki.validator3.api.slurm.entities_tmp.BgpSecAssertion;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -53,7 +53,7 @@ public class BgpSecAssertionsService {
         final long id = slurmStore.nextId();
         return slurmStore.updateWith(slurmExt -> {
             final SlurmBgpSecAssertion slurmBgpSecAssertion = new SlurmBgpSecAssertion();
-            slurmBgpSecAssertion.setAsn(command.getAsn());
+            slurmBgpSecAssertion.setAsn(Asn.parse(command.getAsn()));
             slurmBgpSecAssertion.setPublicKey(command.getPublicKey());
             slurmBgpSecAssertion.setSki(command.getSki());
             slurmBgpSecAssertion.setComment(command.getComment());
@@ -71,7 +71,7 @@ public class BgpSecAssertionsService {
     public Stream<BgpSecAssertion> all() {
         return slurmStore.read().getBgpsecAssertions()
                 .values().stream()
-                .map(v -> new BgpSecAssertion(Asn.parse(v.getAsn()).longValue(), v.getSki(), v.getPublicKey(), v.getComment()));
+                .map(v -> new BgpSecAssertion(v.getAsn().longValue(), v.getSki(), v.getPublicKey(), v.getComment()));
     }
 
     public void clear() {

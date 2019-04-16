@@ -33,7 +33,7 @@ import com.querydsl.jpa.impl.JPAQuery;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
-import net.ripe.rpki.validator3.domain.BgpSecFilter;
+import net.ripe.rpki.validator3.api.slurm.entities_tmp.BgpSecFilter;
 import net.ripe.rpki.validator3.domain.BgpSecFilters;
 import org.springframework.stereotype.Repository;
 
