@@ -29,7 +29,7 @@
  */
 package net.ripe.rpki.validator3.api.slurm.dtos;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -71,7 +71,7 @@ public class Slurm {
     public static class SlurmBgpSecAssertion {
         private Asn asn;
         private String comment;
-        @JsonProperty("SKI")
+        @SerializedName("SKI")
         private String ski;
         private String publicKey;
     }
@@ -81,7 +81,7 @@ public class Slurm {
     @NoArgsConstructor
     public static class SlurmBgpSecFilter {
         private Asn asn;
-        @JsonProperty("SKI")
+        @SerializedName("SKI")
         private String ski;
         private String comment;
     }

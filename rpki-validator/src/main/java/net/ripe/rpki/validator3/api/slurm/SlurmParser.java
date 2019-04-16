@@ -29,13 +29,11 @@
  */
 package net.ripe.rpki.validator3.api.slurm;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
-
-import java.io.IOException;
+import net.ripe.rpki.validator3.storage.encoding.GsonCoder;
 
 public class SlurmParser {
-    public static Slurm parse(String slurm) throws IOException {
-        return new ObjectMapper().readValue(slurm, Slurm.class);
+    public static Slurm parse(String slurm) {
+        return GsonCoder.getPrettyGson().fromJson(slurm, Slurm.class);
     }
 }
