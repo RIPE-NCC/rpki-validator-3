@@ -32,7 +32,7 @@ package net.ripe.rpki.validator3.domain;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
-import net.ripe.rpki.validator3.api.slurm.entities_tmp.BgpSecFilter;
+import net.ripe.rpki.validator3.api.bgpsec.BgpSecFilter;
 
 import java.util.stream.Stream;
 

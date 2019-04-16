@@ -32,8 +32,7 @@ package net.ripe.rpki.validator3.api.bgpsec;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.rpki.validator3.api.slurm.SlurmStore;
-import net.ripe.rpki.validator3.api.slurm.dtos.SlurmBgpSecAssertion;
-import net.ripe.rpki.validator3.api.slurm.entities_tmp.BgpSecAssertion;
+import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -52,7 +51,7 @@ public class BgpSecAssertionsService {
     public long execute(@Valid AddBgpSecAssertion command) {
         final long id = slurmStore.nextId();
         return slurmStore.updateWith(slurmExt -> {
-            final SlurmBgpSecAssertion slurmBgpSecAssertion = new SlurmBgpSecAssertion();
+            final Slurm.SlurmBgpSecAssertion slurmBgpSecAssertion = new Slurm.SlurmBgpSecAssertion();
             slurmBgpSecAssertion.setAsn(Asn.parse(command.getAsn()));
             slurmBgpSecAssertion.setPublicKey(command.getPublicKey());
             slurmBgpSecAssertion.setSki(command.getSki());

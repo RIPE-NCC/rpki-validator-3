@@ -29,7 +29,12 @@
  */
 package net.ripe.rpki.validator3.api.slurm.dtos;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import net.ripe.ipresource.Asn;
+import net.ripe.ipresource.IpRange;
 
 import java.util.List;
 
@@ -42,4 +47,63 @@ public class Slurm {
     private SlurmOutputFilters validationOutputFilters;
 
     private SlurmLocallyAddedAssertions locallyAddedAssertions;
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class SlurmOutputFilters {
+        private List<SlurmPrefixFilter> prefixFilters;
+        private List<SlurmBgpSecFilter> bgpsecFilters;
+
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class SlurmLocallyAddedAssertions {
+        private List<SlurmPrefixAssertion> prefixAssertions;
+        private List<SlurmBgpSecAssertion> bgpsecAssertions;
+    }
+
+    @Data
+    public static class SlurmBgpSecAssertion {
+        private Asn asn;
+        private String comment;
+        @JsonProperty("SKI")
+        private String ski;
+        private String publicKey;
+    }
+
+    @Data
+    public static class SlurmBgpSecFilter {
+        private Asn asn;
+        @JsonProperty("SKI")
+        private String ski;
+        private String comment;
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class SlurmPrefixAssertion {
+        private Asn asn;
+        private IpRange prefix;
+        private Integer maxPrefixLength;
+        private String comment;
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class SlurmPrefixFilter {
+        Asn asn;
+        IpRange prefix;
+        String comment;
+    }
+
+    @Data
+    static class SlurmTarget {
+        private Long asn;
+        private String hostname;
+    }
 }

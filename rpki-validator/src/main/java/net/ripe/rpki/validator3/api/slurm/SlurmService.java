@@ -36,12 +36,6 @@ import net.ripe.rpki.validator3.api.bgpsec.BgpSecFilterService;
 import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
 import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionsService;
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
-import net.ripe.rpki.validator3.api.slurm.dtos.SlurmBgpSecAssertion;
-import net.ripe.rpki.validator3.api.slurm.dtos.SlurmBgpSecFilter;
-import net.ripe.rpki.validator3.api.slurm.dtos.SlurmLocallyAddedAssertions;
-import net.ripe.rpki.validator3.api.slurm.dtos.SlurmOutputFilters;
-import net.ripe.rpki.validator3.api.slurm.dtos.SlurmPrefixAssertion;
-import net.ripe.rpki.validator3.api.slurm.dtos.SlurmPrefixFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -81,18 +75,18 @@ public class SlurmService {
     public Slurm getFromDatabase() {
         final Slurm slurm = new Slurm();
 
-        final SlurmLocallyAddedAssertions slurmLocallyAddedAssertions = new SlurmLocallyAddedAssertions();
+        final Slurm.SlurmLocallyAddedAssertions slurmLocallyAddedAssertions = new Slurm.SlurmLocallyAddedAssertions();
         slurmLocallyAddedAssertions.setPrefixAssertions(roaPrefixAssertionsService.all().map(a -> {
-            final SlurmPrefixAssertion prefixAssertion = new SlurmPrefixAssertion();
-            prefixAssertion.setAsn(new Asn(a.getAsn()));
-            prefixAssertion.setPrefix(IpRange.parse(a.getPrefix()));
-            prefixAssertion.setMaxPrefixLength(a.getMaximumLength());
+            final Slurm.SlurmPrefixAssertion prefixAssertion = new Slurm.SlurmPrefixAssertion();
+            prefixAssertion.setAsn(a.getAsn());
+            prefixAssertion.setPrefix(a.getPrefix());
+            prefixAssertion.setMaxPrefixLength(a.getMaxPrefixLength());
             prefixAssertion.setComment(a.getComment());
             return prefixAssertion;
         }).collect(Collectors.toList()));
 
         slurmLocallyAddedAssertions.setBgpsecAssertions(bgpSecAssertionsService.all().map(a -> {
-            final SlurmBgpSecAssertion bgpSecAssertion = new SlurmBgpSecAssertion();
+            final Slurm.SlurmBgpSecAssertion bgpSecAssertion = new Slurm.SlurmBgpSecAssertion();
             bgpSecAssertion.setAsn(new Asn(a.getAsn()));
             bgpSecAssertion.setSki(a.getSki());
             bgpSecAssertion.setPublicKey(a.getPublicKey());
@@ -102,9 +96,9 @@ public class SlurmService {
 
         slurm.setLocallyAddedAssertions(slurmLocallyAddedAssertions);
 
-        final SlurmOutputFilters filters = new SlurmOutputFilters();
+        final Slurm.SlurmOutputFilters filters = new Slurm.SlurmOutputFilters();
         filters.setPrefixFilters(ignoreFilterService.all().map(f -> {
-            final SlurmPrefixFilter prefixFilter = new SlurmPrefixFilter();
+            final Slurm.SlurmPrefixFilter prefixFilter = new Slurm.SlurmPrefixFilter();
             prefixFilter.setAsn(f.getAsn());
             prefixFilter.setPrefix(f.getPrefix());
             prefixFilter.setComment(f.getComment());
@@ -112,7 +106,7 @@ public class SlurmService {
         }).collect(Collectors.toList()));
 
         filters.setBgpsecFilters(bgpSecFilterService.all().map(f -> {
-            final SlurmBgpSecFilter bgpSecFilter = new SlurmBgpSecFilter();
+            final Slurm.SlurmBgpSecFilter bgpSecFilter = new Slurm.SlurmBgpSecFilter();
             bgpSecFilter.setAsn(new Asn(f.getAsn()));
             bgpSecFilter.setSki(f.getSki());
             bgpSecFilter.setComment(f.getComment());

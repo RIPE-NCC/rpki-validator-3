@@ -36,7 +36,7 @@ import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.api.slurm.SlurmStore;
-import net.ripe.rpki.validator3.api.slurm.dtos.SlurmPrefixAssertion;
+import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 import net.ripe.rpki.validator3.util.Transactions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -70,7 +70,7 @@ public class RoaPrefixAssertionsService {
 
     public long execute(@Valid AddRoaPrefixAssertion command) {
         return slurmStore.updateWith(slurmExt -> {
-            final SlurmPrefixAssertion prefixAssertion = new SlurmPrefixAssertion();
+            final Slurm.SlurmPrefixAssertion prefixAssertion = new Slurm.SlurmPrefixAssertion();
             prefixAssertion.setAsn(Asn.parse(command.getAsn()));
             prefixAssertion.setPrefix(IpRange.parse(command.getPrefix()));
             prefixAssertion.setComment(command.getComment());
@@ -127,7 +127,7 @@ public class RoaPrefixAssertionsService {
     }
 
     public Stream<RoaPrefixAssertion> find(SearchTerm searchTerm, Sorting sorting, Paging paging) {
-        Stream<Map.Entry<Long, SlurmPrefixAssertion>> all = slurmStore.read().getPrefixAssertions().entrySet().stream();
+        Stream<Map.Entry<Long, Slurm.SlurmPrefixAssertion>> all = slurmStore.read().getPrefixAssertions().entrySet().stream();
         all = applySearch(searchTerm, all).sorted(toOrderSpecifier(sorting));
         if (paging != null) {
             all = paging.apply(all);
@@ -135,11 +135,11 @@ public class RoaPrefixAssertionsService {
         return all.map(e -> makeIgnoreFilter(e.getKey(), e.getValue()));
     }
 
-    private RoaPrefixAssertion makeIgnoreFilter(Long id, SlurmPrefixAssertion value) {
+    private RoaPrefixAssertion makeIgnoreFilter(Long id, Slurm.SlurmPrefixAssertion value) {
         return new RoaPrefixAssertion(id, value.getAsn(), value.getPrefix(), value.getMaxPrefixLength(), value.getComment());
     }
 
-    public Stream<Map.Entry<Long, SlurmPrefixAssertion>> applySearch(SearchTerm searchTerm, Stream<Map.Entry<Long, SlurmPrefixAssertion>> all) {
+    public Stream<Map.Entry<Long, Slurm.SlurmPrefixAssertion>> applySearch(SearchTerm searchTerm, Stream<Map.Entry<Long, Slurm.SlurmPrefixAssertion>> all) {
         if (searchTerm != null) {
             if (searchTerm.asAsn() != null) {
                 all = all.filter(pf -> pf.getValue().getAsn().longValue() == searchTerm.asAsn().longValue());
@@ -157,18 +157,18 @@ public class RoaPrefixAssertionsService {
     }
 
     public RoaPrefixAssertion get(long id) {
-        final SlurmPrefixAssertion prefixAssertion = slurmStore.read().getPrefixAssertions().get(id);
+        final Slurm.SlurmPrefixAssertion prefixAssertion = slurmStore.read().getPrefixAssertions().get(id);
         if (prefixAssertion == null) {
             return null;
         }
         return makeIgnoreFilter(id, prefixAssertion);
     }
 
-    private Comparator<Map.Entry<Long, SlurmPrefixAssertion>> toOrderSpecifier(Sorting sorting) {
+    private Comparator<Map.Entry<Long, Slurm.SlurmPrefixAssertion>> toOrderSpecifier(Sorting sorting) {
         if (sorting == null) {
             sorting = Sorting.of(Sorting.By.ASN, Sorting.Direction.ASC);
         }
-        Comparator<Map.Entry<Long, SlurmPrefixAssertion>> comparator;
+        Comparator<Map.Entry<Long, Slurm.SlurmPrefixAssertion>> comparator;
         switch (sorting.getBy()) {
             case PREFIX:
                 comparator = Comparator.comparing(e -> e.getValue().getPrefix());

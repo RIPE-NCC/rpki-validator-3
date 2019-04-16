@@ -32,8 +32,7 @@ package net.ripe.rpki.validator3.api.bgpsec;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.rpki.validator3.api.slurm.SlurmStore;
-import net.ripe.rpki.validator3.api.slurm.dtos.SlurmBgpSecFilter;
-import net.ripe.rpki.validator3.api.slurm.entities_tmp.BgpSecFilter;
+import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -58,7 +57,7 @@ public class BgpSecFilterService {
     public long execute(@Valid AddBgpSecFilter command) {
         final long id = slurmStore.nextId();
         return slurmStore.updateWith(slurmExt -> {
-            final SlurmBgpSecFilter slurmBgpSecFilter = new SlurmBgpSecFilter();
+            final Slurm.SlurmBgpSecFilter slurmBgpSecFilter = new Slurm.SlurmBgpSecFilter();
             slurmBgpSecFilter.setAsn(Asn.parse(command.getAsn()));
             slurmBgpSecFilter.setSki(command.getSki());
             slurmBgpSecFilter.setComment(command.getComment());

@@ -45,22 +45,22 @@ import java.util.stream.Collectors;
  */
 @Data
 public class SlurmExt {
-    private List<SlurmTarget> slurmTarget = new ArrayList<>();
+    private List<Slurm.SlurmTarget> slurmTarget = new ArrayList<>();
 
-    private Map<Long, SlurmPrefixFilter> prefixFilters = new HashMap<>();
+    private Map<Long, Slurm.SlurmPrefixFilter> prefixFilters = new HashMap<>();
 
-    private Map<Long, SlurmBgpSecFilter> bgpsecFilters = new HashMap<>();
+    private Map<Long, Slurm.SlurmBgpSecFilter> bgpsecFilters = new HashMap<>();
 
-    private Map<Long, SlurmPrefixAssertion> prefixAssertions = new HashMap<>();
+    private Map<Long, Slurm.SlurmPrefixAssertion> prefixAssertions = new HashMap<>();
 
-    private Map<Long, SlurmBgpSecAssertion> bgpsecAssertions = new HashMap<>();
+    private Map<Long, Slurm.SlurmBgpSecAssertion> bgpsecAssertions = new HashMap<>();
 
     public Slurm toSlurm() {
         Slurm slurm = new Slurm();
-        slurm.setLocallyAddedAssertions(new SlurmLocallyAddedAssertions(
+        slurm.setLocallyAddedAssertions(new Slurm.SlurmLocallyAddedAssertions(
                 extract(prefixAssertions, slurmPrefixAssertionComparator),
                 extract(bgpsecAssertions, slurmBgpSecAssertionComparator)));
-        slurm.setValidationOutputFilters(new SlurmOutputFilters(
+        slurm.setValidationOutputFilters(new Slurm.SlurmOutputFilters(
                 extract(prefixFilters, slurmPrefixFilterComparator),
                 extract(bgpsecFilters, slurmBgpSecFilterComparator)));
         slurm.setSlurmTarget(slurmTarget);
@@ -78,23 +78,23 @@ public class SlurmExt {
                 .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
     }
 
-    private static Comparator<SlurmPrefixFilter> slurmPrefixFilterComparator =
-            Comparator.comparing(SlurmPrefixFilter::getAsn)
-                    .thenComparing(SlurmPrefixFilter::getPrefix);
+    private static Comparator<Slurm.SlurmPrefixFilter> slurmPrefixFilterComparator =
+            Comparator.comparing(Slurm.SlurmPrefixFilter::getAsn)
+                    .thenComparing(Slurm.SlurmPrefixFilter::getPrefix);
 
-    private static Comparator<SlurmBgpSecFilter> slurmBgpSecFilterComparator =
-            Comparator.comparing(SlurmBgpSecFilter::getAsn)
-                    .thenComparing(SlurmBgpSecFilter::getSki);
+    private static Comparator<Slurm.SlurmBgpSecFilter> slurmBgpSecFilterComparator =
+            Comparator.comparing(Slurm.SlurmBgpSecFilter::getAsn)
+                    .thenComparing(Slurm.SlurmBgpSecFilter::getSki);
 
-    private static Comparator<SlurmPrefixAssertion> slurmPrefixAssertionComparator =
-            Comparator.comparing(SlurmPrefixAssertion::getAsn)
-                    .thenComparing(SlurmPrefixAssertion::getPrefix)
-                    .thenComparing(SlurmPrefixAssertion::getMaxPrefixLength);
+    private static Comparator<Slurm.SlurmPrefixAssertion> slurmPrefixAssertionComparator =
+            Comparator.comparing(Slurm.SlurmPrefixAssertion::getAsn)
+                    .thenComparing(Slurm.SlurmPrefixAssertion::getPrefix)
+                    .thenComparing(Slurm.SlurmPrefixAssertion::getMaxPrefixLength);
 
-    private static Comparator<SlurmBgpSecAssertion> slurmBgpSecAssertionComparator =
-            Comparator.comparing(SlurmBgpSecAssertion::getAsn)
-                    .thenComparing(SlurmBgpSecAssertion::getPublicKey)
-                    .thenComparing(SlurmBgpSecAssertion::getSki);
+    private static Comparator<Slurm.SlurmBgpSecAssertion> slurmBgpSecAssertionComparator =
+            Comparator.comparing(Slurm.SlurmBgpSecAssertion::getAsn)
+                    .thenComparing(Slurm.SlurmBgpSecAssertion::getPublicKey)
+                    .thenComparing(Slurm.SlurmBgpSecAssertion::getSki);
 
     public static SlurmExt fromSlurm(Slurm slurm, AtomicLong idSeq) {
         final SlurmExt slurmExt = new SlurmExt();

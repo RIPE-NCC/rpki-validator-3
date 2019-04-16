@@ -32,7 +32,6 @@ package net.ripe.rpki.validator3.api.bgpsec;
 import com.google.common.collect.ImmutableList;
 import net.ripe.ipresource.Asn;
 import net.ripe.rpki.validator3.IntegrationTest;
-import net.ripe.rpki.validator3.api.slurm.entities_tmp.BgpSecFilter;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import org.junit.Test;
 import org.junit.runner.RunWith;

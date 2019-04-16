@@ -30,16 +30,15 @@
 package net.ripe.rpki.validator3.api.ignorefilters;
 
 import lombok.Getter;
-import lombok.Setter;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.api.roas.ObjectController;
-import net.ripe.rpki.validator3.api.slurm.dtos.SlurmPrefixFilter;
+import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 
 import java.util.stream.Stream;
 
 
-public class IgnoreFilter extends SlurmPrefixFilter {
+public class IgnoreFilter extends Slurm.SlurmPrefixFilter {
     @Getter
     private long id;
 

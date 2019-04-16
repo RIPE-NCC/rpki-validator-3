@@ -36,8 +36,8 @@ import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.api.slurm.SlurmStore;
+import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 import net.ripe.rpki.validator3.api.slurm.dtos.SlurmExt;
-import net.ripe.rpki.validator3.api.slurm.dtos.SlurmPrefixFilter;
 import net.ripe.rpki.validator3.util.Transactions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -71,7 +71,7 @@ public class IgnoreFilterService {
 
     public long execute(@Valid AddIgnoreFilter command) {
         return slurmStore.updateWith(slurmExt -> {
-            final SlurmPrefixFilter ignoreFilter = new SlurmPrefixFilter();
+            final Slurm.SlurmPrefixFilter ignoreFilter = new Slurm.SlurmPrefixFilter();
             ignoreFilter.setAsn(Asn.parse(command.getAsn()));
             ignoreFilter.setPrefix(IpRange.parse(command.getPrefix()));
             ignoreFilter.setComment(command.getComment());
@@ -124,7 +124,7 @@ public class IgnoreFilterService {
     }
 
     public Stream<IgnoreFilter> find(SearchTerm searchTerm, Sorting sorting, Paging paging) {
-        Stream<Map.Entry<Long, SlurmPrefixFilter>> all = slurmStore.read().getPrefixFilters().entrySet().stream();
+        Stream<Map.Entry<Long, Slurm.SlurmPrefixFilter>> all = slurmStore.read().getPrefixFilters().entrySet().stream();
         all = applySearch(searchTerm, all).sorted(toOrderSpecifier(sorting));
         if (paging != null) {
             all = paging.apply(all);
@@ -132,11 +132,11 @@ public class IgnoreFilterService {
         return all.map(e -> makeIgnoreFilter(e.getKey(), e.getValue()));
     }
 
-    private IgnoreFilter makeIgnoreFilter(Long id, SlurmPrefixFilter value) {
+    private IgnoreFilter makeIgnoreFilter(Long id, Slurm.SlurmPrefixFilter value) {
         return new IgnoreFilter(id, value.getAsn(), value.getPrefix(), value.getComment());
     }
 
-    public Stream<Map.Entry<Long, SlurmPrefixFilter>> applySearch(SearchTerm searchTerm, Stream<Map.Entry<Long, SlurmPrefixFilter>> all) {
+    public Stream<Map.Entry<Long, Slurm.SlurmPrefixFilter>> applySearch(SearchTerm searchTerm, Stream<Map.Entry<Long, Slurm.SlurmPrefixFilter>> all) {
         if (searchTerm != null) {
             if (searchTerm.asAsn() != null) {
                 all = all.filter(pf -> pf.getValue().getAsn().longValue() == searchTerm.asAsn().longValue());
@@ -154,18 +154,18 @@ public class IgnoreFilterService {
     }
 
     public IgnoreFilter get(long id) {
-        final SlurmPrefixFilter slurmPrefixFilter = slurmStore.read().getPrefixFilters().get(id);
+        final Slurm.SlurmPrefixFilter slurmPrefixFilter = slurmStore.read().getPrefixFilters().get(id);
         if (slurmPrefixFilter == null) {
             return null;
         }
         return makeIgnoreFilter(id, slurmPrefixFilter);
     }
 
-    private Comparator<Map.Entry<Long, SlurmPrefixFilter>> toOrderSpecifier(Sorting sorting) {
+    private Comparator<Map.Entry<Long, Slurm.SlurmPrefixFilter>> toOrderSpecifier(Sorting sorting) {
         if (sorting == null) {
             sorting = Sorting.of(Sorting.By.ASN, Sorting.Direction.ASC);
         }
-        Comparator<Map.Entry<Long, SlurmPrefixFilter>> comparator;
+        Comparator<Map.Entry<Long, Slurm.SlurmPrefixFilter>> comparator;
         switch (sorting.getBy()) {
             case PREFIX:
                 comparator = Comparator.comparing(e -> e.getValue().getPrefix());

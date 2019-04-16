@@ -27,18 +27,38 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.api.slurm.dtos;
+package net.ripe.rpki.validator3.api.bgpsec;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+import net.ripe.rpki.validator3.domain.AbstractEntity;
 
-import java.util.List;
+import javax.persistence.Basic;
+import javax.persistence.Entity;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class SlurmLocallyAddedAssertions {
-    private List<SlurmPrefixAssertion> prefixAssertions;
-    private List<SlurmBgpSecAssertion> bgpsecAssertions;
+@Entity
+public class BgpSecFilter extends AbstractEntity {
+    @Basic
+    @Getter
+    @Setter
+    private Long asn;
+
+    @Basic
+    @Getter
+    @Setter
+    private String ski;
+
+    @Basic
+    @Getter
+    @Setter
+    private String comment;
+
+    public BgpSecFilter() {
+    }
+
+    public BgpSecFilter(Long asn, String ski, String comment) {
+        this.asn = asn;
+        this.ski = ski;
+        this.comment = comment;
+    }
 }

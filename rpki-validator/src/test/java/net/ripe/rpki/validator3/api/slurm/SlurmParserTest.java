@@ -30,10 +30,6 @@
 package net.ripe.rpki.validator3.api.slurm;
 
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
-import net.ripe.rpki.validator3.api.slurm.dtos.SlurmBgpSecAssertion;
-import net.ripe.rpki.validator3.api.slurm.dtos.SlurmBgpSecFilter;
-import net.ripe.rpki.validator3.api.slurm.dtos.SlurmPrefixAssertion;
-import net.ripe.rpki.validator3.api.slurm.dtos.SlurmPrefixFilter;
 import org.junit.Test;
 
 import java.io.BufferedReader;
@@ -52,14 +48,14 @@ public class SlurmParserTest {
     public void parse() throws IOException {
         final Slurm slurm = SlurmParser.parse(read("slurm/slurm1.json"));
 
-        final List<SlurmPrefixFilter> prefixFilters = slurm.getValidationOutputFilters().getPrefixFilters();
+        final List<Slurm.SlurmPrefixFilter> prefixFilters = slurm.getValidationOutputFilters().getPrefixFilters();
         assertEquals(null, prefixFilters.get(0).getAsn());
         assertEquals("64496", prefixFilters.get(1).getAsn());
         assertEquals("64497", prefixFilters.get(2).getAsn());
         assertEquals("198.51.100.0/24", prefixFilters.get(2).getPrefix());
         assertEquals("All VRPs encompassed by prefix, matching ASN", prefixFilters.get(2).getComment());
 
-        final List<SlurmBgpSecFilter> bgpsecFilters = slurm.getValidationOutputFilters().getBgpsecFilters();
+        final List<Slurm.SlurmBgpSecFilter> bgpsecFilters = slurm.getValidationOutputFilters().getBgpsecFilters();
         assertEquals("64496", bgpsecFilters.get(0).getAsn());
         assertEquals(null, bgpsecFilters.get(1).getAsn());
         assertEquals("Zm9v", bgpsecFilters.get(1).getSki());
@@ -67,7 +63,7 @@ public class SlurmParserTest {
         assertEquals("YmFy", bgpsecFilters.get(2).getSki());
         assertEquals("Key for ASN 64497 matching Router SKI", bgpsecFilters.get(2).getComment());
 
-        final List<SlurmPrefixAssertion> prefixAssertions = slurm.getLocallyAddedAssertions().getPrefixAssertions();
+        final List<Slurm.SlurmPrefixAssertion> prefixAssertions = slurm.getLocallyAddedAssertions().getPrefixAssertions();
         assertEquals("64496", prefixAssertions.get(0).getAsn());
         assertEquals("198.51.100.0/24", prefixAssertions.get(0).getPrefix());
         assertEquals("My other important route", prefixAssertions.get(0).getComment());
@@ -77,7 +73,7 @@ public class SlurmParserTest {
         assertEquals(new Integer(48), prefixAssertions.get(1).getMaxPrefixLength());
         assertEquals("My other important de-aggregated routes", prefixAssertions.get(1).getComment());
 
-        final List<SlurmBgpSecAssertion> bgpsecAssertions = slurm.getLocallyAddedAssertions().getBgpsecAssertions();
+        final List<Slurm.SlurmBgpSecAssertion> bgpsecAssertions = slurm.getLocallyAddedAssertions().getBgpsecAssertions();
         assertEquals("64496", bgpsecAssertions.get(0).getAsn());
         assertEquals("<some base64 SKI>", bgpsecAssertions.get(0).getSki());
         assertEquals("<some base64 public key>", bgpsecAssertions.get(0).getPublicKey());

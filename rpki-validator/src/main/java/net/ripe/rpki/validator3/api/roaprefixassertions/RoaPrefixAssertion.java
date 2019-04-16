@@ -32,13 +32,13 @@ package net.ripe.rpki.validator3.api.roaprefixassertions;
 import lombok.Getter;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
-import net.ripe.rpki.validator3.api.slurm.dtos.SlurmPrefixAssertion;
+import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.Size;
 
-public class RoaPrefixAssertion extends SlurmPrefixAssertion {
+public class RoaPrefixAssertion extends Slurm.SlurmPrefixAssertion {
 
     @Getter
     private Long id;

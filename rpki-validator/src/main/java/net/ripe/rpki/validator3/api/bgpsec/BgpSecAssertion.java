@@ -27,38 +27,49 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.api.slurm.entities_tmp;
+package net.ripe.rpki.validator3.api.bgpsec;
 
 import lombok.Getter;
 import lombok.Setter;
+import net.ripe.ipresource.Asn;
+import net.ripe.ipresource.IpRange;
+import net.ripe.ipresource.IpResourceType;
 import net.ripe.rpki.validator3.domain.AbstractEntity;
 
 import javax.persistence.Basic;
 import javax.persistence.Entity;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+import java.math.BigDecimal;
 
 @Entity
-public class BgpSecFilter extends AbstractEntity {
+public class BgpSecAssertion extends AbstractEntity {
     @Basic
     @Getter
-    @Setter
-    private Long asn;
+    private long asn;
 
     @Basic
     @Getter
-    @Setter
     private String ski;
 
     @Basic
     @Getter
-    @Setter
+    private String publicKey;
+
+    @Basic
+    @Getter
     private String comment;
 
-    public BgpSecFilter() {
+    public BgpSecAssertion() {
     }
 
-    public BgpSecFilter(Long asn, String ski, String comment) {
+    public BgpSecAssertion(long asn, String ski, String publicKey, String comment) {
         this.asn = asn;
         this.ski = ski;
+        this.publicKey = publicKey;
         this.comment = comment;
     }
 }
