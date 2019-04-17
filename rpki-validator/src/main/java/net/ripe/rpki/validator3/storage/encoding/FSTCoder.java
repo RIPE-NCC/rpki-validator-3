@@ -33,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.storage.Binary;
 import net.ripe.rpki.validator3.storage.Bytes;
 import org.nustaq.serialization.simpleapi.DefaultCoder;
+import org.nustaq.serialization.simpleapi.MinBinCoder;
 import org.reflections.Reflections;
 import org.springframework.stereotype.Component;
 
@@ -49,7 +50,7 @@ public class FSTCoder<T> implements Coder<T> {
 
     public FSTCoder() {
         final Class[] registered = getRegisteredClasses();
-        coder = ThreadLocal.withInitial(() -> new DefaultCoder(true, registered));
+        coder = ThreadLocal.withInitial(() -> new MinBinCoder(true, registered));
     }
 
     private static Class[] registeredClasses = null;
