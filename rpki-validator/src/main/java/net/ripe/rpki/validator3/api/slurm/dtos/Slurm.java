@@ -54,7 +54,6 @@ public class Slurm {
     public static class SlurmOutputFilters {
         private List<SlurmPrefixFilter> prefixFilters;
         private List<SlurmBgpSecFilter> bgpsecFilters;
-
     }
 
     @Data
