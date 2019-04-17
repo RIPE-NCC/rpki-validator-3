@@ -79,6 +79,8 @@ public class TrustAnchorValidationService {
     private final RpkiRepositoryValidationService repositoryValidationService;
     private final Lmdb lmdb;
 
+    private boolean firstTimeEver = true;
+
     @Autowired
     public TrustAnchorValidationService(
             TrustAnchorStore trustAnchorStore,
@@ -149,7 +151,10 @@ public class TrustAnchorValidationService {
             }
 
             validationRun.completeWith(validationResult);
-//            if (updatedTrustAnchor) {
+            if (firstTimeEver || updatedTrustAnchor) {
+                if (updatedTrustAnchor) {
+                    lmdb.writeTx0(tx -> trustAnchorStore.update(tx, trustAnchor));
+                }
                 final Set<TrustAnchor> affectedTrustAnchors = Sets.newHashSet(trustAnchor);
                 if (trustAnchor.getRsyncPrefetchUri() != null) {
                     lmdb.readTx(tx ->
@@ -158,19 +163,14 @@ public class TrustAnchorValidationService {
                                     affectedTrustAnchors.addAll(repositoryValidationService.prefetchRepository(r)));
                 }
                 affectedTrustAnchors.forEach(validationScheduler::triggerCertificateTreeValidation);
-//            }
+            }
         } catch (CommandExecutionException | IOException e) {
             log.error("validation run for trust anchor {} failed", trustAnchor, e);
             validationRun.addCheck(new ValidationCheck(validationRun.getTrustAnchorCertificateURI(), ValidationCheck.Status.ERROR, ErrorCodes.UNHANDLED_EXCEPTION, e.toString()));
             validationRun.setFailed();
         } finally {
-            final boolean finalUpdatedTrustAnchor = updatedTrustAnchor;
-            lmdb.writeTx0(tx -> {
-                if (finalUpdatedTrustAnchor) {
-                    trustAnchorStore.update(tx, trustAnchor);
-                }
-                validationRunStore.add(tx, validationRun);
-            });
+            firstTimeEver = false;
+            lmdb.writeTx0(tx -> validationRunStore.add(tx, validationRun));
         }
     }
 
