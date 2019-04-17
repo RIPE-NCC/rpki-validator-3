@@ -235,6 +235,7 @@ public class LmdbValidationRuns implements ValidationRunStore {
     @Override
     public Optional<CertificateTreeValidationRun> findLatestCaTreeValidationRun(Tx.Read tx, TrustAnchor trustAnchor) {
         return ctIxMap.getByIndex(BY_TA_INDEX, tx, trustAnchor.key()).values().stream()
+                .filter(vr -> vr.getCompletedAt() != null)
                 .max(Comparator.comparing(ValidationRun::getCompletedAt));
     }
 
