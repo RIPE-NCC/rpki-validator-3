@@ -29,7 +29,8 @@
  */
 package net.ripe.rpki.validator3.storage;
 
-import net.ripe.rpki.validator3.storage.encoding.BsonCoder;
+import lombok.Data;
+import lombok.Getter;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.encoding.FSTCoder;
 import net.ripe.rpki.validator3.storage.encoding.GsonCoder;
@@ -37,13 +38,21 @@ import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import org.lmdbjava.Env;
 
 import java.nio.ByteBuffer;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public abstract class Lmdb {
 
     public <T> T writeTx(Function<Tx.Write, T> f) {
         Tx.Write tx = Tx.write(getEnv());
+        txs.put(tx.getId(), new TxInfo(tx));
         try {
             final T result = f.apply(tx);
             tx.txn().commit();
@@ -60,6 +69,7 @@ public abstract class Lmdb {
             return result;
         } finally {
             tx.close();
+            txs.remove(tx.getId());
         }
     }
 
@@ -72,10 +82,12 @@ public abstract class Lmdb {
 
     public <T> T readTx(Function<Tx.Read, T> f) {
         Tx.Read tx = Tx.read(getEnv());
+        txs.put(tx.getId(), new TxInfo(tx));
         try {
             return f.apply(tx);
         } finally {
             tx.close();
+            txs.remove(tx.getId());
         }
     }
 
@@ -100,5 +112,28 @@ public abstract class Lmdb {
 
     public String status() {
         return getEnv().stat().toString();
+    }
+
+    @Getter
+    private final Map<Long, TxInfo> txs = new ConcurrentHashMap<>();
+
+    @Data
+    public static class TxInfo {
+        private Long txId;
+        private Long threadId;
+        private List<String> stackTrace;
+        private boolean writing;
+        private Instant startedAt;
+
+        public TxInfo(Tx tx) {
+            this.txId = tx.getId();
+            this.threadId = tx.getThreadId();
+            this.stackTrace = Stream.of(Thread.currentThread().getStackTrace())
+                    .skip(2)
+                    .map(StackTraceElement::toString)
+                    .collect(Collectors.toList());
+            this.writing = tx instanceof Tx.Write;
+            this.startedAt = Instant.now();
+        }
     }
 }
