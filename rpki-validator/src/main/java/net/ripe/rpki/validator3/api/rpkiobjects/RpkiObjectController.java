@@ -105,46 +105,48 @@ public class RpkiObjectController {
 
     @GetMapping(path = "/")
     public ResponseEntity<ApiResponse<Stream<RpkiObj>>> all() {
-        return lmdb.readTx(tx -> {
-            final List<CertificateTreeValidationRun> vrs = validationRuns.findLatestSuccessful(tx, CertificateTreeValidationRun.class);
+        List<RpkiObj> objects = lmdb.readTx(tx ->
+                validationRuns.findLatestSuccessful(tx, CertificateTreeValidationRun.class)
+                        .stream()
+                        .flatMap(vr -> {
+                            final Map<String, ValidationCheck> checkMap = vr.getValidationChecks().stream().collect(Collectors.toMap(
+                                    ValidationCheck::getLocation,
+                                    Function.identity(),
+                                    (a, b) -> {
+                                        if (a.getStatus() == ValidationCheck.Status.ERROR) {
+                                            return a;
+                                        }
+                                        if (b.getStatus() == ValidationCheck.Status.ERROR) {
+                                            return b;
+                                        }
+                                        // if both of them are warnings, it doesn't matter
+                                        return a;
+                                    }
+                            ));
 
-            final Stream<RpkiObj> rpkiObjStream = vrs.stream().flatMap(vr -> {
-                final Map<String, ValidationCheck> checkMap = vr.getValidationChecks().stream().collect(Collectors.toMap(
-                        ValidationCheck::getLocation,
-                        Function.identity(),
-                        (a, b) -> {
-                            if (a.getStatus() == ValidationCheck.Status.ERROR) {
-                                return a;
-                            }
-                            if (b.getStatus() == ValidationCheck.Status.ERROR) {
-                                return b;
-                            }
-                            // if both of them are warnings, it doesn't matter
-                            return a;
-                        }
-                ));
+                            return validationRuns.findAssociatedObjects(tx, vr).stream()
+                                    .map(k -> rpkiObjects.get(tx, k))
+                                    .filter(Optional::isPresent)
+                                    .map(Optional::get)
+                                    .map(ro -> {
+                                        final Optional<ValidationCheck> check = ro.getLocations()
+                                                .stream()
+                                                .map(checkMap::get)
+                                                .filter(Objects::nonNull)
+                                                .findFirst();
+                                        return Pair.of(ro, check);
+                                    });
 
-                return validationRuns.findAssociatedObjects(tx, vr).stream()
-                        .map(k -> rpkiObjects.get(tx, k))
-                        .filter(Optional::isPresent)
-                        .map(Optional::get)
-                        .map(ro -> {
-                            final Optional<ValidationCheck> check = ro.getLocations()
-                                    .stream()
-                                    .map(checkMap::get)
-                                    .filter(Objects::nonNull)
-                                    .findFirst();
-                            return Pair.of(ro, check);
-                        });
+                        })
+                        .sorted(Comparator.comparing(o -> location(o.getLeft())))
+                        .map(pair ->
+                                mapRpkiObject(pair.getLeft(), pair.getRight()
+                                        .map(c ->
+                                                ValidationResult.withLocation(c.getLocation()))))
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList()));
 
-            }).sorted(
-                    Comparator.comparing(o -> location(o.getLeft()))
-            ).map(pair ->
-                    mapRpkiObject(pair.getLeft(), pair.getRight().map(c -> ValidationResult.withLocation(c.getLocation())))
-            ).filter(Objects::nonNull);
-
-            return ResponseEntity.ok(ApiResponse.data(rpkiObjStream));
-        });
+        return ResponseEntity.ok(ApiResponse.data(objects.stream()));
     }
 
 
