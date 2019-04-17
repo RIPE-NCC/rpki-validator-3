@@ -51,7 +51,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
@@ -86,15 +88,16 @@ public class RpkiRepositoriesController {
         final Paging paging = Paging.of(startFrom, pageSize);
 
         return lmdb.readTx(tx -> {
-            final Stream<RpkiRepository> repositories = rpkiRepositories.findAll(tx,
-                    status, Key.of(taId), hideChildrenOfDownloadedParent, searchTerm, sorting, paging);
+            final List<RpkiRepository> repositories = rpkiRepositories.findAll(tx,
+                    status, Key.of(taId), hideChildrenOfDownloadedParent, searchTerm, sorting, paging)
+                    .collect(Collectors.toList());
 
             final int totalSize = (int) rpkiRepositories.countAll(tx, status, Key.of(taId), hideChildrenOfDownloadedParent, searchTerm);
             final Links links = Paging.links(
                     startFrom, pageSize, totalSize,
                     (sf, ps) -> methodOn(RpkiRepositoriesController.class).list(status, taId, sf, ps, searchString, sortBy, sortDirection, hideChildrenOfDownloadedParent));
 
-            final Stream<RpkiRepositoryResource> data = repositories.map(RpkiRepositoryResource::of);
+            final Stream<RpkiRepositoryResource> data = repositories.stream().map(RpkiRepositoryResource::of);
 
             return ResponseEntity.ok(ApiResponse.<Stream<RpkiRepositoryResource>>builder()
                     .data(data)
