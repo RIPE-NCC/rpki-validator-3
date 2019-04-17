@@ -229,7 +229,10 @@ public class RpkiRepositoryValidationService {
                 repository.setFailed();
                 validationResult.error(ErrorCodes.RSYNC_REPOSITORY_IO, e.toString(), ExceptionUtils.getStackTrace(e));
             } finally {
-                lmdb.writeTx0(tx -> validationRunStore.add(tx, validationRun));
+                lmdb.writeTx0(tx -> {
+                    rpkiRepositoryStore.update(tx, repository);
+                    validationRunStore.add(tx, validationRun);
+                });
             }
             lmdb.readTx0(tx ->
                     repository.getTrustAnchors().forEach(taRef ->
@@ -277,6 +280,8 @@ public class RpkiRepositoryValidationService {
         } catch (IOException e) {
             repository.setFailed();
             validationResult.error(ErrorCodes.RSYNC_REPOSITORY_IO, e.toString(), ExceptionUtils.getStackTrace(e));
+        } finally {
+            lmdb.writeTx0(tx -> rpkiRepositoryStore.update(tx, repository));
         }
 
         lmdb.readTx0(tx ->
