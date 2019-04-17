@@ -64,6 +64,7 @@ import org.lmdbjava.Dbi;
 import org.lmdbjava.Env;
 import org.lmdbjava.Txn;
 import org.nustaq.serialization.simpleapi.DefaultCoder;
+import org.nustaq.serialization.simpleapi.MinBinCoder;
 import org.springframework.util.StreamUtils;
 
 import java.io.ByteArrayOutputStream;
@@ -164,6 +165,28 @@ public class LmdbTest {
 //    @Ignore
     public void testLmdbSpeedForFastBinary() throws IOException {
         final DefaultCoder coder = new DefaultCoder(true, Bla.class, Thingy.class);
+        testTemplate(
+                k -> {
+                    final Bla bla = generateBla();
+                    final byte[] bytes = coder.toByteArray(bla);
+                    ByteBuffer bb = allocateDirect(bytes.length);
+                    bb.put(bytes).flip();
+                    return bb;
+                },
+                (p, k) -> {
+                    ByteBuffer buffer = p.getLeft().get(p.getRight(), k);
+                    byte[] data = new byte[buffer.remaining()];
+                    buffer.get(data);
+                    Bla bla = (Bla) coder.toObject(data);
+                    return bla;
+                }
+        );
+    }
+
+    @Test
+//    @Ignore
+    public void testLmdbSpeedForMinBin() throws IOException {
+        final DefaultCoder coder = new MinBinCoder(true, Bla.class, Thingy.class);
         testTemplate(
                 k -> {
                     final Bla bla = generateBla();
