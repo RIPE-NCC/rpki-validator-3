@@ -32,8 +32,6 @@ package net.ripe.rpki.validator3.storage.stores;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 
 public interface SettingsStore {
-    void markPreconfiguredTalsLoaded(Tx.Write tx);
-    boolean isPreconfiguredTalsLoaded(Tx.Read tx);
     void markInitialValidationRunCompleted(Tx.Write tx);
     boolean isInitialValidationRunCompleted(Tx.Read tx);
 }

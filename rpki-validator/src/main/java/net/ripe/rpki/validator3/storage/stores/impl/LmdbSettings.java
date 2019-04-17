@@ -48,7 +48,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 @Component
 public class LmdbSettings implements SettingsStore {
 
-    private static final String PRECONFIGURED_TAL_SETTINGS_KEY = "internal.preconfigured.tals.loaded";
     private static final String INITIAL_VALIDATION_RUN_COMPLETED = "internal.initial.validation.run.completed";
     private static final String SETTINGS = "settings";
 
@@ -71,16 +70,6 @@ public class LmdbSettings implements SettingsStore {
                     }
                 },
                 ImmutableMap.of());
-    }
-
-    @Override
-    public void markPreconfiguredTalsLoaded(Tx.Write tx) {
-        setTrue(tx, PRECONFIGURED_TAL_SETTINGS_KEY);
-    }
-
-    @Override
-    public boolean isPreconfiguredTalsLoaded(Tx.Read tx) {
-        return isTrue(tx, PRECONFIGURED_TAL_SETTINGS_KEY);
     }
 
     @Override
