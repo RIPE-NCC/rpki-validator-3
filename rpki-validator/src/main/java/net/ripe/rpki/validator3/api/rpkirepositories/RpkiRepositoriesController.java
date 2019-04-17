@@ -88,11 +88,12 @@ public class RpkiRepositoriesController {
         final Paging paging = Paging.of(startFrom, pageSize);
 
         return lmdb.readTx(tx -> {
+            final Key taKey = taId == null ? null : Key.of(taId);
             final List<RpkiRepository> repositories = rpkiRepositories.findAll(tx,
-                    status, Key.of(taId), hideChildrenOfDownloadedParent, searchTerm, sorting, paging)
+                    status, taKey, hideChildrenOfDownloadedParent, searchTerm, sorting, paging)
                     .collect(Collectors.toList());
 
-            final int totalSize = (int) rpkiRepositories.countAll(tx, status, Key.of(taId), hideChildrenOfDownloadedParent, searchTerm);
+            final int totalSize = (int) rpkiRepositories.countAll(tx, status, taKey, hideChildrenOfDownloadedParent, searchTerm);
             final Links links = Paging.links(
                     startFrom, pageSize, totalSize,
                     (sf, ps) -> methodOn(RpkiRepositoriesController.class).list(status, taId, sf, ps, searchString, sortBy, sortDirection, hideChildrenOfDownloadedParent));
