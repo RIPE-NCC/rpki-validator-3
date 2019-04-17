@@ -42,6 +42,7 @@ import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -51,6 +52,7 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @Slf4j
@@ -80,16 +82,20 @@ public class RpkiObjectCleanupService {
     public long cleanupRpkiObjects() throws Exception {
         Instant now = Instant.now();
         final List<TrustAnchor> trustAnchors = lmdb.readTx(tx -> this.trustAnchors.findAll(tx));
-        final Set<Key> markThem = new HashSet<>();
-        for (TrustAnchor trustAnchor : trustAnchors) {
-            lmdb.readTx0(tx -> {
-                log.debug("tracing objects for trust anchor {}", trustAnchor);
-                X509ResourceCertificate resourceCertificate = trustAnchor.getCertificate();
-                if (resourceCertificate != null) {
-                    traceCertificateAuthority(tx, now, resourceCertificate, markThem);
-                }
-            });
-        }
+        final Set<Key> markThem = ConcurrentHashMap.newKeySet();
+        final Long t0 = Time.timed(() ->
+                trustAnchors.stream()
+                        .peek(trustAnchor -> log.debug("tracing objects for trust anchor {}", trustAnchor))
+                        .parallel()
+                        .forEach(trustAnchor ->
+                                lmdb.readTx0(tx -> {
+                                    X509ResourceCertificate resourceCertificate = trustAnchor.getCertificate();
+                                    if (resourceCertificate != null) {
+                                        traceCertificateAuthority(tx, now, resourceCertificate, markThem);
+                                    }
+                                })));
+        log.info("Found {} reachable RPKI objects in {}ms", markThem.size(), t0);
+
         return lmdb.writeTx(tx -> {
             Long t = Time.timed(() ->
                     markThem.forEach(pk -> rpkiObjects.get(tx, pk)
