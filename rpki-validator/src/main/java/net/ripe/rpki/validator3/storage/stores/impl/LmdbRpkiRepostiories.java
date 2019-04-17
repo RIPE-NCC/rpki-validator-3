@@ -56,7 +56,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -84,12 +86,18 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
                 RPKI_REPOSITORIES,
                 lmdb.defaultCoder(RpkiRepository.class),
                 ImmutableMap.of(
-                        BY_URI, r -> Key.keys(Key.of(r.getLocationUri())),
+                        BY_URI, this::locationIndex,
                         BY_TA, r -> r.getTrustAnchors().stream().map(Ref::key).collect(Collectors.toSet())
                 )
         );
     }
 
+    private Set<Key> locationIndex(RpkiRepository repository) {
+        return Stream.of(repository.getRrdpNotifyUri(), repository.getRsyncRepositoryUri())
+                .filter(Objects::nonNull)
+                .map(Key::of)
+                .collect(Collectors.toSet());
+    }
 
     @Override
     public RpkiRepository register(Tx.Write tx, Ref<TrustAnchor> trustAnchorRef, String uri, RpkiRepository.Type type) {
