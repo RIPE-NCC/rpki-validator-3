@@ -130,19 +130,6 @@ public class TrustAnchorService {
     public void managePreconfiguredAndExistingTrustAnchors() {
         log.info("Automatically adding preconfigured trust anchors");
 
-        final Boolean alreadyLoaded = lmdb.writeTx(tx -> {
-            if (settingsStore.isPreconfiguredTalsLoaded(tx)) {
-                log.info("Preconfigured trust anchors are already loaded, skipping");
-                scheduleTasValidation(tx);
-                return true;
-            }
-            return false;
-        });
-
-        if (alreadyLoaded) {
-            return;
-        }
-
         final File[] tals = preconfiguredTrustAnchorDirectory.listFiles(new PatternFilenameFilter(Pattern.compile("^.*\\.tal$")));
         if (ArrayUtils.isEmpty(tals)) {
             log.warn("No preconfigured trust anchors found at {}, skipping", preconfiguredTrustAnchorDirectory);
@@ -175,7 +162,6 @@ public class TrustAnchorService {
             });
         }
 
-        lmdb.writeTx0(settingsStore::markPreconfiguredTalsLoaded);
         lmdb.readTx0(this::scheduleTasValidation);
     }
 

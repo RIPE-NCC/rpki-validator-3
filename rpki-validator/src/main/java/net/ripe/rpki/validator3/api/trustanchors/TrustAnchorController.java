@@ -204,7 +204,7 @@ public class TrustAnchorController {
     }
 
     @GetMapping(path = "/statuses")
-    public ApiResponse<List<TaStatus>> statuses(HttpServletResponse response) {
+    public ApiResponse<List<TaStatus>> statuses() {
         return lmdb.readTx(tx -> ApiResponse.<List<TaStatus>>builder().data(trustAnchorStore.getStatuses(tx)).build());
     }
 
