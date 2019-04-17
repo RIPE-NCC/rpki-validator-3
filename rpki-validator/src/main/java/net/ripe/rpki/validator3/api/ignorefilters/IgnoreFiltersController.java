@@ -56,6 +56,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
 import java.net.URI;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
@@ -73,7 +75,7 @@ public class IgnoreFiltersController {
     private ValidatedRpkiObjects validatedRpkiObjects;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<Stream<IgnoreFilter>>> list(
+    public ResponseEntity<ApiResponse<Stream<IgnoreFilterDto>>> list(
             @RequestParam(name = "startFrom", defaultValue = "0") long startFrom,
             @RequestParam(name = "pageSize", defaultValue = "20") long pageSize,
             @RequestParam(name = "search", defaultValue = "", required = false) String searchString,
@@ -92,7 +94,7 @@ public class IgnoreFiltersController {
                 (sf, ps) -> methodOn(IgnoreFiltersController.class).list(sf, ps, searchString, sortBy, sortDirection));
 
         return ResponseEntity.ok(
-                ApiResponse.<Stream<IgnoreFilter>>builder()
+                ApiResponse.<Stream<IgnoreFilterDto>>builder()
                         .links(links)
                         .metadata(Metadata.of(totalSize))
                         .data(matching.map(this::toIgnoreFilter))
@@ -101,12 +103,12 @@ public class IgnoreFiltersController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<IgnoreFilter>> get(@PathVariable long id) {
+    public ResponseEntity<ApiResponse<IgnoreFilterDto>> get(@PathVariable long id) {
         return ResponseEntity.ok(ignoreFilterResource(ignoreFilterService.get(id)));
     }
 
     @PostMapping(consumes = { Api.API_MIME_TYPE, "application/json" })
-    public ResponseEntity<ApiResponse<IgnoreFilter>> add(@RequestBody @Valid ApiCommand<AddIgnoreFilter> command) throws Exception {
+    public ResponseEntity<ApiResponse<IgnoreFilterDto>> add(@RequestBody @Valid ApiCommand<AddIgnoreFilter> command) throws Exception {
         final long id = ignoreFilterService.execute(command.getData());
         final IgnoreFilter ignoreFilter = ignoreFilterService.get(id);
         final Link selfRel = linkTo(methodOn(IgnoreFiltersController.class).get(id)).withSelfRel();
@@ -119,9 +121,9 @@ public class IgnoreFiltersController {
         return ResponseEntity.noContent().build();
     }
 
-    private IgnoreFilter toIgnoreFilter(IgnoreFilter f) {
+    private IgnoreFilterDto toIgnoreFilter(IgnoreFilter f) {
         final IgnoreFiltersPredicate ignoreFiltersPredicate = new IgnoreFiltersPredicate(Stream.of(f));
-        final Stream<ObjectController.RoaPrefix> affectedRoas = validatedRpkiObjects
+        final List<ObjectController.RoaPrefix> affectedRoas = validatedRpkiObjects
                 .findCurrentlyValidatedRoaPrefixes(null, null, null)
                 .getObjects()
                 .filter(ignoreFiltersPredicate)
@@ -129,12 +131,12 @@ public class IgnoreFiltersController {
                         String.valueOf(prefix.getAsn()),
                         prefix.getPrefix().toString(),
                         prefix.getEffectiveLength(),
-                        null
-                ));
-        return new IgnoreFilter(f.getId(), f.getAsn(), f.getPrefix(), f.getComment(), affectedRoas);
+                        null)
+                ).collect(Collectors.toList());
+        return new IgnoreFilterDto(f, affectedRoas);
     }
 
-    private ApiResponse<IgnoreFilter> ignoreFilterResource(IgnoreFilter ignoreFilter) {
-        return ApiResponse.<IgnoreFilter>builder().data(ignoreFilter).build();
+    private ApiResponse<IgnoreFilterDto> ignoreFilterResource(IgnoreFilter ignoreFilter) {
+        return ApiResponse.<IgnoreFilterDto>builder().data(new IgnoreFilterDto(ignoreFilter)).build();
     }
 }

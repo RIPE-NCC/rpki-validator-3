@@ -29,30 +29,32 @@
  */
 package net.ripe.rpki.validator3.api.ignorefilters;
 
-import lombok.Getter;
-import net.ripe.ipresource.Asn;
-import net.ripe.ipresource.IpRange;
+import lombok.Value;
 import net.ripe.rpki.validator3.api.roas.ObjectController;
-import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 
 import java.util.List;
 
-
-public class IgnoreFilter extends Slurm.SlurmPrefixFilter {
-    @Getter
+@Value
+public class IgnoreFilterDto {
     private long id;
-
-    @Getter
+    private String asn;
+    private String prefix;
+    private String comment;
     private List<ObjectController.RoaPrefix> affectedRoas;
 
-    public IgnoreFilter(long id, Asn asn, IpRange prefix, String comment) {
-        super(asn, prefix, comment);
-        this.id = id;
+    public IgnoreFilterDto(IgnoreFilter ignoreFilter) {
+        this.id = ignoreFilter.getId();
+        this.asn = ignoreFilter.getAsn().toString();
+        this.prefix = ignoreFilter.getPrefix().toString();
+        this.comment = ignoreFilter.getComment();
+        this.affectedRoas = ignoreFilter.getAffectedRoas();
     }
 
-    public IgnoreFilter(long id, Asn asn, IpRange prefix, String comment, List<ObjectController.RoaPrefix> affectedRoas) {
-        super(asn, prefix, comment);
-        this.id = id;
+    public IgnoreFilterDto(IgnoreFilter ignoreFilter, List<ObjectController.RoaPrefix> affectedRoas) {
+        this.id = ignoreFilter.getId();
+        this.asn = ignoreFilter.getAsn().toString();
+        this.prefix = ignoreFilter.getPrefix().toString();
+        this.comment = ignoreFilter.getComment();
         this.affectedRoas = affectedRoas;
     }
 }

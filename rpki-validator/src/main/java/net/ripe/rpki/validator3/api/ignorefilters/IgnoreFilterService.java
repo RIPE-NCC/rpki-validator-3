@@ -38,7 +38,6 @@ import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.api.slurm.SlurmStore;
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 import net.ripe.rpki.validator3.api.slurm.dtos.SlurmExt;
-import net.ripe.rpki.validator3.util.Transactions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -85,11 +84,11 @@ public class IgnoreFilterService {
     }
 
     public void remove(long ignoreFilterId) {
-        slurmStore.updateWith(slurmExt -> {
-            if (slurmExt.getPrefixFilters().remove(ignoreFilterId) != null) {
-                notifyListeners();
-            }
-        });
+        Boolean notify = slurmStore.updateWith(slurmExt ->
+                slurmExt.getPrefixFilters().remove(ignoreFilterId) != null);
+        if (notify) {
+            notifyListeners();
+        }
     }
 
     public void clear() {
@@ -106,15 +105,10 @@ public class IgnoreFilterService {
     }
 
     private void notifyListeners() {
-        Transactions.afterCommitOnce(
-                listenersLock,
-                () -> {
-                    synchronized (listenersLock) {
-                        List<IgnoreFilter> filters = all().collect(Collectors.toList());
-                        listeners.forEach(listener -> listener.accept(filters));
-                    }
-                }
-        );
+        synchronized (listenersLock) {
+            List<IgnoreFilter> filters = all().collect(Collectors.toList());
+            listeners.forEach(listener -> listener.accept(filters));
+        }
     }
 
 

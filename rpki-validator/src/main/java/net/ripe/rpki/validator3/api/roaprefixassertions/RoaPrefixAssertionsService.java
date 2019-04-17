@@ -37,7 +37,6 @@ import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.api.slurm.SlurmStore;
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
-import net.ripe.rpki.validator3.util.Transactions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -69,7 +68,7 @@ public class RoaPrefixAssertionsService {
     }
 
     public long execute(@Valid AddRoaPrefixAssertion command) {
-        return slurmStore.updateWith(slurmExt -> {
+        final Long rpId = slurmStore.updateWith(slurmExt -> {
             final Slurm.SlurmPrefixAssertion prefixAssertion = new Slurm.SlurmPrefixAssertion();
             prefixAssertion.setAsn(Asn.parse(command.getAsn()));
             prefixAssertion.setPrefix(IpRange.parse(command.getPrefix()));
@@ -79,18 +78,19 @@ public class RoaPrefixAssertionsService {
             final long id = slurmStore.nextId();
             slurmExt.getPrefixAssertions().put(id, prefixAssertion);
 
-            notifyListeners();
             log.info("added ignore filter '{}'", prefixAssertion);
             return id;
         });
+        notifyListeners();
+        return rpId;
     }
 
     public void remove(long roaPrefixAssertionId) {
-        slurmStore.updateWith(slurmExt -> {
-            if (slurmExt.getPrefixAssertions().remove(roaPrefixAssertionId) != null) {
-                notifyListeners();
-            }
-        });
+        final boolean notify = slurmStore.updateWith(slurmExt ->
+                slurmExt.getPrefixAssertions().remove(roaPrefixAssertionId) != null);
+        if (notify) {
+            notifyListeners();
+        }
     }
 
     public void clear() {
@@ -109,15 +109,10 @@ public class RoaPrefixAssertionsService {
     }
 
     private void notifyListeners() {
-        Transactions.afterCommitOnce(
-            listenerLock,
-            () -> {
-                synchronized (listenerLock) {
-                    List<RoaPrefixAssertion> assertions = all().collect(Collectors.toList());
-                    listeners.forEach(listener -> listener.accept(assertions));
-                }
-            }
-        );
+        synchronized (listenerLock) {
+            List<RoaPrefixAssertion> assertions = all().collect(Collectors.toList());
+            listeners.forEach(listener -> listener.accept(assertions));
+        }
     }
 
 
