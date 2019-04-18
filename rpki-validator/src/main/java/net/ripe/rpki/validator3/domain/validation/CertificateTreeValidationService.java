@@ -64,7 +64,6 @@ import org.springframework.stereotype.Service;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,7 +94,7 @@ public class CertificateTreeValidationService {
     private static final ValidationOptions VALIDATION_OPTIONS = new ValidationOptions();
 
     private final RpkiObjectStore rpkiObjectStore;
-    private final RpkiRepositoryStore rpkiRepositoriStore;
+    private final RpkiRepositoryStore rpkiRepositoryStore;
     private final SettingsStore settingsStore;
     private final ValidationScheduler validationScheduler;
     private final ValidationRunStore validationRunStore;
@@ -113,7 +112,7 @@ public class CertificateTreeValidationService {
                                             ValidatedRpkiObjects validatedRpkiObjects,
                                             Lmdb lmdb) {
         this.rpkiObjectStore = rpkiObjectStore;
-        this.rpkiRepositoriStore = rpkiRepositoryStore;
+        this.rpkiRepositoryStore = rpkiRepositoryStore;
         this.settingsStore = settingsStore;
         this.validationScheduler = validationScheduler;
         this.validationRunStore = validationRunStore;
@@ -285,7 +284,7 @@ public class CertificateTreeValidationService {
                     validatedObjects.addAll(validateCertificateAuthority(trustAnchor, registeredRepositories, childContext, temporary)));
 
         } catch (Exception e) {
-            log.debug("e", e);
+            log.error("Something bad happened", e);
             validationResult.error(ErrorCodes.UNHANDLED_EXCEPTION, e.toString(), ExceptionUtils.getStackTrace(e));
         } finally {
             validationResult.addAll(temporary);
@@ -340,13 +339,13 @@ public class CertificateTreeValidationService {
                         final Ref<TrustAnchor> trustAnchorRef = trustAnchorStore.makeRef(tx, trustAnchor.key());
                         if (context.getRpkiNotifyURI() != null) {
                             final RpkiRepository rpkiRepository = registeredRepositories.computeIfAbsent(context.getRpkiNotifyURI(),
-                                    uri -> rpkiRepositoriStore.register(tx, trustAnchorRef, uri.toASCIIString(), RRDP));
+                                    uri -> rpkiRepositoryStore.register(tx, trustAnchorRef, uri.toASCIIString(), RRDP));
 
                             tx.onCommit(() -> validationScheduler.addRpkiRepository(rpkiRepository));
                             return rpkiRepository;
                         } else {
                             return registeredRepositories.computeIfAbsent(context.getRepositoryURI(),
-                                    uri -> rpkiRepositoriStore.register(tx, trustAnchorRef, uri.toASCIIString(), RSYNC));
+                                    uri -> rpkiRepositoryStore.register(tx, trustAnchorRef, uri.toASCIIString(), RSYNC));
                         }
                     })).get();
         } catch (Exception e) {
