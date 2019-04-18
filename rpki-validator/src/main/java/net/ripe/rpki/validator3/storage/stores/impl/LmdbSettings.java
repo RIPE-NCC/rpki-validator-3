@@ -37,6 +37,7 @@ import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.SettingsStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -46,7 +47,7 @@ import java.nio.ByteBuffer;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Component
-public class LmdbSettings implements SettingsStore {
+public class LmdbSettings extends GenericStoreImpl<String> implements SettingsStore {
 
     private static final String INITIAL_VALIDATION_RUN_COMPLETED = "internal.initial.validation.run.completed";
     private static final String SETTINGS = "settings";
@@ -88,5 +89,10 @@ public class LmdbSettings implements SettingsStore {
 
     private boolean isTrue(Tx.Read tx, String initialValidationRunCompleted) {
         return ixMap.get(tx, Key.of(initialValidationRunCompleted)).filter("true"::equals).isPresent();
+    }
+
+    @Override
+    protected IxMap<String> ixMap() {
+        return ixMap;
     }
 }

@@ -33,13 +33,11 @@ import lombok.Getter;
 import lombok.Setter;
 import net.ripe.rpki.validator3.domain.validation.RpkiRepositoryValidationService;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
-import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidationRun;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
 import org.quartz.JobKey;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -49,7 +47,7 @@ public class RepositoryValidationJob implements Job {
     private static final String RPKI_REPOSITORY_ID = "rpkiRepositoryId";
 
     @Autowired
-    private RpkiRepositoryValidationService validationService;
+    private RpkiRepositoryValidationService rpkiRepositoryValidationService;
 
     @Getter
     @Setter
@@ -57,7 +55,7 @@ public class RepositoryValidationJob implements Job {
 
     @Override
     public void execute(JobExecutionContext context) {
-        validationService.validateRpkiRepository(rpkiRepositoryId);
+        rpkiRepositoryValidationService.validateRpkiRepository(rpkiRepositoryId);
     }
 
     static JobDetail buildJob(RpkiRepository rpkiRepository) {

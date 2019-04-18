@@ -36,6 +36,7 @@ import net.ripe.rpki.validator3.storage.lmdb.LmdbTests;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
+import net.ripe.rpki.validator3.storage.stores.SettingsStore;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import org.junit.Before;
@@ -72,6 +73,10 @@ public class GenericStorageTest {
     @Getter
     private Sequences sequences;
 
+    @Autowired
+    @Getter
+    private SettingsStore settingsStore;
+
     @Getter
     @Autowired
     private Lmdb lmdb;
@@ -84,6 +89,7 @@ public class GenericStorageTest {
             rpkiRepositoryStore.clear(tx);
             validationRunStore.clear(tx);
             sequences.clear(tx);
+            settingsStore.clear(tx);
         });
     }
 

@@ -47,7 +47,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import javax.transaction.Transactional;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.UUID;
@@ -57,20 +56,19 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(SpringRunner.class)
 @IntegrationTest
-@Transactional
-public class RrdpServiceTest extends GenericStorageTest {
+public class RrdpServiceImplTest extends GenericStorageTest {
 
     private static final String RRDP_RIPE_NET_NOTIFICATION_XML = "https://rrdp.ripe.net/notification.xml";
     private static final String SNAPSHOT_URL = "https://host/path/snapshot.xml";
 
     private RrdpClientStub rrdpClient = new RrdpClientStub();
 
-    private RrdpService subject;
+    private RrdpServiceImpl subject;
 
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        subject = new RrdpService(rrdpClient, getRpkiObjectStore(), getRpkiRepositoryStore(), getValidationRunStore(), getLmdb());
+        subject = new RrdpServiceImpl(rrdpClient, getRpkiObjectStore(), getRpkiRepositoryStore(), getValidationRunStore(), getLmdb());
     }
 
     @Test

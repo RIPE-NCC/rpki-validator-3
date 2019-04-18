@@ -48,6 +48,7 @@ import org.springframework.stereotype.Component;
 public class ValidationScheduler {
 
     private final Scheduler scheduler;
+    private boolean enabled = true;
 
     @Autowired
     public ValidationScheduler(Scheduler scheduler) {
@@ -55,6 +56,9 @@ public class ValidationScheduler {
     }
 
     public void addTrustAnchor(TrustAnchor trustAnchor) {
+        if (!enabled) {
+            return;
+        }
         Preconditions.checkArgument(
             trustAnchor.getId().asLong() >= Api.MINIMUM_VALID_ID,
             "trustAnchor id %s is not valid",
@@ -76,6 +80,9 @@ public class ValidationScheduler {
     }
 
     public boolean scheduledTrustAnchor(TrustAnchor trustAnchor) {
+        if (!enabled) {
+            return false;
+        }
         try {
             return scheduler.checkExists(TrustAnchorValidationJob.getJobKey(trustAnchor)) &&
                     scheduler.checkExists(CertificateTreeValidationJob.getJobKey(trustAnchor));
@@ -85,6 +92,9 @@ public class ValidationScheduler {
     }
 
     public void removeTrustAnchor(TrustAnchor trustAnchor) {
+        if (!enabled) {
+            return;
+        }
         try {
             boolean trustAnchorValidationDeleted = scheduler.deleteJob(TrustAnchorValidationJob.getJobKey(trustAnchor));
             boolean certificateTreeValidationDeleted = scheduler.deleteJob(CertificateTreeValidationJob.getJobKey(trustAnchor));
@@ -97,6 +107,9 @@ public class ValidationScheduler {
     }
 
     public synchronized void addRpkiRepository(RpkiRepository rpkiRepository) {
+        if (!enabled) {
+            return;
+        }
         Preconditions.checkArgument(
             rpkiRepository.getId().asLong() >= Api.MINIMUM_VALID_ID,
             "rpkiRepository id %s is not valid",
@@ -121,6 +134,9 @@ public class ValidationScheduler {
     }
 
     public void removeRpkiRepository(RpkiRepository repository) {
+        if (!enabled) {
+            return;
+        }
         try {
             boolean jobDeleted = scheduler.deleteJob(RepositoryValidationJob.getJobKey(repository));
             if (!jobDeleted) {
@@ -132,6 +148,9 @@ public class ValidationScheduler {
     }
 
     public void triggerCertificateTreeValidation(TrustAnchor trustAnchor) {
+        if (!enabled) {
+            return;
+        }
         try {
             final JobKey jobKey = CertificateTreeValidationJob.getJobKey(trustAnchor);
             if (scheduler.checkExists(jobKey)) {
@@ -142,5 +161,9 @@ public class ValidationScheduler {
         } catch (SchedulerException ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    public void disable() {
+        this.enabled = false;
     }
 }
