@@ -332,25 +332,21 @@ public class CertificateTreeValidationService {
 
     private RpkiRepository registerRepository(TrustAnchor trustAnchor,
                                               Map<URI, RpkiRepository> registeredRepositories,
-                                              CertificateRepositoryObjectValidationContext context) {
-        try {
-            return async.submit(() ->
-                    lmdb.writeTx(tx -> {
-                        final Ref<TrustAnchor> trustAnchorRef = trustAnchorStore.makeRef(tx, trustAnchor.key());
-                        if (context.getRpkiNotifyURI() != null) {
-                            final RpkiRepository rpkiRepository = registeredRepositories.computeIfAbsent(context.getRpkiNotifyURI(),
-                                    uri -> rpkiRepositoryStore.register(tx, trustAnchorRef, uri.toASCIIString(), RRDP));
+                                              CertificateRepositoryObjectValidationContext context) throws Exception {
+        return async.submit(() ->
+                lmdb.writeTx(tx -> {
+                    final Ref<TrustAnchor> trustAnchorRef = trustAnchorStore.makeRef(tx, trustAnchor.key());
+                    if (context.getRpkiNotifyURI() != null) {
+                        final RpkiRepository rpkiRepository = registeredRepositories.computeIfAbsent(context.getRpkiNotifyURI(),
+                                uri -> rpkiRepositoryStore.register(tx, trustAnchorRef, uri.toASCIIString(), RRDP));
 
-                            tx.onCommit(() -> validationScheduler.addRpkiRepository(rpkiRepository));
-                            return rpkiRepository;
-                        } else {
-                            return registeredRepositories.computeIfAbsent(context.getRepositoryURI(),
-                                    uri -> rpkiRepositoryStore.register(tx, trustAnchorRef, uri.toASCIIString(), RSYNC));
-                        }
-                    })).get();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+                        tx.onCommit(() -> validationScheduler.addRpkiRepository(rpkiRepository));
+                        return rpkiRepository;
+                    }
+                    return registeredRepositories.computeIfAbsent(context.getRepositoryURI(),
+                            uri -> rpkiRepositoryStore.register(tx, trustAnchorRef, uri.toASCIIString(), RSYNC));
+
+                })).get();
     }
 
     private Map<URI, RpkiObject> retrieveManifestEntries(Tx.Read tx, ManifestCms manifest, URI manifestUri, ValidationResult validationResult) {

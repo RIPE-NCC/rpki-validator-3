@@ -34,13 +34,12 @@ import net.ripe.ipresource.IpAddress;
 import net.ripe.ipresource.IpRange;
 import net.ripe.ipresource.IpResourceSet;
 import net.ripe.rpki.commons.crypto.ValidityPeriod;
-import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificate;
+import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.commons.validation.ValidationString;
 import net.ripe.rpki.validator3.IntegrationTest;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.RoaPrefix;
-import net.ripe.rpki.validator3.domain.Settings;
 import net.ripe.rpki.validator3.domain.ta.TrustAnchorsFactory;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
@@ -48,20 +47,17 @@ import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
-import net.ripe.rpki.validator3.storage.stores.SettingsStore;
 import net.ripe.rpki.validator3.storage.stores.impl.GenericStorageTest;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joda.time.Duration;
 import org.joda.time.Instant;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.security.auth.x500.X500Principal;
-import javax.transaction.Transactional;
 import java.net.URI;
 import java.security.KeyPair;
 import java.util.Arrays;
@@ -70,7 +66,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static net.ripe.rpki.validator3.domain.ta.TrustAnchorsFactory.CertificateAuthority;
@@ -83,7 +78,6 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(SpringRunner.class)
 @IntegrationTest
-@Transactional
 public class CertificateTreeValidationServiceTest extends GenericStorageTest {
 
     @Autowired
@@ -159,17 +153,17 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
     }
 
     @Test
-//    @Ignore("Fix it --- if fails if TrustAnchorControllerTest is not run before it")
     public void should_validate_minimal_trust_anchor() {
         TrustAnchor ta = wtx(tx -> {
             TrustAnchor trustAnchor = factory.createTrustAnchor(tx, x -> {
-                x.notifyURI(null);
+                x.notifyURI(TA_RRDP_NOTIFY_URI);
                 x.repositoryURI(TA_CA_REPOSITORY_URI);
             });
             getTrustAnchorStore().add(tx, trustAnchor);
             final Ref<TrustAnchor> trustAnchorRef = getTrustAnchorStore().makeRef(tx, trustAnchor.key());
             RpkiRepository repository = getRpkiRepositoryStore().register(tx, trustAnchorRef, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
             repository.setDownloaded();
+            getRpkiRepositoryStore().update(tx, repository);
             getTrustAnchorStore().add(tx, trustAnchor);
             return trustAnchor;
         });
@@ -198,13 +192,13 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
         );
 
         rtx0(tx -> {
-            assertThat(ta.isInitialCertificateTreeValidationRunCompleted()).as("trust anchor initial validation run completed").isTrue();
+            TrustAnchor trustAnchor = getTrustAnchorStore().get(tx, ta.key()).get();
+            assertThat(trustAnchor.isInitialCertificateTreeValidationRunCompleted()).as("trust anchor initial validation run completed").isTrue();
             assertThat(getSettingsStore().isInitialValidationRunCompleted(tx)).as("validator initial validation run completed").isFalse();
         });
     }
 
     @Test
-//    @Ignore("Fix it --- if fails if TrustAnchorControllerTest is not run before it")
     public void should_validate_child_ca() {
         KeyPair childKeyPair = KEY_PAIR_FACTORY.generate();
 
@@ -238,15 +232,15 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
         rtx0(tx -> {
             final Optional<TrustAnchor> trustAnchor = getTrustAnchorStore().get(tx, ta.key());
             assertThat(trustAnchor.get().isInitialCertificateTreeValidationRunCompleted()).as("trust anchor initial validation run completed").isTrue();
-            assertThat(getSettingsStore().isInitialValidationRunCompleted(tx)).as("validator initial validation run completed").isFalse();
+            assertThat(getSettingsStore().isInitialValidationRunCompleted(tx)).as("validator initial validation run completed").isTrue();
         });
 
         List<Pair<CertificateTreeValidationRun, RpkiObject>> validated = rtx(tx ->
                 getValidationRunStore().findCurrentlyValidated(tx, RpkiObject.Type.CER).collect(toList()));
         assertThat(validated).hasSize(1);
         assertThat(validated.get(0).getLeft()).isEqualTo(completed.get(0));
-        Optional<X509RouterCertificate> cro = rtx(tx -> getRpkiObjectStore().findCertificateRepositoryObject(tx,
-                validated.get(0).getRight().getId(), X509RouterCertificate.class, ValidationResult.withLocation("ignored.cer")));
+        Optional<X509ResourceCertificate> cro = rtx(tx -> getRpkiObjectStore().findCertificateRepositoryObject(tx,
+                validated.get(0).getRight().getId(), X509ResourceCertificate.class, ValidationResult.withLocation("ignored.cer")));
         assertThat(cro).isPresent().hasValueSatisfying(x -> assertThat(x.getSubject()).isEqualTo(new X500Principal("CN=child-ca")));
     }
 
