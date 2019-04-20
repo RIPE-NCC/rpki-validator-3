@@ -285,9 +285,13 @@ public class CertificateTreeValidationService {
 
         } catch (Exception e) {
             log.error("Something bad happened", e);
-            validationResult.error(ErrorCodes.UNHANDLED_EXCEPTION, e.toString(), ExceptionUtils.getStackTrace(e));
+            synchronized (this) {
+                validationResult.error(ErrorCodes.UNHANDLED_EXCEPTION, e.toString(), ExceptionUtils.getStackTrace(e));
+            }
         } finally {
-            validationResult.addAll(temporary);
+            synchronized (this) {
+                validationResult.addAll(temporary);
+            }
         }
 
         return validatedObjects;
