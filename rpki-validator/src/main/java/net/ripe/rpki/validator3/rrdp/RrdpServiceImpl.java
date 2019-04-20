@@ -243,8 +243,8 @@ public class RrdpServiceImpl implements RrdpService {
             if (bySha256.isPresent()) {
                 bySha256.get().addLocation(objUri);
                 rpkiObjectStore.put(tx, bySha256.get());
+                validationRunStore.associate(tx, validationRun, bySha256.get());
             } else {
-
                 if (workCounter.get() > threshold) {
                     storeSnapshotObject(tx, validationRun, counter);
                     workCounter.decrementAndGet();

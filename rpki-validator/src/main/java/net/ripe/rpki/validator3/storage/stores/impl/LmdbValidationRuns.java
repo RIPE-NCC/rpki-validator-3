@@ -34,8 +34,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
-import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
-import net.ripe.rpki.validator3.storage.data.Base;
 import net.ripe.rpki.validator3.storage.data.validation.RrdpRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.Lmdb;
@@ -57,11 +55,9 @@ import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -218,7 +214,8 @@ public class LmdbValidationRuns implements ValidationRunStore {
     public <T extends ValidationRun> List<T> findLatestSuccessful(Tx.Read tx, Class<T> type) {
 //        // TODO Compare it with the original, it's pretty hard to say if it's correct
         final List<T> result = new ArrayList<>();
-        pickIxMaps(type).forEach(ixMap ->
+        List<IxMap<ValidationRun>> ixMaps = pickIxMaps(type);
+        ixMaps.forEach(ixMap ->
                 ixMap.getByIndexMax(BY_COMPLETED_AT_INDEX, tx, ValidationRun::isSucceeded)
                         .forEach((k, v) -> result.add((T) v)));
         return result;
@@ -394,18 +391,18 @@ public class LmdbValidationRuns implements ValidationRunStore {
     }
 
     // TODO Come up with something better than this horror
-    private List<IxMap<ValidationRun>> pickIxMaps(Class c) {
+    private List<IxMap<ValidationRun>> pickIxMaps(Class<? extends ValidationRun> c) {
         List<IxMap<ValidationRun>> ixMaps = new ArrayList<>();
-        if (CertificateTreeValidationRun.class.equals(c)) {
+        if (c.isAssignableFrom(CertificateTreeValidationRun.class)) {
             ixMaps.add(pickIxMap(CertificateTreeValidationRun.TYPE));
         }
-        if (TrustAnchorValidationRun.class.equals(c)) {
+        if (c.isAssignableFrom(TrustAnchorValidationRun.class)) {
             ixMaps.add(pickIxMap(TrustAnchorValidationRun.TYPE));
         }
-        if (RrdpRepositoryValidationRun.class.isAssignableFrom(c)) {
+        if (c.isAssignableFrom(RrdpRepositoryValidationRun.class)) {
             ixMaps.add(pickIxMap(RrdpRepositoryValidationRun.TYPE));
         }
-        if (RsyncRepositoryValidationRun.class.isAssignableFrom(c)) {
+        if (c.isAssignableFrom(RsyncRepositoryValidationRun.class)) {
             ixMaps.add(pickIxMap(RsyncRepositoryValidationRun.TYPE));
         }
         return ixMaps;

@@ -48,6 +48,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -137,7 +138,9 @@ public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements T
                 }).orElse(TaStatus.of(
                         String.valueOf(ta.key().asLong()),
                         ta.getName(), 0, 0, 0, null, false
-                ))).collect(Collectors.toList());
+                )))
+                .sorted(Comparator.comparing(ta -> ta.getTaName().toLowerCase()))
+                .collect(Collectors.toList());
     }
 
     @Override
