@@ -35,8 +35,8 @@ import net.ripe.ipresource.IpResourceSet;
 import net.ripe.rpki.commons.crypto.ValidityPeriod;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificateBuilder;
 import net.ripe.rpki.validator3.IntegrationTest;
-import net.ripe.rpki.validator3.domain.RoaPrefix;
 import net.ripe.rpki.validator3.domain.ta.TrustAnchorsFactory;
+import net.ripe.rpki.validator3.storage.data.RoaPrefix;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
@@ -47,7 +47,6 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import javax.persistence.EntityManager;
 import javax.security.auth.x500.X500Principal;
 import javax.transaction.Transactional;
 import java.time.Duration;
