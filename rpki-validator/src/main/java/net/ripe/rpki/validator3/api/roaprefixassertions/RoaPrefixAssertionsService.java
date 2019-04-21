@@ -41,7 +41,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
-import javax.transaction.Transactional;
 import javax.validation.Valid;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -53,7 +52,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
-@Transactional
 @Validated
 @Slf4j
 public class RoaPrefixAssertionsService {

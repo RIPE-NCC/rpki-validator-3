@@ -30,21 +30,8 @@
 package net.ripe.rpki.validator3.api.bgpsec;
 
 import lombok.Getter;
-import lombok.Setter;
 import net.ripe.ipresource.Asn;
-import net.ripe.ipresource.IpRange;
-import net.ripe.ipresource.IpResourceType;
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
-import net.ripe.rpki.validator3.domain.AbstractEntity;
-
-import javax.persistence.Basic;
-import javax.persistence.Entity;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
-import java.math.BigDecimal;
 
 public class BgpSecAssertion extends Slurm.SlurmBgpSecAssertion {
     @Getter
