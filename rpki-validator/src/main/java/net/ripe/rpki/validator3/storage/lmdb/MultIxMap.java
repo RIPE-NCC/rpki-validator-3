@@ -72,6 +72,18 @@ public class MultIxMap<T extends Serializable> extends IxBase<T> {
         return result;
     }
 
+    public int count(Tx.Read txn, Key primaryKey) {
+        verifyKey(primaryKey);
+        final ByteBuffer pkBuf = primaryKey.toByteBuffer();
+        final CursorIterator<ByteBuffer> iterate = mainDb.iterate(txn.txn(), KeyRange.closed(pkBuf, pkBuf));
+        int c = 0;
+        while (iterate.hasNext()) {
+            c++;
+            iterate.next();
+        }
+        return c;
+    }
+
     public void put(Tx.Write tx, Key primaryKey, T value) {
         checkKeyAndValue(primaryKey, value);
         mainDb.put(tx.txn(), primaryKey.toByteBuffer(), coder.toBytes(value));

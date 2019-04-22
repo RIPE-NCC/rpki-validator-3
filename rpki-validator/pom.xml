@@ -48,6 +48,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.jooq</groupId>
+            <artifactId>jool-java-8</artifactId>
+            <version>0.9.13</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.javassist</groupId>
             <artifactId>javassist</artifactId>
             <version>3.21.0-GA</version>

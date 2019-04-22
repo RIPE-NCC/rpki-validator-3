@@ -54,6 +54,7 @@ import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
+import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -61,6 +62,7 @@ import org.springframework.stereotype.Component;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -228,12 +230,10 @@ public class LmdbValidationRuns implements ValidationRunStore {
                 .max(Comparator.comparing(ValidationRun::getCompletedAt));
     }
 
-    // TODO Probably optimize it somehow
     @Override
     public Optional<CertificateTreeValidationRun> findLatestCaTreeValidationRun(Tx.Read tx, TrustAnchor trustAnchor) {
-        return ctIxMap.getByIndex(BY_TA_INDEX, tx, trustAnchor.key()).values().stream()
-                .filter(vr -> vr.getCompletedAt() != null)
-                .max(Comparator.comparing(ValidationRun::getCompletedAt));
+        return ctIxMap.getByIndexMax(BY_COMPLETED_AT_INDEX, tx,
+                vr -> trustAnchor.key().equals(vr.getTrustAnchor().key())).values().stream().findFirst();
     }
 
     public void removeAllForTrustAnchor(Tx.Write tx, Key trustAnchorKey) {
@@ -378,7 +378,7 @@ public class LmdbValidationRuns implements ValidationRunStore {
 
     @Override
     public int getObjectCount(Tx.Read tx, ValidationRun validationRun) {
-        return vr2ro.get(tx, validationRun.key()).size();
+        return vr2ro.count(tx, validationRun.key());
     }
 
     @SuppressWarnings("unchecked")
