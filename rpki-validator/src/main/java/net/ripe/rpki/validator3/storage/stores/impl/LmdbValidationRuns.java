@@ -54,7 +54,6 @@ import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
-import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -62,7 +61,6 @@ import org.springframework.stereotype.Component;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -262,27 +260,34 @@ public class LmdbValidationRuns implements ValidationRunStore {
     public Stream<ValidationCheck> findValidationChecksForValidationRun(Tx.Read tx, long trustAnchorId, Paging paging, SearchTerm searchTerm, Sorting sorting) {
         return applyPaging(paging,
                 applySorting(sorting,
-                        applySearchTerm(searchTerm, Stream.concat(
-                                streamValidationChecks(taIxMap, tx, trustAnchorId),
-                                streamValidationChecks(ctIxMap, tx, trustAnchorId)))));
+                        applySearchTerm(searchTerm, validationCheckForTaStreams(tx, trustAnchorId))));
     }
 
     @Override
     public int countValidationChecksForValidationRun(Tx.Read tx, long trustAnchorId, SearchTerm searchTerm) {
-        return (int) applySearchTerm(searchTerm, Stream.concat(
-                streamValidationChecks(taIxMap, tx, trustAnchorId),
-                streamValidationChecks(ctIxMap, tx, trustAnchorId))).count();
+        return (int) applySearchTerm(searchTerm, validationCheckForTaStreams(tx, trustAnchorId)).count();
     }
 
-    private <T extends ValidationRun> Stream<ValidationCheck> streamValidationChecks(IxMap<T> ixMap, Tx.Read tx, long trustAnchorId) {
-        return ixMap.getByIndex(BY_TA_INDEX, tx, Key.of(trustAnchorId))
+    private Stream<ValidationCheck> validationCheckForTaStreams(Tx.Read tx, long trustAnchorId) {
+        Stream<ValidationCheck> taChecks = taIxMap.getByIndexMax(BY_COMPLETED_AT_INDEX, tx,
+                vr -> trustAnchorId == vr.getTrustAnchor().key().asLong())
                 .values()
                 .stream()
-                .filter(ValidationRun::isSucceeded)
-                .max(Comparator.comparing(ValidationRun::getCompletedAt))
+                .findFirst()
                 .map(ValidationRun::getValidationChecks)
                 .orElse(Collections.emptyList())
                 .stream();
+
+        Stream<ValidationCheck> ctChecks = ctIxMap.getByIndexMax(BY_COMPLETED_AT_INDEX, tx,
+                vr -> trustAnchorId == vr.getTrustAnchor().key().asLong())
+                .values()
+                .stream()
+                .findFirst()
+                .map(ValidationRun::getValidationChecks)
+                .orElse(Collections.emptyList())
+                .stream();
+
+        return Stream.concat(taChecks, ctChecks);
     }
 
     private Stream<ValidationCheck> applyPaging(Paging paging, Stream<ValidationCheck> validationChecks) {
