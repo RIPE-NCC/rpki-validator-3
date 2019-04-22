@@ -225,9 +225,8 @@ public class LmdbValidationRuns implements ValidationRunStore {
 
     @Override
     public Optional<TrustAnchorValidationRun> findLatestCompletedForTrustAnchor(Tx.Read tx, TrustAnchor trustAnchor) {
-        return taIxMap.getByIndex(BY_TA_INDEX, tx, trustAnchor.key()).values().stream()
-                .filter(vr -> vr.getCompletedAt() != null)
-                .max(Comparator.comparing(ValidationRun::getCompletedAt));
+        return taIxMap.getByIndexMax(BY_COMPLETED_AT_INDEX, tx,
+                vr -> trustAnchor.key().equals(vr.getTrustAnchor().key())).values().stream().findFirst();
     }
 
     @Override
