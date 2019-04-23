@@ -42,30 +42,33 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 @Component
 public class JobExecutor {
 
-    public Job repeat(Job job, Duration duration) {
-        return new Job(
-                job.queueId,
-                job.type,
-                () -> {
-                    try {
-                        job.r.run();
-                    } finally {
-                        submit(repeat(job, duration));
-                    }
-                });
+    private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
+    private final ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+
+    private AtomicLong idSeq = new AtomicLong(1);
+
+    public void repeat(Job job, Duration duration) {
+        scheduledExecutorService.scheduleAtFixedRate(
+                () -> this.submit(job), 0, duration.toMillis(), TimeUnit.MILLISECONDS);
     }
 
     public Job rrdpRepoValidation(long repositoryId) {
         return new Job(
+                idSeq.getAndIncrement(),
                 QueueId.of("rrdp:" + repositoryId),
                 Type.RRDP_VALIDATION,
                 () -> rpkiRepositoryValidationService.validateRpkiRepository(repositoryId));
@@ -91,10 +94,9 @@ public class JobExecutor {
     private final Map<QueueId, List<Job>> jobs = new HashMap<>();
 
 
-    private final ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-
     public Job taValidation(long trustAnchorId) {
         return new Job(
+                idSeq.getAndIncrement(),
                 QueueId.of("trustAnchor:" + trustAnchorId),
                 Type.TA_VALIDATION,
                 () -> trustAnchorValidationService.validate(trustAnchorId));
@@ -102,6 +104,7 @@ public class JobExecutor {
 
     public Job certificateTreeValidation(long trustAnchorId) {
         return new Job(
+                idSeq.getAndIncrement(),
                 QueueId.of("trustAnchor:" + trustAnchorId),
                 Type.CAT_VALIDATION,
                 () -> certificateTreeValidationService.validate(trustAnchorId));
@@ -121,10 +124,14 @@ public class JobExecutor {
             executor.submit(() -> {
                 synchronized (this.jobs) {
 
+//                    currentlyExecuted.add()
                 }
             });
         }
     }
+
+    private final Set<Long> currentlyExecuted = new HashSet<>();
+
 
     public void sequence(Job... newJobs) {
         synchronized (this.jobs) {
@@ -141,6 +148,7 @@ public class JobExecutor {
     @AllArgsConstructor
     @EqualsAndHashCode(exclude = "r")
     public static class Job {
+        private long id;
         private QueueId queueId;
         private Type type;
         private Runnable r;

@@ -29,5 +29,5 @@
  */
 package net.ripe.rpki.validator3.storage.lmdb;
 
-public class OnDeleteRestrict extends RuntimeException {
+public class OnDeleteRestrictException extends RuntimeException {
 }

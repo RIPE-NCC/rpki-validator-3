@@ -245,7 +245,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
         }
         try {
             onDeleteTriggers.forEach(bf -> bf.accept(tx, primaryKey));
-        } catch (OnDeleteRestrict o) {
+        } catch (OnDeleteRestrictException o) {
             tx.abort();
         }
     }

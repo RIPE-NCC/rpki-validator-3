@@ -49,10 +49,10 @@ public class JobExecutorTest extends GenericStorageTest {
     public void testSmt() {
 
         // initial
-        exec.sequence(
-                exec.repeat(exec.taValidation(10L), Duration.ofMinutes(10)),
-                exec.certificateTreeValidation(10L)
-        );
+//        exec.sequence(
+//                exec.repeat(exec.taValidation(10L), Duration.ofMinutes(10)),
+//                exec.certificateTreeValidation(10L)
+//        );
 
         // loop
         exec.sequence(

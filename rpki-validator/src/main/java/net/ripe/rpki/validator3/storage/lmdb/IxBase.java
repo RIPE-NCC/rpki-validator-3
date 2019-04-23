@@ -133,7 +133,7 @@ public abstract class IxBase<T extends Serializable> {
         }
     }
 
-    // TODO Optimize
+    // TODO Optimize if possible
     public long size(Tx.Read tx) {
         long s = 0;
         try (final CursorIterator<ByteBuffer> ci = mainDb.iterate(tx.txn())) {

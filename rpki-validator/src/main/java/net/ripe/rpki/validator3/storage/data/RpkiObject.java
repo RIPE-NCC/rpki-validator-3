@@ -82,27 +82,21 @@ public class RpkiObject extends Base<RpkiObject> {
     @NotNull
     private String type;
 
-    @Getter
     @NotNull
     @Size(max = 1)
     @Valid
     private SortedSet<@NotNull @ValidLocationURI String> locations = new TreeSet<>();
 
-    @Getter
     private BigInteger serialNumber;
 
-    @Getter
     private Instant signingTime;
 
-    @Getter
     @NotNull
     private Instant lastMarkedReachableAt;
 
-    @Getter
     private byte[] authorityKeyIdentifier;
 
     @NotNull
-    @Getter
     private byte[] sha256;
 
     @NotNull
@@ -110,7 +104,6 @@ public class RpkiObject extends Base<RpkiObject> {
 
     @NotNull
     @Valid
-    @Getter
     private List<RoaPrefix> roaPrefixes = new ArrayList<>();
 
     protected RpkiObject() {
