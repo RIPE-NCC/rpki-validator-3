@@ -1,6 +1,6 @@
 
 * Mon Apr 8 2019 Adianto Wibisono <awibisono@@ripe.net> - 3.0
-- Avoid unique constraint violation due to redundant backgorund jobs 
+- Avoid unique constraint violation due to redundant background jobs 
 - Shorter DB clean up grace period default configuration: from 6 days to 3 days   
 - Immediate prefetch on uploaded Tals, to shorten bootstrap for the first time. 
 

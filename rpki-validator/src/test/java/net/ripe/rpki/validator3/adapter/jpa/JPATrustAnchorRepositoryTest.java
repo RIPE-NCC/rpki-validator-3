@@ -41,6 +41,7 @@ import net.ripe.rpki.validator3.domain.RpkiObject;
 import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.TrustAnchors;
 import net.ripe.rpki.validator3.domain.ValidationCheck;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,6 +68,13 @@ public class JPATrustAnchorRepositoryTest {
     @Autowired
     private TrustAnchors subject;
 
+    @Before
+    public void clear(){
+        subject.findAll().forEach(ta -> subject.remove(ta));
+        entityManager.flush();
+        entityManager.clear();
+    }
+
     @Test
     public void should_use_spring_data_access_Exceptions() {
         log.info("subject {}", subject.getClass());
@@ -85,6 +93,7 @@ public class JPATrustAnchorRepositoryTest {
 
     @Test
     public void should_get_statuses() {
+
         TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
         entityManager.persist(trustAnchor);
 
@@ -111,11 +120,10 @@ public class JPATrustAnchorRepositoryTest {
 
         List<TaStatus> statuses = subject.getStatuses();
 
-        assertThat(statuses).size().isEqualTo(1);
-
-        assertThat(statuses.stream().map(TaStatus::getErrors).count()).isEqualTo(1);
-        assertThat(statuses.stream().map(TaStatus::getWarnings).count()).isEqualTo(1);
-        assertThat(statuses.stream().map(TaStatus::getSuccessful).count()).isEqualTo(1);
+        assertThat(statuses.get(0).getTaName()).isEqualTo("trust anchor");
+        assertThat(statuses.get(0).getErrors()).isEqualTo(1);
+        assertThat(statuses.get(0).getWarnings()).isEqualTo(1);
+        assertThat(statuses.get(0).getSuccessful()).isEqualTo(1);
 
     }
 }
