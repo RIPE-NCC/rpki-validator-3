@@ -42,6 +42,8 @@ import net.ripe.rpki.validator3.storage.Binary;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+import java.util.ArrayList;
+import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Binary
@@ -59,7 +61,7 @@ public class TrustAnchor extends Base<TrustAnchor> {
     @Size(min = 1, max = 1000)
     private String name;
 
-    private ImmutableList<@NotNull @ValidLocationURI String> locations = ImmutableList.of();
+    private List<@NotNull @ValidLocationURI String> locations = new ArrayList<>();
 
     @NotNull
     @ValidPublicKeyInfo

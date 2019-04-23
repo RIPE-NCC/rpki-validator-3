@@ -131,7 +131,7 @@ public class RrdpServiceImpl implements RrdpService {
                         lmdb.readTx0(tx -> verifyDeltaIsApplicable(tx, d));
                         lmdb.writeTx0(tx -> {
                             storeDelta(tx, d, validationRun, rpkiRepository);
-                            rpkiRepository.setRrdpSerial(rpkiRepository.getRrdpSerial().add(BigInteger.ONE));
+                            tx.onCommit(() -> rpkiRepository.setRrdpSerial(rpkiRepository.getRrdpSerial().add(BigInteger.ONE)));
                         });
                     });
 

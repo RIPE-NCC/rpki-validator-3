@@ -86,10 +86,6 @@ import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_TRUST_
 import static net.ripe.rpki.validator3.storage.data.RpkiRepository.Type.RRDP;
 import static net.ripe.rpki.validator3.storage.data.RpkiRepository.Type.RSYNC;
 
-/**
- * TODO Decouple readings from writing in validation
- *  descend to allow parallel validations.
- */
 @Service
 @Slf4j
 public class CertificateTreeValidationService {
@@ -134,6 +130,7 @@ public class CertificateTreeValidationService {
 
     private void validateTa(TrustAnchor trustAnchor) {
         log.info("Starting tree validation for {}", trustAnchor);
+        long begin = System.currentTimeMillis();
 
         final Map<URI, RpkiRepository> registeredRepositories = new ConcurrentHashMap<>();
 
@@ -185,7 +182,8 @@ public class CertificateTreeValidationService {
         } finally {
             validationRun.completeWith(validationResult);
             lmdb.writeTx0(tx -> validationRunStore.update(tx, validationRun));
-            log.info("Tree validation {} for {}", validationRun.getStatus().toString().toLowerCase(), trustAnchor);
+            long end = System.currentTimeMillis();
+            log.info("Tree validation {} for {} in {}ms", validationRun.getStatus().toString().toLowerCase(), trustAnchor, (end - begin));
         }
     }
 

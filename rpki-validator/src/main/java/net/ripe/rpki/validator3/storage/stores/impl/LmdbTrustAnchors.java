@@ -43,10 +43,13 @@ import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
+import net.ripe.rpki.validator3.util.Time;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -88,6 +91,7 @@ public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements T
 
     @Override
     public void update(Tx.Write tx, TrustAnchor trustAnchor) {
+        trustAnchor.setUpdatedAt(Instant.now());
         ixMap.put(tx, trustAnchor.key(), trustAnchor);
     }
 
@@ -123,22 +127,29 @@ public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements T
 
     @Override
     public List<TaStatus> getStatuses(Tx.Read tx) {
-        return findAll(tx).stream().map(ta ->
-                validationRunStore.findLatestCaTreeValidationRun(tx, ta).map(vr -> {
-                    final List<ValidationCheck> validationChecks = vr.getValidationChecks();
-                    return TaStatus.of(
-                            String.valueOf(ta.key().asLong()),
-                            ta.getName(),
-                            Math.toIntExact(validationChecks.stream().filter(vc -> vc.getStatus() == ValidationCheck.Status.ERROR).count()),
-                            Math.toIntExact(validationChecks.stream().filter(vc1 -> vc1.getStatus() == ValidationCheck.Status.WARNING).count()),
-                            validationRunStore.getObjectCount(tx, vr),
-                            vr.getCompletedAt() == null ? null : Dates.formatUTC(vr.getCompletedAt()),
-                            ta.isInitialCertificateTreeValidationRunCompleted()
-                    );
-                }).orElse(TaStatus.of(
+        return findAll(tx).stream().map(ta -> {
+            Pair<Optional<CertificateTreeValidationRun>, Long> p = Time.timed(() ->
+                    validationRunStore.findLatestCaTreeValidationRun(tx, ta));
+            Optional<CertificateTreeValidationRun> latestCaTreeValidationRun = p.getLeft();
+            return latestCaTreeValidationRun.map(vr -> {
+                final List<ValidationCheck> validationChecks = vr.getValidationChecks();
+                Pair<Integer, Long> objectCount = Time.timed(() -> validationRunStore.getObjectCount(tx, vr));
+                int errors = Math.toIntExact(validationChecks.stream().filter(vc -> vc.getStatus() == ValidationCheck.Status.ERROR).count());
+                int warnings = Math.toIntExact(validationChecks.stream().filter(vc1 -> vc1.getStatus() == ValidationCheck.Status.WARNING).count());
+                return TaStatus.of(
                         String.valueOf(ta.key().asLong()),
-                        ta.getName(), 0, 0, 0, null, false
-                )))
+                        ta.getName(),
+                        errors,
+                        warnings,
+                        objectCount.getLeft(),
+                        vr.getCompletedAt() == null ? null : Dates.formatUTC(vr.getCompletedAt()),
+                        ta.isInitialCertificateTreeValidationRunCompleted()
+                );
+            }).orElse(TaStatus.of(
+                    String.valueOf(ta.key().asLong()),
+                    ta.getName(), 0, 0, 0, null, false
+            ));
+        })
                 .sorted(Comparator.comparing(ta -> ta.getTaName().toLowerCase()))
                 .collect(Collectors.toList());
     }

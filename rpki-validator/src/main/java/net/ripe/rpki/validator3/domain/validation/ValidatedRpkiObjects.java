@@ -56,7 +56,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
@@ -104,7 +103,6 @@ public class ValidatedRpkiObjects {
         });
     }
 
-    @Transactional
     public void update(Tx.Read tx, Ref<TrustAnchor> trustAnchor, Collection<RpkiObject> rpkiObjects) {
         trustAnchorStore.get(tx, trustAnchor.key())
                 .map(ta -> {

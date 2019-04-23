@@ -31,6 +31,7 @@ package net.ripe.rpki.validator3.storage;
 
 import lombok.Data;
 import lombok.Getter;
+import net.ripe.rpki.validator3.storage.encoding.BsonCoder;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.encoding.FSTCoder;
 import net.ripe.rpki.validator3.storage.encoding.GsonCoder;
@@ -105,6 +106,7 @@ public abstract class Lmdb {
     }
 
     public <T> Coder<T> defaultCoder(Class<T> c) {
+//        return new FSTCoder<>();
         return new GsonCoder<>(c);
 //        return new BsonCoder<>(c);
     }

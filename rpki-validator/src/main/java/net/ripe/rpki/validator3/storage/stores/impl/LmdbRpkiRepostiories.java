@@ -52,7 +52,9 @@ import org.springframework.stereotype.Component;
 
 import javax.validation.constraints.NotNull;
 import java.net.URI;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -101,7 +103,6 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
 
     @Override
     public RpkiRepository register(Tx.Write tx, Ref<TrustAnchor> trustAnchorRef, String uri, RpkiRepository.Type type) {
-        log.info("Registering repository {} of type {}", uri, type);
         final Optional<RpkiRepository> existing = findByURI(tx, uri);
 
         final RpkiRepository registered;
@@ -109,6 +110,7 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
             registered = existing.get();
             registered.addTrustAnchor(trustAnchorRef);
         } else {
+            log.info("Registering new repository {} of type {}", uri, type);
             registered = new RpkiRepository(trustAnchorRef, uri, type);
             final Key primaryKey = Key.of(sequences.next(tx, RPKI_REPOSITORIES + ":pk"));
             registered.setId(primaryKey);
@@ -140,6 +142,7 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
 
     @Override
     public void update(Tx.Write tx, RpkiRepository rpkiRepository) {
+        rpkiRepository.setUpdatedAt(Instant.now());
         ixMap.put(tx, rpkiRepository.key(), rpkiRepository);
     }
 

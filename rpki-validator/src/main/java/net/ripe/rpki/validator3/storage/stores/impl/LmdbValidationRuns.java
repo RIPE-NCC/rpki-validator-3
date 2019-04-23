@@ -187,6 +187,7 @@ public class LmdbValidationRuns implements ValidationRunStore {
 
     @Override
     public <T extends ValidationRun> void update(Tx.Write tx, T vr) {
+        vr.setUpdatedAt(Instant.now());
         pickIxMap(vr.getType()).put(tx, vr.key(), vr);
     }
 

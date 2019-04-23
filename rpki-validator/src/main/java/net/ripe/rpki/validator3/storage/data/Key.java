@@ -31,6 +31,7 @@ package net.ripe.rpki.validator3.storage.data;
 
 import com.google.common.primitives.Longs;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import net.ripe.rpki.validator3.storage.Binary;
 import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.util.Hex;
@@ -51,18 +52,19 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 @EqualsAndHashCode
 @Binary
 public class Key implements Serializable {
-    private final byte[] key;
+    @Getter
+    private final byte[] bytes;
 
     public Key(ByteBuffer bb) {
-        key = Bytes.toBytes(bb);
+        bytes = Bytes.toBytes(bb);
     }
 
     private Key(byte[] bytes) {
-        key = Arrays.copyOf(bytes, bytes.length);
+        this.bytes = Arrays.copyOf(bytes, bytes.length);
     }
 
     public Key(long long_) {
-        key = Longs.toByteArray(long_);
+        bytes = Longs.toByteArray(long_);
     }
 
     public static Key of(byte[] bytes) {
@@ -102,11 +104,11 @@ public class Key implements Serializable {
     }
 
     public ByteBuffer toByteBuffer() {
-        return Bytes.toDirectBuffer(key);
+        return Bytes.toDirectBuffer(bytes);
     }
 
     public int size() {
-        return key.length;
+        return bytes.length;
     }
 
     public Key concat(Key key) {
@@ -116,16 +118,16 @@ public class Key implements Serializable {
     public static Key concatAll(final Key... keys) {
         final int size = Arrays.stream(keys).mapToInt(Key::size).sum();
         final ByteBuffer combined = ByteBuffer.allocate(size);
-        Arrays.stream(keys).forEach(k -> combined.put(k.key));
+        Arrays.stream(keys).forEach(k -> combined.put(k.bytes));
         return new Key(combined);
     }
 
     @Override
     public String toString() {
-        return Hex.format(key);
+        return Hex.format(bytes);
     }
 
     public long asLong() {
-        return Longs.fromByteArray(key);
+        return Longs.fromByteArray(bytes);
     }
 }

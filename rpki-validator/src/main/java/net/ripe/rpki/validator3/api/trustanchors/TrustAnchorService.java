@@ -54,6 +54,7 @@ import javax.annotation.PostConstruct;
 import javax.validation.Valid;
 import java.io.File;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -96,7 +97,7 @@ public class TrustAnchorService {
     public long execute(@Valid AddTrustAnchor command) {
         TrustAnchor trustAnchor = new TrustAnchor(false);
         trustAnchor.setName(command.getName());
-        trustAnchor.setLocations(ImmutableList.copyOf(command.getLocations()));
+        trustAnchor.setLocations(new ArrayList<>(command.getLocations()));
         trustAnchor.setSubjectPublicKeyInfo(command.getSubjectPublicKeyInfo());
         trustAnchor.setRsyncPrefetchUri(command.getRsyncPrefetchUri());
         return lmdb.writeTx(tx -> add(tx, trustAnchor));
@@ -145,11 +146,10 @@ public class TrustAnchorService {
                 } else {
                     TrustAnchor trustAnchor = new TrustAnchor(true);
                     trustAnchor.setName(locator.getCaName());
-                    trustAnchor.setLocations(ImmutableList.copyOf(
+                    trustAnchor.setLocations(
                             locator.getCertificateLocations().stream()
                                     .map(URI::toASCIIString)
-                                    .collect(Collectors.toList())
-                    ));
+                                    .collect(Collectors.toList()));
                     trustAnchor.setSubjectPublicKeyInfo(locator.getPublicKeyInfo());
                     trustAnchor.setRsyncPrefetchUri(
                             locator.getPrefetchUris().stream()

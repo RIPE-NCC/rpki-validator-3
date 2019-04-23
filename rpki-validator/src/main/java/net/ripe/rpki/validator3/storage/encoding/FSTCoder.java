@@ -32,12 +32,19 @@ package net.ripe.rpki.validator3.storage.encoding;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.storage.Binary;
 import net.ripe.rpki.validator3.storage.Bytes;
+import org.nustaq.serialization.FSTBasicObjectSerializer;
+import org.nustaq.serialization.FSTClazzInfo;
+import org.nustaq.serialization.FSTObjectInput;
+import org.nustaq.serialization.FSTObjectOutput;
+import org.nustaq.serialization.FSTObjectSerializer;
 import org.nustaq.serialization.simpleapi.DefaultCoder;
 import org.nustaq.serialization.simpleapi.MinBinCoder;
 import org.reflections.Reflections;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Set;
@@ -50,7 +57,11 @@ public class FSTCoder<T> implements Coder<T> {
 
     public FSTCoder() {
         final Class[] registered = getRegisteredClasses();
-        coder = ThreadLocal.withInitial(() -> new MinBinCoder(true, registered));
+        coder = ThreadLocal.withInitial(() -> {
+            MinBinCoder minBinCoder = new MinBinCoder(true, registered);
+            minBinCoder.getConf().registerSerializer(Instant.class, new InstantSerializer(), false);
+            return minBinCoder;
+        });
     }
 
     private static Class[] registeredClasses = null;
@@ -74,5 +85,19 @@ public class FSTCoder<T> implements Coder<T> {
     @SuppressWarnings("unchecked")
     public T fromBytes(ByteBuffer bb) {
         return (T) coder.get().toObject(Bytes.toBytes(bb));
+    }
+
+    private class InstantSerializer extends FSTBasicObjectSerializer {
+        @Override
+        public void writeObject(FSTObjectOutput out, Object toWrite, FSTClazzInfo clzInfo, FSTClazzInfo.FSTFieldInfo referencedBy, int streamPosition) throws IOException {
+            out.writeLong(((Instant)toWrite).toEpochMilli());
+        }
+
+        @Override
+        public Object instantiate(Class objectClass, FSTObjectInput in, FSTClazzInfo serializationInfo, FSTClazzInfo.FSTFieldInfo referencee, int streamPosition) throws Exception {
+            Instant instant = Instant.ofEpochMilli(in.readLong());
+            in.registerObject(instant, streamPosition, serializationInfo, referencee);
+            return instant;
+        }
     }
 }

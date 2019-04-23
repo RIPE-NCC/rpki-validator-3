@@ -68,7 +68,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.security.auth.x500.X500Principal;
-import javax.transaction.Transactional;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URI;
@@ -85,7 +84,6 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 
 @Component
-@Transactional
 public class TrustAnchorsFactory {
     private static final X509ResourceCertificate RIPE_NCC_TA_CERTIFICATE = loadCertificate("/ripe-ncc-ta.cer");
     public static final String TA_RRDP_NOTIFY_URI = "https://rpki.test/notification.xml";
@@ -162,10 +160,10 @@ public class TrustAnchorsFactory {
         return ta;
     }
 
-    private <T> ImmutableList<T> concat(ImmutableList<T> s1, ImmutableList<T> s2) {
+    private <T> List<T> concat(List<T> s1, List<T> s2) {
         ArrayList<T> s = new ArrayList<>(s1);
         s.addAll(s2);
-        return ImmutableList.copyOf(s);
+        return s;
     }
 
     public X509ResourceCertificate createCertificateAuthority(Tx.Write tx, CertificateAuthority ca, CertificateAuthority issuer) {
