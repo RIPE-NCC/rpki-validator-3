@@ -48,16 +48,9 @@ public class RoaPrefix extends Base<RoaPrefix> {
     public static final byte FAMILY_IPV6 = 6;
 
     @NotNull
-    @NotEmpty
-    String prefix;
+    IpRange prefix;
 
     byte prefixFamily;
-
-    @NotNull
-    BigDecimal prefixBegin;
-
-    @NotNull
-    BigDecimal prefixEnd;
 
     Integer maximumLength;
 
@@ -67,10 +60,8 @@ public class RoaPrefix extends Base<RoaPrefix> {
 
     public static RoaPrefix of(IpRange prefix, Integer maximumLength, Asn asn) {
         RoaPrefix result = new RoaPrefix();
-        result.setPrefix(prefix.toString());
+        result.setPrefix(prefix);
         result.setPrefixFamily(prefix.getType() == IpResourceType.IPv4 ? FAMILY_IPV4 : FAMILY_IPV6);
-        result.setPrefixBegin(new BigDecimal(prefix.getStart().getValue()));
-        result.setPrefixEnd(new BigDecimal(prefix.getEnd().getValue()));
         result.setMaximumLength(maximumLength);
         result.setEffectiveLength(maximumLength != null ? maximumLength : prefix.getPrefixLength());
         result.setAsn(asn.longValue());

@@ -1,38 +1,28 @@
 package net.ripe.rpki.validator3.storage.data.coders;
 
-import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
 
 import java.io.Serializable;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 public class RefCoder<T extends Serializable> {
+
+    private static final Tags tags = new Tags();
+    private final static short TABLE_NAME_TAG = tags.unique(1);
+    private final static short KEY_TAG = tags.unique(2);
+
     byte[] toBytes(Ref<T> ref) {
-        byte[] bytes = ref.getMapName().getBytes(StandardCharsets.UTF_8);
-        byte[] keyBytes = ref.key().getBytes();
-
-        ByteBuffer bb = ByteBuffer.allocate(bytes.length + keyBytes.length + Integer.BYTES * 2);
-        bb.putInt(bytes.length);
-        bb.put(bytes);
-        bb.putInt(bytes.length);
-        bb.put(keyBytes);
-
-        return Bytes.toBytes(bb);
+        final Encoded encoded = new Encoded();
+        encoded.append(TABLE_NAME_TAG, Coders.toBytes(ref.getMapName()));
+        encoded.append(KEY_TAG, ref.key().getBytes());
+        return encoded.toByteArray();
     }
 
     Ref<T> fromBytes(byte[] bytes) {
-        ByteBuffer bb = ByteBuffer.wrap(bytes);
-        byte[] nameBytes = readBytes(bb);
-        byte[] keyBytes = readBytes(bb);
-        return Ref.unsafe(new String(nameBytes, StandardCharsets.UTF_8), Key.of(keyBytes));
-    }
-
-    private byte[] readBytes(ByteBuffer bb) {
-        int len = bb.getInt();
-        byte[] bytes = new byte[len];
-        bb.get(bytes);
-        return bytes;
+        Map<Short, byte[]> content = Encoded.fromByteArray(bytes).getContent();
+        return Ref.unsafe(
+                Coders.toString(content.get(TABLE_NAME_TAG)),
+                Key.of(content.get(KEY_TAG)));
     }
 }

@@ -243,7 +243,7 @@ public class ValidatedRpkiObjects {
                 builder.add(RoaPrefix.of(
                     trustAnchor,
                     new Asn(prefix.getAsn()),
-                    IpRange.parse(prefix.getPrefix()),
+                    prefix.getPrefix(),
                     prefix.getMaximumLength(),
                     prefix.getEffectiveLength(),
                     data.getLeft()

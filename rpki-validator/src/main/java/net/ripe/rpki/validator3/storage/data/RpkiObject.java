@@ -106,8 +106,7 @@ public class RpkiObject extends Base<RpkiObject> {
     @Valid
     private List<RoaPrefix> roaPrefixes = new ArrayList<>();
 
-    protected RpkiObject() {
-        super();
+    public RpkiObject() {
     }
 
     public RpkiObject(URI location, CertificateRepositoryObject object) {

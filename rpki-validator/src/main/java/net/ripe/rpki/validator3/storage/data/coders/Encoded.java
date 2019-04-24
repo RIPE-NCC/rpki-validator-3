@@ -10,6 +10,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 
 @Data
@@ -27,7 +29,15 @@ public class Encoded {
     private final Map<Short, byte[]> content = new HashMap<>();
 
     public void append(short fieldTag, byte[] bytes) {
-        content.put(fieldTag, bytes);
+        if (bytes != null) {
+            content.put(fieldTag, bytes);
+        }
+    }
+
+    public <T> void appendNotNull(T value, short fieldTag, Function<T, byte[]> f) {
+        if (value != null) {
+            content.put(fieldTag, f.apply(value));
+        }
     }
 
     public byte[] toByteArray() {
@@ -78,5 +88,8 @@ public class Encoded {
         return encoded;
     }
 
+    public static Optional<byte[]> field(Map<Short, byte[]> c, short tag) {
+        return Optional.ofNullable(c.get(tag));
+    }
 
 }

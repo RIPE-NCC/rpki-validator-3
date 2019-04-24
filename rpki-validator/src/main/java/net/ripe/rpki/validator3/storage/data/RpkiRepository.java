@@ -32,13 +32,10 @@ package net.ripe.rpki.validator3.storage.data;
 import com.google.common.base.Objects;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.ToString;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.storage.Binary;
 
-import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.math.BigInteger;
@@ -47,6 +44,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 @EqualsAndHashCode(callSuper = true)
+@Data
 @Binary
 @ToString
 public class RpkiRepository extends Base<RpkiRepository> {
@@ -67,32 +65,25 @@ public class RpkiRepository extends Base<RpkiRepository> {
     @NotNull
     private String status;
 
-    @Getter
     private Instant lastDownloadedAt;
 
     @NotEmpty
-    @Getter
     private Set<Ref<TrustAnchor>> trustAnchors = new HashSet<>();
 
     @ValidLocationURI
-    @Getter
     private String rsyncRepositoryUri;
 
     @ValidLocationURI
-    @Getter
     private String rrdpNotifyUri;
 
-    @Getter
-    @Setter
     private String rrdpSessionId;
 
-    @Getter
-    @Setter
     private BigInteger rrdpSerial;
 
-    @Getter
-    @Setter
     private Ref<RpkiRepository> parentRepository;
+
+    public RpkiRepository() {
+    }
 
     public RpkiRepository(Ref<TrustAnchor> trustAnchor, @NotNull @ValidLocationURI String location, Type type) {
         addTrustAnchor(trustAnchor);

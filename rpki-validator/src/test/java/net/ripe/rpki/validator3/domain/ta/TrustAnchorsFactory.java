@@ -199,7 +199,7 @@ public class TrustAnchorsFactory {
             ca.roaPrefixes.stream().collect(groupingBy(RoaPrefix::getAsn)).forEach((asn, roaPrefix) -> {
                 KeyPair roaKeyPair = KEY_PAIR_FACTORY.generate();
                 IpResourceSet resources = new IpResourceSet();
-                roaPrefix.forEach(p -> resources.add(IpRange.parse(p.getPrefix())));
+                roaPrefix.forEach(p -> resources.add(p.getPrefix()));
                 X509ResourceCertificate roaCertificate = new X509ResourceCertificateBuilder()
 //                    .withInheritedResourceTypes(EnumSet.allOf(IpResourceType.class))
                     .withResources(resources)
@@ -216,7 +216,7 @@ public class TrustAnchorsFactory {
                 RoaCms roaCms = new RoaCmsBuilder()
                     .withAsn(new Asn(asn))
                     .withPrefixes(roaPrefix.stream()
-                        .map(p -> new net.ripe.rpki.commons.crypto.cms.roa.RoaPrefix(IpRange.parse(p.getPrefix()), p.getMaximumLength()))
+                        .map(p -> new net.ripe.rpki.commons.crypto.cms.roa.RoaPrefix(p.getPrefix(), p.getMaximumLength()))
                         .collect(toList()))
                     .withCertificate(roaCertificate)
                     .withSignatureProvider(BouncyCastleProvider.PROVIDER_NAME)
