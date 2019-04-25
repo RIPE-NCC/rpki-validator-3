@@ -47,6 +47,7 @@ import net.ripe.rpki.validator3.storage.data.validation.RsyncRepositoryValidatio
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
+import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.MultIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
@@ -116,27 +117,27 @@ public class LmdbValidationRuns implements ValidationRunStore {
         ctIxMap = new IxMap<>(
                 lmdb.getEnv(),
                 CT_RPKI_VALIDATION_RUNS,
-                lmdb.defaultCoder(CertificateTreeValidationRun.class),
+                CoderFactory.defaultCoder(CertificateTreeValidationRun.class),
                 ImmutableMap.of(BY_TA_INDEX, vr -> Key.keys(vr.getTrustAnchor().key()),
                         BY_COMPLETED_AT_INDEX, this::completedAtIndexKeys));
 
         taIxMap = new IxMap<>(
                 lmdb.getEnv(),
                 TA_RPKI_VALIDATION_RUNS,
-                lmdb.defaultCoder(TrustAnchorValidationRun.class),
+                CoderFactory.defaultCoder(TrustAnchorValidationRun.class),
                 ImmutableMap.of(BY_TA_INDEX, vr -> Key.keys(vr.getTrustAnchor().key()),
                         BY_COMPLETED_AT_INDEX, this::completedAtIndexKeys));
 
         rsIxMap = new IxMap<>(
                 lmdb.getEnv(),
                 RS_RPKI_VALIDATION_RUNS,
-                lmdb.defaultCoder(RsyncRepositoryValidationRun.class),
+                CoderFactory.defaultCoder(RsyncRepositoryValidationRun.class),
                 ImmutableMap.of(BY_COMPLETED_AT_INDEX, this::completedAtIndexKeys));
 
         rrIxMap = new IxMap<>(
                 lmdb.getEnv(),
                 RR_RPKI_VALIDATION_RUNS,
-                lmdb.defaultCoder(RrdpRepositoryValidationRun.class),
+                CoderFactory.defaultCoder(RrdpRepositoryValidationRun.class),
                 ImmutableMap.of(BY_COMPLETED_AT_INDEX, this::completedAtIndexKeys));
 
         maps.put(CertificateTreeValidationRun.TYPE, ctIxMap);

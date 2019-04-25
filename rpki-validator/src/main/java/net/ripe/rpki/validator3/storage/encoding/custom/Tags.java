@@ -27,37 +27,20 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.data.validation;
+package net.ripe.rpki.validator3.storage.encoding.custom;
 
-import lombok.Getter;
-import lombok.Setter;
-import net.ripe.rpki.validator3.storage.Binary;
-import net.ripe.rpki.validator3.storage.data.Ref;
-import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import java.util.HashSet;
+import java.util.Set;
 
-@Binary
-public class TrustAnchorValidationRun extends ValidationRun {
-    public static final String TYPE = "trust-anchor-validation-run";
+public class Tags {
+    private final static Set<Short> uniqueTags = new HashSet<>();
 
-    @Getter
-    private Ref<TrustAnchor> trustAnchor;
-
-    @Getter
-    @Setter
-    private String trustAnchorCertificateURI;
-
-    public TrustAnchorValidationRun(Ref<TrustAnchor> trustAnchor, String trustAnchorCertificateURI) {
-        this.trustAnchor = trustAnchor;
-        this.trustAnchorCertificateURI = trustAnchorCertificateURI;
-    }
-
-    @Override
-    public String getType() {
-        return TYPE;
-    }
-
-    @Override
-    public void visit(Visitor visitor) {
-        visitor.accept(this);
+    public static synchronized short unique(int t) {
+        final short tag = (short) t;
+        if (uniqueTags.contains(tag)) {
+            throw new RuntimeException("Tag " + tag + " is not unique.");
+        }
+        uniqueTags.add(tag);
+        return tag;
     }
 }

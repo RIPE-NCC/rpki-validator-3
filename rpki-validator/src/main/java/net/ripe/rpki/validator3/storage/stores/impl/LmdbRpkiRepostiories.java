@@ -41,6 +41,7 @@ import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
@@ -86,7 +87,7 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
         ixMap = new IxMap<>(
                 lmdb.getEnv(),
                 RPKI_REPOSITORIES,
-                lmdb.defaultCoder(RpkiRepository.class),
+                CoderFactory.defaultCoder(RpkiRepository.class),
                 ImmutableMap.of(
                         BY_URI, this::locationIndex,
                         BY_TA, r -> r.getTrustAnchors().stream().map(Ref::key).collect(Collectors.toSet())

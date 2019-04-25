@@ -39,6 +39,7 @@ import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
+import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.SameSizeKeyIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
@@ -93,7 +94,7 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
                 SHA256_SIZE_IN_BYTES,
                 lmdb.getEnv(),
                 RPKI_OBJECTS,
-                lmdb.defaultCoder(RpkiObject.class),
+                CoderFactory.defaultCoder(RpkiObject.class),
                 ImmutableMap.of(
                         BY_AKI_INDEX, this::akiKey,
                         BY_LAST_REACHABLE_INDEX, this::lasMarkedReachableKey)

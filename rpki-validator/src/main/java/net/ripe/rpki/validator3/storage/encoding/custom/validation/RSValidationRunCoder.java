@@ -27,37 +27,28 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.data.validation;
+package net.ripe.rpki.validator3.storage.encoding.custom.validation;
 
-import lombok.Getter;
-import lombok.Setter;
-import net.ripe.rpki.validator3.storage.Binary;
-import net.ripe.rpki.validator3.storage.data.Ref;
-import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.encoding.custom.CustomCoder;
+import net.ripe.rpki.validator3.storage.encoding.custom.Encoded;
+import net.ripe.rpki.validator3.storage.data.validation.RsyncRepositoryValidationRun;
 
-@Binary
-public class TrustAnchorValidationRun extends ValidationRun {
-    public static final String TYPE = "trust-anchor-validation-run";
+import java.util.Map;
 
-    @Getter
-    private Ref<TrustAnchor> trustAnchor;
+public class RSValidationRunCoder implements CustomCoder<RsyncRepositoryValidationRun> {
 
-    @Getter
-    @Setter
-    private String trustAnchorCertificateURI;
-
-    public TrustAnchorValidationRun(Ref<TrustAnchor> trustAnchor, String trustAnchorCertificateURI) {
-        this.trustAnchor = trustAnchor;
-        this.trustAnchorCertificateURI = trustAnchorCertificateURI;
+    @Override
+    public byte[] toBytes(RsyncRepositoryValidationRun validationRun) {
+        final Encoded encoded = new Encoded();
+        ValidationRunCoder.toBytes(validationRun, encoded);
+        return encoded.toByteArray();
     }
 
     @Override
-    public String getType() {
-        return TYPE;
-    }
-
-    @Override
-    public void visit(Visitor visitor) {
-        visitor.accept(this);
+    public RsyncRepositoryValidationRun fromBytes(byte[] bytes) {
+        Map<Short, byte[]> content = Encoded.fromByteArray(bytes).getContent();
+        final RsyncRepositoryValidationRun validationRun = new RsyncRepositoryValidationRun();
+        ValidationRunCoder.fromBytes(content, validationRun);
+        return validationRun;
     }
 }

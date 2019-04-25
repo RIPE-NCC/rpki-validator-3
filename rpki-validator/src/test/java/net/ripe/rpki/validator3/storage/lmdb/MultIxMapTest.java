@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.storage.lmdb;
 import com.google.common.collect.Sets;
 import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Key;
+import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -55,7 +56,7 @@ public class MultIxMapTest {
     @Before
     public void setUp() throws Exception {
         lmdb = LmdbTests.makeLmdb(tmp.newFolder().getAbsolutePath());
-        multIxMap = new MultIxMap<>(lmdb.getEnv(), "test", lmdb.defaultCoder());
+        multIxMap = new MultIxMap<>(lmdb.getEnv(), "test", CoderFactory.defaultCoder());
     }
 
     @Test

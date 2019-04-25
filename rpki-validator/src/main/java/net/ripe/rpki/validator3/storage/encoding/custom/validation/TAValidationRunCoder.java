@@ -27,37 +27,42 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.data.validation;
+package net.ripe.rpki.validator3.storage.encoding.custom.validation;
 
-import lombok.Getter;
-import lombok.Setter;
-import net.ripe.rpki.validator3.storage.Binary;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.encoding.custom.CustomCoder;
+import net.ripe.rpki.validator3.storage.encoding.custom.Coders;
+import net.ripe.rpki.validator3.storage.encoding.custom.Encoded;
+import net.ripe.rpki.validator3.storage.encoding.custom.RefCoder;
+import net.ripe.rpki.validator3.storage.encoding.custom.Tags;
+import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
 
-@Binary
-public class TrustAnchorValidationRun extends ValidationRun {
-    public static final String TYPE = "trust-anchor-validation-run";
+import java.util.Map;
 
-    @Getter
-    private Ref<TrustAnchor> trustAnchor;
+public class TAValidationRunCoder implements CustomCoder<TrustAnchorValidationRun> {
 
-    @Getter
-    @Setter
-    private String trustAnchorCertificateURI;
+    private final static short TA_TAG = Tags.unique(101);
+    private final static short URI_TAG = Tags.unique(102);
 
-    public TrustAnchorValidationRun(Ref<TrustAnchor> trustAnchor, String trustAnchorCertificateURI) {
-        this.trustAnchor = trustAnchor;
-        this.trustAnchorCertificateURI = trustAnchorCertificateURI;
+    private final static RefCoder<TrustAnchor> taRefCoder = new RefCoder<>();
+
+    @Override
+    public byte[] toBytes(TrustAnchorValidationRun validationRun) {
+        final Encoded encoded = new Encoded();
+        ValidationRunCoder.toBytes(validationRun, encoded);
+        encoded.appendNotNull(TA_TAG, validationRun.getTrustAnchor(), taRefCoder::toBytes);
+        encoded.appendNotNull(URI_TAG, validationRun.getTrustAnchorCertificateURI(), Coders::toBytes);
+        return encoded.toByteArray();
     }
 
     @Override
-    public String getType() {
-        return TYPE;
-    }
-
-    @Override
-    public void visit(Visitor visitor) {
-        visitor.accept(this);
+    public TrustAnchorValidationRun fromBytes(byte[] bytes) {
+        Map<Short, byte[]> content = Encoded.fromByteArray(bytes).getContent();
+        final Ref<TrustAnchor> trustAnchorRef = taRefCoder.fromBytes(content.get(TA_TAG));
+        final String uri = Coders.toString(content.get(URI_TAG));
+        final TrustAnchorValidationRun validationRun = new TrustAnchorValidationRun(trustAnchorRef, uri);
+        ValidationRunCoder.fromBytes(content, validationRun);
+        return validationRun;
     }
 }

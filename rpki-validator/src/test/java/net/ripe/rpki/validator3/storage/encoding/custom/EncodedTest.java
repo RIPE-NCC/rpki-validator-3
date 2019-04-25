@@ -27,37 +27,35 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.data.validation;
+package net.ripe.rpki.validator3.storage.encoding.custom;
 
-import lombok.Getter;
-import lombok.Setter;
-import net.ripe.rpki.validator3.storage.Binary;
-import net.ripe.rpki.validator3.storage.data.Ref;
-import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import com.pholser.junit.quickcheck.Property;
+import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
+import org.junit.runner.RunWith;
 
-@Binary
-public class TrustAnchorValidationRun extends ValidationRun {
-    public static final String TYPE = "trust-anchor-validation-run";
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
 
-    @Getter
-    private Ref<TrustAnchor> trustAnchor;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertNotNull;
 
-    @Getter
-    @Setter
-    private String trustAnchorCertificateURI;
+@RunWith(JUnitQuickcheck.class)
+public class EncodedTest {
 
-    public TrustAnchorValidationRun(Ref<TrustAnchor> trustAnchor, String trustAnchorCertificateURI) {
-        this.trustAnchor = trustAnchor;
-        this.trustAnchorCertificateURI = trustAnchorCertificateURI;
-    }
-
-    @Override
-    public String getType() {
-        return TYPE;
-    }
-
-    @Override
-    public void visit(Visitor visitor) {
-        visitor.accept(this);
+    @Property
+    public void encodeAndDecode(List<String> s) {
+        if (s != null && s.size() < Short.MAX_VALUE) {
+            final Encoded e = new Encoded();
+            for (short tag = 0; tag < s.size(); tag++) {
+                e.append(tag, s.get(tag).getBytes(StandardCharsets.UTF_8));
+            }
+            final Encoded encoded = Encoded.fromByteArray(e.toByteArray());
+            for (Map.Entry<Short, byte[]> entry : e.getContent().entrySet()) {
+                byte[] bytes = encoded.getContent().get(entry.getKey());
+                assertNotNull("bytes for " + entry.getKey(), bytes);
+                assertArrayEquals(entry.getValue(), bytes);
+            }
+        }
     }
 }

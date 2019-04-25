@@ -27,37 +27,47 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.data.validation;
+package net.ripe.rpki.validator3.storage.encoding.custom;
 
-import lombok.Getter;
-import lombok.Setter;
-import net.ripe.rpki.validator3.storage.Binary;
-import net.ripe.rpki.validator3.storage.data.Ref;
-import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import com.pholser.junit.quickcheck.Property;
+import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
+import org.junit.runner.RunWith;
 
-@Binary
-public class TrustAnchorValidationRun extends ValidationRun {
-    public static final String TYPE = "trust-anchor-validation-run";
+import java.math.BigInteger;
+import java.util.List;
 
-    @Getter
-    private Ref<TrustAnchor> trustAnchor;
+import static org.junit.Assert.assertEquals;
 
-    @Getter
-    @Setter
-    private String trustAnchorCertificateURI;
-
-    public TrustAnchorValidationRun(Ref<TrustAnchor> trustAnchor, String trustAnchorCertificateURI) {
-        this.trustAnchor = trustAnchor;
-        this.trustAnchorCertificateURI = trustAnchorCertificateURI;
+@RunWith(JUnitQuickcheck.class)
+public class CodersTest {
+    @Property
+    public void testBoolean(boolean b) {
+        assertEquals(b, Coders.toBoolean(Coders.toBytes(b)));
     }
 
-    @Override
-    public String getType() {
-        return TYPE;
+    @Property
+    public void testInt(int b) {
+        assertEquals(b, Coders.toInt(Coders.toBytes(b)));
     }
 
-    @Override
-    public void visit(Visitor visitor) {
-        visitor.accept(this);
+    @Property
+    public void testLong(long b) {
+        assertEquals(b, Coders.toLong(Coders.toBytes(b)));
     }
+
+    @Property
+    public void testString(String b) {
+        assertEquals(b, Coders.toString(Coders.toBytes(b)));
+    }
+
+    @Property
+    public void testBigInteger(BigInteger b) {
+        assertEquals(b, Coders.toBigInteger(Coders.toBytes(b)));
+    }
+
+    @Property
+    public void testListString(List<String> b) {
+        assertEquals(b, Coders.fromBytes(Coders.toBytes(b, Coders::toBytes), Coders::toString));
+    }
+
 }

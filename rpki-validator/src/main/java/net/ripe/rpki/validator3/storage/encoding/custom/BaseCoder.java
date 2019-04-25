@@ -27,37 +27,28 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.data.validation;
+package net.ripe.rpki.validator3.storage.encoding.custom;
 
-import lombok.Getter;
-import lombok.Setter;
-import net.ripe.rpki.validator3.storage.Binary;
-import net.ripe.rpki.validator3.storage.data.Ref;
-import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.data.Base;
+import net.ripe.rpki.validator3.storage.data.Key;
 
-@Binary
-public class TrustAnchorValidationRun extends ValidationRun {
-    public static final String TYPE = "trust-anchor-validation-run";
+import java.util.Map;
 
-    @Getter
-    private Ref<TrustAnchor> trustAnchor;
+public class BaseCoder {
 
-    @Getter
-    @Setter
-    private String trustAnchorCertificateURI;
+    private final static short ID_TAG = Tags.unique(1);
+    private final static short CREATED_AT = Tags.unique(2);
+    private final static short UPDATED_AT = Tags.unique(3);
 
-    public TrustAnchorValidationRun(Ref<TrustAnchor> trustAnchor, String trustAnchorCertificateURI) {
-        this.trustAnchor = trustAnchor;
-        this.trustAnchorCertificateURI = trustAnchorCertificateURI;
+    public static void toBytes(Base base, Encoded encoded) {
+        encoded.appendNotNull(ID_TAG, base.key(), Key::getBytes);
+        encoded.appendNotNull(CREATED_AT, base.getCreatedAt(), Coders::toBytes);
+        encoded.appendNotNull(UPDATED_AT, base.getUpdatedAt(), Coders::toBytes);
     }
 
-    @Override
-    public String getType() {
-        return TYPE;
-    }
-
-    @Override
-    public void visit(Visitor visitor) {
-        visitor.accept(this);
+    public static void fromBytes(Map<Short, byte[]> content, Base base) {
+        Encoded.field(content, ID_TAG).ifPresent(b -> base.setId(Key.of(b)));
+        Encoded.field(content, CREATED_AT).ifPresent(b -> base.setCreatedAt(Coders.toInstant(b)));
+        Encoded.field(content, UPDATED_AT).ifPresent(b -> base.setUpdatedAt(Coders.toInstant(b)));
     }
 }

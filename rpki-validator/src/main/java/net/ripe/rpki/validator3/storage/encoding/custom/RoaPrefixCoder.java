@@ -27,37 +27,42 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.data.validation;
+package net.ripe.rpki.validator3.storage.encoding.custom;
 
-import lombok.Getter;
-import lombok.Setter;
-import net.ripe.rpki.validator3.storage.Binary;
-import net.ripe.rpki.validator3.storage.data.Ref;
-import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.ipresource.Asn;
+import net.ripe.ipresource.IpRange;
+import net.ripe.rpki.validator3.api.bgp.PackedIpRange;
+import net.ripe.rpki.validator3.storage.data.RoaPrefix;
 
-@Binary
-public class TrustAnchorValidationRun extends ValidationRun {
-    public static final String TYPE = "trust-anchor-validation-run";
+import java.util.Map;
 
-    @Getter
-    private Ref<TrustAnchor> trustAnchor;
+public class RoaPrefixCoder implements CustomCoder<RoaPrefix> {
 
-    @Getter
-    @Setter
-    private String trustAnchorCertificateURI;
+    private final static short PREFIX_TAG = Tags.unique(21);
+    private final static short ASN_TAG = Tags.unique(22);
+    private final static short MAX_LEN_TAG = Tags.unique(23);
 
-    public TrustAnchorValidationRun(Ref<TrustAnchor> trustAnchor, String trustAnchorCertificateURI) {
-        this.trustAnchor = trustAnchor;
-        this.trustAnchorCertificateURI = trustAnchorCertificateURI;
+    @Override
+    public byte[] toBytes(RoaPrefix roaPrefix) {
+        final Encoded encoded = new Encoded();
+        BaseCoder.toBytes(roaPrefix, encoded);
+        encoded.append(PREFIX_TAG, new PackedIpRange(roaPrefix.getPrefix()).getContent());
+        encoded.append(ASN_TAG, Coders.toBytes(roaPrefix.getAsn()));
+        encoded.appendNotNull(MAX_LEN_TAG, roaPrefix.getMaximumLength(), Coders::toBytes);
+        return encoded.toByteArray();
     }
 
     @Override
-    public String getType() {
-        return TYPE;
+    public RoaPrefix fromBytes(byte[] bytes) {
+        Map<Short, byte[]> content = Encoded.fromByteArray(bytes).getContent();
+        IpRange prefix = PackedIpRange.of(content.get(PREFIX_TAG));
+        long asn = Coders.toLong(content.get(ASN_TAG));
+        byte[] maxLen = content.get(MAX_LEN_TAG);
+        Integer maximumLength = maxLen != null ? Coders.toInt(maxLen) : null;
+
+        RoaPrefix roaPrefix = RoaPrefix.of(prefix, maximumLength, new Asn(asn));
+        BaseCoder.fromBytes(content, roaPrefix);
+        return roaPrefix;
     }
 
-    @Override
-    public void visit(Visitor visitor) {
-        visitor.accept(this);
-    }
 }

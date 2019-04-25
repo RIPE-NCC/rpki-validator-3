@@ -38,6 +38,7 @@ import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
+import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
@@ -73,7 +74,7 @@ public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements T
         this.ixMap = new IxMap<>(
                 lmdb.getEnv(),
                 TrustAnchorStore.TRUST_ANCHORS,
-                lmdb.defaultCoder(TrustAnchor.class),
+                CoderFactory.defaultCoder(TrustAnchor.class),
                 ImmutableMap.of(
                         BY_NAME, ta -> Key.keys(Key.of(ta.getName())),
                         BY_SUBJECT_KEY_INFO, ta -> Key.keys(Key.of(ta.getSubjectPublicKeyInfo())))

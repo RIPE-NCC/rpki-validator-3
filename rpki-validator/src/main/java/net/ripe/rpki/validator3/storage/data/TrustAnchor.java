@@ -29,7 +29,6 @@
  */
 package net.ripe.rpki.validator3.storage.data;
 
-import com.google.common.collect.ImmutableList;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;

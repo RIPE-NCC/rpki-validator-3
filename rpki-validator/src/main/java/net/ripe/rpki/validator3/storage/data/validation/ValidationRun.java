@@ -30,6 +30,7 @@
 package net.ripe.rpki.validator3.storage.data.validation;
 
 import lombok.Getter;
+import lombok.Setter;
 import net.ripe.rpki.commons.validation.ValidationLocation;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.commons.validation.ValidationStatus;
@@ -52,11 +53,14 @@ public abstract class ValidationRun extends Base<ValidationRun> {
     }
 
     @Getter
+    @Setter
     private Instant completedAt;
 
+    @Setter
     private String status = Status.RUNNING.name();
 
     @Getter
+    @Setter
     private List<ValidationCheck> validationChecks = new ArrayList<>();
 
     public abstract String getType();

@@ -34,7 +34,6 @@ import com.esotericsoftware.kryo.io.ByteBufferOutput;
 import com.esotericsoftware.kryo.io.Input;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.uuid.Generators;
-import com.google.common.base.Functions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
@@ -45,24 +44,17 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.jsoniter.JsonIterator;
-import com.jsoniter.any.Any;
 import com.jsoniter.output.JsonStream;
-import com.jsoniter.output.ReflectionEncoderFactory;
-import com.jsoniter.spi.Encoder;
-import com.jsoniter.spi.JsoniterSpi;
 import de.undercouch.bson4jackson.BsonFactory;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import net.ripe.rpki.validator3.storage.Bytes;
-import net.ripe.rpki.validator3.storage.data.Ref;
-import net.ripe.rpki.validator3.storage.data.RpkiRepository;
-import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.data.coders.BaseCoder;
-import net.ripe.rpki.validator3.storage.data.coders.Coder;
-import net.ripe.rpki.validator3.storage.data.coders.Coders;
-import net.ripe.rpki.validator3.storage.data.coders.Encoded;
-import net.ripe.rpki.validator3.storage.data.coders.Tags;
+import net.ripe.rpki.validator3.storage.encoding.custom.CustomCoder;
+import net.ripe.rpki.validator3.storage.encoding.custom.Coders;
+import net.ripe.rpki.validator3.storage.encoding.custom.Encoded;
+import net.ripe.rpki.validator3.storage.encoding.custom.Tags;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Assert;
@@ -84,17 +76,17 @@ import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.util.Base64;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
-import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.Assert.assertEquals;
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.Env.create;
 
@@ -285,7 +277,7 @@ public class LmdbTest {
 
     @Test
 //    @Ignore
-    public void testLmdbSpeedForCustom() throws IOException {
+    public void testLmdbSpeedForZZZCustom() throws IOException {
         BlaCoder blaCoder = new BlaCoder();
         testTemplate(
                 k -> {
@@ -297,6 +289,16 @@ public class LmdbTest {
                 },
                 buffer -> blaCoder.fromBytes(Bytes.toBytes(buffer))
         );
+    }
+
+
+    @Test
+//    @Ignore
+    public void testBlaCoder() throws IOException {
+        BlaCoder blaCoder = new BlaCoder();
+        Bla bla = generateBla();
+        Bla bla1 = blaCoder.fromBytes(blaCoder.toBytes(bla));
+        assertEquals(bla, bla1);
     }
 
 //
@@ -353,10 +355,12 @@ public class LmdbTest {
 
         long end = System.currentTimeMillis();
 
-        Long stime = Time.timed(() -> Stream.of(keys).forEach(value::apply));
-        Long dtime = 0L; //Time.timed(() -> Stream.of(keys).forEach(extract::apply));
+        Pair<List<ByteBuffer>, Long> stime = Time.timed(() -> Stream.of(keys).map(value).collect(Collectors.toList()));
+        Pair<List<T>, Long> dtime = Time.timed(() -> stime.getLeft().stream().map(extract).collect(Collectors.toList()));
 
-        System.out.println("total time = " + (end - begin) + "ms, stime = " + stime + "ms, dtime = " + dtime + "ms, env = " + env.info());
+        System.out.println("total time = " + (end - begin) + "ms, " +
+                "stime = " + stime.getRight() + "ms, " +
+                "dtime = " + dtime.getRight() + "ms, env = " + env.info());
         StreamUtils.copy(Runtime.getRuntime().exec("du -sm " + path).getInputStream(), System.out);
         env.close();
     }
@@ -399,7 +403,7 @@ public class LmdbTest {
     }
 
     private byte[] randomBytes(Random r) {
-        return randomBytes(r, r.nextInt(10240));
+        return randomBytes(r, r.nextInt(3000));
     }
 
     private byte[] randomBytes(Random r, int length) {
@@ -409,7 +413,7 @@ public class LmdbTest {
     }
 
     private String randomString(Random r) {
-        final int len = r.nextInt(150);
+        final int len = r.nextInt(50);
         StringBuilder s = new StringBuilder(len);
         for (int i = 0; i < len; i++) {
             s.append(r.nextInt(10));
@@ -427,6 +431,13 @@ public class LmdbTest {
         Thingy thingy;
     }
 
+    @EqualsAndHashCode(callSuper = true)
+    @AllArgsConstructor
+    @NoArgsConstructor
+    static class DerivedBla extends Bla {
+        String extra;
+    }
+
     @Data(staticConstructor = "of")
     @AllArgsConstructor
     @NoArgsConstructor
@@ -435,8 +446,7 @@ public class LmdbTest {
         int alsoThis;
     }
 
-
-    static class BlaCoder implements Coder<Bla> {
+    static class BlaCoder implements CustomCoder<Bla> {
 
         private static final Tags tags = new Tags();
         private final static short STUFF = tags.unique(1);
@@ -449,10 +459,10 @@ public class LmdbTest {
         @Override
         public byte[] toBytes(Bla bla) {
             Encoded encoded = new Encoded();
-            encoded.appendNotNull(bla.getSomeStringValueLongName(), LONG_STRING, Coders::toBytes);
-            encoded.appendNotNull(bla.stuff, STUFF, b -> b);
-            encoded.appendNotNull(bla.getCounter(), COUNTER, Coders::toBytes);
-            encoded.appendNotNull(bla.getThingy(), THINGY, thingyCoder::toBytes);
+            encoded.appendNotNull(LONG_STRING, bla.getSomeStringValueLongName(), Coders::toBytes);
+            encoded.appendNotNull(STUFF, bla.stuff, b -> b);
+            encoded.appendNotNull(COUNTER, bla.getCounter(), Coders::toBytes);
+            encoded.appendNotNull(THINGY, bla.getThingy(), thingyCoder::toBytes);
             return encoded.toByteArray();
         }
 
@@ -468,7 +478,7 @@ public class LmdbTest {
         }
     }
 
-    static class ThingyCoder implements Coder<Thingy> {
+    static class ThingyCoder implements CustomCoder<Thingy> {
 
         private static final Tags tags = new Tags();
         private final static short ALSO_THIS = tags.unique(1);
@@ -477,8 +487,8 @@ public class LmdbTest {
         @Override
         public byte[] toBytes(Thingy t) {
             Encoded encoded = new Encoded();
-            encoded.appendNotNull(t.getAlsoThis(), ALSO_THIS, Coders::toBytes);
-            encoded.appendNotNull(t.getThingyContent(), THINGY_CONTENT, Coders::toBytes);
+            encoded.appendNotNull(ALSO_THIS, t.getAlsoThis(), Coders::toBytes);
+            encoded.appendNotNull(THINGY_CONTENT, t.getThingyContent(), Coders::toBytes);
             return encoded.toByteArray();
         }
 

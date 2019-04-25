@@ -101,17 +101,6 @@ public abstract class Lmdb {
 
     public abstract Env<ByteBuffer> getEnv();
 
-    public <T> Coder<T> defaultCoder() {
-        return new FSTCoder<>();
-    }
-
-    public <T> Coder<T> defaultCoder(Class<T> c) {
-//        return new FSTCoder<>();
-        return new GsonCoder<>(c);
-//        return new BsonCoder<>(c);
-    }
-
-
     public String status() {
         return getEnv().stat().toString();
     }

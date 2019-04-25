@@ -27,37 +27,38 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.data.validation;
+package net.ripe.rpki.validator3.storage.encoding.custom.validation;
 
-import lombok.Getter;
-import lombok.Setter;
-import net.ripe.rpki.validator3.storage.Binary;
 import net.ripe.rpki.validator3.storage.data.Ref;
-import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.data.RpkiRepository;
+import net.ripe.rpki.validator3.storage.encoding.custom.CustomCoder;
+import net.ripe.rpki.validator3.storage.encoding.custom.Encoded;
+import net.ripe.rpki.validator3.storage.encoding.custom.RefCoder;
+import net.ripe.rpki.validator3.storage.encoding.custom.Tags;
+import net.ripe.rpki.validator3.storage.data.validation.RrdpRepositoryValidationRun;
 
-@Binary
-public class TrustAnchorValidationRun extends ValidationRun {
-    public static final String TYPE = "trust-anchor-validation-run";
+import java.util.Map;
 
-    @Getter
-    private Ref<TrustAnchor> trustAnchor;
+public class RRValidationRunCoder implements CustomCoder<RrdpRepositoryValidationRun> {
 
-    @Getter
-    @Setter
-    private String trustAnchorCertificateURI;
+    private final static short REPO_TAG = Tags.unique(91);
 
-    public TrustAnchorValidationRun(Ref<TrustAnchor> trustAnchor, String trustAnchorCertificateURI) {
-        this.trustAnchor = trustAnchor;
-        this.trustAnchorCertificateURI = trustAnchorCertificateURI;
+    private final static RefCoder<RpkiRepository> repoRefCoder = new RefCoder<>();
+
+    @Override
+    public byte[] toBytes(RrdpRepositoryValidationRun validationRun) {
+        final Encoded encoded = new Encoded();
+        ValidationRunCoder.toBytes(validationRun, encoded);
+        encoded.appendNotNull(REPO_TAG, validationRun.getRpkiRepository(), repoRefCoder::toBytes);
+        return encoded.toByteArray();
     }
 
     @Override
-    public String getType() {
-        return TYPE;
-    }
-
-    @Override
-    public void visit(Visitor visitor) {
-        visitor.accept(this);
+    public RrdpRepositoryValidationRun fromBytes(byte[] bytes) {
+        Map<Short, byte[]> content = Encoded.fromByteArray(bytes).getContent();
+        final Ref<RpkiRepository> repoRef = repoRefCoder.fromBytes(content.get(REPO_TAG));
+        final RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(repoRef);
+        ValidationRunCoder.fromBytes(content, validationRun);
+        return validationRun;
     }
 }

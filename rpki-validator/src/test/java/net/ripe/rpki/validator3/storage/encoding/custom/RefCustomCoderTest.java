@@ -27,37 +27,26 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.data.validation;
+package net.ripe.rpki.validator3.storage.encoding.custom;
 
-import lombok.Getter;
-import lombok.Setter;
-import net.ripe.rpki.validator3.storage.Binary;
+import com.pholser.junit.quickcheck.Property;
+import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import org.junit.Ignore;
+import org.junit.runner.RunWith;
 
-@Binary
-public class TrustAnchorValidationRun extends ValidationRun {
-    public static final String TYPE = "trust-anchor-validation-run";
+import static org.junit.Assert.assertEquals;
 
-    @Getter
-    private Ref<TrustAnchor> trustAnchor;
+@RunWith(JUnitQuickcheck.class)
+@Ignore
+public class RefCustomCoderTest {
 
-    @Getter
-    @Setter
-    private String trustAnchorCertificateURI;
+    private final RefCoder<TrustAnchor> coder = new RefCoder<>();
 
-    public TrustAnchorValidationRun(Ref<TrustAnchor> trustAnchor, String trustAnchorCertificateURI) {
-        this.trustAnchor = trustAnchor;
-        this.trustAnchorCertificateURI = trustAnchorCertificateURI;
+    @Property
+    public void formatAndParse(Ref<TrustAnchor> ref) throws Exception {
+        assertEquals(ref, coder.fromBytes(coder.toBytes(ref)));
     }
 
-    @Override
-    public String getType() {
-        return TYPE;
-    }
-
-    @Override
-    public void visit(Visitor visitor) {
-        visitor.accept(this);
-    }
 }

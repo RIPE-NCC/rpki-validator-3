@@ -27,37 +27,30 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.data.validation;
+package net.ripe.rpki.validator3.storage.encoding.custom;
 
-import lombok.Getter;
-import lombok.Setter;
-import net.ripe.rpki.validator3.storage.Binary;
+import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
-import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 
-@Binary
-public class TrustAnchorValidationRun extends ValidationRun {
-    public static final String TYPE = "trust-anchor-validation-run";
+import java.io.Serializable;
+import java.util.Map;
 
-    @Getter
-    private Ref<TrustAnchor> trustAnchor;
+public class RefCoder<T extends Serializable> implements CustomCoder<Ref<T>> {
 
-    @Getter
-    @Setter
-    private String trustAnchorCertificateURI;
+    private final static short TABLE_NAME_TAG = Tags.unique(11);
+    private final static short KEY_TAG = Tags.unique(12);
 
-    public TrustAnchorValidationRun(Ref<TrustAnchor> trustAnchor, String trustAnchorCertificateURI) {
-        this.trustAnchor = trustAnchor;
-        this.trustAnchorCertificateURI = trustAnchorCertificateURI;
+    public byte[] toBytes(Ref<T> ref) {
+        final Encoded encoded = new Encoded();
+        encoded.append(TABLE_NAME_TAG, Coders.toBytes(ref.getMapName()));
+        encoded.append(KEY_TAG, ref.key().getBytes());
+        return encoded.toByteArray();
     }
 
-    @Override
-    public String getType() {
-        return TYPE;
-    }
-
-    @Override
-    public void visit(Visitor visitor) {
-        visitor.accept(this);
+    public Ref<T> fromBytes(byte[] bytes) {
+        Map<Short, byte[]> content = Encoded.fromByteArray(bytes).getContent();
+        return Ref.unsafe(
+                Coders.toString(content.get(TABLE_NAME_TAG)),
+                Key.of(content.get(KEY_TAG)));
     }
 }

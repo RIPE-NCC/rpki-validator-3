@@ -68,9 +68,10 @@ public class FSTCoder<T> implements Coder<T> {
 
     private static synchronized Class[] getRegisteredClasses() {
         if (registeredClasses == null) {
-            final Reflections reflections = new Reflections("net.ripe.rpki.validator3.storage.data");
-            final Set<Class<?>> annotated = reflections.getTypesAnnotatedWith(Binary.class);
-            registeredClasses = annotated.toArray(new Class[0]);
+//            final Reflections reflections = new Reflections("net.ripe.rpki.validator3.storage.data");
+//            final Set<Class<?>> annotated = reflections.getTypesAnnotatedWith(Binary.class);
+//            registeredClasses = annotated.toArray(new Class[0]);
+            registeredClasses = new Class[0];
             Arrays.sort(registeredClasses, Comparator.comparing(Class::getName));
         }
         return registeredClasses;
