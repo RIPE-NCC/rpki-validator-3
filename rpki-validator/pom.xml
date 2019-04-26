@@ -498,6 +498,7 @@
                     <requires>
                         <require>java-1.8.0-openjdk</require>
                         <require>rsync</require>
+                        <require>lmdb-libs</require>
                     </requires>
                 </configuration>
             </plugin>
