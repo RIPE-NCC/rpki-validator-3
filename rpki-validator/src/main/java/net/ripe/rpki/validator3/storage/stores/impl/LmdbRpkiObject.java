@@ -162,13 +162,13 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
 
     @Override
     public Stream<byte[]> streamObjects(Tx.Read tx, RpkiObject.Type type) {
-        // TODO Add index if it makes it faster and not too heavy
-        //  but better just optimise the caller
         final List<byte[]> objectBytes = new ArrayList<>();
         ixMap.forEach(tx, (key, val) -> {
-            RpkiObject rpkiObject = ixMap.toValue(val);
-            if (type.equals(rpkiObject.getType())) {
-                objectBytes.add(Bytes.toBytes(val));
+            if (val != null) {
+                RpkiObject rpkiObject = ixMap.toValue(val);
+                if (type.equals(rpkiObject.getType())) {
+                    objectBytes.add(rpkiObject.getEncoded());
+                }
             }
         });
         return objectBytes.stream();

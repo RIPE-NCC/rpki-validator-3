@@ -214,13 +214,18 @@ public class LmdbValidationRuns implements ValidationRunStore {
     @Override
     @SuppressWarnings("unchecked")
     public <T extends ValidationRun> List<T> findLatestSuccessful(Tx.Read tx, Class<T> type) {
-//        // TODO Compare it with the original, it's pretty hard to say if it's correct
         final List<T> result = new ArrayList<>();
         List<IxMap<ValidationRun>> ixMaps = pickIxMaps(type);
         ixMaps.forEach(ixMap ->
                 ixMap.getByIndexMax(BY_COMPLETED_AT_INDEX, tx, ValidationRun::isSucceeded)
                         .forEach((k, v) -> result.add((T) v)));
         return result;
+    }
+
+    @Override
+    public Optional<CertificateTreeValidationRun> findLatestSuccessfulCaTreeValidationRun(Tx.Read tx, TrustAnchor trustAnchor) {
+        return ctIxMap.getByIndexMax(BY_COMPLETED_AT_INDEX, tx, vr ->
+                vr.isSucceeded() && trustAnchor.key().equals(vr.getTrustAnchor().key())).values().stream().findFirst();
     }
 
     @Override

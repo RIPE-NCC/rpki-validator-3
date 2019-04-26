@@ -299,8 +299,8 @@ public class RpkiRepositoryValidationService {
         for (URI parentLocation : Rsync.generateCandidateParentUris(location)) {
             RpkiRepository parentRepository = fetchedLocations.get(parentLocation);
             if (parentRepository != null) {
-                // TODO Fix it
-//                repository.setParentRepository(parentRepository);
+                final Ref<RpkiRepository> rpkiRepositoryRef = lmdb.readTx(tx -> rpkiRepositoryStore.makeRef(tx, parentRepository.key()));
+                repository.setParentRepository(rpkiRepositoryRef);
                 if (parentRepository.isDownloaded()) {
                     log.debug("Already fetched {} as part of {}, skipping", repository.getLocationUri(), parentRepository.getLocationUri());
                     repository.setDownloaded(parentRepository.getLastDownloadedAt());

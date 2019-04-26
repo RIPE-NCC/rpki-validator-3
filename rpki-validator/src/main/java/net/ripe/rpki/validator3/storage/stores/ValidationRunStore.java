@@ -62,6 +62,8 @@ public interface ValidationRunStore {
 
     <T extends ValidationRun> List<T> findLatestSuccessful(Tx.Read tx, Class<T> type);
 
+    Optional<CertificateTreeValidationRun> findLatestSuccessfulCaTreeValidationRun(Tx.Read tx, TrustAnchor trustAnchor);
+
     Optional<TrustAnchorValidationRun> findLatestCompletedForTrustAnchor(Tx.Read tx, TrustAnchor trustAnchor);
 
     Optional<CertificateTreeValidationRun> findLatestCaTreeValidationRun(Tx.Read tx, TrustAnchor trustAnchor);

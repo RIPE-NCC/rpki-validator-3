@@ -40,8 +40,6 @@ import java.time.Instant;
 public class Base<T extends Base> implements Serializable {
     private Key id;
     private Instant createdAt = Instant.now();
-
-    // TODO Must be updated in every "update" method
     private Instant updatedAt;
 
     public Key key() {
