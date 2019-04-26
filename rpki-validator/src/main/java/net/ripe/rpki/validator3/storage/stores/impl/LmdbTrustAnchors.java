@@ -147,7 +147,7 @@ public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements T
                 );
             }).orElse(TaStatus.of(
                     String.valueOf(ta.key().asLong()),
-                    ta.getName(), 0, 0, 0, null, false
+                    ta.getName(), 0, 1, 0, null, false
             ));
         })
                 .sorted(Comparator.comparing(ta -> ta.getTaName().toLowerCase()))
