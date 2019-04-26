@@ -126,7 +126,7 @@ public class ValidatedRpkiObjects {
     }
 
     public void remove(TrustAnchor trustAnchor) {
-        long trustAnchorId = trustAnchor.getId().asLong();
+        long trustAnchorId = trustAnchor.key().asLong();
         synchronized (listenerLock) {
             validatedObjectsByTrustAnchor.remove(trustAnchorId);
             notifyListeners();
@@ -207,7 +207,7 @@ public class ValidatedRpkiObjects {
         rpkiObjects
             .stream()
             .filter(object -> object.getType() == RpkiObject.Type.ROUTER_CER)
-            .map(object -> this.rpkiObjects.findCertificateRepositoryObject(tx, object.getId(), X509RouterCertificate.class, ValidationResult.withLocation("temporary")))
+            .map(object -> this.rpkiObjects.findCertificateRepositoryObject(tx, object.key(), X509RouterCertificate.class, ValidationResult.withLocation("temporary")))
             .filter(Optional::isPresent).map(Optional::get)
             .forEach(certificate -> {
                     final ImmutableList<String> asns = ImmutableList.copyOf(X509CertificateUtil.getAsns(certificate.getCertificate()));

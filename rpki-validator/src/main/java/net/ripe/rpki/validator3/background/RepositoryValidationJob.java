@@ -61,12 +61,12 @@ public class RepositoryValidationJob implements Job {
     static JobDetail buildJob(RpkiRepository rpkiRepository) {
         return JobBuilder.newJob(RepositoryValidationJob.class)
             .withIdentity(getJobKey(rpkiRepository))
-            .usingJobData(RPKI_REPOSITORY_ID, rpkiRepository.getId().asLong())
+            .usingJobData(RPKI_REPOSITORY_ID, rpkiRepository.key().asLong())
             .build();
     }
 
     static JobKey getJobKey(RpkiRepository rpkiRepository) {
         return new JobKey(String.format("%s#%s#%d", rpkiRepository.getType(),
-                rpkiRepository.getRrdpNotifyUri(), rpkiRepository.getId().asLong()));
+                rpkiRepository.getRrdpNotifyUri(), rpkiRepository.key().asLong()));
     }
 }

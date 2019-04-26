@@ -123,7 +123,7 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
 
         if (registered.getType() == RpkiRepository.Type.RSYNC) {
             findRsyncParentRepository(tx, uri).ifPresent(parent -> {
-                registered.setParentRepository(Ref.of(tx, ixMap, parent.getId()));
+                registered.setParentRepository(Ref.of(tx, ixMap, parent.key()));
                 if (parent.isDownloaded()) {
                     registered.setDownloaded(parent.getLastDownloadedAt());
                 }
@@ -284,7 +284,7 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
 
     @Override
     public void removeAllForTrustAnchor(Tx.Write tx, TrustAnchor trustAnchor) {
-        final Ref<TrustAnchor> taRef = Ref.unsafe(TrustAnchorStore.TRUST_ANCHORS, trustAnchor.getId());
+        final Ref<TrustAnchor> taRef = Ref.unsafe(TrustAnchorStore.TRUST_ANCHORS, trustAnchor.key());
         ixMap.getByIndex(BY_TA, tx, trustAnchor.key()).forEach((pk, rpkiRepository) -> {
             rpkiRepository.removeTrustAnchor(taRef);
             if (rpkiRepository.getTrustAnchors().isEmpty()) {

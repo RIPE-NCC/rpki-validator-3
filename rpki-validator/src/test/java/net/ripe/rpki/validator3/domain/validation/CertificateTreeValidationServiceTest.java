@@ -101,7 +101,7 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
         TrustAnchor ta = factory.createRipeNccTrustAnchor();
         wtx(tx -> getTrustAnchorStore().add(tx, ta));
 
-        subject.validate(ta.getId().asLong());
+        subject.validate(ta.key().asLong());
 
         List<CertificateTreeValidationRun> completed = rtx(tx -> getValidationRunStore().findAll(tx, CertificateTreeValidationRun.class));
         assertThat(completed).hasSize(1);
@@ -130,7 +130,7 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
             return trustAnchor;
         });
 
-        subject.validate(ta.getId().asLong());
+        subject.validate(ta.key().asLong());
 
         List<CertificateTreeValidationRun> completed = rtx(tx -> getValidationRunStore().findAll(tx, CertificateTreeValidationRun.class));
         assertThat(completed).hasSize(1);
@@ -139,7 +139,7 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
         assertThat(result.getStatus()).isEqualTo(SUCCEEDED);
 
         rtx0(tx -> {
-            assertThat(getRpkiRepositoryStore().findAll(tx, ta.getId())).first().extracting(
+            assertThat(getRpkiRepositoryStore().findAll(tx, ta.key())).first().extracting(
                     RpkiRepository::getStatus,
                     RpkiRepository::getLocationUri
             ).containsExactly(
@@ -168,7 +168,7 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
             return trustAnchor;
         });
 
-        subject.validate(ta.getId().asLong());
+        subject.validate(ta.key().asLong());
 
         List<CertificateTreeValidationRun> completed = rtx(tx -> getValidationRunStore().findAll(tx, CertificateTreeValidationRun.class));
         assertThat(completed).hasSize(1);
@@ -224,7 +224,7 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
             getRpkiRepositoryStore().update(tx, repository);
         });
 
-        subject.validate(ta.getId().asLong());
+        subject.validate(ta.key().asLong());
 
         List<CertificateTreeValidationRun> completed = rtx(tx -> getValidationRunStore().findAll(tx, CertificateTreeValidationRun.class));
         assertThat(completed).hasSize(1);
@@ -240,7 +240,7 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
         assertThat(validated).hasSize(1);
         assertThat(validated.get(0).getLeft()).isEqualTo(completed.get(0));
         Optional<X509ResourceCertificate> cro = rtx(tx -> getRpkiObjectStore().findCertificateRepositoryObject(tx,
-                validated.get(0).getRight().getId(), X509ResourceCertificate.class, ValidationResult.withLocation("ignored.cer")));
+                validated.get(0).getRight().key(), X509ResourceCertificate.class, ValidationResult.withLocation("ignored.cer")));
         assertThat(cro).isPresent().hasValueSatisfying(x -> assertThat(x.getSubject()).isEqualTo(new X500Principal("CN=child-ca")));
     }
 
@@ -264,7 +264,7 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
             return r;
         });
 
-        subject.validate(trustAnchor.getId().asLong());
+        subject.validate(trustAnchor.key().asLong());
 
         rtx0(tx -> {
             List<CertificateTreeValidationRun> completed = getValidationRunStore().findAll(tx, CertificateTreeValidationRun.class);
@@ -296,7 +296,7 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
             return r;
         });
 
-        subject.validate(trustAnchor.getId().asLong());
+        subject.validate(trustAnchor.key().asLong());
 
         rtx0(tx -> {
             List<CertificateTreeValidationRun> completed = getValidationRunStore().findAll(tx, CertificateTreeValidationRun.class);
@@ -343,7 +343,7 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
             return r;
         });
 
-        subject.validate(ta.getId().asLong());
+        subject.validate(ta.key().asLong());
 
         rtx0(tx -> {
             List<CertificateTreeValidationRun> completed = getValidationRunStore().findAll(tx, CertificateTreeValidationRun.class);
@@ -370,7 +370,7 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
             return ta1;
         });
 
-        subject.validate(ta.getId().asLong());
+        subject.validate(ta.key().asLong());
 
         List<CertificateTreeValidationRun> completed = rtx(tx -> getValidationRunStore().findAll(tx, CertificateTreeValidationRun.class));
         assertThat(completed).hasSize(1);

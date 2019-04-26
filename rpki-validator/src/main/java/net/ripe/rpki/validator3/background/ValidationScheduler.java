@@ -60,9 +60,9 @@ public class ValidationScheduler {
             return;
         }
         Preconditions.checkArgument(
-            trustAnchor.getId().asLong() >= Api.MINIMUM_VALID_ID,
+            trustAnchor.key().asLong() >= Api.MINIMUM_VALID_ID,
             "trustAnchor id %s is not valid",
-            trustAnchor.getId()
+            trustAnchor.key()
         );
 
         try {
@@ -111,9 +111,9 @@ public class ValidationScheduler {
             return;
         }
         Preconditions.checkArgument(
-            rpkiRepository.getId().asLong() >= Api.MINIMUM_VALID_ID,
+            rpkiRepository.key().asLong() >= Api.MINIMUM_VALID_ID,
             "rpkiRepository id %s is not valid",
-            rpkiRepository.getId()
+            rpkiRepository.key()
         );
 
         try {

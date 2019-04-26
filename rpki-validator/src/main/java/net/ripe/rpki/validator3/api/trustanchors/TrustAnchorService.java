@@ -114,7 +114,7 @@ public class TrustAnchorService {
         log.info("Added trust anchor '{}'", trustAnchor);
         validationScheduler.addTrustAnchor(trustAnchor);
 
-        return trustAnchor.getId().asLong();
+        return trustAnchor.key().asLong();
     }
 
     public void remove(long trustAnchorId) {

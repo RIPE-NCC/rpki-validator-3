@@ -89,7 +89,7 @@ public class TrustAnchorValidationServiceTest extends GenericStorageTest {
         ta.setLocations(ImmutableList.of(DUMMY_RSYNC_URI));
         wtx0(tx -> trustAnchors.add(tx, ta));
 
-        subject.validate(ta.getId().asLong());
+        subject.validate(ta.key().asLong());
 
         assertThat(ta.getCertificate()).isNull();
 
@@ -108,7 +108,7 @@ public class TrustAnchorValidationServiceTest extends GenericStorageTest {
 
         ta.setLocations(ImmutableList.of("src/test/resources/empty-file.cer"));
         wtx0(tx -> trustAnchors.update(tx, ta));
-        subject.validate(ta.getId().asLong());
+        subject.validate(ta.key().asLong());
 
         X509ResourceCertificate certificate = rtx(tx -> trustAnchors.get(tx, ta.key()).get().getCertificate());
         assertThat(certificate).isNull();
@@ -128,7 +128,7 @@ public class TrustAnchorValidationServiceTest extends GenericStorageTest {
         wtx0(tx -> trustAnchors.add(tx, ta));
 
         ta.setLocations(ImmutableList.of("src/test/resources/ripe-ncc-ta.cer"));
-        subject.validate(ta.getId().asLong());
+        subject.validate(ta.key().asLong());
 
         assertThat(ta.getCertificate()).isNull();
 

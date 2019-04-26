@@ -128,7 +128,7 @@ public class RpkiRepositoryValidationService {
         final ValidationResult validationResult = ValidationResult.withLocation(rpkiRepository.getRrdpNotifyUri());
 
         final RpkiRepositoryValidationRun validationRun = lmdb.writeTx(tx -> {
-            Ref<RpkiRepository> rpkiRepositoryRef = rpkiRepositoryStore.makeRef(tx, rpkiRepository.getId());
+            Ref<RpkiRepository> rpkiRepositoryRef = rpkiRepositoryStore.makeRef(tx, rpkiRepository.key());
             return validationRunStore.add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef));
         });
 

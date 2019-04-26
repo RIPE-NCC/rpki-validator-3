@@ -69,7 +69,7 @@ public class TrustAnchorResource {
     public static TrustAnchorResource of(TrustAnchor trustAnchor, Locale locale) {
         return of(
             "trust-anchor",
-            trustAnchor.getId().asLong(),
+            trustAnchor.key().asLong(),
             trustAnchor.getName(),
             trustAnchor.getLocations(),
             trustAnchor.getSubjectPublicKeyInfo(),
@@ -78,7 +78,7 @@ public class TrustAnchorResource {
             trustAnchor.isInitialCertificateTreeValidationRunCompleted(),
             trustAnchor.getEncodedCertificate(),
             new Links(
-                linkTo(methodOn(TrustAnchorController.class).get(trustAnchor.getId().asLong(), locale)).withSelfRel()
+                linkTo(methodOn(TrustAnchorController.class).get(trustAnchor.key().asLong(), locale)).withSelfRel()
             )
         );
     }

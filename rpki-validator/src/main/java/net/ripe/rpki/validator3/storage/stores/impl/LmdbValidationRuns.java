@@ -349,8 +349,8 @@ public class LmdbValidationRuns implements ValidationRunStore {
 
     @Override
     public void associate(Tx.Write writeTx, RsyncRepositoryValidationRun validationRun, RpkiRepository rpkiRepository) {
-        vr2repo.put(writeTx, validationRun.key(), rpkiRepository.getId());
-        repo2vr.put(writeTx, rpkiRepository.key(), validationRun.getId());
+        vr2repo.put(writeTx, validationRun.key(), rpkiRepository.key());
+        repo2vr.put(writeTx, rpkiRepository.key(), validationRun.key());
     }
 
     @Override

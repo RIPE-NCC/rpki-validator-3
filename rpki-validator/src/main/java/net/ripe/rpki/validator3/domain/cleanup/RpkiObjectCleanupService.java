@@ -149,7 +149,7 @@ public class RpkiObjectCleanupService {
     }
 
     private void traceCaCertificate(Tx.Read tx, Instant now, String name, RpkiObject caCertificate, Set<Key> markThem) {
-        rpkiObjects.findCertificateRepositoryObject(tx, caCertificate.getId(),
+        rpkiObjects.findCertificateRepositoryObject(tx, caCertificate.key(),
                 X509ResourceCertificate.class, ValidationResult.withLocation(name))
                 .ifPresent(certificate -> {
                     if (certificate.isCa() && certificate.getManifestUri() != null) {

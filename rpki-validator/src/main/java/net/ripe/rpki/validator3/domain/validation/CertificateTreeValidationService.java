@@ -134,7 +134,7 @@ public class CertificateTreeValidationService {
 
         final Map<URI, RpkiRepository> registeredRepositories = new ConcurrentHashMap<>();
 
-        final Ref<TrustAnchor> trustAnchorRef = lmdb.readTx(tx -> trustAnchorStore.makeRef(tx, trustAnchor.getId()));
+        final Ref<TrustAnchor> trustAnchorRef = lmdb.readTx(tx -> trustAnchorStore.makeRef(tx, trustAnchor.key()));
         final CertificateTreeValidationRun validationRun = lmdb.writeTx(tx ->
                 validationRunStore.add(tx, new CertificateTreeValidationRun(trustAnchorRef)));
 

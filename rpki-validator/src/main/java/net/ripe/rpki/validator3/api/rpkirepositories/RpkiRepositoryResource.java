@@ -69,14 +69,14 @@ public class RpkiRepositoryResource {
     public static RpkiRepositoryResource of(RpkiRepository rpkiRepository) {
         return of(
             repositoryType(rpkiRepository),
-            rpkiRepository.getId().asLong(),
+            rpkiRepository.key().asLong(),
             rpkiRepository.getLocationUri(),
             rpkiRepository.getStatus(),
             formatUTC(rpkiRepository.getLastDownloadedAt()),
             rpkiRepository.getRrdpSessionId(),
             rpkiRepository.getRrdpSerial(),
             new Links(
-                linkTo(methodOn(RpkiRepositoriesController.class).get(rpkiRepository.getId().asLong())).withSelfRel()
+                linkTo(methodOn(RpkiRepositoriesController.class).get(rpkiRepository.key().asLong())).withSelfRel()
             )
         );
     }
