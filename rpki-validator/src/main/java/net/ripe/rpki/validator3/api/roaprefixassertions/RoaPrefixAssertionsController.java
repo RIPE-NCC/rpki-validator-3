@@ -32,7 +32,6 @@ package net.ripe.rpki.validator3.api.roaprefixassertions;
 import com.google.common.collect.ImmutableList;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
-import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiCommand;
 import net.ripe.rpki.validator3.api.ApiResponse;

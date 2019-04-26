@@ -36,7 +36,6 @@ import lombok.Data;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorController;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
-import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.RrdpRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.RsyncRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;

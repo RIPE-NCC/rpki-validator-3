@@ -30,16 +30,13 @@
 package net.ripe.rpki.validator3.storage.encoding;
 
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.storage.Binary;
 import net.ripe.rpki.validator3.storage.Bytes;
 import org.nustaq.serialization.FSTBasicObjectSerializer;
 import org.nustaq.serialization.FSTClazzInfo;
 import org.nustaq.serialization.FSTObjectInput;
 import org.nustaq.serialization.FSTObjectOutput;
-import org.nustaq.serialization.FSTObjectSerializer;
 import org.nustaq.serialization.simpleapi.DefaultCoder;
 import org.nustaq.serialization.simpleapi.MinBinCoder;
-import org.reflections.Reflections;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -47,7 +44,6 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Set;
 
 @Component
 @Slf4j

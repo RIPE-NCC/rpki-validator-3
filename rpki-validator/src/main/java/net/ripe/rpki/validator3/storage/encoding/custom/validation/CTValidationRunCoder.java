@@ -31,11 +31,11 @@ package net.ripe.rpki.validator3.storage.encoding.custom.validation;
 
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.storage.encoding.custom.CustomCoder;
 import net.ripe.rpki.validator3.storage.encoding.custom.Encoded;
 import net.ripe.rpki.validator3.storage.encoding.custom.RefCoder;
 import net.ripe.rpki.validator3.storage.encoding.custom.Tags;
-import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
 
 import java.util.Map;
 

@@ -31,16 +31,11 @@ package net.ripe.rpki.validator3.storage;
 
 import lombok.Data;
 import lombok.Getter;
-import net.ripe.rpki.validator3.storage.encoding.BsonCoder;
-import net.ripe.rpki.validator3.storage.encoding.Coder;
-import net.ripe.rpki.validator3.storage.encoding.FSTCoder;
-import net.ripe.rpki.validator3.storage.encoding.GsonCoder;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import org.lmdbjava.Env;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

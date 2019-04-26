@@ -29,10 +29,10 @@
  */
 package net.ripe.rpki.validator3.api.health;
 
-import java.util.Map;
-
 import lombok.Value;
 import net.ripe.rpki.validator3.api.util.BuildInformation;
+
+import java.util.Map;
 
 @Value(staticConstructor = "of")
 class Health {

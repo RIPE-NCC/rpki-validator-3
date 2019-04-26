@@ -32,7 +32,6 @@ package net.ripe.rpki.validator3.api;
 import lombok.Value;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.function.BiFunction;
 import java.util.stream.Stream;

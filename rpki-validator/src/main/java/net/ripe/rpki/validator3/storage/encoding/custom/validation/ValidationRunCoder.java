@@ -29,11 +29,11 @@
  */
 package net.ripe.rpki.validator3.storage.encoding.custom.validation;
 
+import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
 import net.ripe.rpki.validator3.storage.encoding.custom.BaseCoder;
 import net.ripe.rpki.validator3.storage.encoding.custom.Coders;
 import net.ripe.rpki.validator3.storage.encoding.custom.Encoded;
 import net.ripe.rpki.validator3.storage.encoding.custom.Tags;
-import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
 
 import java.util.Map;
 

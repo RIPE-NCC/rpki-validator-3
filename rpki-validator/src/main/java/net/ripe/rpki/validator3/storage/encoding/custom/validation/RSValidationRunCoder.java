@@ -29,9 +29,9 @@
  */
 package net.ripe.rpki.validator3.storage.encoding.custom.validation;
 
+import net.ripe.rpki.validator3.storage.data.validation.RsyncRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.encoding.custom.CustomCoder;
 import net.ripe.rpki.validator3.storage.encoding.custom.Encoded;
-import net.ripe.rpki.validator3.storage.data.validation.RsyncRepositoryValidationRun;
 
 import java.util.Map;
 

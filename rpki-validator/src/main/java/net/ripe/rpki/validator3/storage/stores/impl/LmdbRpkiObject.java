@@ -48,7 +48,6 @@ import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;

@@ -29,8 +29,8 @@
  */
 package net.ripe.rpki.validator3.storage.lmdb;
 
-import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.data.Key;
+import net.ripe.rpki.validator3.storage.encoding.Coder;
 import org.lmdbjava.Cursor;
 import org.lmdbjava.CursorIterator;
 import org.lmdbjava.Dbi;

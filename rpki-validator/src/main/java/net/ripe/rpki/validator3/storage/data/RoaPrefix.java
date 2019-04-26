@@ -36,9 +36,7 @@ import net.ripe.ipresource.IpRange;
 import net.ripe.ipresource.IpResourceType;
 import net.ripe.rpki.validator3.storage.Binary;
 
-import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
-import java.math.BigDecimal;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
