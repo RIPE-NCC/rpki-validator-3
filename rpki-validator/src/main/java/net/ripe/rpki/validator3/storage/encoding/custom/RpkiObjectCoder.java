@@ -53,7 +53,7 @@ public class RpkiObjectCoder implements CustomCoder<RpkiObject> {
     public byte[] toBytes(RpkiObject rpkiObject) {
         final Encoded encoded = new Encoded();
 
-        BaseCoder.toBytes(rpkiObject, encoded);
+        BaseCoder.toBytesNoId(rpkiObject, encoded);
 
         encoded.append(TYPE_TAG, Coders.toBytes(rpkiObject.getType().name()));
         encoded.append(SHA256_TAG, rpkiObject.getSha256());
@@ -80,7 +80,7 @@ public class RpkiObjectCoder implements CustomCoder<RpkiObject> {
         Map<Short, byte[]> content = Encoded.fromByteArray(bytes).getContent();
 
         final RpkiObject rpkiObject = new RpkiObject();
-        BaseCoder.fromBytes(content, rpkiObject);
+        BaseCoder.fromBytesNoId(content, rpkiObject);
 
         rpkiObject.setType(Coders.toString(content.get(TYPE_TAG)));
         rpkiObject.setSha256(content.get(SHA256_TAG));

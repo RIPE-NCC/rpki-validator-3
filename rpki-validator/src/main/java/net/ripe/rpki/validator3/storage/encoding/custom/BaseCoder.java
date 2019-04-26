@@ -42,12 +42,20 @@ public class BaseCoder {
 
     public static void toBytes(Base base, Encoded encoded) {
         encoded.appendNotNull(ID_TAG, base.key(), Key::getBytes);
-        encoded.appendNotNull(CREATED_AT, base.getCreatedAt(), Coders::toBytes);
-        encoded.appendNotNull(UPDATED_AT, base.getUpdatedAt(), Coders::toBytes);
+        toBytesNoId(base, encoded);
     }
 
     public static void fromBytes(Map<Short, byte[]> content, Base base) {
         Encoded.field(content, ID_TAG).ifPresent(b -> base.setId(Key.of(b)));
+        fromBytesNoId(content, base);
+    }
+
+    public static void toBytesNoId(Base base, Encoded encoded) {
+        encoded.appendNotNull(CREATED_AT, base.getCreatedAt(), Coders::toBytes);
+        encoded.appendNotNull(UPDATED_AT, base.getUpdatedAt(), Coders::toBytes);
+    }
+
+    public static void fromBytesNoId(Map<Short, byte[]> content, Base base) {
         Encoded.field(content, CREATED_AT).ifPresent(b -> base.setCreatedAt(Coders.toInstant(b)));
         Encoded.field(content, UPDATED_AT).ifPresent(b -> base.setUpdatedAt(Coders.toInstant(b)));
     }
