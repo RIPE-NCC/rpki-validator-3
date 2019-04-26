@@ -82,10 +82,9 @@ public class SlurmStore {
             setIdSequenceStartValue(read());
         } else {
             if (!new File(path).isDirectory()) {
-                log.error("SLURM file doesn't exist, creating a new one");
                 throw new RuntimeException("Cannot write to the SLURM file, probably the path " + path + " doesn't exist");
             } else {
-                log.info("SLURM file {} doesn't exist, creating a new one", path);
+                log.info("SLURM file {} doesn't exist, creating a new one", slurmFile.getAbsolutePath());
                 save(new SlurmExt());
                 setIdSequenceStartValue(read());
             }
