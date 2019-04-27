@@ -43,7 +43,7 @@ import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.domain.RoaPrefixDefinition;
-import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
@@ -51,6 +51,7 @@ import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
+import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -99,30 +100,32 @@ public class ValidatedRpkiObjects {
                     pair -> pair.getLeft().getTrustAnchor(),
                     Collectors.mapping(Pair::getRight, Collectors.toList())
                 ));
-            grouped.forEach((taRef, rpkibjects) -> update(tx, taRef, rpkibjects));
+            grouped.forEach((taRef, rpkiObjects) -> update(tx, taRef, rpkiObjects));
         });
     }
 
     public void update(Tx.Read tx, Ref<TrustAnchor> trustAnchor, Collection<RpkiObject> rpkiObjects) {
-        trustAnchorStore.get(tx, trustAnchor.key())
-                .map(ta -> {
-                    TrustAnchorData trustAnchorData = TrustAnchorData.of(trustAnchor.key().asLong(), ta.getName());
-                    return RoaPrefixesAndRouterCertificates.of(
-                            extractRoaPrefixes(trustAnchorData, rpkiObjects),
-                            extractRouterCertificates(tx, trustAnchorData, rpkiObjects)
-                    );
-                })
-                .ifPresent(roaPrefixesAndRouterCertificates -> {
-                    synchronized (listenerLock) {
-                        log.info("updating validation objects cache for trust anchor {} with {} ROA prefixes and {} router certificates",
-                                trustAnchor,
-                                roaPrefixesAndRouterCertificates.getRoaPrefixes().size(),
-                                roaPrefixesAndRouterCertificates.getRouterCertificates().size()
-                        );
-                        validatedObjectsByTrustAnchor.put(trustAnchor.key().asLong(), roaPrefixesAndRouterCertificates);
-                        notifyListeners();
-                    }
-                });
+        Long t = Time.timed(() ->
+                trustAnchorStore.get(tx, trustAnchor.key())
+                        .map(ta -> {
+                            TrustAnchorData trustAnchorData = TrustAnchorData.of(trustAnchor.key().asLong(), ta.getName());
+                            return RoaPrefixesAndRouterCertificates.of(
+                                    extractRoaPrefixes(trustAnchorData, rpkiObjects),
+                                    extractRouterCertificates(tx, trustAnchorData, rpkiObjects)
+                            );
+                        })
+                        .ifPresent(roaPrefixesAndRouterCertificates -> {
+                            synchronized (listenerLock) {
+                                log.info("updating validation objects cache for trust anchor {} with {} ROA prefixes and {} router certificates",
+                                        trustAnchor,
+                                        roaPrefixesAndRouterCertificates.getRoaPrefixes().size(),
+                                        roaPrefixesAndRouterCertificates.getRouterCertificates().size()
+                                );
+                                validatedObjectsByTrustAnchor.put(trustAnchor.key().asLong(), roaPrefixesAndRouterCertificates);
+                                notifyListeners();
+                            }
+                        }));
+        log.info("Updated validated roas in {}ms", t);
     }
 
     public void remove(TrustAnchor trustAnchor) {

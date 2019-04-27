@@ -72,11 +72,11 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
     private final Map<String, Function<T, Set<Key>>> indexFunctions;
     private final List<BiConsumer<Tx.Write, Key>> onDeleteTriggers = new ArrayList<>();
 
-    public IxMap(final Env<ByteBuffer> env,
+    public IxMap(final Lmdb lmdb,
                  final String name,
                  final Coder<T> coder,
                  final Map<String, Function<T, Set<Key>>> indexFunctions) {
-        super(env, name, coder);
+        super(lmdb, name, coder);
         this.indexFunctions = indexFunctions;
 
         // TODO Add index management, reindexing if the index set has changed
@@ -85,20 +85,25 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
                 indexes.put(n, env.openDbi(name + "-idx-" + n, getIndexDbiFlags())));
     }
 
-    public IxMap(Env<ByteBuffer> env, String name, Coder<T> coder) {
-        this(env, name, coder, Collections.emptyMap());
+    public IxMap(final Lmdb lmdb, String name, Coder<T> coder) {
+        this(lmdb, name, coder, Collections.emptyMap());
     }
 
-    public void reindex() {
-        try (Tx.Write tx = writeTx()) {
-            dropIndexes(tx);
-            try (final Cursor<ByteBuffer> cursor = mainDb.openCursor(tx.txn())) {
+    public void reindex(HashSet<String> existingIndexes) {
+        existingIndexes.forEach(idx -> {
+            final Dbi<ByteBuffer> dbi = env.openDbi(idx, getIndexDbiFlags());
+            try (Txn<ByteBuffer> txn = writeTx().txn()) {
+                dbi.drop(txn, true);
+            }
+        });
+        try (Txn<ByteBuffer> txn = writeTx().txn()) {
+            try (final Cursor<ByteBuffer> cursor = mainDb.openCursor(txn)) {
                 do {
                     final ByteBuffer pkBuf = cursor.key();
                     final T value = coder.fromBytes(cursor.val());
                     indexFunctions.forEach((n, idxFun) -> {
                         final Set<Key> indexKeys = idxFun.apply(value);
-                        try (Cursor<ByteBuffer> c = indexes.get(n).openCursor(tx.txn())) {
+                        try (Cursor<ByteBuffer> c = indexes.get(n).openCursor(txn)) {
                             indexKeys.forEach(ik -> c.put(ik.toByteBuffer(), pkBuf));
                         }
                     });

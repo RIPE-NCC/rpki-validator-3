@@ -34,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
-import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
@@ -114,31 +114,28 @@ public class LmdbValidationRuns implements ValidationRunStore {
         this.rpkiObjectStore = rpkiObjectStore;
         this.sequences = sequences;
 
-        ctIxMap = new IxMap<>(
-                lmdb.getEnv(),
+        ctIxMap = lmdb.createIxMap(
                 CT_RPKI_VALIDATION_RUNS,
-                CoderFactory.defaultCoder(CertificateTreeValidationRun.class),
                 ImmutableMap.of(BY_TA_INDEX, vr -> Key.keys(vr.getTrustAnchor().key()),
-                        BY_COMPLETED_AT_INDEX, this::completedAtIndexKeys));
+                        BY_COMPLETED_AT_INDEX, this::completedAtIndexKeys),
+                CertificateTreeValidationRun.class);
 
-        taIxMap = new IxMap<>(
-                lmdb.getEnv(),
+        taIxMap = lmdb.createIxMap(
                 TA_RPKI_VALIDATION_RUNS,
-                CoderFactory.defaultCoder(TrustAnchorValidationRun.class),
                 ImmutableMap.of(BY_TA_INDEX, vr -> Key.keys(vr.getTrustAnchor().key()),
-                        BY_COMPLETED_AT_INDEX, this::completedAtIndexKeys));
+                        BY_COMPLETED_AT_INDEX, this::completedAtIndexKeys),
+                CoderFactory.makeCoder(TrustAnchorValidationRun.class)
+        );
 
-        rsIxMap = new IxMap<>(
-                lmdb.getEnv(),
+        rsIxMap = lmdb.createIxMap(
                 RS_RPKI_VALIDATION_RUNS,
-                CoderFactory.defaultCoder(RsyncRepositoryValidationRun.class),
-                ImmutableMap.of(BY_COMPLETED_AT_INDEX, this::completedAtIndexKeys));
+                ImmutableMap.of(BY_COMPLETED_AT_INDEX, this::completedAtIndexKeys),
+                RsyncRepositoryValidationRun.class);
 
-        rrIxMap = new IxMap<>(
-                lmdb.getEnv(),
+        rrIxMap = lmdb.createIxMap(
                 RR_RPKI_VALIDATION_RUNS,
-                CoderFactory.defaultCoder(RrdpRepositoryValidationRun.class),
-                ImmutableMap.of(BY_COMPLETED_AT_INDEX, this::completedAtIndexKeys));
+                ImmutableMap.of(BY_COMPLETED_AT_INDEX, this::completedAtIndexKeys),
+                CoderFactory.makeCoder(RrdpRepositoryValidationRun.class));
 
         maps.put(CertificateTreeValidationRun.TYPE, ctIxMap);
         maps.put(TrustAnchorValidationRun.TYPE, taIxMap);
@@ -156,11 +153,11 @@ public class LmdbValidationRuns implements ValidationRunStore {
                 return new Key(bb);
             }
         };
-        vr2ro = new MultIxMap<>(lmdb.getEnv(), VALIDATION_RUNS_TO_RPKI_OBJECTS, keyCoder);
-        ro2vr = new MultIxMap<>(lmdb.getEnv(), RPKI_OBJECTS_TO_VALIDATION_RUNS, keyCoder);
+        vr2ro = lmdb.createMultIxMap(VALIDATION_RUNS_TO_RPKI_OBJECTS, keyCoder);
+        ro2vr = lmdb.createMultIxMap(RPKI_OBJECTS_TO_VALIDATION_RUNS, keyCoder);
 
-        vr2repo = new IxMap<>(lmdb.getEnv(), VALIDATION_RUNS_TO_RPKI_REPOSITORIES, keyCoder);
-        repo2vr = new MultIxMap<>(lmdb.getEnv(), RPKI_REPOSITORIES_TO_VALIDATION_RUNS, keyCoder);
+        vr2repo = lmdb.createIxMap(VALIDATION_RUNS_TO_RPKI_REPOSITORIES, Collections.emptyMap(), keyCoder);
+        repo2vr = lmdb.createMultIxMap(RPKI_REPOSITORIES_TO_VALIDATION_RUNS, keyCoder);
 
         rpkiObjectStore.onDelete((tx, rpkiObjectKey) -> {
             ro2vr.get(tx, rpkiObjectKey).forEach(validationRunId -> vr2ro.delete(tx, validationRunId));
@@ -348,8 +345,8 @@ public class LmdbValidationRuns implements ValidationRunStore {
     }
 
     @Override
-    public void associate(Tx.Write writeTx, RpkiRepositoryValidationRun validationRun, RpkiObject ro) {
-        associateVrAndRo(writeTx, validationRun, ro);
+    public void associate(Tx.Write writeTx, RpkiRepositoryValidationRun validationRun, RpkiObject rpkiObject) {
+        associateVrAndRo(writeTx, validationRun, rpkiObject);
     }
 
     @Override

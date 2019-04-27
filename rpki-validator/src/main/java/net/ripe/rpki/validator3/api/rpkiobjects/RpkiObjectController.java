@@ -53,7 +53,7 @@ import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificate;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
-import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;

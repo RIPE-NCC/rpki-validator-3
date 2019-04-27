@@ -41,7 +41,7 @@ import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionsServi
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
 import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
-import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.stores.SettingsStore;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;

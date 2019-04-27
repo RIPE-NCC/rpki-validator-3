@@ -91,14 +91,6 @@ public class Key implements Serializable {
         return new Key(bb);
     }
 
-    public static Set<Key> keys(Collection<Key> ks) {
-        return ks.stream().collect(Collectors.toSet());
-    }
-
-    public static Set<Key> keys(Key... ks) {
-        return Stream.of(ks).collect(Collectors.toSet());
-    }
-
     public static Set<Key> keys(Key k) {
         return Collections.singleton(k);
     }
@@ -115,7 +107,7 @@ public class Key implements Serializable {
         return concatAll(this, key);
     }
 
-    public static Key concatAll(final Key... keys) {
+    private static Key concatAll(final Key... keys) {
         final int size = Arrays.stream(keys).mapToInt(Key::size).sum();
         final ByteBuffer combined = ByteBuffer.allocate(size);
         Arrays.stream(keys).forEach(k -> combined.put(k.bytes));

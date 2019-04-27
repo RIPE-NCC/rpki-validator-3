@@ -29,22 +29,46 @@
  */
 package net.ripe.rpki.validator3.storage;
 
+import fj.P;
 import lombok.Data;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.storage.data.Key;
+import net.ripe.rpki.validator3.storage.encoding.Coder;
+import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
+import net.ripe.rpki.validator3.storage.lmdb.IxMap;
+import net.ripe.rpki.validator3.storage.lmdb.MultIxMap;
+import net.ripe.rpki.validator3.storage.lmdb.SameSizeKeyIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import org.lmdbjava.Env;
 
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Slf4j
 public abstract class Lmdb {
+
+    private IxMap<HashSet<String>> metadata;
+
+    protected synchronized IxMap<HashSet<String>> meta() {
+        if (metadata == null) {
+            final Coder<HashSet<String>> objectCoder = CoderFactory.makeCoder((Class<HashSet<String>>) new HashSet<String>().getClass());
+            metadata = new IxMap<>(getEnv(), "meta", objectCoder, Collections.emptyMap());
+        }
+        return metadata;
+    }
 
     public <T> T writeTx(Function<Tx.Write, T> f) {
         Tx.Write tx = Tx.write(getEnv());
@@ -102,6 +126,58 @@ public abstract class Lmdb {
 
     @Getter
     private final Map<Long, TxInfo> txs = new ConcurrentHashMap<>();
+
+    public <T extends Serializable> IxMap<T> createIxMap(String name,
+                                                                  Map<String, Function<T, Set<Key>>> indexFunctions,
+                                                                  Class<T> c) {
+        return createIxMap(name, indexFunctions, CoderFactory.makeCoder(c));
+    }
+
+
+
+    public <T extends Serializable> MultIxMap<T> createMultIxMap(final String name, Coder<T> c) {
+        return new MultIxMap<>(getEnv(), name, c);
+    }
+
+    public <T extends Serializable> IxMap<T> createIxMap(final String name,
+                                                         final Map<String, Function<T, Set<Key>>> indexFunctions,
+                                                         Coder<T> c) {
+        final IxMap<T> ixMap = new IxMap<>(getEnv(), name, c, indexFunctions);
+        reindexIfNeeded(name, indexFunctions, ixMap);
+        return ixMap;
+    }
+
+    public <T extends Serializable> IxMap<T> createSameSizeIxMap(final int keySize,
+                                                                 final String name,
+                                                                 final Map<String, Function<T, Set<Key>>> indexFunctions,
+                                                                 Coder<T> c) {
+        final IxMap<T> ixMap = new SameSizeKeyIxMap<>(keySize, getEnv(), name, c, indexFunctions);
+        reindexIfNeeded(name, indexFunctions, ixMap);
+        return ixMap;
+    }
+
+    private <T extends Serializable> void reindexIfNeeded(String name, Map<String, Function<T, Set<Key>>> indexFunctions, IxMap<T> ixMap) {
+        final Set<String> indexes = indexFunctions.keySet();
+        final IxMap<HashSet<String>> meta = meta();
+        final Key key = Key.of(name + ":indexes");
+        HashSet<String> xxx = readTx(tx -> {
+            final Optional<HashSet<String>> existingIndexes = meta.get(tx, key);
+            if (existingIndexes.isPresent() && !existingIndexes.get().equals(indexes)) {
+                log.warn("For the map {} there is a difference between indexes in DB {} and the definition in the code {}",
+                        name, existingIndexes.get(), indexes);
+                return existingIndexes.get();
+            }
+            return null;
+        });
+
+        if (xxx != null) {
+            xxx.forEach(idxName -> {
+
+            });
+            ixMap.reindex(xxx);
+        }
+        writeTx0(tx -> meta.put(tx, key, new HashSet<>(indexes)));
+    }
 
     @Data
     public static class TxInfo {

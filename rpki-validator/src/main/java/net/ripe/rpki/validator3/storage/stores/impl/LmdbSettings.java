@@ -30,20 +30,15 @@
 package net.ripe.rpki.validator3.storage.stores.impl;
 
 import com.google.common.collect.ImmutableMap;
-import net.ripe.rpki.validator3.storage.Bytes;
-import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Key;
-import net.ripe.rpki.validator3.storage.encoding.Coder;
+import net.ripe.rpki.validator3.storage.encoding.StringCoder;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.SettingsStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.nio.ByteBuffer;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Component
 public class LmdbSettings extends GenericStoreImpl<String> implements SettingsStore {
@@ -55,21 +50,7 @@ public class LmdbSettings extends GenericStoreImpl<String> implements SettingsSt
 
     @Autowired
     public LmdbSettings(Lmdb lmdb) {
-        this.ixMap = new IxMap<>(
-                lmdb.getEnv(),
-                SETTINGS,
-                new Coder<String>() {
-                    @Override
-                    public ByteBuffer toBytes(String s) {
-                        return Bytes.toDirectBuffer(s.getBytes(UTF_8));
-                    }
-
-                    @Override
-                    public String fromBytes(ByteBuffer bb) {
-                        return new String(Bytes.toBytes(bb), UTF_8);
-                    }
-                },
-                ImmutableMap.of());
+        this.ixMap = lmdb.createIxMap(SETTINGS, ImmutableMap.of(), new StringCoder());
     }
 
     @Override
@@ -94,4 +75,5 @@ public class LmdbSettings extends GenericStoreImpl<String> implements SettingsSt
     protected IxMap<String> ixMap() {
         return ixMap;
     }
+
 }

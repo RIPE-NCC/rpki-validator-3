@@ -31,7 +31,7 @@ package net.ripe.rpki.validator3.api.rpkirepositories;
 
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
-import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

@@ -46,10 +46,10 @@ import static org.lmdbjava.DbiFlags.MDB_DUPSORT;
 
 public class MultIxMap<T extends Serializable> extends IxBase<T> {
 
-    public MultIxMap(final Env<ByteBuffer> env,
+    public MultIxMap(final Lmdb lmdb,
                      final String name,
                      final Coder<T> coder) {
-        super(env, name, coder);
+        super(lmdb, name, coder);
     }
 
     protected DbiFlags[] getMainDbCreateFlags() {

@@ -31,8 +31,8 @@ package net.ripe.rpki.validator3.storage;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import org.lmdbjava.Env;
-import org.lmdbjava.EnvFlags;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -42,9 +42,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
-import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.Env.create;
 
 @Profile("test")

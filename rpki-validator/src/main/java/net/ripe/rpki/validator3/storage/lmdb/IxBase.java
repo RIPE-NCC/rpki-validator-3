@@ -46,21 +46,21 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 
 public abstract class IxBase<T extends Serializable> {
-    private final Env<ByteBuffer> env;
+    protected final Env<ByteBuffer> env;
     @Getter
     private final String name;
 
     final Dbi<ByteBuffer> mainDb;
     final Coder<T> coder;
 
-    public IxBase(final Env<ByteBuffer> env,
+    public IxBase(final Lmdb lmdb,
                   final String name,
                   final Coder<T> coder) {
-        this.env = env;
+        this.env = lmdb.getEnv();
         this.name = name;
         this.coder = coder;
-        synchronized (env) {
-            this.mainDb = env.openDbi(name + "-main", getMainDbCreateFlags());
+        synchronized (lmdb) {
+            this.mainDb = lmdb.createMainMapDb(name, getMainDbCreateFlags());
         }
     }
 

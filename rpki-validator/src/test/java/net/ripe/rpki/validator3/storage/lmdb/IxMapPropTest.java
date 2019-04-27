@@ -32,7 +32,6 @@ package net.ripe.rpki.validator3.storage.lmdb;
 import com.google.common.collect.ImmutableMap;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
 import org.assertj.core.util.Files;
@@ -62,8 +61,9 @@ public class IxMapPropTest {
     @BeforeClass
     public static void setUp() throws Exception {
         lmdb = LmdbTests.makeLmdb(Files.temporaryFolder().getAbsolutePath());
-        ixMap = new IxMap<>(lmdb.getEnv(), "test", CoderFactory.defaultCoder(),
-                ImmutableMap.of(LENGTH_INDEX, s -> Key.keys(intKey(s.length()))));
+        ixMap = lmdb.createIxMap("test",
+                ImmutableMap.of(LENGTH_INDEX, s -> Key.keys(intKey(s.length()))),
+                CoderFactory.makeCoder());
         lmdb.writeTx0(tx -> ixMap.clear(tx));
     }
 

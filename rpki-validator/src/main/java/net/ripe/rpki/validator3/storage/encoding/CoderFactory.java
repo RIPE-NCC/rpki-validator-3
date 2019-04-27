@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.storage.encoding;
 
+import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
@@ -52,18 +53,20 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 public class CoderFactory {
 
-    public static <T> Coder<T> defaultCoder() {
+    public static <T> Coder<T> makeCoder() {
         return new FSTCoder<>();
     }
 
-    public static <T> Coder<T> defaultCoder(Class<T> c) {
-//        return new FSTCoder<>();
-//        return new GsonCoder<>(c);
-//        return new BsonCoder<>(c);
-
+    public static <T> Coder<T> makeCoder(Class<T> c) {
         final CustomCoder<T> cc = customCoder(c);
+        if (cc == null) {
+            final GsonCoder<T> gsonCoder = new GsonCoder<>(c);
+            log.warn("There's no custom coder for the type {}, using a {}", c, gsonCoder.getClass());
+            return gsonCoder;
+        }
         return new Coder<T>() {
             @Override
             public ByteBuffer toBytes(T t) {
@@ -93,11 +96,7 @@ public class CoderFactory {
     }
 
     private static <T> CustomCoder<T> customCoder(Class<T> c) {
-        CustomCoder<?> coder = customCoders.get(c);
-        if (coder == null) {
-            throw new IllegalArgumentException("There's no coder for class " + c);
-        }
-        return (CustomCoder<T>) coder;
+        return (CustomCoder<T>) customCoders.get(c);
     }
 
 }

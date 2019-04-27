@@ -29,9 +29,8 @@
  */
 package net.ripe.rpki.validator3.storage.stores.impl;
 
-import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbTests;
-import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

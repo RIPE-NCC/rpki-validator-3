@@ -41,7 +41,7 @@ import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.api.validationruns.ValidationCheckResource;
 import net.ripe.rpki.validator3.api.validationruns.ValidationRunController;
 import net.ripe.rpki.validator3.api.validationruns.ValidationRunResource;
-import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;

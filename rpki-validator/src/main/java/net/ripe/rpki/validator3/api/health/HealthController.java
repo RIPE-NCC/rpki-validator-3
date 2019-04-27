@@ -37,7 +37,7 @@ import net.ripe.rpki.validator3.api.bgp.BgpRisDump;
 import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
 import net.ripe.rpki.validator3.api.util.BuildInformation;
 import net.ripe.rpki.validator3.background.BackgroundJobs;
-import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

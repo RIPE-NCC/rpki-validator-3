@@ -59,21 +59,6 @@ public class JobExecutor {
     private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
     private final ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
-    private AtomicLong idSeq = new AtomicLong(1);
-
-    public void repeat(Job job, Duration duration) {
-        scheduledExecutorService.scheduleAtFixedRate(
-                () -> this.submit(job), 0, duration.toMillis(), TimeUnit.MILLISECONDS);
-    }
-
-    public Job rrdpRepoValidation(long repositoryId) {
-        return new Job(
-                idSeq.getAndIncrement(),
-                QueueId.of("rrdp:" + repositoryId),
-                Type.RRDP_VALIDATION,
-                () -> rpkiRepositoryValidationService.validateRpkiRepository(repositoryId));
-    }
-
     private enum Type {
         TA_VALIDATION, CAT_VALIDATION, RRDP_VALIDATION, COMPOSITE
     }
@@ -108,6 +93,22 @@ public class JobExecutor {
                 QueueId.of("trustAnchor:" + trustAnchorId),
                 Type.CAT_VALIDATION,
                 () -> certificateTreeValidationService.validate(trustAnchorId));
+    }
+
+    public Job rrdpRepoValidation(long repositoryId) {
+        return new Job(
+                idSeq.getAndIncrement(),
+                QueueId.of("rrdp:" + repositoryId),
+                Type.RRDP_VALIDATION,
+                () -> rpkiRepositoryValidationService.validateRpkiRepository(repositoryId));
+    }
+
+
+    private AtomicLong idSeq = new AtomicLong(1);
+
+    public void repeat(Job job, Duration duration) {
+        scheduledExecutorService.scheduleAtFixedRate(
+                () -> this.submit(job), 0, duration.toMillis(), TimeUnit.MILLISECONDS);
     }
 
     public void submit(Job job) {

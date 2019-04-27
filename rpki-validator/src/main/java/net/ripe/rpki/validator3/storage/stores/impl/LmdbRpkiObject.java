@@ -36,12 +36,11 @@ import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.storage.Bytes;
-import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
-import net.ripe.rpki.validator3.storage.lmdb.SameSizeKeyIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
@@ -89,15 +88,13 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
 
     @Autowired
     public LmdbRpkiObject(Lmdb lmdb) {
-        this.ixMap = new SameSizeKeyIxMap<>(
+        this.ixMap = lmdb.createSameSizeIxMap(
                 SHA256_SIZE_IN_BYTES,
-                lmdb.getEnv(),
                 RPKI_OBJECTS,
-                CoderFactory.defaultCoder(RpkiObject.class),
                 ImmutableMap.of(
                         BY_AKI_INDEX, this::akiKey,
-                        BY_LAST_REACHABLE_INDEX, this::lasMarkedReachableKey)
-        );
+                        BY_LAST_REACHABLE_INDEX, this::lasMarkedReachableKey),
+                CoderFactory.makeCoder(RpkiObject.class));
     }
 
     @Override

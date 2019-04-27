@@ -31,7 +31,6 @@ package net.ripe.rpki.validator3.storage.lmdb;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import net.ripe.rpki.validator3.storage.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
 import net.ripe.rpki.validator3.util.Time;
@@ -73,11 +72,11 @@ public class IxMapTest {
     @Before
     public void setUp() throws Exception {
         lmdb = LmdbTests.makeLmdb(tmp.newFolder().getAbsolutePath());
-        ixMap = new IxMap<>(lmdb.getEnv(), "test", CoderFactory.defaultCoder(),
+        ixMap = lmdb.createIxMap("test",
                 ImmutableMap.of(
                         LENGTH_INDEX, IxMapTest::stringLen,
-                        PAIRS_INDEX, s -> charPairSet(s).stream().map(Key::of).collect(Collectors.toSet()))
-        );
+                        PAIRS_INDEX, s -> charPairSet(s).stream().map(Key::of).collect(Collectors.toSet())),
+                CoderFactory.makeCoder());
     }
 
     @Test

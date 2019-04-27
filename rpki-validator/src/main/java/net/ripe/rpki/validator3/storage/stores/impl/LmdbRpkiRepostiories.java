@@ -36,12 +36,11 @@ import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
-import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
@@ -83,14 +82,13 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
         this.sequences = sequences;
         this.validationScheduler = validationScheduler;
 
-        ixMap = new IxMap<>(
-                lmdb.getEnv(),
+        ixMap = lmdb.createIxMap(
                 RPKI_REPOSITORIES,
-                CoderFactory.defaultCoder(RpkiRepository.class),
                 ImmutableMap.of(
                         BY_URI, this::locationIndex,
                         BY_TA, r -> r.getTrustAnchors().stream().map(Ref::key).collect(Collectors.toSet())
-                )
+                ),
+                RpkiRepository.class
         );
     }
 
@@ -284,17 +282,18 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
     @Override
     public void removeAllForTrustAnchor(Tx.Write tx, TrustAnchor trustAnchor) {
         final Ref<TrustAnchor> taRef = Ref.unsafe(TrustAnchorStore.TRUST_ANCHORS, trustAnchor.key());
-        ixMap.getByIndex(BY_TA, tx, trustAnchor.key()).forEach((pk, rpkiRepository) -> {
-            rpkiRepository.removeTrustAnchor(taRef);
-            if (rpkiRepository.getTrustAnchors().isEmpty()) {
-                if (rpkiRepository.getType() == RpkiRepository.Type.RRDP) {
-                    tx.onCommit(() -> validationScheduler.removeRpkiRepository(rpkiRepository));
-                }
-                ixMap.delete(tx, pk);
-            } else {
-                ixMap.put(tx, pk, rpkiRepository);
-            }
-        });
+        ixMap.getByIndex(BY_TA, tx, trustAnchor.key())
+                .forEach((pk, rpkiRepository) -> {
+                    rpkiRepository.removeTrustAnchor(taRef);
+                    if (rpkiRepository.getTrustAnchors().isEmpty()) {
+                        if (rpkiRepository.getType() == RpkiRepository.Type.RRDP) {
+                            tx.onCommit(() -> validationScheduler.removeRpkiRepository(rpkiRepository));
+                        }
+                        ixMap.delete(tx, pk);
+                    } else {
+                        ixMap.put(tx, pk, rpkiRepository);
+                    }
+                });
     }
 
     @Override

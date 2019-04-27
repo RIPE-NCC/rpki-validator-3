@@ -31,7 +31,7 @@ package net.ripe.rpki.validator3.storage.stores.impl;
 
 import com.google.common.primitives.Longs;
 import net.ripe.rpki.validator3.storage.Bytes;
-import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
@@ -52,7 +52,7 @@ public class Sequences extends GenericStoreImpl<Long> {
     @Autowired
     public Sequences(Lmdb lmdb) {
         this.ixMap = new IxMap<>(
-                lmdb.getEnv(),
+                lmdb,
                 SEQUENCES,
                 new Coder<Long>() {
                     @Override

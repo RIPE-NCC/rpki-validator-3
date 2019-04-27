@@ -31,8 +31,7 @@ package net.ripe.rpki.validator3.storage.stores.impl;
 
 import lombok.Getter;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
-import net.ripe.rpki.validator3.storage.Lmdb;
-import net.ripe.rpki.validator3.storage.lmdb.LmdbTests;
+import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
@@ -40,8 +39,6 @@ import net.ripe.rpki.validator3.storage.stores.SettingsStore;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.function.Consumer;

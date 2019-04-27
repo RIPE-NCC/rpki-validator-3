@@ -32,12 +32,10 @@ package net.ripe.rpki.validator3.storage.stores.impl;
 import com.google.common.collect.ImmutableMap;
 import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
 import net.ripe.rpki.validator3.api.util.Dates;
-import net.ripe.rpki.validator3.storage.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
-import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
@@ -70,14 +68,12 @@ public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements T
     public LmdbTrustAnchors(Lmdb lmdb,
                             Sequences sequences,
                             @Lazy ValidationRunStore validationRunStore) {
-        this.ixMap = new IxMap<>(
-                lmdb.getEnv(),
+        this.ixMap = lmdb.createIxMap(
                 TrustAnchorStore.TRUST_ANCHORS,
-                CoderFactory.defaultCoder(TrustAnchor.class),
                 ImmutableMap.of(
                         BY_NAME, ta -> Key.keys(Key.of(ta.getName())),
-                        BY_SUBJECT_KEY_INFO, ta -> Key.keys(Key.of(ta.getSubjectPublicKeyInfo())))
-        );
+                        BY_SUBJECT_KEY_INFO, ta -> Key.keys(Key.of(ta.getSubjectPublicKeyInfo()))),
+                TrustAnchor.class);
         this.sequences = sequences;
         this.validationRunStore = validationRunStore;
     }
@@ -127,29 +123,25 @@ public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements T
 
     @Override
     public List<TaStatus> getStatuses(Tx.Read tx) {
-        return findAll(tx).stream().map(ta -> {
-            Pair<Optional<CertificateTreeValidationRun>, Long> p = Time.timed(() ->
-                    validationRunStore.findLatestCaTreeValidationRun(tx, ta));
-            Optional<CertificateTreeValidationRun> latestCaTreeValidationRun = p.getLeft();
-            return latestCaTreeValidationRun.map(vr -> {
-                final List<ValidationCheck> validationChecks = vr.getValidationChecks();
-                Pair<Integer, Long> objectCount = Time.timed(() -> validationRunStore.getObjectCount(tx, vr));
-                int errors = Math.toIntExact(validationChecks.stream().filter(vc -> vc.getStatus() == ValidationCheck.Status.ERROR).count());
-                int warnings = Math.toIntExact(validationChecks.stream().filter(vc1 -> vc1.getStatus() == ValidationCheck.Status.WARNING).count());
-                return TaStatus.of(
+        return findAll(tx).stream().map(ta ->
+                validationRunStore.findLatestCaTreeValidationRun(tx, ta).map(vr -> {
+                    final List<ValidationCheck> validationChecks = vr.getValidationChecks();
+                    Pair<Integer, Long> objectCount = Time.timed(() -> validationRunStore.getObjectCount(tx, vr));
+                    int warnings = Math.toIntExact(validationChecks.stream().filter(vc1 -> vc1.getStatus() == ValidationCheck.Status.WARNING).count());
+                    int errors = Math.toIntExact(validationChecks.stream().filter(vc -> vc.getStatus() == ValidationCheck.Status.ERROR).count());
+                    return TaStatus.of(
+                            String.valueOf(ta.key().asLong()),
+                            ta.getName(),
+                            errors,
+                            warnings,
+                            objectCount.getLeft(),
+                            vr.getCompletedAt() == null ? null : Dates.formatUTC(vr.getCompletedAt()),
+                            ta.isInitialCertificateTreeValidationRunCompleted()
+                    );
+                }).orElse(TaStatus.of(
                         String.valueOf(ta.key().asLong()),
-                        ta.getName(),
-                        errors,
-                        warnings,
-                        objectCount.getLeft(),
-                        vr.getCompletedAt() == null ? null : Dates.formatUTC(vr.getCompletedAt()),
-                        ta.isInitialCertificateTreeValidationRunCompleted()
-                );
-            }).orElse(TaStatus.of(
-                    String.valueOf(ta.key().asLong()),
-                    ta.getName(), 0, 1, 0, null, false
-            ));
-        })
+                        ta.getName(), 0, 1, 0, null, false
+                )))
                 .sorted(Comparator.comparing(ta -> ta.getTaName().toLowerCase()))
                 .collect(Collectors.toList());
     }

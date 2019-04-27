@@ -52,11 +52,11 @@ public class SameSizeKeyIxMap<T extends Serializable> extends IxMap<T> {
     private final int keySizeInBytes;
 
     public SameSizeKeyIxMap(int keySizeInBytes,
-                            Env<ByteBuffer> env,
+                            Lmdb lmdb,
                             String name,
                             Coder<T> coder,
                             Map<String, Function<T, Set<Key>>> indexFunctions) {
-        super(env, name, coder, indexFunctions);
+        super(lmdb, name, coder, indexFunctions);
         this.keySizeInBytes = keySizeInBytes;
     }
 
