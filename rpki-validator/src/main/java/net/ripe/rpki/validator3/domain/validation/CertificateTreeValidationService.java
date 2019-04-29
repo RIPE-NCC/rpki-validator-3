@@ -372,10 +372,9 @@ public class CertificateTreeValidationService {
             object.ifPresent(obj -> {
                 boolean hashMatches = Arrays.equals(obj.getSha256(), entry.getValue());
                 validationResult.rejectIfFalse(hashMatches, VALIDATOR_MANIFEST_ENTRY_HASH_MATCHES, entry.getKey());
-                if (!hashMatches) {
-                    return;
+                if (hashMatches) {
+                    result.put(location, obj);
                 }
-                result.put(location, obj);
             });
         }
         return result;
