@@ -190,13 +190,12 @@ public class LmdbValidationRuns implements ValidationRunStore {
     }
 
     @Override
-    public <T extends ValidationRun> T get(Tx.Read tx, Class<T> type, long id) {
+    public <T extends ValidationRun> Optional<T> get(Tx.Read tx, Class<T> type, long id) {
         return pickIxMaps(type).stream()
                 .map(ixMap -> ixMap.get(tx, Key.of(id)))
                 .filter(Optional::isPresent)
                 .findFirst()
-                .map(validationRun -> (T) validationRun.get())
-                .orElse(null);
+                .map(validationRun -> (T) validationRun.get());
     }
 
     @Override

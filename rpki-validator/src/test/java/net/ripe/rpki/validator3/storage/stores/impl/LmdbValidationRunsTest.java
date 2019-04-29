@@ -36,15 +36,19 @@ import net.ripe.rpki.validator3.storage.TmpLmdb;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
+import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(SpringRunner.class)
 @IntegrationTest
@@ -64,7 +68,7 @@ public class LmdbValidationRunsTest extends GenericStorageTest {
 
         rtx0(tx -> {
             CertificateTreeValidationRun actual = getValidationRunStore().get(tx,
-                    CertificateTreeValidationRun.class, validationRun.key().asLong());
+                    CertificateTreeValidationRun.class, validationRun.key().asLong()).get();
             assertEquals(validationRun, actual);
         });
 
@@ -73,7 +77,7 @@ public class LmdbValidationRunsTest extends GenericStorageTest {
 
         rtx0(tx -> {
             CertificateTreeValidationRun actual = getValidationRunStore().get(tx,
-                    CertificateTreeValidationRun.class, validationRun.key().asLong());
+                    CertificateTreeValidationRun.class, validationRun.key().asLong()).get();
             assertEquals(validationRun, actual);
         });
     }
@@ -122,6 +126,22 @@ public class LmdbValidationRunsTest extends GenericStorageTest {
             assertEquals(vr2, latestSuccessful.get(0));
         });
 
+        rtx0(tx -> {
+            Optional<CertificateTreeValidationRun> latestCompletedForTrustAnchor = getValidationRunStore().findLatestCaTreeValidationRun(tx, trustAnchor);
+            assertTrue(latestCompletedForTrustAnchor.isPresent());
+            assertEquals(vr3, latestCompletedForTrustAnchor.get());
+        });
+
+        wtx0(tx -> {
+            vr3.setCompletedAt(null);
+            getValidationRunStore().update(tx, vr3);
+        });
+
+        rtx0(tx -> {
+            Optional<CertificateTreeValidationRun> latestCompletedForTrustAnchor = getValidationRunStore().findLatestCaTreeValidationRun(tx, trustAnchor);
+            assertTrue(latestCompletedForTrustAnchor.isPresent());
+            assertEquals(vr2, latestCompletedForTrustAnchor.get());
+        });
 
     }
 }

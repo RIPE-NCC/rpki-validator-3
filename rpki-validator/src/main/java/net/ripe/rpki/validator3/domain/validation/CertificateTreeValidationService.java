@@ -57,6 +57,7 @@ import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
 import net.ripe.rpki.validator3.storage.stores.SettingsStore;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
+import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jooq.lambda.Unchecked;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -165,7 +166,8 @@ public class CertificateTreeValidationService {
 
             final List<RpkiObject> rpkiObjects = validateCertificateAuthority(trustAnchor, registeredRepositories, context, validationResult);
             lmdb.writeTx0(tx -> {
-                rpkiObjects.forEach(o -> validationRunStore.associate(tx, validationRun, o));
+                Long t = Time.timed(() -> rpkiObjects.forEach(o -> validationRunStore.associate(tx, validationRun, o)));
+                log.info("Associated {} objects with the validation run {} in {}ms", rpkiObjects.size(), validationRun.key(), t);
 
                 if (isValidationRunCompleted(validationResult)) {
                     trustAnchor.markInitialCertificateTreeValidationRunCompleted();
@@ -176,7 +178,7 @@ public class CertificateTreeValidationService {
                     }
                 }
 
-                validatedRpkiObjects.update(tx, trustAnchorRef, rpkiObjects);
+                tx.onCommit(() -> validatedRpkiObjects.update(trustAnchorRef, rpkiObjects));
             });
         } finally {
             validationRun.completeWith(validationResult);

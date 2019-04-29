@@ -79,7 +79,7 @@ public class ValidationRunController {
                 )));
     }
 
-    @GetMapping(path = "/latest")
+    @GetMapping(path = "/latest-successful")
     public ResponseEntity<ApiResponse<List<ValidationRunResource>>> listLatestSuccessful(Locale locale) {
         return lmdb.readTx(tx ->
                 ResponseEntity.ok(ApiResponse.data(
@@ -95,10 +95,11 @@ public class ValidationRunController {
 
     @GetMapping(path = "/{id}")
     public ResponseEntity<ApiResponse<ValidationRunResource>> get(@PathVariable long id, Locale locale) {
-        return lmdb.readTx(tx -> {
-            ValidationRun validationRun = validationRunStore.get(tx, ValidationRun.class, id);
-            return ResponseEntity.ok(ApiResponse.data(ValidationRunResource.of(validationRun,
-                    vr -> validationRunStore.getObjectCount(tx, vr), messageSource, locale)));
-        });
+        return lmdb.readTx(tx ->
+                validationRunStore.get(tx, ValidationRun.class, id)
+                        .map(validationRun ->
+                                ResponseEntity.ok(ApiResponse.data(ValidationRunResource.of(validationRun,
+                                        vr -> validationRunStore.getObjectCount(tx, vr), messageSource, locale))))
+                        .orElse(ResponseEntity.notFound().build()));
     }
 }

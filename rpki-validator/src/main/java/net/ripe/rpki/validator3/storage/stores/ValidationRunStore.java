@@ -56,7 +56,7 @@ public interface ValidationRunStore {
 
     <T extends ValidationRun> void update(Tx.Write tx, T validationRun);
 
-    <T extends ValidationRun> T get(Tx.Read tx, Class<T> type, long id);
+    <T extends ValidationRun> Optional<T> get(Tx.Read tx, Class<T> type, long id);
 
     <T extends ValidationRun> List<T> findAll(Tx.Read tx, Class<T> type);
 

@@ -91,17 +91,20 @@ public class ValidatedRpkiObjects {
 
     @PostConstruct
     private synchronized void initialize() {
-        lmdb.readTx0(tx -> {
-            Map<Ref<TrustAnchor>, List<RpkiObject>> grouped = Stream.concat(
-                    validationRunStore.findCurrentlyValidated(tx, RpkiObject.Type.ROA),
-                    validationRunStore.findCurrentlyValidated(tx, RpkiObject.Type.ROUTER_CER)
-                )
-                .collect(Collectors.groupingBy(
-                    pair -> pair.getLeft().getTrustAnchor(),
-                    Collectors.mapping(Pair::getRight, Collectors.toList())
-                ));
-            grouped.forEach((taRef, rpkiObjects) -> update(tx, taRef, rpkiObjects));
-        });
+        lmdb.readTx0(tx ->
+                Stream.concat(
+                        validationRunStore.findCurrentlyValidated(tx, RpkiObject.Type.ROA),
+                        validationRunStore.findCurrentlyValidated(tx, RpkiObject.Type.ROUTER_CER))
+                        .collect(Collectors.groupingBy(
+                                pair -> pair.getLeft().getTrustAnchor(),
+                                Collectors.mapping(Pair::getRight, Collectors.toList())
+                        ))
+                        .forEach((taRef, rpkiObjects) -> update(tx, taRef, rpkiObjects)));
+    }
+
+
+    public void update(Ref<TrustAnchor> trustAnchor, Collection<RpkiObject> rpkiObjects) {
+        lmdb.readTx0(tx -> update(tx, trustAnchor, rpkiObjects));
     }
 
     public void update(Tx.Read tx, Ref<TrustAnchor> trustAnchor, Collection<RpkiObject> rpkiObjects) {
