@@ -54,6 +54,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -280,6 +281,45 @@ public class IxMapTest {
             assertEquals(Sets.newHashSet("ttt"), getShortestStrings(tx, s -> s.contains("t")));
             assertEquals(Sets.newHashSet("zabx"), getShortestStrings(tx, s -> s.contains("z")));
         });
+    }
+
+    @Test
+    public void testReindex() {
+        ixMap = lmdb.createIxMap("testReindex",
+                ImmutableMap.of(
+                        "len", IxMapTest::stringLen,
+                        "lower", s -> Key.keys(Key.of(s.toLowerCase()))),
+                CoderFactory.makeCoder(String.class));
+
+        Set<String> dbNames = lmdb.getEnv().getDbiNames().stream().map(n -> new String(n, UTF_8)).collect(Collectors.toSet());
+
+        assertTrue(dbNames.containsAll(Sets.newHashSet("testReindex-idx-lower", "testReindex-idx-len", "testReindex-main")));
+
+        lmdb.writeTx0(tx -> ixMap.put(tx, Key.of(1L), "aa"));
+        lmdb.writeTx0(tx -> ixMap.put(tx, Key.of(2L), "aBa"));
+
+        assertEquals(ImmutableMap.of(Key.of(1L), "aa"), lmdb.readTx(tx -> ixMap.getByIndex("len", tx, intKey(2))));
+        assertEquals(ImmutableMap.of(Key.of(2L), "aBa"), lmdb.readTx(tx -> ixMap.getByIndex("len", tx, intKey(3))));
+        assertEquals(ImmutableMap.of(Key.of(2L), "aBa"), lmdb.readTx(tx -> ixMap.getByIndex("lower", tx, Key.of("aba"))));
+
+        ixMap = lmdb.createIxMap("testReindex",
+                ImmutableMap.of(
+                        "lenPlus1", s -> Key.keys(intKey(s.length() + 1)),
+                        "lower", s -> Key.keys(Key.of(s.toLowerCase()))),
+                CoderFactory.makeCoder(String.class));
+
+        dbNames = lmdb.getEnv().getDbiNames().stream().map(n -> new String(n, UTF_8)).collect(Collectors.toSet());
+
+        assertTrue(dbNames.containsAll(Sets.newHashSet("testReindex-idx-lower", "testReindex-idx-lenPlus1", "testReindex-main")));
+        assertFalse(dbNames.contains("testReindex-idx-len"));
+
+        assertEquals(Optional.of("aa"), lmdb.readTx(tx -> ixMap.get(tx, Key.of(1L))));
+        assertEquals(Optional.of("aBa"), lmdb.readTx(tx -> ixMap.get(tx, Key.of(2L))));
+
+        assertEquals(ImmutableMap.of(), lmdb.readTx(tx -> ixMap.getByIndex("len", tx, intKey(2))));
+        assertEquals(ImmutableMap.of(Key.of(1L), "aa"), lmdb.readTx(tx -> ixMap.getByIndex("lenPlus1", tx, intKey(3))));
+        assertEquals(ImmutableMap.of(Key.of(2L), "aBa"), lmdb.readTx(tx -> ixMap.getByIndex("lenPlus1", tx, intKey(4))));
+        assertEquals(ImmutableMap.of(Key.of(2L), "aBa"), lmdb.readTx(tx -> ixMap.getByIndex("lower", tx, Key.of("aba"))));
     }
 
     private Set<String> getLongestStrings(Tx.Read tx) {

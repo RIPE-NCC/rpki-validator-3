@@ -27,29 +27,29 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage;
+package net.ripe.rpki.validator3.storage.lmdb;
 
-import fj.P;
+import com.google.common.collect.Sets;
+import com.google.gson.Gson;
 import lombok.Data;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
-import net.ripe.rpki.validator3.storage.lmdb.IxMap;
-import net.ripe.rpki.validator3.storage.lmdb.MultIxMap;
-import net.ripe.rpki.validator3.storage.lmdb.SameSizeKeyIxMap;
-import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import org.apache.commons.lang3.tuple.Pair;
+import org.lmdbjava.Dbi;
+import org.lmdbjava.DbiFlags;
 import org.lmdbjava.Env;
+import org.lmdbjava.Txn;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -57,15 +57,21 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.lmdbjava.DbiFlags.MDB_CREATE;
+
 @Slf4j
 public abstract class Lmdb {
 
-    private IxMap<HashSet<String>> metadata;
+    private static final String METADATA_MAP_NAME = "meta";
 
-    protected synchronized IxMap<HashSet<String>> meta() {
+    private Dbi<ByteBuffer> metadata;
+
+    private Gson gson = new Gson();
+
+    protected synchronized Dbi<ByteBuffer> meta() {
         if (metadata == null) {
-            final Coder<HashSet<String>> objectCoder = CoderFactory.makeCoder((Class<HashSet<String>>) new HashSet<String>().getClass());
-            metadata = new IxMap<>(getEnv(), "meta", objectCoder, Collections.emptyMap());
+            metadata = getEnv().openDbi(METADATA_MAP_NAME, MDB_CREATE);
         }
         return metadata;
     }
@@ -128,55 +134,106 @@ public abstract class Lmdb {
     private final Map<Long, TxInfo> txs = new ConcurrentHashMap<>();
 
     public <T extends Serializable> IxMap<T> createIxMap(String name,
-                                                                  Map<String, Function<T, Set<Key>>> indexFunctions,
-                                                                  Class<T> c) {
+                                                         Map<String, Function<T, Set<Key>>> indexFunctions,
+                                                         Class<T> c) {
         return createIxMap(name, indexFunctions, CoderFactory.makeCoder(c));
     }
 
 
-
     public <T extends Serializable> MultIxMap<T> createMultIxMap(final String name, Coder<T> c) {
-        return new MultIxMap<>(getEnv(), name, c);
+        return new MultIxMap<>(this, name, c);
     }
 
     public <T extends Serializable> IxMap<T> createIxMap(final String name,
                                                          final Map<String, Function<T, Set<Key>>> indexFunctions,
                                                          Coder<T> c) {
-        final IxMap<T> ixMap = new IxMap<>(getEnv(), name, c, indexFunctions);
-        reindexIfNeeded(name, indexFunctions, ixMap);
-        return ixMap;
+        return new IxMap<>(this, name, c, indexFunctions);
     }
 
     public <T extends Serializable> IxMap<T> createSameSizeIxMap(final int keySize,
                                                                  final String name,
                                                                  final Map<String, Function<T, Set<Key>>> indexFunctions,
                                                                  Coder<T> c) {
-        final IxMap<T> ixMap = new SameSizeKeyIxMap<>(keySize, getEnv(), name, c, indexFunctions);
-        reindexIfNeeded(name, indexFunctions, ixMap);
-        return ixMap;
+        return new SameSizeKeyIxMap<>(keySize, this, name, c, indexFunctions);
     }
 
-    private <T extends Serializable> void reindexIfNeeded(String name, Map<String, Function<T, Set<Key>>> indexFunctions, IxMap<T> ixMap) {
-        final Set<String> indexes = indexFunctions.keySet();
-        final IxMap<HashSet<String>> meta = meta();
-        final Key key = Key.of(name + ":indexes");
-        HashSet<String> xxx = readTx(tx -> {
-            final Optional<HashSet<String>> existingIndexes = meta.get(tx, key);
-            if (existingIndexes.isPresent() && !existingIndexes.get().equals(indexes)) {
-                log.warn("For the map {} there is a difference between indexes in DB {} and the definition in the code {}",
-                        name, existingIndexes.get(), indexes);
-                return existingIndexes.get();
+    Dbi<ByteBuffer> createMainMapDb(String name, DbiFlags[] mainDbCreateFlags) {
+        final String dbName = name + "-main";
+        final Dbi<ByteBuffer> dbi = getEnv().openDbi(dbName, mainDbCreateFlags);
+
+        // don't go into infinite recursion when creating IxMap for meta and do it manually
+        final IxMapInfo mapInfo = new IxMapInfo();
+        mapInfo.setName(dbName);
+        saveDbMeta(mapInfo);
+        return dbi;
+    }
+
+    private void saveDbMeta(IxMapInfo mapInfo) {
+        final Key key = dbMetaKey(mapInfo.getName());
+        final ByteBuffer foo = Bytes.toDirectBuffer(gson.toJson(mapInfo).getBytes(UTF_8));
+        meta().put(key.toByteBuffer(), foo);
+    }
+
+    private Key dbMetaKey(String dbName) {
+        return Key.of(dbName + "-key");
+    }
+
+    <T extends Serializable> Pair<Map<String, Dbi<ByteBuffer>>, Boolean> createIndexes(
+            String name,
+            Map<String, Function<T, Set<Key>>> indexFunctions,
+            DbiFlags[] indexDbiFlags) {
+        final Dbi<ByteBuffer> meta = meta();
+        IxMapInfo existingIxMapInfo = readTx(tx -> {
+            ByteBuffer bb = meta.get(tx.txn(), dbMetaKey(name).toByteBuffer());
+            if (bb == null) {
+                return null;
             }
-            return null;
+            String json = new String(Bytes.toBytes(bb), UTF_8);
+            return gson.fromJson(json, IxMapInfo.class);
         });
 
-        if (xxx != null) {
-            xxx.forEach(idxName -> {
-
-            });
-            ixMap.reindex(xxx);
+        final Map<String, Dbi<ByteBuffer>> indexes = new HashMap<>();
+        final Env<ByteBuffer> env = getEnv();
+        boolean reindex = false;
+        if (existingIxMapInfo != null) {
+            final Set<String> existingIndexes = existingIxMapInfo.getIndexes();
+            if (existingIndexes != null) {
+                if (!existingIndexes.equals(indexFunctions.keySet())) {
+                    Sets.difference(existingIndexes, indexFunctions.keySet()).forEach(idx -> {
+                        final Dbi<ByteBuffer> idxDbi = env.openDbi(indexDbName(name, idx));
+                        try (Txn<ByteBuffer> txn = env.txnWrite()) {
+                            idxDbi.drop(txn, true);
+                            txn.commit();
+                        }
+                        idxDbi.close();
+                    });
+                    existingIxMapInfo.setIndexes(indexFunctions.keySet());
+                    saveDbMeta(existingIxMapInfo);
+                    reindex = true;
+                }
+            } else {
+                existingIxMapInfo.setIndexes(indexFunctions.keySet());
+                saveDbMeta(existingIxMapInfo);
+            }
+        } else {
+            IxMapInfo mapInfo = new IxMapInfo();
+            mapInfo.setName(name);
+            mapInfo.setIndexes(indexFunctions.keySet());
+            saveDbMeta(mapInfo);
         }
-        writeTx0(tx -> meta.put(tx, key, new HashSet<>(indexes)));
+        indexFunctions.forEach((n, idxFun) ->
+                indexes.put(n, env.openDbi(indexDbName(name, n), indexDbiFlags)));
+        return Pair.of(indexes, reindex);
+    }
+
+    private String indexDbName(String name, String idx) {
+        return name + "-idx-" + idx;
+    }
+
+    @Data
+    private static class IxMapInfo {
+        private String name;
+        private Set<String> indexes;
     }
 
     @Data
@@ -187,7 +244,7 @@ public abstract class Lmdb {
         private boolean writing;
         private Instant startedAt;
 
-        public TxInfo(Tx tx) {
+        TxInfo(Tx tx) {
             this.txId = tx.getId();
             this.threadId = tx.getThreadId();
             this.stackTrace = Stream.of(Thread.currentThread().getStackTrace())

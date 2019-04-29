@@ -31,6 +31,7 @@ package net.ripe.rpki.validator3.storage.lmdb;
 
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
+import org.apache.commons.lang3.tuple.Pair;
 import org.lmdbjava.Cursor;
 import org.lmdbjava.CursorIterator;
 import org.lmdbjava.Dbi;
@@ -78,38 +79,34 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
                  final Map<String, Function<T, Set<Key>>> indexFunctions) {
         super(lmdb, name, coder);
         this.indexFunctions = indexFunctions;
-
-        // TODO Add index management, reindexing if the index set has changed
-        indexes = new HashMap<>();
-        indexFunctions.forEach((n, idxFun) ->
-                indexes.put(n, env.openDbi(name + "-idx-" + n, getIndexDbiFlags())));
+        Pair<Map<String, Dbi<ByteBuffer>>, Boolean> p = lmdb.createIndexes(name, indexFunctions, getIndexDbiFlags());
+        indexes = p.getLeft();
+        boolean reindex = p.getRight();
+        if (reindex) {
+            reindex();
+        }
     }
 
     public IxMap(final Lmdb lmdb, String name, Coder<T> coder) {
         this(lmdb, name, coder, Collections.emptyMap());
     }
 
-    public void reindex(HashSet<String> existingIndexes) {
-        existingIndexes.forEach(idx -> {
-            final Dbi<ByteBuffer> dbi = env.openDbi(idx, getIndexDbiFlags());
-            try (Txn<ByteBuffer> txn = writeTx().txn()) {
-                dbi.drop(txn, true);
-            }
-        });
-        try (Txn<ByteBuffer> txn = writeTx().txn()) {
-            try (final Cursor<ByteBuffer> cursor = mainDb.openCursor(txn)) {
-                do {
-                    final ByteBuffer pkBuf = cursor.key();
-                    final T value = coder.fromBytes(cursor.val());
-                    indexFunctions.forEach((n, idxFun) -> {
-                        final Set<Key> indexKeys = idxFun.apply(value);
-                        try (Cursor<ByteBuffer> c = indexes.get(n).openCursor(txn)) {
-                            indexKeys.forEach(ik -> c.put(ik.toByteBuffer(), pkBuf));
-                        }
-                    });
-                }
-                while (cursor.next());
-            }
+    private void reindex() {
+        final Tx.Write tx = writeTx();
+        try {
+            Txn<ByteBuffer> txn = tx.txn();
+            indexes.forEach((name, idx) -> idx.drop(txn));
+            forEach(tx, (k, bb) -> {
+                final T value = coder.fromBytes(bb);
+                indexFunctions.forEach((n, idxFun) ->
+                        idxFun.apply(value).forEach(ik -> {
+                            final Dbi<ByteBuffer> idx = indexes.get(n);
+                            idx.put(txn, ik.toByteBuffer(), k.toByteBuffer());
+                        }));
+            });
+            txn.commit();
+        } finally {
+            tx.close();
         }
     }
 
