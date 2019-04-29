@@ -207,11 +207,9 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
                         .filter(oik -> !indexKeys.contains(oik))
                         .forEach(oik -> index.delete(txn, oik.toByteBuffer(), pkBuf));
 
-                try (Cursor<ByteBuffer> c = index.openCursor(txn)) {
-                    indexKeys.stream()
-                            .filter(ik -> !oldIndexKeys.contains(ik))
-                            .forEach(ik -> c.put(ik.toByteBuffer(), pkBuf));
-                }
+                indexKeys.stream()
+                        .filter(ik -> !oldIndexKeys.contains(ik))
+                        .forEach(ik -> index.put(txn, ik.toByteBuffer(), pkBuf));
             });
             return oldValue;
         } else {
@@ -219,9 +217,8 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
                 final Set<Key> indexKeys = idxFun.apply(value).stream()
                         .filter(Objects::nonNull)
                         .collect(Collectors.toSet());
-                try (Cursor<ByteBuffer> c = indexes.get(n).openCursor(txn)) {
-                    indexKeys.forEach(ik -> c.put(ik.toByteBuffer(), pkBuf));
-                }
+
+                indexKeys.forEach(ik -> indexes.get(n).put(txn, ik.toByteBuffer(), pkBuf));
             });
         }
         return Optional.empty();
