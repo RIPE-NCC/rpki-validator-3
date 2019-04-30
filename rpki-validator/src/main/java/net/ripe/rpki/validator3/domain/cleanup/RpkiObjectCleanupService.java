@@ -118,8 +118,7 @@ public class RpkiObjectCleanupService {
             return;
         }
 
-        rpkiObjects.findLatestByTypeAndAuthorityKeyIdentifier(tx,
-                RpkiObject.Type.MFT, resourceCertificate.getSubjectKeyIdentifier())
+        rpkiObjects.findLatestMftByAKI(tx, resourceCertificate.getSubjectKeyIdentifier())
                 .ifPresent(manifest -> markAndTraceObject(tx, now, "manifest.mft", manifest, markThem));
     }
 

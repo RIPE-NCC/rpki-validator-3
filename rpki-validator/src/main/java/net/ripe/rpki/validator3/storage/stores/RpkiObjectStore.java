@@ -55,7 +55,7 @@ public interface RpkiObjectStore extends GenericStore<RpkiObject> {
 
     Map<String, RpkiObject> findObjectsInManifest(Tx.Read tx, ManifestCms manifestCms);
 
-    Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(Tx.Read tx, RpkiObject.Type type, byte[] authorityKeyIdentifier);
+    Optional<RpkiObject> findLatestMftByAKI(Tx.Read tx, byte[] authorityKeyIdentifier);
 
     long deleteUnreachableObjects(Tx.Write tx, Instant unreachableSince);
 

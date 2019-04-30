@@ -214,8 +214,7 @@ public class CertificateTreeValidationService {
             temporary.setLocation(new ValidationLocation(manifestUri));
 
 
-            Optional<RpkiObject> manifestObject = lmdb.readTx(tx -> rpkiObjectStore.findLatestByTypeAndAuthorityKeyIdentifier(tx,
-                    RpkiObject.Type.MFT, context.getSubjectKeyIdentifier()));
+            Optional<RpkiObject> manifestObject = lmdb.readTx(tx -> rpkiObjectStore.findLatestMftByAKI(tx, context.getSubjectKeyIdentifier()));
 
             if (!manifestObject.isPresent()) {
                 if (rpkiRepository.getStatus() == RpkiRepository.Status.FAILED) {

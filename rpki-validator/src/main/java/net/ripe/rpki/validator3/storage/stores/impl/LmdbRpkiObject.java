@@ -65,7 +65,7 @@ import java.util.stream.Stream;
 public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements RpkiObjectStore {
 
     private static final String RPKI_OBJECTS = "rpki-objects";
-    private static final String BY_AKI_INDEX = "by-aki";
+    private static final String BY_AKI_MFT_INDEX = "by-aki-mft";
     private static final String BY_LAST_REACHABLE_INDEX = "by-last-reachable";
 
     private static final int SHA256_SIZE_IN_BYTES = 32;
@@ -86,13 +86,20 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
                 Key.keys(Key.of(authorityKeyIdentifier));
     }
 
+    private Set<Key> akiMftKey(RpkiObject rpkiObject) {
+        byte[] authorityKeyIdentifier = rpkiObject.getAuthorityKeyIdentifier();
+        return (rpkiObject.getType() == RpkiObject.Type.MFT && authorityKeyIdentifier != null) ?
+                Key.keys(Key.of(authorityKeyIdentifier)) :
+                Collections.emptySet();
+    }
+
     @Autowired
     public LmdbRpkiObject(Lmdb lmdb) {
         this.ixMap = lmdb.createSameSizeIxMap(
                 SHA256_SIZE_IN_BYTES,
                 RPKI_OBJECTS,
                 ImmutableMap.of(
-                        BY_AKI_INDEX, this::akiKey,
+                        BY_AKI_MFT_INDEX, this::akiMftKey,
                         BY_LAST_REACHABLE_INDEX, this::lasMarkedReachableKey),
                 CoderFactory.makeCoder(RpkiObject.class));
     }
@@ -140,11 +147,10 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     }
 
     @Override
-    public Optional<RpkiObject> findLatestByTypeAndAuthorityKeyIdentifier(Tx.Read tx, RpkiObject.Type type, byte[] authorityKeyIdentifier) {
-        return ixMap.getByIndex(BY_AKI_INDEX, tx, Key.of(authorityKeyIdentifier))
+    public Optional<RpkiObject> findLatestMftByAKI(Tx.Read tx, byte[] authorityKeyIdentifier) {
+        return ixMap.getByIndex(BY_AKI_MFT_INDEX, tx, Key.of(authorityKeyIdentifier))
                 .values()
                 .stream()
-                .filter(o -> type.equals(o.getType()))
                 .max(Comparator
                         .comparing(RpkiObject::getSerialNumber)
                         .thenComparing(RpkiObject::getSigningTime));
