@@ -177,9 +177,9 @@ public class CertificateTreeValidationService {
                         log.info("All trust anchors have completed their initial certificate tree validation run, validator is now ready");
                     }
                 }
-
-                tx.onCommit(() -> validatedRpkiObjects.update(trustAnchorRef, rpkiObjects));
             });
+
+            lmdb.readTx0(tx -> validatedRpkiObjects.update(tx, trustAnchorRef, rpkiObjects));
         } finally {
             validationRun.completeWith(validationResult);
             lmdb.writeTx0(tx -> validationRunStore.update(tx, validationRun));

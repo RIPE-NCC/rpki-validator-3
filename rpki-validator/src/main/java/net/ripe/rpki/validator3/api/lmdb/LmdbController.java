@@ -58,4 +58,13 @@ public class LmdbController {
                         .build()
         );
     }
+
+    @GetMapping("/stat")
+    public ResponseEntity<ApiResponse<Lmdb.Stat>> stat() {
+        return ResponseEntity.ok(
+                ApiResponse.<Lmdb.Stat>builder()
+                        .data(lmdb.getStat())
+                        .build()
+        );
+    }
 }

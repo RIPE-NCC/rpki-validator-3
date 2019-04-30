@@ -82,8 +82,8 @@ public class LmdbValidationRuns implements ValidationRunStore {
     private static final String RS_RPKI_VALIDATION_RUNS = "rs-validation-runs";
     private static final String RR_RPKI_VALIDATION_RUNS = "rr-validation-runs";
     private static final String TA_RPKI_VALIDATION_RUNS = "ta-validation-runs";
-    private static final String VALIDATION_RUNS_TO_RPKI_OBJECTS = "validation-runs-to-trust-anchors";
-    private static final String RPKI_OBJECTS_TO_VALIDATION_RUNS = "trust-anchors-to-validation-runs";
+    private static final String VALIDATION_RUNS_TO_RPKI_OBJECTS = "validation-runs-to-rpki-objects";
+    private static final String RPKI_OBJECTS_TO_VALIDATION_RUNS = "rpki-objects-to-validation-runs";
     private static final String VALIDATION_RUNS_TO_RPKI_REPOSITORIES = "validation-runs-to-repositories";
     private static final String RPKI_REPOSITORIES_TO_VALIDATION_RUNS = "repositories-to-validation-runs";
     private static final String BY_TA_INDEX = "by-ta";

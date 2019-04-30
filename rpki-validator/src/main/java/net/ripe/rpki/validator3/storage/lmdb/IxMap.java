@@ -29,6 +29,9 @@
  */
 package net.ripe.rpki.validator3.storage.lmdb;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.Getter;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import org.apache.commons.lang3.tuple.Pair;
@@ -51,6 +54,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -352,6 +356,40 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
             }
         }
         return Collections.emptyMap();
+    }
+
+    @Override
+    public IxBase.Sizes sizeInfo(Tx.Read tx) {
+        IxBase.Sizes sizes = super.sizeInfo(tx);
+        final Map<String, IxBase.Sizes> indexSizes = new HashMap<>();
+        indexes.forEach((name, idx) -> {
+            AtomicInteger count = new AtomicInteger();
+            AtomicInteger size = new AtomicInteger();
+            try (final CursorIterator<ByteBuffer> iterator = idx.iterate(tx.txn())) {
+                while (iterator.hasNext()) {
+                    count.incrementAndGet();
+                    final CursorIterator.KeyVal<ByteBuffer> next = iterator.next();
+                    size.addAndGet(next.key().remaining() + next.val().remaining());
+                }
+            }
+            indexSizes.put(name, new IxBase.Sizes(count.get(), size.get()));
+        });
+        return new Sizes(sizes.getCount(), sizes.getSizeInBytes(), indexSizes);
+    }
+
+    public static class Sizes extends IxBase.Sizes {
+        @Getter
+        private Map<String, IxBase.Sizes> indexSizes;
+
+        @Getter
+        private int totalSize;
+
+        Sizes(int count, int sizeInBytes, Map<String, IxBase.Sizes> indexSizes) {
+            super(count, sizeInBytes);
+            this.indexSizes = indexSizes.isEmpty() ? null : indexSizes;
+            totalSize = sizeInBytes;
+            indexSizes.forEach((n, s) -> totalSize += s.getSizeInBytes());
+        }
     }
 
 }

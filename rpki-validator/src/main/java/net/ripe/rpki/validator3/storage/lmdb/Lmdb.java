@@ -31,6 +31,7 @@ package net.ripe.rpki.validator3.storage.lmdb;
 
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -42,16 +43,20 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.lmdbjava.Dbi;
 import org.lmdbjava.DbiFlags;
 import org.lmdbjava.Env;
+import org.lmdbjava.EnvInfo;
+import org.lmdbjava.Stat;
 import org.lmdbjava.Txn;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -133,6 +138,8 @@ public abstract class Lmdb {
     @Getter
     private final Map<Long, TxInfo> txs = new ConcurrentHashMap<>();
 
+    private final Map<String, IxBase<?>> ixMaps = new ConcurrentHashMap<>();
+
     public <T extends Serializable> IxMap<T> createIxMap(String name,
                                                          Map<String, Function<T, Set<Key>>> indexFunctions,
                                                          Class<T> c) {
@@ -141,20 +148,26 @@ public abstract class Lmdb {
 
 
     public <T extends Serializable> MultIxMap<T> createMultIxMap(final String name, Coder<T> c) {
-        return new MultIxMap<>(this, name, c);
+        MultIxMap<T> ixMap = new MultIxMap<>(this, name, c);
+        ixMaps.put(name, ixMap);
+        return ixMap;
     }
 
     public <T extends Serializable> IxMap<T> createIxMap(final String name,
                                                          final Map<String, Function<T, Set<Key>>> indexFunctions,
                                                          Coder<T> c) {
-        return new IxMap<>(this, name, c, indexFunctions);
+        IxMap<T> ixMap = new IxMap<>(this, name, c, indexFunctions);
+        ixMaps.put(name, ixMap);
+        return ixMap;
     }
 
     public <T extends Serializable> IxMap<T> createSameSizeIxMap(final int keySize,
                                                                  final String name,
                                                                  final Map<String, Function<T, Set<Key>>> indexFunctions,
                                                                  Coder<T> c) {
-        return new SameSizeKeyIxMap<>(keySize, this, name, c, indexFunctions);
+        SameSizeKeyIxMap<T> ixMap = new SameSizeKeyIxMap<>(keySize, this, name, c, indexFunctions);
+        ixMaps.put(name, ixMap);
+        return ixMap;
     }
 
     Dbi<ByteBuffer> createMainMapDb(String name, DbiFlags[] mainDbCreateFlags) {
@@ -254,5 +267,32 @@ public abstract class Lmdb {
             this.writing = tx instanceof Tx.Write;
             this.startedAt = Instant.now();
         }
+    }
+
+    @Data
+    @AllArgsConstructor
+    public class Stat {
+        private org.lmdbjava.Stat lmdbStat;
+        private EnvInfo info;
+        private List<IxMapStat> ixMapStats;
+    }
+
+    @Data
+    @AllArgsConstructor
+    private class IxMapStat {
+        private String name;
+        private IxBase.Sizes sizes;
+    }
+
+    public Stat getStat() {
+        final org.lmdbjava.Stat stat = getEnv().stat();
+        final EnvInfo info = getEnv().info();
+        return readTx(tx -> {
+            final List<IxMapStat> ixMapStats = ixMaps.entrySet().stream()
+                    .sorted(Comparator.comparing(Map.Entry::getKey))
+                    .map(e -> new IxMapStat(e.getKey(), e.getValue().sizeInfo(tx)))
+                    .collect(Collectors.toList());
+            return new Stat(stat, info, ixMapStats);
+        });
     }
 }

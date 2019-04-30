@@ -29,6 +29,8 @@
  */
 package net.ripe.rpki.validator3.storage.lmdb;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
@@ -43,6 +45,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
 public abstract class IxBase<T extends Serializable> {
@@ -145,4 +148,20 @@ public abstract class IxBase<T extends Serializable> {
         return s;
     }
 
+    public Sizes sizeInfo(Tx.Read tx) {
+        AtomicInteger count = new AtomicInteger();
+        AtomicInteger size = new AtomicInteger();
+        forEach(tx, (k, v) -> {
+            count.getAndIncrement();
+            size.addAndGet(k.size() + v.remaining());
+        });
+        return new Sizes(count.get(), size.get());
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static class Sizes {
+        private int count;
+        private int sizeInBytes;
+    }
 }

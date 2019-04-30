@@ -102,11 +102,6 @@ public class ValidatedRpkiObjects {
                         .forEach((taRef, rpkiObjects) -> update(tx, taRef, rpkiObjects)));
     }
 
-
-    public void update(Ref<TrustAnchor> trustAnchor, Collection<RpkiObject> rpkiObjects) {
-        lmdb.readTx0(tx -> update(tx, trustAnchor, rpkiObjects));
-    }
-
     public void update(Tx.Read tx, Ref<TrustAnchor> trustAnchor, Collection<RpkiObject> rpkiObjects) {
         Long t = Time.timed(() ->
                 trustAnchorStore.get(tx, trustAnchor.key())
