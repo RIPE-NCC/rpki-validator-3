@@ -404,7 +404,7 @@ public class RpkiRepositoryValidationService {
             if (maybeRpkiObject.isLeft()) {
                 final ValidationResult value = maybeRpkiObject.left().value();
                 validationRun.addChecks(value);
-                log.debug("parsing {} failed: {}", value.getCurrentLocation(), value);
+                log.debug("parsing {} failed: {}", value.getCurrentLocation().getName(), value);
             } else {
                 final RpkiObject object = maybeRpkiObject.right().value();
                 final String key = Hex.format(object.getSha256());
