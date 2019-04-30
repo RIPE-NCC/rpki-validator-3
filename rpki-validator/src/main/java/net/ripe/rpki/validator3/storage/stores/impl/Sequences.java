@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.storage.stores.impl;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Longs;
 import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
@@ -51,9 +52,9 @@ public class Sequences extends GenericStoreImpl<Long> {
 
     @Autowired
     public Sequences(Lmdb lmdb) {
-        this.ixMap = new IxMap<>(
-                lmdb,
+        this.ixMap = lmdb.createIxMap(
                 SEQUENCES,
+                ImmutableMap.of(),
                 new Coder<Long>() {
                     @Override
                     public ByteBuffer toBytes(Long bigInteger) {
