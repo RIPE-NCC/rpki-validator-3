@@ -78,16 +78,16 @@ import java.util.stream.Stream;
 public class LmdbValidationRuns implements ValidationRunStore {
 
     private static final String RPKI_VALIDATION_RUNS = "validation-runs";
-    private static final String CT_RPKI_VALIDATION_RUNS = "ct-validation-runs";
-    private static final String RS_RPKI_VALIDATION_RUNS = "rs-validation-runs";
-    private static final String RR_RPKI_VALIDATION_RUNS = "rr-validation-runs";
-    private static final String TA_RPKI_VALIDATION_RUNS = "ta-validation-runs";
+    private static final String CT_RPKI_VALIDATION_RUNS = "certificate-tree-validation-runs";
+    private static final String RS_RPKI_VALIDATION_RUNS = "rsync-repository-validation-runs";
+    private static final String RR_RPKI_VALIDATION_RUNS = "rrdp-repository-validation-runs";
+    private static final String TA_RPKI_VALIDATION_RUNS = "trust-anchor-validation-runs";
     private static final String VALIDATION_RUNS_TO_RPKI_OBJECTS = "validation-runs-to-rpki-objects";
     private static final String RPKI_OBJECTS_TO_VALIDATION_RUNS = "rpki-objects-to-validation-runs";
     private static final String VALIDATION_RUNS_TO_RPKI_REPOSITORIES = "validation-runs-to-repositories";
     private static final String RPKI_REPOSITORIES_TO_VALIDATION_RUNS = "repositories-to-validation-runs";
     private static final String BY_TA_INDEX = "by-ta";
-    private static final String BY_COMPLETED_AT_INDEX = "by-time";
+    private static final String BY_COMPLETED_AT_INDEX = "by-completed-at";
 
     private MultIxMap<Key> vr2ro;
     private MultIxMap<Key> ro2vr;
@@ -167,7 +167,14 @@ public class LmdbValidationRuns implements ValidationRunStore {
             repo2vr.get(tx, repoKey).forEach(vrId -> vr2repo.delete(tx, vrId));
             repo2vr.delete(tx, repoKey);
         });
+
         trustAnchorStore.onDelete(this::removeAllForTrustAnchor);
+
+        maps.values().forEach(ixMap ->
+                ixMap.onDelete((tx, vrKey) -> {
+                    vr2ro.delete(tx, vrKey);
+                    vr2repo.delete(tx, vrKey);
+                }));
     }
 
     private Set<Key> completedAtIndexKeys(ValidationRun vr) {
