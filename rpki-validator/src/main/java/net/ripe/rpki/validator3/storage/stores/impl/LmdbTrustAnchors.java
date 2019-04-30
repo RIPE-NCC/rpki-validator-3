@@ -57,9 +57,6 @@ import java.util.stream.Collectors;
 @Component
 public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements TrustAnchorStore {
 
-    private static final String BY_NAME = "by-name";
-    private static final String BY_SUBJECT_KEY_INFO = "by-ski";
-
     private final IxMap<TrustAnchor> ixMap;
     private final Sequences sequences;
     private final ValidationRunStore validationRunStore;
@@ -70,9 +67,7 @@ public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements T
                             @Lazy ValidationRunStore validationRunStore) {
         this.ixMap = lmdb.createIxMap(
                 TrustAnchorStore.TRUST_ANCHORS,
-                ImmutableMap.of(
-                        BY_NAME, ta -> Key.keys(Key.of(ta.getName())),
-                        BY_SUBJECT_KEY_INFO, ta -> Key.keys(Key.of(ta.getSubjectPublicKeyInfo()))),
+                ImmutableMap.of(),
                 TrustAnchor.class);
         this.sequences = sequences;
         this.validationRunStore = validationRunStore;
@@ -108,17 +103,21 @@ public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements T
 
     @Override
     public Collection<TrustAnchor> findByName(Tx.Read tx, String name) {
-        return ixMap.getByIndex(BY_NAME, tx, Key.of(name)).values();
+        return findAll(tx).stream()
+                .filter(ta -> ta.getName().equals(name))
+                .collect(Collectors.toList());
     }
 
     @Override
     public Optional<TrustAnchor> findBySubjectPublicKeyInfo(Tx.Read tx, String subjectPublicKeyInfo) {
-        return ixMap.getByIndex(BY_SUBJECT_KEY_INFO, tx, Key.of(subjectPublicKeyInfo)).values().stream().findFirst();
+        return findAll(tx).stream()
+                .filter(ta -> ta.getSubjectPublicKeyInfo().equals(subjectPublicKeyInfo))
+                .findFirst();
     }
 
     @Override
     public boolean allInitialCertificateTreeValidationRunsCompleted(Tx.Read tx) {
-        return ixMap.values(tx).stream().allMatch(TrustAnchor::isInitialCertificateTreeValidationRunCompleted);
+        return findAll(tx).stream().allMatch(TrustAnchor::isInitialCertificateTreeValidationRunCompleted);
     }
 
     @Override

@@ -43,9 +43,7 @@ public class CTValidationRunCoder implements CustomCoder<CertificateTreeValidati
 
     private final static short TA_TAG = Tags.unique(81);
 
-    private static final ValidationCheckCoder vcCoder = new ValidationCheckCoder();
     private final static RefCoder<TrustAnchor> taRefCoder = new RefCoder<>();
-
 
     @Override
     public byte[] toBytes(CertificateTreeValidationRun validationRun) {
