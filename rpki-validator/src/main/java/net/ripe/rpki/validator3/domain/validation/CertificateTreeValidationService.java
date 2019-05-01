@@ -135,8 +135,7 @@ public class CertificateTreeValidationService {
         final Map<URI, RpkiRepository> registeredRepositories = new ConcurrentHashMap<>();
 
         final Ref<TrustAnchor> trustAnchorRef = lmdb.readTx(tx -> trustAnchorStore.makeRef(tx, trustAnchor.key()));
-        final CertificateTreeValidationRun validationRun = lmdb.writeTx(tx ->
-                validationRunStore.add(tx, new CertificateTreeValidationRun(trustAnchorRef)));
+        final CertificateTreeValidationRun validationRun = new CertificateTreeValidationRun(trustAnchorRef);
 
         String trustAnchorLocation = trustAnchor.getLocations().get(0);
         ValidationResult validationResult = ValidationResult.withLocation(trustAnchorLocation);
@@ -166,6 +165,7 @@ public class CertificateTreeValidationService {
 
             final List<RpkiObject> rpkiObjects = validateCertificateAuthority(trustAnchor, registeredRepositories, context, validationResult);
             lmdb.writeTx0(tx -> {
+                validationRunStore.add(tx, validationRun);
                 Long t = Time.timed(() -> rpkiObjects.forEach(o -> validationRunStore.associate(tx, validationRun, o)));
                 log.info("Associated {} objects with the validation run {} in {}ms", rpkiObjects.size(), validationRun.key(), t);
 
@@ -274,8 +274,34 @@ public class CertificateTreeValidationService {
             validatedObjects.add(manifestObject.get());
 
             List<CertificateRepositoryObjectValidationContext> objectStream = lmdb.readTx(tx ->
-                    retrieveManifestEntries(tx, manifest, manifestUri, temporary).entrySet().stream()
-                            .map(e -> createChildValidationContext(tx, context, validatedObjects, temporary, crlUri, crl, e))
+                    retrieveManifestEntries(tx, manifest, manifestUri, temporary)
+                            .entrySet().stream().map(e -> {
+                        URI location = e.getKey();
+                        RpkiObject obj = e.getValue();
+                        temporary.setLocation(new ValidationLocation(location));
+
+                        Optional<CertificateRepositoryObject> maybeCertificateRepositoryObject =
+                                rpkiObjectStore.findCertificateRepositoryObject(tx, obj.key(), CertificateRepositoryObject.class, temporary);
+
+                        if (!temporary.hasFailureForCurrentLocation()) {
+                            return maybeCertificateRepositoryObject.flatMap(certificateRepositoryObject -> {
+                                certificateRepositoryObject.validate(location.toASCIIString(), context, crl.get(), crlUri, VALIDATION_OPTIONS, temporary);
+
+                                if (!temporary.hasFailureForCurrentLocation()) {
+                                    validatedObjects.add(obj);
+                                }
+
+                                if (certificateRepositoryObject instanceof X509ResourceCertificate
+                                        && ((X509ResourceCertificate) certificateRepositoryObject).isCa()
+                                        && !temporary.hasFailureForCurrentLocation()) {
+
+                                    return Optional.of(context.createChildContext(location, (X509ResourceCertificate) certificateRepositoryObject));
+                                }
+                                return Optional.empty();
+                            });
+                        }
+                        return Optional.<CertificateRepositoryObjectValidationContext>empty();
+                    })
                             .filter(Optional::isPresent)
                             .map(Optional::get)
                             .collect(Collectors.toList()));
@@ -295,40 +321,6 @@ public class CertificateTreeValidationService {
         }
 
         return validatedObjects;
-    }
-
-    private Optional<CertificateRepositoryObjectValidationContext> createChildValidationContext(Tx.Read tx,
-                                                                                                CertificateRepositoryObjectValidationContext parentContext,
-                                                                                                List<RpkiObject> validatedObjects,
-                                                                                                ValidationResult validationResult,
-                                                                                                URI crlUri,
-                                                                                                Optional<X509Crl> crl,
-                                                                                                Map.Entry<URI, RpkiObject> e) {
-        URI location = e.getKey();
-        RpkiObject obj = e.getValue();
-        validationResult.setLocation(new ValidationLocation(location));
-
-        Optional<CertificateRepositoryObject> maybeCertificateRepositoryObject =
-                rpkiObjectStore.findCertificateRepositoryObject(tx, obj.key(), CertificateRepositoryObject.class, validationResult);
-
-        if (!validationResult.hasFailureForCurrentLocation()) {
-            return maybeCertificateRepositoryObject.flatMap(certificateRepositoryObject -> {
-                certificateRepositoryObject.validate(location.toASCIIString(), parentContext, crl.get(), crlUri, VALIDATION_OPTIONS, validationResult);
-
-                if (!validationResult.hasFailureForCurrentLocation()) {
-                    validatedObjects.add(obj);
-                }
-
-                if (certificateRepositoryObject instanceof X509ResourceCertificate
-                        && ((X509ResourceCertificate) certificateRepositoryObject).isCa()
-                        && !validationResult.hasFailureForCurrentLocation()) {
-
-                    return Optional.of(parentContext.createChildContext(location, (X509ResourceCertificate) certificateRepositoryObject));
-                }
-                return Optional.empty();
-            });
-        }
-        return Optional.empty();
     }
 
     // Use async as a trick to perform writing Tx while being inside of a reading Tx
