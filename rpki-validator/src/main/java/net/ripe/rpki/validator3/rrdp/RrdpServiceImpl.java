@@ -164,7 +164,7 @@ public class RrdpServiceImpl implements RrdpService {
                     return rrdpParser.snapshot(hashingStream.get());
                 }));
 
-        byte[] snapshotHash = hashingStream.get().hash().asBytes();
+        final byte[] snapshotHash = hashingStream.get().hash().asBytes();
         if (!Arrays.equals(Hex.parse(notification.snapshotHash), snapshotHash)) {
             throw new RrdpException(ErrorCodes.RRDP_WRONG_SNAPSHOT_HASH, "Hash of the snapshot file " +
                     notification.snapshotUri + " is " + Hex.format(snapshotHash) + ", but notification file says " + notification.snapshotHash);
