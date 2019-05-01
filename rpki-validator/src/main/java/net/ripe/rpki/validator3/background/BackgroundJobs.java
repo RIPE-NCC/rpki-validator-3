@@ -67,8 +67,8 @@ public class BackgroundJobs extends JobListenerSupport {
 
     @Autowired
     public BackgroundJobs(Scheduler scheduler,
-                          @Value("${rpki.validator.validation.run.cleanup.interval.ms:3600000}") int validationRunCleanUpDelay,
-                          @Value("${rpki.validator.rpki.object.cleanup.interval.ms:3600000}") int rpkiObjectsRunCleanUpDelay
+                          @Value("${rpki.validator.validation.run.cleanup.interval.ms:3600000}") int validationRunCleanUpInterval,
+                          @Value("${rpki.validator.rpki.object.cleanup.interval.ms:3600000}") int rpkiObjectsRunCleanUpInterval
                           ) throws SchedulerException {
 
         this.scheduler = scheduler;
@@ -77,11 +77,11 @@ public class BackgroundJobs extends JobListenerSupport {
 
         schedule(RpkiObjectCleanupJob.class,
                 futureDate(1, MINUTE),
-                simpleSchedule().repeatForever().withIntervalInMilliseconds(rpkiObjectsRunCleanUpDelay));
+                simpleSchedule().repeatForever().withIntervalInMilliseconds(rpkiObjectsRunCleanUpInterval));
 
         schedule(ValidationRunCleanupJob.class,
                 futureDate(2, MINUTE),
-                simpleSchedule().repeatForever().withIntervalInMilliseconds(validationRunCleanUpDelay));
+                simpleSchedule().repeatForever().withIntervalInMilliseconds(validationRunCleanUpInterval));
 
         schedule(ValidateRsyncRepositoriesJob.class,
                 futureDate(10, SECOND),
