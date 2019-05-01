@@ -132,6 +132,7 @@ public class RpkiRepositoryValidationService {
             return validationRunStore.add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef));
         });
 
+        boolean triggerCaTreeAfter = false;
         try {
             final String uri = rpkiRepository.getRrdpNotifyUri();
             if (isRrdpUri(uri)) {
@@ -151,14 +152,7 @@ public class RpkiRepositoryValidationService {
                 validationRun.setFailed();
             } else {
                 validationRun.setSucceeded();
-                lmdb.readTx0(tx -> {
-                    int updatedObjectCount = validationRunStore.getObjectCount(tx, validationRun);
-                    if (updatedObjectCount > 0) {
-                        rpkiRepository.getTrustAnchors().forEach(taRef ->
-                                trustAnchorStore.get(tx, taRef.key())
-                                        .ifPresent(validationScheduler::triggerCertificateTreeValidation));
-                    }
-                });
+                triggerCaTreeAfter = true;
             }
         } catch (Exception e) {
             log.error("Error validating repository " + rpkiRepository, e);
@@ -168,6 +162,15 @@ public class RpkiRepositoryValidationService {
                 rpkiRepositoryStore.update(tx, rpkiRepository);
                 validationRunStore.update(tx, validationRun);
             });
+            if (triggerCaTreeAfter) {
+                lmdb.readTx0(tx -> {
+                    if (validationRunStore.getObjectCount(tx, validationRun) > 0) {
+                        rpkiRepository.getTrustAnchors().forEach(taRef ->
+                                trustAnchorStore.get(tx, taRef.key())
+                                        .ifPresent(validationScheduler::triggerCertificateTreeValidation));
+                    }
+                });
+            }
         }
     }
 
