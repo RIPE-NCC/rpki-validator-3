@@ -178,7 +178,7 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
         assertThat(result.getStatus()).isEqualTo(SUCCEEDED);
 
         Set<RpkiObject> validatedObjects = rtx(tx ->
-                getValidationRunStore().findAssociatedObjects(tx, result)
+                getValidationRunStore().findAssociatedPks(tx, result)
                         .stream()
                         .map(pk -> getRpkiObjectStore().get(tx, pk))
                         .filter(Optional::isPresent)

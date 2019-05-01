@@ -364,7 +364,7 @@ public class LmdbValidationRuns implements ValidationRunStore {
     }
 
     @Override
-    public Set<Key> findAssociatedObjects(Tx.Read tx, CertificateTreeValidationRun validationRun) {
+    public Set<Key> findAssociatedPks(Tx.Read tx, CertificateTreeValidationRun validationRun) {
         return new HashSet<>(vr2ro.get(tx, validationRun.key()));
     }
 

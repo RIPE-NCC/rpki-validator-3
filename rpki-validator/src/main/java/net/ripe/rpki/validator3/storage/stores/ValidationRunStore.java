@@ -80,7 +80,7 @@ public interface ValidationRunStore {
 
     void associate(Tx.Write writeTx, RsyncRepositoryValidationRun validationRun, RpkiRepository r);
 
-    Set<Key> findAssociatedObjects(Tx.Read tx, CertificateTreeValidationRun validationRun);
+    Set<Key> findAssociatedPks(Tx.Read tx, CertificateTreeValidationRun validationRun);
 
     Stream<Pair<CertificateTreeValidationRun, RpkiObject>> findCurrentlyValidated(Tx.Read tx, RpkiObject.Type cer);
 

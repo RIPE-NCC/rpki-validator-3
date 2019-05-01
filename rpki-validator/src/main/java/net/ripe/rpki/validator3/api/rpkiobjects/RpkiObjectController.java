@@ -138,7 +138,7 @@ public class RpkiObjectController {
     }
 
     private Stream<Pair<RpkiObject, Optional<ValidationCheck>>> getAssociatedRpkiObjects(Tx.Read tx, CertificateTreeValidationRun vr, Map<String, ValidationCheck> checkMap) {
-        return validationRuns.findAssociatedObjects(tx, vr).stream()
+        return validationRuns.findAssociatedPks(tx, vr).stream()
                 .map(k -> rpkiObjects.get(tx, k))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
