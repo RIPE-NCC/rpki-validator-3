@@ -63,25 +63,27 @@ public class MultIxMap<T extends Serializable> extends IxBase<T> {
     public List<T> get(Tx.Read txn, Key primaryKey) {
         verifyKey(primaryKey);
         final ByteBuffer pkBuf = primaryKey.toByteBuffer();
-        final CursorIterator<ByteBuffer> iterate = mainDb.iterate(txn.txn(), KeyRange.closed(pkBuf, pkBuf));
         final List<T> result = new ArrayList<>();
-        while (iterate.hasNext()) {
-            final CursorIterator.KeyVal<ByteBuffer> next = iterate.next();
-            result.add(coder.fromBytes(next.val()));
+        try (final CursorIterator<ByteBuffer> iterate = mainDb.iterate(txn.txn(), KeyRange.closed(pkBuf, pkBuf))) {
+            while (iterate.hasNext()) {
+                final CursorIterator.KeyVal<ByteBuffer> next = iterate.next();
+                result.add(coder.fromBytes(next.val()));
+            }
         }
         return result;
     }
 
     public int count(Tx.Read txn, Key primaryKey) {
         verifyKey(primaryKey);
+        int s = 0;
         final ByteBuffer pkBuf = primaryKey.toByteBuffer();
-        final CursorIterator<ByteBuffer> iterate = mainDb.iterate(txn.txn(), KeyRange.closed(pkBuf, pkBuf));
-        int c = 0;
-        while (iterate.hasNext()) {
-            c++;
-            iterate.next();
+        try (final CursorIterator<ByteBuffer> ci = mainDb.iterate(txn.txn(), KeyRange.closed(pkBuf, pkBuf))) {
+            while (ci.hasNext()) {
+                ci.next();
+                s++;
+            }
         }
-        return c;
+        return s;
     }
 
     public void put(Tx.Write tx, Key primaryKey, T value) {
