@@ -74,7 +74,6 @@ public class GsonCoder<T> implements Coder<T> {
     public static Gson getGson(boolean pretty) {
         final GsonBuilder gsonBuilder = new GsonBuilder()
                 .registerTypeAdapter(byte[].class, new ByteArraysGsonAdapter())
-                .registerTypeAdapter(ImmutableList.class, new ImmutableListAdapter())
                 .registerTypeAdapter(IpRange.class, new ParsingAdapter<>(IpRange::parse))
                 .registerTypeAdapter(Asn.class, new ParsingAdapter<>(Asn::parse));
         if (pretty) {
@@ -127,15 +126,6 @@ public class GsonCoder<T> implements Coder<T> {
         @Override
         public JsonElement serialize(byte[] bytes, Type type, JsonSerializationContext jsonSerializationContext) {
             return new JsonPrimitive(Base64.getEncoder().encodeToString(bytes));
-        }
-    }
-
-    static class ImmutableListAdapter implements JsonDeserializer<ImmutableList<?>> {
-        @Override
-        public ImmutableList<?> deserialize(JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
-            final Type type2 = ParameterizedTypeImpl.make(List.class, ((ParameterizedType) type).getActualTypeArguments(), null);
-            final List<?> list = context.deserialize(json, type2);
-            return ImmutableList.copyOf(list);
         }
     }
 }
