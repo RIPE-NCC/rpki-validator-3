@@ -114,7 +114,7 @@ public class RrdpServiceImpl implements RrdpService {
     private void doStoreRepository(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun) {
         final Notification notification = rrdpClient.readStream(rpkiRepository.getRrdpNotifyUri(), rrdpParser::notification);
 
-        log.info("Repository {} has local serial is '{}' and the latest serial is {}",
+        log.info("Repository {}: local serial is '{}', latest serial is {}",
                 rpkiRepository.getRrdpNotifyUri(), rpkiRepository.getRrdpSerial(), notification.serial);
 
         if (notification.sessionId.equals(rpkiRepository.getRrdpSessionId())) {
@@ -145,7 +145,7 @@ public class RrdpServiceImpl implements RrdpService {
                     readSnapshot(rpkiRepository, validationRun, notification);
                 }
             } else {
-                log.info("Repository serial {} is ahead of the serial in notification file {}, fetching the snapshot",
+                log.info("Repository serial {} is ahead of serial in notification file {}, fetching the snapshot",
                         rpkiRepository.getRrdpSessionId(), notification.sessionId);
                 readSnapshot(rpkiRepository, validationRun, notification);
             }
