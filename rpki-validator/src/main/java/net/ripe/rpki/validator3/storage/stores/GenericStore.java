@@ -50,4 +50,6 @@ public interface GenericStore<T extends Serializable> {
     void clear(Tx.Write tx);
 
     void onDelete(BiConsumer<Tx.Write, Key> bf);
+
+    boolean exists(Tx.Read tx, Key key);
 }

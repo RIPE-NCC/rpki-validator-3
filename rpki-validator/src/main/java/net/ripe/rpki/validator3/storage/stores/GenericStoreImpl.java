@@ -64,5 +64,10 @@ public abstract class GenericStoreImpl<T extends Serializable> implements Generi
         ixMap().onDelete(bf);
     }
 
+    @Override
+    public boolean exists(Tx.Read tx, Key key) {
+        return ixMap().exists(tx, key);
+    }
+
     protected abstract IxMap<T> ixMap();
 }

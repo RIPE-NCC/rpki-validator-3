@@ -87,4 +87,6 @@ public interface ValidationRunStore {
     void clear(Tx.Write tx);
 
     int getObjectCount(Tx.Read tx, ValidationRun validationRun);
+
+    void removeOrphanValidationRuns(Tx.Write tx);
 }

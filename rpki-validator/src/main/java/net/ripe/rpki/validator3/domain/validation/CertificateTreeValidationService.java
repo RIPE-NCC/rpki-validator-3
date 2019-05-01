@@ -120,12 +120,12 @@ public class CertificateTreeValidationService {
     }
 
     public void validate(long trustAnchorId) {
-            Optional<TrustAnchor> maybeTrustAnchor = lmdb.readTx(tx -> trustAnchorStore.get(tx, Key.of(trustAnchorId)));
-            if (!maybeTrustAnchor.isPresent()) {
-                log.error("Couldn't find trust anchor {}", trustAnchorId);
-                return;
-            }
-            validateTa(maybeTrustAnchor.get());
+        Optional<TrustAnchor> maybeTrustAnchor = lmdb.readTx(tx -> trustAnchorStore.get(tx, Key.of(trustAnchorId)));
+        if (!maybeTrustAnchor.isPresent()) {
+            log.error("Couldn't find trust anchor {}", trustAnchorId);
+            return;
+        }
+        validateTa(maybeTrustAnchor.get());
     }
 
     private void validateTa(TrustAnchor trustAnchor) {

@@ -59,8 +59,10 @@ public class ValidationRunCleanupService {
     public long cleanupValidationRuns() {
         // Delete all validation runs older than `cleanupGraceDuration` that have a later validation run.
         Instant completedBefore = Instant.now().minus(cleanupGraceDuration);
-        long removedCount = lmdb.writeTx(tx ->
-                validationRuns.removeOldValidationRuns(tx, completedBefore));
+        long removedCount = lmdb.writeTx(tx -> {
+            validationRuns.removeOrphanValidationRuns(tx);
+            return validationRuns.removeOldValidationRuns(tx, completedBefore);
+        });
         log.info("Removed {} old validation runs", removedCount);
         return removedCount;
     }

@@ -38,7 +38,6 @@ import net.ripe.rpki.validator3.storage.data.Base;
 import org.springframework.context.MessageSource;
 import org.springframework.context.MessageSourceResolvable;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -95,7 +94,6 @@ public class ValidationCheck extends Base<ValidationCheck> implements MessageSou
         return parameters.toArray(new String[parameters.size()]);
     }
 
-    @Nullable
     public String formattedMessage(MessageSource messageSource, Locale locale) {
         return messageSource.getMessage(this, locale);
     }

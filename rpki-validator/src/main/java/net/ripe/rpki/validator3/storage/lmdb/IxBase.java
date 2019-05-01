@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
 
 public abstract class IxBase<T extends Serializable> {
     protected final Env<ByteBuffer> env;
@@ -132,6 +133,17 @@ public abstract class IxBase<T extends Serializable> {
             while (ci.hasNext()) {
                 final CursorIterator.KeyVal<ByteBuffer> next = ci.next();
                 c.accept(new Key(next.key()), next.val());
+            }
+        }
+    }
+
+    public void deleteIf(Tx.Read tx, BiPredicate<Key, ByteBuffer> p) {
+        try (final CursorIterator<ByteBuffer> ci = mainDb.iterate(tx.txn())) {
+            while (ci.hasNext()) {
+                final CursorIterator.KeyVal<ByteBuffer> next = ci.next();
+                if (p.test(new Key(next.key()), next.val())) {
+                    ci.remove();
+                }
             }
         }
     }

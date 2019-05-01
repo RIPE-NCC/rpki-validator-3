@@ -29,17 +29,13 @@
  */
 package net.ripe.rpki.validator3.storage.lmdb;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.Getter;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import org.apache.commons.lang3.tuple.Pair;
-import org.lmdbjava.Cursor;
 import org.lmdbjava.CursorIterator;
 import org.lmdbjava.Dbi;
 import org.lmdbjava.DbiFlags;
-import org.lmdbjava.Env;
 import org.lmdbjava.KeyRange;
 import org.lmdbjava.Txn;
 
@@ -64,9 +60,7 @@ import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.DbiFlags.MDB_DUPSORT;
 
 /**
- * TODO
- *  Use some sort of T fingerprint to determine the situation when the definition of T is different
- *  from what is store on the disk has changed and needs to be recreated from scratch.
+ *
  *
  *
  * @param <T>
