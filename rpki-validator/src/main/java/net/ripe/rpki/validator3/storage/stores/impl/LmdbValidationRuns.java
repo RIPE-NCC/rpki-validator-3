@@ -160,7 +160,7 @@ public class LmdbValidationRuns implements ValidationRunStore {
         repo2vr = lmdb.createMultIxMap(RPKI_REPOSITORIES_TO_VALIDATION_RUNS, keyCoder);
 
         rpkiObjectStore.onDelete((tx, rpkiObjectKey) -> {
-            ro2vr.get(tx, rpkiObjectKey).forEach(validationRunId -> vr2ro.delete(tx, validationRunId));
+            ro2vr.get(tx, rpkiObjectKey).forEach(validationRunId -> vr2ro.delete(tx, validationRunId, rpkiObjectKey));
             ro2vr.delete(tx, rpkiObjectKey);
         });
         rpkiRepositoryStore.onDelete((tx, repoKey) -> {
