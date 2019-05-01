@@ -43,8 +43,10 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -124,6 +126,11 @@ public class JobExecutor {
             }
             executor.submit(() -> {
                 synchronized (this.jobs) {
+                    jobs.values().stream().findFirst().ifPresent(q -> {
+                        q.stream().findFirst().ifPresent(j -> {
+
+                        });
+                    });
 
 //                    currentlyExecuted.add()
                 }
