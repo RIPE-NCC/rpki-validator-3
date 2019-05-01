@@ -172,9 +172,9 @@ public class LmdbValidationRuns implements ValidationRunStore {
 
         maps.values().forEach(ixMap ->
                 ixMap.onDelete((tx, vrKey) -> {
-                    vr2ro.get(tx, vrKey).forEach(roKey -> ro2vr.delete(tx, roKey));
-                    vr2repo.get(tx, vrKey).ifPresent(repoKey -> repo2vr.delete(tx, repoKey));
+                    vr2ro.get(tx, vrKey).forEach(roKey -> ro2vr.delete(tx, roKey, vrKey));
                     vr2ro.delete(tx, vrKey);
+                    vr2repo.get(tx, vrKey).ifPresent(repoKey -> repo2vr.delete(tx, repoKey, vrKey));
                     vr2repo.delete(tx, vrKey);
                 }));
     }
