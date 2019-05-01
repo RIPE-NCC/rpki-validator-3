@@ -61,6 +61,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -239,11 +240,11 @@ public class RrdpServiceImpl implements RrdpService {
         final int threshold = 10;
         snapshot.asMap().forEach((objUri, value) -> {
             byte[] content = value.content;
-            Optional<RpkiObject> bySha256 = rpkiObjectStore.findBySha256(tx, Sha256.hash(content));
-            if (bySha256.isPresent()) {
-                bySha256.get().addLocation(objUri);
-                rpkiObjectStore.put(tx, bySha256.get());
-                validationRunStore.associate(tx, validationRun, bySha256.get());
+            Optional<RpkiObject> existing = rpkiObjectStore.findBySha256(tx, Sha256.hash(content));
+            if (existing.isPresent()) {
+                existing.get().addLocation(objUri);
+                rpkiObjectStore.put(tx, existing.get());
+                validationRunStore.associate(tx, validationRun, existing.get());
             } else {
                 if (workCounter.get() > threshold) {
                     storeSnapshotObject(tx, validationRun, counter);
