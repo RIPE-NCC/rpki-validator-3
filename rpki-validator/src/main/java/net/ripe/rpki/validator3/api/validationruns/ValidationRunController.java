@@ -34,6 +34,7 @@ import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
@@ -44,9 +45,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
@@ -58,6 +61,9 @@ public class ValidationRunController {
 
     @Autowired
     private ValidationRunStore validationRunStore;
+
+    @Autowired
+    private TrustAnchorStore trustAnchorStore;
 
     @Autowired
     private MessageSource messageSource;
@@ -89,6 +95,37 @@ public class ValidationRunController {
                                 .map(validationRun -> ValidationRunResource.of(validationRun,
                                         vr -> validationRunStore.getObjectCount(tx, vr),
                                         messageSource, locale))
+                                .collect(Collectors.toList())
+                )));
+    }
+
+
+    @GetMapping(path = "/latest-completed-per-ta")
+    public ResponseEntity<ApiResponse<List<ValidationRunResource>>> listLatestCompletedPerTa(Locale locale) {
+        return lmdb.readTx(tx ->
+                ResponseEntity.ok(ApiResponse.data(
+                        new Links(linkTo(methodOn(ValidationRunController.class).listLatestCompletedPerTa(locale)).withSelfRel()),
+                        trustAnchorStore.findAll(tx).stream().flatMap(ta ->
+                                validationRunStore.findLatestCaTreeValidationRun(tx, ta)
+                                        .map(validationRun -> Stream.of(ValidationRunResource.of(validationRun,
+                                                vr -> validationRunStore.getObjectCount(tx, vr),
+                                                messageSource, locale)))
+                                        .orElse(Stream.empty()))
+                                .collect(Collectors.toList())
+                )));
+    }
+
+    @GetMapping(path = "/latest-completed-per-ta2")
+    public ResponseEntity<ApiResponse<List<ValidationRunResource>>> listLatestCompletedPerTa2(Locale locale) {
+        return lmdb.readTx(tx ->
+                ResponseEntity.ok(ApiResponse.data(
+                        new Links(linkTo(methodOn(ValidationRunController.class).listLatestCompletedPerTa2(locale)).withSelfRel()),
+                        trustAnchorStore.findAll(tx).stream().flatMap(ta ->
+                                validationRunStore.findLatestCaTreeValidationRun2(tx, ta)
+                                        .map(validationRun -> Stream.of(ValidationRunResource.of(validationRun,
+                                                vr -> validationRunStore.getObjectCount(tx, vr),
+                                                messageSource, locale)))
+                                        .orElse(Stream.empty()))
                                 .collect(Collectors.toList())
                 )));
     }
