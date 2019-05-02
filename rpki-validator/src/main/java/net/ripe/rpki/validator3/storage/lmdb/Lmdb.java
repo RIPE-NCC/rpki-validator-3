@@ -161,10 +161,10 @@ public abstract class Lmdb {
         return ixMap;
     }
 
-    public <T extends Serializable> IxMap<T> createSameSizeIxMap(final int keySize,
-                                                                 final String name,
-                                                                 final Map<String, Function<T, Set<Key>>> indexFunctions,
-                                                                 Coder<T> c) {
+    public <T extends Serializable> IxMap<T> createSameSizeKeyIxMap(final int keySize,
+                                                                    final String name,
+                                                                    final Map<String, Function<T, Set<Key>>> indexFunctions,
+                                                                    Coder<T> c) {
         SameSizeKeyIxMap<T> ixMap = new SameSizeKeyIxMap<>(keySize, this, name, c, indexFunctions);
         ixMaps.put(name, ixMap);
         return ixMap;
