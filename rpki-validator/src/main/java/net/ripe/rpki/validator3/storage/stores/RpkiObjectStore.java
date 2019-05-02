@@ -39,6 +39,7 @@ import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public interface RpkiObjectStore extends GenericStore<RpkiObject> {
@@ -60,4 +61,6 @@ public interface RpkiObjectStore extends GenericStore<RpkiObject> {
     long deleteUnreachableObjects(Tx.Write tx, Instant unreachableSince);
 
     Stream<byte[]> streamObjects(Tx.Read tx, RpkiObject.Type type);
+
+    Set<Key> getPkByType(Tx.Read tx, RpkiObject.Type type);
 }

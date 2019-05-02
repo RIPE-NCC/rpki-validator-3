@@ -66,6 +66,7 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
 
     private static final String RPKI_OBJECTS = "rpki-objects";
     private static final String BY_AKI_MFT_INDEX = "by-aki-mft";
+    private static final String BY_TYPE_INDEX = "by-type";
     private static final String BY_LAST_REACHABLE_INDEX = "by-last-reachable";
 
     private static final int SHA256_SIZE_IN_BYTES = 32;
@@ -79,13 +80,6 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
                 Key.keys(Key.of(lastMarkedReachableAt.toEpochMilli()));
     }
 
-    private Set<Key> akiKey(RpkiObject rpkiObject) {
-        byte[] authorityKeyIdentifier = rpkiObject.getAuthorityKeyIdentifier();
-        return authorityKeyIdentifier == null ?
-                Collections.emptySet() :
-                Key.keys(Key.of(authorityKeyIdentifier));
-    }
-
     private Set<Key> akiMftKey(RpkiObject rpkiObject) {
         byte[] authorityKeyIdentifier = rpkiObject.getAuthorityKeyIdentifier();
         return (rpkiObject.getType() == RpkiObject.Type.MFT && authorityKeyIdentifier != null) ?
@@ -93,13 +87,18 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
                 Collections.emptySet();
     }
 
+    private Set<Key> typeKey(RpkiObject rpkiObject) {
+        return Key.keys(Key.of(rpkiObject.getType().toString()));
+    }
+
     @Autowired
     public LmdbRpkiObject(Lmdb lmdb) {
-        this.ixMap = lmdb.createSameSizeIxMap(
+        this.ixMap = lmdb.createSameSizeKeyIxMap(
                 SHA256_SIZE_IN_BYTES,
                 RPKI_OBJECTS,
                 ImmutableMap.of(
                         BY_AKI_MFT_INDEX, this::akiMftKey,
+                        BY_TYPE_INDEX, this::typeKey,
                         BY_LAST_REACHABLE_INDEX, this::lasMarkedReachableKey),
                 CoderFactory.makeCoder(RpkiObject.class));
     }
@@ -175,6 +174,11 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
             }
         });
         return objectBytes.stream();
+    }
+
+    @Override
+    public Set<Key> getPkByType(Tx.Read tx, RpkiObject.Type type) {
+        return ixMap.getPkByIndex(BY_TYPE_INDEX, tx, Key.of(type.toString()));
     }
 
     @Override

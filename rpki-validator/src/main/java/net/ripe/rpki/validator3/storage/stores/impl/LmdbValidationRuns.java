@@ -340,18 +340,23 @@ public class LmdbValidationRuns implements ValidationRunStore {
     }
 
     @Override
-    public void associate(Tx.Write writeTx, CertificateTreeValidationRun validationRun, RpkiObject rpkiObject) {
-        associateVrAndRo(writeTx, validationRun, rpkiObject);
+    public void associate(Tx.Write tx, CertificateTreeValidationRun validationRun, RpkiObject rpkiObject) {
+        vr2ro.put(tx, validationRun.key(), rpkiObject.key());
     }
 
     @Override
-    public void associate(Tx.Write writeTx, RpkiRepositoryValidationRun validationRun, RpkiObject rpkiObject) {
-        associateVrAndRo(writeTx, validationRun, rpkiObject);
+    public void associate(Tx.Write tx, RpkiRepositoryValidationRun validationRun, RpkiObject rpkiObject) {
+        vr2ro.put(tx, validationRun.key(), rpkiObject.key());
     }
 
     @Override
-    public void associate(Tx.Write writeTx, RsyncRepositoryValidationRun validationRun, RpkiRepository rpkiRepository) {
-        vr2repo.put(writeTx, validationRun.key(), rpkiRepository.key());
+    public void associateRpkiObjectKey(Tx.Write tx, CertificateTreeValidationRun validationRun, Key rpkiObjectKey) {
+        vr2ro.put(tx, validationRun.key(), rpkiObjectKey);
+    }
+
+    @Override
+    public void associate(Tx.Write tx, RsyncRepositoryValidationRun validationRun, RpkiRepository rpkiRepository) {
+        vr2repo.put(tx, validationRun.key(), rpkiRepository.key());
     }
 
     @Override
@@ -359,17 +364,15 @@ public class LmdbValidationRuns implements ValidationRunStore {
         return new HashSet<>(vr2ro.get(tx, validationRun.key()));
     }
 
-    private void associateVrAndRo(Tx.Write writeTx, ValidationRun validationRun, RpkiObject rpkiObject) {
-        vr2ro.put(writeTx, validationRun.key(), rpkiObject.key());
-    }
-
     @Override
     public Stream<Pair<CertificateTreeValidationRun, RpkiObject>> findCurrentlyValidated(Tx.Read tx, RpkiObject.Type type) {
+        final Set<Key> byType = rpkiObjectStore.getPkByType(tx, type);
         return findLatestSuccessful(tx, CertificateTreeValidationRun.class)
                 .stream()
                 .flatMap(ct -> vr2ro.get(tx, ct.key())
                         .stream()
-                        .map(roId -> rpkiObjectStore.get(tx, roId))
+                        .filter(byType::contains)
+                        .map(roKey -> rpkiObjectStore.get(tx, roKey))
                         .filter(Optional::isPresent)
                         .map(Optional::get)
                         .filter(ro -> ro.getType() == type)

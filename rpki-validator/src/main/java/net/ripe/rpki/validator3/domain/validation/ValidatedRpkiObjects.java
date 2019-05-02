@@ -43,6 +43,8 @@ import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.domain.RoaPrefixDefinition;
+import net.ripe.rpki.validator3.storage.data.Key;
+import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
@@ -64,6 +66,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -91,25 +94,25 @@ public class ValidatedRpkiObjects {
 
     @PostConstruct
     private synchronized void initialize() {
-        lmdb.readTx0(tx ->
-                Stream.concat(
-                        validationRunStore.findCurrentlyValidated(tx, RpkiObject.Type.ROA),
-                        validationRunStore.findCurrentlyValidated(tx, RpkiObject.Type.ROUTER_CER))
-                        .collect(Collectors.groupingBy(
-                                pair -> pair.getLeft().getTrustAnchor(),
-                                Collectors.mapping(Pair::getRight, Collectors.toList())
-                        ))
-                        .forEach((taRef, rpkiObjects) -> update(tx, taRef, rpkiObjects)));
+        Long t = Time.timed(() -> lmdb.readTx0(tx ->
+                validationRunStore.findLatestSuccessful(tx, CertificateTreeValidationRun.class)
+                        .forEach(vr -> {
+                            final Set<Key> associatedPks = validationRunStore.findAssociatedPks(tx, vr);
+                            updateByKey(tx, vr.getTrustAnchor(), associatedPks);
+                        })));
+        log.info("Initialise taken {}ms", t);
     }
 
-    public void update(Tx.Read tx, Ref<TrustAnchor> trustAnchor, Collection<RpkiObject> rpkiObjects) {
+    void updateByKey(Tx.Read tx, Ref<TrustAnchor> trustAnchor, Collection<Key> rpkiObjectsKeys) {
         Long t = Time.timed(() ->
                 trustAnchorStore.get(tx, trustAnchor.key())
                         .map(ta -> {
                             TrustAnchorData trustAnchorData = TrustAnchorData.of(trustAnchor.key().asLong(), ta.getName());
+                            Stream<RpkiObject> roaStream = streamByType(tx, rpkiObjectsKeys, RpkiObject.Type.ROA);
+                            Stream<RpkiObject> routerCertStream = streamByType(tx, rpkiObjectsKeys, RpkiObject.Type.ROUTER_CER);
                             return RoaPrefixesAndRouterCertificates.of(
-                                    extractRoaPrefixes(trustAnchorData, rpkiObjects),
-                                    extractRouterCertificates(tx, trustAnchorData, rpkiObjects)
+                                    extractRoaPrefixes(trustAnchorData, roaStream),
+                                    extractRouterCertificates(tx, trustAnchorData, routerCertStream)
                             );
                         })
                         .ifPresent(roaPrefixesAndRouterCertificates -> {
@@ -124,6 +127,15 @@ public class ValidatedRpkiObjects {
                             }
                         }));
         log.info("Updated validated roas in {}ms", t);
+    }
+
+    private Stream<RpkiObject> streamByType(Tx.Read tx, Collection<Key> rpkiObjectsKeys, RpkiObject.Type type) {
+        final Set<Key> byType = rpkiObjects.getPkByType(tx, type);
+        return rpkiObjectsKeys.stream()
+                .filter(byType::contains)
+                .map(k -> rpkiObjects.get(tx, k))
+                .filter(Optional::isPresent)
+                .map(Optional::get);
     }
 
     public void remove(TrustAnchor trustAnchor) {
@@ -202,11 +214,10 @@ public class ValidatedRpkiObjects {
         String subjectPublicKeyInfo;
     }
 
-    private ImmutableSet<RouterCertificate> extractRouterCertificates(Tx.Read tx, TrustAnchorData trustAnchor, Collection<RpkiObject> rpkiObjects) {
+    private ImmutableSet<RouterCertificate> extractRouterCertificates(Tx.Read tx, TrustAnchorData trustAnchor, Stream<RpkiObject> rpkiObjects) {
         final Base64.Encoder encoder = Base64.getEncoder();
         ImmutableSet.Builder<RouterCertificate> builder = ImmutableSet.builder();
         rpkiObjects
-            .stream()
             .filter(object -> object.getType() == RpkiObject.Type.ROUTER_CER)
             .map(object -> this.rpkiObjects.findCertificateRepositoryObject(tx, object.key(), X509RouterCertificate.class, ValidationResult.withLocation("temporary")))
             .filter(Optional::isPresent).map(Optional::get)
@@ -226,10 +237,9 @@ public class ValidatedRpkiObjects {
         return builder.build();
     }
 
-    private ImmutableSet<RoaPrefix> extractRoaPrefixes(TrustAnchorData trustAnchor, Collection<RpkiObject> rpkiObjects) {
+    private ImmutableSet<RoaPrefix> extractRoaPrefixes(TrustAnchorData trustAnchor, Stream<RpkiObject> rpkiObjects) {
         ImmutableSet.Builder<RoaPrefix> builder = ImmutableSet.builder();
         rpkiObjects
-            .stream()
             .filter(
                 object -> object.getType() == RpkiObject.Type.ROA
             )
