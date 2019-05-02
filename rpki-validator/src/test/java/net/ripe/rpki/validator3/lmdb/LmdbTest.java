@@ -29,11 +29,7 @@
  */
 package net.ripe.rpki.validator3.lmdb;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.ByteBufferOutput;
-import com.esotericsoftware.kryo.io.Input;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.uuid.Generators;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
@@ -43,8 +39,6 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-import com.jsoniter.JsonIterator;
-import com.jsoniter.output.JsonStream;
 import de.undercouch.bson4jackson.BsonFactory;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -144,24 +138,6 @@ public class LmdbTest {
         env.close();
     }
 
-    @Test
-    @Ignore
-    public void testLmdbSpeedForBinary() throws IOException {
-        final Kryo kryo = new Kryo();
-        kryo.register(Bla.class);
-        kryo.register(byte[].class);
-        kryo.register(Thingy.class);
-
-        testTemplate(
-                k -> {
-                    final ByteBufferOutput bbo = new ByteBufferOutput(1024*1024);
-                    Bla bla = generateBla();
-                    kryo.writeObject(bbo, bla);
-                    return Bytes.toDirectBuffer(bbo.toBytes());
-                },
-                buffer -> kryo.readObject(new Input(Bytes.toBytes(buffer)), Bla.class)
-        );
-    }
 
     @Test
 //    @Ignore
@@ -202,19 +178,6 @@ public class LmdbTest {
                     Bla bla = (Bla) coder.toObject(data);
                     return bla;
                 }
-        );
-    }
-
-    @Test
-    @Ignore
-    public void testLmdbSpeedForJson() throws IOException {
-        testTemplate(
-                k -> {
-                    ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
-                    JsonStream.serialize(generateBla(), bos);
-                    return Bytes.toDirectBuffer(bos.toByteArray());
-                },
-                buffer -> JsonIterator.deserialize(Bytes.toBytes(buffer)).as(Bla.class)
         );
     }
 
@@ -372,7 +335,7 @@ public class LmdbTest {
     }
 
     private static UUID makeUuid() {
-        return Generators.timeBasedGenerator().generate();
+        return UUID.randomUUID();
     }
 
     private static ByteBuffer makeByteBuffer(UUID uuid) {
