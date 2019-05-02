@@ -316,7 +316,7 @@ public class BgpPreviewService {
         return readLocked(() -> {
             final int count;
             if (searchTerm == null) {
-                count = bgpPreviewEntries.values().stream().map(AbstractCollection::size).reduce((s1, s2) -> s1 + s2).orElse(0);
+                count = bgpPreviewEntries.values().stream().map(AbstractCollection::size).reduce(0, Integer::sum);
              } else {
                 count = (int) bgpPreviewEntries
                         .values()
@@ -382,7 +382,7 @@ public class BgpPreviewService {
         });
     }
 
-    public void updateValidatedRoaPrefixes(Stream<ValidatedRpkiObjects.RoaPrefix> prefixes) {
+    void updateValidatedRoaPrefixes(Stream<ValidatedRpkiObjects.RoaPrefix> prefixes) {
         sequential(() -> {
             final ImmutableList<RoaPrefix> validatedRoaPrefixes = ImmutableList.copyOf(prefixes
                     .map(p -> RoaPrefix.of(

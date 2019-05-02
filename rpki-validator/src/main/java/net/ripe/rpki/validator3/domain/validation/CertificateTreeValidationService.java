@@ -184,7 +184,7 @@ public class CertificateTreeValidationService {
             validationRun.completeWith(validationResult);
             lmdb.writeTx0(tx -> validationRunStore.update(tx, validationRun));
             long end = System.currentTimeMillis();
-            log.info("Tree validation {} for {} in {}ms", validationRun.getStatus().toString().toLowerCase(), trustAnchor, (end - begin));
+            log.info("Tree validation {} for {} in {}ms", validationRun.getStatus().toString().toLowerCase(), trustAnchor.getName(), (end - begin));
         }
     }
 
