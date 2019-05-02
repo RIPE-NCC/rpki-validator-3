@@ -115,21 +115,6 @@ public class ValidationRunController {
                 )));
     }
 
-    @GetMapping(path = "/latest-completed-per-ta2")
-    public ResponseEntity<ApiResponse<List<ValidationRunResource>>> listLatestCompletedPerTa2(Locale locale) {
-        return lmdb.readTx(tx ->
-                ResponseEntity.ok(ApiResponse.data(
-                        new Links(linkTo(methodOn(ValidationRunController.class).listLatestCompletedPerTa2(locale)).withSelfRel()),
-                        trustAnchorStore.findAll(tx).stream().flatMap(ta ->
-                                validationRunStore.findLatestCaTreeValidationRun2(tx, ta)
-                                        .map(validationRun -> Stream.of(ValidationRunResource.of(validationRun,
-                                                vr -> validationRunStore.getObjectCount(tx, vr),
-                                                messageSource, locale)))
-                                        .orElse(Stream.empty()))
-                                .collect(Collectors.toList())
-                )));
-    }
-
     @GetMapping(path = "/{id}")
     public ResponseEntity<ApiResponse<ValidationRunResource>> get(@PathVariable long id, Locale locale) {
         return lmdb.readTx(tx ->
