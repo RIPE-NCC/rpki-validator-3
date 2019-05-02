@@ -60,12 +60,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.fasterxml.uuid</groupId>
-            <artifactId>java-uuid-generator</artifactId>
-            <version>3.1.4</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.lmdbjava</groupId>
             <artifactId>lmdbjava</artifactId>
             <version>0.6.3</version>
@@ -99,12 +93,6 @@
             <groupId>org.reflections</groupId>
             <artifactId>reflections</artifactId>
             <version>0.9.11</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-devtools</artifactId>
-            <optional>true</optional>
         </dependency>
 
         <dependency>
@@ -222,16 +210,6 @@
         </dependency>
 
     </dependencies>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>com.thoughtworks.xstream</groupId>
-                <artifactId>xstream</artifactId>
-                <version>1.4.10</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <build>
         <resources>
