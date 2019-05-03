@@ -164,6 +164,11 @@ public class CertificateTreeValidationService {
             }
 
             final List<Key> rpkiObjectsKeys = validateCertificateAuthority(trustAnchor, registeredRepositories, context, validationResult);
+            if (rpkiObjectsKeys.isEmpty()) {
+                if (isValidationRunCompleted(validationResult)) {
+                    log.info("No associated objects, validation run: {}, validation result: {}", validationRun.key(), validationResult);
+                }
+            }
             lmdb.writeTx0(tx -> {
                 validationRunStore.add(tx, validationRun);
                 Long t = Time.timed(() -> rpkiObjectsKeys.forEach(key -> validationRunStore.associateRpkiObjectKey(tx, validationRun, key)));
@@ -178,7 +183,6 @@ public class CertificateTreeValidationService {
                     }
                 }
             });
-
             lmdb.readTx0(tx -> validatedRpkiObjects.updateByKey(tx, trustAnchorRef, rpkiObjectsKeys));
         } finally {
             validationRun.completeWith(validationResult);
@@ -212,7 +216,6 @@ public class CertificateTreeValidationService {
             X509ResourceCertificate certificate = context.getCertificate();
             URI manifestUri = certificate.getManifestUri();
             temporary.setLocation(new ValidationLocation(manifestUri));
-
 
             Optional<RpkiObject> manifestObject = lmdb.readTx(tx -> rpkiObjectStore.findLatestMftByAKI(tx, context.getSubjectKeyIdentifier()));
 
