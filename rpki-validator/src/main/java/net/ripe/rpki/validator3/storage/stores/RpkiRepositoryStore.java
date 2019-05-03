@@ -38,6 +38,8 @@ import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -74,4 +76,6 @@ public interface RpkiRepositoryStore extends GenericStore<RpkiRepository> {
     void removeAllForTrustAnchor(Tx.Write tx, TrustAnchor trustAnchor);
 
     void remove(Tx.Write tx, Key key);
+
+    Collection<RpkiRepository> findByTrustAnchor(Tx.Read tx, Key key);
 }

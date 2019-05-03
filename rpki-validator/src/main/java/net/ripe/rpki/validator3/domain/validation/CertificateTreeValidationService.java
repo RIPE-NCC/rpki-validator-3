@@ -44,6 +44,7 @@ import net.ripe.rpki.commons.validation.ValidationString;
 import net.ripe.rpki.commons.validation.objectvalidators.CertificateRepositoryObjectValidationContext;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
+import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
@@ -66,6 +67,7 @@ import org.springframework.stereotype.Service;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -132,7 +134,7 @@ public class CertificateTreeValidationService {
         log.info("Starting tree validation for {}", trustAnchor);
         long begin = System.currentTimeMillis();
 
-        final Map<URI, RpkiRepository> registeredRepositories = new ConcurrentHashMap<>();
+        final Map<URI, RpkiRepository> registeredRepositories = createRegisteredRepositoryMap(trustAnchor);
 
         final Ref<TrustAnchor> trustAnchorRef = lmdb.readTx(tx -> trustAnchorStore.makeRef(tx, trustAnchor.key()));
         final CertificateTreeValidationRun validationRun = new CertificateTreeValidationRun(trustAnchorRef);
@@ -355,7 +357,19 @@ public class CertificateTreeValidationService {
                                     final Ref<TrustAnchor> trustAnchorRef = trustAnchorStore.makeRef(tx, trustAnchor.key());
                                     return rpkiRepositoryStore.register(tx, trustAnchorRef, uri.toASCIIString(), RSYNC);
                                 })).get()));
+    }
 
+    private Map<URI, RpkiRepository> createRegisteredRepositoryMap(TrustAnchor trustAnchor) {
+        final Map<URI, RpkiRepository> registeredRepositories = new ConcurrentHashMap<>();
+        long t = Time.timed(() -> lmdb.readTx(tx -> rpkiRepositoryStore.findByTrustAnchor(tx, trustAnchor.key()))
+                .forEach(r -> {
+                    if (r.getRrdpNotifyUri() != null) {
+                        registeredRepositories.put(URI.create(r.getRrdpNotifyUri()), r);
+                    } else
+                        registeredRepositories.put(URI.create(r.getLocationUri()), r);
+                }));
+        log.info("Pre-loaded {} repositories in {}ms", registeredRepositories.size(), t);
+        return registeredRepositories;
     }
 
     private Map<URI, RpkiObject> retrieveManifestEntries(Tx.Read tx, ManifestCms manifest, URI manifestUri, ValidationResult validationResult) {
