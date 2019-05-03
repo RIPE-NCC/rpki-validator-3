@@ -58,7 +58,6 @@ import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -532,32 +531,57 @@ public class BgpPreviewService {
             IntervalMap<IpRange, List<RoaPrefix>> roaPrefixes,
             BgpPreviewEntry bgpRisEntry
     ) {
-        List<RoaPrefix> matchingRoaPrefixes = roaPrefixes
-                .findExactAndAllLessSpecific(bgpRisEntry.getPrefix())
-                .stream()
-                .flatMap(Collection::stream)
-                .collect(Collectors.toList());
-
-        return validateBgpRisEntry(matchingRoaPrefixes, bgpRisEntry);
-    }
-
-    private static Validity validateBgpRisEntry(List<RoaPrefix> matchingRoaPrefixes, BgpPreviewEntry bgpRisEntry) {
-        List<RoaPrefix> matchingAsnRoas = matchingRoaPrefixes
-                .stream()
-                .filter(roaPrefix -> roaPrefix.getAsn().equals(bgpRisEntry.getOrigin()))
-                .collect(Collectors.toList());
-
-        final Validity validity;
-        if (matchingRoaPrefixes.isEmpty()) {
-            validity = Validity.UNKNOWN;
-        } else if (matchingAsnRoas.isEmpty()) {
-            validity = Validity.INVALID_ASN;
-        } else if (matchingAsnRoas.stream().noneMatch(roaPrefix -> roaPrefix.getEffectiveLength() >= bgpRisEntry.getPrefix().getPrefixLength())) {
-            validity = Validity.INVALID_LENGTH;
-        } else {
-            validity = Validity.VALID;
+        Validity validity = Validity.UNKNOWN;
+        final int bgpPrefixLength = bgpRisEntry.getPrefix().getPrefixLength();
+        for (List<RoaPrefix> rs : roaPrefixes.findExactAndAllLessSpecific(bgpRisEntry.getPrefix())) {
+            for (RoaPrefix r : rs) {
+                if (r.getAsn().longValue() == bgpRisEntry.origin) {
+                    if (r.getEffectiveLength() < bgpPrefixLength) {
+                        validity = Validity.INVALID_LENGTH;
+                    } else {
+                        return Validity.VALID;
+                    }
+                } else if (validity != Validity.INVALID_LENGTH) {
+                    validity = Validity.INVALID_ASN;
+                }
+            }
         }
         return validity;
+//
+//
+//        List<RoaPrefix> matchingRoaPrefixes = roaPrefixes
+//                .findExactAndAllLessSpecific(bgpRisEntry.getPrefix())
+//                .stream()
+//                .flatMap(Collection::stream)
+//                .collect(Collectors.toList());
+//
+//        List<RoaPrefix> matchingAsnRoas = matchingRoaPrefixes
+//                .stream()
+//                .filter(roaPrefix -> roaPrefix.getAsn().longValue() == bgpRisEntry.origin)
+//                .collect(Collectors.toList());
+//
+//
+//        final int prefixLength = bgpRisEntry.getPrefix().getPrefixLength();
+//        if (matchingRoaPrefixes.isEmpty()) {
+//            validity = Validity.UNKNOWN;
+//        } else if (matchingAsnRoas.isEmpty()) {
+//            validity = Validity.INVALID_ASN;
+//        } else if (matchingAsnRoas.stream().noneMatch(roaPrefix -> roaPrefix.getEffectiveLength() >= prefixLength)) {
+//            validity = Validity.INVALID_LENGTH;
+//        } else {
+//            validity = Validity.VALID;
+//        }
+//        return validity;
+    }
+
+    private static Validity validateMatchingBgpRisEntry(RoaPrefix matchingRoaPrefix, BgpPreviewEntry bgpRisEntry) {
+        if (matchingRoaPrefix.getAsn().longValue() == bgpRisEntry.origin) {
+            if (matchingRoaPrefix.getEffectiveLength() < bgpRisEntry.getPrefix().getPrefixLength()) {
+                return Validity.INVALID_LENGTH;
+            }
+            return Validity.VALID;
+        }
+        return Validity.INVALID_ASN;
     }
 
     public BgpValidityWithFilteredResource validity(final Asn origin, final IpRange prefix) {
@@ -588,7 +612,7 @@ public class BgpPreviewService {
                 .flatMap(Collection::stream)
                 .map(r -> {
                     final BgpPreviewEntry bgpPreviewEntry = BgpPreviewEntry.of(origin, prefix, Validity.UNKNOWN);
-                    final Validity validity = validateBgpRisEntry(Collections.singletonList(r), bgpPreviewEntry);
+                    final Validity validity = validateMatchingBgpRisEntry(r, bgpPreviewEntry);
                     return Pair.of(r, validity);
                 })
                 .sorted(comparingInt(p -> {
@@ -604,7 +628,7 @@ public class BgpPreviewService {
                 }))
                 .collect(Collectors.toList());
 
-        final Validity validity = matchingRoaPrefixes.stream().findFirst().map(p -> p.getRight()).orElse(Validity.UNKNOWN);
+        final Validity validity = matchingRoaPrefixes.stream().findFirst().map(Pair::getRight).orElse(Validity.UNKNOWN);
 
         final List<ValidatingRoa> validatingRoaStream = matchingRoaPrefixes
                 .stream()
