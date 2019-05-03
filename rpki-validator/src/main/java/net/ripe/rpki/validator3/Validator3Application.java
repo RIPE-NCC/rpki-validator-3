@@ -275,10 +275,10 @@ public class Validator3Application {
     public static void main(String[] args) {
         Locale.setDefault(Locale.ENGLISH);
         try {
-            SpringApplication application = new SpringApplicationBuilder(Validator3Application.class)
+            new SpringApplicationBuilder(Validator3Application.class)
                     .bannerMode(Banner.Mode.OFF)
-                    .build();
-            application.run(args);
+                    .build()
+                    .run(args);
         } catch (Exception e) {
             terminateIfKnownProblem(e);
         }
