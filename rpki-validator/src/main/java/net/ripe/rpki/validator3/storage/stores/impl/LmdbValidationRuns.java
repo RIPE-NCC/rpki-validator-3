@@ -258,7 +258,12 @@ public class LmdbValidationRuns implements ValidationRunStore {
     public void removeOrphanValidationRuns(Tx.Write tx) {
         vr2ro.deleteIf(tx, (k, bb) -> !rpkiObjectStore.exists(tx, Key.of(Bytes.toBytes(bb))));
         vr2repo.deleteIf(tx, (k, bb) -> !rpkiRepositoryStore.exists(tx, Key.of(Bytes.toBytes(bb))));
-    }    
+    }
+
+    @Override
+    public void delete(Tx.Write tx, ValidationRun vr) {
+        pickIxMap(vr.getType()).delete(tx, vr.key());
+    }
 
     @Override
     public Stream<ValidationCheck> findValidationChecksForValidationRun(Tx.Read tx, long trustAnchorId, Paging paging, SearchTerm searchTerm, Sorting sorting) {

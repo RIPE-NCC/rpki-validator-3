@@ -92,4 +92,5 @@ public interface ValidationRunStore {
 
     void removeOrphanValidationRuns(Tx.Write tx);
 
+    void delete(Tx.Write tx, ValidationRun validationRun);
 }
