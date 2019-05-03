@@ -185,7 +185,9 @@ public class CertificateTreeValidationService {
                     }
                 }
             });
-            lmdb.readTx0(tx -> validatedRpkiObjects.updateByKey(tx, trustAnchorRef, rpkiObjectsKeys));
+            if (!rpkiObjectsKeys.isEmpty()) {
+                lmdb.readTx0(tx -> validatedRpkiObjects.updateByKey(tx, trustAnchorRef, rpkiObjectsKeys));
+            }
         } finally {
             validationRun.completeWith(validationResult);
             lmdb.writeTx0(tx -> validationRunStore.update(tx, validationRun));
