@@ -97,15 +97,14 @@ public class ValidatedRpkiObjects {
 
     @PostConstruct
     private void initialize() {
-        Locks.locked(dataLock.writeLock(), () -> {
-            Long t = Time.timed(() -> lmdb.readTx0(tx ->
-                    validationRunStore.findLatestSuccessful(tx, CertificateTreeValidationRun.class)
-                            .forEach(vr -> {
-                                final Set<Key> associatedPks = validationRunStore.findAssociatedPks(tx, vr);
-                                updateByKey(tx, vr.getTrustAnchor(), associatedPks);
-                            })));
-            log.info("Initialise taken {}ms", t);
-        });
+        Long t = Locks.locked(dataLock.writeLock(), () ->
+                Time.timed(() -> lmdb.readTx0(tx ->
+                        validationRunStore.findLatestSuccessful(tx, CertificateTreeValidationRun.class)
+                                .forEach(vr -> {
+                                    final Set<Key> associatedPks = validationRunStore.findAssociatedPks(tx, vr);
+                                    updateByKey(tx, vr.getTrustAnchor(), associatedPks);
+                                }))));
+        log.info("Initialise taken {}ms", t);
     }
 
     void updateByKey(Tx.Read tx, Ref<TrustAnchor> trustAnchor, Collection<Key> rpkiObjectsKeys) {
