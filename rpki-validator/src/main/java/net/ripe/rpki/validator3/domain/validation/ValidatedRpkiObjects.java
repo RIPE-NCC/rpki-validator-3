@@ -53,6 +53,7 @@ import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
+import net.ripe.rpki.validator3.util.Locks;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,6 +68,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -74,7 +76,6 @@ import java.util.stream.Stream;
 @Component
 @Slf4j
 public class ValidatedRpkiObjects {
-    private final Object listenerLock = new Object();
 
     private final List<Consumer<Collection<RoaPrefixesAndRouterCertificates>>> listeners = new ArrayList<>();
 
@@ -92,15 +93,19 @@ public class ValidatedRpkiObjects {
     @Autowired
     private Lmdb lmdb;
 
+    private ReentrantReadWriteLock dataLock = new ReentrantReadWriteLock();
+
     @PostConstruct
-    private synchronized void initialize() {
-        Long t = Time.timed(() -> lmdb.readTx0(tx ->
-                validationRunStore.findLatestSuccessful(tx, CertificateTreeValidationRun.class)
-                        .forEach(vr -> {
-                            final Set<Key> associatedPks = validationRunStore.findAssociatedPks(tx, vr);
-                            updateByKey(tx, vr.getTrustAnchor(), associatedPks);
-                        })));
-        log.info("Initialise taken {}ms", t);
+    private void initialize() {
+        Locks.locked(dataLock.writeLock(), () -> {
+            Long t = Time.timed(() -> lmdb.readTx0(tx ->
+                    validationRunStore.findLatestSuccessful(tx, CertificateTreeValidationRun.class)
+                            .forEach(vr -> {
+                                final Set<Key> associatedPks = validationRunStore.findAssociatedPks(tx, vr);
+                                updateByKey(tx, vr.getTrustAnchor(), associatedPks);
+                            })));
+            log.info("Initialise taken {}ms", t);
+        });
     }
 
     void updateByKey(Tx.Read tx, Ref<TrustAnchor> trustAnchor, Collection<Key> rpkiObjectsKeys) {
@@ -116,15 +121,14 @@ public class ValidatedRpkiObjects {
                             );
                         })
                         .ifPresent(roaPrefixesAndRouterCertificates -> {
-                            synchronized (listenerLock) {
-                                log.info("updating validation objects cache for trust anchor {} with {} ROA prefixes and {} router certificates",
-                                        trustAnchor,
-                                        roaPrefixesAndRouterCertificates.getRoaPrefixes().size(),
-                                        roaPrefixesAndRouterCertificates.getRouterCertificates().size()
-                                );
-                                validatedObjectsByTrustAnchor.put(trustAnchor.key().asLong(), roaPrefixesAndRouterCertificates);
-                                notifyListeners();
-                            }
+                            log.info("updating validation objects cache for trust anchor {} with {} ROA prefixes and {} router certificates",
+                                    trustAnchor,
+                                    roaPrefixesAndRouterCertificates.getRoaPrefixes().size(),
+                                    roaPrefixesAndRouterCertificates.getRouterCertificates().size()
+                            );
+                            Locks.locked(dataLock.writeLock(), () ->
+                                    validatedObjectsByTrustAnchor.put(trustAnchor.key().asLong(), roaPrefixesAndRouterCertificates));
+                            notifyListeners();
                         }));
         log.info("Updated validated roas in {}ms", t);
     }
@@ -140,10 +144,10 @@ public class ValidatedRpkiObjects {
 
     public void remove(TrustAnchor trustAnchor) {
         long trustAnchorId = trustAnchor.key().asLong();
-        synchronized (listenerLock) {
+        Locks.locked(dataLock.writeLock(), () -> {
             validatedObjectsByTrustAnchor.remove(trustAnchorId);
             notifyListeners();
-        }
+        });
     }
 
     public ValidatedObjects<RoaPrefix> findCurrentlyValidatedRoaPrefixes() {
@@ -158,24 +162,28 @@ public class ValidatedRpkiObjects {
             sorting = Sorting.of(Sorting.By.TA, Sorting.Direction.ASC);
         }
 
-        return ValidatedObjects.of(
-            countRoaPrefixes(searchTerm),
-            findRoaPrefixes(searchTerm, sorting, paging)
-        );
+        Sorting finalSorting = sorting;
+        Paging finalPaging = paging;
+        return Locks.locked(dataLock.readLock(), () ->
+                ValidatedObjects.of(
+                        countRoaPrefixes(searchTerm),
+                        findRoaPrefixes(searchTerm, finalSorting, finalPaging)
+                ));
     }
 
     public ValidatedObjects<RouterCertificate> findCurrentlyValidatedRouterCertificates() {
-        return ValidatedObjects.of(
-            countRouterCertificates(),
-            findRouterCertificates()
-        );
+        return Locks.locked(dataLock.readLock(), () ->
+                ValidatedObjects.of(
+                        countRouterCertificates(),
+                        findRouterCertificates()
+                ));
     }
 
     public void addListener(Consumer<Collection<RoaPrefixesAndRouterCertificates>> listener) {
-        synchronized (listenerLock) {
+        Locks.locked(dataLock.writeLock(), () -> {
             listeners.add(listener);
             listener.accept(validatedObjectsByTrustAnchor.values());
-        }
+        });
     }
 
     @Value(staticConstructor = "of")
@@ -264,8 +272,9 @@ public class ValidatedRpkiObjects {
         return builder.build();
     }
 
-    private synchronized ImmutableList<RoaPrefixesAndRouterCertificates> validatedObjects() {
-        return ImmutableList.copyOf(validatedObjectsByTrustAnchor.values());
+    private ImmutableList<RoaPrefixesAndRouterCertificates> validatedObjects() {
+        return Locks.locked(dataLock.readLock(), () ->
+                ImmutableList.copyOf(validatedObjectsByTrustAnchor.values()));
     }
 
     private int countRouterCertificates() {
@@ -296,6 +305,7 @@ public class ValidatedRpkiObjects {
     }
 
     private void notifyListeners() {
-        listeners.forEach(listener -> listener.accept(validatedObjectsByTrustAnchor.values()));
+        Locks.locked(dataLock.readLock(), () ->
+                listeners.forEach(listener -> listener.accept(validatedObjectsByTrustAnchor.values())));
     }
 }
