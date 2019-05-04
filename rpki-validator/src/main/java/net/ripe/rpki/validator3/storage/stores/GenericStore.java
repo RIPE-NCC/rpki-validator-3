@@ -36,6 +36,7 @@ import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
 
 public interface GenericStore<T extends Serializable> {
@@ -52,4 +53,6 @@ public interface GenericStore<T extends Serializable> {
     void onDelete(BiConsumer<Tx.Write, Key> bf);
 
     boolean exists(Tx.Read tx, Key key);
+
+    Set<Key> keys(Tx.Read tx);
 }

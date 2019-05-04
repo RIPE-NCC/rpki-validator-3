@@ -32,10 +32,8 @@ package net.ripe.rpki.validator3.storage.lmdb;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import org.lmdbjava.DbiFlags;
-import org.lmdbjava.Env;
 
 import java.io.Serializable;
-import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;

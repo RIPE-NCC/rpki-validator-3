@@ -38,14 +38,18 @@ import org.lmdbjava.CursorIterator;
 import org.lmdbjava.Dbi;
 import org.lmdbjava.DbiFlags;
 import org.lmdbjava.Env;
+import org.lmdbjava.Stat;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
@@ -54,12 +58,12 @@ public abstract class IxBase<T extends Serializable> {
     @Getter
     private final String name;
 
-    final Dbi<ByteBuffer> mainDb;
+    private final Dbi<ByteBuffer> mainDb;
     final Coder<T> coder;
 
-    public IxBase(final Lmdb lmdb,
-                  final String name,
-                  final Coder<T> coder) {
+    IxBase(final Lmdb lmdb,
+           final String name,
+           final Coder<T> coder) {
         this.env = lmdb.getEnv();
         this.name = name;
         this.coder = coder;
@@ -72,7 +76,7 @@ public abstract class IxBase<T extends Serializable> {
 
     protected abstract DbiFlags[] getIndexDbiFlags();
 
-    protected static void checkNotNull(Object v, String s) {
+    static void checkNotNull(Object v, String s) {
         if (v == null) {
             throw new NullPointerException(s);
         }
@@ -96,32 +100,38 @@ public abstract class IxBase<T extends Serializable> {
     }
 
     public boolean exists(Tx.Read tx, Key key) {
-        return mainDb.get(tx.txn(), key.toByteBuffer()) != null;
+        return getMainDb().get(tx.txn(), key.toByteBuffer()) != null;
+    }
+
+    Dbi<ByteBuffer> getMainDb() {
+        checkEnv();
+        return mainDb;
+    }
+
+    void checkEnv() {
+        Lmdb.checkEnv(env);
+    }
+
+    public Set<Key> keys(Tx.Read tx) {
+        final Set<Key> result = new HashSet<>();
+        forEach(tx, (k, v) -> result.add(k));
+        return result;
     }
 
     public List<T> values(Tx.Read tx) {
         final List<T> result = new ArrayList<>();
-        try (final CursorIterator<ByteBuffer> ci = mainDb.iterate(tx.txn())) {
-            while (ci.hasNext()) {
-                result.add(coder.fromBytes(ci.next().val()));
-            }
-        }
+        forEach(tx, (k, v) -> result.add(coder.fromBytes(v)));
         return result;
     }
 
     public Map<Key, T> all(Tx.Read tx) {
         final Map<Key, T> result = new HashMap<>();
-        try (final CursorIterator<ByteBuffer> ci = mainDb.iterate(tx.txn())) {
-            while (ci.hasNext()) {
-                CursorIterator.KeyVal<ByteBuffer> next = ci.next();
-                result.put(new Key(next.key()), coder.fromBytes(next.val()));
-            }
-        }
+        forEach(tx, (k, v) -> result.put(k, coder.fromBytes(v)));
         return result;
     }
 
     public void clear(Tx.Write tx) {
-        mainDb.drop(tx.txn());
+        getMainDb().drop(tx.txn());
     }
 
     public T toValue(ByteBuffer bb) {
@@ -129,7 +139,7 @@ public abstract class IxBase<T extends Serializable> {
     }
 
     public void forEach(Tx.Read tx, BiConsumer<Key, ByteBuffer> c) {
-        try (final CursorIterator<ByteBuffer> ci = mainDb.iterate(tx.txn())) {
+        try (final CursorIterator<ByteBuffer> ci = getMainDb().iterate(tx.txn())) {
             while (ci.hasNext()) {
                 final CursorIterator.KeyVal<ByteBuffer> next = ci.next();
                 c.accept(new Key(next.key()), next.val());
@@ -137,27 +147,24 @@ public abstract class IxBase<T extends Serializable> {
         }
     }
 
-    public void deleteIf(Tx.Read tx, BiPredicate<Key, ByteBuffer> p) {
-        try (final CursorIterator<ByteBuffer> ci = mainDb.iterate(tx.txn())) {
+    public int deleteIf(Tx.Write tx, BiPredicate<Key, ByteBuffer> p) {
+        int c = 0;
+        try (final CursorIterator<ByteBuffer> ci = getMainDb().iterate(tx.txn())) {
             while (ci.hasNext()) {
                 final CursorIterator.KeyVal<ByteBuffer> next = ci.next();
                 if (p.test(new Key(next.key()), next.val())) {
                     ci.remove();
+                    c++;
                 }
             }
         }
+        return c;
     }
 
-    // TODO Optimize if possible
     public long size(Tx.Read tx) {
-        long s = 0;
-        try (final CursorIterator<ByteBuffer> ci = mainDb.iterate(tx.txn())) {
-            while (ci.hasNext()) {
-                ci.next();
-                s++;
-            }
-        }
-        return s;
+        AtomicLong s = new AtomicLong();
+        forEach(tx, (k, v) -> s.getAndIncrement());
+        return s.get();
     }
 
     public Sizes sizeInfo(Tx.Read tx) {
@@ -167,13 +174,19 @@ public abstract class IxBase<T extends Serializable> {
             count.getAndIncrement();
             size.addAndGet(k.size() + v.remaining());
         });
-        return new Sizes(count.get(), size.get());
+        return new Sizes(count.get(), size.get(), getAllocatedSize(tx, getMainDb()));
+    }
+
+    long getAllocatedSize(Tx.Read tx, Dbi<ByteBuffer> dbi) {
+        final Stat stat = dbi.stat(tx.txn());
+        return stat.pageSize * (stat.branchPages + stat.leafPages + stat.overflowPages);
     }
 
     @Data
     @AllArgsConstructor
     public static class Sizes {
         private int count;
-        private int sizeInBytes;
+        private long keysAndValuesBytes;
+        private long allocatedSize;
     }
 }

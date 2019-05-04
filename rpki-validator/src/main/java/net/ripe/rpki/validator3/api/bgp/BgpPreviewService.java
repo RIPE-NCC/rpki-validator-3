@@ -260,8 +260,8 @@ public class BgpPreviewService {
         );
 
         validatedRpkiObjects.addListener(objects -> updateValidatedRoaPrefixes(objects.stream().flatMap(x -> x.getRoaPrefixes().stream())));
-        ignoreFilterService.addListener(filters -> updateIgnoreFilters(filters));
-        roaPrefixAssertionsService.addListener(roaPrefixAssertions -> updateRoaPrefixAssertions(roaPrefixAssertions));
+        ignoreFilterService.addListener(this::updateIgnoreFilters);
+        roaPrefixAssertionsService.addListener(this::updateRoaPrefixAssertions);
     }
 
     private ReentrantReadWriteLock dataLock = new ReentrantReadWriteLock();
@@ -337,7 +337,7 @@ public class BgpPreviewService {
             DateTime lastModified = bgpRisDumps.stream()
                     .map(BgpRisDump::getLastModified)
                     .filter(Objects::nonNull)
-                    .min(Comparator.reverseOrder())
+                    .max(Comparator.naturalOrder())
                     .orElse(DateTime.now());
 
             return BgpPreviewResult.of(count, lastModified.getMillis(), entries);
@@ -547,31 +547,6 @@ public class BgpPreviewService {
             }
         }
         return validity;
-//
-//
-//        List<RoaPrefix> matchingRoaPrefixes = roaPrefixes
-//                .findExactAndAllLessSpecific(bgpRisEntry.getPrefix())
-//                .stream()
-//                .flatMap(Collection::stream)
-//                .collect(Collectors.toList());
-//
-//        List<RoaPrefix> matchingAsnRoas = matchingRoaPrefixes
-//                .stream()
-//                .filter(roaPrefix -> roaPrefix.getAsn().longValue() == bgpRisEntry.origin)
-//                .collect(Collectors.toList());
-//
-//
-//        final int prefixLength = bgpRisEntry.getPrefix().getPrefixLength();
-//        if (matchingRoaPrefixes.isEmpty()) {
-//            validity = Validity.UNKNOWN;
-//        } else if (matchingAsnRoas.isEmpty()) {
-//            validity = Validity.INVALID_ASN;
-//        } else if (matchingAsnRoas.stream().noneMatch(roaPrefix -> roaPrefix.getEffectiveLength() >= prefixLength)) {
-//            validity = Validity.INVALID_LENGTH;
-//        } else {
-//            validity = Validity.VALID;
-//        }
-//        return validity;
     }
 
     private static Validity validateMatchingBgpRisEntry(RoaPrefix matchingRoaPrefix, BgpPreviewEntry bgpRisEntry) {

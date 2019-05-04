@@ -35,7 +35,6 @@ import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.storage.Bytes;
-import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
@@ -48,8 +47,8 @@ import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
-import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
+import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.MultIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
@@ -71,6 +70,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
@@ -122,8 +122,7 @@ public class LmdbValidationRuns implements ValidationRunStore {
                 TA_RPKI_VALIDATION_RUNS,
                 ImmutableMap.of(BY_TA_INDEX, vr -> Key.keys(vr.getTrustAnchor().key()),
                         BY_COMPLETED_AT_INDEX, this::completedAtIndexKeys),
-                CoderFactory.makeCoder(TrustAnchorValidationRun.class)
-        );
+                TrustAnchorValidationRun.class);
 
         rsIxMap = lmdb.createIxMap(
                 RS_RPKI_VALIDATION_RUNS,
@@ -133,7 +132,7 @@ public class LmdbValidationRuns implements ValidationRunStore {
         rrIxMap = lmdb.createIxMap(
                 RR_RPKI_VALIDATION_RUNS,
                 ImmutableMap.of(BY_COMPLETED_AT_INDEX, this::completedAtIndexKeys),
-                CoderFactory.makeCoder(RrdpRepositoryValidationRun.class));
+                RrdpRepositoryValidationRun.class);
 
         maps.put(CertificateTreeValidationRun.TYPE, ctIxMap);
         maps.put(TrustAnchorValidationRun.TYPE, taIxMap);
@@ -169,7 +168,6 @@ public class LmdbValidationRuns implements ValidationRunStore {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T extends ValidationRun> T add(Tx.Write tx, T vr) {
         vr.setId(Key.of(sequences.next(tx, RPKI_VALIDATION_RUNS + ":pk")));
         pickIxMap(vr.getType()).put(tx, vr.key(), vr);
@@ -236,13 +234,13 @@ public class LmdbValidationRuns implements ValidationRunStore {
     }
 
     @Override
-    public long removeOldValidationRuns(Tx.Write tx, Instant completedBefore) {
-        AtomicLong count = new AtomicLong();
+    public int removeOldValidationRuns(Tx.Write tx, Instant completedBefore) {
+        AtomicInteger count = new AtomicInteger(0);
         maps.forEach((type, ixMap) -> {
             // Don't delete the most recent one
             final Set<Key> latestSuccessfulKeys = ixMap.getByIndexMax(BY_COMPLETED_AT_INDEX, tx, ValidationRun::isSucceeded).keySet();
             count.addAndGet(
-                    ixMap.getByIndexLessPk(BY_COMPLETED_AT_INDEX, tx, Key.of(completedBefore.toEpochMilli()))
+                    (int) ixMap.getByIndexLessPk(BY_COMPLETED_AT_INDEX, tx, Key.of(completedBefore.toEpochMilli()))
                             .stream()
                             .filter(pk -> !latestSuccessfulKeys.contains(pk))
                             .peek(pk -> ixMap.delete(tx, pk))
@@ -253,9 +251,11 @@ public class LmdbValidationRuns implements ValidationRunStore {
     }
 
     @Override
-    public void removeOrphanValidationRuns(Tx.Write tx) {
-        vr2ro.deleteIf(tx, (k, bb) -> !rpkiObjectStore.exists(tx, Key.of(Bytes.toBytes(bb))));
-        vr2repo.deleteIf(tx, (k, bb) -> !rpkiRepositoryStore.exists(tx, Key.of(Bytes.toBytes(bb))));
+    public int removeOrphanValidationRunAssociations(Tx.Write tx) {
+        final Set<Key> roKeys = rpkiObjectStore.keys(tx);
+        final Set<Key> repoKeys = rpkiRepositoryStore.keys(tx);
+        return vr2ro.deleteIf(tx, (k, bb) -> !roKeys.contains(Key.of(Bytes.toBytes(bb)))) +
+                vr2repo.deleteIf(tx, (k1, bb) -> !repoKeys.contains(Key.of(Bytes.toBytes(bb))));
     }
 
     @Override
@@ -340,11 +340,6 @@ public class LmdbValidationRuns implements ValidationRunStore {
                 sorting.getDirection() == Sorting.Direction.DESC ?
                         comparator :
                         comparator.reversed());
-    }
-
-    @Override
-    public void associate(Tx.Write tx, CertificateTreeValidationRun validationRun, RpkiObject rpkiObject) {
-        vr2ro.put(tx, validationRun.key(), rpkiObject.key());
     }
 
     @Override

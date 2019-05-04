@@ -44,7 +44,6 @@ import org.lmdbjava.Dbi;
 import org.lmdbjava.DbiFlags;
 import org.lmdbjava.Env;
 import org.lmdbjava.EnvInfo;
-import org.lmdbjava.Stat;
 import org.lmdbjava.Txn;
 
 import java.io.Serializable;
@@ -56,7 +55,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -130,6 +128,13 @@ public abstract class Lmdb {
     }
 
     public abstract Env<ByteBuffer> getEnv();
+
+    static void checkEnv(Env env) {
+        if (env.isClosed()) {
+            throw new RuntimeException("The database environment is closed and cannot be used anymore. " +
+                    "This exception is harmless and can be safely ignored.");
+        }
+    }
 
     public String status() {
         return getEnv().stat().toString();

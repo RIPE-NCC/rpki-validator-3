@@ -29,7 +29,6 @@
  */
 package net.ripe.rpki.validator3.storage.encoding;
 
-import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
@@ -43,13 +42,10 @@ import lombok.AllArgsConstructor;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.storage.Bytes;
-import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.util.Base64;
-import java.util.List;
 import java.util.function.Function;
 
 import static java.nio.charset.StandardCharsets.UTF_8;

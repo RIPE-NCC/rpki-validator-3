@@ -33,7 +33,6 @@ import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import org.lmdbjava.CursorIterator;
 import org.lmdbjava.DbiFlags;
-import org.lmdbjava.Env;
 import org.lmdbjava.KeyRange;
 
 import java.io.Serializable;
@@ -64,7 +63,7 @@ public class MultIxMap<T extends Serializable> extends IxBase<T> {
         verifyKey(primaryKey);
         final ByteBuffer pkBuf = primaryKey.toByteBuffer();
         final List<T> result = new ArrayList<>();
-        try (final CursorIterator<ByteBuffer> iterate = mainDb.iterate(txn.txn(), KeyRange.closed(pkBuf, pkBuf))) {
+        try (final CursorIterator<ByteBuffer> iterate = getMainDb().iterate(txn.txn(), KeyRange.closed(pkBuf, pkBuf))) {
             while (iterate.hasNext()) {
                 final CursorIterator.KeyVal<ByteBuffer> next = iterate.next();
                 result.add(coder.fromBytes(next.val()));
@@ -77,7 +76,7 @@ public class MultIxMap<T extends Serializable> extends IxBase<T> {
         verifyKey(primaryKey);
         int s = 0;
         final ByteBuffer pkBuf = primaryKey.toByteBuffer();
-        try (final CursorIterator<ByteBuffer> ci = mainDb.iterate(txn.txn(), KeyRange.closed(pkBuf, pkBuf))) {
+        try (final CursorIterator<ByteBuffer> ci = getMainDb().iterate(txn.txn(), KeyRange.closed(pkBuf, pkBuf))) {
             while (ci.hasNext()) {
                 ci.next();
                 s++;
@@ -88,15 +87,15 @@ public class MultIxMap<T extends Serializable> extends IxBase<T> {
 
     public void put(Tx.Write tx, Key primaryKey, T value) {
         checkKeyAndValue(primaryKey, value);
-        mainDb.put(tx.txn(), primaryKey.toByteBuffer(), coder.toBytes(value));
+        getMainDb().put(tx.txn(), primaryKey.toByteBuffer(), coder.toBytes(value));
     }
 
     public void delete(Tx.Write tx, Key primaryKey) {
-        mainDb.delete(tx.txn(), primaryKey.toByteBuffer());
+        getMainDb().delete(tx.txn(), primaryKey.toByteBuffer());
     }
 
     public void delete(Tx.Write tx, Key primaryKey, T value) {
         verifyKey(primaryKey);
-        mainDb.delete(tx.txn(), primaryKey.toByteBuffer(), coder.toBytes(value));
+        getMainDb().delete(tx.txn(), primaryKey.toByteBuffer(), coder.toBytes(value));
     }
 }

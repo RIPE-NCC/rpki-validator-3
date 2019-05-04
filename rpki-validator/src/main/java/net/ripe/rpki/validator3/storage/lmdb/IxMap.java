@@ -52,6 +52,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -98,7 +99,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
                 final T value = coder.fromBytes(bb);
                 indexFunctions.forEach((n, idxFun) ->
                         idxFun.apply(value).forEach(ik -> {
-                            final Dbi<ByteBuffer> idx = indexes.get(n);
+                            final Dbi<ByteBuffer> idx = getIdx(n);
                             idx.put(txn, ik.toByteBuffer(), k.toByteBuffer());
                         }));
             });
@@ -106,6 +107,11 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
         } finally {
             tx.close();
         }
+    }
+
+    private Dbi<ByteBuffer> getIdx(String name) {
+        checkEnv();
+        return indexes.get(name);
     }
 
     private void dropIndexes(Tx.Write tx) {
@@ -126,7 +132,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
 
     public Optional<T> get(Tx.Read txn, Key primaryKey) {
         verifyKey(primaryKey);
-        ByteBuffer bb = mainDb.get(txn.txn(), primaryKey.toByteBuffer());
+        ByteBuffer bb = getMainDb().get(txn.txn(), primaryKey.toByteBuffer());
         return bb == null ?
                 Optional.empty() :
                 Optional.of(coder.fromBytes(bb));
@@ -193,14 +199,14 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
         final ByteBuffer pkBuf = primaryKey.toByteBuffer();
         final Txn<ByteBuffer> txn = tx.txn();
         final Optional<T> oldValue = get(tx, primaryKey);
-        mainDb.put(txn, pkBuf, coder.toBytes(value));
+        getMainDb().put(txn, pkBuf, coder.toBytes(value));
         if (oldValue.isPresent()) {
             indexFunctions.forEach((n, idxFun) -> {
                 final Set<Key> oldIndexKeys = idxFun.apply(oldValue.get());
                 final Set<Key> indexKeys = idxFun.apply(value).stream()
                         .filter(Objects::nonNull)
                         .collect(Collectors.toSet());
-                final Dbi<ByteBuffer> index = indexes.get(n);
+                final Dbi<ByteBuffer> index = getIdx(n);
                 oldIndexKeys.stream()
                         .filter(oik -> !indexKeys.contains(oik))
                         .forEach(oik -> index.delete(txn, oik.toByteBuffer(), pkBuf));
@@ -216,16 +222,26 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
                         .filter(Objects::nonNull)
                         .collect(Collectors.toSet());
 
-                indexKeys.forEach(ik -> indexes.get(n).put(txn, ik.toByteBuffer(), pkBuf));
+                indexKeys.forEach(ik -> getIdx(n).put(txn, ik.toByteBuffer(), pkBuf));
             });
         }
         return Optional.empty();
+    }
+
+    public boolean modify(Tx.Write tx, Key primaryKey, Consumer<T> modifyValue) {
+        final Optional<T> t = get(tx, primaryKey);
+        t.ifPresent(v -> {
+            modifyValue.accept(v);
+            put(tx, primaryKey, v);
+        });
+        return t.isPresent();
     }
 
     public void delete(Tx.Write tx, Key primaryKey) {
         checkNotNull(primaryKey, "Key is null");
         final ByteBuffer pkBuf = primaryKey.toByteBuffer();
         final Txn<ByteBuffer> txn = tx.txn();
+        final Dbi<ByteBuffer> mainDb = getMainDb();
         if (indexFunctions.isEmpty()) {
             mainDb.delete(txn, pkBuf);
         } else {
@@ -237,7 +253,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
                 mainDb.delete(txn, pkBuf);
                 indexFunctions.forEach((n, idxFun) ->
                         idxFun.apply(value).forEach(ix ->
-                                indexes.get(n).delete(txn, ix.toByteBuffer(), pkBuf)));
+                                getIdx(n).delete(txn, ix.toByteBuffer(), pkBuf)));
             }
         }
         try {
@@ -253,17 +269,18 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
 
     @Override
     public void clear(Tx.Write tx) {
-        mainDb.drop(tx.txn());
+        getMainDb().drop(tx.txn());
         dropIndexes(tx);
     }
 
     private Map<Key, T> getByIndexKeyRange(String indexName, Tx.Read tx, KeyRange keyRange) {
-        final Dbi<ByteBuffer> index = indexes.get(indexName);
+        final Dbi<ByteBuffer> index = getIdx(indexName);
         if (index == null) {
             return Collections.emptyMap();
         }
         final Txn<ByteBuffer> txn = tx.txn();
         final Map<Key, T> m = new HashMap<>();
+        final Dbi<ByteBuffer> mainDb = getMainDb();
         try (final CursorIterator<ByteBuffer> iterator = index.iterate(txn, keyRange)) {
             while (iterator.hasNext()) {
                 final Key pk = new Key(iterator.next().val());
@@ -279,7 +296,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
     }
 
     private Set<Key> getPkByIndexKeyRange(String indexName, Tx.Read tx, KeyRange keyRange) {
-        final Dbi<ByteBuffer> index = indexes.get(indexName);
+        final Dbi<ByteBuffer> index = getIdx(indexName);
         if (index == null) {
             return Collections.emptySet();
         }
@@ -294,7 +311,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
     }
 
     private Set<Key> getKeyAtTheMinOrMaxOfIndex(String indexName, Tx.Read tx, KeyRange<ByteBuffer> objectKeyRange) {
-        final Dbi<ByteBuffer> index = indexes.get(indexName);
+        final Dbi<ByteBuffer> index = getIdx(indexName);
         if (index != null) {
             final Txn<ByteBuffer> txn = tx.txn();
             try (final CursorIterator<ByteBuffer> iterator = index.iterate(txn, objectKeyRange)) {
@@ -320,8 +337,9 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
     }
 
     private Map<Key, T> getKeyAtTheMinOrMaxOfIndex(String indexName, Tx.Read tx, KeyRange<ByteBuffer> keyRange, Predicate<T> p) {
-        final Dbi<ByteBuffer> index = indexes.get(indexName);
+        final Dbi<ByteBuffer> index = getIdx(indexName);
         if (index != null) {
+            final Dbi<ByteBuffer> mainDb = getMainDb();
             final Txn<ByteBuffer> txn = tx.txn();
             try (final CursorIterator<ByteBuffer> iterator = index.iterate(txn, keyRange)) {
                 final Map<Key, T> m = new HashMap<>();
@@ -356,7 +374,8 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
     public IxBase.Sizes sizeInfo(Tx.Read tx) {
         IxBase.Sizes sizes = super.sizeInfo(tx);
         final Map<String, IxBase.Sizes> indexSizes = new HashMap<>();
-        indexes.forEach((name, idx) -> {
+        indexes.forEach((name, ignore) -> {
+            Dbi<ByteBuffer> idx = getIdx(name);
             AtomicInteger count = new AtomicInteger();
             AtomicInteger size = new AtomicInteger();
             try (final CursorIterator<ByteBuffer> iterator = idx.iterate(tx.txn())) {
@@ -366,9 +385,13 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
                     size.addAndGet(next.key().remaining() + next.val().remaining());
                 }
             }
-            indexSizes.put(name, new IxBase.Sizes(count.get(), size.get()));
+            long allocatedSize = getAllocatedSize(tx, idx);
+            indexSizes.put(name, new IxBase.Sizes(count.get(), size.get(), allocatedSize));
         });
-        return new Sizes(sizes.getCount(), sizes.getSizeInBytes(), indexSizes);
+        return new Sizes(sizes.getCount(),
+                sizes.getKeysAndValuesBytes(),
+                sizes.getAllocatedSize(),
+                indexSizes);
     }
 
     public static class Sizes extends IxBase.Sizes {
@@ -376,13 +399,20 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
         private Map<String, IxBase.Sizes> indexSizes;
 
         @Getter
-        private int totalSize;
+        private long totalKeysAndValuesBytes;
 
-        Sizes(int count, int sizeInBytes, Map<String, IxBase.Sizes> indexSizes) {
-            super(count, sizeInBytes);
+        @Getter
+        private long totalAllocatedSize;
+
+        Sizes(int count, long sizeInBytes, long allocatedSize, Map<String, IxBase.Sizes> indexSizes) {
+            super(count, sizeInBytes, allocatedSize);
             this.indexSizes = indexSizes.isEmpty() ? null : indexSizes;
-            totalSize = sizeInBytes;
-            indexSizes.forEach((n, s) -> totalSize += s.getSizeInBytes());
+            totalKeysAndValuesBytes = sizeInBytes;
+            totalAllocatedSize = allocatedSize;
+            indexSizes.forEach((n, s) -> {
+                totalKeysAndValuesBytes += s.getKeysAndValuesBytes();
+                totalAllocatedSize += s.getAllocatedSize();
+            });
         }
     }
 

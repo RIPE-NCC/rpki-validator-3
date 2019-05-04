@@ -30,6 +30,7 @@
 package net.ripe.rpki.validator3.storage.lmdb;
 
 import lombok.extern.slf4j.Slf4j;
+import net.bytebuddy.implementation.bytecode.Throw;
 import org.lmdbjava.Env;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
@@ -67,6 +68,8 @@ public class LmdbImpl extends Lmdb {
                     .setMapSize(dbSizeInMb * 1024 * 1024L)
                     .setMaxDbs(100)
                     .open(new File(lmdbPath));
+
+            Runtime.getRuntime().addShutdownHook(new Thread(this::close));
         } catch (Exception e) {
             log.error("Couldn't open LMDB", e);
             throw e;
@@ -74,12 +77,14 @@ public class LmdbImpl extends Lmdb {
     }
 
     @PreDestroy
-    public void close() {
-        try {
-            log.info("Closing LMDB environment at {}", lmdbPath);
-            env.close();
-        } catch (Exception e) {
-            log.error("Couldn't close LMDB", e);
+    public synchronized void close() {
+        if (!env.isClosed()) {
+            try {
+                log.info("Closing LMDB environment at {}", lmdbPath);
+                env.close();
+            } catch (Throwable e) {
+                log.error("Couldn't close LMDB", e);
+            }
         }
     }
 

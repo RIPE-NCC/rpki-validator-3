@@ -74,7 +74,7 @@ public abstract class Tx implements AutoCloseable {
         return new Write(e);
     }
 
-    public Txn<ByteBuffer> txn() {
+    Txn<ByteBuffer> txn() {
         verifyState();
         return txn;
     }
@@ -87,9 +87,15 @@ public abstract class Tx implements AutoCloseable {
             throw new RuntimeException("This transaction was created in another " +
                     "thread and cannot be used in the thread " + Thread.currentThread());
         }
+        checkEnv();
+    }
+
+    void checkEnv() {
+        Lmdb.checkEnv(env);
     }
 
     public void abort() {
+        checkEnv();
         txn.abort();
         aborted = true;
     }
@@ -101,6 +107,7 @@ public abstract class Tx implements AutoCloseable {
 
         @Override
         protected Txn<ByteBuffer> makeTxn() {
+            checkEnv();
             return env.txnWrite();
         }
 
@@ -122,6 +129,7 @@ public abstract class Tx implements AutoCloseable {
 
         @Override
         protected Txn<ByteBuffer> makeTxn() {
+            checkEnv();
             return env.txnRead();
         }
     }

@@ -68,13 +68,11 @@ public interface ValidationRunStore {
 
     Optional<CertificateTreeValidationRun> findLatestCaTreeValidationRun(Tx.Read tx, TrustAnchor trustAnchor);
 
-    long removeOldValidationRuns(Tx.Write tx, Instant completedBefore);
+    int removeOldValidationRuns(Tx.Write tx, Instant completedBefore);
 
     Stream<ValidationCheck> findValidationChecksForValidationRun(Tx.Read tx, long validationRunId, Paging paging, SearchTerm searchTerm, Sorting sorting);
 
     int countValidationChecksForValidationRun(Tx.Read tx, long validationRunId, SearchTerm searchTerm);
-
-    void associate(Tx.Write writeTx, CertificateTreeValidationRun validationRun, RpkiObject o);
 
     void associate(Tx.Write writeTx, RpkiRepositoryValidationRun validationRun, RpkiObject o);
 
@@ -90,7 +88,7 @@ public interface ValidationRunStore {
 
     int getObjectCount(Tx.Read tx, ValidationRun validationRun);
 
-    void removeOrphanValidationRuns(Tx.Write tx);
+    int removeOrphanValidationRunAssociations(Tx.Write tx);
 
     void delete(Tx.Write tx, ValidationRun validationRun);
 }

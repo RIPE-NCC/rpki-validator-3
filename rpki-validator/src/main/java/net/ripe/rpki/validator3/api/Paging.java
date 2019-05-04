@@ -42,11 +42,7 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 public class Paging {
 
     final Long startFrom;
-    final Long pageSize;;
-
-    public boolean isIndefinite() {
-        return startFrom == null || pageSize == null;
-    }
+    final Long pageSize;
 
     public static <T> Links links(long startFrom, long pageSize, long totalSize, BiFunction<Long, Long, T> linkConstructor) {
         long previous = startFrom - pageSize;

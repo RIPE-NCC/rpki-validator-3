@@ -91,7 +91,7 @@ public class ValidationCheck extends Base<ValidationCheck> implements MessageSou
 
     @Override
     public Object[] getArguments() {
-        return parameters.toArray(new String[parameters.size()]);
+        return parameters.toArray(new String[0]);
     }
 
     public String formattedMessage(MessageSource messageSource, Locale locale) {

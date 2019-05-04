@@ -37,6 +37,7 @@ import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
 
 public abstract class GenericStoreImpl<T extends Serializable> implements GenericStore<T> {
@@ -67,6 +68,10 @@ public abstract class GenericStoreImpl<T extends Serializable> implements Generi
     @Override
     public boolean exists(Tx.Read tx, Key key) {
         return ixMap().exists(tx, key);
+    }
+
+    public Set<Key> keys(Tx.Read tx) {
+        return ixMap().keys(tx);
     }
 
     protected abstract IxMap<T> ixMap();

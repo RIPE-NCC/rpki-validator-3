@@ -44,11 +44,11 @@ import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.domain.RoaPrefixDefinition;
 import net.ripe.rpki.validator3.storage.data.Key;
-import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
-import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
+import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
@@ -70,7 +70,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
@@ -97,14 +96,13 @@ public class ValidatedRpkiObjects {
 
     @PostConstruct
     private void initialize() {
-        Long t = Locks.locked(dataLock.writeLock(), () ->
-                Time.timed(() -> lmdb.readTx0(tx ->
-                        validationRunStore.findLatestSuccessful(tx, CertificateTreeValidationRun.class)
-                                .forEach(vr -> {
-                                    final Set<Key> associatedPks = validationRunStore.findAssociatedPks(tx, vr);
-                                    updateByKey(tx, vr.getTrustAnchor(), associatedPks);
-                                }))));
-        log.info("Initialise taken {}ms", t);
+        Long t = Time.timed(() -> lmdb.readTx0(tx ->
+                validationRunStore.findLatestSuccessful(tx, CertificateTreeValidationRun.class)
+                        .forEach(vr -> {
+                            final Set<Key> associatedPks = validationRunStore.findAssociatedPks(tx, vr);
+                            updateByKey(tx, vr.getTrustAnchor(), associatedPks);
+                        })));
+        log.info("Initialised in {}ms", t);
     }
 
     void updateByKey(Tx.Read tx, Ref<TrustAnchor> trustAnchor, Collection<Key> rpkiObjectsKeys) {

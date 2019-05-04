@@ -284,6 +284,25 @@ public class IxMapTest {
     }
 
     @Test
+    public void testOnDeleteCascade() {
+        final Set<Key> deleteKeys = new HashSet<>();
+        ixMap.onDelete((tx, k) -> deleteKeys.add(k));
+        putAndGet("a");
+        putAndGet("bbb");
+        putAndGet("ttt");
+
+        Key ka = Key.of("a");
+        Key kb = Key.of("bbb");
+        lmdb.writeTx0(tx -> {
+                    ixMap.delete(tx, ka);
+                    ixMap.delete(tx, kb);
+                }
+        );
+
+        assertEquals(Sets.newHashSet(ka, kb), deleteKeys);
+    }
+
+    @Test
     public void testReindex() {
         ixMap = lmdb.createIxMap("testReindex",
                 ImmutableMap.of(

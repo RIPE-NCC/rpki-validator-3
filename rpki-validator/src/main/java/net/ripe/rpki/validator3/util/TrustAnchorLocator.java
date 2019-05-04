@@ -115,7 +115,7 @@ public class TrustAnchorLocator {
             while ((line = reader.readLine()) != null) {
                 publicKeyInfo.append(line.trim());
             }
-            return new TrustAnchorLocator(caName, certificateLocations, publicKeyInfo.toString(), Collections.<URI>emptyList());
+            return new TrustAnchorLocator(caName, certificateLocations, publicKeyInfo.toString(), Collections.emptyList());
         }
     }
 
