@@ -32,12 +32,14 @@ package net.ripe.rpki.validator3.domain.cleanup;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
+import net.ripe.rpki.validator3.util.Time;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 @Slf4j
@@ -57,10 +59,14 @@ public class ValidationRunCleanupService {
     }
 
     public void cleanupValidationRuns() {
-        // Delete all validation runs older than `cleanupGraceDuration` that have a later validation run.
+        AtomicInteger oldCount = new AtomicInteger();
+        AtomicInteger orphanCount = new AtomicInteger();
         Instant completedBefore = Instant.now().minus(cleanupGraceDuration);
-        int oldCount = lmdb.writeTx(tx -> validationRuns.removeOldValidationRuns(tx, completedBefore));
-        int orphanCount = lmdb.writeTx(tx -> validationRuns.removeOrphanValidationRunAssociations(tx));
-        log.info("Removed {} old validation runs and {} orphans", oldCount, orphanCount);
+        Long t = Time.timed(() -> {
+            // Delete all validation runs older than `cleanupGraceDuration` that have a later validation run.
+            oldCount.set(lmdb.writeTx(tx -> validationRuns.removeOldValidationRuns(tx, completedBefore)));
+            orphanCount.set(lmdb.writeTx(tx -> validationRuns.removeOrphanValidationRunAssociations(tx)));
+        });
+        log.info("Removed {} old validation runs and {} orphans in {}ms", oldCount.get(), orphanCount.get(), t);
     }
 }
