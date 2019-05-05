@@ -237,15 +237,29 @@ public class LmdbValidationRuns implements ValidationRunStore {
     public int removeOldValidationRuns(Tx.Write tx, Instant completedBefore) {
         AtomicInteger count = new AtomicInteger(0);
         maps.forEach((type, ixMap) -> {
-            // Don't delete the most recent one
+            // Don't delete the most recent one successful
             final Set<Key> latestSuccessfulKeys = ixMap.getByIndexMax(BY_COMPLETED_AT_INDEX, tx, ValidationRun::isSucceeded).keySet();
-            count.addAndGet(
-                    (int) ixMap.getByIndexLessPk(BY_COMPLETED_AT_INDEX, tx, Key.of(completedBefore.toEpochMilli()))
-                            .stream()
-                            .filter(pk -> !latestSuccessfulKeys.contains(pk))
-                            .peek(pk -> ixMap.delete(tx, pk))
-                            .count()
-            );
+            final Set<Key> toDelete = new HashSet<>();
+            ixMap.forEach(tx, (k, bb) -> {
+                ValidationRun validationRun = ixMap.toValue(bb);
+                boolean deleteIt = false;
+                if (validationRun.getCompletedAt() != null) {
+                    if (validationRun.getCompletedAt().isBefore(completedBefore)) {
+                        deleteIt = true;
+                    }
+                } else {
+                    if (validationRun.getUpdatedAt() != null && validationRun.getUpdatedAt().isBefore(completedBefore)) {
+                        deleteIt = true;
+                    } else if (validationRun.getCreatedAt().isBefore(completedBefore)) {
+                        deleteIt = true;
+                    }
+                }
+                if (deleteIt && !latestSuccessfulKeys.contains(k)) {
+                    toDelete.add(k);
+                }
+            });
+            toDelete.forEach(pk -> ixMap.delete(tx, pk));
+            count.addAndGet(toDelete.size());
         });
         return count.get();
     }
