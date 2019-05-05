@@ -156,6 +156,7 @@ public class RpkiRepositoryValidationService {
             }
         } catch (Exception e) {
             log.error("Error validating repository " + rpkiRepository, e);
+            validationRun.setFailed();
         }
         finally {
             lmdb.writeTx0(tx -> {
@@ -208,8 +209,10 @@ public class RpkiRepositoryValidationService {
                 log.info("The following trust anchor was affected, validation will be triggered {}", ta);
                 validationScheduler.triggerCertificateTreeValidation(ta);
             });
+        } catch (Exception e) {
+            validationRun.setFailed();
         } finally {
-            lmdb.writeTx0(tx -> validationRunStore.add(tx, validationRun));
+            lmdb.writeTx0(tx -> validationRunStore.update(tx, validationRun));
         }
     }
 
