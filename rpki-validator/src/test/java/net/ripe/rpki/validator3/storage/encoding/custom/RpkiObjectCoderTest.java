@@ -29,10 +29,15 @@
  */
 package net.ripe.rpki.validator3.storage.encoding.custom;
 
+import com.google.common.io.ByteStreams;
+import fj.data.Either;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.IpResourceSet;
+import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.ValidityPeriod;
+import net.ripe.rpki.commons.crypto.util.CertificateRepositoryObjectFactory;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificateBuilder;
+import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.IntegrationTest;
 import net.ripe.rpki.validator3.domain.ta.TrustAnchorsFactory;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
@@ -43,6 +48,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.security.auth.x500.X500Principal;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.security.KeyPair;
 
 import static net.ripe.rpki.validator3.domain.ta.TrustAnchorsFactory.KEY_PAIR_FACTORY;
@@ -67,6 +74,21 @@ public class RpkiObjectCoderTest {
                         .withSigningKeyPair(generate)
                         .withValidityPeriod(new ValidityPeriod(DateTime.now(), DateTime.now().plusYears(1)))
                         .build());
+
+        RpkiObjectCoder coder = new RpkiObjectCoder();
+        RpkiObject rpkiObject1 = coder.fromBytes(coder.toBytes(rpkiObject));
+
+        assertEquals(rpkiObject, rpkiObject1);
+    }
+
+    @Test
+    public void testRealObject() throws IOException {
+        InputStream is = this.getClass().getResourceAsStream("/557B4C46969B11E681906146C4F9AE02.roa");
+        byte[] content = ByteStreams.toByteArray(is);
+
+        ValidationResult validationResult = ValidationResult.withLocation("whatever.roa");
+        CertificateRepositoryObject repositoryObject = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(content, validationResult);
+        RpkiObject rpkiObject = new RpkiObject("rsync://somewhere.com/whatever.roa", repositoryObject);
 
         RpkiObjectCoder coder = new RpkiObjectCoder();
         RpkiObject rpkiObject1 = coder.fromBytes(coder.toBytes(rpkiObject));
