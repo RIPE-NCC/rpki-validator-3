@@ -109,9 +109,8 @@ public class TrustAnchorService {
             rpkiRepositoryStore.register(tx, trustAnchorRef,
                     trustAnchor.getRsyncPrefetchUri(), RpkiRepository.Type.RSYNC_PREFETCH);
         }
+        tx.afterCommit(() -> validationScheduler.addTrustAnchor(trustAnchor));
         log.info("Added trust anchor '{}'", trustAnchor);
-        validationScheduler.addTrustAnchor(trustAnchor);
-
         return trustAnchor.key().asLong();
     }
 
