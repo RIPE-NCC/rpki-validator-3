@@ -288,7 +288,7 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
                     rpkiRepository.removeTrustAnchor(taRef);
                     if (rpkiRepository.getTrustAnchors().isEmpty()) {
                         if (rpkiRepository.getType() == RpkiRepository.Type.RRDP) {
-                            tx.onCommit(() -> validationScheduler.removeRpkiRepository(rpkiRepository));
+                            tx.afterCommit(() -> validationScheduler.removeRpkiRepository(rpkiRepository));
                         }
                         ixMap.delete(tx, pk);
                     } else {

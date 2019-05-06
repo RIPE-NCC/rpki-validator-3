@@ -62,7 +62,7 @@ public class RpkiRepositoryService {
         log.info("Schedule RPKI validation for the existing repositories");
         lmdb.writeTx0(tx ->
                 rpkiRepositoryStore.findRrdpRepositories(tx).forEach(r -> {
-                    tx.onCommit(() -> validationScheduler.addRpkiRepository(r));
+                    tx.afterCommit(() -> validationScheduler.addRpkiRepository(r));
                     log.info("Scheduled {} for validation.", r);
                 }));
     }

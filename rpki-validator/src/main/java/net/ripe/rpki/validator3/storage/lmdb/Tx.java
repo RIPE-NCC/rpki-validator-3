@@ -112,13 +112,13 @@ public abstract class Tx implements AutoCloseable {
         }
 
         @Getter
-        private List<Runnable> onCommit = null;
+        private List<Runnable> afterCommit = null;
 
-        public synchronized void onCommit(Runnable r) {
-            if (onCommit == null) {
-                onCommit = new ArrayList<>();
+        public synchronized void afterCommit(Runnable r) {
+            if (afterCommit == null) {
+                afterCommit = new ArrayList<>();
             }
-            onCommit.add(r);
+            afterCommit.add(r);
         }
     }
 

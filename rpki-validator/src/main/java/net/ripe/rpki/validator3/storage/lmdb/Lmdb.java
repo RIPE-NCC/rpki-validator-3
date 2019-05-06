@@ -85,8 +85,8 @@ public abstract class Lmdb {
         try {
             final T result = f.apply(tx);
             tx.txn().commit();
-            if (tx.getOnCommit() != null) {
-                tx.getOnCommit().forEach(r -> {
+            if (tx.getAfterCommit() != null) {
+                tx.getAfterCommit().forEach(r -> {
                     try {
                         r.run();
                     } catch (Exception ignored) {

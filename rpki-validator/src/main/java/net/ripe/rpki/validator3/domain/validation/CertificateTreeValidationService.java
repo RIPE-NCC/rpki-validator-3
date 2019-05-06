@@ -344,7 +344,7 @@ public class CertificateTreeValidationService {
                                     lmdb.writeTx(tx -> {
                                         final Ref<TrustAnchor> trustAnchorRef = trustAnchorStore.makeRef(tx, trustAnchor.key());
                                         RpkiRepository r = rpkiRepositoryStore.register(tx, trustAnchorRef, uri.toASCIIString(), RRDP);
-                                        tx.onCommit(() -> validationScheduler.addRpkiRepository(r));
+                                        tx.afterCommit(() -> validationScheduler.addRpkiRepository(r));
                                         return r;
                                     })).get()));
         }
