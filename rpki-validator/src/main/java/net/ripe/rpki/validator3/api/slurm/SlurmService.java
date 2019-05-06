@@ -53,7 +53,7 @@ public class SlurmService {
         return slurmStore.read().toSlurm();
     }
 
-    public void writeTo(OutputStream out) {
+    void writeTo(OutputStream out) {
         try {
             slurmStore.writeTo(out);
         } catch (IOException e) {

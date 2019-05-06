@@ -154,7 +154,7 @@ public class SlurmStore {
         save(SlurmExt.fromSlurm(slurm, idSeq));
     }
 
-    public void writeTo(OutputStream out) throws IOException {
+    void writeTo(OutputStream out) throws IOException {
         IOUtils.copy(new FileInputStream(new File(slurmFileName)), out);
     }
 }
