@@ -40,6 +40,11 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static org.lmdbjava.Env.create;
 
@@ -53,6 +58,9 @@ public class LmdbImpl extends Lmdb {
 
     private Env<ByteBuffer> env;
 
+    // this is to guarantee that 'env' is opened and closed by the same thread
+    private ExecutorService oneThread = Executors.newSingleThreadExecutor();
+
     public LmdbImpl(
             @Value("${rpki.validator.data.path}") String lmdbPath,
             @Value("${rpki.validator.lmdb.size.mb:8192}") long dbSizeInMb) {
@@ -64,27 +72,35 @@ public class LmdbImpl extends Lmdb {
     public void initLmdb() {
         try {
             log.info("Creating LMDB environment at {}", lmdbPath);
-            env = create()
-                    .setMapSize(dbSizeInMb * 1024 * 1024L)
-                    .setMaxDbs(100)
-                    .open(new File(lmdbPath));
+            oneThread.submit(() -> {
+                env = create()
+                        .setMapSize(dbSizeInMb * 1024 * 1024L)
+                        .setMaxDbs(100)
+                        .open(new File(lmdbPath));
+            }).get();
 
             Runtime.getRuntime().addShutdownHook(new Thread(this::close));
         } catch (Exception e) {
             log.error("Couldn't open LMDB", e);
-            throw e;
+            throw new RuntimeException(e);
         }
     }
 
     @PreDestroy
     public synchronized void close() {
-        if (!env.isClosed()) {
-            try {
-                log.info("Closing LMDB environment at {}", lmdbPath);
-                env.close();
-            } catch (Throwable e) {
-                log.error("Couldn't close LMDB", e);
-            }
+        try {
+            oneThread.submit(() -> {
+                if (!env.isClosed()) {
+                    try {
+                        log.info("Closing LMDB environment at {}", lmdbPath);
+                        env.close();
+                    } catch (Throwable e) {
+                        log.error("Couldn't close LMDB", e);
+                    }
+                }
+            }).get();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
