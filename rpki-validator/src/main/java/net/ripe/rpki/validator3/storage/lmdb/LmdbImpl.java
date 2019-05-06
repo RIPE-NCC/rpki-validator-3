@@ -30,7 +30,6 @@
 package net.ripe.rpki.validator3.storage.lmdb;
 
 import lombok.extern.slf4j.Slf4j;
-import net.bytebuddy.implementation.bytecode.Throw;
 import org.lmdbjava.Env;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
@@ -40,11 +39,8 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.io.File;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import static org.lmdbjava.Env.create;
 
@@ -69,7 +65,7 @@ public class LmdbImpl extends Lmdb {
     }
 
     @PostConstruct
-    public void initLmdb() {
+    void initLmdb() {
         try {
             log.info("Creating LMDB environment at {}", lmdbPath);
             oneThread.submit(() -> {
