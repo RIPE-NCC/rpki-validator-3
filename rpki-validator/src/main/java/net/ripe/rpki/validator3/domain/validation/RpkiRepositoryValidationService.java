@@ -72,6 +72,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -136,15 +137,21 @@ public class RpkiRepositoryValidationService {
             validationRun.setSucceeded();
         }
 
-        // FIXME: Added object count >= 0 really only added here because of Pilot having http & https pointing to the
-        //  same RRDP which might causes no new object added.
-        if (validationRun.isSucceeded() && validationRun.getAddedObjectCount() >= 0) {
-            log.info("Succesful validation of RRDP Repo, kicking tree validation after flush");
-            entityManager.flush();
-            entityManager.clear();
-            log.info("Ready to kick validation tree involving this repo {}", rpkiRepository);
+        if (validationRun.isSucceeded()) {
 
-            rpkiRepository.getTrustAnchors().forEach(validationRunRepository::runCertificateTreeValidation);
+            Set<TrustAnchor> toBeTriggered = rpkiRepository.getTrustAnchors();
+            if(validationRun.getAddedObjectCount() == 0) {
+                toBeTriggered = toBeTriggered.stream().filter(t -> !t.isInitialCertificateTreeValidationRunCompleted()).collect(Collectors.toSet());
+            }
+
+            if(!toBeTriggered.isEmpty()){
+                log.info("Succesful validation of RRDP Repo, kicking tree validation after flush");
+                entityManager.flush();
+                entityManager.clear();
+                log.info("Ready to kick validation tree involving this repo {}", rpkiRepository);
+                toBeTriggered.forEach(validationRunRepository::runCertificateTreeValidation);
+            }
+
         }
     }
 
