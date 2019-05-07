@@ -136,7 +136,9 @@ public class RpkiRepositoryValidationService {
             validationRun.setSucceeded();
         }
 
-        if (validationRun.isSucceeded() && validationRun.getAddedObjectCount() > 0) {
+        // FIXME: Added object count >= 0 really only added here because of Pilot having http & https pointing to the
+        //  same RRDP which might causes no new object added.
+        if (validationRun.isSucceeded() && validationRun.getAddedObjectCount() >= 0) {
             log.info("Succesful validation of RRDP Repo, kicking tree validation after flush");
             entityManager.flush();
             entityManager.clear();

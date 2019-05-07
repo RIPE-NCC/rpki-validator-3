@@ -45,7 +45,8 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Documented
 @Constraint(validatedBy = {})
 @Size(min = ValidLocationURI.MIN, max = ValidLocationURI.MAX)
-@Pattern(regexp = "^(rsync|https)://.+$", flags = Pattern.Flag.CASE_INSENSITIVE)
+//UNSURE: Pilot have http RRDP, do we want this or should we fix Pilot env?
+@Pattern(regexp = "^(rsync|http|https)://.+$", flags = Pattern.Flag.CASE_INSENSITIVE)
 public @interface ValidLocationURI {
     int MIN = 5;
     int MAX = 160000;
