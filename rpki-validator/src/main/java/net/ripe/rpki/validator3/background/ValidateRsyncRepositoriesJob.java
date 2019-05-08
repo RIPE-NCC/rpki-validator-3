@@ -33,6 +33,7 @@ import net.ripe.rpki.validator3.domain.validation.RpkiRepositoryValidationServic
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @DisallowConcurrentExecution
@@ -42,7 +43,7 @@ class ValidateRsyncRepositoriesJob implements Job {
     private RpkiRepositoryValidationService rpkiRepositoryValidationService;
 
     @Override
-    public void execute(JobExecutionContext context){
+    public void execute(JobExecutionContext context) throws JobExecutionException {
         rpkiRepositoryValidationService.validateRsyncRepositories();
     }
 }

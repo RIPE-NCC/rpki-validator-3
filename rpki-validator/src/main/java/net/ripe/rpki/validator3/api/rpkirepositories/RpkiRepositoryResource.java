@@ -32,13 +32,12 @@ package net.ripe.rpki.validator3.api.rpkirepositories;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import net.ripe.rpki.validator3.api.Api;
-import net.ripe.rpki.validator3.domain.RpkiRepository;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
+import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import org.springframework.hateoas.Links;
 
 import javax.validation.constraints.NotNull;
 import java.math.BigInteger;
-import java.time.Instant;
 
 import static net.ripe.rpki.validator3.api.util.Dates.formatUTC;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
@@ -70,14 +69,14 @@ public class RpkiRepositoryResource {
     public static RpkiRepositoryResource of(RpkiRepository rpkiRepository) {
         return of(
             repositoryType(rpkiRepository),
-            rpkiRepository.getId(),
+            rpkiRepository.key().asLong(),
             rpkiRepository.getLocationUri(),
             rpkiRepository.getStatus(),
             formatUTC(rpkiRepository.getLastDownloadedAt()),
             rpkiRepository.getRrdpSessionId(),
             rpkiRepository.getRrdpSerial(),
             new Links(
-                linkTo(methodOn(RpkiRepositoriesController.class).get(rpkiRepository.getId())).withSelfRel()
+                linkTo(methodOn(RpkiRepositoriesController.class).get(rpkiRepository.key().asLong())).withSelfRel()
             )
         );
     }

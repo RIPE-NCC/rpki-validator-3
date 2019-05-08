@@ -37,9 +37,6 @@ import javax.validation.ConstraintValidatorContext;
 public class AddBgpSecFilterValidator implements ConstraintValidator<ValidAddIgnoreFilter, AddBgpSecFilter> {
     @Override
     public boolean isValid(AddBgpSecFilter value, ConstraintValidatorContext context) {
-        if (value.getAsn() == null && value.getSki() == null) {
-            return false;
-        }
-        return true;
+        return value.getAsn() != null || value.getSki() != null;
     }
 }

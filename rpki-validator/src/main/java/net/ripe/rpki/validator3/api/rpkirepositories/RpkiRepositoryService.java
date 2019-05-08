@@ -31,40 +31,39 @@ package net.ripe.rpki.validator3.api.rpkirepositories;
 
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
-import net.ripe.rpki.validator3.domain.RpkiRepositories;
+import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
+import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.PostConstruct;
-import javax.transaction.Transactional;
 
 @Component
-@Transactional
 @Validated
 @Slf4j
 public class RpkiRepositoryService {
 
-    @Autowired
-    private RpkiRepositories rpkiRepositories;
+    private final RpkiRepositoryStore rpkiRepositoryStore;
+
+    private final ValidationScheduler validationScheduler;
+
+    private final Lmdb lmdb;
 
     @Autowired
-    private ValidationScheduler validationScheduler;
-
-    @Autowired
-    private PlatformTransactionManager transactionManager;
+    public RpkiRepositoryService(RpkiRepositoryStore rpkiRepositoryStore, ValidationScheduler validationScheduler, Lmdb lmdb) {
+        this.rpkiRepositoryStore = rpkiRepositoryStore;
+        this.validationScheduler = validationScheduler;
+        this.lmdb = lmdb;
+    }
 
     @PostConstruct
     public void scheduleRpkiRepositoryValidation() {
         log.info("Schedule RPKI validation for the existing repositories");
-        new TransactionTemplate(transactionManager).execute(status -> {
-            rpkiRepositories.findRrdpRepositories().forEach(r -> {
-                validationScheduler.scheduleRRDPValidation(r);
-                log.info("Scheduled RRDP repo {} for validation.", r);
-            });
-            return null;
-        });
+        lmdb.writeTx0(tx ->
+                rpkiRepositoryStore.findRrdpRepositories(tx).forEach(r -> {
+                    tx.afterCommit(() -> validationScheduler.addRpkiRepository(r));
+                    log.info("Scheduled {} for validation.", r);
+                }));
     }
 }

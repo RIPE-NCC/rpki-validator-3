@@ -53,11 +53,15 @@ import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificate;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
-import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
-import net.ripe.rpki.validator3.domain.RpkiObject;
-import net.ripe.rpki.validator3.domain.RpkiObjects;
-import net.ripe.rpki.validator3.domain.ValidationCheck;
-import net.ripe.rpki.validator3.domain.ValidationRuns;
+import net.ripe.rpki.validator3.storage.data.RpkiObject;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
+import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
+import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
+import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import net.ripe.rpki.validator3.util.Hex;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -94,42 +98,75 @@ import java.util.stream.StreamSupport;
 public class RpkiObjectController {
 
     @Autowired
-    private RpkiObjects rpkiObjects;
+    private RpkiObjectStore rpkiObjects;
 
     @Autowired
-    private ValidationRuns validationRuns;
+    private TrustAnchorStore trustAnchors;
+
+    @Autowired
+    private ValidationRunStore validationRuns;
+
+    @Autowired
+    private Lmdb lmdb;
 
     @GetMapping(path = "/")
     public ResponseEntity<ApiResponse<Stream<RpkiObj>>> all() {
-        final List<CertificateTreeValidationRun> vrs = validationRuns.findLatestSuccessful(CertificateTreeValidationRun.class);
+        List<RpkiObj> objects = lmdb.readTx(tx -> this.trustAnchors.findAll(tx))
+                .parallelStream()
+                .flatMap(this::getRpkiObjsPerTa)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(ApiResponse.data(objects.stream()));
+    }
 
-        final Stream<RpkiObj> rpkiObjStream = vrs.stream().flatMap(vr -> {
-            final Map<String, ValidationCheck> checkMap = vr.getValidationChecks().stream().collect(Collectors.toMap(
-                    ValidationCheck::getLocation,
-                    Function.identity(),
-                    (a, b) -> {
-                        if (a.getStatus() == ValidationCheck.Status.ERROR) {
-                            return a;
-                        }
-                        if (b.getStatus() == ValidationCheck.Status.ERROR) {
-                            return b;
-                        }
-                        // if both of them are warnings, it doesn't matter
+    private Stream<RpkiObj> getRpkiObjsPerTa(TrustAnchor trustAnchor) {
+        return lmdb.readTx(tx ->
+                validationRuns.findLatestSuccessfulCaTreeValidationRun(tx, trustAnchor)
+                        .map(vr -> getAssociatedRpkiObjects(tx, vr, getCheckMap(vr)))
+                        .orElse(Stream.empty())
+                        .collect(Collectors.toList()))
+                .stream()
+                .sorted(Comparator.comparing(o -> location(o.getLeft())))
+                .parallel()
+                .map(pair -> {
+                    final RpkiObject rpkiObject = pair.getLeft();
+                    Optional<ValidationCheck> vc = pair.getRight();
+                    return mapRpkiObject(rpkiObject, vc
+                            .map(c -> ValidationResult.withLocation(c.getLocation()))
+                            .orElse(ValidationResult.withLocation(location(rpkiObject))));
+                })
+                .filter(Objects::nonNull);
+    }
+
+    private Stream<Pair<RpkiObject, Optional<ValidationCheck>>> getAssociatedRpkiObjects(Tx.Read tx, CertificateTreeValidationRun vr, Map<String, ValidationCheck> checkMap) {
+        return validationRuns.findAssociatedPks(tx, vr).stream()
+                .map(k -> rpkiObjects.get(tx, k))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .map(ro -> {
+                    final Optional<ValidationCheck> check = ro.getLocations()
+                            .stream()
+                            .map(checkMap::get)
+                            .filter(Objects::nonNull)
+                            .findFirst();
+                    return Pair.of(ro, check);
+                });
+    }
+
+    private Map<String, ValidationCheck> getCheckMap(CertificateTreeValidationRun vr) {
+        return vr.getValidationChecks().stream().collect(Collectors.toMap(
+                ValidationCheck::getLocation,
+                Function.identity(),
+                (a, b) -> {
+                    if (a.getStatus() == ValidationCheck.Status.ERROR) {
                         return a;
                     }
-            ));
-
-            return vr.getValidatedObjects().stream().map(r -> {
-                Optional<ValidationCheck> check = r.getLocations().stream().map(checkMap::get).filter(Objects::nonNull).findFirst();
-                return Pair.of(r, check);
-            });
-        }).sorted(
-                Comparator.comparing(o -> location(o.getLeft()))
-        ).map(pair ->
-                mapRpkiObject(pair.getLeft(), pair.getRight().map(c -> ValidationResult.withLocation(c.getLocation())))
-        ).filter(Objects::nonNull);
-
-        return ResponseEntity.ok(ApiResponse.data(rpkiObjStream));
+                    if (b.getStatus() == ValidationCheck.Status.ERROR) {
+                        return b;
+                    }
+                    // if both of them are warnings, it doesn't matter
+                    return a;
+                }
+        ));
     }
 
 
@@ -149,15 +186,22 @@ public class RpkiObjectController {
         final IpResourceSet all = IpResourceSet.parse("0/0, ::/0");
 
         final IpResourceSet ipResources = new IpResourceSet();
-        final Set<String> roaAKIs = objectStream(rpkiObjects.streamObjects(RpkiObject.Type.ROA), "roa")
-                .filter(p -> p instanceof RoaCms)
-                .map(p -> Hex.format(((RoaCms) p).getCertificate().getAuthorityKeyIdentifier()))
-                .collect(Collectors.toSet());
 
-        final List<X509ResourceCertificate> allCerts = objectStream(rpkiObjects.streamObjects(RpkiObject.Type.CER), "cer")
-                .filter(p -> p instanceof X509ResourceCertificate)
-                .map(p -> (X509ResourceCertificate) p)
-                .collect(Collectors.toList());
+        final Pair<Set<String>, List<X509ResourceCertificate>> txResult = lmdb.readTx(tx -> {
+            final Set<String> roaAKIs = objectStream(rpkiObjects.streamObjects(tx, RpkiObject.Type.ROA), "roa")
+                    .filter(p -> p instanceof RoaCms)
+                    .map(p -> Hex.format(((RoaCms) p).getCertificate().getAuthorityKeyIdentifier()))
+                    .collect(Collectors.toSet());
+
+            final List<X509ResourceCertificate> allCerts = objectStream(rpkiObjects.streamObjects(tx, RpkiObject.Type.CER), "cer")
+                    .filter(p -> p instanceof X509ResourceCertificate)
+                    .map(p -> (X509ResourceCertificate) p)
+                    .collect(Collectors.toList());
+            return Pair.of(roaAKIs, allCerts);
+        });
+
+        Set<String> roaAKIs = txResult.getLeft();
+        List<X509ResourceCertificate> allCerts = txResult.getRight();
 
         final List<X509ResourceCertificate> roaParents = allCerts
                 .stream()
@@ -166,8 +210,11 @@ public class RpkiObjectController {
 
         final Map<String, Set<X509ResourceCertificate>> byAki = allCerts.stream().collect(Collectors.toMap(
                 c -> Hex.format(c.getAuthorityKeyIdentifier()),
-                c -> oneElem(c),
-                (c1, c2) -> { c1.addAll(c2); return c1; }));
+                RpkiObjectController::oneElem,
+                (c1, c2) -> {
+                    c1.addAll(c2);
+                    return c1;
+                }));
 
         final Map<String, X509ResourceCertificate> bySki = allCerts.stream().collect(Collectors.toMap(
                 c -> Hex.format(c.getSubjectKeyIdentifier()),
@@ -214,7 +261,8 @@ public class RpkiObjectController {
         try (final CSVWriter writer = new CSVWriter(response.getWriter())) {
             writer.writeNext(new String[]{"Subject", "Resources"});
 
-            objectStream(rpkiObjects.streamObjects(RpkiObject.Type.CER), "cer")
+            Stream<byte[]> byteStream = lmdb.readTx(tx -> rpkiObjects.streamObjects(tx, RpkiObject.Type.CER));
+            objectStream(byteStream, "cer")
                     .forEachOrdered(c -> {
                         if (c instanceof X509ResourceCertificate) {
                             final X509ResourceCertificate cert = (X509ResourceCertificate) c;
@@ -234,7 +282,7 @@ public class RpkiObjectController {
         return a;
     }
 
-    private RpkiObj mapRpkiObject(final RpkiObject rpkiObject, final Optional<ValidationResult> validationResult) {
+    private RpkiObj mapRpkiObject(final RpkiObject rpkiObject, final ValidationResult validationResult) {
         switch (rpkiObject.getType()) {
             case CER:
                 return makeTypedDto(rpkiObject, validationResult, X509ResourceCertificate.class, cert -> makeCertificate(validationResult, cert, rpkiObject));
@@ -255,12 +303,13 @@ public class RpkiObjectController {
     }
 
     private <T extends CertificateRepositoryObject> RpkiObj makeTypedDto(final RpkiObject rpkiObject,
-                                                                         final Optional<ValidationResult> validationResult,
+                                                                         final ValidationResult validationResult,
                                                                          final Class<T> clazz,
                                                                          final Function<T, RpkiObj> create) {
-        return validationResult
-                .flatMap(vr -> rpkiObjects.findCertificateRepositoryObject(rpkiObject.getId(), clazz, vr))
-                .map(create).orElse(null);
+        return lmdb.readTx(tx ->
+                rpkiObjects.findCertificateRepositoryObject(tx, rpkiObject.key(), clazz, validationResult)
+                        .map(create)
+                        .orElse(null));
     }
 
     private static String location(final RpkiObject rpkiObject) {
@@ -271,15 +320,15 @@ public class RpkiObjectController {
         return locations.first();
     }
 
-    private ResourceCertificate makeCertificate(final Optional<ValidationResult> validationResult, final X509ResourceCertificate certificate, final RpkiObject rpkiObject) {
-        final String location = validationResult.map(vr -> vr.getCurrentLocation().getName()).orElse(location(rpkiObject));
+    private ResourceCertificate makeCertificate(final ValidationResult validationResult, final X509ResourceCertificate certificate, final RpkiObject rpkiObject) {
+        final String location = validationResult.getCurrentLocation().getName();
         final boolean isValid = isValid(validationResult);
 
         return ResourceCertificate.builder().
                 uri(location).
                 valid(isValid).
-                warnings(formatChecks(validationResult.map(ValidationResult::getWarnings).orElse(Collections.emptyList()))).
-                errors(formatChecks(validationResult.map(ValidationResult::getFailuresForAllLocations).orElse(Collections.emptyList()))).
+                warnings(formatChecks(validationResult.getWarnings())).
+                errors(formatChecks(validationResult.getFailuresForAllLocations())).
                 resources(formatResources(certificate.getResources())).
                 subjectName(certificate.getSubject().getName()).
                 ski(Hex.format(certificate.getSubjectKeyIdentifier())).
@@ -291,15 +340,15 @@ public class RpkiObjectController {
                 build();
     }
 
-    private RouterCertificate makeCertificate(final Optional<ValidationResult> validationResult, final X509RouterCertificate certificate, final RpkiObject rpkiObject) {
-        final String location = validationResult.map(vr -> vr.getCurrentLocation().getName()).orElse(location(rpkiObject));
+    private RouterCertificate makeCertificate(final ValidationResult validationResult, final X509RouterCertificate certificate, final RpkiObject rpkiObject) {
+        final String location = validationResult.getCurrentLocation().getName();
         final boolean isValid = isValid(validationResult);
 
         return RouterCertificate.builder().
                 uri(location).
                 valid(isValid).
-                warnings(formatChecks(validationResult.map(ValidationResult::getWarnings).orElse(Collections.emptyList()))).
-                errors(formatChecks(validationResult.map(ValidationResult::getFailuresForAllLocations).orElse(Collections.emptyList()))).
+                warnings(formatChecks(validationResult.getWarnings())).
+                errors(formatChecks(validationResult.getFailuresForAllLocations())).
                 subjectName(certificate.getSubject().getName()).
                 ski(Hex.format(certificate.getSubjectKeyIdentifier())).
                 aki(Hex.format(certificate.getAuthorityKeyIdentifier())).
@@ -310,12 +359,12 @@ public class RpkiObjectController {
                 build();
     }
 
-    private boolean isValid(Optional<ValidationResult> validationResult) {
-        return !validationResult.filter(ValidationResult::hasFailureForCurrentLocation).isPresent();
+    private boolean isValid(ValidationResult validationResult) {
+        return !validationResult.hasFailureForCurrentLocation();
     }
 
-    private Roa makeRoa(final Optional<ValidationResult> validationResult, RoaCms roaCms, final RpkiObject rpkiObject) {
-        final String location = validationResult.map(vr -> vr.getCurrentLocation().getName()).orElse(location(rpkiObject));
+    private Roa makeRoa(final ValidationResult validationResult, RoaCms roaCms, final RpkiObject rpkiObject) {
+        final String location = validationResult.getCurrentLocation().getName();
         final boolean isValid = isValid(validationResult);
 
         final List<net.ripe.rpki.commons.crypto.cms.roa.RoaPrefix> pref = roaCms.getPrefixes();
@@ -329,8 +378,8 @@ public class RpkiObjectController {
         return Roa.builder().
                 uri(location).
                 valid(isValid).
-                warnings(formatChecks(validationResult.map(ValidationResult::getWarnings).orElse(Collections.emptyList()))).
-                errors(formatChecks(validationResult.map(ValidationResult::getFailuresForAllLocations).orElse(Collections.emptyList()))).
+                warnings(formatChecks(validationResult.getWarnings())).
+                errors(formatChecks(validationResult.getFailuresForAllLocations())).
                 asn(roaCms.getAsn().toString()).
                 roaPrefixes(prefixes).
                 sha256(Hex.format(rpkiObject.getSha256())).
@@ -347,15 +396,15 @@ public class RpkiObjectController {
                 build();
     }
 
-    private Mft makeMft(final Optional<ValidationResult> validationResult, ManifestCms manifestCms, final RpkiObject rpkiObject) {
-        final String location = validationResult.map(vr -> vr.getCurrentLocation().getName()).orElse(location(rpkiObject));
+    private Mft makeMft(final ValidationResult validationResult, ManifestCms manifestCms, final RpkiObject rpkiObject) {
+        final String location = validationResult.getCurrentLocation().getName();
         final boolean isValid = isValid(validationResult);
 
         return Mft.builder().
                 uri(location).
                 valid(isValid).
-                warnings(formatChecks(validationResult.map(ValidationResult::getWarnings).orElse(Collections.emptyList()))).
-                errors(formatChecks(validationResult.map(ValidationResult::getFailuresForAllLocations).orElse(Collections.emptyList()))).
+                warnings(formatChecks(validationResult.getWarnings())).
+                errors(formatChecks(validationResult.getFailuresForAllLocations())).
                 eeCertificate(makeEeCertificate(manifestCms.getCertificate())).
                 thisUpdateTime(manifestCms.getThisUpdateTime().toDate()).
                 nextUpdateTime(manifestCms.getNextUpdateTime().toDate()).
@@ -371,8 +420,8 @@ public class RpkiObjectController {
         ).collect(Collectors.toList());
     }
 
-    private Crl makeCrl(final Optional<ValidationResult> validationResult, final X509Crl crl, final RpkiObject rpkiObject) {
-        final String location = validationResult.map(vr -> vr.getCurrentLocation().getName()).orElse(location(rpkiObject));
+    private Crl makeCrl(final ValidationResult validationResult, final X509Crl crl, final RpkiObject rpkiObject) {
+        final String location = validationResult.getCurrentLocation().getName();
         final boolean isValid = isValid(validationResult);
 
         final Set<? extends X509CRLEntry> revokedCertificates = crl.getCrl().getRevokedCertificates();
@@ -380,33 +429,33 @@ public class RpkiObjectController {
                 Collections.emptyList() :
                 revokedCertificates.stream().map(X509CRLEntry::getSerialNumber).collect(Collectors.toList());
 
-        return Crl.builder().
-                uri(location).
-                valid(isValid).
-                warnings(formatChecks(validationResult.map(ValidationResult::getWarnings).orElse(Collections.emptyList()))).
-                errors(formatChecks(validationResult.map(ValidationResult::getFailuresForAllLocations).orElse(Collections.emptyList()))).
-                aki(Hex.format(crl.getAuthorityKeyIdentifier())).
-                serial(crl.getNumber()).
-                revocations(revocations).
-                build();
+        return Crl.builder()
+                .uri(location)
+                .valid(isValid)
+                .warnings(formatChecks(validationResult.getWarnings()))
+                .errors(formatChecks(validationResult.getFailuresForAllLocations()))
+                .aki(Hex.format(crl.getAuthorityKeyIdentifier()))
+                .serial(crl.getNumber())
+                .revocations(revocations)
+                .build();
     }
 
-    private RpkiObj makeGbr(Optional<ValidationResult> validationResult, GhostbustersCms gbr, RpkiObject rpkiObject) {
-        final String location = validationResult.map(vr -> vr.getCurrentLocation().getName()).orElse(location(rpkiObject));
+    private RpkiObj makeGbr(ValidationResult validationResult, GhostbustersCms gbr, RpkiObject rpkiObject) {
+        final String location = validationResult.getCurrentLocation().getName();
         final boolean isValid = isValid(validationResult);
 
         return GhostbustersRecord.builder()
-            .uri(location)
-            .valid(isValid)
-            .warnings(formatChecks(validationResult.map(ValidationResult::getWarnings).orElse(Collections.emptyList())))
-            .errors(formatChecks(validationResult.map(ValidationResult::getFailuresForAllLocations).orElse(Collections.emptyList())))
-            .sha256(Hex.format(rpkiObject.getSha256()))
-            .vCard(gbr.getVCardContent())
-            .eeCertificate(makeEeCertificate(gbr.getCertificate()))
-            .build();
+                .uri(location)
+                .valid(isValid)
+                .warnings(formatChecks(validationResult.getWarnings()))
+                .errors(formatChecks(validationResult.getFailuresForAllLocations()))
+                .sha256(Hex.format(rpkiObject.getSha256()))
+                .vCard(gbr.getVCardContent())
+                .eeCertificate(makeEeCertificate(gbr.getCertificate()))
+                .build();
     }
 
-    private RpkiObj makeOther(final Optional<ValidationResult> vr, final RpkiObject ro) {
+    private RpkiObj makeOther(final ValidationResult vr, final RpkiObject ro) {
         return Other.builder().uri(location(ro)).build();
     }
 

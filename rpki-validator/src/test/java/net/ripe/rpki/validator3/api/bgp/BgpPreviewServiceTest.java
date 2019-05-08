@@ -35,12 +35,18 @@ import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
 import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionsService;
-import net.ripe.rpki.validator3.domain.IgnoreFilter;
-import net.ripe.rpki.validator3.domain.RoaPrefixAssertion;
-import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
+import net.ripe.rpki.validator3.api.slurm.SlurmStore;
+import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilter;
+import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertion;
+import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import org.joda.time.DateTime;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.stream.Stream;
@@ -53,7 +59,15 @@ public class BgpPreviewServiceTest {
     private static final Asn AS_3333 = Asn.parse("AS3333");
     private static final Asn AS_2222 = Asn.parse("AS2222");
 
-    private BgpPreviewService subject = createBgpPreviewService();
+    private BgpPreviewService subject;
+
+    @Rule
+    public final TemporaryFolder tmp = new TemporaryFolder();
+
+    @Before
+    public void setUp() {
+        subject = createBgpPreviewService();
+    }
 
     @Test
     public void should_mark_non_matching_bgp_entry_as_unknown() {
@@ -173,12 +187,13 @@ public class BgpPreviewServiceTest {
     }
 
     private BgpPreviewService createBgpPreviewService(final Collection<IgnoreFilter> ignoreFilters) {
-        return new BgpPreviewService(new String[0],5, null, new ValidatedRpkiObjects(), new IgnoreFilterService() {
+        SlurmStore slurmStore = createSlurmStore();
+        return new BgpPreviewService(new String[0],5, null, new ValidatedRpkiObjects(), new IgnoreFilterService(slurmStore) {
             @Override
             public Stream<IgnoreFilter> all() {
                 return ignoreFilters.stream();
             }
-        }, new RoaPrefixAssertionsService() {
+        }, new RoaPrefixAssertionsService(slurmStore) {
             @Override
             public Stream<RoaPrefixAssertion> all() {
                 return Stream.empty();
@@ -186,10 +201,18 @@ public class BgpPreviewServiceTest {
         });
     }
 
+    private SlurmStore createSlurmStore()  {
+        try {
+            return new SlurmStore(tmp.newFolder().getAbsolutePath());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private IgnoreFilter ignoreFilter(Long asn, String prefix) {
-        IgnoreFilter f = new IgnoreFilter();
-        f.setAsn(asn);
-        f.setPrefix(prefix);
-        return f;
+        return new IgnoreFilter(10L,
+                asn == null ? null : new Asn(asn),
+                prefix == null ? null : IpRange.parse(prefix),
+                "comment");
     }
 }

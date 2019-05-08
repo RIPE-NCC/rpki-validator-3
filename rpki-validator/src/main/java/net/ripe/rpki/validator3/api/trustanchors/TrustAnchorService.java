@@ -32,98 +32,101 @@ package net.ripe.rpki.validator3.api.trustanchors;
 import com.google.common.io.PatternFilenameFilter;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
-import net.ripe.rpki.validator3.domain.RpkiRepositories;
-import net.ripe.rpki.validator3.domain.RpkiRepository;
-import net.ripe.rpki.validator3.domain.Settings;
-import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.TrustAnchors;
-import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
-import net.ripe.rpki.validator3.domain.ValidationRuns;
+import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
+import net.ripe.rpki.validator3.storage.data.Key;
+import net.ripe.rpki.validator3.storage.data.Ref;
+import net.ripe.rpki.validator3.storage.data.RpkiRepository;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
+import net.ripe.rpki.validator3.storage.stores.SettingsStore;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.util.TrustAnchorLocator;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.PostConstruct;
-import javax.persistence.EntityManager;
-import javax.transaction.Transactional;
 import javax.validation.Valid;
 import java.io.File;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Component
-@Transactional
 @Validated
 @Slf4j
 public class TrustAnchorService {
 
-    @Autowired
-    private TrustAnchors trustAnchors;
+    private final TrustAnchorStore trustAnchorStore;
 
-    @Autowired
-    private RpkiRepositories rpkiRepositories;
+    private final RpkiRepositoryStore rpkiRepositoryStore;
 
-    @Autowired
-    private ValidatedRpkiObjects validatedRpkiObjects;
+    private final ValidatedRpkiObjects validatedRpkiObjects;
 
-    @Autowired
-    private ValidationRuns validationRunRepository;
+    private final SettingsStore settingsStore;
 
-    @Autowired
-    private PlatformTransactionManager transactionManager;
-
-    @Autowired
-    private Settings settings;
-
-    @Autowired
-    private ValidationScheduler validationScheduler;
+    private final ValidationScheduler validationScheduler;
 
     @Value("${rpki.validator.preconfigured.trust.anchors.directory}")
     private File preconfiguredTrustAnchorDirectory;
 
+    private final Lmdb lmdb;
+
     @Autowired
-    private EntityManager entityManager;
+    public TrustAnchorService(TrustAnchorStore trustAnchorStore,
+                              RpkiRepositoryStore rpkiRepositoryStore,
+                              ValidatedRpkiObjects validatedRpkiObjects, SettingsStore settingsStore,
+                              ValidationScheduler validationScheduler,
+                              Lmdb lmdb) {
+        this.trustAnchorStore = trustAnchorStore;
+        this.rpkiRepositoryStore = rpkiRepositoryStore;
+        this.validatedRpkiObjects = validatedRpkiObjects;
+        this.settingsStore = settingsStore;
+        this.validationScheduler = validationScheduler;
+        this.lmdb = lmdb;
+    }
 
     public long execute(@Valid AddTrustAnchor command) {
         TrustAnchor trustAnchor = new TrustAnchor(false);
         trustAnchor.setName(command.getName());
-        trustAnchor.setLocations(command.getLocations());
+        trustAnchor.setLocations(new ArrayList<>(command.getLocations()));
         trustAnchor.setSubjectPublicKeyInfo(command.getSubjectPublicKeyInfo());
         trustAnchor.setRsyncPrefetchUri(command.getRsyncPrefetchUri());
-
-        if(trustAnchor.getRsyncPrefetchUri()!= null) {
-            log.info("Register and schedule prefetch trust anchor '{}'", trustAnchor);
-            RpkiRepository prefetchRepo = rpkiRepositories.register(trustAnchor, trustAnchor.getRsyncPrefetchUri(), RpkiRepository.Type.RSYNC_PREFETCH);
-            validationScheduler.schedulePrefetchRsync(prefetchRepo);
-        }
-
-        long trustAnchorId = addAndScheduleTA(trustAnchor);
-
-        entityManager.flush();
-        entityManager.clear();
-
-        return trustAnchorId;
+        return lmdb.writeTx(tx -> add(tx, trustAnchor));
     }
 
+    long add(Tx.Write tx, TrustAnchor trustAnchor) {
+        trustAnchorStore.add(tx, trustAnchor);
+
+        final Ref<TrustAnchor> trustAnchorRef = trustAnchorStore.makeRef(tx, trustAnchor.key());
+        if (trustAnchor.getRsyncPrefetchUri() != null) {
+            rpkiRepositoryStore.register(tx, trustAnchorRef,
+                    trustAnchor.getRsyncPrefetchUri(), RpkiRepository.Type.RSYNC_PREFETCH);
+        }
+        tx.afterCommit(() -> validationScheduler.addTrustAnchor(trustAnchor));
+        log.info("Added trust anchor '{}'", trustAnchor);
+        return trustAnchor.key().asLong();
+    }
+
+    public void remove(long trustAnchorId) {
+        lmdb.writeTx0(tx ->
+                trustAnchorStore.get(tx, Key.of(trustAnchorId))
+                        .ifPresent(trustAnchor -> {
+                            rpkiRepositoryStore.removeAllForTrustAnchor(tx, trustAnchor);
+                            trustAnchorStore.remove(tx, trustAnchor);
+                            validatedRpkiObjects.remove(trustAnchor);
+                        }));
+    }
 
     @PostConstruct
     public void managePreconfiguredAndExistingTrustAnchors() {
         log.info("Automatically adding preconfigured trust anchors");
-
-        if (settings.isPreconfiguredTalsLoaded()) {
-            log.info("Preconfigured trust anchors are already loaded, skipping");
-            scheduleTasValidation();
-            return;
-        }
-
-        settings.markPreconfiguredTalsLoaded();
 
         final File[] tals = preconfiguredTrustAnchorDirectory.listFiles(new PatternFilenameFilter(Pattern.compile("^.*\\.tal$")));
         if (ArrayUtils.isEmpty(tals)) {
@@ -131,16 +134,19 @@ public class TrustAnchorService {
             return;
         }
 
-        for (File tal : tals) {
+        for (final File tal : tals) {
             final TrustAnchorLocator locator = TrustAnchorLocator.fromFile(tal);
-            new TransactionTemplate(transactionManager).execute((status) -> {
-                Optional<TrustAnchor> ta = trustAnchors.findBySubjectPublicKeyInfo(locator.getPublicKeyInfo());
+            lmdb.writeTx0(tx -> {
+                Optional<TrustAnchor> ta = trustAnchorStore.findBySubjectPublicKeyInfo(tx, locator.getPublicKeyInfo());
                 if (ta.isPresent()) {
                     log.info("Preconfigured trust anchor '{}' already installed, skipping", locator.getCaName());
                 } else {
                     TrustAnchor trustAnchor = new TrustAnchor(true);
                     trustAnchor.setName(locator.getCaName());
-                    trustAnchor.setLocations(locator.getCertificateLocations().stream().map(URI::toASCIIString).collect(Collectors.toList()));
+                    trustAnchor.setLocations(
+                            locator.getCertificateLocations().stream()
+                                    .map(URI::toASCIIString)
+                                    .collect(Collectors.toList()));
                     trustAnchor.setSubjectPublicKeyInfo(locator.getPublicKeyInfo());
                     trustAnchor.setRsyncPrefetchUri(
                             locator.getPrefetchUris().stream()
@@ -148,47 +154,21 @@ public class TrustAnchorService {
                                     .map(URI::toASCIIString)
                                     .findFirst().orElse(null)
                     );
-                    if(trustAnchor.getRsyncPrefetchUri()!= null) {
-                        log.info("Register only prefetch trust anchor '{}'", trustAnchor);
-                        rpkiRepositories.register(trustAnchor, trustAnchor.getRsyncPrefetchUri(), RpkiRepository.Type.RSYNC_PREFETCH);
-                    }
-                    addAndScheduleTA(trustAnchor);
+                    add(tx, trustAnchor);
                 }
-                return null;
             });
         }
 
-        scheduleTasValidation();
+        lmdb.readTx0(this::scheduleTasValidation);
     }
 
-    public void remove(long trustAnchorId) {
-        TrustAnchor trustAnchor = trustAnchors.get(trustAnchorId);
-        validationRunRepository.removeAllForTrustAnchor(trustAnchor);
-        rpkiRepositories.removeAllForTrustAnchor(trustAnchor);
-        validationScheduler.removeTrustAnchor(trustAnchor);
-        trustAnchors.remove(trustAnchor);
-        validatedRpkiObjects.remove(trustAnchor);
-    }
-
-    private long addAndScheduleTA(TrustAnchor trustAnchor) {
-        trustAnchors.add(trustAnchor);
-        validationScheduler.addTrustAnchor(trustAnchor);
-
-        log.info("Add and schedule trust anchor '{}'", trustAnchor);
-        return trustAnchor.getId();
-    }
-
-
-    private void scheduleTasValidation() {
+    private void scheduleTasValidation(Tx.Read tx) {
         log.info("Schedule TA validation that were in the database already");
-        new TransactionTemplate(transactionManager).execute((status) -> {
-            trustAnchors.findAll().forEach(ta -> {
-                if (!validationScheduler.scheduledTrustAnchor(ta)) {
-                    log.info("Adding " + ta.getName() + " to the validation scheduler");
-                    validationScheduler.addTrustAnchor(ta);
-                }
-            });
-            return null;
+        trustAnchorStore.findAll(tx).forEach(ta -> {
+            if (!validationScheduler.scheduledTrustAnchor(ta)) {
+                log.info("Adding " + ta.getName() + " to the validation scheduler");
+                validationScheduler.addTrustAnchor(ta);
+            }
         });
     }
 }

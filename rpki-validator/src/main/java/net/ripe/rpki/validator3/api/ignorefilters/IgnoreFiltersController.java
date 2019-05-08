@@ -38,9 +38,8 @@ import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.api.roas.ObjectController;
-import net.ripe.rpki.validator3.domain.IgnoreFilters;
 import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
-import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
+import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.Link;
@@ -70,16 +69,13 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 public class IgnoreFiltersController {
 
     @Autowired
-    private IgnoreFilters ignoreFilters;
-
-    @Autowired
     private IgnoreFilterService ignoreFilterService;
 
     @Autowired
     private ValidatedRpkiObjects validatedRpkiObjects;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<Stream<IgnoreFilter>>> list(
+    public ResponseEntity<ApiResponse<Stream<IgnoreFilterDto>>> list(
             @RequestParam(name = "startFrom", defaultValue = "0") long startFrom,
             @RequestParam(name = "pageSize", defaultValue = "20") long pageSize,
             @RequestParam(name = "search", defaultValue = "", required = false) String searchString,
@@ -90,32 +86,31 @@ public class IgnoreFiltersController {
         final Sorting sorting = Sorting.parse(sortBy, sortDirection);
         final Paging paging = Paging.of(startFrom, pageSize);
 
-        final List<net.ripe.rpki.validator3.domain.IgnoreFilter> matching = ignoreFilters.find(searchTerm, sorting, paging).collect(Collectors.toList());
-
-        int totalSize = (int) ignoreFilters.count(searchTerm);
+        final Stream<IgnoreFilter> matching = ignoreFilterService.find(searchTerm, sorting, paging);
+        int totalSize = (int) ignoreFilterService.count(searchTerm);
 
         final Links links = Paging.links(
                 startFrom, pageSize, totalSize,
                 (sf, ps) -> methodOn(IgnoreFiltersController.class).list(sf, ps, searchString, sortBy, sortDirection));
 
         return ResponseEntity.ok(
-                ApiResponse.<Stream<IgnoreFilter>>builder()
+                ApiResponse.<Stream<IgnoreFilterDto>>builder()
                         .links(links)
                         .metadata(Metadata.of(totalSize))
-                        .data(matching.stream().map(this::toIgnoreFilter))
+                        .data(matching.map(this::toIgnoreFilter))
                         .build()
         );
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<IgnoreFilter>> get(@PathVariable long id) {
-        return ResponseEntity.ok(ignoreFilterResource(ignoreFilters.get(id)));
+    public ResponseEntity<ApiResponse<IgnoreFilterDto>> get(@PathVariable long id) {
+        return ResponseEntity.ok(ignoreFilterResource(ignoreFilterService.get(id)));
     }
 
     @PostMapping(consumes = { Api.API_MIME_TYPE, "application/json" })
-    public ResponseEntity<ApiResponse<IgnoreFilter>> add(@RequestBody @Valid ApiCommand<AddIgnoreFilter> command) {
+    public ResponseEntity<ApiResponse<IgnoreFilterDto>> add(@RequestBody @Valid ApiCommand<AddIgnoreFilter> command) throws Exception {
         final long id = ignoreFilterService.execute(command.getData());
-        final net.ripe.rpki.validator3.domain.IgnoreFilter ignoreFilter = ignoreFilters.get(id);
+        final IgnoreFilter ignoreFilter = ignoreFilterService.get(id);
         final Link selfRel = linkTo(methodOn(IgnoreFiltersController.class).get(id)).withSelfRel();
         return ResponseEntity.created(URI.create(selfRel.getHref())).body(ignoreFilterResource(ignoreFilter));
     }
@@ -126,22 +121,22 @@ public class IgnoreFiltersController {
         return ResponseEntity.noContent().build();
     }
 
-    private IgnoreFilter toIgnoreFilter(net.ripe.rpki.validator3.domain.IgnoreFilter f) {
+    private IgnoreFilterDto toIgnoreFilter(IgnoreFilter f) {
         final IgnoreFiltersPredicate ignoreFiltersPredicate = new IgnoreFiltersPredicate(Stream.of(f));
-        final Stream<ObjectController.RoaPrefix> affectedRoas = validatedRpkiObjects
+        final List<ObjectController.RoaPrefix> affectedRoas = validatedRpkiObjects
                 .findCurrentlyValidatedRoaPrefixes(null, null, null)
                 .getObjects()
-                .filter(roa -> ignoreFiltersPredicate.test(roa))
+                .filter(ignoreFiltersPredicate)
                 .map(prefix -> new ObjectController.RoaPrefix(
                         String.valueOf(prefix.getAsn()),
                         prefix.getPrefix().toString(),
                         prefix.getEffectiveLength(),
-                        null
-                ));
-        return new IgnoreFilter(f.getId(), f.getAsn(), f.getPrefix(), f.getComment(), affectedRoas);
+                        null)
+                ).collect(Collectors.toList());
+        return new IgnoreFilterDto(f, affectedRoas);
     }
 
-    private ApiResponse<IgnoreFilter> ignoreFilterResource(net.ripe.rpki.validator3.domain.IgnoreFilter ignoreFilter) {
-        return ApiResponse.<IgnoreFilter>builder().data(toIgnoreFilter(ignoreFilter)).build();
+    private ApiResponse<IgnoreFilterDto> ignoreFilterResource(IgnoreFilter ignoreFilter) {
+        return ApiResponse.<IgnoreFilterDto>builder().data(new IgnoreFilterDto(ignoreFilter)).build();
     }
 }

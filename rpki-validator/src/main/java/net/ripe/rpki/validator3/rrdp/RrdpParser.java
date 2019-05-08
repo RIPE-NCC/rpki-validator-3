@@ -203,28 +203,26 @@ public class RrdpParser {
             while (eventReader.hasNext()) {
                 final XMLEvent event = eventReader.nextEvent();
 
-                switch (event.getEventType()) {
-                    case XMLStreamConstants.START_ELEMENT:
-                        final StartElement startElement = event.asStartElement();
-                        final String qName = startElement.getName().getLocalPart();
+                if (event.getEventType() == XMLStreamConstants.START_ELEMENT) {
+                    final StartElement startElement = event.asStartElement();
+                    final String qName = startElement.getName().getLocalPart();
 
-                        switch (qName) {
-                            case "notification":
-                                serial = new BigInteger(getAttr(startElement, "serial", "Notification serial is not present"));
-                                sessionId = getAttr(startElement, "session_id", "Session id is not present");
-                                break;
-                            case "snapshot":
-                                snapshotUri = getAttr(startElement, "uri", "Snapshot URI is not present");
-                                snapshotHash = getAttr(startElement, "hash", "Snapshot hash is not present");
-                                break;
-                            case "delta":
-                                final String deltaUri = getAttr(startElement, "uri", "Delta URI is not present");
-                                final String deltaHash = getAttr(startElement, "hash", "Delta hash is not present");
-                                final String deltaSerial = getAttr(startElement, "serial", "Delta serial is not present");
-                                deltas.add(new DeltaInfo(deltaUri, deltaHash, new BigInteger(deltaSerial)));
-                                break;
-                        }
-                        break;
+                    switch (qName) {
+                        case "notification":
+                            serial = new BigInteger(getAttr(startElement, "serial", "Notification serial is not present"));
+                            sessionId = getAttr(startElement, "session_id", "Session id is not present");
+                            break;
+                        case "snapshot":
+                            snapshotUri = getAttr(startElement, "uri", "Snapshot URI is not present");
+                            snapshotHash = getAttr(startElement, "hash", "Snapshot hash is not present");
+                            break;
+                        case "delta":
+                            final String deltaUri = getAttr(startElement, "uri", "Delta URI is not present");
+                            final String deltaHash = getAttr(startElement, "hash", "Delta hash is not present");
+                            final String deltaSerial = getAttr(startElement, "serial", "Delta serial is not present");
+                            deltas.add(new DeltaInfo(deltaUri, deltaHash, new BigInteger(deltaSerial)));
+                            break;
+                    }
                 }
             }
             return new Notification(sessionId, serial, snapshotUri, snapshotHash, deltas);

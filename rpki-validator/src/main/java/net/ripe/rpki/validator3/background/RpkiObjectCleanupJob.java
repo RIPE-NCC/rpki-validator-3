@@ -44,6 +44,10 @@ class RpkiObjectCleanupJob implements Job {
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
-        rpkiObjectCleanupService.cleanupRpkiObjects();
+        try {
+            rpkiObjectCleanupService.cleanupRpkiObjects();
+        } catch (Exception e) {
+            throw new JobExecutionException(e);
+        }
     }
 }

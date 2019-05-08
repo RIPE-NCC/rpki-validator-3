@@ -29,14 +29,21 @@
  */
 package net.ripe.rpki.validator3.util;
 
+import lombok.AllArgsConstructor;
 import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 
-import java.io.*;
-import java.util.Arrays;
-import java.util.List;
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
+@AllArgsConstructor
 public class Sha256 {
+    private final byte[] bytes;
+
     public static byte[] hash(byte[] data) {
         try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
             return hash(in);

@@ -32,9 +32,9 @@ package net.ripe.rpki.validator3.api.trustanchors;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Builder;
 import lombok.Data;
-import net.ripe.rpki.validator3.domain.TrustAnchor;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.domain.constraints.ValidPublicKeyInfo;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;

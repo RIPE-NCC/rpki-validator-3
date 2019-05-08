@@ -29,23 +29,22 @@
  */
 package net.ripe.rpki.validator3.domain.validation;
 
+import com.google.common.collect.ImmutableList;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.validator3.IntegrationTest;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
-import net.ripe.rpki.validator3.domain.RpkiRepositories;
-import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
-import net.ripe.rpki.validator3.domain.TrustAnchors;
-import net.ripe.rpki.validator3.domain.ValidationCheck;
-import net.ripe.rpki.validator3.domain.ValidationRun;
-import net.ripe.rpki.validator3.domain.ValidationRuns;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
+import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
+import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
+import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
+import net.ripe.rpki.validator3.storage.stores.impl.GenericStorageTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import javax.transaction.Transactional;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -53,36 +52,31 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(SpringRunner.class)
 @IntegrationTest
-@Transactional
-public class TrustAnchorValidationServiceTest {
+public class TrustAnchorValidationServiceTest extends GenericStorageTest {
 
     private static final String DUMMY_RSYNC_URI = "rsync://localhost/non-existent/ta/ripe-ncc-ta.cer";
 
     @Autowired
-    private TrustAnchors trustAnchors;
+    private TrustAnchorStore trustAnchors;
 
     @Autowired
     private TrustAnchorValidationService subject;
 
     @Autowired
-    private ValidationRuns validationRuns;
-
-    @Autowired
-    private RpkiRepositories rpkiRepositories;
+    private ValidationRunStore validationRuns;
 
     @Test
     public void test_success() {
         TrustAnchor ta = createRipeNccTrustAnchor();
-        trustAnchors.add(ta);
+        wtx0(tx -> trustAnchors.add(tx, ta));
 
-        ta.setLocations(Arrays.asList("src/test/resources/ripe-ncc-ta.cer"));
-        subject.validate(ta.getId());
-        ta.setLocations(Arrays.asList(DUMMY_RSYNC_URI));
+        ta.setLocations(ImmutableList.of("src/test/resources/ripe-ncc-ta.cer"));
+        subject.validate(ta.key().asLong());
 
-        X509ResourceCertificate certificate = ta.getCertificate();
+        X509ResourceCertificate certificate = rtx(tx -> trustAnchors.get(tx, ta.key()).get().getCertificate());
         assertThat(certificate).isNotNull();
 
-        Optional<TrustAnchorValidationRun> validationRun = validationRuns.findLatestCompletedForTrustAnchor(ta);
+        Optional<TrustAnchorValidationRun> validationRun = rtx(tx -> validationRuns.findLatestCompletedForTrustAnchor(tx, ta));
         assertThat(validationRun).isPresent();
         assertThat(validationRun.get().getStatus()).isEqualTo(ValidationRun.Status.SUCCEEDED);
 
@@ -92,14 +86,14 @@ public class TrustAnchorValidationServiceTest {
     @Test
     public void test_rsync_failure() {
         TrustAnchor ta = createRipeNccTrustAnchor();
-        ta.setLocations(Arrays.asList(DUMMY_RSYNC_URI));
-        trustAnchors.add(ta);
+        ta.setLocations(ImmutableList.of(DUMMY_RSYNC_URI));
+        wtx0(tx -> trustAnchors.add(tx, ta));
 
-        subject.validate(ta.getId());
+        subject.validate(ta.key().asLong());
 
         assertThat(ta.getCertificate()).isNull();
 
-        Optional<TrustAnchorValidationRun> validationRun = validationRuns.findLatestCompletedForTrustAnchor(ta);
+        Optional<TrustAnchorValidationRun> validationRun = rtx(tx -> validationRuns.findLatestCompletedForTrustAnchor(tx, ta));
         assertThat(validationRun).isPresent();
 
         List<ValidationCheck> validationChecks = validationRun.get().getValidationChecks();
@@ -110,15 +104,16 @@ public class TrustAnchorValidationServiceTest {
     @Test
     public void test_empty_file() {
         TrustAnchor ta = createRipeNccTrustAnchor();
-        trustAnchors.add(ta);
+        wtx0(tx -> trustAnchors.add(tx, ta));
 
-        ta.setLocations(Arrays.asList("src/test/resources/empty-file.cer"));
-        subject.validate(ta.getId());
-        ta.setLocations(Arrays.asList(DUMMY_RSYNC_URI));
+        ta.setLocations(ImmutableList.of("src/test/resources/empty-file.cer"));
+        wtx0(tx -> trustAnchors.update(tx, ta));
+        subject.validate(ta.key().asLong());
 
-        assertThat(ta.getCertificate()).isNull();
+        X509ResourceCertificate certificate = rtx(tx -> trustAnchors.get(tx, ta.key()).get().getCertificate());
+        assertThat(certificate).isNull();
 
-        Optional<TrustAnchorValidationRun> validationRun = validationRuns.findLatestCompletedForTrustAnchor(ta);
+        Optional<TrustAnchorValidationRun> validationRun = rtx(tx -> validationRuns.findLatestCompletedForTrustAnchor(tx, ta));
         assertThat(validationRun).isPresent();
 
         List<ValidationCheck> validationChecks = validationRun.get().getValidationChecks();
@@ -130,15 +125,14 @@ public class TrustAnchorValidationServiceTest {
     public void test_bad_subject_public_key() {
         TrustAnchor ta = createRipeNccTrustAnchor();
         ta.setSubjectPublicKeyInfo(ta.getSubjectPublicKeyInfo().toUpperCase());
-        trustAnchors.add(ta);
+        wtx0(tx -> trustAnchors.add(tx, ta));
 
-        ta.setLocations(Arrays.asList("src/test/resources/ripe-ncc-ta.cer"));
-        subject.validate(ta.getId());
-        ta.setLocations(Arrays.asList(DUMMY_RSYNC_URI));
+        ta.setLocations(ImmutableList.of("src/test/resources/ripe-ncc-ta.cer"));
+        subject.validate(ta.key().asLong());
 
         assertThat(ta.getCertificate()).isNull();
 
-        Optional<TrustAnchorValidationRun> validationRun = validationRuns.findLatestCompletedForTrustAnchor(ta);
+        Optional<TrustAnchorValidationRun> validationRun = rtx(tx -> validationRuns.findLatestCompletedForTrustAnchor(tx, ta));
         assertThat(validationRun).isPresent();
 
         List<ValidationCheck> validationChecks = validationRun.get().getValidationChecks();
@@ -149,7 +143,7 @@ public class TrustAnchorValidationServiceTest {
     public static TrustAnchor createRipeNccTrustAnchor() {
         TrustAnchor ta = new TrustAnchor(false);
         ta.setName("RIPE NCC");
-        ta.setLocations(Arrays.asList("rsync://rpki.ripe.net/ta/ripe-ncc-ta.cer"));
+        ta.setLocations(ImmutableList.of("rsync://rpki.ripe.net/ta/ripe-ncc-ta.cer"));
         ta.setSubjectPublicKeyInfo("MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0URYSGqUz2myBsOzeW1jQ6NsxNvlLMyhWknvnl8NiBCs/T/S2XuNKQNZ+wBZxIgPPV2pFBFeQAvoH/WK83HwA26V2siwm/MY2nKZ+Olw+wlpzlZ1p3Ipj2eNcKrmit8BwBC8xImzuCGaV0jkRB0GZ0hoH6Ml03umLprRsn6v0xOP0+l6Qc1ZHMFVFb385IQ7FQQTcVIxrdeMsoyJq9eMkE6DoclHhF/NlSllXubASQ9KUWqJ0+Ot3QCXr4LXECMfkpkVR2TZT+v5v658bHVs6ZxRD1b6Uk1uQKAyHUbn/tXvP8lrjAibGzVsXDT2L0x4Edx+QdixPgOji3gBMyL2VwIDAQAB");
         return ta;
     }

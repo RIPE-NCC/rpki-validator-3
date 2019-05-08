@@ -31,64 +31,59 @@ package net.ripe.rpki.validator3.api.bgpsec;
 
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
-import net.ripe.ipresource.IpRange;
-import net.ripe.rpki.validator3.domain.BgpSecAssertion;
-import net.ripe.rpki.validator3.domain.BgpSecAssertions;
-import net.ripe.rpki.validator3.domain.RoaPrefixAssertion;
-import net.ripe.rpki.validator3.util.Transactions;
+import net.ripe.rpki.validator3.api.slurm.SlurmStore;
+import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
-import javax.transaction.Transactional;
 import javax.validation.Valid;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
-@Transactional
 @Validated
 @Slf4j
 public class BgpSecAssertionsService {
 
+    private final SlurmStore slurmStore;
+
     @Autowired
-    private BgpSecAssertions bgpSecAssertions;
+    public BgpSecAssertionsService(SlurmStore slurmStore) {
+        this.slurmStore = slurmStore;
+    }
 
     public long execute(@Valid AddBgpSecAssertion command) {
-        BgpSecAssertion entity = new BgpSecAssertion(
-            command.getAsn() == null ? null : Asn.parse(command.getAsn()).longValue(),
-            command.getSki(),
-            command.getPublicKey(),
-            command.getComment()
-        );
-
-        return add(entity);
+        final long id = slurmStore.nextId();
+        return slurmStore.updateWith(slurmExt -> {
+            final Slurm.SlurmBgpSecAssertion slurmBgpSecAssertion = new Slurm.SlurmBgpSecAssertion();
+            slurmBgpSecAssertion.setAsn(Asn.parse(command.getAsn()));
+            slurmBgpSecAssertion.setPublicKey(command.getPublicKey());
+            slurmBgpSecAssertion.setSki(command.getSki());
+            slurmBgpSecAssertion.setComment(command.getComment());
+            slurmExt.getBgpsecAssertions().put(id, slurmBgpSecAssertion);
+            return id;
+        });
     }
 
-    long add(BgpSecAssertion entity) {
-        bgpSecAssertions.add(entity);
-
-        log.info("added BGPSec assertion '{}'", entity);
-        return entity.getId();
-    }
-
-    public void remove(long roaPrefixAssertionId) {
-        BgpSecAssertion entity = bgpSecAssertions.get(roaPrefixAssertionId);
-        if (entity != null) {
-            bgpSecAssertions.remove(entity);
-        }
+    public void remove(long id) {
+        slurmStore.updateWith(slurmExt -> {
+            slurmExt.getPrefixAssertions().remove(id);
+        });
     }
 
     public Stream<BgpSecAssertion> all() {
-        return bgpSecAssertions.all();
+        return slurmStore.read().getBgpsecAssertions()
+                .entrySet().stream()
+                .map(e -> {
+                    Slurm.SlurmBgpSecAssertion v = e.getValue();
+                    return new BgpSecAssertion(e.getKey(), v.getAsn(), v.getComment(), v.getSki(), v.getPublicKey());
+                });
     }
 
     public void clear() {
-        bgpSecAssertions.clear();
+        slurmStore.updateWith(slurmExt -> {
+            slurmExt.getBgpsecAssertions().clear();
+        });
     }
 
 }

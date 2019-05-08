@@ -32,8 +32,10 @@ package net.ripe.rpki.validator3.api.validationruns;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
-import net.ripe.rpki.validator3.domain.ValidationRun;
-import net.ripe.rpki.validator3.domain.ValidationRuns;
+import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
+import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
+import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.hateoas.Links;
@@ -46,6 +48,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
@@ -56,35 +59,68 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 public class ValidationRunController {
 
     @Autowired
-    private ValidationRuns validationRunRepository;
+    private ValidationRunStore validationRunStore;
+
+    @Autowired
+    private TrustAnchorStore trustAnchorStore;
+
     @Autowired
     private MessageSource messageSource;
 
+    @Autowired
+    private Lmdb lmdb;
+
     @GetMapping
     public ResponseEntity<ApiResponse<List<ValidationRunResource>>> list(Locale locale) {
-        return ResponseEntity.ok(ApiResponse.data(
-            new Links(linkTo(methodOn(ValidationRunController.class).list(locale)).withSelfRel()),
-            validationRunRepository.findAll(ValidationRun.class)
-                .stream()
-                .map(check -> ValidationRunResource.of(check, messageSource, locale))
-                .collect(Collectors.toList())
-        ));
+        return lmdb.readTx(tx ->
+                ResponseEntity.ok(ApiResponse.data(
+                        new Links(linkTo(methodOn(ValidationRunController.class).list(locale)).withSelfRel()),
+                        validationRunStore.findAll(tx, ValidationRun.class)
+                                .stream()
+                                .map(validationRun -> ValidationRunResource.of(validationRun,
+                                        vr -> validationRunStore.getObjectCount(tx, vr),
+                                        messageSource, locale))
+                                .collect(Collectors.toList())
+                )));
     }
 
-    @GetMapping(path = "/latest")
+    @GetMapping(path = "/latest-successful")
     public ResponseEntity<ApiResponse<List<ValidationRunResource>>> listLatestSuccessful(Locale locale) {
-        return ResponseEntity.ok(ApiResponse.data(
-            new Links(linkTo(methodOn(ValidationRunController.class).listLatestSuccessful(locale)).withSelfRel()),
-            validationRunRepository.findLatestSuccessful(ValidationRun.class)
-                .stream()
-                .map(vr -> ValidationRunResource.of(vr, messageSource, locale))
-                .collect(Collectors.toList())
-        ));
+        return lmdb.readTx(tx ->
+                ResponseEntity.ok(ApiResponse.data(
+                        new Links(linkTo(methodOn(ValidationRunController.class).listLatestSuccessful(locale)).withSelfRel()),
+                        validationRunStore.findLatestSuccessful(tx, ValidationRun.class)
+                                .stream()
+                                .map(validationRun -> ValidationRunResource.of(validationRun,
+                                        vr -> validationRunStore.getObjectCount(tx, vr),
+                                        messageSource, locale))
+                                .collect(Collectors.toList())
+                )));
+    }
+
+
+    @GetMapping(path = "/latest-completed-per-ta")
+    public ResponseEntity<ApiResponse<List<ValidationRunResource>>> listLatestCompletedPerTa(Locale locale) {
+        return lmdb.readTx(tx ->
+                ResponseEntity.ok(ApiResponse.data(
+                        new Links(linkTo(methodOn(ValidationRunController.class).listLatestCompletedPerTa(locale)).withSelfRel()),
+                        trustAnchorStore.findAll(tx).stream().flatMap(ta ->
+                                validationRunStore.findLatestCaTreeValidationRun(tx, ta)
+                                        .map(validationRun -> Stream.of(ValidationRunResource.of(validationRun,
+                                                vr -> validationRunStore.getObjectCount(tx, vr),
+                                                messageSource, locale)))
+                                        .orElse(Stream.empty()))
+                                .collect(Collectors.toList())
+                )));
     }
 
     @GetMapping(path = "/{id}")
     public ResponseEntity<ApiResponse<ValidationRunResource>> get(@PathVariable long id, Locale locale) {
-        ValidationRun validationRun = validationRunRepository.get(ValidationRun.class, id);
-        return ResponseEntity.ok(ApiResponse.data(ValidationRunResource.of(validationRun, messageSource, locale)));
+        return lmdb.readTx(tx ->
+                validationRunStore.get(tx, ValidationRun.class, id)
+                        .map(validationRun ->
+                                ResponseEntity.ok(ApiResponse.data(ValidationRunResource.of(validationRun,
+                                        vr -> validationRunStore.getObjectCount(tx, vr), messageSource, locale))))
+                        .orElse(ResponseEntity.notFound().build()));
     }
 }

@@ -43,32 +43,37 @@ import net.ripe.rpki.commons.validation.ValidationStatus;
 import net.ripe.rpki.commons.validation.ValidationString;
 import net.ripe.rpki.commons.validation.objectvalidators.CertificateRepositoryObjectValidationContext;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
-import net.ripe.rpki.validator3.domain.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
-import net.ripe.rpki.validator3.domain.RpkiObject;
-import net.ripe.rpki.validator3.domain.RpkiObjects;
-import net.ripe.rpki.validator3.domain.RpkiRepositories;
-import net.ripe.rpki.validator3.domain.RpkiRepository;
-import net.ripe.rpki.validator3.domain.Settings;
-import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.TrustAnchors;
-import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
-import net.ripe.rpki.validator3.domain.ValidationRuns;
+import net.ripe.rpki.validator3.storage.data.Key;
+import net.ripe.rpki.validator3.storage.data.Ref;
+import net.ripe.rpki.validator3.storage.data.RpkiObject;
+import net.ripe.rpki.validator3.storage.data.RpkiRepository;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
+import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
+import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
+import net.ripe.rpki.validator3.storage.stores.SettingsStore;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
+import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
+import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.jooq.lambda.Unchecked;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.EntityManager;
-import javax.persistence.FlushModeType;
-import javax.transaction.Transactional;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_CRL_FOUND;
@@ -78,39 +83,59 @@ import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_MANIFE
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_RPKI_REPOSITORY_PENDING;
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_TRUST_ANCHOR_CERTIFICATE_AVAILABLE;
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_TRUST_ANCHOR_CERTIFICATE_RRDP_NOTIFY_URI_OR_REPOSITORY_URI_PRESENT;
+import static net.ripe.rpki.validator3.storage.data.RpkiRepository.Type.RRDP;
+import static net.ripe.rpki.validator3.storage.data.RpkiRepository.Type.RSYNC;
 
 @Service
 @Slf4j
 public class CertificateTreeValidationService {
     private static final ValidationOptions VALIDATION_OPTIONS = new ValidationOptions();
 
-    @Autowired
-    private EntityManager entityManager;
-    @Autowired
-    private RpkiObjects rpkiObjects;
-    @Autowired
-    private TrustAnchors trustAnchors;
-    @Autowired
-    private RpkiRepositories rpkiRepositories;
-    @Autowired
-    private ValidationRuns validationRuns;
-    @Autowired
-    private Settings settings;
-    @Autowired
-    private ValidatedRpkiObjects validatedRpkiObjects;
-    @Autowired
-    private ValidationScheduler validationScheduler;
+    private final RpkiObjectStore rpkiObjectStore;
+    private final RpkiRepositoryStore rpkiRepositoryStore;
+    private final SettingsStore settingsStore;
+    private final ValidationScheduler validationScheduler;
+    private final ValidationRunStore validationRunStore;
+    private final TrustAnchorStore trustAnchorStore;
+    private final Lmdb lmdb;
+    private final ValidatedRpkiObjects validatedRpkiObjects;
 
-    @Transactional(Transactional.TxType.REQUIRED)
+    @Autowired
+    public CertificateTreeValidationService(RpkiObjectStore rpkiObjectStore,
+                                            RpkiRepositoryStore rpkiRepositoryStore,
+                                            SettingsStore settingsStore,
+                                            ValidationScheduler validationScheduler,
+                                            ValidationRunStore validationRunStore,
+                                            TrustAnchorStore trustAnchorStore,
+                                            ValidatedRpkiObjects validatedRpkiObjects,
+                                            Lmdb lmdb) {
+        this.rpkiObjectStore = rpkiObjectStore;
+        this.rpkiRepositoryStore = rpkiRepositoryStore;
+        this.settingsStore = settingsStore;
+        this.validationScheduler = validationScheduler;
+        this.validationRunStore = validationRunStore;
+        this.trustAnchorStore = trustAnchorStore;
+        this.validatedRpkiObjects = validatedRpkiObjects;
+        this.lmdb = lmdb;
+    }
+
     public void validate(long trustAnchorId) {
-        Map<URI, RpkiRepository> registeredRepositories = new HashMap<>();
-        entityManager.setFlushMode(FlushModeType.COMMIT);
+        Optional<TrustAnchor> maybeTrustAnchor = lmdb.readTx(tx -> trustAnchorStore.get(tx, Key.of(trustAnchorId)));
+        if (!maybeTrustAnchor.isPresent()) {
+            log.error("Couldn't find trust anchor {}", trustAnchorId);
+            return;
+        }
+        validateTa(maybeTrustAnchor.get());
+    }
 
-        TrustAnchor trustAnchor = trustAnchors.get(trustAnchorId);
+    private void validateTa(TrustAnchor trustAnchor) {
         log.info("Starting tree validation for {}", trustAnchor);
+        long begin = System.currentTimeMillis();
 
-        CertificateTreeValidationRun validationRun = new CertificateTreeValidationRun(trustAnchor);
-        validationRuns.add(validationRun);
+        final Map<URI, RpkiRepository> registeredRepositories = createRegisteredRepositoryMap(trustAnchor);
+
+        final Ref<TrustAnchor> trustAnchorRef = lmdb.readTx(tx -> trustAnchorStore.makeRef(tx, trustAnchor.key()));
+        final CertificateTreeValidationRun validationRun = new CertificateTreeValidationRun(trustAnchorRef);
 
         String trustAnchorLocation = trustAnchor.getLocations().get(0);
         ValidationResult validationResult = ValidationResult.withLocation(trustAnchorLocation);
@@ -123,8 +148,8 @@ public class CertificateTreeValidationService {
             }
 
             CertificateRepositoryObjectValidationContext context = new CertificateRepositoryObjectValidationContext(
-                URI.create(trustAnchorLocation),
-                certificate
+                    URI.create(trustAnchorLocation),
+                    certificate
             );
 
             certificate.validate(trustAnchorLocation, context, null, null, VALIDATION_OPTIONS, validationResult);
@@ -138,26 +163,34 @@ public class CertificateTreeValidationService {
                 return;
             }
 
-            validationRun.getValidatedObjects().addAll(
-                validateCertificateAuthority(trustAnchor, registeredRepositories, context, validationResult)
-            );
-
-            entityManager.setFlushMode(FlushModeType.AUTO);
-
-            if (isValidationRunCompleted(validationResult)) {
-                trustAnchor.markInitialCertificateTreeValidationRunCompleted();
-                if (!settings.isInitialValidationRunCompleted() && trustAnchors.allInitialCertificateTreeValidationRunsCompleted()) {
-                    settings.markInitialValidationRunCompleted();
-                    log.info("All trust anchors have completed their initial certificate tree validation run, validator is now ready");
+            final List<Key> rpkiObjectsKeys = validateCertificateAuthority(trustAnchor, registeredRepositories, context, validationResult);
+            if (rpkiObjectsKeys.isEmpty()) {
+                if (isValidationRunCompleted(validationResult)) {
+                    log.info("No associated objects, validation run: {}, validation result: {}", validationRun.key(), validationResult);
                 }
-            } else {
-                log.info("Tree validation INCOMPLETE for {}  ", trustAnchor.getName());
             }
+            lmdb.writeTx0(tx -> {
+                validationRunStore.add(tx, validationRun);
+                Long t = Time.timed(() -> rpkiObjectsKeys.forEach(key -> validationRunStore.associateRpkiObjectKey(tx, validationRun, key)));
+                log.info("Associated {} objects with the validation run {} in {}ms", rpkiObjectsKeys.size(), validationRun.key(), t);
 
-            validatedRpkiObjects.update(trustAnchor, validationRun.getValidatedObjects());
+                if (isValidationRunCompleted(validationResult)) {
+                    trustAnchor.markInitialCertificateTreeValidationRunCompleted();
+                    trustAnchorStore.update(tx, trustAnchor);
+                    if (!settingsStore.isInitialValidationRunCompleted(tx) && trustAnchorStore.allInitialCertificateTreeValidationRunsCompleted(tx)) {
+                        settingsStore.markInitialValidationRunCompleted(tx);
+                        log.info("All trust anchors have completed their initial certificate tree validation run, validator is now ready");
+                    }
+                }
+            });
+            if (!rpkiObjectsKeys.isEmpty()) {
+                lmdb.readTx0(tx -> validatedRpkiObjects.updateByKey(tx, trustAnchorRef, rpkiObjectsKeys));
+            }
         } finally {
             validationRun.completeWith(validationResult);
-            log.info("Tree validation {} for {}", validationRun.getStatus().toString().toLowerCase(), trustAnchor);
+            lmdb.writeTx0(tx -> validationRunStore.update(tx, validationRun));
+            long end = System.currentTimeMillis();
+            log.info("Tree validation {} for {} in {}ms", validationRun.getStatus().toString().toLowerCase(), trustAnchor.getName(), (end - begin));
         }
     }
 
@@ -166,11 +199,11 @@ public class CertificateTreeValidationService {
                 .noneMatch(check -> check.getStatus() != ValidationStatus.PASSED && VALIDATOR_RPKI_REPOSITORY_PENDING.equals(check.getKey()));
     }
 
-    private List<RpkiObject> validateCertificateAuthority(TrustAnchor trustAnchor,
+    private List<Key> validateCertificateAuthority(TrustAnchor trustAnchor,
                                                           Map<URI, RpkiRepository> registeredRepositories,
                                                           CertificateRepositoryObjectValidationContext context,
                                                           ValidationResult validationResult) {
-        final List<RpkiObject> validatedObjects = new ArrayList<>();
+        final List<Key> validatedObjects = new ArrayList<>();
 
         ValidationLocation certificateLocation = validationResult.getCurrentLocation();
         ValidationResult temporary = ValidationResult.withLocation(certificateLocation);
@@ -186,7 +219,8 @@ public class CertificateTreeValidationService {
             URI manifestUri = certificate.getManifestUri();
             temporary.setLocation(new ValidationLocation(manifestUri));
 
-            Optional<RpkiObject> manifestObject = rpkiObjects.findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type.MFT, context.getSubjectKeyIdentifier());
+            Optional<RpkiObject> manifestObject = lmdb.readTx(tx -> rpkiObjectStore.findLatestMftByAKI(tx, context.getSubjectKeyIdentifier()));
+
             if (!manifestObject.isPresent()) {
                 if (rpkiRepository.getStatus() == RpkiRepository.Status.FAILED) {
                     temporary.error(ValidationString.VALIDATOR_NO_MANIFEST_REPOSITORY_FAILED, rpkiRepository.getLocationUri());
@@ -195,7 +229,8 @@ public class CertificateTreeValidationService {
                 }
             }
 
-            Optional<ManifestCms> maybeManifest = manifestObject.flatMap(x -> rpkiObjects.findCertificateRepositoryObject(x.getId(), ManifestCms.class, temporary));
+            Optional<ManifestCms> maybeManifest = lmdb.readTx(tx -> manifestObject.flatMap(x ->
+                    rpkiObjectStore.findCertificateRepositoryObject(tx, x.key(), ManifestCms.class, temporary)));
 
             temporary.rejectIfTrue(manifestObject.isPresent() &&
                             rpkiRepository.getStatus() == RpkiRepository.Status.FAILED &&
@@ -209,8 +244,8 @@ public class CertificateTreeValidationService {
 
             final ManifestCms manifest = maybeManifest.get();
             List<Map.Entry<String, byte[]>> crlEntries = manifest.getFiles().entrySet().stream()
-                .filter(entry -> RepositoryObjectType.parse(entry.getKey()) == RepositoryObjectType.Crl)
-                .collect(toList());
+                    .filter(entry -> RepositoryObjectType.parse(entry.getKey()) == RepositoryObjectType.Crl)
+                    .collect(toList());
             temporary.rejectIfFalse(crlEntries.size() == 1, VALIDATOR_MANIFEST_CONTAINS_ONE_CRL_ENTRY, String.valueOf(crlEntries.size()));
             if (temporary.hasFailureForCurrentLocation()) {
                 return validatedObjects;
@@ -219,14 +254,14 @@ public class CertificateTreeValidationService {
             Map.Entry<String, byte[]> crlEntry = crlEntries.get(0);
             URI crlUri = manifestUri.resolve(crlEntry.getKey());
 
-            Optional<RpkiObject> crlObject = rpkiObjects.findBySha256(crlEntry.getValue());
+            Optional<RpkiObject> crlObject = lmdb.readTx(tx -> rpkiObjectStore.findBySha256(tx, crlEntry.getValue()));
             temporary.rejectIfFalse(crlObject.isPresent(), VALIDATOR_CRL_FOUND, crlUri.toASCIIString());
             if (temporary.hasFailureForCurrentLocation()) {
                 return validatedObjects;
             }
 
             temporary.setLocation(new ValidationLocation(crlUri));
-            Optional<X509Crl> crl = crlObject.flatMap(x -> rpkiObjects.findCertificateRepositoryObject(x.getId(), X509Crl.class, temporary));
+            Optional<X509Crl> crl = crlObject.flatMap(x -> lmdb.readTx(tx -> rpkiObjectStore.findCertificateRepositoryObject(tx, x.key(), X509Crl.class, temporary)));
             if (temporary.hasFailureForCurrentLocation()) {
                 return validatedObjects;
             }
@@ -241,80 +276,116 @@ public class CertificateTreeValidationService {
             if (temporary.hasFailureForCurrentLocation()) {
                 return validatedObjects;
             }
-            validatedObjects.add(manifestObject.get());
+            validatedObjects.add(manifestObject.get().key());
 
-            Map<URI, RpkiObject> manifestEntries = retrieveManifestEntries(manifest, manifestUri, temporary);
+            List<CertificateRepositoryObjectValidationContext> objectStream = lmdb.readTx(tx ->
+                    retrieveManifestEntries(tx, manifest, manifestUri, temporary)
+                            .entrySet().stream().map(e -> {
+                        URI location = e.getKey();
+                        RpkiObject rpkiObject = e.getValue();
+                        temporary.setLocation(new ValidationLocation(location));
 
-            manifestEntries.forEach((location, obj) -> {
-                temporary.setLocation(new ValidationLocation(location));
+                        Optional<CertificateRepositoryObject> maybeCertificateRepositoryObject =
+                                rpkiObjectStore.findCertificateRepositoryObject(tx, rpkiObject.key(), CertificateRepositoryObject.class, temporary);
 
-                Optional<CertificateRepositoryObject> maybeCertificateRepositoryObject = rpkiObjects.findCertificateRepositoryObject(obj.getId(), CertificateRepositoryObject.class, temporary);
-                if (temporary.hasFailureForCurrentLocation()) {
-                    return;
-                }
+                        if (!temporary.hasFailureForCurrentLocation()) {
+                            return maybeCertificateRepositoryObject.flatMap(certificateRepositoryObject -> {
+                                certificateRepositoryObject.validate(location.toASCIIString(), context, crl.get(), crlUri, VALIDATION_OPTIONS, temporary);
 
-                maybeCertificateRepositoryObject.ifPresent(certificateRepositoryObject -> {
-                    certificateRepositoryObject.validate(location.toASCIIString(), context, crl.get(), crlUri, VALIDATION_OPTIONS, temporary);
+                                if (!temporary.hasFailureForCurrentLocation()) {
+                                    validatedObjects.add(rpkiObject.key());
+                                }
 
-                    if (!temporary.hasFailureForCurrentLocation()) {
-                        validatedObjects.add(obj);
-                    }
+                                if (certificateRepositoryObject instanceof X509ResourceCertificate
+                                        && ((X509ResourceCertificate) certificateRepositoryObject).isCa()
+                                        && !temporary.hasFailureForCurrentLocation()) {
 
-                    if (certificateRepositoryObject instanceof X509ResourceCertificate
-                        && ((X509ResourceCertificate) certificateRepositoryObject).isCa()
-                        && !temporary.hasFailureForCurrentLocation()) {
+                                    return Optional.of(context.createChildContext(location, (X509ResourceCertificate) certificateRepositoryObject));
+                                }
+                                return Optional.empty();
+                            });
+                        }
+                        return Optional.<CertificateRepositoryObjectValidationContext>empty();
+                    })
+                            .filter(Optional::isPresent)
+                            .map(Optional::get)
+                            .collect(Collectors.toList()));
 
-                        CertificateRepositoryObjectValidationContext childContext = context.createChildContext(location, (X509ResourceCertificate) certificateRepositoryObject);
-                        validatedObjects.addAll(validateCertificateAuthority(trustAnchor, registeredRepositories, childContext, temporary));
-                    }
-                });
-            });
+            objectStream
+                    .parallelStream()
+                    .map(childContext -> validateCertificateAuthority(trustAnchor, registeredRepositories, childContext, temporary))
+                    .forEachOrdered(validatedObjects::addAll);
+
         } catch (Exception e) {
-            log.debug("e", e);
-            validationResult.error(ErrorCodes.UNHANDLED_EXCEPTION, e.toString(), ExceptionUtils.getStackTrace(e));
+            synchronized (this) {
+                validationResult.error(ErrorCodes.UNHANDLED_EXCEPTION, e.toString(), ExceptionUtils.getStackTrace(e));
+            }
         } finally {
-            validationResult.addAll(temporary);
+            synchronized (this) {
+                validationResult.addAll(temporary);
+            }
         }
 
         return validatedObjects;
     }
 
+    // Use async as a trick to perform writing Tx while being inside of a reading Tx
+    private ExecutorService async = Executors.newSingleThreadExecutor();
+
     private RpkiRepository registerRepository(TrustAnchor trustAnchor,
                                               Map<URI, RpkiRepository> registeredRepositories,
-                                              CertificateRepositoryObjectValidationContext context) {
+                                              CertificateRepositoryObjectValidationContext context) throws Exception {
+
         if (context.getRpkiNotifyURI() != null) {
-            RpkiRepository rpkiRepository = registeredRepositories.computeIfAbsent(context.getRpkiNotifyURI(), (uri) -> rpkiRepositories.register(
-                    trustAnchor,
-                    uri.toASCIIString(),
-                    RpkiRepository.Type.RRDP
-            ));
-            validationScheduler.scheduleRRDPValidation(rpkiRepository);
-            return rpkiRepository;
-        } else {
-            return registeredRepositories.computeIfAbsent(context.getRepositoryURI(), (uri) -> rpkiRepositories.register(
-                trustAnchor,
-                uri.toASCIIString(),
-                RpkiRepository.Type.RSYNC
-            ));
+            return registeredRepositories.computeIfAbsent(
+                    context.getRpkiNotifyURI(),
+                    Unchecked.function(uri ->
+                            async.submit(() ->
+                                    lmdb.writeTx(tx -> {
+                                        final Ref<TrustAnchor> trustAnchorRef = trustAnchorStore.makeRef(tx, trustAnchor.key());
+                                        RpkiRepository r = rpkiRepositoryStore.register(tx, trustAnchorRef, uri.toASCIIString(), RRDP);
+                                        tx.afterCommit(() -> validationScheduler.addRpkiRepository(r));
+                                        return r;
+                                    })).get()));
         }
+        return registeredRepositories.computeIfAbsent(
+                context.getRepositoryURI(),
+                Unchecked.function(uri ->
+                        async.submit(() ->
+                                lmdb.writeTx(tx -> {
+                                    final Ref<TrustAnchor> trustAnchorRef = trustAnchorStore.makeRef(tx, trustAnchor.key());
+                                    return rpkiRepositoryStore.register(tx, trustAnchorRef, uri.toASCIIString(), RSYNC);
+                                })).get()));
     }
 
-    private Map<URI, RpkiObject> retrieveManifestEntries(ManifestCms manifest, URI manifestUri, ValidationResult validationResult) {
+    private Map<URI, RpkiRepository> createRegisteredRepositoryMap(TrustAnchor trustAnchor) {
+        final Map<URI, RpkiRepository> registeredRepositories = new ConcurrentHashMap<>();
+        long t = Time.timed(() -> lmdb.readTx(tx -> rpkiRepositoryStore.findByTrustAnchor(tx, trustAnchor.key()))
+                .forEach(r -> {
+                    if (r.getRrdpNotifyUri() != null) {
+                        registeredRepositories.put(URI.create(r.getRrdpNotifyUri()), r);
+                    } else
+                        registeredRepositories.put(URI.create(r.getLocationUri()), r);
+                }));
+        log.info("Pre-loaded {} repositories in {}ms", registeredRepositories.size(), t);
+        return registeredRepositories;
+    }
+
+    private Map<URI, RpkiObject> retrieveManifestEntries(Tx.Read tx, ManifestCms manifest, URI manifestUri, ValidationResult validationResult) {
         Map<URI, RpkiObject> result = new LinkedHashMap<>();
         for (Map.Entry<String, byte[]> entry : manifest.getFiles().entrySet()) {
             URI location = manifestUri.resolve(entry.getKey());
             validationResult.setLocation(new ValidationLocation(location));
 
-            Optional<RpkiObject> object = rpkiObjects.findBySha256(entry.getValue());
+            Optional<RpkiObject> object = rpkiObjectStore.findBySha256(tx, entry.getValue());
             validationResult.rejectIfFalse(object.isPresent(), VALIDATOR_MANIFEST_ENTRY_FOUND, manifestUri.toASCIIString());
 
             object.ifPresent(obj -> {
                 boolean hashMatches = Arrays.equals(obj.getSha256(), entry.getValue());
                 validationResult.rejectIfFalse(hashMatches, VALIDATOR_MANIFEST_ENTRY_HASH_MATCHES, entry.getKey());
-                if (!hashMatches) {
-                    return;
+                if (hashMatches) {
+                    result.put(location, obj);
                 }
-                result.put(location, obj);
             });
         }
         return result;

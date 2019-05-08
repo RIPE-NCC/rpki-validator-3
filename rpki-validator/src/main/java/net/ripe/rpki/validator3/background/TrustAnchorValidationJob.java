@@ -31,10 +31,16 @@ package net.ripe.rpki.validator3.background;
 
 import lombok.Getter;
 import lombok.Setter;
-import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.domain.validation.TrustAnchorValidationService;
-import org.quartz.*;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
+import org.quartz.DisallowConcurrentExecution;
+import org.quartz.Job;
+import org.quartz.JobBuilder;
+import org.quartz.JobDetail;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+import org.quartz.JobKey;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @DisallowConcurrentExecution
@@ -57,11 +63,12 @@ public class TrustAnchorValidationJob implements Job {
     static JobDetail buildJob(TrustAnchor trustAnchor) {
         return JobBuilder.newJob(TrustAnchorValidationJob.class)
             .withIdentity(getJobKey(trustAnchor))
-            .usingJobData(TRUST_ANCHOR_ID_KEY, trustAnchor.getId())
+            .usingJobData(TRUST_ANCHOR_ID_KEY, trustAnchor.key().asLong())
             .build();
     }
 
     static JobKey getJobKey(TrustAnchor trustAnchor) {
-        return new JobKey(String.format("%s#%s#%d", TrustAnchorValidationRun.TYPE, trustAnchor.getName(), trustAnchor.getId()));
+        return new JobKey(String.format("%s#%s#%d", TrustAnchorValidationRun.TYPE,
+                trustAnchor.getName(), trustAnchor.key().asLong()));
     }
 }

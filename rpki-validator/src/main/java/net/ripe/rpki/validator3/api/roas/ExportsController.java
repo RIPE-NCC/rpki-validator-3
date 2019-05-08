@@ -33,8 +33,9 @@ import au.com.bytecode.opencsv.CSVWriter;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.domain.Settings;
-import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
+import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
+import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
+import net.ripe.rpki.validator3.storage.stores.SettingsStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -60,19 +61,22 @@ public class ExportsController {
 
     private final ValidatedRpkiObjects validatedRpkiObjects;
 
-    private final Settings settings;
+    private final SettingsStore settings;
+    private final Lmdb lmdb;
 
     @Autowired
-    public ExportsController(ValidatedRpkiObjects validatedRpkiObjects, Settings settings) {
+    public ExportsController(ValidatedRpkiObjects validatedRpkiObjects, SettingsStore settings, Lmdb lmdb) {
         this.validatedRpkiObjects = validatedRpkiObjects;
         this.settings = settings;
+        this.lmdb = lmdb;
     }
 
     @GetMapping(path = "/api/export.json", produces = {JSON, APPLICATION_JSON_VALUE})
     public JsonExport exportJson(HttpServletResponse response) {
         response.setContentType(JSON);
 
-        if (!settings.isInitialValidationRunCompleted()) {
+
+        if (!lmdb.readTx(settings::isInitialValidationRunCompleted)) {
             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
             return null;
         }
@@ -95,7 +99,7 @@ public class ExportsController {
     public void exportCsv(HttpServletResponse response) throws IOException {
         response.setContentType(CSV);
 
-        if (!settings.isInitialValidationRunCompleted()) {
+        if (!lmdb.readTx(settings::isInitialValidationRunCompleted)) {
             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
             return;
         }

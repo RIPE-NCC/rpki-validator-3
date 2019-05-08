@@ -38,14 +38,14 @@ import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
 import net.ripe.rpki.validator3.api.util.BuildInformation;
 import net.ripe.rpki.validator3.api.util.Dates;
 import net.ripe.rpki.validator3.background.BackgroundJobs;
-import net.ripe.rpki.validator3.domain.TrustAnchors;
+import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.persistence.EntityManager;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -57,13 +57,10 @@ import java.util.stream.Collectors;
 public class HealthController {
 
     @Autowired
-    private TrustAnchors trustAnchorRepository;
+    private TrustAnchorStore trustAnchors;
 
     @Autowired
     private BgpPreviewService bgpPreviewService;
-
-    @Autowired
-    private EntityManager entityManager;
 
     @Autowired
     private BackgroundJobs backgroundJobs;
@@ -71,11 +68,13 @@ public class HealthController {
     @Autowired
     private BuildInformation buildInformation;
 
+    @Autowired
+    private Lmdb lmdb;
 
     @GetMapping
     public ResponseEntity<ApiResponse<Health>> health() {
 
-        final Map<String, Boolean> trustAnchorReady = trustAnchorRepository.getStatuses().stream().
+        final Map<String, Boolean> trustAnchorReady = lmdb.readTx(tx -> trustAnchors.getStatuses(tx)).stream().
                 collect(Collectors.toMap(
                         TaStatus::getTaName,
                         TaStatus::isCompletedValidation)
@@ -95,7 +94,7 @@ public class HealthController {
     }
 
     @GetMapping(path = "/backgrounds")
-    public ResponseEntity<ApiResponse<Map<String, BackgroundJobs.Execution>>> check(){
+    public ResponseEntity<ApiResponse<Map<String, BackgroundJobs.Execution>>> check() {
         return ResponseEntity.ok(ApiResponse.<Map<String, BackgroundJobs.Execution>>builder()
                 .data(backgroundJobs.getStat())
                 .build());
@@ -103,28 +102,29 @@ public class HealthController {
 
     @GetMapping(path = "/all-ta-completed")
     public ResponseEntity<ApiResponse<String>> statuses() {
-        List<TaStatus> statuses = trustAnchorRepository.getStatuses();
+        List<TaStatus> statuses = lmdb.readTx(tx -> trustAnchors.getStatuses(tx));
 
-        Boolean allComplete = statuses.stream().filter(TaStatus::isCompletedValidation).count() == 5;
+        Boolean allComplete = statuses.stream().filter(TaStatus::isCompletedValidation).count() >= 5;
 
         Instant twoHoursAgo = Instant.now().minusSeconds(7200L);
-        Boolean completedRecently = statuses.stream().map(s -> Dates.parseUTC(s.getLastUpdated()))
-                .sorted().findFirst().map(i -> i.isAfter(twoHoursAgo)).orElse(false);
+        Boolean completedRecently = statuses.stream()
+                .map(s -> Dates.parseUTC(s.getLastUpdated()))
+                .sorted()
+                .findFirst()
+                .map(i -> i.isAfter(twoHoursAgo)).orElse(false);
 
-        if(allComplete && completedRecently)
+        if (allComplete && completedRecently)
             return ResponseEntity.ok(ApiResponse.<String>builder()
-                .data("OK")
-                .build());
+                    .data("OK")
+                    .build());
         else
             return ResponseEntity.noContent().build();
-
     }
 
 
     private String databaseStatus() {
         try {
-            entityManager.createNativeQuery("SELECT 1").getSingleResult();
-            return "OK";
+            return lmdb.status();
         } catch (Exception e) {
             return e.getMessage();
         }

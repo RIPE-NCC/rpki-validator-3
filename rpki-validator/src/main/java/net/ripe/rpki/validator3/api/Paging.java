@@ -32,9 +32,9 @@ package net.ripe.rpki.validator3.api;
 import lombok.Value;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.function.BiFunction;
+import java.util.stream.Stream;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 
@@ -42,11 +42,7 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 public class Paging {
 
     final Long startFrom;
-    final Long pageSize;;
-
-    public boolean isIndefinite() {
-        return startFrom == null || pageSize == null;
-    }
+    final Long pageSize;
 
     public static <T> Links links(long startFrom, long pageSize, long totalSize, BiFunction<Long, Long, T> linkConstructor) {
         long previous = startFrom - pageSize;
@@ -68,5 +64,10 @@ public class Paging {
                 linkTo(linkConstructor.apply(realTotal, pageSize)).withRel(Link.REL_LAST)
         );
     }
+
+    public <T> Stream<T> apply(Stream<T> stream) {
+        return stream.skip(getStartFrom()).limit(getPageSize());
+    }
+
 
 }

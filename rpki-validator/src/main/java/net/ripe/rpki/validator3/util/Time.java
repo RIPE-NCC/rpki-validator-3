@@ -40,4 +40,11 @@ public class Time {
         long end = System.currentTimeMillis();
         return Pair.of(t, end - begin);
     }
+
+    public static Long timed(Runnable s) {
+        long begin = System.currentTimeMillis();
+        s.run();
+        long end = System.currentTimeMillis();
+        return end - begin;
+    }
 }
