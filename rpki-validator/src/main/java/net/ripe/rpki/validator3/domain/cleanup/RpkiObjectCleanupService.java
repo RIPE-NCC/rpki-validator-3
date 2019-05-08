@@ -70,6 +70,7 @@ public class RpkiObjectCleanupService {
     public RpkiObjectCleanupService(@Value("${rpki.validator.rpki.object.cleanup.grace.duration}") String cleanupGraceDuration,
                                     Lmdb lmdb) {
         this.cleanupGraceDuration = Duration.parse(cleanupGraceDuration);
+        log.info("Configured to remove objects older than {}", cleanupGraceDuration);
         this.lmdb = lmdb;
     }
 
@@ -138,7 +139,7 @@ public class RpkiObjectCleanupService {
 
     private void traceManifest(Tx.Read tx, Instant now, String name, RpkiObject manifest, Set<Key> markThem) {
         rpkiObjects.findCertificateRepositoryObject(tx,
-                manifest.getId(), ManifestCms.class, ValidationResult.withLocation(name))
+                manifest.key(), ManifestCms.class, ValidationResult.withLocation(name))
                 .ifPresent(manifestCms ->
                         rpkiObjects.findObjectsInManifest(tx, manifestCms)
                                 .forEach((entry, rpkiObject) ->
