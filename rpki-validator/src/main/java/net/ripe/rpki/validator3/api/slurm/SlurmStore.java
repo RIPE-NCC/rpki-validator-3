@@ -36,9 +36,6 @@ import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 import net.ripe.rpki.validator3.api.slurm.dtos.SlurmExt;
 import net.ripe.rpki.validator3.storage.encoding.GsonCoder;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -57,7 +54,6 @@ import java.util.stream.Stream;
 /**
  * Always store SLURM spec as a file.
  */
-@Component
 @Slf4j
 public class SlurmStore {
 
@@ -70,8 +66,7 @@ public class SlurmStore {
     @Getter
     private final AtomicLong idSeq = new AtomicLong(0);
 
-    @Autowired
-    public SlurmStore(@Value("${rpki.validator.data.path}") String path) {
+    public SlurmStore(String path) {
         final File slurmFile = new File(path, "slurm.json");
         this.slurmFileName = slurmFile.getAbsolutePath();
         this.gson = GsonCoder.getPrettyGson();
