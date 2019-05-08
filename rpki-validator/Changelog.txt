@@ -1,3 +1,9 @@
+
+* Mon Apr 8 2019 Adianto Wibisono <awibisono@@ripe.net> - 3.0
+- Avoid unique constraint violation due to redundant background jobs 
+- Shorter DB clean up grace period default configuration: from 6 days to 3 days   
+- Immediate prefetch on uploaded Tals, to shorten bootstrap for the first time. 
+
 * Tue Mar 19 2019 Mikhail Puzanov <mpuzanov@ripe.net> - 3.0
 - fixed issue with very slow initial sync (https://github.com/RIPE-NCC/rpki-validator-3/issues/77)
 - fixed issues with too many messages in log from API logger (https://github.com/RIPE-NCC/rpki-validator-3/issues/75)

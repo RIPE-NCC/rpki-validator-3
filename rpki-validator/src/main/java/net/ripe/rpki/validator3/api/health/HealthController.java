@@ -36,6 +36,7 @@ import net.ripe.rpki.validator3.api.bgp.BgpPreviewService;
 import net.ripe.rpki.validator3.api.bgp.BgpRisDump;
 import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
 import net.ripe.rpki.validator3.api.util.BuildInformation;
+import net.ripe.rpki.validator3.api.util.Dates;
 import net.ripe.rpki.validator3.background.BackgroundJobs;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
@@ -45,6 +46,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -91,10 +94,31 @@ public class HealthController {
     }
 
     @GetMapping(path = "/backgrounds")
-    public ResponseEntity<ApiResponse<Map<String, BackgroundJobs.Execution>>> check(){
+    public ResponseEntity<ApiResponse<Map<String, BackgroundJobs.Execution>>> check() {
         return ResponseEntity.ok(ApiResponse.<Map<String, BackgroundJobs.Execution>>builder()
                 .data(backgroundJobs.getStat())
                 .build());
+    }
+
+    @GetMapping(path = "/all-ta-completed")
+    public ResponseEntity<ApiResponse<String>> statuses() {
+        List<TaStatus> statuses = lmdb.readTx(tx -> trustAnchors.getStatuses(tx));
+
+        Boolean allComplete = statuses.stream().filter(TaStatus::isCompletedValidation).count() >= 5;
+
+        Instant twoHoursAgo = Instant.now().minusSeconds(7200L);
+        Boolean completedRecently = statuses.stream()
+                .map(s -> Dates.parseUTC(s.getLastUpdated()))
+                .sorted()
+                .findFirst()
+                .map(i -> i.isAfter(twoHoursAgo)).orElse(false);
+
+        if (allComplete && completedRecently)
+            return ResponseEntity.ok(ApiResponse.<String>builder()
+                    .data("OK")
+                    .build());
+        else
+            return ResponseEntity.noContent().build();
     }
 
 
