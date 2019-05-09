@@ -47,8 +47,10 @@ import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -93,8 +95,7 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
 
     @Autowired
     public LmdbRpkiObject(Lmdb lmdb) {
-        this.ixMap = lmdb.createSameSizeKeyIxMap(
-                SHA256_SIZE_IN_BYTES,
+        this.ixMap = lmdb.createIxMap(
                 RPKI_OBJECTS,
                 ImmutableMap.of(
                         BY_AKI_MFT_INDEX, this::akiMftKey,
