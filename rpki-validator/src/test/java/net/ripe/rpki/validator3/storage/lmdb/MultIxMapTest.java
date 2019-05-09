@@ -55,7 +55,7 @@ public class MultIxMapTest {
     @Before
     public void setUp() throws Exception {
         lmdb = LmdbTests.makeLmdb(tmp.newFolder().getAbsolutePath());
-        multIxMap = lmdb.createMultIxMap("test", CoderFactory.makeCoder());
+        multIxMap = lmdb.createMultIxMap("test", CoderFactory.makeCoder(String.class));
     }
 
     @Test

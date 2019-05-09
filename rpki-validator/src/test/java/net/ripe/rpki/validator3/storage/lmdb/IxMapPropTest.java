@@ -63,7 +63,7 @@ public class IxMapPropTest {
         lmdb = LmdbTests.makeLmdb(Files.temporaryFolder().getAbsolutePath());
         ixMap = lmdb.createIxMap("test",
                 ImmutableMap.of(LENGTH_INDEX, s -> Key.keys(intKey(s.length()))),
-                CoderFactory.makeCoder());
+                CoderFactory.makeCoder(String.class));
         lmdb.writeTx0(tx -> ixMap.clear(tx));
     }
 

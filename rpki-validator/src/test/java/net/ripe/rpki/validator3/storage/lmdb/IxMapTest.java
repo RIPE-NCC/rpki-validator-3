@@ -77,7 +77,7 @@ public class IxMapTest {
                 ImmutableMap.of(
                         LENGTH_INDEX, IxMapTest::stringLen,
                         PAIRS_INDEX, s -> charPairSet(s).stream().map(Key::of).collect(Collectors.toSet())),
-                CoderFactory.makeCoder());
+                CoderFactory.makeCoder(String.class));
     }
 
     @Test
