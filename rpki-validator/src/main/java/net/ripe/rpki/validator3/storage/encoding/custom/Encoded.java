@@ -75,7 +75,7 @@ public class Encoded {
         final int entryCount = content.size();
         bb.putInt(entryCount);
 
-        int currentOffset = 0;
+        int currentOffset = Integer.BYTES + entryCount * (Short.BYTES + Integer.BYTES);
         byte[][] bbytes = new byte[entryCount][];
         int i = 0;
         for (Map.Entry<Short, byte[]> e : content.entrySet()) {
