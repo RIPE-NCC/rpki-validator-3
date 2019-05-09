@@ -56,10 +56,6 @@ import java.util.Map;
 @Slf4j
 public class CoderFactory {
 
-    public static <T> Coder<T> makeCoder() {
-        return new FSTCoder<>();
-    }
-
     public static <T> Coder<T> makeCoder(Class<T> c) {
         final CustomCoder<T> cc = customCoder(c);
         if (cc == null) {
