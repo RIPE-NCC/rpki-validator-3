@@ -166,14 +166,9 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     @Override
     public Stream<byte[]> streamObjects(Tx.Read tx, RpkiObject.Type type) {
         final List<byte[]> objectBytes = new ArrayList<>();
-        ixMap.forEach(tx, (key, val) -> {
-            if (val != null) {
-                RpkiObject rpkiObject = ixMap.toValue(val);
-                if (type.equals(rpkiObject.getType())) {
-                    objectBytes.add(rpkiObject.getEncoded());
-                }
-            }
-        });
+        getPkByType(tx, type).forEach(pk ->
+                ixMap.get(tx, pk).ifPresent(ro ->
+                        objectBytes.add(ro.getEncoded())));
         return objectBytes.stream();
     }
 
