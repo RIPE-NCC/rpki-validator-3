@@ -352,7 +352,7 @@ public class RrdpServiceImpl implements RrdpService {
                         validationRunStore.associate(tx, validationRun, object);
                         return true;
                     } else {
-                        log.info("The object added is the same {}", object);
+                        log.debug("The object added is the same {}", object);
                     }
                 }
             } else {
@@ -369,7 +369,7 @@ public class RrdpServiceImpl implements RrdpService {
                 final RpkiObject object = maybeRpkiObject.right().value();
                 final Optional<RpkiObject> bySha256 = rpkiObjectStore.findBySha256(tx, Sha256.hash(content));
                 if (bySha256.isPresent()) {
-                    log.info("The object will not be added, there's one already existing {}", object);
+                    log.debug("The object will not be added, there's one already existing {}", object);
                 } else {
                     rpkiObjectStore.put(tx, object);
                     validationRunStore.associate(tx, validationRun, object);
