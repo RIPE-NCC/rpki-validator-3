@@ -196,10 +196,9 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
 
     public Optional<T> put(Tx.Write tx, Key primaryKey, T value) {
         checkKeyAndValue(primaryKey, value);
-        final ByteBuffer pkBuf = primaryKey.toByteBuffer();
         final Txn<ByteBuffer> txn = tx.txn();
         final Optional<T> oldValue = get(tx, primaryKey);
-        getMainDb().put(txn, pkBuf, coder.toBytes(value));
+        getMainDb().put(txn, primaryKey.toByteBuffer(), coder.toBytes(value));
         if (oldValue.isPresent()) {
             indexFunctions.forEach((n, idxFun) -> {
                 final Set<Key> oldIndexKeys = idxFun.apply(oldValue.get());
@@ -209,11 +208,11 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
                 final Dbi<ByteBuffer> index = getIdx(n);
                 oldIndexKeys.stream()
                         .filter(oik -> !indexKeys.contains(oik))
-                        .forEach(oik -> index.delete(txn, oik.toByteBuffer(), pkBuf));
+                        .forEach(oik -> index.delete(txn, oik.toByteBuffer(), primaryKey.toByteBuffer()));
 
                 indexKeys.stream()
                         .filter(ik -> !oldIndexKeys.contains(ik))
-                        .forEach(ik -> index.put(txn, ik.toByteBuffer(), pkBuf));
+                        .forEach(ik -> index.put(txn, ik.toByteBuffer(), primaryKey.toByteBuffer()));
             });
             return oldValue;
         } else {
@@ -222,7 +221,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
                         .filter(Objects::nonNull)
                         .collect(Collectors.toSet());
 
-                indexKeys.forEach(ik -> getIdx(n).put(txn, ik.toByteBuffer(), pkBuf));
+                indexKeys.forEach(ik -> getIdx(n).put(txn, ik.toByteBuffer(), primaryKey.toByteBuffer()));
             });
         }
         return Optional.empty();
@@ -239,21 +238,20 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
 
     public void delete(Tx.Write tx, Key primaryKey) {
         checkNotNull(primaryKey, "Key is null");
-        final ByteBuffer pkBuf = primaryKey.toByteBuffer();
         final Txn<ByteBuffer> txn = tx.txn();
         final Dbi<ByteBuffer> mainDb = getMainDb();
         if (indexFunctions.isEmpty()) {
-            mainDb.delete(txn, pkBuf);
+            mainDb.delete(txn, primaryKey.toByteBuffer());
         } else {
-            final ByteBuffer bb = mainDb.get(txn, pkBuf);
+            final ByteBuffer bb = mainDb.get(txn, primaryKey.toByteBuffer());
             if (bb != null) {
                 // TODO probably avoid deserialization, just store the
                 //  index keys next to the serialized value
                 final T value = coder.fromBytes(bb);
-                mainDb.delete(txn, pkBuf);
+                mainDb.delete(txn, primaryKey.toByteBuffer());
                 indexFunctions.forEach((n, idxFun) ->
                         idxFun.apply(value).forEach(ix ->
-                                getIdx(n).delete(txn, ix.toByteBuffer(), pkBuf)));
+                                getIdx(n).delete(txn, ix.toByteBuffer(), primaryKey.toByteBuffer())));
             }
         }
         try {
