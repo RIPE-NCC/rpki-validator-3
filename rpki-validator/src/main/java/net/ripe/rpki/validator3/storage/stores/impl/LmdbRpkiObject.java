@@ -105,10 +105,8 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     }
 
     @Override
-    public RpkiObject put(Tx.Write tx, RpkiObject o) {
-        o.setId(Key.of(o.getSha256()));
+    public void put(Tx.Write tx, RpkiObject o) {
         ixMap.put(tx, o.key(), o);
-        return o;
     }
 
     @Override
@@ -119,17 +117,17 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     @Override
     public <T extends CertificateRepositoryObject> Optional<T> findCertificateRepositoryObject(
             Tx.Read tx, Key sha256, Class<T> clazz, ValidationResult validationResult) {
-        return ixMap.get(tx, sha256).flatMap(o -> o.get(clazz, validationResult));
+        return get(tx, sha256).flatMap(o -> o.get(clazz, validationResult));
     }
 
     @Override
     public Optional<RpkiObject> get(Tx.Read tx, Key key) {
-        return findBySha256(tx, Bytes.toBytes(key.toByteBuffer()));
+        return ixMap.get(tx, key);
     }
 
     @Override
     public Optional<RpkiObject> findBySha256(Tx.Read tx, byte[] sha256) {
-        return ixMap.get(tx, Key.of(sha256));
+        return get(tx, Key.of(sha256));
     }
 
     @Override

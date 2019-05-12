@@ -45,7 +45,7 @@ import java.util.stream.Stream;
 public interface RpkiObjectStore extends GenericStore<RpkiObject> {
     Optional<RpkiObject> get(Tx.Read tx, Key key);
 
-    RpkiObject put(Tx.Write tx, RpkiObject rpkiObject);
+    void put(Tx.Write tx, RpkiObject rpkiObject);
 
     void remove(Tx.Write tx, RpkiObject o);
 

@@ -240,18 +240,19 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
         checkNotNull(primaryKey, "Key is null");
         final Txn<ByteBuffer> txn = tx.txn();
         final Dbi<ByteBuffer> mainDb = getMainDb();
+        final ByteBuffer pkBuf = primaryKey.toByteBuffer();
         if (indexFunctions.isEmpty()) {
-            mainDb.delete(txn, primaryKey.toByteBuffer());
+            mainDb.delete(txn, pkBuf);
         } else {
-            final ByteBuffer bb = mainDb.get(txn, primaryKey.toByteBuffer());
+            final ByteBuffer bb = mainDb.get(txn, pkBuf);
             if (bb != null) {
                 // TODO probably avoid deserialization, just store the
                 //  index keys next to the serialized value
                 final T value = coder.fromBytes(bb);
-                mainDb.delete(txn, primaryKey.toByteBuffer());
+                mainDb.delete(txn, pkBuf);
                 indexFunctions.forEach((n, idxFun) ->
                         idxFun.apply(value).forEach(ix ->
-                                getIdx(n).delete(txn, ix.toByteBuffer(), primaryKey.toByteBuffer())));
+                                getIdx(n).delete(txn, ix.toByteBuffer(), pkBuf)));
             }
         }
         try {
