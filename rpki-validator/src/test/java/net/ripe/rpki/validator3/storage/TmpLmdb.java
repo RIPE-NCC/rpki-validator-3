@@ -66,7 +66,7 @@ public class TmpLmdb extends Lmdb {
 
     private Env<ByteBuffer> open() {
         return create()
-                .setMapSize(1024 * 1024 * 1024L)
+                .setMapSize(8 * 1024 * 1024 * 1024L)
                 .setMaxDbs(100)
                 .open(mdb.toFile());
     }
