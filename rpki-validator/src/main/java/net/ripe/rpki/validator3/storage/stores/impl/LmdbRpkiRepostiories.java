@@ -71,7 +71,7 @@ import java.util.stream.Stream;
 public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> implements RpkiRepositoryStore {
 
     private static final String RPKI_REPOSITORIES = "rpki-repositories";
-    private static final String BY_URI = "by-uri";
+    private static final String BY_URI_PREFIX = "by-uri";
     private static final String BY_TA = "by-ta";
 
     private final IxMap<RpkiRepository> ixMap;
@@ -86,17 +86,22 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
         ixMap = lmdb.createIxMap(
                 RPKI_REPOSITORIES,
                 ImmutableMap.of(
-                        BY_URI, this::locationIndex,
+                        BY_URI_PREFIX, this::locationIndex,
                         BY_TA, r -> r.getTrustAnchors().stream().map(Ref::key).collect(Collectors.toSet())
                 ),
                 RpkiRepository.class
         );
     }
 
+    private Key uriToKey(String uri) {
+        return Key.of(uri.substring(0, Math.min(uri.length(), 100)));
+    }
+
     private Set<Key> locationIndex(RpkiRepository repository) {
         return Stream.of(repository.getRrdpNotifyUri(), repository.getRsyncRepositoryUri())
                 .filter(Objects::nonNull)
-                .map(Key::of)
+                // this is to avoid troubles with URLs that are too long and thus key is too long
+                .map(this::uriToKey)
                 .collect(Collectors.toSet());
     }
 
@@ -147,7 +152,10 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
 
     @Override
     public Optional<RpkiRepository> findByURI(Tx.Read tx, String uri) {
-        return ixMap.getByIndex(BY_URI, tx, Key.of(uri)).values().stream().findFirst();
+        return ixMap.getByIndex(BY_URI_PREFIX, tx, uriToKey(uri)).values()
+                .stream()
+                .filter(r -> uri.equals(r.getRrdpNotifyUri()) || uri.equals(r.getRsyncRepositoryUri()))
+                .findFirst();
     }
 
     @Override
