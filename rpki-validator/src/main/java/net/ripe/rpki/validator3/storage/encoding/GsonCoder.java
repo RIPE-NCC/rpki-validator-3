@@ -41,10 +41,8 @@ import com.google.gson.JsonSerializer;
 import lombok.AllArgsConstructor;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
-import net.ripe.rpki.validator3.storage.Bytes;
 
 import java.lang.reflect.Type;
-import java.nio.ByteBuffer;
 import java.util.Base64;
 import java.util.function.Function;
 
@@ -101,14 +99,14 @@ public class GsonCoder<T> implements Coder<T> {
     }
 
     @Override
-    public ByteBuffer toBytes(T t) {
+    public byte[] toBytes(T t) {
         String json = gson.toJson(t);
-        return Bytes.toDirectBuffer(json.getBytes(UTF_8));
+        return json.getBytes(UTF_8);
     }
 
     @Override
-    public T fromBytes(ByteBuffer bb) {
-        String json = new String(Bytes.toBytes(bb), UTF_8);
+    public T fromBytes(byte[] bb) {
+        String json = new String(bb, UTF_8);
         return gson.fromJson(json, class_);
     }
 

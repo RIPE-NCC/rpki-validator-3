@@ -30,9 +30,9 @@
 package net.ripe.rpki.validator3.storage.encoding.custom.validation;
 
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
+import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.encoding.custom.BaseCoder;
 import net.ripe.rpki.validator3.storage.encoding.custom.Coders;
-import net.ripe.rpki.validator3.storage.encoding.custom.CustomCoder;
 import net.ripe.rpki.validator3.storage.encoding.custom.Encoded;
 import net.ripe.rpki.validator3.storage.encoding.custom.Tags;
 
@@ -40,7 +40,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class ValidationCheckCoder implements CustomCoder<ValidationCheck> {
+public class ValidationCheckCoder implements Coder<ValidationCheck> {
 
     private final static short KEY_TAG = Tags.unique(111);
     private final static short STATUS_TAG = Tags.unique(112);

@@ -38,6 +38,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.lmdbjava.Dbi;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -302,6 +303,12 @@ public class IxMapTest {
         assertEquals(Sets.newHashSet(ka, kb), deleteKeys);
     }
 
+    @Test(expected = Dbi.BadValueSizeException.class)
+    public void testKeySize() {
+        final String s = randomString(new Random(), 2000);
+        lmdb.writeTx0(tx -> ixMap.put(tx, Key.of(s), s));
+    }
+
     @Test
     public void testReindex() {
         ixMap = lmdb.createIxMap("testReindex",
@@ -409,7 +416,10 @@ public class IxMapTest {
     }
 
     private String randomString(Random r) {
-        final int len = r.nextInt(50);
+        return randomString(r, r.nextInt(50));
+    }
+
+    private String randomString(Random r, int len) {
         StringBuilder s = new StringBuilder(len);
         for (int i = 0; i < len; i++) {
             s.append(r.nextInt(10));
@@ -417,7 +427,7 @@ public class IxMapTest {
         return s.toString();
     }
 
-    static Set<String> charPairSet(String s) {
+    private static Set<String> charPairSet(String s) {
         if (s.length() < 2) {
             return Collections.emptySet();
         }

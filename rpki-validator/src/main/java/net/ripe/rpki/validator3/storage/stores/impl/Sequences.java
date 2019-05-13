@@ -57,13 +57,13 @@ public class Sequences extends GenericStoreImpl<Long> {
                 ImmutableMap.of(),
                 new Coder<Long>() {
                     @Override
-                    public ByteBuffer toBytes(Long bigInteger) {
-                        return Bytes.toDirectBuffer(Longs.toByteArray(bigInteger));
+                    public byte[] toBytes(Long bigInteger) {
+                        return Longs.toByteArray(bigInteger);
                     }
 
                     @Override
-                    public Long fromBytes(ByteBuffer bb) {
-                        return Longs.fromByteArray(Bytes.toBytes(bb));
+                    public Long fromBytes(byte[] bb) {
+                        return Longs.fromByteArray(bb);
                     }
                 });
     }

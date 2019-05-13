@@ -30,7 +30,6 @@
 package net.ripe.rpki.validator3.storage.encoding;
 
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
@@ -39,7 +38,6 @@ import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidatio
 import net.ripe.rpki.validator3.storage.data.validation.RrdpRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.RsyncRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
-import net.ripe.rpki.validator3.storage.encoding.custom.CustomCoder;
 import net.ripe.rpki.validator3.storage.encoding.custom.RefCoder;
 import net.ripe.rpki.validator3.storage.encoding.custom.RpkiObjectCoder;
 import net.ripe.rpki.validator3.storage.encoding.custom.RpkiRepositoryCoder;
@@ -49,7 +47,6 @@ import net.ripe.rpki.validator3.storage.encoding.custom.validation.RRValidationR
 import net.ripe.rpki.validator3.storage.encoding.custom.validation.RSValidationRunCoder;
 import net.ripe.rpki.validator3.storage.encoding.custom.validation.TAValidationRunCoder;
 
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -57,7 +54,7 @@ import java.util.Map;
 public class CoderFactory {
 
     public static <T> Coder<T> makeCoder(Class<T> c) {
-        final CustomCoder<T> cc = customCoder(c);
+        final Coder<T> cc = Coder(c);
         if (cc == null) {
             final GsonCoder<T> gsonCoder = new GsonCoder<>(c);
             log.warn("There's no custom coder for the type {}, using a {}", c, gsonCoder.getClass());
@@ -65,21 +62,21 @@ public class CoderFactory {
         }
         return new Coder<T>() {
             @Override
-            public ByteBuffer toBytes(T t) {
-                return Bytes.toDirectBuffer(cc.toBytes(t));
+            public byte[] toBytes(T t) {
+                return cc.toBytes(t);
             }
 
             @Override
-            public T fromBytes(ByteBuffer bb) {
-                return cc.fromBytes(Bytes.toBytes(bb));
+            public T fromBytes(byte[] bb) {
+                return cc.fromBytes(bb);
             }
         };
     }
 
-    private static Map<Class<?>, CustomCoder<?>> customCoders = registerCustomCoder();
+    private static Map<Class<?>, Coder<?>> customCoders = registerCustomCoder();
 
-    private static Map<Class<?>, CustomCoder<?>> registerCustomCoder() {
-        final Map<Class<?>, CustomCoder<?>> cc = new HashMap<>();
+    private static Map<Class<?>, Coder<?>> registerCustomCoder() {
+        final Map<Class<?>, Coder<?>> cc = new HashMap<>();
         cc.put(Ref.class, new RefCoder());
         cc.put(RpkiObject.class, new RpkiObjectCoder());
         cc.put(RpkiRepository.class, new RpkiRepositoryCoder());
@@ -91,8 +88,8 @@ public class CoderFactory {
         return cc;
     }
 
-    private static <T> CustomCoder<T> customCoder(Class<T> c) {
-        return (CustomCoder<T>) customCoders.get(c);
+    private static <T> Coder<T> Coder(Class<T> c) {
+        return (Coder<T>) customCoders.get(c);
     }
 
 }

@@ -45,7 +45,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import net.ripe.rpki.validator3.storage.Bytes;
-import net.ripe.rpki.validator3.storage.encoding.custom.CustomCoder;
+import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.encoding.custom.Coders;
 import net.ripe.rpki.validator3.storage.encoding.custom.Encoded;
 import net.ripe.rpki.validator3.storage.encoding.custom.Tags;
@@ -409,7 +409,7 @@ public class LmdbTest {
         int alsoThis;
     }
 
-    static class BlaCoder implements CustomCoder<Bla> {
+    static class BlaCoder implements Coder<Bla> {
 
         private static final Tags tags = new Tags();
         private final static short STUFF = tags.unique(1);
@@ -441,7 +441,7 @@ public class LmdbTest {
         }
     }
 
-    static class ThingyCoder implements CustomCoder<Thingy> {
+    static class ThingyCoder implements Coder<Thingy> {
 
         private static final Tags tags = new Tags();
         private final static short ALSO_THIS = tags.unique(1);

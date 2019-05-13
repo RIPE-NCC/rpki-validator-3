@@ -30,6 +30,7 @@
 package net.ripe.rpki.validator3.storage.lmdb;
 
 import lombok.Getter;
+import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import org.apache.commons.lang3.tuple.Pair;
@@ -56,6 +57,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.zip.CRC32;
 
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.DbiFlags.MDB_DUPSORT;
@@ -96,7 +98,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
             Txn<ByteBuffer> txn = tx.txn();
             indexes.forEach((name, idx) -> idx.drop(txn));
             forEach(tx, (k, bb) -> {
-                final T value = coder.fromBytes(bb);
+                final T value = getValue(k, bb);
                 indexFunctions.forEach((n, idxFun) ->
                         idxFun.apply(value).forEach(ik -> {
                             final Dbi<ByteBuffer> idx = getIdx(n);
@@ -135,7 +137,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
         ByteBuffer bb = getMainDb().get(txn.txn(), primaryKey.toByteBuffer());
         return bb == null ?
                 Optional.empty() :
-                Optional.of(coder.fromBytes(bb));
+                Optional.of(getValue(primaryKey, bb));
     }
 
     public List<T> get(Tx.Read txn, Set<Key> primaryKeys) {
@@ -198,7 +200,9 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
         checkKeyAndValue(primaryKey, value);
         final Txn<ByteBuffer> txn = tx.txn();
         final Optional<T> oldValue = get(tx, primaryKey);
-        getMainDb().put(txn, primaryKey.toByteBuffer(), coder.toBytes(value));
+        final ByteBuffer pkBuf = primaryKey.toByteBuffer();
+        final ByteBuffer val = valueBuf(value);
+        getMainDb().put(txn, pkBuf, val);
         if (oldValue.isPresent()) {
             indexFunctions.forEach((n, idxFun) -> {
                 final Set<Key> oldIndexKeys = idxFun.apply(oldValue.get());
@@ -208,11 +212,11 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
                 final Dbi<ByteBuffer> index = getIdx(n);
                 oldIndexKeys.stream()
                         .filter(oik -> !indexKeys.contains(oik))
-                        .forEach(oik -> index.delete(txn, oik.toByteBuffer(), primaryKey.toByteBuffer()));
+                        .forEach(oik -> index.delete(txn, oik.toByteBuffer(), pkBuf));
 
                 indexKeys.stream()
                         .filter(ik -> !oldIndexKeys.contains(ik))
-                        .forEach(ik -> index.put(txn, ik.toByteBuffer(), primaryKey.toByteBuffer()));
+                        .forEach(ik -> index.put(txn, ik.toByteBuffer(), pkBuf));
             });
             return oldValue;
         } else {
@@ -221,7 +225,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
                         .filter(Objects::nonNull)
                         .collect(Collectors.toSet());
 
-                indexKeys.forEach(ik -> getIdx(n).put(txn, ik.toByteBuffer(), primaryKey.toByteBuffer()));
+                indexKeys.forEach(ik -> getIdx(n).put(txn, ik.toByteBuffer(), pkBuf));
             });
         }
         return Optional.empty();
@@ -248,7 +252,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
             if (bb != null) {
                 // TODO probably avoid deserialization, just store the
                 //  index keys next to the serialized value
-                final T value = coder.fromBytes(bb);
+                final T value = getValue(primaryKey, bb);
                 mainDb.delete(txn, pkBuf);
                 indexFunctions.forEach((n, idxFun) ->
                         idxFun.apply(value).forEach(ix ->
@@ -286,7 +290,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
                 if (!m.containsKey(pk)) {
                     final ByteBuffer bb = mainDb.get(txn, pk.toByteBuffer());
                     if (bb != null) {
-                        m.put(pk, coder.fromBytes(bb));
+                        m.put(pk, getValue(pk, bb));
                     }
                 }
             }
@@ -391,6 +395,27 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
                 sizes.getKeysAndValuesBytes(),
                 sizes.getAllocatedSize(),
                 indexSizes);
+    }
+
+    public void verify(Tx.Read tx) {
+        final Txn<ByteBuffer> txn = tx.txn();
+        final Map<Key, Set<Key>> indexValues = new HashMap<>();
+        forEach(tx, (k, bb) -> {
+            final T value = getValue(k, bb);
+            indexFunctions.forEach((n, idxFun) -> {
+                idxFun.apply(value).forEach(ik -> {
+                            Set<Key> pks = indexValues.get(ik);
+                            if (pks == null) {
+                                pks = getPkByIndex(n, tx, ik);
+                                indexValues.put(ik, pks);
+                            }
+                            if (!pks.contains(k)) {
+                                throw new RuntimeException("PkBuf blabla");
+                            }
+                        }
+                );
+            });
+        });
     }
 
     public static class Sizes extends IxBase.Sizes {

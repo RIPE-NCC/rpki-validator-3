@@ -66,7 +66,7 @@ public class MultIxMap<T extends Serializable> extends IxBase<T> {
         try (final CursorIterator<ByteBuffer> iterate = getMainDb().iterate(txn.txn(), KeyRange.closed(pkBuf, pkBuf))) {
             while (iterate.hasNext()) {
                 final CursorIterator.KeyVal<ByteBuffer> next = iterate.next();
-                result.add(coder.fromBytes(next.val()));
+                result.add(getValue(primaryKey, next.val()));
             }
         }
         return result;
@@ -87,7 +87,7 @@ public class MultIxMap<T extends Serializable> extends IxBase<T> {
 
     public void put(Tx.Write tx, Key primaryKey, T value) {
         checkKeyAndValue(primaryKey, value);
-        getMainDb().put(tx.txn(), primaryKey.toByteBuffer(), coder.toBytes(value));
+        getMainDb().put(tx.txn(), primaryKey.toByteBuffer(), valueBuf(value));
     }
 
     public void delete(Tx.Write tx, Key primaryKey) {
@@ -96,6 +96,6 @@ public class MultIxMap<T extends Serializable> extends IxBase<T> {
 
     public void delete(Tx.Write tx, Key primaryKey, T value) {
         verifyKey(primaryKey);
-        getMainDb().delete(tx.txn(), primaryKey.toByteBuffer(), coder.toBytes(value));
+        getMainDb().delete(tx.txn(), primaryKey.toByteBuffer(), valueBuf(value));
     }
 }

@@ -30,12 +30,13 @@
 package net.ripe.rpki.validator3.storage.encoding.custom;
 
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
+import net.ripe.rpki.validator3.storage.encoding.Coder;
 
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
-public class RpkiObjectCoder implements CustomCoder<RpkiObject> {
+public class RpkiObjectCoder implements Coder<RpkiObject> {
 
     private final static short TYPE_TAG = Tags.unique(31);
     private final static short SHA256_TAG = Tags.unique(32);

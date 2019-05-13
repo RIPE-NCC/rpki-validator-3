@@ -140,13 +140,13 @@ public class LmdbValidationRuns implements ValidationRunStore {
 
         final Coder<Key> keyCoder = new Coder<Key>() {
             @Override
-            public ByteBuffer toBytes(Key key) {
-                return key.toByteBuffer();
+            public byte[] toBytes(Key key) {
+                return key.getBytes();
             }
 
             @Override
-            public Key fromBytes(ByteBuffer bb) {
-                return new Key(bb);
+            public Key fromBytes(byte[] bb) {
+                return Key.of(bb);
             }
         };
         vr2ro = lmdb.createMultIxMap(VALIDATION_RUNS_TO_RPKI_OBJECTS, keyCoder);
@@ -267,13 +267,25 @@ public class LmdbValidationRuns implements ValidationRunStore {
     public int removeOrphanValidationRunAssociations(Tx.Write tx) {
         final Set<Key> roKeys = rpkiObjectStore.keys(tx);
         final Set<Key> repoKeys = rpkiRepositoryStore.keys(tx);
-        return vr2ro.deleteIf(tx, (k, bb) -> !roKeys.contains(Key.of(Bytes.toBytes(bb)))) +
-                vr2repo.deleteIf(tx, (k1, bb) -> !repoKeys.contains(Key.of(Bytes.toBytes(bb))));
-    }
+        final List<Pair<Key, Key>> toDelete = new ArrayList<>();
+        vr2ro.forEach(tx, (vrKey, bb) -> {
+            final Key roKey = Key.of(Bytes.toBytes(bb));
+            if (!roKeys.contains(roKey)) {
+                toDelete.add(Pair.of(vrKey, roKey));
+            }
+        });
+        toDelete.forEach(p -> vr2ro.delete(tx, p.getLeft(), p.getRight()));
+        int c1 = toDelete.size();
 
-    @Override
-    public void delete(Tx.Write tx, ValidationRun vr) {
-        pickIxMap(vr.getType()).delete(tx, vr.key());
+        final Set<Key> reposToDelete = new HashSet<>();
+        vr2repo.forEach(tx, (vrKey, bb) -> {
+            final Key repoKey = Key.of(Bytes.toBytes(bb));
+            if (!repoKeys.contains(repoKey)) {
+                reposToDelete.add(vrKey);
+            }
+        });
+        reposToDelete.forEach(vrKey -> vr2repo.delete(tx, vrKey));
+        return c1 + reposToDelete.size();
     }
 
     @Override

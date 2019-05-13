@@ -29,10 +29,8 @@
  */
 package net.ripe.rpki.validator3.storage.encoding;
 
-import java.nio.ByteBuffer;
-
 public interface Coder<T> {
-    ByteBuffer toBytes(T t);
+    byte[] toBytes(T t);
 
-    T fromBytes(ByteBuffer bb);
+    T fromBytes(byte[] bb);
 }

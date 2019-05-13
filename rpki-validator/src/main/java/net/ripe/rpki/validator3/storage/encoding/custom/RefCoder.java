@@ -31,11 +31,12 @@ package net.ripe.rpki.validator3.storage.encoding.custom;
 
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
+import net.ripe.rpki.validator3.storage.encoding.Coder;
 
 import java.io.Serializable;
 import java.util.Map;
 
-public class RefCoder<T extends Serializable> implements CustomCoder<Ref<T>> {
+public class RefCoder<T extends Serializable> implements Coder<Ref<T>> {
 
     private final static short TABLE_NAME_TAG = Tags.unique(11);
     private final static short KEY_TAG = Tags.unique(12);

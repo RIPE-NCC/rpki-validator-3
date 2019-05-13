@@ -33,10 +33,11 @@ import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.api.bgp.PackedIpRange;
 import net.ripe.rpki.validator3.storage.data.RoaPrefix;
+import net.ripe.rpki.validator3.storage.encoding.Coder;
 
 import java.util.Map;
 
-public class RoaPrefixCoder implements CustomCoder<RoaPrefix> {
+public class RoaPrefixCoder implements Coder<RoaPrefix> {
 
     private final static short PREFIX_TAG = Tags.unique(21);
     private final static short ASN_TAG = Tags.unique(22);

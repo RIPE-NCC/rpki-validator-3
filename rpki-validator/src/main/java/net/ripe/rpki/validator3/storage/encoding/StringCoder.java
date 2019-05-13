@@ -29,20 +29,16 @@
  */
 package net.ripe.rpki.validator3.storage.encoding;
 
-import net.ripe.rpki.validator3.storage.Bytes;
-
-import java.nio.ByteBuffer;
-
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class StringCoder implements Coder<String> {
     @Override
-    public ByteBuffer toBytes(String s) {
-        return Bytes.toDirectBuffer(s.getBytes(UTF_8));
+    public byte[] toBytes(String s) {
+        return s.getBytes(UTF_8);
     }
 
     @Override
-    public String fromBytes(ByteBuffer bb) {
-        return new String(Bytes.toBytes(bb), UTF_8);
+    public String fromBytes(byte[] bb) {
+        return new String(bb, UTF_8);
     }
 }

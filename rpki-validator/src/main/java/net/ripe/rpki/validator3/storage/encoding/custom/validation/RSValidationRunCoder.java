@@ -30,12 +30,12 @@
 package net.ripe.rpki.validator3.storage.encoding.custom.validation;
 
 import net.ripe.rpki.validator3.storage.data.validation.RsyncRepositoryValidationRun;
-import net.ripe.rpki.validator3.storage.encoding.custom.CustomCoder;
+import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.encoding.custom.Encoded;
 
 import java.util.Map;
 
-public class RSValidationRunCoder implements CustomCoder<RsyncRepositoryValidationRun> {
+public class RSValidationRunCoder implements Coder<RsyncRepositoryValidationRun> {
 
     @Override
     public byte[] toBytes(RsyncRepositoryValidationRun validationRun) {

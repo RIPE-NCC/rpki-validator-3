@@ -32,12 +32,13 @@ package net.ripe.rpki.validator3.storage.encoding.custom;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.encoding.Coder;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-public class RpkiRepositoryCoder implements CustomCoder<RpkiRepository> {
+public class RpkiRepositoryCoder implements Coder<RpkiRepository> {
 
     private final static short TYPE_TAG = Tags.unique(51);
     private final static short RRDP_NOTIFY_URL_TAG = Tags.unique(52);

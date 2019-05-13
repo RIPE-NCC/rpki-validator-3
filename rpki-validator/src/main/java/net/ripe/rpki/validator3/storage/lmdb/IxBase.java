@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.storage.lmdb;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
+import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import org.lmdbjava.CursorIterator;
@@ -52,6 +53,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
+import java.util.zip.CRC32;
 
 public abstract class IxBase<T extends Serializable> {
     protected final Env<ByteBuffer> env;
@@ -112,6 +114,28 @@ public abstract class IxBase<T extends Serializable> {
         Lmdb.checkEnv(env);
     }
 
+    protected ByteBuffer valueBuf(T value) {
+        final byte[] valueBytes = coder.toBytes(value);
+        CRC32 checksum = new CRC32();
+        checksum.update(valueBytes);
+        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(Long.BYTES + valueBytes.length);
+        byteBuffer.putLong(checksum.getValue());
+        byteBuffer.put(valueBytes);
+        byteBuffer.flip();
+        return byteBuffer;
+    }
+
+    protected T getValue(Key k, ByteBuffer bb) {
+        long crc32 = bb.getLong();
+        final byte[] valueBytes = Bytes.toBytes(bb);
+        CRC32 checksum = new CRC32();
+        checksum.update(valueBytes);
+        if (checksum.getValue() != crc32) {
+            throw new RuntimeException("Data for the key " + k + " is corrupted");
+        }
+        return coder.fromBytes(valueBytes);
+    }
+
     public Set<Key> keys(Tx.Read tx) {
         final Set<Key> result = new HashSet<>();
         forEach(tx, (k, v) -> result.add(k));
@@ -120,13 +144,13 @@ public abstract class IxBase<T extends Serializable> {
 
     public List<T> values(Tx.Read tx) {
         final List<T> result = new ArrayList<>();
-        forEach(tx, (k, v) -> result.add(coder.fromBytes(v)));
+        forEach(tx, (k, v) -> result.add(getValue(k, v)));
         return result;
     }
 
     public Map<Key, T> all(Tx.Read tx) {
         final Map<Key, T> result = new HashMap<>();
-        forEach(tx, (k, v) -> result.put(k, coder.fromBytes(v)));
+        forEach(tx, (k, v) -> result.put(k, getValue(k, v)));
         return result;
     }
 
@@ -135,7 +159,7 @@ public abstract class IxBase<T extends Serializable> {
     }
 
     public T toValue(ByteBuffer bb) {
-        return coder.fromBytes(bb);
+        return getValue(null, bb);
     }
 
     public void forEach(Tx.Read tx, BiConsumer<Key, ByteBuffer> c) {
@@ -145,20 +169,6 @@ public abstract class IxBase<T extends Serializable> {
                 c.accept(new Key(next.key()), next.val());
             }
         }
-    }
-
-    public int deleteIf(Tx.Write tx, BiPredicate<Key, ByteBuffer> p) {
-        int c = 0;
-        try (final CursorIterator<ByteBuffer> ci = getMainDb().iterate(tx.txn())) {
-            while (ci.hasNext()) {
-                final CursorIterator.KeyVal<ByteBuffer> next = ci.next();
-                if (p.test(new Key(next.key()), next.val())) {
-                    ci.remove();
-                    c++;
-                }
-            }
-        }
-        return c;
     }
 
     public long size(Tx.Read tx) {

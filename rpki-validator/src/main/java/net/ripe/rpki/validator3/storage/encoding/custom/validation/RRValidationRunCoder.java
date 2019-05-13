@@ -32,14 +32,14 @@ package net.ripe.rpki.validator3.storage.encoding.custom.validation;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.validation.RrdpRepositoryValidationRun;
-import net.ripe.rpki.validator3.storage.encoding.custom.CustomCoder;
+import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.encoding.custom.Encoded;
 import net.ripe.rpki.validator3.storage.encoding.custom.RefCoder;
 import net.ripe.rpki.validator3.storage.encoding.custom.Tags;
 
 import java.util.Map;
 
-public class RRValidationRunCoder implements CustomCoder<RrdpRepositoryValidationRun> {
+public class RRValidationRunCoder implements Coder<RrdpRepositoryValidationRun> {
 
     private final static short REPO_TAG = Tags.unique(91);
 

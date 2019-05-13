@@ -30,12 +30,13 @@
 package net.ripe.rpki.validator3.storage.encoding.custom;
 
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.encoding.Coder;
 
 import java.util.Map;
 
 import static net.ripe.rpki.validator3.storage.encoding.custom.Encoded.field;
 
-public class TrustAnchorCoder implements CustomCoder<TrustAnchor> {
+public class TrustAnchorCoder implements Coder<TrustAnchor> {
 
     private final static short NAME_TAG = Tags.unique(71);
     private final static short RSYNC_PREFETCH_TAG = Tags.unique(72);
