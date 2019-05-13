@@ -70,7 +70,7 @@ public class LmdbImpl extends Lmdb {
             log.info("Creating LMDB environment at {}", lmdbPath);
             oneThread.submit(() -> {
                 env = create()
-                        .setMapSize(dbSizeInMb * 1024 * 1024L)
+                        .setMapSize(dbSizeInMb * 1024L * 1024L)
                         .setMaxDbs(100)
                         .open(new File(lmdbPath));
             }).get();
