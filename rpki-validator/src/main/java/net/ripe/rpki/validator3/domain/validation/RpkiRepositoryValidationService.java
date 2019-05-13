@@ -329,6 +329,7 @@ public class RpkiRepositoryValidationService {
                 throw new RuntimeException(e);
             }
         });
+        lmdb.readTx0(rpkiObjectStore::verify);
     }
 
     private void traverseFSandStore(Tx.Write tx,

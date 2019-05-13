@@ -49,6 +49,7 @@ import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
+import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
@@ -71,6 +72,7 @@ public class TrustAnchorValidationService {
 
     private final TrustAnchorStore trustAnchorStore;
     private final RpkiRepositoryStore rpkiRepositoryStore;
+    private final RpkiObjectStore rpkiObjectStore;
     private final ValidationRunStore validationRunStore;
     private final ValidationScheduler validationScheduler;
     private final File localRsyncStorageDirectory;
@@ -83,13 +85,14 @@ public class TrustAnchorValidationService {
     public TrustAnchorValidationService(
             TrustAnchorStore trustAnchorStore,
             RpkiRepositoryStore rpkiRepositoryStore,
-            ValidationRunStore validationRunStore,
+            RpkiObjectStore rpkiObjectStore, ValidationRunStore validationRunStore,
             ValidationScheduler validationScheduler,
             @Value("${rpki.validator.rsync.local.storage.directory}") File localRsyncStorageDirectory,
             RpkiRepositoryValidationService repositoryValidationService,
             Lmdb lmdb) {
         this.trustAnchorStore = trustAnchorStore;
         this.rpkiRepositoryStore = rpkiRepositoryStore;
+        this.rpkiObjectStore = rpkiObjectStore;
         this.validationRunStore = validationRunStore;
         this.validationScheduler = validationScheduler;
         this.localRsyncStorageDirectory = localRsyncStorageDirectory;
@@ -160,6 +163,7 @@ public class TrustAnchorValidationService {
                             .ifPresent(r ->
                                     affectedTrustAnchors.addAll(repositoryValidationService.prefetchRepository(r)));
                 }
+                lmdb.readTx0(rpkiObjectStore::verify);
                 affectedTrustAnchors.forEach(validationScheduler::triggerCertificateTreeValidation);
             }
         } catch (CommandExecutionException | IOException e) {

@@ -186,6 +186,7 @@ public class CertificateTreeValidationService {
             if (!rpkiObjectsKeys.isEmpty()) {
                 lmdb.readTx0(tx -> validatedRpkiObjects.updateByKey(tx, trustAnchorRef, rpkiObjectsKeys));
             }
+            lmdb.readTx0(rpkiObjectStore::verify);
         } finally {
             validationRun.completeWith(validationResult);
             lmdb.writeTx0(tx -> validationRunStore.update(tx, validationRun));

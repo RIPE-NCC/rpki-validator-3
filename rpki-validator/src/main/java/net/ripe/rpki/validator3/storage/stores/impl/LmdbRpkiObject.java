@@ -44,6 +44,7 @@ import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
+import net.ripe.rpki.validator3.util.Time;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -178,5 +179,15 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     @Override
     protected IxMap<RpkiObject> ixMap() {
         return ixMap;
+    }
+
+    @Override
+    public void verify(Tx.Read tx) {
+        try {
+            final Long t = Time.timed(() -> ixMap().verify(tx));
+            log.info("Verified in {}ms", 0L);
+        } catch (Exception e) {
+            log.error("And now the data is screwed", e);
+        }
     }
 }
