@@ -49,6 +49,8 @@ public interface RpkiObjectStore extends GenericStore<RpkiObject> {
 
     void remove(Tx.Write tx, RpkiObject o);
 
+    void markReachable(Tx.Write tx, Key pk, Instant i);
+
     <T extends CertificateRepositoryObject> Optional<T> findCertificateRepositoryObject(
             Tx.Read tx, Key sha256, Class<T> clazz, ValidationResult validationResult);
 

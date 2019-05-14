@@ -94,8 +94,7 @@ public class RpkiObjectCleanupServiceTest extends GenericStorageTest {
         // Orphan is still new, so nothing to delete
         assertThat(subject.cleanupRpkiObjects()).isEqualTo(0);
 
-        orphan.markReachable(Instant.now().minus(Duration.ofDays(10)));
-        wtx0(tx -> rpkiObjects.put(tx, orphan));
+        wtx0(tx -> rpkiObjects.markReachable(tx, orphan.key(), Instant.now().minus(Duration.ofDays(10))));
 
         // Orphan is now old, so should be deleted
         assertThat(subject.cleanupRpkiObjects()).isEqualTo(1);

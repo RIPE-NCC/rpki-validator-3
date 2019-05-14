@@ -92,9 +92,6 @@ public class RpkiObject extends Base<RpkiObject> {
 
     private Instant signingTime;
 
-    @NotNull
-    private Instant lastMarkedReachableAt;
-
     private byte[] authorityKeyIdentifier;
 
     @NotNull
@@ -119,7 +116,6 @@ public class RpkiObject extends Base<RpkiObject> {
         byte[] encoded = object.getEncoded();
         this.sha256 = Sha256.hash(encoded);
         this.encoded = encoded;
-        this.lastMarkedReachableAt = Instant.now();
         if (object instanceof X509ResourceCertificate) {
             this.serialNumber = ((X509ResourceCertificate) object).getSerialNumber();
             this.signingTime = null; // Use not valid before instead?
@@ -197,14 +193,6 @@ public class RpkiObject extends Base<RpkiObject> {
 
     public void removeLocation(String location) {
         this.locations.remove(location);
-    }
-
-    /**
-     * Mark this object as currently reachable by following a chain of references from the
-     * trust anchors through manifest to this object.
-     */
-    public void markReachable(Instant now) {
-        this.lastMarkedReachableAt = now;
     }
 
     public Type getType() {

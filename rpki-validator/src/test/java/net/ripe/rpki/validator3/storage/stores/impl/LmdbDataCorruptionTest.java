@@ -78,7 +78,6 @@ public class LmdbDataCorruptionTest extends GenericStorageTest {
                     Set<Key> keysToUpdate = randomSubSet(objects.keySet(), finalObjectCount - deltaCount, r);
                     keysToUpdate.forEach(k -> {
                         getRpkiObjectStore().get(tx, k).ifPresent(ro -> {
-                            ro.setLastMarkedReachableAt(Instant.now().plus(Duration.ofDays(3)));
                             objects.put(ro.key(), ro);
                             getRpkiObjectStore().put(tx, ro);
                         });
@@ -86,7 +85,6 @@ public class LmdbDataCorruptionTest extends GenericStorageTest {
 
                     Sets.difference(objects.keySet(), keysToUpdate).forEach(k ->
                             getRpkiObjectStore().get(tx, k).ifPresent(ro -> {
-                                ro.setLastMarkedReachableAt(Instant.now().minus(Duration.ofDays(1)));
                                 objects.put(ro.key(), ro);
                                 getRpkiObjectStore().put(tx, ro);
                             }));
@@ -125,7 +123,6 @@ public class LmdbDataCorruptionTest extends GenericStorageTest {
         getLmdb().writeTx0(tx -> {
             for (int i = 0; i < objectCount; i++) {
                 RpkiObject rpkiObject = randomRpkiObject();
-                rpkiObject.setLastMarkedReachableAt(Instant.now().minus(Duration.ofDays(1)));
                 keys.put(rpkiObject.key(), rpkiObject);
                 getRpkiObjectStore().put(tx, rpkiObject);
             }

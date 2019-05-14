@@ -51,6 +51,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -65,20 +66,12 @@ import java.util.stream.Stream;
 public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements RpkiObjectStore {
 
     private static final String RPKI_OBJECTS = "rpki-objects";
+    private static final String REACHABLE_MAP = "reachable-map";
     private static final String BY_AKI_MFT_INDEX = "by-aki-mft";
     private static final String BY_TYPE_INDEX = "by-type";
-    private static final String BY_LAST_REACHABLE_INDEX = "by-last-reachable";
-
-    private static final int SHA256_SIZE_IN_BYTES = 32;
 
     private final IxMap<RpkiObject> ixMap;
-
-    private Set<Key> lasMarkedReachableKey(RpkiObject rpkiObject) {
-        Instant lastMarkedReachableAt = rpkiObject.getLastMarkedReachableAt();
-        return lastMarkedReachableAt == null ?
-                Collections.emptySet() :
-                Key.keys(Key.of(lastMarkedReachableAt.toEpochMilli()));
-    }
+    private final IxMap<Long> reachableMap;
 
     private Set<Key> akiMftKey(RpkiObject rpkiObject) {
         byte[] authorityKeyIdentifier = rpkiObject.getAuthorityKeyIdentifier();
@@ -97,9 +90,12 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
                 RPKI_OBJECTS,
                 ImmutableMap.of(
                         BY_AKI_MFT_INDEX, this::akiMftKey,
-                        BY_TYPE_INDEX, this::typeKey,
-                        BY_LAST_REACHABLE_INDEX, this::lasMarkedReachableKey),
+                        BY_TYPE_INDEX, this::typeKey),
                 CoderFactory.makeCoder(RpkiObject.class));
+
+        this.reachableMap = lmdb.createIxMap(REACHABLE_MAP, ImmutableMap.of(), CoderFactory.longCoder());
+
+        ixMap.onDelete(reachableMap::delete);
     }
 
     @Override
@@ -110,6 +106,11 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     @Override
     public void remove(Tx.Write tx, RpkiObject o) {
         ixMap.delete(tx, o.key());
+    }
+
+    @Override
+    public void markReachable(Tx.Write tx, Key pk, Instant i) {
+        reachableMap.put(tx, pk, i.toEpochMilli());
     }
 
     @Override
@@ -154,9 +155,15 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
 
     @Override
     public long deleteUnreachableObjects(Tx.Write tx, Instant unreachableSince) {
-        final Set<Key> tooOldPks = ixMap.getByIndexLessPk(BY_LAST_REACHABLE_INDEX, tx, Key.of(unreachableSince.toEpochMilli()));
-        tooOldPks.forEach(pk -> ixMap.delete(tx, pk));
-        return (long) tooOldPks.size();
+        final Set<Key> toDelete = new HashSet<>();
+        reachableMap.forEach(tx, (k, bb) -> {
+            if (reachableMap.toValue(bb) < unreachableSince.toEpochMilli()) {
+                toDelete.add(k);
+            }
+        });
+        // reachableMap
+        toDelete.forEach(pk -> ixMap.delete(tx, pk));
+        return (long) toDelete.size();
     }
 
     @Override

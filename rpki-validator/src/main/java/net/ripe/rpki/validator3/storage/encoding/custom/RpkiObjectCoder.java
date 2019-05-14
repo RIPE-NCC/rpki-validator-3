@@ -62,7 +62,6 @@ public class RpkiObjectCoder implements Coder<RpkiObject> {
         encoded.appendNotNull(SERIAL_TAG, rpkiObject.getSerialNumber(), Coders::toBytes);
         encoded.appendNotNull(ENCODED_TAG, rpkiObject.getEncoded());
         encoded.appendNotNull(SIGNING_TIME_TAG, rpkiObject.getSigningTime(), Coders::toBytes);
-        encoded.appendNotNull(LAST_MARKED_TAG, rpkiObject.getLastMarkedReachableAt(), Coders::toBytes);
 
         if (rpkiObject.getLocations() != null && !rpkiObject.getLocations().isEmpty()) {
             byte[] locationBytes = Coders.toBytes(rpkiObject.getLocations(), Coders::toBytes);
@@ -87,7 +86,6 @@ public class RpkiObjectCoder implements Coder<RpkiObject> {
         rpkiObject.setSha256(content.get(SHA256_TAG));
         rpkiObject.setEncoded(content.get(ENCODED_TAG));
         rpkiObject.setAuthorityKeyIdentifier(content.get(AKI_TAG));
-        Encoded.field(content, LAST_MARKED_TAG).ifPresent(b -> rpkiObject.setLastMarkedReachableAt(Coders.toInstant(b)));
         Encoded.field(content, SIGNING_TIME_TAG).ifPresent(b -> rpkiObject.setSigningTime(Coders.toInstant(b)));
         Encoded.field(content, SERIAL_TAG).ifPresent(b -> rpkiObject.setSerialNumber(Coders.toBigInteger(b)));
 

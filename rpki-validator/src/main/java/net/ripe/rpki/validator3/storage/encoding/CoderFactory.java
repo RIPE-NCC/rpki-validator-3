@@ -29,7 +29,9 @@
  */
 package net.ripe.rpki.validator3.storage.encoding;
 
+import com.google.common.primitives.Longs;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
@@ -90,6 +92,34 @@ public class CoderFactory {
 
     private static <T> Coder<T> Coder(Class<T> c) {
         return (Coder<T>) customCoders.get(c);
+    }
+
+    public static Coder<Key> keyCoder() {
+        return new Coder<Key>() {
+            @Override
+            public byte[] toBytes(Key key) {
+                return key.getBytes();
+            }
+
+            @Override
+            public Key fromBytes(byte[] bb) {
+                return Key.of(bb);
+            }
+        };
+    }
+
+    public static Coder<Long> longCoder() {
+        return new Coder<Long>() {
+            @Override
+            public byte[] toBytes(Long z) {
+                return Longs.toByteArray(z);
+            }
+
+            @Override
+            public Long fromBytes(byte[] bb) {
+                return Longs.fromByteArray(bb);
+            }
+        };
     }
 
 }

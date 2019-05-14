@@ -98,13 +98,7 @@ public class RpkiObjectCleanupService {
         log.info("Found {} reachable RPKI objects in {}ms, verifying", markThem.size(), t0);
         lmdb.readTx0(tx -> rpkiObjects.verify(tx));
         return lmdb.writeTx(tx -> {
-            Long t = Time.timed(() ->
-                    markThem.forEach(pk -> rpkiObjects.get(tx, pk)
-                            .ifPresent(ro -> {
-                                ro.markReachable(now);
-                                rpkiObjects.delete(tx, pk);
-                                rpkiObjects.put(tx, ro);
-                            })));
+            Long t = Time.timed(() -> markThem.forEach(pk -> rpkiObjects.markReachable(tx, pk, now)));
             log.info("Marked reachable {} RPKI objects in {}ms", markThem.size(), t);
             log.info("Verification before delete");
             rpkiObjects.verify(tx);
