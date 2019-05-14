@@ -35,7 +35,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.validation.ValidationResult;
-import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
@@ -48,10 +47,8 @@ import net.ripe.rpki.validator3.util.Time;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -185,7 +182,7 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     public void verify(Tx.Read tx) {
         try {
             final Long t = Time.timed(() -> ixMap().verify(tx));
-            log.info("Verified in {}ms", 0L);
+            log.info("Verified in {}ms", t);
         } catch (Exception e) {
             log.error("And now the data is screwed", e);
         }

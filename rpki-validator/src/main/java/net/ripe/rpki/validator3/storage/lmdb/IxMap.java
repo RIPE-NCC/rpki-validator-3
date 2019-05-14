@@ -30,7 +30,6 @@
 package net.ripe.rpki.validator3.storage.lmdb;
 
 import lombok.Getter;
-import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import org.apache.commons.lang3.tuple.Pair;
@@ -57,7 +56,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.zip.CRC32;
 
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.DbiFlags.MDB_DUPSORT;
@@ -204,12 +202,12 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
         final ByteBuffer val = valueBuf(value);
         getMainDb().put(txn, pkBuf, val);
         if (oldValue.isPresent()) {
-            indexFunctions.forEach((n, idxFun) -> {
+            indexFunctions.forEach((idxName, idxFun) -> {
                 final Set<Key> oldIndexKeys = idxFun.apply(oldValue.get());
                 final Set<Key> indexKeys = idxFun.apply(value).stream()
                         .filter(Objects::nonNull)
                         .collect(Collectors.toSet());
-                final Dbi<ByteBuffer> index = getIdx(n);
+                final Dbi<ByteBuffer> index = getIdx(idxName);
                 oldIndexKeys.stream()
                         .filter(oik -> !indexKeys.contains(oik))
                         .forEach(oik -> index.delete(txn, oik.toByteBuffer(), pkBuf));
@@ -220,12 +218,12 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
             });
             return oldValue;
         } else {
-            indexFunctions.forEach((n, idxFun) -> {
+            indexFunctions.forEach((idxName, idxFun) -> {
                 final Set<Key> indexKeys = idxFun.apply(value).stream()
                         .filter(Objects::nonNull)
                         .collect(Collectors.toSet());
 
-                indexKeys.forEach(ik -> getIdx(n).put(txn, ik.toByteBuffer(), pkBuf));
+                indexKeys.forEach(ik -> getIdx(idxName).put(txn, ik.toByteBuffer(), pkBuf));
             });
         }
         return Optional.empty();
@@ -254,9 +252,9 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
                 //  index keys next to the serialized value
                 final T value = getValue(primaryKey, bb);
                 mainDb.delete(txn, pkBuf);
-                indexFunctions.forEach((n, idxFun) ->
+                indexFunctions.forEach((idxName, idxFun) ->
                         idxFun.apply(value).forEach(ix ->
-                                getIdx(n).delete(txn, ix.toByteBuffer(), pkBuf)));
+                                getIdx(idxName).delete(txn, ix.toByteBuffer(), pkBuf)));
             }
         }
         try {
@@ -398,7 +396,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
     }
 
     public void verify(Tx.Read tx) {
-        final Txn<ByteBuffer> txn = tx.txn();
+
         final Map<Key, Set<Key>> indexValues = new HashMap<>();
         forEach(tx, (k, bb) -> {
             final T value = getValue(k, bb);

@@ -49,6 +49,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -82,6 +83,8 @@ public class RpkiObjectCleanupService {
         Instant now = Instant.now();
         final List<TrustAnchor> trustAnchors = lmdb.readTx(tx -> this.trustAnchors.findAll(tx));
         final Set<Key> markThem = ConcurrentHashMap.newKeySet();
+        log.info("Verify starting cleanup ");
+        lmdb.readTx0(tx -> rpkiObjects.verify(tx));
         final Long t0 = Time.timed(() ->
                 trustAnchors.stream()
                         .peek(trustAnchor -> log.debug("tracing objects for trust anchor {}", trustAnchor))
@@ -93,17 +96,24 @@ public class RpkiObjectCleanupService {
                                         traceCertificateAuthority(tx, now, resourceCertificate, markThem);
                                     }
                                 })));
-        log.info("Found {} reachable RPKI objects in {}ms", markThem.size(), t0);
-
+        log.info("Found {} reachable RPKI objects in {}ms, verifying", markThem.size(), t0);
+        lmdb.readTx0(tx -> rpkiObjects.verify(tx));
         return lmdb.writeTx(tx -> {
             Long t = Time.timed(() ->
                     markThem.forEach(pk -> rpkiObjects.get(tx, pk)
                             .ifPresent(ro -> {
                                 ro.markReachable(now);
                                 rpkiObjects.put(tx, ro);
+                                Optional<RpkiObject> again = rpkiObjects.get(tx, pk);
+
                             })));
             log.info("Marked reachable {} RPKI objects in {}ms", markThem.size(), t);
-            return deleteUnreachableObjects(tx, now);
+            log.info("Verification before delete");
+            rpkiObjects.verify(tx);
+            long delCount = deleteUnreachableObjects(tx, now);
+            log.info("Verification after delete");
+            rpkiObjects.verify(tx);
+            return delCount;
         });
     }
 
