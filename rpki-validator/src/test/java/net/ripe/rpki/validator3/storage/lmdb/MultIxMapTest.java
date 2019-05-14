@@ -124,6 +124,9 @@ public class MultIxMapTest {
             multIxMap.put(tx, k1, "b");
             multIxMap.put(tx, k2, "aa");
             multIxMap.put(tx, k2, "bb");
+            multIxMap.put(tx, k2, "bb");
+            multIxMap.put(tx, k2, "bb");
+            multIxMap.put(tx, k2, "bb");
             multIxMap.delete(tx, k1, "b");
         });
 

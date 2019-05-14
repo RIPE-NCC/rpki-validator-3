@@ -59,11 +59,11 @@ public class MultIxMap<T extends Serializable> extends IxBase<T> {
         return new DbiFlags[]{MDB_CREATE, MDB_DUPSORT};
     }
 
-    public List<T> get(Tx.Read txn, Key primaryKey) {
+    public List<T> get(Tx.Read tx, Key primaryKey) {
         verifyKey(primaryKey);
         final ByteBuffer pkBuf = primaryKey.toByteBuffer();
         final List<T> result = new ArrayList<>();
-        try (final CursorIterator<ByteBuffer> iterate = getMainDb().iterate(txn.txn(), KeyRange.closed(pkBuf, pkBuf))) {
+        try (final CursorIterator<ByteBuffer> iterate = getMainDb().iterate(tx.txn(), KeyRange.closed(pkBuf, pkBuf))) {
             while (iterate.hasNext()) {
                 final CursorIterator.KeyVal<ByteBuffer> next = iterate.next();
                 result.add(getValue(primaryKey, next.val()));
