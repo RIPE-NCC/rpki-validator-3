@@ -65,4 +65,6 @@ public interface RpkiObjectStore extends GenericStore<RpkiObject> {
     Set<Key> getPkByType(Tx.Read tx, RpkiObject.Type type);
 
     void verify(Tx.Read tx);
+
+    void delete(Tx.Write tx, Key pk);
 }

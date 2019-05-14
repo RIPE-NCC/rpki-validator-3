@@ -187,4 +187,9 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
             log.error("And now the data is screwed", e);
         }
     }
+
+    @Override
+    public void delete(Tx.Write tx, Key pk) {
+        ixMap.delete(tx, pk);
+    }
 }

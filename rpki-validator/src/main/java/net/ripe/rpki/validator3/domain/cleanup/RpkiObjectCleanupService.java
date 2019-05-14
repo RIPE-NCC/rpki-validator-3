@@ -49,7 +49,6 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -103,9 +102,8 @@ public class RpkiObjectCleanupService {
                     markThem.forEach(pk -> rpkiObjects.get(tx, pk)
                             .ifPresent(ro -> {
                                 ro.markReachable(now);
+                                rpkiObjects.delete(tx, pk);
                                 rpkiObjects.put(tx, ro);
-                                Optional<RpkiObject> again = rpkiObjects.get(tx, pk);
-
                             })));
             log.info("Marked reachable {} RPKI objects in {}ms", markThem.size(), t);
             log.info("Verification before delete");
