@@ -59,11 +59,11 @@ import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.jooq.lambda.Unchecked;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -71,8 +71,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
@@ -201,15 +199,15 @@ public class CertificateTreeValidationService {
     }
 
     private List<Key> validateCertificateAuthority(TrustAnchor trustAnchor,
-                                                          Map<URI, RpkiRepository> registeredRepositories,
-                                                          CertificateRepositoryObjectValidationContext context,
-                                                          ValidationResult validationResult) {
+                                                   Map<URI, RpkiRepository> registeredRepositories,
+                                                   CertificateRepositoryObjectValidationContext context,
+                                                   ValidationResult validationResult) {
         final List<Key> validatedObjects = new ArrayList<>();
 
         ValidationLocation certificateLocation = validationResult.getCurrentLocation();
         ValidationResult temporary = ValidationResult.withLocation(certificateLocation);
         try {
-            RpkiRepository rpkiRepository = registerRepository(trustAnchor, registeredRepositories, context);
+            RpkiRepository rpkiRepository = lmdb.writeTx(tx -> registerRepository(tx, trustAnchor, registeredRepositories, context));
 
             temporary.warnIfTrue(rpkiRepository.isPending(), VALIDATOR_RPKI_REPOSITORY_PENDING, rpkiRepository.getLocationUri());
             if (rpkiRepository.isPending()) {
@@ -330,33 +328,27 @@ public class CertificateTreeValidationService {
         return validatedObjects;
     }
 
-    // Use async as a trick to perform writing Tx while being inside of a reading Tx
-    private ExecutorService async = Executors.newSingleThreadExecutor();
-
-    private RpkiRepository registerRepository(TrustAnchor trustAnchor,
+    private RpkiRepository registerRepository(Tx.Write tx,
+                                              TrustAnchor trustAnchor,
                                               Map<URI, RpkiRepository> registeredRepositories,
-                                              CertificateRepositoryObjectValidationContext context) throws Exception {
+                                              CertificateRepositoryObjectValidationContext context) {
 
         if (context.getRpkiNotifyURI() != null) {
             return registeredRepositories.computeIfAbsent(
                     context.getRpkiNotifyURI(),
-                    Unchecked.function(uri ->
-                            async.submit(() ->
-                                    lmdb.writeTx(tx -> {
-                                        final Ref<TrustAnchor> trustAnchorRef = trustAnchorStore.makeRef(tx, trustAnchor.key());
-                                        RpkiRepository r = rpkiRepositoryStore.register(tx, trustAnchorRef, uri.toASCIIString(), RRDP);
-                                        tx.afterCommit(() -> validationScheduler.addRpkiRepository(r));
-                                        return r;
-                                    })).get()));
+                    uri -> {
+                        final Ref<TrustAnchor> trustAnchorRef = trustAnchorStore.makeRef(tx, trustAnchor.key());
+                        RpkiRepository r = rpkiRepositoryStore.register(tx, trustAnchorRef, uri.toASCIIString(), RRDP);
+                        tx.afterCommit(() -> validationScheduler.addRpkiRepository(r));
+                        return r;
+                    });
         }
         return registeredRepositories.computeIfAbsent(
                 context.getRepositoryURI(),
-                Unchecked.function(uri ->
-                        async.submit(() ->
-                                lmdb.writeTx(tx -> {
-                                    final Ref<TrustAnchor> trustAnchorRef = trustAnchorStore.makeRef(tx, trustAnchor.key());
-                                    return rpkiRepositoryStore.register(tx, trustAnchorRef, uri.toASCIIString(), RSYNC);
-                                })).get()));
+                uri -> {
+                    final Ref<TrustAnchor> trustAnchorRef = trustAnchorStore.makeRef(tx, trustAnchor.key());
+                    return rpkiRepositoryStore.register(tx, trustAnchorRef, uri.toASCIIString(), RSYNC);
+                });
     }
 
     private Map<URI, RpkiRepository> createRegisteredRepositoryMap(TrustAnchor trustAnchor) {
