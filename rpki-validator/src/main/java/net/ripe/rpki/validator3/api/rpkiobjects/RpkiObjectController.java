@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.api.rpkiobjects;
 import au.com.bytecode.opencsv.CSVWriter;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.google.common.collect.Sets;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Builder;
@@ -64,6 +65,7 @@ import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
 import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
 import net.ripe.rpki.validator3.util.Hex;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -76,6 +78,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.cert.X509CRLEntry;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -87,6 +90,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -125,30 +129,32 @@ public class RpkiObjectController {
                         .orElse(Stream.empty())
                         .collect(Collectors.toList()))
                 .stream()
-                .sorted(Comparator.comparing(o -> location(o.getLeft())))
+                .sorted(Comparator.comparing(o -> location(o.getLeft().getType(), o.getMiddle())))
                 .parallel()
-                .map(pair -> {
-                    final RpkiObject rpkiObject = pair.getLeft();
-                    Optional<ValidationCheck> vc = pair.getRight();
+                .map(triple -> {
+                    final RpkiObject rpkiObject = triple.getLeft();
+                    final SortedSet<String> locations = triple.getMiddle();
+                    Optional<ValidationCheck> vc = triple.getRight();
                     return mapRpkiObject(rpkiObject, vc
                             .map(c -> ValidationResult.withLocation(c.getLocation()))
-                            .orElse(ValidationResult.withLocation(location(rpkiObject))));
+                            .orElse(ValidationResult.withLocation(location(rpkiObject.getType(), locations))));
                 })
                 .filter(Objects::nonNull);
     }
 
-    private Stream<Pair<RpkiObject, Optional<ValidationCheck>>> getAssociatedRpkiObjects(Tx.Read tx, CertificateTreeValidationRun vr, Map<String, ValidationCheck> checkMap) {
+    private Stream<Triple<RpkiObject, SortedSet<String>, Optional<ValidationCheck>>> getAssociatedRpkiObjects(Tx.Read tx, CertificateTreeValidationRun vr, Map<String, ValidationCheck> checkMap) {
         return validationRuns.findAssociatedPks(tx, vr).stream()
                 .map(k -> rpkiObjects.get(tx, k))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .map(ro -> {
-                    final Optional<ValidationCheck> check = ro.getLocations()
+                    final SortedSet<String> locations = rpkiObjects.getLocations(tx, ro.key());
+                    final Optional<ValidationCheck> check = locations
                             .stream()
                             .map(checkMap::get)
                             .filter(Objects::nonNull)
                             .findFirst();
-                    return Pair.of(ro, check);
+                    return Triple.of(ro, locations, check);
                 });
     }
 
@@ -312,10 +318,9 @@ public class RpkiObjectController {
                         .orElse(null));
     }
 
-    private static String location(final RpkiObject rpkiObject) {
-        final SortedSet<String> locations = rpkiObject.getLocations();
+    private static String location(final RpkiObject.Type objectType, final SortedSet<String> locations) {
         if (locations.isEmpty()) {
-            return "unknown." + rpkiObject.getType().toString().toLowerCase(Locale.ROOT);
+            return "unknown." + objectType.toString().toLowerCase(Locale.ROOT);
         }
         return locations.first();
     }
@@ -456,7 +461,9 @@ public class RpkiObjectController {
     }
 
     private RpkiObj makeOther(final ValidationResult vr, final RpkiObject ro) {
-        return Other.builder().uri(location(ro)).build();
+        final TreeSet<String> s = Sets.newTreeSet();
+        s.add(vr.getCurrentLocation().getName());
+        return Other.builder().uri(location(ro.getType(), s)).build();
     }
 
     private static List<String> formatResources(final IpResourceSet resources) {

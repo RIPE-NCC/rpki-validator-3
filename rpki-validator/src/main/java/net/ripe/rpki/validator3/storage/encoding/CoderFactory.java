@@ -52,6 +52,8 @@ import net.ripe.rpki.validator3.storage.encoding.custom.validation.TAValidationR
 import java.util.HashMap;
 import java.util.Map;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 @Slf4j
 public class CoderFactory {
 
@@ -118,6 +120,20 @@ public class CoderFactory {
             @Override
             public Long fromBytes(byte[] bb) {
                 return Longs.fromByteArray(bb);
+            }
+        };
+    }
+
+    public static Coder<String> stringCoder() {
+        return new Coder<String>() {
+            @Override
+            public byte[] toBytes(String z) {
+                return z.getBytes(UTF_8);
+            }
+
+            @Override
+            public String fromBytes(byte[] bb) {
+                return new String(bb, UTF_8);
             }
         };
     }

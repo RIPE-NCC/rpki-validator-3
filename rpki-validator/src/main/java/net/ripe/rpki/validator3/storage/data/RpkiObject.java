@@ -83,11 +83,6 @@ public class RpkiObject extends Base<RpkiObject> {
     @NotNull
     private String type;
 
-    @NotNull
-    @Size(max = 1)
-    @Valid
-    private SortedSet<@NotNull @ValidLocationURI String> locations = new TreeSet<>();
-
     private BigInteger serialNumber;
 
     private Instant signingTime;
@@ -107,12 +102,7 @@ public class RpkiObject extends Base<RpkiObject> {
     public RpkiObject() {
     }
 
-    public RpkiObject(URI location, CertificateRepositoryObject object) {
-        this(location.toASCIIString(), object);
-    }
-
-    public RpkiObject(String location, CertificateRepositoryObject object) {
-        this.locations.add(location);
+    public RpkiObject(CertificateRepositoryObject object) {
         byte[] encoded = object.getEncoded();
         this.sha256 = Sha256.hash(encoded);
         this.encoded = encoded;
@@ -185,14 +175,6 @@ public class RpkiObject extends Base<RpkiObject> {
         }
 
         return Optional.of(clazz.cast(candidate));
-    }
-
-    public void addLocation(String location) {
-        this.locations.add(location);
-    }
-
-    public void removeLocation(String location) {
-        this.locations.remove(location);
     }
 
     public Type getType() {

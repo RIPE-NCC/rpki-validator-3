@@ -31,12 +31,11 @@ package net.ripe.rpki.validator3.domain.validation;
 
 import fj.data.Either;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
-import net.ripe.rpki.commons.crypto.util.CertificateRepositoryObjectFactory;
 import net.ripe.rpki.commons.validation.ValidationLocation;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
+import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.rrdp.RrdpService;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
@@ -58,6 +57,7 @@ import net.ripe.rpki.validator3.util.Sha256;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -389,11 +389,10 @@ public class RpkiRepositoryValidationService {
                         storeObject(tx, validationRun, objectsBySha256);
                         workCounter.decrementAndGet();
                     }
-                    asyncCreateObjects.submit(() -> createRpkiObject(location, content));
+                    asyncCreateObjects.submit(() -> RpkiObjects.createRpkiObject(location, content));
                     workCounter.incrementAndGet();
                 } else {
-                    existing.addLocation(location);
-                    rpkiObjectStore.put(tx, existing);
+                    rpkiObjectStore.addLocation(tx, existing.key(), location);
                     validationRunStore.associate(tx, validationRun, existing);
                 }
                 return FileVisitResult.CONTINUE;
@@ -407,22 +406,23 @@ public class RpkiRepositoryValidationService {
 
     private void storeObject(Tx.Write tx, RpkiRepositoryValidationRun validationRun, Map<String, RpkiObject> objectsBySha256) {
         try {
-            final Either<ValidationResult, RpkiObject> maybeRpkiObject = asyncCreateObjects.take().get();
+            final Either<ValidationResult, Pair<String, RpkiObject>> maybeRpkiObject = asyncCreateObjects.take().get();
             if (maybeRpkiObject.isLeft()) {
                 final ValidationResult value = maybeRpkiObject.left().value();
                 validationRun.addChecks(value);
                 log.debug("parsing {} failed: {}", value.getCurrentLocation().getName(), value);
             } else {
-                final RpkiObject object = maybeRpkiObject.right().value();
+                final Pair<String, RpkiObject> p = maybeRpkiObject.right().value();
+                final RpkiObject object = p.getRight();
                 final String key = Hex.format(object.getSha256());
                 final RpkiObject existing = objectsBySha256.get(key);
+                final String location = p.getLeft();
                 if (existing != null) {
                     // re-check it for a weird case of object with the
                     // same hash inserted while this task was in the pool
-                    object.getLocations().forEach(existing::addLocation);
-                    rpkiObjectStore.put(tx, existing);
+                    rpkiObjectStore.addLocation(tx, existing.key(), location);
                 } else {
-                    rpkiObjectStore.put(tx, object);
+                    rpkiObjectStore.put(tx, object, location);
                     validationRunStore.associate(tx, validationRun, object);
                     objectsBySha256.put(key, object);
                 }
@@ -432,17 +432,7 @@ public class RpkiRepositoryValidationService {
         }
     }
 
-    private Either<ValidationResult, RpkiObject> createRpkiObject(final String uri, final byte[] content) {
-        ValidationResult validationResult = ValidationResult.withLocation(uri);
-        CertificateRepositoryObject repositoryObject = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(content, validationResult);
-        if (validationResult.hasFailures()) {
-            return Either.left(validationResult);
-        } else {
-            return Either.right(new RpkiObject(uri, repositoryObject));
-        }
-    }
-
-    private ExecutorCompletionService<Either<ValidationResult, RpkiObject>> asyncCreateObjects =
+    private ExecutorCompletionService<Either<ValidationResult, Pair<String, RpkiObject>>> asyncCreateObjects =
             new ExecutorCompletionService<>(Executors.newFixedThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1)));
 
     private RsyncRepositoryValidationRun makeRsyncValidationRun() {

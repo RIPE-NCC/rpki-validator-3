@@ -40,6 +40,7 @@ import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.MultIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
@@ -57,7 +58,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -67,11 +70,13 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
 
     private static final String RPKI_OBJECTS = "rpki-objects";
     private static final String REACHABLE_MAP = "reachable-map";
+    private static final String LOCATION_MAP = "location-map";
     private static final String BY_AKI_MFT_INDEX = "by-aki-mft";
     private static final String BY_TYPE_INDEX = "by-type";
 
     private final IxMap<RpkiObject> ixMap;
     private final IxMap<Long> reachableMap;
+    private final MultIxMap<String> locationMap;
 
     private Set<Key> akiMftKey(RpkiObject rpkiObject) {
         byte[] authorityKeyIdentifier = rpkiObject.getAuthorityKeyIdentifier();
@@ -94,13 +99,23 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
                 CoderFactory.makeCoder(RpkiObject.class));
 
         this.reachableMap = lmdb.createIxMap(REACHABLE_MAP, ImmutableMap.of(), CoderFactory.longCoder());
+        this.locationMap = lmdb.createMultIxMap(LOCATION_MAP, CoderFactory.stringCoder());
 
-        ixMap.onDelete(reachableMap::delete);
+        ixMap.onDelete((tx, k) -> {
+            reachableMap.delete(tx, k);
+            locationMap.delete(tx, k);
+        });
     }
 
     @Override
     public void put(Tx.Write tx, RpkiObject o) {
         ixMap.put(tx, o.key(), o);
+    }
+
+    @Override
+    public void put(Tx.Write tx, RpkiObject o, String location) {
+        ixMap.put(tx, o.key(), o);
+        addLocation(tx, o.key(), location);
     }
 
     @Override
@@ -111,6 +126,21 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     @Override
     public void markReachable(Tx.Write tx, Key pk, Instant i) {
         reachableMap.put(tx, pk, i.toEpochMilli());
+    }
+
+    @Override
+    public void addLocation(Tx.Write tx, Key pk, String location) {
+        locationMap.put(tx, pk, location);
+    }
+
+    @Override
+    public SortedSet<String> getLocations(Tx.Read tx, Key pk) {
+        return new TreeSet<>(locationMap.get(tx, pk));
+    }
+
+    @Override
+    public void removeLocation(Tx.Write tx, Key key, String uri) {
+        locationMap.delete(tx, key, uri);
     }
 
     @Override
@@ -161,7 +191,6 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
                 toDelete.add(k);
             }
         });
-        // reachableMap
         toDelete.forEach(pk -> ixMap.delete(tx, pk));
         return (long) toDelete.size();
     }

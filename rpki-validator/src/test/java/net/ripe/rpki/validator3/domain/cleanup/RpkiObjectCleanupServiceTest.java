@@ -78,7 +78,6 @@ public class RpkiObjectCleanupServiceTest extends GenericStorageTest {
         assertThat(subject.cleanupRpkiObjects()).isEqualTo(0);
 
         RpkiObject orphan = new RpkiObject(
-            "rsync://localhost/orphan.cer",
             new X509ResourceCertificateBuilder()
                 .withResources(IpResourceSet.parse("10.0.0.0/8"))
                 .withIssuerDN(trustAnchor.getCertificate().getSubject())

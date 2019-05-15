@@ -37,9 +37,11 @@ import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.stream.Stream;
 
 public interface RpkiObjectStore extends GenericStore<RpkiObject> {
@@ -47,9 +49,17 @@ public interface RpkiObjectStore extends GenericStore<RpkiObject> {
 
     void put(Tx.Write tx, RpkiObject rpkiObject);
 
+    void put(Tx.Write tx, RpkiObject rpkiObject, String location);
+
     void remove(Tx.Write tx, RpkiObject o);
 
     void markReachable(Tx.Write tx, Key pk, Instant i);
+
+    void addLocation(Tx.Write tx, Key pk, String location);
+
+    SortedSet<String> getLocations(Tx.Read tx, Key pk);
+
+    void removeLocation(Tx.Write tx, Key key, String uri);
 
     <T extends CertificateRepositoryObject> Optional<T> findCertificateRepositoryObject(
             Tx.Read tx, Key sha256, Class<T> clazz, ValidationResult validationResult);
@@ -69,4 +79,5 @@ public interface RpkiObjectStore extends GenericStore<RpkiObject> {
     void verify(Tx.Read tx);
 
     void delete(Tx.Write tx, Key pk);
+
 }

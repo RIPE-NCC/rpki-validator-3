@@ -63,10 +63,6 @@ public class RpkiObjectCoder implements Coder<RpkiObject> {
         encoded.appendNotNull(ENCODED_TAG, rpkiObject.getEncoded());
         encoded.appendNotNull(SIGNING_TIME_TAG, rpkiObject.getSigningTime(), Coders::toBytes);
 
-        if (rpkiObject.getLocations() != null && !rpkiObject.getLocations().isEmpty()) {
-            byte[] locationBytes = Coders.toBytes(rpkiObject.getLocations(), Coders::toBytes);
-            encoded.append(LOCATIONS_TAG, locationBytes);
-        }
         if (rpkiObject.getRoaPrefixes() != null && !rpkiObject.getRoaPrefixes().isEmpty()) {
             byte[] prefixesBytes = Coders.toBytes(rpkiObject.getRoaPrefixes(), roaPrefixCoder::toBytes);
             encoded.append(ROA_PREFIXES, prefixesBytes);
@@ -88,11 +84,6 @@ public class RpkiObjectCoder implements Coder<RpkiObject> {
         rpkiObject.setAuthorityKeyIdentifier(content.get(AKI_TAG));
         Encoded.field(content, SIGNING_TIME_TAG).ifPresent(b -> rpkiObject.setSigningTime(Coders.toInstant(b)));
         Encoded.field(content, SERIAL_TAG).ifPresent(b -> rpkiObject.setSerialNumber(Coders.toBigInteger(b)));
-
-        Encoded.field(content, LOCATIONS_TAG).ifPresent(b -> {
-            final List<String> objects = Coders.fromBytes(b, Coders::toString);
-            rpkiObject.setLocations(new TreeSet<>(objects));
-        });
 
         Encoded.field(content, ROA_PREFIXES).ifPresent(b ->
                 rpkiObject.setRoaPrefixes(Coders.fromBytes(b, roaPrefixCoder::fromBytes)));

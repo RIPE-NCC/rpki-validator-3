@@ -39,6 +39,7 @@ import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.RrdpRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
+import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.impl.GenericStorageTest;
 import net.ripe.rpki.validator3.util.Hex;
 import net.ripe.rpki.validator3.util.Sha256;
@@ -49,6 +50,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.math.BigInteger;
 import java.util.List;
+import java.util.SortedSet;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
@@ -92,14 +94,20 @@ public class RrdpServiceImplTest extends GenericStorageTest {
         final List<RpkiObject> objects = rtx(tx -> getRpkiObjectStore().values(tx));
         assertEquals(3, objects.size());
 
-        final String uri1 = "rsync://rpki.ripe.net/repository/DEFAULT/61/fdce4c-2ea5-47eb-94bc-5b50ea88eeab/1/phQ5JfV8llJoaGylcrBcVa7oPfI.roa";
-        assertTrue(objects.stream().anyMatch(o -> uri1.equals(o.getLocations().first())));
+        rtx0(tx -> {
+            final String uri1 = "rsync://rpki.ripe.net/repository/DEFAULT/61/fdce4c-2ea5-47eb-94bc-5b50ea88eeab/1/phQ5JfV8llJoaGylcrBcVa7oPfI.roa";
+            assertTrue(objects.stream().anyMatch(o -> uri1.equals(getLocations(tx, o).first())));
 
-        final String uri2 = "rsync://rpki.ripe.net/repository/DEFAULT/a0/bf69c4-d64a-4340-9bf1-364854cbc0e8/1/Xt2pFufQkzxVnLyxgKKC8x5dVsw.mft";
-        assertTrue(objects.stream().anyMatch(o -> uri2.equals(o.getLocations().first())));
+            final String uri2 = "rsync://rpki.ripe.net/repository/DEFAULT/a0/bf69c4-d64a-4340-9bf1-364854cbc0e8/1/Xt2pFufQkzxVnLyxgKKC8x5dVsw.mft";
+            assertTrue(objects.stream().anyMatch(o -> uri2.equals(getLocations(tx, o).first())));
 
-        final String uri3 = "rsync://rpki.ripe.net/repository/DEFAULT/8f/db5787-c2c8-429b-8137-cbf6c1849c44/1/s70Ab2nV-TCWnoHVAM4QdNgMolQ.mft";
-        assertTrue(objects.stream().anyMatch(o -> uri3.equals(o.getLocations().first())));
+            final String uri3 = "rsync://rpki.ripe.net/repository/DEFAULT/8f/db5787-c2c8-429b-8137-cbf6c1849c44/1/s70Ab2nV-TCWnoHVAM4QdNgMolQ.mft";
+            assertTrue(objects.stream().anyMatch(o -> uri3.equals(getLocations(tx, o).first())));
+        });
+    }
+
+    public SortedSet<String> getLocations(Tx.Read tx, RpkiObject o) {
+        return getRpkiObjectStore().getLocations(tx, o.key());
     }
 
     @Test
@@ -136,8 +144,10 @@ public class RrdpServiceImplTest extends GenericStorageTest {
         final List<RpkiObject> objects = rtx(tx -> getRpkiObjectStore().values(tx));
         assertEquals(2, objects.size());
 
-        assertTrue(objects.stream().anyMatch(o -> cert.uri.equals(o.getLocations().first())));
-        assertTrue(objects.stream().anyMatch(o -> crl.uri.equals(o.getLocations().first())));
+        rtx0(tx -> {
+            assertTrue(objects.stream().anyMatch(o -> cert.uri.equals(getLocations(tx, o).first())));
+            assertTrue(objects.stream().anyMatch(o -> crl.uri.equals(getLocations(tx, o).first())));
+        });
     }
 
     @Test
@@ -277,7 +287,8 @@ public class RrdpServiceImplTest extends GenericStorageTest {
         assertEquals(1, objects.size());
         RpkiObject rpkiObject = objects.get(0);
         assertEquals(RpkiObject.Type.CRL, rpkiObject.getType());
-        assertEquals(Sets.newHashSet("rsync://host/path/crl1.crl"), rpkiObject.getLocations());
+        rtx0(tx ->
+                assertEquals(Sets.newHashSet("rsync://host/path/crl1.crl"), getLocations(tx, rpkiObject)));
     }
 
     @Test
@@ -316,7 +327,8 @@ public class RrdpServiceImplTest extends GenericStorageTest {
 
         final List<RpkiObject> objects = rtx(tx -> getRpkiObjectStore().values(tx));
         assertEquals(1, objects.size());
-        assertEquals(Sets.newHashSet("rsync://host/path/cert1.cer"), objects.get(0).getLocations());
+        rtx0(tx ->
+                assertEquals(Sets.newHashSet("rsync://host/path/cert1.cer"), getLocations(tx, objects.get(0))));
         assertEquals(1, objects.size());
     }
 
@@ -419,7 +431,8 @@ public class RrdpServiceImplTest extends GenericStorageTest {
 
         final RpkiObject rpkiObject = objects.get(0);
         assertEquals(RpkiObject.Type.CRL, rpkiObject.getType());
-        assertEquals(Sets.newHashSet("rsync://host/path/crl1.crl"), rpkiObject.getLocations());
+
+        rtx0(tx -> assertEquals(Sets.newHashSet("rsync://host/path/crl1.crl"), getLocations(tx, rpkiObject)));
     }
 
     @Test
@@ -474,7 +487,8 @@ public class RrdpServiceImplTest extends GenericStorageTest {
 
         final RpkiObject rpkiObject = objects.get(0);
         assertEquals(RpkiObject.Type.CRL, rpkiObject.getType());
-        assertEquals(Sets.newHashSet("rsync://host/path/crl1.crl"), rpkiObject.getLocations());
+        rtx0(tx ->
+            assertEquals(Sets.newHashSet("rsync://host/path/crl1.crl"), getLocations(tx, rpkiObject)));
     }
 
     @Test
@@ -525,7 +539,7 @@ public class RrdpServiceImplTest extends GenericStorageTest {
 
         final RpkiObject rpkiObject = objects.get(0);
         assertEquals(RpkiObject.Type.CRL, rpkiObject.getType());
-        assertEquals(Sets.newHashSet("rsync://host/path/crl1.crl"), rpkiObject.getLocations());
+        rtx0(tx -> assertEquals(Sets.newHashSet("rsync://host/path/crl1.crl"), getLocations(tx, rpkiObject)));
     }
 
 

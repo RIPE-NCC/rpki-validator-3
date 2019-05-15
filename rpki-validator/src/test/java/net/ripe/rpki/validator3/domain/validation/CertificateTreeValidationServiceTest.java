@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.domain.validation;
 
+import com.google.common.collect.Sets;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpAddress;
 import net.ripe.ipresource.IpRange;
@@ -185,11 +186,15 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
                         .map(Optional::get)
                         .collect(Collectors.toSet()));
 
-        assertThat(validatedObjects)
-            .extracting((x) -> x.getLocations().first()).containsExactlyInAnyOrder(
-            "rsync://rpki.test/test-trust-anchor.mft",
-            "rsync://rpki.test/test-trust-anchor.crl"
-        );
+        rtx0(tx ->
+                assertEquals(
+                        Sets.newHashSet(
+                                "rsync://rpki.test/test-trust-anchor.mft",
+                                "rsync://rpki.test/test-trust-anchor.crl"
+                        ),
+                        validatedObjects.stream()
+                                .flatMap(ro -> getRpkiObjectStore().getLocations(tx, ro.key()).stream())
+                                .collect(Collectors.toSet())));
 
         rtx0(tx -> {
             TrustAnchor trustAnchor = getTrustAnchorStore().get(tx, ta.key()).get();
@@ -259,7 +264,10 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
             getRpkiRepositoryStore().update(tx, r);
 
             final URI manifestUri = trustAnchor.getCertificate().getManifestUri();
-            final Optional<RpkiObject> mft = getRpkiObjectStore().values(tx).stream().filter(o -> o.getLocations().contains(manifestUri.toASCIIString())).findFirst();
+            final Optional<RpkiObject> mft = getRpkiObjectStore().values(tx)
+                    .stream()
+                    .filter(o -> getRpkiObjectStore().getLocations(tx, o.key()).contains(manifestUri.toASCIIString()))
+                    .findFirst();
             mft.ifPresent(m -> getRpkiObjectStore().remove(tx, m));
             return r;
         });
@@ -290,8 +298,10 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
             getRpkiRepositoryStore().update(tx, r);
 
             final URI manifestUri = trustAnchor.getCertificate().getManifestUri();
-            final Optional<RpkiObject> mft = getRpkiObjectStore().values(tx).stream()
-                    .filter(o -> o.getLocations().contains(manifestUri.toASCIIString())).findFirst();
+            final Optional<RpkiObject> mft = getRpkiObjectStore().values(tx)
+                    .stream()
+                    .filter(o -> getRpkiObjectStore().getLocations(tx, o.key()).contains(manifestUri.toASCIIString()))
+                    .findFirst();
             mft.ifPresent(m -> getRpkiObjectStore().remove(tx, m));
             return r;
         });

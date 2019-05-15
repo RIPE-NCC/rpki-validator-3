@@ -33,10 +33,9 @@ import com.google.common.hash.Hashing;
 import com.google.common.hash.HashingInputStream;
 import fj.data.Either;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
-import net.ripe.rpki.commons.crypto.util.CertificateRepositoryObjectFactory;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
+import net.ripe.rpki.validator3.domain.RpkiObjects;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidationRun;
@@ -232,7 +231,7 @@ public class RrdpServiceImpl implements RrdpService {
       Creating objects from byte arrays is CPU-bound, so we do it
       in parallel to make the writing transaction as short as possible.
      */
-    private ExecutorCompletionService<Either<ValidationResult, RpkiObject>> asyncCreateObjects =
+    private ExecutorCompletionService<Either<ValidationResult, Pair<String, RpkiObject>>> asyncCreateObjects =
             new ExecutorCompletionService<>(Executors.newFixedThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1)));
 
     void storeSnapshot(final Tx.Write tx, final Snapshot snapshot, final RpkiRepositoryValidationRun validationRun) {
@@ -241,17 +240,17 @@ public class RrdpServiceImpl implements RrdpService {
         final int threshold = 10;
         snapshot.asMap().forEach((objUri, value) -> {
             byte[] content = value.content;
-            Optional<RpkiObject> existing = rpkiObjectStore.findBySha256(tx, Sha256.hash(content));
+            final byte[] sha256 = Sha256.hash(content);
+            Optional<RpkiObject> existing = rpkiObjectStore.findBySha256(tx, sha256);
             if (existing.isPresent()) {
-                existing.get().addLocation(objUri);
-                rpkiObjectStore.put(tx, existing.get());
+                rpkiObjectStore.addLocation(tx, existing.get().key(), objUri);
                 validationRunStore.associate(tx, validationRun, existing.get());
             } else {
                 if (workCounter.get() > threshold) {
                     storeSnapshotObject(tx, validationRun, counter);
                     workCounter.decrementAndGet();
                 }
-                asyncCreateObjects.submit(() -> createRpkiObject(objUri, content));
+                asyncCreateObjects.submit(() -> RpkiObjects.createRpkiObject(objUri, content));
                 workCounter.incrementAndGet();
             }
         });
@@ -265,12 +264,14 @@ public class RrdpServiceImpl implements RrdpService {
 
     private void storeSnapshotObject(Tx.Write tx, RpkiRepositoryValidationRun validationRun, AtomicInteger counter) {
         try {
-            final Either<ValidationResult, RpkiObject> maybeRpkiObject = asyncCreateObjects.take().get();
+            final Either<ValidationResult, Pair<String, RpkiObject>> maybeRpkiObject = asyncCreateObjects.take().get();
             if (maybeRpkiObject.isLeft()) {
                 validationRun.addChecks(maybeRpkiObject.left().value());
             } else {
-                final RpkiObject object = maybeRpkiObject.right().value();
-                rpkiObjectStore.put(tx, object);
+                final Pair<String, RpkiObject> p = maybeRpkiObject.right().value();
+                final RpkiObject object = p.getRight();
+                final String location = p.getLeft();
+                rpkiObjectStore.put(tx, object, location);
                 validationRunStore.associate(tx, validationRun, object);
                 counter.incrementAndGet();
             }
@@ -304,7 +305,7 @@ public class RrdpServiceImpl implements RrdpService {
         final byte[] sha256 = deltaWithdraw.getHash();
         final Optional<RpkiObject> maybeObject = rpkiObjectStore.findBySha256(tx, sha256);
         if (maybeObject.isPresent()) {
-            maybeObject.get().removeLocation(uri);
+            rpkiObjectStore.removeLocation(tx, maybeObject.get().key(), uri);
             return true;
         } else {
             ValidationCheck validationCheck = new ValidationCheck(uri, ValidationCheck.Status.ERROR,
@@ -344,13 +345,16 @@ public class RrdpServiceImpl implements RrdpService {
             final Optional<RpkiObject> existing = rpkiObjectStore.findBySha256(tx, sha256);
             if (existing.isPresent()) {
                 final byte[] content = deltaPublish.getContent();
-                final Either<ValidationResult, RpkiObject> maybeRpkiObject = createRpkiObject(uri, content);
+                Either<ValidationResult, Pair<String, RpkiObject>> maybeRpkiObject =
+                        RpkiObjects.createRpkiObject(uri, content);
                 if (maybeRpkiObject.isLeft()) {
                     validationRun.addChecks(maybeRpkiObject.left().value());
                 } else {
-                    final RpkiObject object = maybeRpkiObject.right().value();
+                    final Pair<String, RpkiObject> p = maybeRpkiObject.right().value();
+                    final RpkiObject object = p.getRight();
                     if (!Arrays.equals(object.getSha256(), sha256)) {
-                        rpkiObjectStore.put(tx, object);
+                        final String location = p.getLeft();
+                        rpkiObjectStore.put(tx, object, location);
                         validationRunStore.associate(tx, validationRun, object);
                         return true;
                     } else {
@@ -364,31 +368,24 @@ public class RrdpServiceImpl implements RrdpService {
             }
         } else {
             final byte[] content = deltaPublish.getContent();
-            final Either<ValidationResult, RpkiObject> maybeRpkiObject = createRpkiObject(uri, content);
+            final Either<ValidationResult, Pair<String, RpkiObject>> maybeRpkiObject =
+                    RpkiObjects.createRpkiObject(uri, content);
             if (maybeRpkiObject.isLeft()) {
                 validationRun.addChecks(maybeRpkiObject.left().value());
             } else {
-                final RpkiObject object = maybeRpkiObject.right().value();
+                final Pair<String, RpkiObject> p = maybeRpkiObject.right().value();
+                final RpkiObject object = p.getRight();
                 final Optional<RpkiObject> bySha256 = rpkiObjectStore.findBySha256(tx, Sha256.hash(content));
                 if (bySha256.isPresent()) {
                     log.debug("The object will not be added, there's one already existing {}", object);
                 } else {
-                    rpkiObjectStore.put(tx, object);
+                    final String location = p.getLeft();
+                    rpkiObjectStore.put(tx, object, location);
                     validationRunStore.associate(tx, validationRun, object);
                     return true;
                 }
             }
         }
         return false;
-    }
-
-    private Either<ValidationResult, RpkiObject> createRpkiObject(final String uri, final byte[] content) {
-        ValidationResult validationResult = ValidationResult.withLocation(uri);
-        CertificateRepositoryObject repositoryObject = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(content, validationResult);
-        if (validationResult.hasFailures()) {
-            return Either.left(validationResult);
-        } else {
-            return Either.right(new RpkiObject(uri, repositoryObject));
-        }
     }
 }

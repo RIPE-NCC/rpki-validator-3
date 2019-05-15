@@ -183,14 +183,18 @@ public class TrustAnchorsFactory {
             .withNumber(nextSerial())
             .build(ca.keyPair.getPrivate());
 
-        rpkiObjects.put(tx, new RpkiObject(ca.crlDistributionPoint, crl));
+        final RpkiObject crlObject = new RpkiObject(crl);
+        rpkiObjects.put(tx, crlObject);
+        rpkiObjects.addLocation(tx, crlObject.key(), ca.crlDistributionPoint);
         manifestBuilder.addFile(ca.crlDistributionPoint.substring(ca.crlDistributionPoint.lastIndexOf('/') + 1), crl.getEncoded());
 
         if (ca.children != null) {
             for (CertificateAuthority child : ca.children) {
                 X509ResourceCertificate childCertificate = createCertificateAuthority(tx, child, ca);
 
-                rpkiObjects.put(tx, new RpkiObject(ca.repositoryURI + "/" + child.dn + ".cer", childCertificate));
+                final RpkiObject certObject = new RpkiObject(childCertificate);
+                rpkiObjects.put(tx, certObject);
+                rpkiObjects.addLocation(tx, certObject.key(), ca.repositoryURI + "/" + child.dn + ".cer");
                 manifestBuilder.addFile(child.dn + ".cer", childCertificate.getEncoded());
             }
         }
@@ -222,7 +226,9 @@ public class TrustAnchorsFactory {
                     .withSignatureProvider(BouncyCastleProvider.PROVIDER_NAME)
                     .build(roaKeyPair.getPrivate());
 
-                rpkiObjects.put(tx, new RpkiObject(ca.repositoryURI + "/" + "AS" + asn + ".roa", roaCms));
+                final RpkiObject roaObject = new RpkiObject(roaCms);
+                rpkiObjects.put(tx, roaObject);
+                rpkiObjects.addLocation(tx, roaObject.key(), ca.repositoryURI + "/" + "AS" + asn + ".roa");
                 manifestBuilder.addFile("AS" + asn + ".roa", roaCms.getEncoded());
             });
         }
@@ -246,7 +252,11 @@ public class TrustAnchorsFactory {
             .withThisUpdateTime(DateTime.now())
             .withNextUpdateTime(DateTime.now().plusHours(8));
         ManifestCms manifest = manifestBuilder.build(manifestKeyPair.getPrivate());
-        rpkiObjects.put(tx, new RpkiObject(ca.manifestURI, manifest));
+
+        final RpkiObject mftObject = new RpkiObject(manifest);
+        rpkiObjects.put(tx, mftObject);
+        rpkiObjects.addLocation(tx, mftObject.key(), ca.manifestURI);
+
         return caCertificate;
     }
 

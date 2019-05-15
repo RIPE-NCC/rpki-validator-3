@@ -64,7 +64,6 @@ public class RpkiObjectCoderTest {
     public void testSaveRead() {
         KeyPair generate = KEY_PAIR_FACTORY.generate();
         RpkiObject rpkiObject = new RpkiObject(
-                "rsync://localhost/orphan.cer",
                 new X509ResourceCertificateBuilder()
                         .withResources(IpResourceSet.parse("10.0.0.0/8"))
                         .withIssuerDN(new X500Principal("CN=issuer"))
@@ -88,7 +87,7 @@ public class RpkiObjectCoderTest {
 
         ValidationResult validationResult = ValidationResult.withLocation("whatever.roa");
         CertificateRepositoryObject repositoryObject = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(content, validationResult);
-        RpkiObject rpkiObject = new RpkiObject("rsync://somewhere.com/whatever.roa", repositoryObject);
+        RpkiObject rpkiObject = new RpkiObject(repositoryObject);
 
         RpkiObjectCoder coder = new RpkiObjectCoder();
         RpkiObject rpkiObject1 = coder.fromBytes(coder.toBytes(rpkiObject));

@@ -113,8 +113,8 @@ public class ValidatedRpkiObjects {
                             Stream<RpkiObject> roaStream = streamByType(tx, rpkiObjectsKeys, RpkiObject.Type.ROA);
                             Stream<RpkiObject> routerCertStream = streamByType(tx, rpkiObjectsKeys, RpkiObject.Type.ROUTER_CER);
                             return RoaPrefixesAndRouterCertificates.of(
-                                    extractRoaPrefixes(trustAnchorData, roaStream),
-                                    extractRouterCertificates(tx, trustAnchorData, routerCertStream)
+                                    toRoaPrefixes(tx, trustAnchorData, roaStream),
+                                    toRouterCertificates(tx, trustAnchorData, routerCertStream)
                             );
                         })
                         .ifPresent(roaPrefixesAndRouterCertificates -> {
@@ -219,12 +219,11 @@ public class ValidatedRpkiObjects {
         String subjectPublicKeyInfo;
     }
 
-    private ImmutableSet<RouterCertificate> extractRouterCertificates(Tx.Read tx, TrustAnchorData trustAnchor, Stream<RpkiObject> rpkiObjects) {
+    private ImmutableSet<RouterCertificate> toRouterCertificates(Tx.Read tx, TrustAnchorData trustAnchor, Stream<RpkiObject> roaCertStream) {
         final Base64.Encoder encoder = Base64.getEncoder();
         ImmutableSet.Builder<RouterCertificate> builder = ImmutableSet.builder();
-        rpkiObjects
-            .filter(object -> object.getType() == RpkiObject.Type.ROUTER_CER)
-            .map(object -> this.rpkiObjects.findCertificateRepositoryObject(tx, object.key(), X509RouterCertificate.class, ValidationResult.withLocation("temporary")))
+        roaCertStream
+            .map(object -> rpkiObjects.findCertificateRepositoryObject(tx, object.key(), X509RouterCertificate.class, ValidationResult.withLocation("temporary")))
             .filter(Optional::isPresent).map(Optional::get)
             .forEach(certificate -> {
                     final ImmutableList<String> asns = ImmutableList.copyOf(X509CertificateUtil.getAsns(certificate.getCertificate()));
@@ -242,15 +241,12 @@ public class ValidatedRpkiObjects {
         return builder.build();
     }
 
-    private ImmutableSet<RoaPrefix> extractRoaPrefixes(TrustAnchorData trustAnchor, Stream<RpkiObject> rpkiObjects) {
+    private ImmutableSet<RoaPrefix> toRoaPrefixes(Tx.Read tx, TrustAnchorData trustAnchor, Stream<RpkiObject> roaStream) {
         ImmutableSet.Builder<RoaPrefix> builder = ImmutableSet.builder();
-        rpkiObjects
-            .filter(
-                object -> object.getType() == RpkiObject.Type.ROA
-            )
+        roaStream
             .flatMap(
                 object -> {
-                    ImmutableSortedSet<String> locations = ImmutableSortedSet.copyOf(object.getLocations());
+                    ImmutableSortedSet<String> locations = ImmutableSortedSet.copyOf(rpkiObjects.getLocations(tx, object.key()));
                     return object.getRoaPrefixes().stream().map(prefix -> Pair.of(locations, prefix));
                 }
             )
