@@ -69,8 +69,8 @@ import java.util.stream.Stream;
 public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements RpkiObjects {
 
     private static final String RPKI_OBJECTS = "rpki-objects";
-    private static final String REACHABLE_MAP = "reachable-map";
-    private static final String LOCATION_MAP = "location-map";
+    private static final String REACHABLE_MAP = "rpki-objects-reachable";
+    private static final String LOCATION_MAP = "rpki-objects-location";
     private static final String BY_AKI_MFT_INDEX = "by-aki-mft";
     private static final String BY_TYPE_INDEX = "by-type";
 
