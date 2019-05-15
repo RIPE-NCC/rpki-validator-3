@@ -110,16 +110,19 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     @Override
     public void put(Tx.Write tx, RpkiObject o) {
         ixMap.put(tx, o.key(), o);
+        // mark every object as reachable at the moment of inserting, otherwise
+        // we will keep the objects that have never been reached forever
+        markReachable(tx, o.key(), o.getCreatedAt());
     }
 
     @Override
     public void put(Tx.Write tx, RpkiObject o, String location) {
-        ixMap.put(tx, o.key(), o);
+        put(tx, o);
         addLocation(tx, o.key(), location);
     }
 
     @Override
-    public void remove(Tx.Write tx, RpkiObject o) {
+    public void delete(Tx.Write tx, RpkiObject o) {
         ixMap.delete(tx, o.key());
     }
 
@@ -139,7 +142,7 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     }
 
     @Override
-    public void removeLocation(Tx.Write tx, Key key, String uri) {
+    public void deleteLocation(Tx.Write tx, Key key, String uri) {
         locationMap.delete(tx, key, uri);
     }
 
@@ -222,10 +225,5 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
         } catch (Exception e) {
             log.error("And now the data is screwed", e);
         }
-    }
-
-    @Override
-    public void delete(Tx.Write tx, Key pk) {
-        ixMap.delete(tx, pk);
     }
 }
