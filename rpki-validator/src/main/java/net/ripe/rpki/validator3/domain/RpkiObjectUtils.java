@@ -36,7 +36,7 @@ import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import org.apache.commons.lang3.tuple.Pair;
 
-public class RpkiObjects {
+public class RpkiObjectUtils {
 
     public static Either<ValidationResult, Pair<String, RpkiObject>> createRpkiObject(final String uri, final byte[] content) {
         ValidationResult validationResult = ValidationResult.withLocation(uri);
