@@ -50,9 +50,9 @@ import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
-import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
-import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
-import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
+import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
+import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Locks;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
@@ -81,13 +81,13 @@ public class ValidatedRpkiObjects {
     private Map<Long, RoaPrefixesAndRouterCertificates> validatedObjectsByTrustAnchor = new HashMap<>();
 
     @Autowired
-    private RpkiObjectStore rpkiObjects;
+    private RpkiObjects rpkiObjects;
 
     @Autowired
-    private TrustAnchorStore trustAnchorStore;
+    private TrustAnchors trustAnchors;
 
     @Autowired
-    private ValidationRunStore validationRunStore;
+    private ValidationRuns validationRuns;
 
     @Autowired
     private Lmdb lmdb;
@@ -97,9 +97,9 @@ public class ValidatedRpkiObjects {
     @PostConstruct
     private void initialize() {
         Long t = Time.timed(() -> lmdb.readTx0(tx ->
-                validationRunStore.findLatestSuccessful(tx, CertificateTreeValidationRun.class)
+                validationRuns.findLatestSuccessful(tx, CertificateTreeValidationRun.class)
                         .forEach(vr -> {
-                            final Set<Key> associatedPks = validationRunStore.findAssociatedPks(tx, vr);
+                            final Set<Key> associatedPks = validationRuns.findAssociatedPks(tx, vr);
                             updateByKey(tx, vr.getTrustAnchor(), associatedPks);
                         })));
         log.info("Initialised in {}ms", t);
@@ -107,7 +107,7 @@ public class ValidatedRpkiObjects {
 
     void updateByKey(Tx.Read tx, Ref<TrustAnchor> trustAnchor, Collection<Key> rpkiObjectsKeys) {
         Long t = Time.timed(() ->
-                trustAnchorStore.get(tx, trustAnchor.key())
+                trustAnchors.get(tx, trustAnchor.key())
                         .map(ta -> {
                             TrustAnchorData trustAnchorData = TrustAnchorData.of(trustAnchor.key().asLong(), ta.getName());
                             Stream<RpkiObject> roaStream = streamByType(tx, rpkiObjectsKeys, RpkiObject.Type.ROA);

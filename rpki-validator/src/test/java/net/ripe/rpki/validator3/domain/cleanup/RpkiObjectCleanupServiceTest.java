@@ -39,7 +39,7 @@ import net.ripe.rpki.validator3.domain.ta.TrustAnchorsFactory;
 import net.ripe.rpki.validator3.storage.data.RoaPrefix;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
+import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.impl.GenericStorageTest;
 import org.joda.time.DateTime;
 import org.junit.Test;
@@ -66,7 +66,7 @@ public class RpkiObjectCleanupServiceTest extends GenericStorageTest {
     private RpkiObjectCleanupService subject;
 
     @Autowired
-    private RpkiObjectStore rpkiObjects;
+    private RpkiObjects rpkiObjects;
 
     @Test
     public void should_delete_objects_not_reachable_from_manifest() throws Exception {

@@ -31,7 +31,7 @@ package net.ripe.rpki.validator3.domain.cleanup;
 
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
-import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
+import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Time;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -46,7 +46,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ValidationRunCleanupService {
 
     @Autowired
-    private ValidationRunStore validationRuns;
+    private ValidationRuns validationRuns;
 
     private final Duration cleanupGraceDuration;
 

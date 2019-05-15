@@ -33,11 +33,11 @@ import lombok.Getter;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
-import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
-import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
-import net.ripe.rpki.validator3.storage.stores.SettingsStore;
-import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
-import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
+import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
+import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
+import net.ripe.rpki.validator3.storage.stores.Settings;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
+import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import org.junit.Before;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -48,19 +48,19 @@ public class GenericStorageTest {
 
     @Autowired
     @Getter
-    private RpkiObjectStore rpkiObjectStore;
+    private RpkiObjects rpkiObjects;
 
     @Autowired
     @Getter
-    private RpkiRepositoryStore rpkiRepositoryStore;
+    private RpkiRepositories rpkiRepositories;
 
     @Autowired
     @Getter
-    private TrustAnchorStore trustAnchorStore;
+    private TrustAnchors trustAnchors;
 
     @Autowired
     @Getter
-    private ValidationRunStore validationRunStore;
+    private ValidationRuns validationRuns;
 
     @Autowired
     @Getter
@@ -72,7 +72,7 @@ public class GenericStorageTest {
 
     @Autowired
     @Getter
-    private SettingsStore settingsStore;
+    private Settings settings;
 
     @Getter
     @Autowired
@@ -81,12 +81,12 @@ public class GenericStorageTest {
     @Before
     public void setUp() throws Exception {
         wtx0(tx -> {
-            rpkiObjectStore.clear(tx);
-            trustAnchorStore.clear(tx);
-            rpkiRepositoryStore.clear(tx);
-            validationRunStore.clear(tx);
+            rpkiObjects.clear(tx);
+            trustAnchors.clear(tx);
+            rpkiRepositories.clear(tx);
+            validationRuns.clear(tx);
             sequences.clear(tx);
-            settingsStore.clear(tx);
+            settings.clear(tx);
         });
     }
 

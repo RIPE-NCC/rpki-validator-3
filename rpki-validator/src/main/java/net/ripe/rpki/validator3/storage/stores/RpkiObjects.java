@@ -27,53 +27,54 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.stores.impl;
+package net.ripe.rpki.validator3.storage.stores;
 
-import com.google.common.collect.ImmutableMap;
+import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
+import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
+import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.storage.data.Key;
-import net.ripe.rpki.validator3.storage.encoding.StringCoder;
-import net.ripe.rpki.validator3.storage.lmdb.IxMap;
-import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
+import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
-import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
-import net.ripe.rpki.validator3.storage.stores.Settings;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-@Component
-public class LmdbSettings extends GenericStoreImpl<String> implements Settings {
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.stream.Stream;
 
-    private static final String INITIAL_VALIDATION_RUN_COMPLETED = "internal.initial.validation.run.completed";
-    private static final String SETTINGS = "settings";
+public interface RpkiObjects extends GenericStore<RpkiObject> {
+    Optional<RpkiObject> get(Tx.Read tx, Key key);
 
-    private final IxMap<String> ixMap;
+    void put(Tx.Write tx, RpkiObject rpkiObject);
 
-    @Autowired
-    public LmdbSettings(Lmdb lmdb) {
-        this.ixMap = lmdb.createIxMap(SETTINGS, ImmutableMap.of(), new StringCoder());
-    }
+    void put(Tx.Write tx, RpkiObject rpkiObject, String location);
 
-    @Override
-    public void markInitialValidationRunCompleted(Tx.Write tx) {
-        setTrue(tx, INITIAL_VALIDATION_RUN_COMPLETED);
-    }
+    void delete(Tx.Write tx, RpkiObject o);
 
-    @Override
-    public boolean isInitialValidationRunCompleted(Tx.Read tx) {
-        return isTrue(tx, INITIAL_VALIDATION_RUN_COMPLETED);
-    }
+    void markReachable(Tx.Write tx, Key pk, Instant i);
 
-    public void setTrue(Tx.Write tx, String preconfiguredTalSettingsKey) {
-        ixMap.put(tx, Key.of(preconfiguredTalSettingsKey), "true");
-    }
+    void addLocation(Tx.Write tx, Key pk, String location);
 
-    private boolean isTrue(Tx.Read tx, String initialValidationRunCompleted) {
-        return ixMap.get(tx, Key.of(initialValidationRunCompleted)).filter("true"::equals).isPresent();
-    }
+    SortedSet<String> getLocations(Tx.Read tx, Key pk);
 
-    @Override
-    protected IxMap<String> ixMap() {
-        return ixMap;
-    }
+    void deleteLocation(Tx.Write tx, Key key, String uri);
 
+    <T extends CertificateRepositoryObject> Optional<T> findCertificateRepositoryObject(
+            Tx.Read tx, Key sha256, Class<T> clazz, ValidationResult validationResult);
+
+    Optional<RpkiObject> findBySha256(Tx.Read tx, byte[] sha256);
+
+    Map<String, RpkiObject> findObjectsInManifest(Tx.Read tx, ManifestCms manifestCms);
+
+    Optional<RpkiObject> findLatestMftByAKI(Tx.Read tx, byte[] authorityKeyIdentifier);
+
+    long deleteUnreachableObjects(Tx.Write tx, Instant unreachableSince);
+
+    Stream<byte[]> streamObjects(Tx.Read tx, RpkiObject.Type type);
+
+    Set<Key> getPkByType(Tx.Read tx, RpkiObject.Type type);
+
+    void verify(Tx.Read tx);
 }

@@ -38,8 +38,8 @@ import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
-import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
-import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
+import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,10 +57,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RpkiObjectCleanupService {
 
     @Autowired
-    private TrustAnchorStore trustAnchors;
+    private TrustAnchors trustAnchors;
 
     @Autowired
-    private RpkiObjectStore rpkiObjects;
+    private RpkiObjects rpkiObjects;
 
     private final Duration cleanupGraceDuration;
 

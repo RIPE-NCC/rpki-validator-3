@@ -37,8 +37,8 @@ import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
-import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
-import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
+import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.storage.stores.impl.GenericStorageTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -57,13 +57,13 @@ public class TrustAnchorValidationServiceTest extends GenericStorageTest {
     private static final String DUMMY_RSYNC_URI = "rsync://localhost/non-existent/ta/ripe-ncc-ta.cer";
 
     @Autowired
-    private TrustAnchorStore trustAnchors;
+    private TrustAnchors trustAnchors;
 
     @Autowired
     private TrustAnchorValidationService subject;
 
     @Autowired
-    private ValidationRunStore validationRuns;
+    private ValidationRuns validationRuns;
 
     @Test
     public void test_success() {

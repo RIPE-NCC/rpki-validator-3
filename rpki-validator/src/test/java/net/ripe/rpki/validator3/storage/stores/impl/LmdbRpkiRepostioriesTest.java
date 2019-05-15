@@ -36,7 +36,6 @@ import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -57,23 +56,23 @@ public class LmdbRpkiRepostioriesTest extends GenericStorageTest {
     @Before
     public void setup() {
         trustAnchor = TestObjects.newTrustAnchor();
-        wtx0(tx -> getTrustAnchorStore().add(tx, trustAnchor));
+        wtx0(tx -> this.getTrustAnchors().add(tx, trustAnchor));
 
-        final Ref<TrustAnchor> trustAnchorRef = rtx(tx -> getTrustAnchorStore().makeRef(tx, trustAnchor.key()));
-        rsyncRepo = wtx(tx -> getRpkiRepositoryStore().register(tx,
+        final Ref<TrustAnchor> trustAnchorRef = rtx(tx -> this.getTrustAnchors().makeRef(tx, trustAnchor.key()));
+        rsyncRepo = wtx(tx -> this.getRpkiRepositories().register(tx,
                 trustAnchorRef, "rsync://some.rsync.repo", RpkiRepository.Type.RSYNC));
     }
 
     @Test
     public void after_setup_there_is_one_rpki_repository() {
-        long countAll = rtx(tx -> getRpkiRepositoryStore().countAll(tx, RpkiRepository.Status.PENDING,
+        long countAll = rtx(tx -> this.getRpkiRepositories().countAll(tx, RpkiRepository.Status.PENDING,
                 trustAnchor.key(), true, new SearchTerm("some")));
         assertEquals(1, countAll);
     }
 
     @Test
     public void after_setup_there_is_one_pending() {
-        Map<RpkiRepository.Status, Long> statuses = rtx(tx -> getRpkiRepositoryStore().countByStatus(tx, trustAnchor.key(), true));
+        Map<RpkiRepository.Status, Long> statuses = rtx(tx -> this.getRpkiRepositories().countByStatus(tx, trustAnchor.key(), true));
         long countPending = statuses.get(RpkiRepository.Status.PENDING);
         assertEquals(1, countPending);
     }
@@ -81,8 +80,8 @@ public class LmdbRpkiRepostioriesTest extends GenericStorageTest {
     @Test
     public void after_remove_count_should_be_zero() {
         long countAll = wtx(tx -> {
-            getRpkiRepositoryStore().removeAllForTrustAnchor(tx, trustAnchor);
-            return getRpkiRepositoryStore().countAll(tx, RpkiRepository.Status.PENDING, trustAnchor.key(), true, new SearchTerm("some"));
+            this.getRpkiRepositories().removeAllForTrustAnchor(tx, trustAnchor);
+            return this.getRpkiRepositories().countAll(tx, RpkiRepository.Status.PENDING, trustAnchor.key(), true, new SearchTerm("some"));
         });
         assertEquals(0, countAll);
     }
@@ -90,8 +89,8 @@ public class LmdbRpkiRepostioriesTest extends GenericStorageTest {
     @Test
     public void after_remove_repository_count_should_be_zero() {
         long countAll = wtx(tx -> {
-            getRpkiRepositoryStore().remove(tx, rsyncRepo.key());
-            return getRpkiRepositoryStore().countAll(tx, RpkiRepository.Status.PENDING, trustAnchor.key(), true, new SearchTerm("some"));
+            this.getRpkiRepositories().remove(tx, rsyncRepo.key());
+            return this.getRpkiRepositories().countAll(tx, RpkiRepository.Status.PENDING, trustAnchor.key(), true, new SearchTerm("some"));
         });
         assertEquals(0, countAll);
     }

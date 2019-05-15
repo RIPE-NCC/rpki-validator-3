@@ -39,7 +39,7 @@ import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
-import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
+import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.Links;
@@ -63,11 +63,11 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 @Slf4j
 public class RpkiRepositoriesController {
 
-    private final RpkiRepositoryStore rpkiRepositories;
+    private final RpkiRepositories rpkiRepositories;
     private final Lmdb lmdb;
 
     @Autowired
-    public RpkiRepositoriesController(RpkiRepositoryStore rpkiRepositories, Lmdb lmdb) {
+    public RpkiRepositoriesController(RpkiRepositories rpkiRepositories, Lmdb lmdb) {
         this.rpkiRepositories = rpkiRepositories;
         this.lmdb = lmdb;
     }

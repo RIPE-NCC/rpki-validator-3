@@ -43,7 +43,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-public interface RpkiRepositoryStore extends GenericStore<RpkiRepository> {
+public interface RpkiRepositories extends GenericStore<RpkiRepository> {
 
     RpkiRepository register(Tx.Write tx, Ref<TrustAnchor> trustAnchor, String uri, RpkiRepository.Type type);
 

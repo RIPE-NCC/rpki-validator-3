@@ -35,6 +35,7 @@ import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
 import net.ripe.rpki.validator3.util.Time;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -98,6 +99,29 @@ public class IxMapTest {
             assertEquals(Sets.newHashSet("aa", "ab"), new HashSet<>(getByLength(tx, 2)));
             assertEquals(Sets.newHashSet("bbb", "xxx"), new HashSet<>(getByLength(tx, 3)));
         });
+    }
+
+
+    @Test
+    @Ignore
+    public void putAndUpdateWithBiggerValue() {
+        Random r = new Random();
+        lmdb.writeTx0(tx -> {
+            for (int i = 0; i < 10_000; i++) {
+                ixMap.put(tx, Key.of(i), randomString(r, 10));
+            }
+        });
+
+        for (int c = 0; c < 10; c++) {
+            lmdb.writeTx0(tx -> {
+                for (int i = 0; i < 10_000; i++) {
+                    final Key k = Key.of(i);
+                    final String s = ixMap.get(tx, k).get();
+                    ixMap.put(tx, k, s + s);
+                    assertEquals(s + s, ixMap.get(tx, k).get());
+                }
+            });
+        }
     }
 
     @Test

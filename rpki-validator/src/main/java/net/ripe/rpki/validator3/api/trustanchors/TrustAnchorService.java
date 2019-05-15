@@ -39,9 +39,9 @@ import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
-import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
-import net.ripe.rpki.validator3.storage.stores.SettingsStore;
-import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
+import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
+import net.ripe.rpki.validator3.storage.stores.Settings;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.util.TrustAnchorLocator;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,13 +63,13 @@ import java.util.stream.Collectors;
 @Slf4j
 public class TrustAnchorService {
 
-    private final TrustAnchorStore trustAnchorStore;
+    private final TrustAnchors trustAnchors;
 
-    private final RpkiRepositoryStore rpkiRepositoryStore;
+    private final RpkiRepositories rpkiRepositories;
 
     private final ValidatedRpkiObjects validatedRpkiObjects;
 
-    private final SettingsStore settingsStore;
+    private final Settings settings;
 
     private final ValidationScheduler validationScheduler;
 
@@ -79,15 +79,15 @@ public class TrustAnchorService {
     private final Lmdb lmdb;
 
     @Autowired
-    public TrustAnchorService(TrustAnchorStore trustAnchorStore,
-                              RpkiRepositoryStore rpkiRepositoryStore,
-                              ValidatedRpkiObjects validatedRpkiObjects, SettingsStore settingsStore,
+    public TrustAnchorService(TrustAnchors trustAnchors,
+                              RpkiRepositories rpkiRepositories,
+                              ValidatedRpkiObjects validatedRpkiObjects, Settings settings,
                               ValidationScheduler validationScheduler,
                               Lmdb lmdb) {
-        this.trustAnchorStore = trustAnchorStore;
-        this.rpkiRepositoryStore = rpkiRepositoryStore;
+        this.trustAnchors = trustAnchors;
+        this.rpkiRepositories = rpkiRepositories;
         this.validatedRpkiObjects = validatedRpkiObjects;
-        this.settingsStore = settingsStore;
+        this.settings = settings;
         this.validationScheduler = validationScheduler;
         this.lmdb = lmdb;
     }
@@ -102,11 +102,11 @@ public class TrustAnchorService {
     }
 
     long add(Tx.Write tx, TrustAnchor trustAnchor) {
-        trustAnchorStore.add(tx, trustAnchor);
+        trustAnchors.add(tx, trustAnchor);
 
-        final Ref<TrustAnchor> trustAnchorRef = trustAnchorStore.makeRef(tx, trustAnchor.key());
+        final Ref<TrustAnchor> trustAnchorRef = trustAnchors.makeRef(tx, trustAnchor.key());
         if (trustAnchor.getRsyncPrefetchUri() != null) {
-            rpkiRepositoryStore.register(tx, trustAnchorRef,
+            rpkiRepositories.register(tx, trustAnchorRef,
                     trustAnchor.getRsyncPrefetchUri(), RpkiRepository.Type.RSYNC_PREFETCH);
         }
         tx.afterCommit(() -> validationScheduler.addTrustAnchor(trustAnchor));
@@ -116,10 +116,10 @@ public class TrustAnchorService {
 
     public void remove(long trustAnchorId) {
         lmdb.writeTx0(tx ->
-                trustAnchorStore.get(tx, Key.of(trustAnchorId))
+                trustAnchors.get(tx, Key.of(trustAnchorId))
                         .ifPresent(trustAnchor -> {
-                            rpkiRepositoryStore.removeAllForTrustAnchor(tx, trustAnchor);
-                            trustAnchorStore.remove(tx, trustAnchor);
+                            rpkiRepositories.removeAllForTrustAnchor(tx, trustAnchor);
+                            trustAnchors.remove(tx, trustAnchor);
                             validatedRpkiObjects.remove(trustAnchor);
                         }));
     }
@@ -137,7 +137,7 @@ public class TrustAnchorService {
         for (final File tal : tals) {
             final TrustAnchorLocator locator = TrustAnchorLocator.fromFile(tal);
             lmdb.writeTx0(tx -> {
-                Optional<TrustAnchor> ta = trustAnchorStore.findBySubjectPublicKeyInfo(tx, locator.getPublicKeyInfo());
+                Optional<TrustAnchor> ta = trustAnchors.findBySubjectPublicKeyInfo(tx, locator.getPublicKeyInfo());
                 if (ta.isPresent()) {
                     log.info("Preconfigured trust anchor '{}' already installed, skipping", locator.getCaName());
                 } else {
@@ -164,7 +164,7 @@ public class TrustAnchorService {
 
     private void scheduleTasValidation(Tx.Read tx) {
         log.info("Schedule TA validation that were in the database already");
-        trustAnchorStore.findAll(tx).forEach(ta -> {
+        trustAnchors.findAll(tx).forEach(ta -> {
             if (!validationScheduler.scheduledTrustAnchor(ta)) {
                 log.info("Adding " + ta.getName() + " to the validation scheduler");
                 validationScheduler.addTrustAnchor(ta);

@@ -51,7 +51,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-public interface ValidationRunStore {
+public interface ValidationRuns {
     <T extends ValidationRun> T add(Tx.Write tx, T validationRun);
 
     <T extends ValidationRun> void update(Tx.Write tx, T validationRun);

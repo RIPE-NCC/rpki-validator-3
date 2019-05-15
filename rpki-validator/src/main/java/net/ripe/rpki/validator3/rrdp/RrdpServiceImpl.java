@@ -35,16 +35,16 @@ import fj.data.Either;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
-import net.ripe.rpki.validator3.domain.RpkiObjects;
+import net.ripe.rpki.validator3.domain.RpkiObjectUtils;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
-import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
-import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
-import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
+import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
+import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
+import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Hex;
 import net.ripe.rpki.validator3.util.Sha256;
 import net.ripe.rpki.validator3.util.Time;
@@ -75,33 +75,33 @@ public class RrdpServiceImpl implements RrdpService {
 
     private final RrdpClient rrdpClient;
 
-    private final RpkiObjectStore rpkiObjectStore;
+    private final RpkiObjects rpkiObjects;
 
-    private final RpkiRepositoryStore rpkiRepositoryStore;
+    private final RpkiRepositories rpkiRepositories;
 
-    private final ValidationRunStore validationRunStore;
+    private final ValidationRuns validationRuns;
 
     private final Lmdb lmdb;
 
     @Autowired
     public RrdpServiceImpl(final RrdpClient rrdpClient,
-                           final RpkiObjectStore rpkiObjectStore,
-                           final RpkiRepositoryStore rpkiRepositoryStore,
-                           final ValidationRunStore validationRunStore,
+                           final RpkiObjects rpkiObjects,
+                           final RpkiRepositories rpkiRepositories,
+                           final ValidationRuns validationRuns,
                            final Lmdb lmdb) {
         this.rrdpClient = rrdpClient;
-        this.rpkiObjectStore = rpkiObjectStore;
-        this.rpkiRepositoryStore = rpkiRepositoryStore;
-        this.validationRunStore = validationRunStore;
+        this.rpkiObjects = rpkiObjects;
+        this.rpkiRepositories = rpkiRepositories;
+        this.validationRuns = validationRuns;
         this.lmdb = lmdb;
     }
 
     @Override
     public void storeRepository(final RpkiRepository rpkiRepository, final RpkiRepositoryValidationRun validationRun) {
         try {
-            lmdb.readTx0(rpkiObjectStore::verify);
+            lmdb.readTx0(rpkiObjects::verify);
             doStoreRepository(rpkiRepository, validationRun);
-            lmdb.readTx0(rpkiObjectStore::verify);
+            lmdb.readTx0(rpkiObjects::verify);
         } catch (RrdpException e) {
             log.warn("Error retrieving RRDP repository at {}: " + e.getMessage(), rpkiRepository.getRrdpNotifyUri());
             ValidationCheck validationCheck = new ValidationCheck(rpkiRepository.getRrdpNotifyUri(),
@@ -176,7 +176,7 @@ public class RrdpServiceImpl implements RrdpService {
                     storeSnapshot(tx, timedSnapshot.getLeft(), validationRun);
                     rpkiRepository.setRrdpSessionId(notification.sessionId);
                     rpkiRepository.setRrdpSerial(notification.serial);
-                    rpkiRepositoryStore.update(tx, rpkiRepository);
+                    rpkiRepositories.update(tx, rpkiRepository);
                 }));
 
         log.info("Storing snapshot time {}ms", timedStoreSnapshot);
@@ -238,19 +238,19 @@ public class RrdpServiceImpl implements RrdpService {
         final AtomicInteger counter = new AtomicInteger();
         final AtomicInteger workCounter = new AtomicInteger(0);
         final int threshold = 10;
-        snapshot.asMap().forEach((objUri, value) -> {
+        snapshot.asMap().forEach((uri, value) -> {
             byte[] content = value.content;
             final byte[] sha256 = Sha256.hash(content);
-            Optional<RpkiObject> existing = rpkiObjectStore.findBySha256(tx, sha256);
+            Optional<RpkiObject> existing = rpkiObjects.findBySha256(tx, sha256);
             if (existing.isPresent()) {
-                rpkiObjectStore.addLocation(tx, existing.get().key(), objUri);
-                validationRunStore.associate(tx, validationRun, existing.get());
+                rpkiObjects.addLocation(tx, existing.get().key(), uri);
+                validationRuns.associate(tx, validationRun, existing.get());
             } else {
                 if (workCounter.get() > threshold) {
                     storeSnapshotObject(tx, validationRun, counter);
                     workCounter.decrementAndGet();
                 }
-                asyncCreateObjects.submit(() -> RpkiObjects.createRpkiObject(objUri, content));
+                asyncCreateObjects.submit(() -> RpkiObjectUtils.createRpkiObject(uri, content));
                 workCounter.incrementAndGet();
             }
         });
@@ -271,8 +271,8 @@ public class RrdpServiceImpl implements RrdpService {
                 final Pair<String, RpkiObject> p = maybeRpkiObject.right().value();
                 final RpkiObject object = p.getRight();
                 final String location = p.getLeft();
-                rpkiObjectStore.put(tx, object, location);
-                validationRunStore.associate(tx, validationRun, object);
+                rpkiObjects.put(tx, object, location);
+                validationRuns.associate(tx, validationRun, object);
                 counter.incrementAndGet();
             }
         } catch (Exception e) {
@@ -303,9 +303,9 @@ public class RrdpServiceImpl implements RrdpService {
 
     private boolean applyDeltaWithdraw(RpkiRepositoryValidationRun validationRun, String uri, DeltaWithdraw deltaWithdraw, Tx.Write tx) {
         final byte[] sha256 = deltaWithdraw.getHash();
-        final Optional<RpkiObject> maybeObject = rpkiObjectStore.findBySha256(tx, sha256);
+        final Optional<RpkiObject> maybeObject = rpkiObjects.findBySha256(tx, sha256);
         if (maybeObject.isPresent()) {
-            rpkiObjectStore.removeLocation(tx, maybeObject.get().key(), uri);
+            rpkiObjects.deleteLocation(tx, maybeObject.get().key(), uri);
             return true;
         } else {
             ValidationCheck validationCheck = new ValidationCheck(uri, ValidationCheck.Status.ERROR,
@@ -328,7 +328,7 @@ public class RrdpServiceImpl implements RrdpService {
     }
 
     private void checkObjectExists(DeltaElement deltaElement, String errorCode, byte[] sha256, Tx.Read tx) {
-        final Optional<RpkiObject> objectByHash = rpkiObjectStore.findBySha256(tx, sha256);
+        final Optional<RpkiObject> objectByHash = rpkiObjects.findBySha256(tx, sha256);
         if (!objectByHash.isPresent()) {
             throw new RrdpException(errorCode, "Couldn't find an object with location '" +
                     deltaElement.uri + "' with hash " + Hex.format(sha256));
@@ -342,11 +342,11 @@ public class RrdpServiceImpl implements RrdpService {
 
         if (deltaPublish.getHash().isPresent()) {
             final byte[] sha256 = deltaPublish.getHash().get();
-            final Optional<RpkiObject> existing = rpkiObjectStore.findBySha256(tx, sha256);
+            final Optional<RpkiObject> existing = rpkiObjects.findBySha256(tx, sha256);
             if (existing.isPresent()) {
                 final byte[] content = deltaPublish.getContent();
                 Either<ValidationResult, Pair<String, RpkiObject>> maybeRpkiObject =
-                        RpkiObjects.createRpkiObject(uri, content);
+                        RpkiObjectUtils.createRpkiObject(uri, content);
                 if (maybeRpkiObject.isLeft()) {
                     validationRun.addChecks(maybeRpkiObject.left().value());
                 } else {
@@ -354,8 +354,8 @@ public class RrdpServiceImpl implements RrdpService {
                     final RpkiObject object = p.getRight();
                     if (!Arrays.equals(object.getSha256(), sha256)) {
                         final String location = p.getLeft();
-                        rpkiObjectStore.put(tx, object, location);
-                        validationRunStore.associate(tx, validationRun, object);
+                        rpkiObjects.put(tx, object, location);
+                        validationRuns.associate(tx, validationRun, object);
                         return true;
                     } else {
                         log.debug("The object added is the same {}", object);
@@ -369,19 +369,19 @@ public class RrdpServiceImpl implements RrdpService {
         } else {
             final byte[] content = deltaPublish.getContent();
             final Either<ValidationResult, Pair<String, RpkiObject>> maybeRpkiObject =
-                    RpkiObjects.createRpkiObject(uri, content);
+                    RpkiObjectUtils.createRpkiObject(uri, content);
             if (maybeRpkiObject.isLeft()) {
                 validationRun.addChecks(maybeRpkiObject.left().value());
             } else {
                 final Pair<String, RpkiObject> p = maybeRpkiObject.right().value();
                 final RpkiObject object = p.getRight();
-                final Optional<RpkiObject> bySha256 = rpkiObjectStore.findBySha256(tx, Sha256.hash(content));
+                final Optional<RpkiObject> bySha256 = rpkiObjects.findBySha256(tx, Sha256.hash(content));
                 if (bySha256.isPresent()) {
                     log.debug("The object will not be added, there's one already existing {}", object);
                 } else {
                     final String location = p.getLeft();
-                    rpkiObjectStore.put(tx, object, location);
-                    validationRunStore.associate(tx, validationRun, object);
+                    rpkiObjects.put(tx, object, location);
+                    validationRuns.associate(tx, validationRun, object);
                     return true;
                 }
             }

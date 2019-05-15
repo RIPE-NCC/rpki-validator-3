@@ -51,15 +51,14 @@ import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.MultIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
-import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
-import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
-import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
-import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
+import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
+import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
+import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -75,7 +74,7 @@ import java.util.stream.Stream;
 
 @Component
 @Slf4j
-public class LmdbValidationRuns implements ValidationRunStore {
+public class LmdbValidationRuns implements ValidationRuns {
 
     private static final String RPKI_VALIDATION_RUNS = "validation-runs";
     private static final String CT_RPKI_VALIDATION_RUNS = "certificate-tree-validation-runs";
@@ -97,18 +96,18 @@ public class LmdbValidationRuns implements ValidationRunStore {
 
     private final Map<String, IxMap<? extends ValidationRun>> maps = new HashMap<>();
 
-    private final RpkiObjectStore rpkiObjectStore;
-    private final RpkiRepositoryStore rpkiRepositoryStore;
+    private final RpkiObjects rpkiObjects;
+    private final RpkiRepositories rpkiRepositories;
 
     private final Sequences sequences;
 
-    public LmdbValidationRuns(RpkiObjectStore rpkiObjectStore,
-                              @Lazy TrustAnchorStore trustAnchorStore,
-                              RpkiRepositoryStore rpkiRepositoryStore,
+    public LmdbValidationRuns(RpkiObjects rpkiObjects,
+                              @Lazy TrustAnchors trustAnchors,
+                              RpkiRepositories rpkiRepositories,
                               Sequences sequences,
                               Lmdb lmdb) {
-        this.rpkiObjectStore = rpkiObjectStore;
-        this.rpkiRepositoryStore = rpkiRepositoryStore;
+        this.rpkiObjects = rpkiObjects;
+        this.rpkiRepositories = rpkiRepositories;
         this.sequences = sequences;
 
         ctIxMap = lmdb.createIxMap(
@@ -152,7 +151,7 @@ public class LmdbValidationRuns implements ValidationRunStore {
         vr2ro = lmdb.createMultIxMap(VALIDATION_RUNS_TO_RPKI_OBJECTS, keyCoder);
         vr2repo = lmdb.createIxMap(VALIDATION_RUNS_TO_RPKI_REPOSITORIES, Collections.emptyMap(), keyCoder);
 
-        trustAnchorStore.onDelete(this::removeAllForTrustAnchor);
+        trustAnchors.onDelete(this::removeAllForTrustAnchor);
 
         maps.values().forEach(ixMap ->
                 ixMap.onDelete((tx, vrKey) -> {
@@ -265,8 +264,8 @@ public class LmdbValidationRuns implements ValidationRunStore {
 
     @Override
     public int removeOrphanValidationRunAssociations(Tx.Write tx) {
-        final Set<Key> roKeys = rpkiObjectStore.keys(tx);
-        final Set<Key> repoKeys = rpkiRepositoryStore.keys(tx);
+        final Set<Key> roKeys = rpkiObjects.keys(tx);
+        final Set<Key> repoKeys = rpkiRepositories.keys(tx);
         final List<Pair<Key, Key>> toDelete = new ArrayList<>();
         vr2ro.forEach(tx, (vrKey, bb) -> {
             final Key roKey = Key.of(Bytes.toBytes(bb));
@@ -389,13 +388,13 @@ public class LmdbValidationRuns implements ValidationRunStore {
 
     @Override
     public Stream<Pair<CertificateTreeValidationRun, RpkiObject>> findCurrentlyValidated(Tx.Read tx, RpkiObject.Type type) {
-        final Set<Key> byType = rpkiObjectStore.getPkByType(tx, type);
+        final Set<Key> byType = rpkiObjects.getPkByType(tx, type);
         return findLatestSuccessful(tx, CertificateTreeValidationRun.class)
                 .stream()
                 .flatMap(ct -> vr2ro.get(tx, ct.key())
                         .stream()
                         .filter(byType::contains)
-                        .map(roKey -> rpkiObjectStore.get(tx, roKey))
+                        .map(roKey -> rpkiObjects.get(tx, roKey))
                         .filter(Optional::isPresent)
                         .map(Optional::get)
                         .filter(ro -> ro.getType() == type)

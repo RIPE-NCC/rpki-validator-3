@@ -44,8 +44,8 @@ import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
-import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
-import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
+import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.util.Rsync;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -68,7 +68,7 @@ import java.util.stream.Stream;
 
 @Component
 @Slf4j
-public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> implements RpkiRepositoryStore {
+public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> implements RpkiRepositories {
 
     private static final String RPKI_REPOSITORIES = "rpki-repositories";
     private static final String BY_URI_PREFIX = "by-uri";
@@ -290,7 +290,7 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
 
     @Override
     public void removeAllForTrustAnchor(Tx.Write tx, TrustAnchor trustAnchor) {
-        final Ref<TrustAnchor> taRef = Ref.unsafe(TrustAnchorStore.TRUST_ANCHORS, trustAnchor.key());
+        final Ref<TrustAnchor> taRef = Ref.unsafe(TrustAnchors.TRUST_ANCHORS, trustAnchor.key());
         ixMap.getByIndex(BY_TA, tx, trustAnchor.key())
                 .forEach((pk, rpkiRepository) -> {
                     rpkiRepository.removeTrustAnchor(taRef);

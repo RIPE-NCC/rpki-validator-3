@@ -50,9 +50,9 @@ public class LmdbTrustAnchorsTest extends GenericStorageTest {
     @Test
     public void should_find_trust_anchors_by_case_insensitive_name() {
         final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
-        wtx0(tx -> getTrustAnchorStore().add(tx, trustAnchor));
+        wtx0(tx -> this.getTrustAnchors().add(tx, trustAnchor));
 
-        List<TrustAnchor> byName = new ArrayList<>(rtx(tx -> getTrustAnchorStore().findByName(tx, "trust anchor")));
+        List<TrustAnchor> byName = new ArrayList<>(rtx(tx -> this.getTrustAnchors().findByName(tx, "trust anchor")));
         assertThat(byName).isNotEmpty();
         assertThat(byName.get(0)).isEqualTo(trustAnchor);
     }

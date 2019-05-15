@@ -60,9 +60,9 @@ import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidatio
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
-import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
-import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
-import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
+import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
+import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Hex;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -78,7 +78,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.cert.X509CRLEntry;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -102,13 +101,13 @@ import java.util.stream.StreamSupport;
 public class RpkiObjectController {
 
     @Autowired
-    private RpkiObjectStore rpkiObjects;
+    private RpkiObjects rpkiObjects;
 
     @Autowired
-    private TrustAnchorStore trustAnchors;
+    private TrustAnchors trustAnchors;
 
     @Autowired
-    private ValidationRunStore validationRuns;
+    private ValidationRuns validationRuns;
 
     @Autowired
     private Lmdb lmdb;

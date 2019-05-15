@@ -43,7 +43,7 @@ import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.MultIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
-import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
+import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.util.Time;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -66,7 +66,7 @@ import java.util.stream.Stream;
 
 @Component
 @Slf4j
-public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements RpkiObjectStore {
+public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements RpkiObjects {
 
     private static final String RPKI_OBJECTS = "rpki-objects";
     private static final String REACHABLE_MAP = "reachable-map";

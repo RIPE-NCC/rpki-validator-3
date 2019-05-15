@@ -77,24 +77,24 @@ public class LmdbDataCorruptionTest extends GenericStorageTest {
                 getLmdb().writeTx0(tx -> {
                     Set<Key> keysToUpdate = randomSubSet(objects.keySet(), finalObjectCount - deltaCount, r);
                     keysToUpdate.forEach(k -> {
-                        getRpkiObjectStore().get(tx, k).ifPresent(ro -> {
+                        this.getRpkiObjects().get(tx, k).ifPresent(ro -> {
                             objects.put(ro.key(), ro);
-                            getRpkiObjectStore().put(tx, ro);
+                            this.getRpkiObjects().put(tx, ro);
                         });
                     });
 
                     Sets.difference(objects.keySet(), keysToUpdate).forEach(k ->
-                            getRpkiObjectStore().get(tx, k).ifPresent(ro -> {
+                            this.getRpkiObjects().get(tx, k).ifPresent(ro -> {
                                 objects.put(ro.key(), ro);
-                                getRpkiObjectStore().put(tx, ro);
+                                this.getRpkiObjects().put(tx, ro);
                             }));
                 });
 
                 // it should delete the rest
                 long deletedCount = getLmdb().writeTx(tx ->
-                        getRpkiObjectStore().deleteUnreachableObjects(tx, Instant.now().minus(Duration.ofHours(12))));
+                        this.getRpkiObjects().deleteUnreachableObjects(tx, Instant.now().minus(Duration.ofHours(12))));
 
-                List<RpkiObject> extracted = getLmdb().readTx(tx -> getRpkiObjectStore().values(tx));
+                List<RpkiObject> extracted = getLmdb().readTx(tx -> this.getRpkiObjects().values(tx));
 
                 getLmdb().readTx0(tx ->
                         extracted.forEach(ro -> {
@@ -106,7 +106,7 @@ public class LmdbDataCorruptionTest extends GenericStorageTest {
 
                 getLmdb().readTx0(tx ->
                         objects.forEach((sha256, rpkiObject) ->
-                                getRpkiObjectStore().findBySha256(tx, sha256.getBytes()).ifPresent(ro ->
+                                this.getRpkiObjects().findBySha256(tx, sha256.getBytes()).ifPresent(ro ->
                                         assertEquals(rpkiObject, ro))));
 
                 objects.clear();
@@ -124,7 +124,7 @@ public class LmdbDataCorruptionTest extends GenericStorageTest {
             for (int i = 0; i < objectCount; i++) {
                 RpkiObject rpkiObject = randomRpkiObject();
                 keys.put(rpkiObject.key(), rpkiObject);
-                getRpkiObjectStore().put(tx, rpkiObject);
+                this.getRpkiObjects().put(tx, rpkiObject);
             }
         });
     }

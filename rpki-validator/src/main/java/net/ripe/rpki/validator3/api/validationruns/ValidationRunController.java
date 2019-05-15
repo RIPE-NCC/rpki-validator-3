@@ -34,8 +34,8 @@ import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
-import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
-import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
+import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.hateoas.Links;
@@ -59,10 +59,10 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 public class ValidationRunController {
 
     @Autowired
-    private ValidationRunStore validationRunStore;
+    private ValidationRuns validationRuns;
 
     @Autowired
-    private TrustAnchorStore trustAnchorStore;
+    private TrustAnchors trustAnchors;
 
     @Autowired
     private MessageSource messageSource;
@@ -75,10 +75,10 @@ public class ValidationRunController {
         return lmdb.readTx(tx ->
                 ResponseEntity.ok(ApiResponse.data(
                         new Links(linkTo(methodOn(ValidationRunController.class).list(locale)).withSelfRel()),
-                        validationRunStore.findAll(tx, ValidationRun.class)
+                        validationRuns.findAll(tx, ValidationRun.class)
                                 .stream()
                                 .map(validationRun -> ValidationRunResource.of(validationRun,
-                                        vr -> validationRunStore.getObjectCount(tx, vr),
+                                        vr -> validationRuns.getObjectCount(tx, vr),
                                         messageSource, locale))
                                 .collect(Collectors.toList())
                 )));
@@ -89,10 +89,10 @@ public class ValidationRunController {
         return lmdb.readTx(tx ->
                 ResponseEntity.ok(ApiResponse.data(
                         new Links(linkTo(methodOn(ValidationRunController.class).listLatestSuccessful(locale)).withSelfRel()),
-                        validationRunStore.findLatestSuccessful(tx, ValidationRun.class)
+                        validationRuns.findLatestSuccessful(tx, ValidationRun.class)
                                 .stream()
                                 .map(validationRun -> ValidationRunResource.of(validationRun,
-                                        vr -> validationRunStore.getObjectCount(tx, vr),
+                                        vr -> validationRuns.getObjectCount(tx, vr),
                                         messageSource, locale))
                                 .collect(Collectors.toList())
                 )));
@@ -104,10 +104,10 @@ public class ValidationRunController {
         return lmdb.readTx(tx ->
                 ResponseEntity.ok(ApiResponse.data(
                         new Links(linkTo(methodOn(ValidationRunController.class).listLatestCompletedPerTa(locale)).withSelfRel()),
-                        trustAnchorStore.findAll(tx).stream().flatMap(ta ->
-                                validationRunStore.findLatestCaTreeValidationRun(tx, ta)
+                        trustAnchors.findAll(tx).stream().flatMap(ta ->
+                                validationRuns.findLatestCaTreeValidationRun(tx, ta)
                                         .map(validationRun -> Stream.of(ValidationRunResource.of(validationRun,
-                                                vr -> validationRunStore.getObjectCount(tx, vr),
+                                                vr -> validationRuns.getObjectCount(tx, vr),
                                                 messageSource, locale)))
                                         .orElse(Stream.empty()))
                                 .collect(Collectors.toList())
@@ -117,10 +117,10 @@ public class ValidationRunController {
     @GetMapping(path = "/{id}")
     public ResponseEntity<ApiResponse<ValidationRunResource>> get(@PathVariable long id, Locale locale) {
         return lmdb.readTx(tx ->
-                validationRunStore.get(tx, ValidationRun.class, id)
+                validationRuns.get(tx, ValidationRun.class, id)
                         .map(validationRun ->
                                 ResponseEntity.ok(ApiResponse.data(ValidationRunResource.of(validationRun,
-                                        vr -> validationRunStore.getObjectCount(tx, vr), messageSource, locale))))
+                                        vr -> validationRuns.getObjectCount(tx, vr), messageSource, locale))))
                         .orElse(ResponseEntity.notFound().build()));
     }
 }

@@ -43,8 +43,8 @@ import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
-import net.ripe.rpki.validator3.storage.stores.SettingsStore;
-import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
+import net.ripe.rpki.validator3.storage.stores.Settings;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
@@ -69,7 +69,7 @@ public class ObjectController {
     private ValidatedRpkiObjects validatedRpkiObjects;
 
     @Autowired
-    private TrustAnchorStore trustAnchors;
+    private TrustAnchors trustAnchors;
 
     @Autowired
     private IgnoreFilterService ignoreFilters;
@@ -84,7 +84,7 @@ public class ObjectController {
     private BgpSecFilterService bgpSecFilterService;
 
     @Autowired
-    private SettingsStore settings;
+    private Settings settings;
 
     @Autowired
     private Lmdb lmdb;

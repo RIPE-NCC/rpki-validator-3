@@ -46,8 +46,8 @@ import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
-import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
-import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
+import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.TrustAnchorExtractorException;
 import net.ripe.rpki.validator3.util.TrustAnchorLocator;
 import org.apache.commons.lang.StringUtils;
@@ -87,11 +87,11 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 public class TrustAnchorController {
 
     @Autowired
-    private TrustAnchorStore trustAnchorStore;
+    private TrustAnchors trustAnchors;
     @Autowired
     private TrustAnchorService trustAnchorService;
     @Autowired
-    private ValidationRunStore validationRunStore;
+    private ValidationRuns validationRuns;
     @Autowired
     private MessageSource messageSource;
 
@@ -102,7 +102,7 @@ public class TrustAnchorController {
     public ResponseEntity<ApiResponse<List<TrustAnchorResource>>> list(Locale locale) {
         return lmdb.readTx(tx -> ResponseEntity.ok(ApiResponse.data(
             new Links(linkTo(methodOn(TrustAnchorController.class).list(locale)).withSelfRel()),
-            trustAnchorStore.findAll(tx)
+            trustAnchors.findAll(tx)
                 .stream()
                 .map(ta -> TrustAnchorResource.of(ta, locale))
                 .collect(Collectors.toList())
@@ -113,7 +113,7 @@ public class TrustAnchorController {
     public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@RequestBody @Valid ApiCommand<AddTrustAnchor> command, Locale locale) {
         long id = trustAnchorService.execute(command.getData());
         return lmdb.readTx(tx -> {
-            TrustAnchor trustAnchor = trustAnchorStore.get(tx, Key.of(id)).get();
+            TrustAnchor trustAnchor = trustAnchors.get(tx, Key.of(id)).get();
             Link selfRel = linkTo(methodOn(TrustAnchorController.class).get(id, locale)).withSelfRel();
             return ResponseEntity.created(URI.create(selfRel.getHref())).body(trustAnchorResource(tx, trustAnchor, locale));
         });
@@ -137,7 +137,7 @@ public class TrustAnchorController {
 
             long id = trustAnchorService.execute(command);
             return lmdb.readTx(tx -> {
-                Optional<TrustAnchor> trustAnchor = trustAnchorStore.get(tx, Key.of(id));
+                Optional<TrustAnchor> trustAnchor = trustAnchors.get(tx, Key.of(id));
                 Link selfRel = linkTo(methodOn(TrustAnchorController.class).get(id, locale)).withSelfRel();
                 return ResponseEntity.created(URI.create(selfRel.getHref())).body(trustAnchorResource(tx, trustAnchor.get(), locale));
             });
@@ -152,7 +152,7 @@ public class TrustAnchorController {
     @GetMapping(path = "/{id}")
     public ResponseEntity<ApiResponse<TrustAnchorResource>> get(@PathVariable long id, Locale locale) {
         return lmdb.readTx(tx ->
-            trustAnchorStore.get(tx, Key.of(id))
+            trustAnchors.get(tx, Key.of(id))
                     .map(ta -> ResponseEntity.ok(trustAnchorResource(tx, ta, locale)))
                     .orElse(ResponseEntity.notFound().build()));
     }
@@ -160,9 +160,9 @@ public class TrustAnchorController {
     @GetMapping(path = "/{id}/validation-run")
     public ResponseEntity<ApiResponse<ValidationRunResource>> validationResults(@PathVariable long id, HttpServletResponse response, Locale locale) throws IOException {
         Optional<TrustAnchorValidationRun> validationRun = lmdb.readTx(tx ->
-                trustAnchorStore.get(tx, Key.of(id))
+                trustAnchors.get(tx, Key.of(id))
                         .flatMap(trustAnchor ->
-                                validationRunStore.findLatestCompletedForTrustAnchor(tx, trustAnchor)));
+                                validationRuns.findLatestCompletedForTrustAnchor(tx, trustAnchor)));
 
         if (validationRun.isPresent()) {
             response.sendRedirect(linkTo(methodOn(ValidationRunController.class).get(validationRun.get().key().asLong(), locale)).toString());
@@ -186,9 +186,9 @@ public class TrustAnchorController {
         final Paging paging = Paging.of(startFrom, pageSize);
 
         return lmdb.readTx(tx -> {
-            int totalCount = validationRunStore.countValidationChecksForValidationRun(tx, id, searchTerm);
+            int totalCount = validationRuns.countValidationChecksForValidationRun(tx, id, searchTerm);
 
-            Stream<ValidationCheckResource> checks = validationRunStore.findValidationChecksForValidationRun(tx, id, paging, searchTerm, sorting)
+            Stream<ValidationCheckResource> checks = validationRuns.findValidationChecksForValidationRun(tx, id, paging, searchTerm, sorting)
                     .map(check -> ValidationCheckResource.of(check, messageSource.getMessage(check, locale)));
 
             Links links = Paging.links(startFrom, pageSize, totalCount,
@@ -205,7 +205,7 @@ public class TrustAnchorController {
 
     @GetMapping(path = "/statuses")
     public ApiResponse<List<TaStatus>> statuses() {
-        return lmdb.readTx(tx -> ApiResponse.<List<TaStatus>>builder().data(trustAnchorStore.getStatuses(tx)).build());
+        return lmdb.readTx(tx -> ApiResponse.<List<TaStatus>>builder().data(trustAnchors.getStatuses(tx)).build());
     }
 
     @DeleteMapping(path = "/{id}")
@@ -215,9 +215,9 @@ public class TrustAnchorController {
     }
 
     private ApiResponse<TrustAnchorResource> trustAnchorResource(Tx.Read tx, TrustAnchor trustAnchor, Locale locale) {
-            Optional<TrustAnchorValidationRun> validationRun = validationRunStore.findLatestCompletedForTrustAnchor(tx, trustAnchor);
+            Optional<TrustAnchorValidationRun> validationRun = validationRuns.findLatestCompletedForTrustAnchor(tx, trustAnchor);
             ArrayList<Object> includes = new ArrayList<>(1);
-            validationRun.ifPresent(run -> includes.add(ValidationRunResource.of(run, vr -> validationRunStore.getObjectCount(tx, vr), messageSource, locale)));
+            validationRun.ifPresent(run -> includes.add(ValidationRunResource.of(run, vr -> validationRuns.getObjectCount(tx, vr), messageSource, locale)));
             return ApiResponse.<TrustAnchorResource>builder().data(
                     TrustAnchorResource.of(trustAnchor, locale)
             ).includes(includes).build();

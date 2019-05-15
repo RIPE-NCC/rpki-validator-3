@@ -34,7 +34,6 @@ import com.google.common.io.Resources;
 import lombok.Builder;
 import lombok.Value;
 import net.ripe.ipresource.Asn;
-import net.ripe.ipresource.IpRange;
 import net.ripe.ipresource.IpResourceSet;
 import net.ripe.ipresource.IpResourceType;
 import net.ripe.rpki.commons.crypto.ValidityPeriod;
@@ -57,7 +56,7 @@ import net.ripe.rpki.validator3.storage.data.RoaPrefix;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.lmdb.Tx;
-import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
+import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.joda.time.DateTime;
@@ -103,7 +102,7 @@ public class TrustAnchorsFactory {
     }
 
     @Autowired
-    private RpkiObjectStore rpkiObjects;
+    private RpkiObjects rpkiObjects;
 
     private static BigInteger nextSerial = BigInteger.ONE;
 

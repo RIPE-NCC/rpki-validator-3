@@ -49,10 +49,10 @@ import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
-import net.ripe.rpki.validator3.storage.stores.RpkiObjectStore;
-import net.ripe.rpki.validator3.storage.stores.RpkiRepositoryStore;
-import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
-import net.ripe.rpki.validator3.storage.stores.ValidationRunStore;
+import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
+import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
+import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Rsync;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,10 +70,10 @@ import java.util.Set;
 @Slf4j
 public class TrustAnchorValidationService {
 
-    private final TrustAnchorStore trustAnchorStore;
-    private final RpkiRepositoryStore rpkiRepositoryStore;
-    private final RpkiObjectStore rpkiObjectStore;
-    private final ValidationRunStore validationRunStore;
+    private final TrustAnchors trustAnchors;
+    private final RpkiRepositories rpkiRepositories;
+    private final RpkiObjects rpkiObjects;
+    private final ValidationRuns validationRuns;
     private final ValidationScheduler validationScheduler;
     private final File localRsyncStorageDirectory;
     private final RpkiRepositoryValidationService repositoryValidationService;
@@ -83,17 +83,17 @@ public class TrustAnchorValidationService {
 
     @Autowired
     public TrustAnchorValidationService(
-            TrustAnchorStore trustAnchorStore,
-            RpkiRepositoryStore rpkiRepositoryStore,
-            RpkiObjectStore rpkiObjectStore, ValidationRunStore validationRunStore,
+            TrustAnchors trustAnchors,
+            RpkiRepositories rpkiRepositories,
+            RpkiObjects rpkiObjects, ValidationRuns validationRuns,
             ValidationScheduler validationScheduler,
             @Value("${rpki.validator.rsync.local.storage.directory}") File localRsyncStorageDirectory,
             RpkiRepositoryValidationService repositoryValidationService,
             Lmdb lmdb) {
-        this.trustAnchorStore = trustAnchorStore;
-        this.rpkiRepositoryStore = rpkiRepositoryStore;
-        this.rpkiObjectStore = rpkiObjectStore;
-        this.validationRunStore = validationRunStore;
+        this.trustAnchors = trustAnchors;
+        this.rpkiRepositories = rpkiRepositories;
+        this.rpkiObjects = rpkiObjects;
+        this.validationRuns = validationRuns;
         this.validationScheduler = validationScheduler;
         this.localRsyncStorageDirectory = localRsyncStorageDirectory;
         this.repositoryValidationService = repositoryValidationService;
@@ -101,7 +101,7 @@ public class TrustAnchorValidationService {
     }
 
     public void validate(long trustAnchorId) {
-        Optional<TrustAnchor> maybeTrustAnchor = lmdb.readTx(tx -> trustAnchorStore.get(tx, Key.of(trustAnchorId)));
+        Optional<TrustAnchor> maybeTrustAnchor = lmdb.readTx(tx -> trustAnchors.get(tx, Key.of(trustAnchorId)));
         if (!maybeTrustAnchor.isPresent()) {
             log.error("Trust anchor {} doesn't exist.", trustAnchorId);
             return;
@@ -111,7 +111,7 @@ public class TrustAnchorValidationService {
         log.info("trust anchor {} located at {} with subject public key info {}", trustAnchor.getName(), trustAnchor.getLocations(), trustAnchor.getSubjectPublicKeyInfo());
 
         TrustAnchorValidationRun validationRun = lmdb.readTx(tx -> {
-            final Ref<TrustAnchor> trustAnchorRef = trustAnchorStore.makeRef(tx, Key.of(trustAnchorId));
+            final Ref<TrustAnchor> trustAnchorRef = trustAnchors.makeRef(tx, Key.of(trustAnchorId));
             return new TrustAnchorValidationRun(trustAnchorRef, trustAnchor.getLocations().get(0));
         });
 
@@ -154,16 +154,16 @@ public class TrustAnchorValidationService {
             validationRun.completeWith(validationResult);
             if (firstTimeEver || updatedTrustAnchor) {
                 if (updatedTrustAnchor) {
-                    lmdb.writeTx0(tx -> trustAnchorStore.update(tx, trustAnchor));
+                    lmdb.writeTx0(tx -> trustAnchors.update(tx, trustAnchor));
                 }
                 final Set<TrustAnchor> affectedTrustAnchors = Sets.newHashSet(trustAnchor);
                 if (trustAnchor.getRsyncPrefetchUri() != null) {
                     lmdb.readTx(tx ->
-                            rpkiRepositoryStore.findByURI(tx, trustAnchor.getRsyncPrefetchUri()))
+                            rpkiRepositories.findByURI(tx, trustAnchor.getRsyncPrefetchUri()))
                             .ifPresent(r ->
                                     affectedTrustAnchors.addAll(repositoryValidationService.prefetchRepository(r)));
                 }
-                lmdb.readTx0(rpkiObjectStore::verify);
+                lmdb.readTx0(rpkiObjects::verify);
                 affectedTrustAnchors.forEach(validationScheduler::triggerCertificateTreeValidation);
             }
         } catch (CommandExecutionException | IOException e) {
@@ -172,7 +172,7 @@ public class TrustAnchorValidationService {
             validationRun.setFailed();
         } finally {
             firstTimeEver = false;
-            lmdb.writeTx0(tx -> validationRunStore.add(tx, validationRun));
+            lmdb.writeTx0(tx -> validationRuns.add(tx, validationRun));
         }
     }
 

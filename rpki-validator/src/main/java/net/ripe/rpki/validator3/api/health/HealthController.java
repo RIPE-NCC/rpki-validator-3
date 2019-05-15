@@ -39,7 +39,7 @@ import net.ripe.rpki.validator3.api.util.BuildInformation;
 import net.ripe.rpki.validator3.api.util.Dates;
 import net.ripe.rpki.validator3.background.BackgroundJobs;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
-import net.ripe.rpki.validator3.storage.stores.TrustAnchorStore;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -57,7 +57,7 @@ import java.util.stream.Collectors;
 public class HealthController {
 
     @Autowired
-    private TrustAnchorStore trustAnchors;
+    private TrustAnchors trustAnchors;
 
     @Autowired
     private BgpPreviewService bgpPreviewService;

@@ -93,7 +93,7 @@ public class TrustAnchorCoderTest extends GenericStorageTest {
             ta1.setInitialCertificateTreeValidationRunCompleted(true);
             ta1.setUpdatedAt(java.time.Instant.now());
             ta1.setCreatedAt(java.time.Instant.now().minus(java.time.Duration.ofDays(1)));
-            getTrustAnchorStore().add(tx, ta1);
+            this.getTrustAnchors().add(tx, ta1);
             return ta1;
         });
     }

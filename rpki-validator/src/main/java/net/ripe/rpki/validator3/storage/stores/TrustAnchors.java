@@ -38,7 +38,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-public interface TrustAnchorStore extends GenericStore<TrustAnchor> {
+public interface TrustAnchors extends GenericStore<TrustAnchor> {
     String TRUST_ANCHORS = "trust-anchors";
 
     TrustAnchor add(Tx.Write tx, TrustAnchor trustAnchor);

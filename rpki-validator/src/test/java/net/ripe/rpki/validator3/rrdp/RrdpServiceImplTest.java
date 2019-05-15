@@ -70,28 +70,28 @@ public class RrdpServiceImplTest extends GenericStorageTest {
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        subject = new RrdpServiceImpl(rrdpClient, getRpkiObjectStore(), getRpkiRepositoryStore(), getValidationRunStore(), getLmdb());
+        subject = new RrdpServiceImpl(rrdpClient, this.getRpkiObjects(), this.getRpkiRepositories(), this.getValidationRuns(), getLmdb());
     }
 
     @Test
     public void should_parse_and_save_snapshot() throws Exception {
         final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
-        wtx0(tx -> getTrustAnchorStore().add(tx, trustAnchor));
+        wtx0(tx -> this.getTrustAnchors().add(tx, trustAnchor));
 
-        final Ref<TrustAnchor> trustAnchorRef = rtx(tx -> getTrustAnchorStore().makeRef(tx, trustAnchor.key()));
-        RpkiRepository rpkiRepository = wtx(tx -> getRpkiRepositoryStore().register(tx,
+        final Ref<TrustAnchor> trustAnchorRef = rtx(tx -> this.getTrustAnchors().makeRef(tx, trustAnchor.key()));
+        RpkiRepository rpkiRepository = wtx(tx -> this.getRpkiRepositories().register(tx,
                 trustAnchorRef, RRDP_RIPE_NET_NOTIFICATION_XML, RpkiRepository.Type.RRDP));
 
         Ref<RpkiRepository> rpkiRepositoryRef = rtx(tx ->
-                getRpkiRepositoryStore().makeRef(tx, rpkiRepository.key()));
+                this.getRpkiRepositories().makeRef(tx, rpkiRepository.key()));
 
         final RrdpRepositoryValidationRun validationRun = wtx(tx ->
-                getValidationRunStore().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
+                this.getValidationRuns().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
 
         final Snapshot snapshot = new RrdpParser().snapshot(Objects.fileIS("rrdp/snapshot2.xml"));
         wtx0(tx -> subject.storeSnapshot(tx, snapshot, validationRun));
 
-        final List<RpkiObject> objects = rtx(tx -> getRpkiObjectStore().values(tx));
+        final List<RpkiObject> objects = rtx(tx -> this.getRpkiObjects().values(tx));
         assertEquals(3, objects.size());
 
         rtx0(tx -> {
@@ -107,7 +107,7 @@ public class RrdpServiceImplTest extends GenericStorageTest {
     }
 
     public SortedSet<String> getLocations(Tx.Read tx, RpkiObject o) {
-        return getRpkiObjectStore().getLocations(tx, o.key());
+        return this.getRpkiObjects().getLocations(tx, o.key());
     }
 
     @Test
@@ -128,20 +128,20 @@ public class RrdpServiceImplTest extends GenericStorageTest {
         rrdpClient.add(RRDP_RIPE_NET_NOTIFICATION_XML, notificationXml);
 
         final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
-        wtx0(tx -> getTrustAnchorStore().add(tx, trustAnchor));
+        wtx0(tx -> this.getTrustAnchors().add(tx, trustAnchor));
 
-        final Ref<TrustAnchor> trustAnchorRef = rtx(tx -> getTrustAnchorStore().makeRef(tx, trustAnchor.key()));
-        RpkiRepository rpkiRepository = wtx(tx -> getRpkiRepositoryStore().register(tx,
+        final Ref<TrustAnchor> trustAnchorRef = rtx(tx -> this.getTrustAnchors().makeRef(tx, trustAnchor.key()));
+        RpkiRepository rpkiRepository = wtx(tx -> this.getRpkiRepositories().register(tx,
                 trustAnchorRef, RRDP_RIPE_NET_NOTIFICATION_XML, RpkiRepository.Type.RRDP));
 
         final RrdpRepositoryValidationRun validationRun = wtx(tx -> {
-            Ref<RpkiRepository> ref = getRpkiRepositoryStore().makeRef(tx, rpkiRepository.key());
-            return getValidationRunStore().add(tx, new RrdpRepositoryValidationRun(ref));
+            Ref<RpkiRepository> ref = this.getRpkiRepositories().makeRef(tx, rpkiRepository.key());
+            return this.getValidationRuns().add(tx, new RrdpRepositoryValidationRun(ref));
         });
 
         subject.storeRepository(rpkiRepository, validationRun);
 
-        final List<RpkiObject> objects = rtx(tx -> getRpkiObjectStore().values(tx));
+        final List<RpkiObject> objects = rtx(tx -> this.getRpkiObjects().values(tx));
         assertEquals(2, objects.size());
 
         rtx0(tx -> {
@@ -168,19 +168,19 @@ public class RrdpServiceImplTest extends GenericStorageTest {
         rrdpClient.add(RRDP_RIPE_NET_NOTIFICATION_XML, notificationXml);
 
         final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
-        wtx0(tx -> getTrustAnchorStore().add(tx, trustAnchor));
+        wtx0(tx -> this.getTrustAnchors().add(tx, trustAnchor));
 
-        final Ref<TrustAnchor> trustAnchorRef = rtx(tx -> getTrustAnchorStore().makeRef(tx, trustAnchor.key()));
-        RpkiRepository rpkiRepository = wtx(tx -> getRpkiRepositoryStore().register(tx,
+        final Ref<TrustAnchor> trustAnchorRef = rtx(tx -> this.getTrustAnchors().makeRef(tx, trustAnchor.key()));
+        RpkiRepository rpkiRepository = wtx(tx -> this.getRpkiRepositories().register(tx,
                 trustAnchorRef, RRDP_RIPE_NET_NOTIFICATION_XML, RpkiRepository.Type.RRDP));
 
         Ref<RpkiRepository> rpkiRepositoryRef = rtx(tx ->
-                getRpkiRepositoryStore().makeRef(tx, rpkiRepository.key()));
+                this.getRpkiRepositories().makeRef(tx, rpkiRepository.key()));
         final RrdpRepositoryValidationRun validationRun = new RrdpRepositoryValidationRun(rpkiRepositoryRef);
 
         subject.storeRepository(rpkiRepository, validationRun);
 
-        final List<RpkiObject> objects = rtx(tx -> getRpkiObjectStore().values(tx));
+        final List<RpkiObject> objects = rtx(tx -> this.getRpkiObjects().values(tx));
         assertEquals(0, objects.size());
 
         assertEquals(1, validationRun.getValidationChecks().size());
@@ -210,26 +210,26 @@ public class RrdpServiceImplTest extends GenericStorageTest {
         rrdpClient.add(RRDP_RIPE_NET_NOTIFICATION_XML, Objects.notificationXml(serial, sessionId, emptySnapshot, deltaInfo));
 
         final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
-        wtx0(tx -> getTrustAnchorStore().add(tx, trustAnchor));
+        wtx0(tx -> this.getTrustAnchors().add(tx, trustAnchor));
 
-        final Ref<TrustAnchor> trustAnchorRef = rtx(tx -> getTrustAnchorStore().makeRef(tx, trustAnchor.key()));
-        RpkiRepository rpkiRepository = wtx(tx -> getRpkiRepositoryStore().register(tx,
+        final Ref<TrustAnchor> trustAnchorRef = rtx(tx -> this.getTrustAnchors().makeRef(tx, trustAnchor.key()));
+        RpkiRepository rpkiRepository = wtx(tx -> this.getRpkiRepositories().register(tx,
                 trustAnchorRef, RRDP_RIPE_NET_NOTIFICATION_XML, RpkiRepository.Type.RRDP));
 
-        Ref<RpkiRepository> rpkiRepositoryRef = rtx(tx -> getRpkiRepositoryStore().makeRef(tx, rpkiRepository.key()));
+        Ref<RpkiRepository> rpkiRepositoryRef = rtx(tx -> this.getRpkiRepositories().makeRef(tx, rpkiRepository.key()));
 
         // make current serial lower to trigger delta download
         rpkiRepository.setRrdpSerial(BigInteger.valueOf(serial - 1));
         rpkiRepository.setRrdpSessionId(sessionId);
-        wtx0(tx -> getRpkiRepositoryStore().update(tx, rpkiRepository));
+        wtx0(tx -> this.getRpkiRepositories().update(tx, rpkiRepository));
 
         // do the first run to get the snapshot
         final RrdpRepositoryValidationRun validationRun = wtx(tx ->
-                getValidationRunStore().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
+                this.getValidationRuns().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
         subject.storeRepository(rpkiRepository, validationRun);
         assertEquals(0, validationRun.getValidationChecks().size());
 
-        final List<RpkiObject> objects = rtx(tx -> getRpkiObjectStore().values(tx));
+        final List<RpkiObject> objects = rtx(tx -> this.getRpkiObjects().values(tx));
         assertEquals(1, objects.size());
     }
 
@@ -255,23 +255,23 @@ public class RrdpServiceImplTest extends GenericStorageTest {
         rrdpClient.add(RRDP_RIPE_NET_NOTIFICATION_XML, Objects.notificationXml(serial, sessionId, snapshot, deltaInfo));
 
         final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
-        wtx0(tx -> getTrustAnchorStore().add(tx, trustAnchor));
+        wtx0(tx -> this.getTrustAnchors().add(tx, trustAnchor));
 
-        final Ref<TrustAnchor> trustAnchorRef = rtx(tx -> getTrustAnchorStore().makeRef(tx, trustAnchor.key()));
-        RpkiRepository rpkiRepository = wtx(tx -> getRpkiRepositoryStore().register(tx,
+        final Ref<TrustAnchor> trustAnchorRef = rtx(tx -> this.getTrustAnchors().makeRef(tx, trustAnchor.key()));
+        RpkiRepository rpkiRepository = wtx(tx -> this.getRpkiRepositories().register(tx,
                 trustAnchorRef, RRDP_RIPE_NET_NOTIFICATION_XML, RpkiRepository.Type.RRDP));
 
         Ref<RpkiRepository> rpkiRepositoryRef = rtx(tx ->
-                getRpkiRepositoryStore().makeRef(tx, rpkiRepository.key()));
+                this.getRpkiRepositories().makeRef(tx, rpkiRepository.key()));
 
         // make current serial lower to trigger delta download
         rpkiRepository.setRrdpSerial(BigInteger.valueOf(serial - 1));
         rpkiRepository.setRrdpSessionId(sessionId);
-        wtx0(tx -> getRpkiRepositoryStore().update(tx, rpkiRepository));
+        wtx0(tx -> this.getRpkiRepositories().update(tx, rpkiRepository));
 
         // do the first run to get the snapshot
         final RrdpRepositoryValidationRun validationRun = wtx(tx ->
-                getValidationRunStore().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
+                this.getValidationRuns().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
         subject.storeRepository(rpkiRepository, validationRun);
 
         assertEquals(1, validationRun.getValidationChecks().size());
@@ -283,7 +283,7 @@ public class RrdpServiceImplTest extends GenericStorageTest {
         assertTrue(validationCheck.getParameters().get(0).contains("is not the same as in the notification file: " + sessionId));
 
         // make sure that it will be the CRL from the snapshot
-        final List<RpkiObject> objects = rtx(tx -> getRpkiObjectStore().values(tx));
+        final List<RpkiObject> objects = rtx(tx -> this.getRpkiObjects().values(tx));
         assertEquals(1, objects.size());
         RpkiObject rpkiObject = objects.get(0);
         assertEquals(RpkiObject.Type.CRL, rpkiObject.getType());
@@ -314,18 +314,18 @@ public class RrdpServiceImplTest extends GenericStorageTest {
         rrdpClient.add(RRDP_RIPE_NET_NOTIFICATION_XML, Objects.notificationXml(3, sessionId, emptySnapshot, deltaInfo2, deltaInfo3));
 
         final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
-        wtx0(tx -> getTrustAnchorStore().add(tx, trustAnchor));
+        wtx0(tx -> this.getTrustAnchors().add(tx, trustAnchor));
 
         RpkiRepository rpkiRepository = makeRpkiRepository(sessionId, RRDP_RIPE_NET_NOTIFICATION_XML, trustAnchor);
-        Ref<RpkiRepository> rpkiRepositoryRef = rtx(tx -> getRpkiRepositoryStore().makeRef(tx, rpkiRepository.key()));
+        Ref<RpkiRepository> rpkiRepositoryRef = rtx(tx -> this.getRpkiRepositories().makeRef(tx, rpkiRepository.key()));
 
         final RrdpRepositoryValidationRun validationRun = wtx(tx ->
-                getValidationRunStore().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
+                this.getValidationRuns().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
 
         subject.storeRepository(rpkiRepository, validationRun);
         assertEquals(0, validationRun.getValidationChecks().size());
 
-        final List<RpkiObject> objects = rtx(tx -> getRpkiObjectStore().values(tx));
+        final List<RpkiObject> objects = rtx(tx -> this.getRpkiObjects().values(tx));
         assertEquals(1, objects.size());
         rtx0(tx ->
                 assertEquals(Sets.newHashSet("rsync://host/path/cert1.cer"), getLocations(tx, objects.get(0))));
@@ -360,21 +360,21 @@ public class RrdpServiceImplTest extends GenericStorageTest {
         rrdpClient.add(notificationUri, Objects.notificationXml(3, sessionId, snapshot, deltaInfo1, deltaInfo2));
 
         final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
-        wtx0(tx -> getTrustAnchorStore().add(tx, trustAnchor));
+        wtx0(tx -> this.getTrustAnchors().add(tx, trustAnchor));
 
         // make current serial lower to trigger delta download
         final RpkiRepository rpkiRepository = makeRpkiRepository(sessionId, notificationUri, trustAnchor);
 
         Ref<RpkiRepository> rpkiRepositoryRef = rtx(tx ->
-                getRpkiRepositoryStore().makeRef(tx, rpkiRepository.key()));
+                this.getRpkiRepositories().makeRef(tx, rpkiRepository.key()));
 
         // do the first run to get the snapshot
         final RrdpRepositoryValidationRun validationRun = wtx(tx ->
-                getValidationRunStore().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
+                this.getValidationRuns().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
         subject.storeRepository(rpkiRepository, validationRun);
         assertEquals(0, validationRun.getValidationChecks().size());
 
-        final List<RpkiObject> objects = rtx(tx -> getRpkiObjectStore().values(tx));
+        final List<RpkiObject> objects = rtx(tx -> this.getRpkiObjects().values(tx));
         assertEquals(1, objects.size());
     }
 
@@ -406,17 +406,17 @@ public class RrdpServiceImplTest extends GenericStorageTest {
         rrdpClient.add(notificationUri, Objects.notificationXml(4, sessionId, emptySnapshot, deltaInfo1, deltaInfo2));
 
         final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
-        wtx0(tx -> getTrustAnchorStore().add(tx, trustAnchor));
+        wtx0(tx -> this.getTrustAnchors().add(tx, trustAnchor));
 
         // make current serial lower to trigger delta download
         final RpkiRepository rpkiRepository = makeRpkiRepository(sessionId, notificationUri, trustAnchor);
 
         Ref<RpkiRepository> rpkiRepositoryRef = rtx(tx ->
-                getRpkiRepositoryStore().makeRef(tx, rpkiRepository.key()));
+                this.getRpkiRepositories().makeRef(tx, rpkiRepository.key()));
 
         // do the first run to get the snapshot
         final RrdpRepositoryValidationRun validationRun = wtx(tx ->
-                getValidationRunStore().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
+                this.getValidationRuns().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
         subject.storeRepository(rpkiRepository, validationRun);
         assertEquals(1, validationRun.getValidationChecks().size());
 
@@ -426,7 +426,7 @@ public class RrdpServiceImplTest extends GenericStorageTest {
         assertEquals(rpkiRepository.getRrdpNotifyUri(), validationCheck.getLocation());
         assertEquals("Serials of the deltas are not contiguous: found 2 and 4 after it", validationCheck.getParameters().get(0));
 
-        final List<RpkiObject> objects = rtx(tx -> getRpkiObjectStore().values(tx));
+        final List<RpkiObject> objects = rtx(tx -> this.getRpkiObjects().values(tx));
         assertEquals(1, objects.size());
 
         final RpkiObject rpkiObject = objects.get(0);
@@ -462,17 +462,17 @@ public class RrdpServiceImplTest extends GenericStorageTest {
         rrdpClient.add(notificationUri, Objects.notificationXml(4, sessionId, emptySnapshot, deltaInfo1, deltaInfo2));
 
         final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
-        wtx0(tx -> getTrustAnchorStore().add(tx, trustAnchor));
+        wtx0(tx -> this.getTrustAnchors().add(tx, trustAnchor));
 
         // make current serial lower to trigger delta download
         final RpkiRepository rpkiRepository = makeRpkiRepository(sessionId, notificationUri, trustAnchor);
 
         Ref<RpkiRepository> rpkiRepositoryRef = rtx(tx ->
-                getRpkiRepositoryStore().makeRef(tx, rpkiRepository.key()));
+                this.getRpkiRepositories().makeRef(tx, rpkiRepository.key()));
 
         // do the first run to get the snapshot
         final RrdpRepositoryValidationRun validationRun = wtx(tx ->
-                getValidationRunStore().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
+                this.getValidationRuns().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
         subject.storeRepository(rpkiRepository, validationRun);
         assertEquals(1, validationRun.getValidationChecks().size());
 
@@ -482,7 +482,7 @@ public class RrdpServiceImplTest extends GenericStorageTest {
         assertEquals(rpkiRepository.getRrdpNotifyUri(), validationCheck.getLocation());
         assertEquals("The last delta serial is 3, notification file serial is 4", validationCheck.getParameters().get(0));
 
-        final List<RpkiObject> objects = rtx(tx -> getRpkiObjectStore().values(tx));
+        final List<RpkiObject> objects = rtx(tx -> this.getRpkiObjects().values(tx));
         assertEquals(1, objects.size());
 
         final RpkiObject rpkiObject = objects.get(0);
@@ -513,17 +513,17 @@ public class RrdpServiceImplTest extends GenericStorageTest {
         rrdpClient.add(notificationUri, Objects.notificationXml(3, sessionId, emptySnapshot, deltaInfo1));
 
         final TrustAnchor trustAnchor = TestObjects.newTrustAnchor();
-        wtx0(tx -> getTrustAnchorStore().add(tx, trustAnchor));
+        wtx0(tx -> this.getTrustAnchors().add(tx, trustAnchor));
 
         // make current serial lower to trigger delta download
         final RpkiRepository rpkiRepository = makeRpkiRepository(sessionId, notificationUri, trustAnchor);
 
         Ref<RpkiRepository> rpkiRepositoryRef = rtx(tx ->
-                getRpkiRepositoryStore().makeRef(tx, rpkiRepository.key()));
+                this.getRpkiRepositories().makeRef(tx, rpkiRepository.key()));
 
         // do the first run to get the snapshot
         final RrdpRepositoryValidationRun validationRun = wtx(tx ->
-                getValidationRunStore().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
+                this.getValidationRuns().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
         subject.storeRepository(rpkiRepository, validationRun);
         assertEquals(1, validationRun.getValidationChecks().size());
         final ValidationCheck validationCheck = validationRun.getValidationChecks().get(0);
@@ -534,7 +534,7 @@ public class RrdpServiceImplTest extends GenericStorageTest {
         assertTrue(validationCheck.getParameters().get(0).startsWith("Hash of the delta file"));
         assertTrue(validationCheck.getParameters().get(0).contains("is " + Hex.format(Sha256.hash(deltaXml1)) + ", but notification file says FFFFFFFF"));
 
-        final List<RpkiObject> objects = rtx(tx -> getRpkiObjectStore().values(tx));
+        final List<RpkiObject> objects = rtx(tx -> this.getRpkiObjects().values(tx));
         assertEquals(1, objects.size());
 
         final RpkiObject rpkiObject = objects.get(0);
@@ -545,13 +545,13 @@ public class RrdpServiceImplTest extends GenericStorageTest {
 
     private RpkiRepository makeRpkiRepository(String sessionId, String notificationUri, TrustAnchor trustAnchor) {
         RpkiRepository rpkiRepository = wtx(tx -> {
-            final Ref<TrustAnchor> trustAnchorRef = getTrustAnchorStore().makeRef(tx, trustAnchor.key());
-            return getRpkiRepositoryStore().register(tx, trustAnchorRef, notificationUri, RpkiRepository.Type.RRDP);
+            final Ref<TrustAnchor> trustAnchorRef = this.getTrustAnchors().makeRef(tx, trustAnchor.key());
+            return this.getRpkiRepositories().register(tx, trustAnchorRef, notificationUri, RpkiRepository.Type.RRDP);
         });
 
         rpkiRepository.setRrdpSerial(BigInteger.valueOf(1L));
         rpkiRepository.setRrdpSessionId(sessionId);
-        wtx0(tx -> getRpkiRepositoryStore().update(tx, rpkiRepository));
+        wtx0(tx -> this.getRpkiRepositories().update(tx, rpkiRepository));
         return rpkiRepository;
     }
 }
