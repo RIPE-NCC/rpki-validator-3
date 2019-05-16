@@ -75,7 +75,7 @@ public class LmdbImpl extends Lmdb {
                         .open(new File(lmdbPath));
             }).get();
 
-            Runtime.getRuntime().addShutdownHook(new Thread(this::close));
+            Runtime.getRuntime().addShutdownHook(new Thread(this::waitForAllTxToFinishAndClose));
         } catch (Exception e) {
             log.error("Couldn't open LMDB", e);
             throw new RuntimeException(e);
@@ -83,7 +83,20 @@ public class LmdbImpl extends Lmdb {
     }
 
     @PreDestroy
-    public synchronized void close() {
+    public synchronized void waitForAllTxToFinishAndClose() {
+        if (!env.isClosed()) {
+            log.info("Preparing to close the LMDB environment, waiting for all transactions to finish...");
+            while (!getTxs().isEmpty()) {
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException ignore) {
+                }
+            }
+            close();
+        }
+    }
+
+    private synchronized void close() {
         try {
             oneThread.submit(() -> {
                 if (!env.isClosed()) {
