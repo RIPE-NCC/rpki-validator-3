@@ -31,6 +31,7 @@ package net.ripe.rpki.validator3.storage.data;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.ToString;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.UnknownCertificateRepositoryObject;
@@ -78,10 +79,9 @@ public class RpkiObject extends Base<RpkiObject> {
         return Key.of(sha256);
     }
 
-    // Store it as a string and not as enum, enums behave
-    // not very nicely when serialised.
+    @Getter
     @NotNull
-    private String type;
+    private Type type;
 
     private BigInteger serialNumber;
 
@@ -110,33 +110,33 @@ public class RpkiObject extends Base<RpkiObject> {
             this.serialNumber = ((X509ResourceCertificate) object).getSerialNumber();
             this.signingTime = null; // Use not valid before instead?
             this.authorityKeyIdentifier = ((X509ResourceCertificate) object).getAuthorityKeyIdentifier();
-            this.type = Type.CER.name(); // FIXME separate certificate types? CA, EE, Router, ?
+            this.type = Type.CER; // FIXME separate certificate types? CA, EE, Router, ?
         } else  if (object instanceof X509RouterCertificate) {
             this.serialNumber = ((X509RouterCertificate) object).getSerialNumber();
             this.signingTime = null;
             this.authorityKeyIdentifier = ((X509RouterCertificate) object).getAuthorityKeyIdentifier();
-            this.type = Type.ROUTER_CER.name();
+            this.type = Type.ROUTER_CER;
         } else if (object instanceof X509Crl) {
             this.serialNumber = ((X509Crl) object).getNumber();
             this.signingTime = Instant.ofEpochMilli(((X509Crl) object).getThisUpdateTime().getMillis());
             this.authorityKeyIdentifier = ((X509Crl) object).getAuthorityKeyIdentifier();
-            this.type = Type.CRL.name();
+            this.type = Type.CRL;
         } else if (object instanceof RpkiSignedObject) {
             this.serialNumber = ((RpkiSignedObject) object).getCertificate().getSerialNumber();
             this.signingTime = Instant.ofEpochMilli(((RpkiSignedObject) object).getSigningTime().getMillis());
             this.authorityKeyIdentifier = ((RpkiSignedObject) object).getCertificate().getAuthorityKeyIdentifier();
             if (object instanceof ManifestCms) {
-                this.type = Type.MFT.name();
+                this.type = Type.MFT;
             } else if (object instanceof RoaCms) {
                 RoaCms roaCms = (RoaCms) object;
-                this.type = Type.ROA.name();
+                this.type = Type.ROA;
                 this.roaPrefixes = roaCms.getPrefixes().stream()
                     .map(prefix -> RoaPrefix.of(prefix.getPrefix(), prefix.getMaximumLength(), roaCms.getAsn()))
                     .collect(Collectors.toList());
             } else if (object instanceof GhostbustersCms) {
-                this.type = Type.GBR.name();
+                this.type = Type.GBR;
             } else {
-                this.type = Type.OTHER.name();
+                this.type = Type.OTHER;
             }
         } else if (object instanceof UnknownCertificateRepositoryObject) {
             // FIXME store these at all?
@@ -175,10 +175,6 @@ public class RpkiObject extends Base<RpkiObject> {
         }
 
         return Optional.of(clazz.cast(candidate));
-    }
-
-    public Type getType() {
-        return Type.valueOf(type);
     }
 
 }

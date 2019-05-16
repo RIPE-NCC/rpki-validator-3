@@ -151,7 +151,7 @@ public class LmdbDataCorruptionTest extends GenericStorageTest {
         rpkiObject.setAuthorityKeyIdentifier(randomBytes(32));
         rpkiObject.setSigningTime(Instant.now());
         rpkiObject.setSerialNumber(new BigInteger("13"));
-        rpkiObject.setType(randomElem(RpkiObject.Type.values()).toString());
+        rpkiObject.setType(randomElem(RpkiObject.Type.values()));
         return rpkiObject;
     }
 

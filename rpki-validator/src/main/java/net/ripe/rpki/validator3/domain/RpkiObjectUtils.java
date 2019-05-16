@@ -36,6 +36,8 @@ import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import org.apache.commons.lang3.tuple.Pair;
 
+import static net.ripe.rpki.commons.validation.ValidationString.OBJECTS_GENERAL_PARSING;
+
 public class RpkiObjectUtils {
 
     public static Either<ValidationResult, Pair<String, RpkiObject>> createRpkiObject(final String uri, final byte[] content) {
@@ -44,7 +46,12 @@ public class RpkiObjectUtils {
         if (validationResult.hasFailures()) {
             return Either.left(validationResult);
         } else {
-            return Either.right(Pair.of(uri, new RpkiObject(repositoryObject)));
+            try {
+                return Either.right(Pair.of(uri, new RpkiObject(repositoryObject)));
+            } catch (Exception e) {
+                validationResult.rejectIfFalse(false, OBJECTS_GENERAL_PARSING);
+                return Either.left(validationResult);
+            }
         }
     }
 }

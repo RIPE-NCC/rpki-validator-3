@@ -78,7 +78,7 @@ public class RpkiObjectCoder implements Coder<RpkiObject> {
         final RpkiObject rpkiObject = new RpkiObject();
         BaseCoder.fromBytesNoId(content, rpkiObject);
 
-        rpkiObject.setType(Coders.toString(content.get(TYPE_TAG)));
+        rpkiObject.setType(RpkiObject.Type.valueOf(Coders.toString(content.get(TYPE_TAG))));
         rpkiObject.setSha256(content.get(SHA256_TAG));
         rpkiObject.setEncoded(content.get(ENCODED_TAG));
         rpkiObject.setAuthorityKeyIdentifier(content.get(AKI_TAG));
