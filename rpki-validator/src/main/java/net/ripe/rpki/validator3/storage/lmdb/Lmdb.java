@@ -131,8 +131,7 @@ public abstract class Lmdb {
 
     static void checkEnv(Env env) {
         if (env.isClosed()) {
-            throw new RuntimeException("The database environment is closed and cannot be used anymore. " +
-                    "This exception is harmless and can be safely ignored.");
+            throw new LmdbClosedException();
         }
     }
 
