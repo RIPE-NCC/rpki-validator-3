@@ -219,11 +219,11 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
 
     @Override
     public void verify(Tx.Read tx) {
-        try {
-            final Long t = Time.timed(() -> ixMap().verify(tx));
-            log.info("Verified in {}ms", t);
-        } catch (Exception e) {
-            log.error("And now the data is screwed", e);
-        }
+//        try {
+//            final Long t = Time.timed(() -> ixMap().verify(tx));
+//            log.info("Verified in {}ms", t);
+//        } catch (Exception e) {
+//            log.error("And now the data is screwed", e);
+//        }
     }
 }
