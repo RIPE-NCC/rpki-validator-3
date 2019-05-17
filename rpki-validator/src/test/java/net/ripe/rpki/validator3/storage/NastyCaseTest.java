@@ -57,6 +57,7 @@ import static org.junit.Assert.assertEquals;
 @Ignore
 public class NastyCaseTest {
 
+
     private LmdbImpl lmdb;
 
     private LmdbRpkiObject lmdbRpkiObject;
@@ -99,7 +100,7 @@ public class NastyCaseTest {
 
         ValidationResult validationResult = ValidationResult.withLocation("whatever.roa");
         CertificateRepositoryObject repositoryObject = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(content, validationResult);
-        RpkiObject rpkiObject = new RpkiObject("rsync://somewhere.com/whatever.roa", repositoryObject);
+        RpkiObject rpkiObject = new RpkiObject(repositoryObject);
         lmdb.writeTx0(tx -> lmdbRpkiObject.put(tx, rpkiObject));
 
         RpkiObjectCoder coder = new RpkiObjectCoder();
