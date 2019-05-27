@@ -38,6 +38,7 @@
         <build.number>DEV${maven.build.timestamp}</build.number>
         <build.version>3.0</build.version>
         <jetty-http2-client.version>9.4.11.v20180605</jetty-http2-client.version>
+        <xodus.version>1.3.0</xodus.version>
     </properties>
 
     <dependencies>
@@ -63,6 +64,24 @@
             <groupId>org.lmdbjava</groupId>
             <artifactId>lmdbjava</artifactId>
             <version>0.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jetbrains.xodus</groupId>
+            <artifactId>xodus-openAPI</artifactId>
+            <version>${xodus.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jetbrains.xodus</groupId>
+            <artifactId>xodus-environment</artifactId>
+            <version>${xodus.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jetbrains.xodus</groupId>
+            <artifactId>xodus-entity-store</artifactId>
+            <version>${xodus.version}</version>
         </dependency>
 
         <dependency>
