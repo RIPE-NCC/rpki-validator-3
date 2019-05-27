@@ -46,7 +46,7 @@ import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidation
 import net.ripe.rpki.validator3.storage.data.validation.RrdpRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.RsyncRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
-import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
@@ -332,7 +332,7 @@ public class RpkiRepositoryValidationService {
         lmdb.readTx0(rpkiObjects::verify);
     }
 
-    private void traverseFSandStore(Tx.Write tx,
+    private void traverseFSandStore(LmdbTx.Write tx,
                                     File targetDirectory,
                                     RsyncRepositoryValidationRun validationRun,
                                     ValidationResult validationResult,
@@ -404,7 +404,7 @@ public class RpkiRepositoryValidationService {
         }
     }
 
-    private void storeObject(Tx.Write tx, RpkiRepositoryValidationRun validationRun, Map<String, RpkiObject> objectsBySha256) {
+    private void storeObject(LmdbTx.Write tx, RpkiRepositoryValidationRun validationRun, Map<String, RpkiObject> objectsBySha256) {
         try {
             final Either<ValidationResult, Pair<String, RpkiObject>> maybeRpkiObject = asyncCreateObjects.take().get();
             if (maybeRpkiObject.isLeft()) {

@@ -52,7 +52,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
-import java.util.function.BiPredicate;
 import java.util.zip.CRC32;
 
 public abstract class IxBase<T extends Serializable> {
@@ -84,12 +83,12 @@ public abstract class IxBase<T extends Serializable> {
         }
     }
 
-    public Tx.Read readTx() {
-        return Tx.read(env);
+    public LmdbTx.Read readTx() {
+        return LmdbTx.read(env);
     }
 
-    public Tx.Write writeTx() {
-        return Tx.write(env);
+    public LmdbTx.Write writeTx() {
+        return LmdbTx.write(env);
     }
 
     protected void verifyKey(Key k) {
@@ -101,7 +100,7 @@ public abstract class IxBase<T extends Serializable> {
         checkNotNull(value, "Value is null");
     }
 
-    public boolean exists(Tx.Read tx, Key key) {
+    public boolean exists(LmdbTx.Read tx, Key key) {
         return getMainDb().get(tx.txn(), key.toByteBuffer()) != null;
     }
 
@@ -136,25 +135,25 @@ public abstract class IxBase<T extends Serializable> {
         return coder.fromBytes(valueBytes);
     }
 
-    public Set<Key> keys(Tx.Read tx) {
+    public Set<Key> keys(LmdbTx.Read tx) {
         final Set<Key> result = new HashSet<>();
         forEach(tx, (k, v) -> result.add(k));
         return result;
     }
 
-    public List<T> values(Tx.Read tx) {
+    public List<T> values(LmdbTx.Read tx) {
         final List<T> result = new ArrayList<>();
         forEach(tx, (k, v) -> result.add(getValue(k, v)));
         return result;
     }
 
-    public Map<Key, T> all(Tx.Read tx) {
+    public Map<Key, T> all(LmdbTx.Read tx) {
         final Map<Key, T> result = new HashMap<>();
         forEach(tx, (k, v) -> result.put(k, getValue(k, v)));
         return result;
     }
 
-    public void clear(Tx.Write tx) {
+    public void clear(LmdbTx.Write tx) {
         getMainDb().drop(tx.txn());
     }
 
@@ -162,7 +161,7 @@ public abstract class IxBase<T extends Serializable> {
         return getValue(null, bb);
     }
 
-    public void forEach(Tx.Read tx, BiConsumer<Key, ByteBuffer> c) {
+    public void forEach(LmdbTx.Read tx, BiConsumer<Key, ByteBuffer> c) {
         try (final CursorIterator<ByteBuffer> ci = getMainDb().iterate(tx.txn())) {
             while (ci.hasNext()) {
                 final CursorIterator.KeyVal<ByteBuffer> next = ci.next();
@@ -171,13 +170,13 @@ public abstract class IxBase<T extends Serializable> {
         }
     }
 
-    public long size(Tx.Read tx) {
+    public long size(LmdbTx.Read tx) {
         AtomicLong s = new AtomicLong();
         forEach(tx, (k, v) -> s.getAndIncrement());
         return s.get();
     }
 
-    public Sizes sizeInfo(Tx.Read tx) {
+    public Sizes sizeInfo(LmdbTx.Read tx) {
         AtomicInteger count = new AtomicInteger();
         AtomicInteger size = new AtomicInteger();
         forEach(tx, (k, v) -> {
@@ -187,7 +186,7 @@ public abstract class IxBase<T extends Serializable> {
         return new Sizes(count.get(), size.get(), getAllocatedSize(tx, getMainDb()));
     }
 
-    long getAllocatedSize(Tx.Read tx, Dbi<ByteBuffer> dbi) {
+    long getAllocatedSize(LmdbTx.Read tx, Dbi<ByteBuffer> dbi) {
         final Stat stat = dbi.stat(tx.txn());
         return stat.pageSize * (stat.branchPages + stat.leafPages + stat.overflowPages);
     }

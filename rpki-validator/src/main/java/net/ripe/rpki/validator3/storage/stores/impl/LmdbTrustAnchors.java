@@ -37,7 +37,7 @@ import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
-import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
@@ -74,54 +74,54 @@ public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements T
     }
 
     @Override
-    public TrustAnchor add(Tx.Write tx, TrustAnchor trustAnchor) {
+    public TrustAnchor add(LmdbTx.Write tx, TrustAnchor trustAnchor) {
         trustAnchor.setId(Key.of(sequences.next(tx, TrustAnchors.TRUST_ANCHORS + ":pk")));
         ixMap.put(tx, trustAnchor.key(), trustAnchor);
         return trustAnchor;
     }
 
     @Override
-    public void update(Tx.Write tx, TrustAnchor trustAnchor) {
+    public void update(LmdbTx.Write tx, TrustAnchor trustAnchor) {
         trustAnchor.setUpdatedAt(Instant.now());
         ixMap.put(tx, trustAnchor.key(), trustAnchor);
     }
 
     @Override
-    public void remove(Tx.Write tx, TrustAnchor trustAnchor) {
+    public void remove(LmdbTx.Write tx, TrustAnchor trustAnchor) {
         ixMap.delete(tx, trustAnchor.key());
     }
 
     @Override
-    public Optional<TrustAnchor> get(Tx.Read tx, Key id) {
+    public Optional<TrustAnchor> get(LmdbTx.Read tx, Key id) {
         return ixMap.get(tx, id);
     }
 
     @Override
-    public List<TrustAnchor> findAll(Tx.Read tx) {
+    public List<TrustAnchor> findAll(LmdbTx.Read tx) {
         return ixMap.values(tx);
     }
 
     @Override
-    public Collection<TrustAnchor> findByName(Tx.Read tx, String name) {
+    public Collection<TrustAnchor> findByName(LmdbTx.Read tx, String name) {
         return findAll(tx).stream()
                 .filter(ta -> ta.getName().equals(name))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public Optional<TrustAnchor> findBySubjectPublicKeyInfo(Tx.Read tx, String subjectPublicKeyInfo) {
+    public Optional<TrustAnchor> findBySubjectPublicKeyInfo(LmdbTx.Read tx, String subjectPublicKeyInfo) {
         return findAll(tx).stream()
                 .filter(ta -> ta.getSubjectPublicKeyInfo().equals(subjectPublicKeyInfo))
                 .findFirst();
     }
 
     @Override
-    public boolean allInitialCertificateTreeValidationRunsCompleted(Tx.Read tx) {
+    public boolean allInitialCertificateTreeValidationRunsCompleted(LmdbTx.Read tx) {
         return findAll(tx).stream().allMatch(TrustAnchor::isInitialCertificateTreeValidationRunCompleted);
     }
 
     @Override
-    public List<TaStatus> getStatuses(Tx.Read tx) {
+    public List<TaStatus> getStatuses(LmdbTx.Read tx) {
         return findAll(tx).stream().map(ta ->
                 validationRuns.findLatestCaTreeValidationRun(tx, ta).map(vr -> {
                     final List<ValidationCheck> validationChecks = vr.getValidationChecks();

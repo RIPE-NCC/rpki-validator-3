@@ -59,7 +59,7 @@ public class MultIxMap<T extends Serializable> extends IxBase<T> {
         return new DbiFlags[]{MDB_CREATE, MDB_DUPSORT};
     }
 
-    public List<T> get(Tx.Read tx, Key primaryKey) {
+    public List<T> get(LmdbTx.Read tx, Key primaryKey) {
         verifyKey(primaryKey);
         final ByteBuffer pkBuf = primaryKey.toByteBuffer();
         final List<T> result = new ArrayList<>();
@@ -72,7 +72,7 @@ public class MultIxMap<T extends Serializable> extends IxBase<T> {
         return result;
     }
 
-    public int count(Tx.Read txn, Key primaryKey) {
+    public int count(LmdbTx.Read txn, Key primaryKey) {
         verifyKey(primaryKey);
         int s = 0;
         final ByteBuffer pkBuf = primaryKey.toByteBuffer();
@@ -85,16 +85,16 @@ public class MultIxMap<T extends Serializable> extends IxBase<T> {
         return s;
     }
 
-    public void put(Tx.Write tx, Key primaryKey, T value) {
+    public void put(LmdbTx.Write tx, Key primaryKey, T value) {
         checkKeyAndValue(primaryKey, value);
         getMainDb().put(tx.txn(), primaryKey.toByteBuffer(), valueBuf(value));
     }
 
-    public void delete(Tx.Write tx, Key primaryKey) {
+    public void delete(LmdbTx.Write tx, Key primaryKey) {
         getMainDb().delete(tx.txn(), primaryKey.toByteBuffer());
     }
 
-    public void delete(Tx.Write tx, Key primaryKey, T value) {
+    public void delete(LmdbTx.Write tx, Key primaryKey, T value) {
         verifyKey(primaryKey);
         getMainDb().delete(tx.txn(), primaryKey.toByteBuffer(), valueBuf(value));
     }

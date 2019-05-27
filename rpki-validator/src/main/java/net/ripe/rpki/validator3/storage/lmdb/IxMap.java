@@ -70,7 +70,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
 
     private final Map<String, Dbi<ByteBuffer>> indexes;
     private final Map<String, Function<T, Set<Key>>> indexFunctions;
-    private final List<BiConsumer<Tx.Write, Key>> onDeleteTriggers = new ArrayList<>();
+    private final List<BiConsumer<LmdbTx.Write, Key>> onDeleteTriggers = new ArrayList<>();
 
     public IxMap(final Lmdb lmdb,
                  final String name,
@@ -91,7 +91,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
     }
 
     private void reindex() {
-        final Tx.Write tx = writeTx();
+        final LmdbTx.Write tx = writeTx();
         try {
             Txn<ByteBuffer> txn = tx.txn();
             indexes.forEach((name, idx) -> idx.drop(txn));
@@ -114,7 +114,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
         return indexes.get(name);
     }
 
-    private void dropIndexes(Tx.Write tx) {
+    private void dropIndexes(LmdbTx.Write tx) {
         indexes.forEach((name, db) -> db.drop(tx.txn()));
     }
 
@@ -130,7 +130,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
         return get(readTx(), primaryKey);
     }
 
-    public Optional<T> get(Tx.Read txn, Key primaryKey) {
+    public Optional<T> get(LmdbTx.Read txn, Key primaryKey) {
         verifyKey(primaryKey);
         ByteBuffer bb = getMainDb().get(txn.txn(), primaryKey.toByteBuffer());
         return bb == null ?
@@ -138,7 +138,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
                 Optional.of(getValue(primaryKey, bb));
     }
 
-    public List<T> get(Tx.Read txn, Set<Key> primaryKeys) {
+    public List<T> get(LmdbTx.Read txn, Set<Key> primaryKeys) {
         return primaryKeys.stream()
                 .map(pk -> get(txn, pk))
                 .filter(Optional::isPresent)
@@ -146,55 +146,55 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
                 .collect(Collectors.toList());
     }
 
-    public Map<Key, T> getByIndex(String indexName, Tx.Read tx, Key indexKey) {
+    public Map<Key, T> getByIndex(String indexName, LmdbTx.Read tx, Key indexKey) {
         checkNotNull(indexKey, "Index key is null");
         final ByteBuffer idxKey = indexKey.toByteBuffer();
         return getByIndexKeyRange(indexName, tx, KeyRange.closed(idxKey, idxKey));
     }
 
-    public Set<Key> getPkByIndex(String indexName, Tx.Read tx, Key indexKey) {
+    public Set<Key> getPkByIndex(String indexName, LmdbTx.Read tx, Key indexKey) {
         checkNotNull(indexKey, "Index key is null");
         final ByteBuffer idxKey = indexKey.toByteBuffer();
         return getPkByIndexKeyRange(indexName, tx, KeyRange.closed(idxKey, idxKey));
     }
 
-    public Map<Key, T> getByIndexLess(String indexName, Tx.Read tx, Key indexKey) {
+    public Map<Key, T> getByIndexLess(String indexName, LmdbTx.Read tx, Key indexKey) {
         final ByteBuffer idxKey = indexKey.toByteBuffer();
         return getByIndexKeyRange(indexName, tx, KeyRange.lessThan(idxKey));
     }
 
-    public Map<Key, T> getByIndexGreater(String indexName, Tx.Read tx, Key indexKey) {
+    public Map<Key, T> getByIndexGreater(String indexName, LmdbTx.Read tx, Key indexKey) {
         final ByteBuffer idxKey = indexKey.toByteBuffer();
         return getByIndexKeyRange(indexName, tx, KeyRange.greaterThan(idxKey));
     }
 
-    public Set<Key> getByIndexLessPk(String indexName, Tx.Read tx, Key indexKey) {
+    public Set<Key> getByIndexLessPk(String indexName, LmdbTx.Read tx, Key indexKey) {
         final ByteBuffer idxKey = indexKey.toByteBuffer();
         return getPkByIndexKeyRange(indexName, tx, KeyRange.lessThan(idxKey));
     }
 
-    public Set<Key> getByIndexGreaterPk(String indexName, Tx.Read tx, Key indexKey) {
+    public Set<Key> getByIndexGreaterPk(String indexName, LmdbTx.Read tx, Key indexKey) {
         final ByteBuffer idxKey = indexKey.toByteBuffer();
         return getPkByIndexKeyRange(indexName, tx, KeyRange.greaterThan(idxKey));
     }
 
-    public Map<Key, T> getByIndexMax(String indexName, Tx.Read tx, Predicate<T> p) {
+    public Map<Key, T> getByIndexMax(String indexName, LmdbTx.Read tx, Predicate<T> p) {
         return getKeyAtTheMinOrMaxOfIndex(indexName, tx, KeyRange.allBackward(), p);
     }
 
-    public Map<Key, T> getByIndexMin(String indexName, Tx.Read tx, Predicate<T> p) {
+    public Map<Key, T> getByIndexMin(String indexName, LmdbTx.Read tx, Predicate<T> p) {
         return getKeyAtTheMinOrMaxOfIndex(indexName, tx, KeyRange.all(), p);
     }
 
-    Set<Key> getPkByIndexMax(String indexName, Tx.Read tx) {
+    Set<Key> getPkByIndexMax(String indexName, LmdbTx.Read tx) {
         return getKeyAtTheMinOrMaxOfIndex(indexName, tx, KeyRange.allBackward());
     }
 
-    Set<Key> getPkByIndexMin(String indexName, Tx.Read tx) {
+    Set<Key> getPkByIndexMin(String indexName, LmdbTx.Read tx) {
         return getKeyAtTheMinOrMaxOfIndex(indexName, tx, KeyRange.all());
     }
 
-    public Optional<T> put(Tx.Write tx, Key primaryKey, T value) {
+    public Optional<T> put(LmdbTx.Write tx, Key primaryKey, T value) {
         checkKeyAndValue(primaryKey, value);
         final Txn<ByteBuffer> txn = tx.txn();
         final Optional<T> oldValue = get(tx, primaryKey);
@@ -229,7 +229,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
         return Optional.empty();
     }
 
-    public boolean modify(Tx.Write tx, Key primaryKey, Consumer<T> modifyValue) {
+    public boolean modify(LmdbTx.Write tx, Key primaryKey, Consumer<T> modifyValue) {
         final Optional<T> t = get(tx, primaryKey);
         t.ifPresent(v -> {
             modifyValue.accept(v);
@@ -238,7 +238,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
         return t.isPresent();
     }
 
-    public void delete(Tx.Write tx, Key primaryKey) {
+    public void delete(LmdbTx.Write tx, Key primaryKey) {
         checkNotNull(primaryKey, "Key is null");
         final Txn<ByteBuffer> txn = tx.txn();
         final Dbi<ByteBuffer> mainDb = getMainDb();
@@ -264,17 +264,17 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
         }
     }
 
-    public void onDelete(BiConsumer<Tx.Write, Key> bf) {
+    public void onDelete(BiConsumer<LmdbTx.Write, Key> bf) {
         onDeleteTriggers.add(bf);
     }
 
     @Override
-    public void clear(Tx.Write tx) {
+    public void clear(LmdbTx.Write tx) {
         getMainDb().drop(tx.txn());
         dropIndexes(tx);
     }
 
-    private Map<Key, T> getByIndexKeyRange(String indexName, Tx.Read tx, KeyRange keyRange) {
+    private Map<Key, T> getByIndexKeyRange(String indexName, LmdbTx.Read tx, KeyRange keyRange) {
         final Dbi<ByteBuffer> index = getIdx(indexName);
         if (index == null) {
             return Collections.emptyMap();
@@ -296,7 +296,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
         return m;
     }
 
-    private Set<Key> getPkByIndexKeyRange(String indexName, Tx.Read tx, KeyRange keyRange) {
+    private Set<Key> getPkByIndexKeyRange(String indexName, LmdbTx.Read tx, KeyRange keyRange) {
         final Dbi<ByteBuffer> index = getIdx(indexName);
         if (index == null) {
             return Collections.emptySet();
@@ -311,7 +311,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
         return values;
     }
 
-    private Set<Key> getKeyAtTheMinOrMaxOfIndex(String indexName, Tx.Read tx, KeyRange<ByteBuffer> objectKeyRange) {
+    private Set<Key> getKeyAtTheMinOrMaxOfIndex(String indexName, LmdbTx.Read tx, KeyRange<ByteBuffer> objectKeyRange) {
         final Dbi<ByteBuffer> index = getIdx(indexName);
         if (index != null) {
             final Txn<ByteBuffer> txn = tx.txn();
@@ -337,7 +337,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
         return Collections.emptySet();
     }
 
-    private Map<Key, T> getKeyAtTheMinOrMaxOfIndex(String indexName, Tx.Read tx, KeyRange<ByteBuffer> keyRange, Predicate<T> p) {
+    private Map<Key, T> getKeyAtTheMinOrMaxOfIndex(String indexName, LmdbTx.Read tx, KeyRange<ByteBuffer> keyRange, Predicate<T> p) {
         final Dbi<ByteBuffer> index = getIdx(indexName);
         if (index != null) {
             final Dbi<ByteBuffer> mainDb = getMainDb();
@@ -372,7 +372,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
     }
 
     @Override
-    public IxBase.Sizes sizeInfo(Tx.Read tx) {
+    public IxBase.Sizes sizeInfo(LmdbTx.Read tx) {
         IxBase.Sizes sizes = super.sizeInfo(tx);
         final Map<String, IxBase.Sizes> indexSizes = new HashMap<>();
         indexes.forEach((name, ignore) -> {
@@ -395,7 +395,7 @@ public class IxMap<T extends Serializable> extends IxBase<T> {
                 indexSizes);
     }
 
-    public void verify(Tx.Read tx) {
+    public void verify(LmdbTx.Read tx) {
 
         final Map<Key, Set<Key>> indexValues = new HashMap<>();
         forEach(tx, (k, bb) -> {

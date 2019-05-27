@@ -39,7 +39,7 @@ import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.RrdpRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
-import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 import net.ripe.rpki.validator3.storage.stores.impl.GenericStorageTest;
 import net.ripe.rpki.validator3.util.Hex;
 import net.ripe.rpki.validator3.util.Sha256;
@@ -106,7 +106,7 @@ public class RrdpServiceImplTest extends GenericStorageTest {
         });
     }
 
-    public SortedSet<String> getLocations(Tx.Read tx, RpkiObject o) {
+    public SortedSet<String> getLocations(LmdbTx.Read tx, RpkiObject o) {
         return this.getRpkiObjects().getLocations(tx, o.key());
     }
 

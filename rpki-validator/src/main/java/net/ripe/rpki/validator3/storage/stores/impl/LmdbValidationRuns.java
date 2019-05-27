@@ -50,7 +50,7 @@ import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.MultIxMap;
-import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
@@ -166,20 +166,20 @@ public class LmdbValidationRuns implements ValidationRuns {
     }
 
     @Override
-    public <T extends ValidationRun> T add(Tx.Write tx, T vr) {
+    public <T extends ValidationRun> T add(LmdbTx.Write tx, T vr) {
         vr.setId(Key.of(sequences.next(tx, RPKI_VALIDATION_RUNS + ":pk")));
         pickIxMap(vr.getType()).put(tx, vr.key(), vr);
         return vr;
     }
 
     @Override
-    public <T extends ValidationRun> void update(Tx.Write tx, T vr) {
+    public <T extends ValidationRun> void update(LmdbTx.Write tx, T vr) {
         vr.setUpdatedAt(Instant.now());
         pickIxMap(vr.getType()).put(tx, vr.key(), vr);
     }
 
     @Override
-    public <T extends ValidationRun> Optional<T> get(Tx.Read tx, Class<T> type, long id) {
+    public <T extends ValidationRun> Optional<T> get(LmdbTx.Read tx, Class<T> type, long id) {
         return pickIxMaps(type).stream()
                 .map(ixMap -> ixMap.get(tx, Key.of(id)))
                 .filter(Optional::isPresent)
@@ -188,7 +188,7 @@ public class LmdbValidationRuns implements ValidationRuns {
     }
 
     @Override
-    public <T extends ValidationRun> List<T> findAll(Tx.Read tx, Class<T> type) {
+    public <T extends ValidationRun> List<T> findAll(LmdbTx.Read tx, Class<T> type) {
         final List<T> result = new ArrayList<>();
         pickIxMaps(type).forEach(ixMap ->
                 ixMap.forEach(tx, (k, bb) ->
@@ -198,7 +198,7 @@ public class LmdbValidationRuns implements ValidationRuns {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T extends ValidationRun> List<T> findLatestSuccessful(Tx.Read tx, Class<T> type) {
+    public <T extends ValidationRun> List<T> findLatestSuccessful(LmdbTx.Read tx, Class<T> type) {
         final List<T> result = new ArrayList<>();
         List<IxMap<ValidationRun>> ixMaps = pickIxMaps(type);
         ixMaps.forEach(ixMap ->
@@ -208,31 +208,31 @@ public class LmdbValidationRuns implements ValidationRuns {
     }
 
     @Override
-    public Optional<CertificateTreeValidationRun> findLatestSuccessfulCaTreeValidationRun(Tx.Read tx, TrustAnchor trustAnchor) {
+    public Optional<CertificateTreeValidationRun> findLatestSuccessfulCaTreeValidationRun(LmdbTx.Read tx, TrustAnchor trustAnchor) {
         return ctIxMap.getByIndexMax(BY_COMPLETED_AT_INDEX, tx, vr ->
                 vr.isSucceeded() && trustAnchor.key().equals(vr.getTrustAnchor().key())).values().stream().findFirst();
     }
 
     @Override
-    public Optional<TrustAnchorValidationRun> findLatestCompletedForTrustAnchor(Tx.Read tx, TrustAnchor trustAnchor) {
+    public Optional<TrustAnchorValidationRun> findLatestCompletedForTrustAnchor(LmdbTx.Read tx, TrustAnchor trustAnchor) {
         return taIxMap.getByIndexMax(BY_COMPLETED_AT_INDEX, tx,
                 vr -> trustAnchor.key().equals(vr.getTrustAnchor().key())).values().stream().findFirst();
     }
 
     @Override
-    public Optional<CertificateTreeValidationRun> findLatestCaTreeValidationRun(Tx.Read tx, TrustAnchor trustAnchor) {
+    public Optional<CertificateTreeValidationRun> findLatestCaTreeValidationRun(LmdbTx.Read tx, TrustAnchor trustAnchor) {
         return ctIxMap.getByIndexMax(BY_COMPLETED_AT_INDEX, tx,
                 vr -> trustAnchor.key().equals(vr.getTrustAnchor().key())).values().stream().findFirst();
     }
 
-    private void removeAllForTrustAnchor(Tx.Write tx, Key trustAnchorKey) {
+    private void removeAllForTrustAnchor(LmdbTx.Write tx, Key trustAnchorKey) {
         Stream.of(taIxMap, ctIxMap).forEach(ixMap ->
                 ixMap.getPkByIndex(BY_TA_INDEX, tx, trustAnchorKey)
                         .forEach(pk -> ixMap.delete(tx, pk)));
     }
 
     @Override
-    public int removeOldValidationRuns(Tx.Write tx, Instant completedBefore) {
+    public int removeOldValidationRuns(LmdbTx.Write tx, Instant completedBefore) {
         AtomicInteger count = new AtomicInteger(0);
         maps.forEach((type, ixMap) -> {
             // Don't delete the most recent one successful
@@ -263,7 +263,7 @@ public class LmdbValidationRuns implements ValidationRuns {
     }
 
     @Override
-    public int removeOrphanValidationRunAssociations(Tx.Write tx) {
+    public int removeOrphanValidationRunAssociations(LmdbTx.Write tx) {
         final Set<Key> roKeys = rpkiObjects.keys(tx);
         final Set<Key> repoKeys = rpkiRepositories.keys(tx);
         final List<Pair<Key, Key>> toDelete = new ArrayList<>();
@@ -288,18 +288,18 @@ public class LmdbValidationRuns implements ValidationRuns {
     }
 
     @Override
-    public Stream<ValidationCheck> findValidationChecksForValidationRun(Tx.Read tx, long trustAnchorId, Paging paging, SearchTerm searchTerm, Sorting sorting) {
+    public Stream<ValidationCheck> findValidationChecksForValidationRun(LmdbTx.Read tx, long trustAnchorId, Paging paging, SearchTerm searchTerm, Sorting sorting) {
         return applyPaging(paging,
                 applySorting(sorting,
                         applySearchTerm(searchTerm, validationCheckForTaStreams(tx, trustAnchorId))));
     }
 
     @Override
-    public int countValidationChecksForValidationRun(Tx.Read tx, long trustAnchorId, SearchTerm searchTerm) {
+    public int countValidationChecksForValidationRun(LmdbTx.Read tx, long trustAnchorId, SearchTerm searchTerm) {
         return (int) applySearchTerm(searchTerm, validationCheckForTaStreams(tx, trustAnchorId)).count();
     }
 
-    private Stream<ValidationCheck> validationCheckForTaStreams(Tx.Read tx, long trustAnchorId) {
+    private Stream<ValidationCheck> validationCheckForTaStreams(LmdbTx.Read tx, long trustAnchorId) {
         Stream<ValidationCheck> taChecks = taIxMap.getByIndexMax(BY_COMPLETED_AT_INDEX, tx,
                 vr -> trustAnchorId == vr.getTrustAnchor().key().asLong())
                 .values()
@@ -367,27 +367,27 @@ public class LmdbValidationRuns implements ValidationRuns {
     }
 
     @Override
-    public void associate(Tx.Write tx, RpkiRepositoryValidationRun validationRun, RpkiObject rpkiObject) {
+    public void associate(LmdbTx.Write tx, RpkiRepositoryValidationRun validationRun, RpkiObject rpkiObject) {
         vr2ro.put(tx, validationRun.key(), rpkiObject.key());
     }
 
     @Override
-    public void associateRpkiObjectKey(Tx.Write tx, CertificateTreeValidationRun validationRun, Key rpkiObjectKey) {
+    public void associateRpkiObjectKey(LmdbTx.Write tx, CertificateTreeValidationRun validationRun, Key rpkiObjectKey) {
         vr2ro.put(tx, validationRun.key(), rpkiObjectKey);
     }
 
     @Override
-    public void associate(Tx.Write tx, RsyncRepositoryValidationRun validationRun, RpkiRepository rpkiRepository) {
+    public void associate(LmdbTx.Write tx, RsyncRepositoryValidationRun validationRun, RpkiRepository rpkiRepository) {
         vr2repo.put(tx, validationRun.key(), rpkiRepository.key());
     }
 
     @Override
-    public Set<Key> findAssociatedPks(Tx.Read tx, CertificateTreeValidationRun validationRun) {
+    public Set<Key> findAssociatedPks(LmdbTx.Read tx, CertificateTreeValidationRun validationRun) {
         return new HashSet<>(vr2ro.get(tx, validationRun.key()));
     }
 
     @Override
-    public Stream<Pair<CertificateTreeValidationRun, RpkiObject>> findCurrentlyValidated(Tx.Read tx, RpkiObject.Type type) {
+    public Stream<Pair<CertificateTreeValidationRun, RpkiObject>> findCurrentlyValidated(LmdbTx.Read tx, RpkiObject.Type type) {
         final Set<Key> byType = rpkiObjects.getPkByType(tx, type);
         return findLatestSuccessful(tx, CertificateTreeValidationRun.class)
                 .stream()
@@ -402,13 +402,13 @@ public class LmdbValidationRuns implements ValidationRuns {
     }
 
     @Override
-    public void clear(Tx.Write tx) {
+    public void clear(LmdbTx.Write tx) {
         Stream.of(vr2ro, vr2repo, ctIxMap, taIxMap, rsIxMap, rrIxMap)
                 .forEach(ixMap -> ixMap.clear(tx));
     }
 
     @Override
-    public int getObjectCount(Tx.Read tx, ValidationRun validationRun) {
+    public int getObjectCount(LmdbTx.Read tx, ValidationRun validationRun) {
         return vr2ro.count(tx, validationRun.key());
     }
 

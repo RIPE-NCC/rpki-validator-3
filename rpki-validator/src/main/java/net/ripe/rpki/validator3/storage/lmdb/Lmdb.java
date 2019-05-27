@@ -79,8 +79,8 @@ public abstract class Lmdb {
         return metadata;
     }
 
-    public <T> T writeTx(Function<Tx.Write, T> f) {
-        Tx.Write tx = Tx.write(getEnv());
+    public <T> T writeTx(Function<LmdbTx.Write, T> f) {
+        LmdbTx.Write tx = LmdbTx.write(getEnv());
         txs.put(tx.getId(), new TxInfo(tx));
         try {
             final T result = f.apply(tx);
@@ -102,15 +102,15 @@ public abstract class Lmdb {
         }
     }
 
-    public void writeTx0(Consumer<Tx.Write> c) {
+    public void writeTx0(Consumer<LmdbTx.Write> c) {
         writeTx(tx -> {
             c.accept(tx);
             return null;
         });
     }
 
-    public <T> T readTx(Function<Tx.Read, T> f) {
-        Tx.Read tx = Tx.read(getEnv());
+    public <T> T readTx(Function<LmdbTx.Read, T> f) {
+        LmdbTx.Read tx = LmdbTx.read(getEnv());
         txs.put(tx.getId(), new TxInfo(tx));
         try {
             return f.apply(tx);
@@ -120,7 +120,7 @@ public abstract class Lmdb {
         }
     }
 
-    public void readTx0(Consumer<Tx.Read> c) {
+    public void readTx0(Consumer<LmdbTx.Read> c) {
         readTx(tx -> {
             c.accept(tx);
             return null;
@@ -261,14 +261,14 @@ public abstract class Lmdb {
         private boolean writing;
         private Instant startedAt;
 
-        TxInfo(Tx tx) {
-            this.txId = tx.getId();
-            this.threadId = tx.getThreadId();
+        TxInfo(LmdbTx lmdbTx) {
+            this.txId = lmdbTx.getId();
+            this.threadId = lmdbTx.getThreadId();
             this.stackTrace = Stream.of(Thread.currentThread().getStackTrace())
                     .skip(2)
                     .map(StackTraceElement::toString)
                     .collect(Collectors.toList());
-            this.writing = tx instanceof Tx.Write;
+            this.writing = lmdbTx instanceof LmdbTx.Write;
             this.startedAt = Instant.now();
         }
     }

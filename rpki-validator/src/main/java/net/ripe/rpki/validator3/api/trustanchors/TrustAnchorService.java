@@ -38,7 +38,7 @@ import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
-import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.Settings;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
@@ -101,7 +101,7 @@ public class TrustAnchorService {
         return lmdb.writeTx(tx -> add(tx, trustAnchor));
     }
 
-    long add(Tx.Write tx, TrustAnchor trustAnchor) {
+    long add(LmdbTx.Write tx, TrustAnchor trustAnchor) {
         trustAnchors.add(tx, trustAnchor);
 
         final Ref<TrustAnchor> trustAnchorRef = trustAnchors.makeRef(tx, trustAnchor.key());
@@ -162,7 +162,7 @@ public class TrustAnchorService {
         lmdb.readTx0(this::scheduleTasValidation);
     }
 
-    private void scheduleTasValidation(Tx.Read tx) {
+    private void scheduleTasValidation(LmdbTx.Read tx) {
         log.info("Schedule TA validation that were in the database already");
         trustAnchors.findAll(tx).forEach(ta -> {
             if (!validationScheduler.scheduledTrustAnchor(ta)) {

@@ -34,7 +34,7 @@ import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.StringCoder;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
-import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.Settings;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,20 +54,20 @@ public class LmdbSettings extends GenericStoreImpl<String> implements Settings {
     }
 
     @Override
-    public void markInitialValidationRunCompleted(Tx.Write tx) {
+    public void markInitialValidationRunCompleted(LmdbTx.Write tx) {
         setTrue(tx, INITIAL_VALIDATION_RUN_COMPLETED);
     }
 
     @Override
-    public boolean isInitialValidationRunCompleted(Tx.Read tx) {
+    public boolean isInitialValidationRunCompleted(LmdbTx.Read tx) {
         return isTrue(tx, INITIAL_VALIDATION_RUN_COMPLETED);
     }
 
-    public void setTrue(Tx.Write tx, String preconfiguredTalSettingsKey) {
+    public void setTrue(LmdbTx.Write tx, String preconfiguredTalSettingsKey) {
         ixMap.put(tx, Key.of(preconfiguredTalSettingsKey), "true");
     }
 
-    private boolean isTrue(Tx.Read tx, String initialValidationRunCompleted) {
+    private boolean isTrue(LmdbTx.Read tx, String initialValidationRunCompleted) {
         return ixMap.get(tx, Key.of(initialValidationRunCompleted)).filter("true"::equals).isPresent();
     }
 

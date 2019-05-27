@@ -34,10 +34,9 @@ import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
-import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -45,36 +44,36 @@ import java.util.SortedSet;
 import java.util.stream.Stream;
 
 public interface RpkiObjects extends GenericStore<RpkiObject> {
-    Optional<RpkiObject> get(Tx.Read tx, Key key);
+    Optional<RpkiObject> get(LmdbTx.Read tx, Key key);
 
-    void put(Tx.Write tx, RpkiObject rpkiObject);
+    void put(LmdbTx.Write tx, RpkiObject rpkiObject);
 
-    void put(Tx.Write tx, RpkiObject rpkiObject, String location);
+    void put(LmdbTx.Write tx, RpkiObject rpkiObject, String location);
 
-    void delete(Tx.Write tx, RpkiObject o);
+    void delete(LmdbTx.Write tx, RpkiObject o);
 
-    void markReachable(Tx.Write tx, Key pk, Instant i);
+    void markReachable(LmdbTx.Write tx, Key pk, Instant i);
 
-    void addLocation(Tx.Write tx, Key pk, String location);
+    void addLocation(LmdbTx.Write tx, Key pk, String location);
 
-    SortedSet<String> getLocations(Tx.Read tx, Key pk);
+    SortedSet<String> getLocations(LmdbTx.Read tx, Key pk);
 
-    void deleteLocation(Tx.Write tx, Key key, String uri);
+    void deleteLocation(LmdbTx.Write tx, Key key, String uri);
 
     <T extends CertificateRepositoryObject> Optional<T> findCertificateRepositoryObject(
-            Tx.Read tx, Key sha256, Class<T> clazz, ValidationResult validationResult);
+            LmdbTx.Read tx, Key sha256, Class<T> clazz, ValidationResult validationResult);
 
-    Optional<RpkiObject> findBySha256(Tx.Read tx, byte[] sha256);
+    Optional<RpkiObject> findBySha256(LmdbTx.Read tx, byte[] sha256);
 
-    Map<String, RpkiObject> findObjectsInManifest(Tx.Read tx, ManifestCms manifestCms);
+    Map<String, RpkiObject> findObjectsInManifest(LmdbTx.Read tx, ManifestCms manifestCms);
 
-    Optional<RpkiObject> findLatestMftByAKI(Tx.Read tx, byte[] authorityKeyIdentifier);
+    Optional<RpkiObject> findLatestMftByAKI(LmdbTx.Read tx, byte[] authorityKeyIdentifier);
 
-    long deleteUnreachableObjects(Tx.Write tx, Instant unreachableSince);
+    long deleteUnreachableObjects(LmdbTx.Write tx, Instant unreachableSince);
 
-    Stream<byte[]> streamObjects(Tx.Read tx, RpkiObject.Type type);
+    Stream<byte[]> streamObjects(LmdbTx.Read tx, RpkiObject.Type type);
 
-    Set<Key> getPkByType(Tx.Read tx, RpkiObject.Type type);
+    Set<Key> getPkByType(LmdbTx.Read tx, RpkiObject.Type type);
 
-    void verify(Tx.Read tx);
+    void verify(LmdbTx.Read tx);
 }

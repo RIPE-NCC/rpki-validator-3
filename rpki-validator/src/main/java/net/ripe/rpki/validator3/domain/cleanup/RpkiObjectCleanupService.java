@@ -37,7 +37,7 @@ import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
-import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.util.Time;
@@ -109,14 +109,14 @@ public class RpkiObjectCleanupService {
         });
     }
 
-    private long deleteUnreachableObjects(Tx.Write tx, Instant now) {
+    private long deleteUnreachableObjects(LmdbTx.Write tx, Instant now) {
         Instant unreachableSince = now.minus(cleanupGraceDuration);
         final Pair<Long, Long> count = Time.timed(() -> rpkiObjects.deleteUnreachableObjects(tx, unreachableSince));
         log.info("Removed {} RPKI objects that have not been marked reachable since {}, took {}ms", count.getLeft(), unreachableSince, count.getRight());
         return count.getLeft();
     }
 
-    private void traceCertificateAuthority(Tx.Read tx, Instant now, X509ResourceCertificate resourceCertificate, Set<Key> markThem) {
+    private void traceCertificateAuthority(LmdbTx.Read tx, Instant now, X509ResourceCertificate resourceCertificate, Set<Key> markThem) {
         if (resourceCertificate == null || resourceCertificate.getManifestUri() == null) {
             return;
         }
@@ -125,7 +125,7 @@ public class RpkiObjectCleanupService {
                 .ifPresent(manifest -> markAndTraceObject(tx, now, "manifest.mft", manifest, markThem));
     }
 
-    private void markAndTraceObject(Tx.Read tx, Instant now, String name, RpkiObject rpkiObject, Set<Key> markThem) {
+    private void markAndTraceObject(LmdbTx.Read tx, Instant now, String name, RpkiObject rpkiObject, Set<Key> markThem) {
         markThem.add(rpkiObject.key());
         switch (rpkiObject.getType()) {
             case MFT:
@@ -139,7 +139,7 @@ public class RpkiObjectCleanupService {
         }
     }
 
-    private void traceManifest(Tx.Read tx, Instant now, String name, RpkiObject manifest, Set<Key> markThem) {
+    private void traceManifest(LmdbTx.Read tx, Instant now, String name, RpkiObject manifest, Set<Key> markThem) {
         rpkiObjects.findCertificateRepositoryObject(tx,
                 manifest.key(), ManifestCms.class, ValidationResult.withLocation(name))
                 .ifPresent(manifestCms ->
@@ -148,7 +148,7 @@ public class RpkiObjectCleanupService {
                                         markAndTraceObject(tx, now, entry, rpkiObject, markThem)));
     }
 
-    private void traceCaCertificate(Tx.Read tx, Instant now, String name, RpkiObject caCertificate, Set<Key> markThem) {
+    private void traceCaCertificate(LmdbTx.Read tx, Instant now, String name, RpkiObject caCertificate, Set<Key> markThem) {
         rpkiObjects.findCertificateRepositoryObject(tx, caCertificate.key(),
                 X509ResourceCertificate.class, ValidationResult.withLocation(name))
                 .ifPresent(certificate -> {

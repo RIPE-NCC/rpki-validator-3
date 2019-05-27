@@ -31,7 +31,7 @@ package net.ripe.rpki.validator3.storage.stores;
 
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
-import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
@@ -40,19 +40,19 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 public interface GenericStore<T extends Serializable> {
-    Ref<T> makeRef(Tx.Read tx, Key key);
+    Ref<T> makeRef(LmdbTx.Read tx, Key key);
 
-    List<T> values(Tx.Read tx);
+    List<T> values(LmdbTx.Read tx);
 
-    long size(Tx.Read tx);
+    long size(LmdbTx.Read tx);
 
-    void forEach(Tx.Read tx, BiConsumer<Key, ByteBuffer> c);
+    void forEach(LmdbTx.Read tx, BiConsumer<Key, ByteBuffer> c);
 
-    void clear(Tx.Write tx);
+    void clear(LmdbTx.Write tx);
 
-    void onDelete(BiConsumer<Tx.Write, Key> bf);
+    void onDelete(BiConsumer<LmdbTx.Write, Key> bf);
 
-    boolean exists(Tx.Read tx, Key key);
+    boolean exists(LmdbTx.Read tx, Key key);
 
-    Set<Key> keys(Tx.Read tx);
+    Set<Key> keys(LmdbTx.Read tx);
 }

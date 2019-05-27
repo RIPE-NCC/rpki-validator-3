@@ -55,7 +55,7 @@ import net.ripe.rpki.validator3.domain.validation.TrustAnchorValidationServiceTe
 import net.ripe.rpki.validator3.storage.data.RoaPrefix;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -115,7 +115,7 @@ public class TrustAnchorsFactory {
         return new ValidityPeriod(Instant.now(), Instant.now().plus(Duration.standardDays(1)));
     }
 
-    public TrustAnchor createTypicalTa(Tx.Write tx, KeyPair childKeyPair) {
+    public TrustAnchor createTypicalTa(LmdbTx.Write tx, KeyPair childKeyPair) {
         return createTrustAnchor(tx, x -> {
             CertificateAuthority child = CertificateAuthority.builder()
                 .dn("CN=child-ca")
@@ -131,11 +131,11 @@ public class TrustAnchorsFactory {
         });
     }
 
-    public TrustAnchor createTrustAnchor(Tx.Write tx, Consumer<CertificateAuthority.CertificateAuthorityBuilder> configure) {
+    public TrustAnchor createTrustAnchor(LmdbTx.Write tx, Consumer<CertificateAuthority.CertificateAuthorityBuilder> configure) {
         return createTrustAnchor(tx, configure, typicalValidityPeriod());
     }
 
-    public TrustAnchor createTrustAnchor(Tx.Write tx, Consumer<CertificateAuthority.CertificateAuthorityBuilder> configure, ValidityPeriod mftValidityPeriod) {
+    public TrustAnchor createTrustAnchor(LmdbTx.Write tx, Consumer<CertificateAuthority.CertificateAuthorityBuilder> configure, ValidityPeriod mftValidityPeriod) {
         KeyPair rootKeyPair = KEY_PAIR_FACTORY.generate();
         CertificateAuthority.CertificateAuthorityBuilder builder = CertificateAuthority.builder()
             .dn("CN=test-trust-anchor")
@@ -165,11 +165,11 @@ public class TrustAnchorsFactory {
         return s;
     }
 
-    public X509ResourceCertificate createCertificateAuthority(Tx.Write tx, CertificateAuthority ca, CertificateAuthority issuer) {
+    public X509ResourceCertificate createCertificateAuthority(LmdbTx.Write tx, CertificateAuthority ca, CertificateAuthority issuer) {
         return createCertificateAuthority(tx, ca, issuer, typicalValidityPeriod());
     }
 
-    public X509ResourceCertificate createCertificateAuthority(Tx.Write tx, CertificateAuthority ca, CertificateAuthority issuer, ValidityPeriod mftValidityPeriod) {
+    public X509ResourceCertificate createCertificateAuthority(LmdbTx.Write tx, CertificateAuthority ca, CertificateAuthority issuer, ValidityPeriod mftValidityPeriod) {
         ManifestCmsBuilder manifestBuilder = new ManifestCmsBuilder();
 
         X509ResourceCertificate caCertificate = createCaCertificate(ca, ca.keyPair.getPublic(), issuer.dn, issuer.crlDistributionPoint, issuer.keyPair);

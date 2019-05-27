@@ -372,23 +372,23 @@ public class IxMapTest {
         assertEquals(ImmutableMap.of(Key.of(2L), "aBa"), lmdb.readTx(tx -> ixMap.getByIndex("lower", tx, Key.of("aba"))));
     }
 
-    private Set<String> getLongestStrings(Tx.Read tx) {
+    private Set<String> getLongestStrings(LmdbTx.Read tx) {
         return getValues(tx, ixMap.getPkByIndexMax(LENGTH_INDEX, tx));
     }
 
-    private Set<String> getShortestStrings(Tx.Read tx) {
+    private Set<String> getShortestStrings(LmdbTx.Read tx) {
         return getValues(tx, ixMap.getPkByIndexMin(LENGTH_INDEX, tx));
     }
 
-    private Set<String> getLongestStrings(Tx.Read tx, Predicate<String> p) {
+    private Set<String> getLongestStrings(LmdbTx.Read tx, Predicate<String> p) {
         return new HashSet<>(ixMap.getByIndexMax(LENGTH_INDEX, tx, p).values());
     }
 
-    private Set<String> getShortestStrings(Tx.Read tx, Predicate<String> p) {
+    private Set<String> getShortestStrings(LmdbTx.Read tx, Predicate<String> p) {
         return new HashSet<>(ixMap.getByIndexMin(LENGTH_INDEX, tx, p).values());
     }
 
-    private Set<String> getValues(Tx.Read tx, Collection<Key> maxByIndex) {
+    private Set<String> getValues(LmdbTx.Read tx, Collection<Key> maxByIndex) {
         return maxByIndex.stream()
                 .map(k -> ixMap.get(tx, k))
                 .filter(Optional::isPresent)
@@ -396,11 +396,11 @@ public class IxMapTest {
                 .collect(Collectors.toSet());
     }
 
-    private List<String> getByLength(Tx.Read tx, int i) {
+    private List<String> getByLength(LmdbTx.Read tx, int i) {
         return new ArrayList<>(ixMap.getByIndex(LENGTH_INDEX, tx, intKey(i)).values());
     }
 
-    private List<String> getByPair(Tx.Read tx, String charPair) {
+    private List<String> getByPair(LmdbTx.Read tx, String charPair) {
         return new ArrayList<>(ixMap.getByIndex(PAIRS_INDEX, tx, Key.of(charPair)).values());
     }
 

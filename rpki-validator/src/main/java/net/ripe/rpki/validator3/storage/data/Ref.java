@@ -34,7 +34,7 @@ import lombok.Getter;
 import lombok.ToString;
 import net.ripe.rpki.validator3.storage.Binary;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
-import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 
 import java.io.Serializable;
 
@@ -51,7 +51,7 @@ public class Ref<T extends Serializable> implements Serializable {
         this.key = key;
     }
 
-    public static <R extends Serializable> Ref<R> of(Tx.Read tx, IxMap<R> ix, Key sid) {
+    public static <R extends Serializable> Ref<R> of(LmdbTx.Read tx, IxMap<R> ix, Key sid) {
         if (ix.exists(tx, sid)) {
             return new Ref<>(ix.getName(), sid);
         }

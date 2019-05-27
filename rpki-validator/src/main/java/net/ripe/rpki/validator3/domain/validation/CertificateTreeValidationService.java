@@ -51,7 +51,7 @@ import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
-import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.Settings;
@@ -327,7 +327,7 @@ public class CertificateTreeValidationService {
         return validatedObjects;
     }
 
-    private RpkiRepository registerRepository(Tx.Write tx,
+    private RpkiRepository registerRepository(LmdbTx.Write tx,
                                               TrustAnchor trustAnchor,
                                               Map<URI, RpkiRepository> registeredRepositories,
                                               CertificateRepositoryObjectValidationContext context) {
@@ -363,7 +363,7 @@ public class CertificateTreeValidationService {
         return registeredRepositories;
     }
 
-    private Map<URI, RpkiObject> retrieveManifestEntries(Tx.Read tx, ManifestCms manifest, URI manifestUri, ValidationResult validationResult) {
+    private Map<URI, RpkiObject> retrieveManifestEntries(LmdbTx.Read tx, ManifestCms manifest, URI manifestUri, ValidationResult validationResult) {
         Map<URI, RpkiObject> result = new LinkedHashMap<>();
         for (Map.Entry<String, byte[]> entry : manifest.getFiles().entrySet()) {
             URI location = manifestUri.resolve(entry.getKey());

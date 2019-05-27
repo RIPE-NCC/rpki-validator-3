@@ -42,7 +42,7 @@ import net.ripe.rpki.validator3.storage.data.validation.RsyncRepositoryValidatio
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
-import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.Instant;
@@ -52,41 +52,41 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 public interface ValidationRuns {
-    <T extends ValidationRun> T add(Tx.Write tx, T validationRun);
+    <T extends ValidationRun> T add(LmdbTx.Write tx, T validationRun);
 
-    <T extends ValidationRun> void update(Tx.Write tx, T validationRun);
+    <T extends ValidationRun> void update(LmdbTx.Write tx, T validationRun);
 
-    <T extends ValidationRun> Optional<T> get(Tx.Read tx, Class<T> type, long id);
+    <T extends ValidationRun> Optional<T> get(LmdbTx.Read tx, Class<T> type, long id);
 
-    <T extends ValidationRun> List<T> findAll(Tx.Read tx, Class<T> type);
+    <T extends ValidationRun> List<T> findAll(LmdbTx.Read tx, Class<T> type);
 
-    <T extends ValidationRun> List<T> findLatestSuccessful(Tx.Read tx, Class<T> type);
+    <T extends ValidationRun> List<T> findLatestSuccessful(LmdbTx.Read tx, Class<T> type);
 
-    Optional<CertificateTreeValidationRun> findLatestSuccessfulCaTreeValidationRun(Tx.Read tx, TrustAnchor trustAnchor);
+    Optional<CertificateTreeValidationRun> findLatestSuccessfulCaTreeValidationRun(LmdbTx.Read tx, TrustAnchor trustAnchor);
 
-    Optional<TrustAnchorValidationRun> findLatestCompletedForTrustAnchor(Tx.Read tx, TrustAnchor trustAnchor);
+    Optional<TrustAnchorValidationRun> findLatestCompletedForTrustAnchor(LmdbTx.Read tx, TrustAnchor trustAnchor);
 
-    Optional<CertificateTreeValidationRun> findLatestCaTreeValidationRun(Tx.Read tx, TrustAnchor trustAnchor);
+    Optional<CertificateTreeValidationRun> findLatestCaTreeValidationRun(LmdbTx.Read tx, TrustAnchor trustAnchor);
 
-    int removeOldValidationRuns(Tx.Write tx, Instant completedBefore);
+    int removeOldValidationRuns(LmdbTx.Write tx, Instant completedBefore);
 
-    Stream<ValidationCheck> findValidationChecksForValidationRun(Tx.Read tx, long validationRunId, Paging paging, SearchTerm searchTerm, Sorting sorting);
+    Stream<ValidationCheck> findValidationChecksForValidationRun(LmdbTx.Read tx, long validationRunId, Paging paging, SearchTerm searchTerm, Sorting sorting);
 
-    int countValidationChecksForValidationRun(Tx.Read tx, long validationRunId, SearchTerm searchTerm);
+    int countValidationChecksForValidationRun(LmdbTx.Read tx, long validationRunId, SearchTerm searchTerm);
 
-    void associate(Tx.Write writeTx, RpkiRepositoryValidationRun validationRun, RpkiObject o);
+    void associate(LmdbTx.Write writeTx, RpkiRepositoryValidationRun validationRun, RpkiObject o);
 
-    void associate(Tx.Write writeTx, RsyncRepositoryValidationRun validationRun, RpkiRepository r);
+    void associate(LmdbTx.Write writeTx, RsyncRepositoryValidationRun validationRun, RpkiRepository r);
 
-    void associateRpkiObjectKey(Tx.Write tx, CertificateTreeValidationRun validationRun, Key rpkiObjectKey);
+    void associateRpkiObjectKey(LmdbTx.Write tx, CertificateTreeValidationRun validationRun, Key rpkiObjectKey);
 
-    Set<Key> findAssociatedPks(Tx.Read tx, CertificateTreeValidationRun validationRun);
+    Set<Key> findAssociatedPks(LmdbTx.Read tx, CertificateTreeValidationRun validationRun);
 
-    Stream<Pair<CertificateTreeValidationRun, RpkiObject>> findCurrentlyValidated(Tx.Read tx, RpkiObject.Type cer);
+    Stream<Pair<CertificateTreeValidationRun, RpkiObject>> findCurrentlyValidated(LmdbTx.Read tx, RpkiObject.Type cer);
 
-    void clear(Tx.Write tx);
+    void clear(LmdbTx.Write tx);
 
-    int getObjectCount(Tx.Read tx, ValidationRun validationRun);
+    int getObjectCount(LmdbTx.Read tx, ValidationRun validationRun);
 
-    int removeOrphanValidationRunAssociations(Tx.Write tx);
+    int removeOrphanValidationRunAssociations(LmdbTx.Write tx);
 }

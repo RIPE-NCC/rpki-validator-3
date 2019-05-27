@@ -31,17 +31,15 @@ package net.ripe.rpki.validator3.storage.stores.impl;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Longs;
-import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
-import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.nio.ByteBuffer;
 import java.util.Optional;
 
 @Component
@@ -69,7 +67,7 @@ public class Sequences extends GenericStoreImpl<Long> {
     }
 
 
-    public long next(Tx.Write tx, String name) {
+    public long next(LmdbTx.Write tx, String name) {
         final Key key = Key.of(name);
         final Optional<Long> seqValue = ixMap.get(tx, key);
         if (seqValue.isPresent()) {

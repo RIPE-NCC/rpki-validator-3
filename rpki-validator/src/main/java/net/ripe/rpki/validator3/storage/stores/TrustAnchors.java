@@ -32,7 +32,7 @@ package net.ripe.rpki.validator3.storage.stores;
 import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 
 import java.util.Collection;
 import java.util.List;
@@ -41,22 +41,22 @@ import java.util.Optional;
 public interface TrustAnchors extends GenericStore<TrustAnchor> {
     String TRUST_ANCHORS = "trust-anchors";
 
-    TrustAnchor add(Tx.Write tx, TrustAnchor trustAnchor);
+    TrustAnchor add(LmdbTx.Write tx, TrustAnchor trustAnchor);
 
-    void update(Tx.Write tx, TrustAnchor trustAnchor);
+    void update(LmdbTx.Write tx, TrustAnchor trustAnchor);
 
-    void remove(Tx.Write tx, TrustAnchor trustAnchor);
+    void remove(LmdbTx.Write tx, TrustAnchor trustAnchor);
 
-    Optional<TrustAnchor> get(Tx.Read tx, Key id);
+    Optional<TrustAnchor> get(LmdbTx.Read tx, Key id);
 
-    List<TrustAnchor> findAll(Tx.Read tx);
+    List<TrustAnchor> findAll(LmdbTx.Read tx);
 
-    Collection<TrustAnchor> findByName(Tx.Read tx, String name);
+    Collection<TrustAnchor> findByName(LmdbTx.Read tx, String name);
 
-    Optional<TrustAnchor> findBySubjectPublicKeyInfo(Tx.Read tx, String subjectPublicKeyInfo);
+    Optional<TrustAnchor> findBySubjectPublicKeyInfo(LmdbTx.Read tx, String subjectPublicKeyInfo);
 
-    boolean allInitialCertificateTreeValidationRunsCompleted(Tx.Read tx);
+    boolean allInitialCertificateTreeValidationRunsCompleted(LmdbTx.Read tx);
 
-    List<TaStatus> getStatuses(Tx.Read tx);
+    List<TaStatus> getStatuses(LmdbTx.Read tx);
 
 }

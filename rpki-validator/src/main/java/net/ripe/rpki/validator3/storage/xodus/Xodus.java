@@ -27,52 +27,39 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.stores;
+package net.ripe.rpki.validator3.storage.xodus;
 
-import net.ripe.rpki.validator3.storage.data.Key;
-import net.ripe.rpki.validator3.storage.data.Ref;
-import net.ripe.rpki.validator3.storage.lmdb.IxMap;
-import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
+import jetbrains.exodus.env.Environment;
+import lombok.extern.slf4j.Slf4j;
 
-import java.io.Serializable;
-import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.Set;
-import java.util.function.BiConsumer;
+import java.util.function.Function;
 
-public abstract class GenericStoreImpl<T extends Serializable> implements GenericStore<T> {
-    public Ref<T> makeRef(LmdbTx.Read tx, Key key) {
-        return Ref.of(tx, ixMap(), key);
+@Slf4j
+public abstract class Xodus {
+
+    protected abstract Environment getEnv();
+
+    public <T> T writeTx(Function<XodusTx.Write, T> f) {
+        XodusTx.Write tx = XodusTx.write(getEnv());
+//        txs.put(tx.getId(), new Lmdb.TxInfo(tx));
+        try {
+            final T result = f.apply(tx);
+            tx.txn().commit();
+            if (tx.getAfterCommit() != null) {
+                tx.getAfterCommit().forEach(r -> {
+                    try {
+                        r.run();
+                    } catch (Exception ignored) {
+                        // this is just to keep the loop going, every Runnable
+                        // has to take care of exceptions themselves
+                    }
+                });
+            }
+            return result;
+        } finally {
+            tx.close();
+//            txs.remove(tx.getId());
+        }
     }
 
-    public List<T> values(LmdbTx.Read tx) {
-        return ixMap().values(tx);
-    }
-
-    public long size(LmdbTx.Read tx) {
-        return ixMap().size(tx);
-    }
-
-    public void forEach(LmdbTx.Read tx, BiConsumer<Key, ByteBuffer> bb) {
-        ixMap().forEach(tx, bb);
-    }
-
-    public void clear(LmdbTx.Write tx) {
-        ixMap().clear(tx);
-    }
-
-    public void onDelete(BiConsumer<LmdbTx.Write, Key> bf) {
-        ixMap().onDelete(bf);
-    }
-
-    @Override
-    public boolean exists(LmdbTx.Read tx, Key key) {
-        return ixMap().exists(tx, key);
-    }
-
-    public Set<Key> keys(LmdbTx.Read tx) {
-        return ixMap().keys(tx);
-    }
-
-    protected abstract IxMap<T> ixMap();
 }

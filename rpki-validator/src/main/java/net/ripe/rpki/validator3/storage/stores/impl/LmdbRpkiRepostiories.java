@@ -42,7 +42,7 @@ import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
-import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
@@ -106,7 +106,7 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
     }
 
     @Override
-    public RpkiRepository register(Tx.Write tx, Ref<TrustAnchor> trustAnchorRef, String uri, RpkiRepository.Type type) {
+    public RpkiRepository register(LmdbTx.Write tx, Ref<TrustAnchor> trustAnchorRef, String uri, RpkiRepository.Type type) {
         final Optional<RpkiRepository> existing = findByURI(tx, uri);
 
         final RpkiRepository registered;
@@ -136,7 +136,7 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
         return registered;
     }
 
-    private Optional<RpkiRepository> findRsyncParentRepository(Tx.Read tx, @NotNull @ValidLocationURI String uri) {
+    private Optional<RpkiRepository> findRsyncParentRepository(LmdbTx.Read tx, @NotNull @ValidLocationURI String uri) {
         return Rsync.generateCandidateParentUris(URI.create(uri)).stream()
                 .map(parentURI -> findByURI(tx, parentURI.toASCIIString()))
                 .filter(Optional::isPresent)
@@ -145,13 +145,13 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
     }
 
     @Override
-    public void update(Tx.Write tx, RpkiRepository rpkiRepository) {
+    public void update(LmdbTx.Write tx, RpkiRepository rpkiRepository) {
         rpkiRepository.setUpdatedAt(Instant.now());
         ixMap.put(tx, rpkiRepository.key(), rpkiRepository);
     }
 
     @Override
-    public Optional<RpkiRepository> findByURI(Tx.Read tx, String uri) {
+    public Optional<RpkiRepository> findByURI(LmdbTx.Read tx, String uri) {
         return ixMap.getByIndex(BY_URI_PREFIX, tx, uriToKey(uri)).values()
                 .stream()
                 .filter(r -> uri.equals(r.getRrdpNotifyUri()) || uri.equals(r.getRsyncRepositoryUri()))
@@ -159,12 +159,12 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
     }
 
     @Override
-    public Optional<RpkiRepository> get(Tx.Read tx, Key id) {
+    public Optional<RpkiRepository> get(LmdbTx.Read tx, Key id) {
         return ixMap.get(tx, id);
     }
 
     @Override
-    public Stream<RpkiRepository> findAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Key taId,
+    public Stream<RpkiRepository> findAll(LmdbTx.Read tx, RpkiRepository.Status optionalStatus, Key taId,
                                           boolean hideChildrenOfDownloadedParent,
                                           SearchTerm searchTerm, Sorting sorting, Paging paging) {
         return applyPaged(
@@ -175,7 +175,7 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
     }
 
     // TODO Optimize it with forEach
-    private Stream<RpkiRepository> applyFiltered(Tx.Read tx,
+    private Stream<RpkiRepository> applyFiltered(LmdbTx.Read tx,
                                                  RpkiRepository.Status optionalStatus,
                                                  Key taId, boolean hideChildrenOfDownloadedParent,
                                                  SearchTerm searchTerm) {
@@ -243,41 +243,41 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
     }
 
     @Override
-    public long countAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Key taId,
+    public long countAll(LmdbTx.Read tx, RpkiRepository.Status optionalStatus, Key taId,
                          boolean hideChildrenOfDownloadedParent, SearchTerm searchTerm) {
         return applyFiltered(tx, optionalStatus, taId, hideChildrenOfDownloadedParent, searchTerm).count();
     }
 
     @Override
-    public Stream<RpkiRepository> findAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Key taId) {
+    public Stream<RpkiRepository> findAll(LmdbTx.Read tx, RpkiRepository.Status optionalStatus, Key taId) {
         final Stream<RpkiRepository> all = findAll(tx, taId);
         return optionalStatus == null ? all : all.filter(r -> r.getStatus() == optionalStatus);
     }
 
     @Override
-    public Stream<RpkiRepository> findAll(Tx.Read tx, Key taId) {
+    public Stream<RpkiRepository> findAll(LmdbTx.Read tx, Key taId) {
         return ixMap.getByIndex(BY_TA, tx, taId).values().stream();
     }
 
     @Override
-    public Map<RpkiRepository.Status, Long> countByStatus(Tx.Read tx, Key taId, boolean hideChildrenOfDownloadedParent) {
+    public Map<RpkiRepository.Status, Long> countByStatus(LmdbTx.Read tx, Key taId, boolean hideChildrenOfDownloadedParent) {
         return findAll(tx, null, taId, hideChildrenOfDownloadedParent, null, null, null)
                 .collect(Collectors.groupingBy(RpkiRepository::getStatus, Collectors.counting()));
     }
 
     @Override
-    public Stream<RpkiRepository> findRsyncRepositories(Tx.Read tx) {
+    public Stream<RpkiRepository> findRsyncRepositories(LmdbTx.Read tx) {
         return findRepositoriesByPredicate(tx, r ->
                 r.getType() == RpkiRepository.Type.RSYNC ||
                 r.getType() == RpkiRepository.Type.RSYNC_PREFETCH);
     }
 
     @Override
-    public Stream<RpkiRepository> findRrdpRepositories(Tx.Read tx) {
+    public Stream<RpkiRepository> findRrdpRepositories(LmdbTx.Read tx) {
         return findRepositoriesByPredicate(tx, r -> r.getType() == RpkiRepository.Type.RRDP);
     }
 
-    private Stream<RpkiRepository> findRepositoriesByPredicate(Tx.Read tx, Predicate<RpkiRepository> p) {
+    private Stream<RpkiRepository> findRepositoriesByPredicate(LmdbTx.Read tx, Predicate<RpkiRepository> p) {
         final List<RpkiRepository> result = new ArrayList<>();
         ixMap.forEach(tx, (k, bb) -> {
             final RpkiRepository r = ixMap.toValue(bb);
@@ -289,7 +289,7 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
     }
 
     @Override
-    public void removeAllForTrustAnchor(Tx.Write tx, TrustAnchor trustAnchor) {
+    public void removeAllForTrustAnchor(LmdbTx.Write tx, TrustAnchor trustAnchor) {
         final Ref<TrustAnchor> taRef = Ref.unsafe(TrustAnchors.TRUST_ANCHORS, trustAnchor.key());
         ixMap.getByIndex(BY_TA, tx, trustAnchor.key())
                 .forEach((pk, rpkiRepository) -> {
@@ -306,12 +306,12 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
     }
 
     @Override
-    public void remove(Tx.Write tx, Key key) {
+    public void remove(LmdbTx.Write tx, Key key) {
         ixMap.delete(tx, key);
     }
 
     @Override
-    public Collection<RpkiRepository> findByTrustAnchor(Tx.Read tx, Key key) {
+    public Collection<RpkiRepository> findByTrustAnchor(LmdbTx.Read tx, Key key) {
         return ixMap.getByIndex(BY_TA, tx, key).values();
     }
 

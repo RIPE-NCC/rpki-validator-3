@@ -27,10 +27,13 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.lmdb;
+package net.ripe.rpki.validator3.storage.xodus;
 
+import jetbrains.exodus.env.Environment;
+import jetbrains.exodus.env.Transaction;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import org.lmdbjava.Env;
 import org.lmdbjava.Txn;
 
@@ -45,10 +48,10 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  */
 @Slf4j
-public abstract class Tx implements AutoCloseable {
+public abstract class XodusTx implements AutoCloseable {
 
-    protected final Env<ByteBuffer> env;
-    private final Txn<ByteBuffer> txn;
+    protected final Environment env;
+    protected final Transaction txn;
     @Getter
     private final long threadId;
     @Getter
@@ -57,31 +60,31 @@ public abstract class Tx implements AutoCloseable {
 
     private static AtomicLong idseq = new AtomicLong(1);
 
-    private Tx(Env<ByteBuffer> env) {
+    private XodusTx(Environment env) {
         threadId = Thread.currentThread().getId();
         this.env = env;
         id = idseq.getAndIncrement();
         txn = makeTxn();
     }
 
-    protected abstract Txn<ByteBuffer> makeTxn();
+    protected abstract Transaction makeTxn();
 
-    public static Read read(Env<ByteBuffer> e) {
+    public static Read read(Environment e) {
         return new Read(e);
     }
 
-    public static Write write(Env<ByteBuffer> e) {
+    public static Write write(Environment e) {
         return new Write(e);
     }
 
-    Txn<ByteBuffer> txn() {
+    Transaction txn() {
         verifyState();
         return txn;
     }
 
     private void verifyState() {
         if (aborted) {
-            throw new RuntimeException("Transaction " + txn.getId() + " was aborted.");
+            throw new RuntimeException("Transaction " + txn.getHighAddress() + " was aborted.");
         }
         if (Thread.currentThread().getId() != threadId) {
             throw new RuntimeException("This transaction was created in another " +
@@ -91,7 +94,7 @@ public abstract class Tx implements AutoCloseable {
     }
 
     void checkEnv() {
-        Lmdb.checkEnv(env);
+        // TODO Implement something if needed
     }
 
     public void abort() {
@@ -101,14 +104,14 @@ public abstract class Tx implements AutoCloseable {
     }
 
     public static class Write extends Read {
-        Write(Env<ByteBuffer> e) {
+        Write(Environment e) {
             super(e);
         }
 
         @Override
-        protected Txn<ByteBuffer> makeTxn() {
+        protected Transaction makeTxn() {
             checkEnv();
-            return env.txnWrite();
+            return env.beginExclusiveTransaction();
         }
 
         @Getter
@@ -122,20 +125,23 @@ public abstract class Tx implements AutoCloseable {
         }
     }
 
-    public static class Read extends Tx {
-        Read(Env<ByteBuffer> e) {
+    public static class Read extends XodusTx {
+        Read(Environment e) {
             super(e);
         }
 
         @Override
-        protected Txn<ByteBuffer> makeTxn() {
+        protected Transaction makeTxn() {
             checkEnv();
-            return env.txnRead();
+            return env.beginReadonlyTransaction();
         }
     }
 
     @Override
     public void close() {
-        txn().close();
+        final Transaction txn = txn();
+        if (!txn.isReadonly()) {
+            txn.flush();
+        }
     }
 }

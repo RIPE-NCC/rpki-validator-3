@@ -36,7 +36,7 @@ import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 
 import java.util.Collection;
 import java.util.Map;
@@ -45,36 +45,36 @@ import java.util.stream.Stream;
 
 public interface RpkiRepositories extends GenericStore<RpkiRepository> {
 
-    RpkiRepository register(Tx.Write tx, Ref<TrustAnchor> trustAnchor, String uri, RpkiRepository.Type type);
+    RpkiRepository register(LmdbTx.Write tx, Ref<TrustAnchor> trustAnchor, String uri, RpkiRepository.Type type);
 
-    void update(Tx.Write tx, RpkiRepository rpkiRepository);
+    void update(LmdbTx.Write tx, RpkiRepository rpkiRepository);
 
-    Optional<RpkiRepository> findByURI(Tx.Read tx, String uri);
+    Optional<RpkiRepository> findByURI(LmdbTx.Read tx, String uri);
 
-    Optional<RpkiRepository> get(Tx.Read tx, Key id);
+    Optional<RpkiRepository> get(LmdbTx.Read tx, Key id);
 
-    Stream<RpkiRepository> findAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Key taId, boolean hideChildrenOfDownloadedParent,
+    Stream<RpkiRepository> findAll(LmdbTx.Read tx, RpkiRepository.Status optionalStatus, Key taId, boolean hideChildrenOfDownloadedParent,
                                    SearchTerm searchTerm, Sorting sorting, Paging paging);
 
-    long countAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Key taId, boolean hideChildrenOfDownloadedParent, SearchTerm searchTerm);
+    long countAll(LmdbTx.Read tx, RpkiRepository.Status optionalStatus, Key taId, boolean hideChildrenOfDownloadedParent, SearchTerm searchTerm);
 
-    Map<RpkiRepository.Status, Long> countByStatus(Tx.Read tx, Key taId, boolean hideChildrenOfDownloadedParent);
+    Map<RpkiRepository.Status, Long> countByStatus(LmdbTx.Read tx, Key taId, boolean hideChildrenOfDownloadedParent);
 
-    default Stream<RpkiRepository> findAll(Tx.Read tx, RpkiRepository.Status optionalStatus, Key taId) {
+    default Stream<RpkiRepository> findAll(LmdbTx.Read tx, RpkiRepository.Status optionalStatus, Key taId) {
         return findAll(tx, optionalStatus, taId, false, null, null, null);
     }
 
-    default Stream<RpkiRepository> findAll(Tx.Read tx, Key taId) {
+    default Stream<RpkiRepository> findAll(LmdbTx.Read tx, Key taId) {
         return findAll(tx, null, taId, false, null, null, null);
     }
 
-    Stream<RpkiRepository> findRsyncRepositories(Tx.Read tx);
+    Stream<RpkiRepository> findRsyncRepositories(LmdbTx.Read tx);
 
-    Stream<RpkiRepository> findRrdpRepositories(Tx.Read tx);
+    Stream<RpkiRepository> findRrdpRepositories(LmdbTx.Read tx);
 
-    void removeAllForTrustAnchor(Tx.Write tx, TrustAnchor trustAnchor);
+    void removeAllForTrustAnchor(LmdbTx.Write tx, TrustAnchor trustAnchor);
 
-    void remove(Tx.Write tx, Key key);
+    void remove(LmdbTx.Write tx, Key key);
 
-    Collection<RpkiRepository> findByTrustAnchor(Tx.Read tx, Key key);
+    Collection<RpkiRepository> findByTrustAnchor(LmdbTx.Read tx, Key key);
 }

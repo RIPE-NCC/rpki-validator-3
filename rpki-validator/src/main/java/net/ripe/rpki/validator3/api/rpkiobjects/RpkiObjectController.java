@@ -59,7 +59,7 @@ import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
-import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
@@ -141,7 +141,7 @@ public class RpkiObjectController {
                 .filter(Objects::nonNull);
     }
 
-    private Stream<Triple<RpkiObject, SortedSet<String>, Optional<ValidationCheck>>> getAssociatedRpkiObjects(Tx.Read tx, CertificateTreeValidationRun vr, Map<String, ValidationCheck> checkMap) {
+    private Stream<Triple<RpkiObject, SortedSet<String>, Optional<ValidationCheck>>> getAssociatedRpkiObjects(LmdbTx.Read tx, CertificateTreeValidationRun vr, Map<String, ValidationCheck> checkMap) {
         return validationRuns.findAssociatedPks(tx, vr).stream()
                 .map(k -> rpkiObjects.get(tx, k))
                 .filter(Optional::isPresent)
