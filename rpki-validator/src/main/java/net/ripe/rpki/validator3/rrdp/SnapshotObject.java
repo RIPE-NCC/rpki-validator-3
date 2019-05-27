@@ -29,7 +29,6 @@
  */
 package net.ripe.rpki.validator3.rrdp;
 
-
 import lombok.Getter;
 
 public class SnapshotObject extends RepoObject {

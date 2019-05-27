@@ -29,10 +29,11 @@
  */
 package net.ripe.rpki.validator3.rrdp;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+@Data
+@AllArgsConstructor
 public class RepoObject {
     public final byte[] content;
-
-    public RepoObject(byte[] content) {
-        this.content = content;
-    }
 }

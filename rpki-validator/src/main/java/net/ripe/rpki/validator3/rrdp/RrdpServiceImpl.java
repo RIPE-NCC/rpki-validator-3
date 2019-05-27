@@ -41,7 +41,7 @@ import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
-import net.ripe.rpki.validator3.storage.lmdb.Tx;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
@@ -231,10 +231,10 @@ public class RrdpServiceImpl implements RrdpService {
       Creating objects from byte arrays is CPU-bound, so we do it
       in parallel to make the writing transaction as short as possible.
      */
-    private ExecutorCompletionService<Either<ValidationResult, Pair<String, RpkiObject>>> asyncCreateObjects =
+    private final ExecutorCompletionService<Either<ValidationResult, Pair<String, RpkiObject>>> asyncCreateObjects =
             new ExecutorCompletionService<>(Executors.newFixedThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1)));
 
-    void storeSnapshot(final Tx.Write tx, final Snapshot snapshot, final RpkiRepositoryValidationRun validationRun) {
+    void storeSnapshot(final LmdbTx.Write tx, final Snapshot snapshot, final RpkiRepositoryValidationRun validationRun) {
         final AtomicInteger counter = new AtomicInteger();
         final AtomicInteger workCounter = new AtomicInteger(0);
         final int threshold = 10;
@@ -262,7 +262,7 @@ public class RrdpServiceImpl implements RrdpService {
         log.info("Added (or updated locations for) {} new objects", counter.get());
     }
 
-    private void storeSnapshotObject(Tx.Write tx, RpkiRepositoryValidationRun validationRun, AtomicInteger counter) {
+    private void storeSnapshotObject(LmdbTx.Write tx, RpkiRepositoryValidationRun validationRun, AtomicInteger counter) {
         try {
             final Either<ValidationResult, Pair<String, RpkiObject>> maybeRpkiObject = asyncCreateObjects.take().get();
             if (maybeRpkiObject.isLeft()) {
@@ -280,7 +280,7 @@ public class RrdpServiceImpl implements RrdpService {
         }
     }
 
-    private void storeDelta(final Tx.Write wtx,
+    private void storeDelta(final LmdbTx.Write wtx,
                             final Delta delta,
                             final RpkiRepositoryValidationRun validationRun,
                             final RpkiRepository rpkiRepository) {
@@ -301,7 +301,7 @@ public class RrdpServiceImpl implements RrdpService {
                 rpkiRepository.getRrdpNotifyUri(), added.get(), deleted.get());
     }
 
-    private boolean applyDeltaWithdraw(RpkiRepositoryValidationRun validationRun, String uri, DeltaWithdraw deltaWithdraw, Tx.Write tx) {
+    private boolean applyDeltaWithdraw(RpkiRepositoryValidationRun validationRun, String uri, DeltaWithdraw deltaWithdraw, LmdbTx.Write tx) {
         final byte[] sha256 = deltaWithdraw.getHash();
         final Optional<RpkiObject> maybeObject = rpkiObjects.findBySha256(tx, sha256);
         if (maybeObject.isPresent()) {
@@ -315,7 +315,7 @@ public class RrdpServiceImpl implements RrdpService {
         return false;
     }
 
-    private void verifyDeltaIsApplicable(Tx.Read tx, Delta d) {
+    private void verifyDeltaIsApplicable(LmdbTx.Read tx, Delta d) {
         d.asMap().forEach((uri, deltaElement) -> {
                     if (deltaElement instanceof DeltaPublish) {
                         ((DeltaPublish) deltaElement).getHash().ifPresent(sha ->
@@ -327,7 +327,7 @@ public class RrdpServiceImpl implements RrdpService {
         );
     }
 
-    private void checkObjectExists(DeltaElement deltaElement, String errorCode, byte[] sha256, Tx.Read tx) {
+    private void checkObjectExists(DeltaElement deltaElement, String errorCode, byte[] sha256, LmdbTx.Read tx) {
         final Optional<RpkiObject> objectByHash = rpkiObjects.findBySha256(tx, sha256);
         if (!objectByHash.isPresent()) {
             throw new RrdpException(errorCode, "Couldn't find an object with location '" +
@@ -338,7 +338,7 @@ public class RrdpServiceImpl implements RrdpService {
     private boolean applyDeltaPublish(final RpkiRepositoryValidationRun validationRun,
                                       final String uri,
                                       final DeltaPublish deltaPublish,
-                                      final Tx.Write tx) {
+                                      final LmdbTx.Write tx) {
 
         if (deltaPublish.getHash().isPresent()) {
             final byte[] sha256 = deltaPublish.getHash().get();
