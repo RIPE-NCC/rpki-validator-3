@@ -30,6 +30,8 @@
 package net.ripe.rpki.validator3.storage.data;
 
 import com.google.common.primitives.Longs;
+import jetbrains.exodus.ArrayByteIterable;
+import jetbrains.exodus.ByteIterable;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import net.ripe.rpki.validator3.storage.Binary;
@@ -55,6 +57,8 @@ public class Key implements Serializable {
     public Key(ByteBuffer bb) {
         bytes = Bytes.toBytes(bb);
     }
+
+    public Key(ByteIterable bi) { bytes = bi.getBytesUnsafe(); }
 
     private Key(byte[] bytes) {
         this.bytes = Arrays.copyOf(bytes, bytes.length);
@@ -94,6 +98,10 @@ public class Key implements Serializable {
 
     public ByteBuffer toByteBuffer() {
         return Bytes.toDirectBuffer(bytes);
+    }
+
+    public ByteIterable toByteIterable(){
+        return new ArrayByteIterable(bytes);
     }
 
     public int size() {
