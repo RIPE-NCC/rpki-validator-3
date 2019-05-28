@@ -29,57 +29,9 @@
  */
 package net.ripe.rpki.validator3.storage.xodus;
 
-import jetbrains.exodus.env.Environment;
-import jetbrains.exodus.env.Store;
-import lombok.extern.slf4j.Slf4j;
-
-import java.util.function.Function;
-
-import static jetbrains.exodus.env.StoreConfig.WITHOUT_DUPLICATES;
-
-@Slf4j
-public abstract class Xodus {
-
-    private static final String METADATA_MAP_NAME = "meta";
-
-    private Store metadata;
-
-    protected synchronized Store meta(){
-        if(metadata == null){
-            metadata = getEnv().computeInTransaction(txn ->
-                    getEnv().openStore(METADATA_MAP_NAME, WITHOUT_DUPLICATES, txn));
-        }
-        return metadata;
-    }
-
-    protected abstract Environment getEnv();
-
-    public <T> T writeTx(Function<XodusTx.Write, T> f) {
-        XodusTx.Write tx = XodusTx.write(getEnv());
-//        txs.put(tx.getId(), new Lmdb.TxInfo(tx));
-        try {
-            final T result = f.apply(tx);
-            tx.txn().commit();
-            if (tx.getAfterCommit() != null) {
-                tx.getAfterCommit().forEach(r -> {
-                    try {
-                        r.run();
-                    } catch (Exception ignored) {
-                        // this is just to keep the loop going, every Runnable
-                        // has to take care of exceptions themselves
-                    }
-                });
-            }
-            return result;
-        } finally {
-            tx.close();
-//            txs.remove(tx.getId());
-        }
-    }
-
-    static void checkEnv(Environment env) {
-        if (!env.isOpen()) {
-            throw new XodusClosedException();
-        }
+public class XodusClosedException extends RuntimeException {
+    public XodusClosedException() {
+        super("The database environment is closed and cannot be used anymore. " +
+                "This exception is harmless and can be safely ignored.");
     }
 }

@@ -27,7 +27,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.lmdb;
+package net.ripe.rpki.validator3.storage.lmdb;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;

@@ -33,11 +33,7 @@ import jetbrains.exodus.env.Environment;
 import jetbrains.exodus.env.Transaction;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
-import org.lmdbjava.Env;
-import org.lmdbjava.Txn;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -94,7 +90,7 @@ public abstract class XodusTx implements AutoCloseable {
     }
 
     void checkEnv() {
-        // TODO Implement something if needed
+        Xodus.checkEnv(env);
     }
 
     public void abort() {
