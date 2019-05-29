@@ -29,19 +29,30 @@
  */
 package net.ripe.rpki.validator3.storage.xodus;
 
+import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import jetbrains.exodus.ArrayByteIterable;
 import jetbrains.exodus.ByteIterable;
+import jetbrains.exodus.env.Cursor;
 import jetbrains.exodus.env.Environment;
 import jetbrains.exodus.env.EnvironmentStatistics;
 import jetbrains.exodus.env.Store;
+import jetbrains.exodus.env.StoreConfig;
+import jetbrains.exodus.env.Transaction;
 import lombok.Data;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.data.Key;
+import net.ripe.rpki.validator3.storage.encoding.Coder;
+import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
+import org.apache.commons.lang3.tuple.Pair;
 
+import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -52,6 +63,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static jetbrains.exodus.env.StoreConfig.USE_EXISTING;
 import static jetbrains.exodus.env.StoreConfig.WITHOUT_DUPLICATES;
 
 @Slf4j
@@ -137,6 +149,20 @@ public abstract class Xodus {
 
     private final Map<String, IxBaseX<?>> ixMaps = new ConcurrentHashMap<>();
 
+    public <T extends Serializable> IxMapX<T> createIxMap(String name,
+                                                         Map<String, Function<T, Set<Key>>> indexFunctions,
+                                                         Class<T> c) {
+        return createIxMap(name, indexFunctions, CoderFactory.makeCoder(c));
+    }
+
+    public <T extends Serializable> IxMapX<T> createIxMap(final String name,
+                                                         final Map<String, Function<T, Set<Key>>> indexFunctions,
+                                                         Coder<T> c) {
+        IxMapX<T> ixMap = new IxMapX<>(this, name, c, indexFunctions);
+        ixMaps.put(name, ixMap);
+        return ixMap;
+    }
+
     Store createMainMapDb(String name) {
         final String dbName = name + "-main";
         final Store store = getEnv().computeInTransaction(txn ->
@@ -149,7 +175,6 @@ public abstract class Xodus {
         return store;
     }
 
-
     private void saveDbMeta(IxMapInfo mapInfo) {
         final Key key = dbMetaKey(mapInfo.getName());
         final ByteIterable foo = new ArrayByteIterable(gson.toJson(mapInfo).getBytes(UTF_8));
@@ -160,6 +185,61 @@ public abstract class Xodus {
         return Key.of(dbName + "-key");
     }
 
+    <T extends Serializable> Pair<Map<String, Store>, Boolean> createIndexes(
+            String name,
+            Map<String, Function<T, Set<Key>>> indexFunctions,
+            StoreConfig storeConfigs) {
+        final Store meta = meta();
+        Xodus.IxMapInfo existingIxMapInfo = readTx(tx -> {
+            ByteBuffer bb = iterableToByteBuffer(meta.get(tx.txn(), dbMetaKey(name).toByteIterable()));
+            if (bb == null) {
+                return null;
+            }
+            String json = new String(Bytes.toBytes(bb), UTF_8);
+            return gson.fromJson(json, Xodus.IxMapInfo.class);
+        });
+
+        final Map<String, Store> indexes = new HashMap<>();
+        final Environment env = getEnv();
+        boolean reindex = false;
+        if (existingIxMapInfo != null) {
+            final Set<String> existingIndexes = existingIxMapInfo.getIndexes();
+            if (existingIndexes != null) {
+                if (!existingIndexes.equals(indexFunctions.keySet())) {
+                    Sets.difference(existingIndexes, indexFunctions.keySet()).forEach(idx -> {
+                        getEnv().executeInTransaction(txn -> {
+                                    Store store = getEnv().openStore(indexDbName(name, idx), USE_EXISTING, txn);
+                                    clearStore(txn, store);
+                                }
+                        );
+                    });
+                    existingIxMapInfo.setIndexes(indexFunctions.keySet());
+                    saveDbMeta(existingIxMapInfo);
+                    reindex = true;
+                }
+            } else {
+                existingIxMapInfo.setIndexes(indexFunctions.keySet());
+                saveDbMeta(existingIxMapInfo);
+            }
+        } else {
+            Xodus.IxMapInfo mapInfo = new Xodus.IxMapInfo();
+            mapInfo.setName(name);
+            mapInfo.setIndexes(indexFunctions.keySet());
+            saveDbMeta(mapInfo);
+        }
+        getEnv().executeInTransaction(txn -> {
+            indexFunctions.forEach((n, idxFun) -> {
+                Store store = getEnv().openStore(indexDbName(name, n), storeConfigs, txn);
+                indexes.put(n, store);
+            });
+        });
+
+        return Pair.of(indexes, reindex);
+    }
+
+    private String indexDbName(String name, String idx) {
+        return name + "-idx-" + idx;
+    }
     @Data
     private static class IxMapInfo {
         private String name;
@@ -183,6 +263,24 @@ public abstract class Xodus {
                     .collect(Collectors.toList());
             this.writing = xodusTx instanceof XodusTx.Write;
             this.startedAt = Instant.now();
+        }
+    }
+
+    public static ByteBuffer iterableToByteBuffer(ByteIterable bi) {
+        return ByteBuffer.wrap(bi.getBytesUnsafe());
+    }
+
+    public static ByteIterable byteBufferToIterable(ByteBuffer bb){
+        return new ArrayByteIterable(bb.array());
+    }
+
+    //DBI had a drop method to clear store, Xodus store does not have, unless there is a better way to do this for
+    // now we iterate and delete
+    public static void clearStore(Transaction txn, Store s){
+        Cursor cursor = s.openCursor(txn);
+        s.delete(txn, cursor.getKey());
+        while(cursor.getNext()){
+            s.delete(txn, cursor.getKey());
         }
     }
 }
