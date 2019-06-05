@@ -46,6 +46,8 @@ import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
+import net.ripe.rpki.validator3.storage.IxBase;
+import net.ripe.rpki.validator3.storage.IxMap;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.Serializable;
@@ -147,18 +149,18 @@ public abstract class Xodus {
     @Getter
     private final Map<Long, TxInfo> txs = new ConcurrentHashMap<>();
 
-    private final Map<String, IxBaseX<?>> ixMaps = new ConcurrentHashMap<>();
+    private final Map<String, IxBase<?>> ixMaps = new ConcurrentHashMap<>();
 
-    public <T extends Serializable> IxMapX<T> createIxMap(String name,
+    public <T extends Serializable> IxMap<T> createIxMap(String name,
                                                          Map<String, Function<T, Set<Key>>> indexFunctions,
                                                          Class<T> c) {
         return createIxMap(name, indexFunctions, CoderFactory.makeCoder(c));
     }
 
-    public <T extends Serializable> IxMapX<T> createIxMap(final String name,
+    public <T extends Serializable> IxMap<T> createIxMap(final String name,
                                                          final Map<String, Function<T, Set<Key>>> indexFunctions,
                                                          Coder<T> c) {
-        IxMapX<T> ixMap = new IxMapX<>(this, name, c, indexFunctions);
+        IxMap<T> ixMap = new XodusIxMap(this, name, c, indexFunctions);
         ixMaps.put(name, ixMap);
         return ixMap;
     }
@@ -191,7 +193,7 @@ public abstract class Xodus {
             StoreConfig storeConfigs) {
         final Store meta = meta();
         Xodus.IxMapInfo existingIxMapInfo = readTx(tx -> {
-            ByteBuffer bb = iterableToByteBuffer(meta.get(tx.txn(), dbMetaKey(name).toByteIterable()));
+            ByteBuffer bb = ByteBuffer.wrap(meta.get(tx.txn(), dbMetaKey(name).toByteIterable()).getBytesUnsafe());
             if (bb == null) {
                 return null;
             }
@@ -266,8 +268,9 @@ public abstract class Xodus {
         }
     }
 
-    public static ByteBuffer iterableToByteBuffer(ByteIterable bi) {
-        return ByteBuffer.wrap(bi.getBytesUnsafe());
+
+    public static ByteBuffer iterableToByteBuffer(byte[] bi) {
+        return ByteBuffer.wrap(bi);
     }
 
     public static ByteIterable byteBufferToIterable(ByteBuffer bb){

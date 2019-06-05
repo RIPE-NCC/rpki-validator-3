@@ -33,6 +33,7 @@ import jetbrains.exodus.env.Environment;
 import jetbrains.exodus.env.Transaction;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.storage.Tx;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,7 +74,7 @@ public abstract class XodusTx implements AutoCloseable {
         return new Write(e);
     }
 
-    Transaction txn() {
+    public Transaction txn() {
         verifyState();
         return txn;
     }
@@ -99,7 +100,7 @@ public abstract class XodusTx implements AutoCloseable {
         aborted = true;
     }
 
-    public static class Write extends Read {
+    public static class Write extends Read  implements Tx.Write {
         Write(Environment e) {
             super(e);
         }
@@ -121,7 +122,7 @@ public abstract class XodusTx implements AutoCloseable {
         }
     }
 
-    public static class Read extends XodusTx {
+    public static class Read extends XodusTx  implements Tx.Read{
         Read(Environment e) {
             super(e);
         }

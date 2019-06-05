@@ -32,12 +32,13 @@ package net.ripe.rpki.validator3.storage.xodus;
 import jetbrains.exodus.env.Cursor;
 import jetbrains.exodus.env.Environment;
 import jetbrains.exodus.env.Store;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import jetbrains.exodus.env.Transaction;
 import lombok.Getter;
 import net.ripe.rpki.validator3.storage.Bytes;
+import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
+import net.ripe.rpki.validator3.storage.IxBase;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
@@ -52,7 +53,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.zip.CRC32;
 
-public abstract class IxBaseX<T extends Serializable> {
+public abstract class XodusIxBase<T extends Serializable> implements IxBase<T> {
+
     protected final Environment env;
     @Getter
     private final String name;
@@ -60,9 +62,9 @@ public abstract class IxBaseX<T extends Serializable> {
     private final Store mainDb;
     final Coder<T> coder;
 
-    IxBaseX(final Xodus xodus,
-            final String name,
-            final Coder<T> coder) {
+    XodusIxBase(final Xodus xodus,
+                final String name,
+                final Coder<T> coder) {
         this.env = xodus.getEnv();
         this.name = name;
         this.coder = coder;
@@ -78,7 +80,7 @@ public abstract class IxBaseX<T extends Serializable> {
         }
     }
 
-    public XodusTx.Read readTx() {
+    public Tx.Read readTx() {
         return XodusTx.read(env);
     }
 
@@ -95,8 +97,8 @@ public abstract class IxBaseX<T extends Serializable> {
         checkNotNull(value, "Value is null");
     }
 
-    public boolean exists(XodusTx.Read tx, Key key) {
-        return getMainDb().get(tx.txn(), key.toByteIterable()) != null;
+    public boolean exists(Tx.Read tx, Key key) {
+        return getMainDb().get((Transaction)tx.txn(), key.toByteIterable()) != null;
     }
 
     Store getMainDb() {
@@ -119,7 +121,8 @@ public abstract class IxBaseX<T extends Serializable> {
         return byteBuffer;
     }
 
-    protected T getValue(Key k, ByteBuffer bb) {
+    protected T getValue(Key k, byte[] b) {
+        ByteBuffer bb = ByteBuffer.wrap(b);
         long crc32 = bb.getLong();
         final byte[] valueBytes = Bytes.toBytes(bb);
         CRC32 checksum = new CRC32();
@@ -130,19 +133,19 @@ public abstract class IxBaseX<T extends Serializable> {
         return coder.fromBytes(valueBytes);
     }
 
-    public Set<Key> keys(XodusTx.Read tx) {
+    public Set<Key> keys(Tx.Read tx) {
         final Set<Key> result = new HashSet<>();
         forEach(tx, (k, v) -> result.add(k));
         return result;
     }
 
-    public List<T> values(XodusTx.Read tx) {
+    public List<T> values(Tx.Read tx) {
         final List<T> result = new ArrayList<>();
         forEach(tx, (k, v) -> result.add(getValue(k, v)));
         return result;
     }
 
-    public Map<Key, T> all(XodusTx.Read tx) {
+    public Map<Key, T> all(Tx.Read tx) {
         final Map<Key, T> result = new HashMap<>();
         forEach(tx, (k, v) -> result.put(k, getValue(k, v)));
         return result;
@@ -153,46 +156,41 @@ public abstract class IxBaseX<T extends Serializable> {
     }
 
     public T toValue(ByteBuffer bb) {
-        return getValue(null, bb);
+        //FIXME: fishy
+        return getValue(null, bb.array());
     }
 
-    public void forEach(XodusTx.Read tx, BiConsumer<Key, ByteBuffer> c) {
-        try (final Cursor ci = getMainDb().openCursor(tx.txn())) {
+
+    @Override
+    public void forEach(Tx.Read tx, BiConsumer<Key, byte[]> c){
+        try (final Cursor ci = getMainDb().openCursor((Transaction) tx.txn())) {
             while (ci.getNext()) {
-                c.accept(new Key(ci.getKey()),
-                        // TODO: Verify Misha
-                        ByteBuffer.wrap(ci.getValue().getBytesUnsafe())
-                );
+                c.accept(new Key(ci.getKey()), ci.getValue().getBytesUnsafe());
             }
         }
     }
 
-    public long size(XodusTx.Read tx) {
+    public long size(Tx.Read tx) {
         AtomicLong s = new AtomicLong();
         forEach(tx, (k, v) -> s.getAndIncrement());
         return s.get();
     }
 
-    public Sizes sizeInfo(XodusTx.Read tx) {
+    @Override
+    public Sizes sizeInfo(Tx.Read tx) {
         AtomicInteger count = new AtomicInteger();
         AtomicInteger size = new AtomicInteger();
         forEach(tx, (k, v) -> {
             count.getAndIncrement();
-            size.addAndGet(k.size() + v.remaining());
+            size.addAndGet(k.size() + v.length);
         });
         return new Sizes(count.get(), size.get(), getAllocatedSize(tx, getMainDb()));
     }
 
-    long getAllocatedSize(XodusTx.Read tx, Store store) {
+    long getAllocatedSize(Tx.Read tx, Store store) {
         // TODO: Verify
-        return store.count(tx.makeTxn());
+        return store.count((Transaction)tx.txn());
     }
 
-    @Data
-    @AllArgsConstructor
-    public static class Sizes {
-        private int count;
-        private long keysAndValuesBytes;
-        private long allocatedSize;
-    }
+
 }

@@ -56,7 +56,7 @@ public class XodusImpl extends Xodus {
     }
 
     @PostConstruct
-    public void initLmdb() {
+    public void initXodus() {
         try {
             log.info("Creating Xodus environment at {}", path);
             oneThread.submit(() -> {
