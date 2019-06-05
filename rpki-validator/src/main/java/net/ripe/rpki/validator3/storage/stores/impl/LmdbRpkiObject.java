@@ -35,6 +35,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.validation.ValidationResult;
+import net.ripe.rpki.validator3.storage.Bytes;
+import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
@@ -107,7 +109,7 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     }
 
     @Override
-    public void put(LmdbTx.Write tx, RpkiObject o) {
+    public void put(Tx.Write tx, RpkiObject o) {
         ixMap.put(tx, o.key(), o);
         // mark every object as reachable at the moment of inserting, otherwise
         // we will keep the objects that have never been reached forever
@@ -115,54 +117,54 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     }
 
     @Override
-    public void put(LmdbTx.Write tx, RpkiObject o, String location) {
+    public void put(Tx.Write tx, RpkiObject o, String location) {
         put(tx, o);
         addLocation(tx, o.key(), location);
     }
 
     @Override
-    public void delete(LmdbTx.Write tx, RpkiObject o) {
+    public void delete(Tx.Write tx, RpkiObject o) {
         ixMap.delete(tx, o.key());
     }
 
     @Override
-    public void markReachable(LmdbTx.Write tx, Key pk, Instant i) {
+    public void markReachable(Tx.Write tx, Key pk, Instant i) {
         reachableMap.put(tx, pk, i.toEpochMilli());
     }
 
     @Override
-    public void addLocation(LmdbTx.Write tx, Key pk, String location) {
+    public void addLocation(Tx.Write tx, Key pk, String location) {
         locationMap.put(tx, pk, location);
     }
 
     @Override
-    public SortedSet<String> getLocations(LmdbTx.Read tx, Key pk) {
+    public SortedSet<String> getLocations(Tx.Read tx, Key pk) {
         return new TreeSet<>(locationMap.get(tx, pk));
     }
 
     @Override
-    public void deleteLocation(LmdbTx.Write tx, Key key, String uri) {
+    public void deleteLocation(Tx.Write tx, Key key, String uri) {
         locationMap.delete(tx, key, uri);
     }
 
     @Override
     public <T extends CertificateRepositoryObject> Optional<T> findCertificateRepositoryObject(
-            LmdbTx.Read tx, Key sha256, Class<T> clazz, ValidationResult validationResult) {
+            Tx.Read tx, Key sha256, Class<T> clazz, ValidationResult validationResult) {
         return get(tx, sha256).flatMap(o -> o.get(clazz, validationResult));
     }
 
     @Override
-    public Optional<RpkiObject> get(LmdbTx.Read tx, Key key) {
+    public Optional<RpkiObject> get(Tx.Read tx, Key key) {
         return ixMap.get(tx, key);
     }
 
     @Override
-    public Optional<RpkiObject> findBySha256(LmdbTx.Read tx, byte[] sha256) {
+    public Optional<RpkiObject> findBySha256(Tx.Read tx, byte[] sha256) {
         return get(tx, Key.of(sha256));
     }
 
     @Override
-    public Map<String, RpkiObject> findObjectsInManifest(LmdbTx.Read tx, ManifestCms manifestCms) {
+    public Map<String, RpkiObject> findObjectsInManifest(Tx.Read tx, ManifestCms manifestCms) {
         final SortedMap<byte[], String> hashes = new TreeMap<>(UnsignedBytes.lexicographicalComparator());
         manifestCms.getFiles().forEach((name, hash) -> hashes.put(hash, name));
         return hashes.keySet().stream()
@@ -176,7 +178,7 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     }
 
     @Override
-    public Optional<RpkiObject> findLatestMftByAKI(LmdbTx.Read tx, byte[] authorityKeyIdentifier) {
+    public Optional<RpkiObject> findLatestMftByAKI(Tx.Read tx, byte[] authorityKeyIdentifier) {
         return ixMap.getByIndex(BY_AKI_MFT_INDEX, tx, Key.of(authorityKeyIdentifier))
                 .values()
                 .stream()
@@ -186,7 +188,7 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     }
 
     @Override
-    public long deleteUnreachableObjects(LmdbTx.Write tx, Instant unreachableSince) {
+    public long deleteUnreachableObjects(Tx.Write tx, Instant unreachableSince) {
         final Set<Key> toDelete = new HashSet<>();
         reachableMap.forEach(tx, (k, bb) -> {
             if (reachableMap.toValue(bb) < unreachableSince.toEpochMilli()) {
@@ -198,7 +200,7 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     }
 
     @Override
-    public Stream<byte[]> streamObjects(LmdbTx.Read tx, RpkiObject.Type type) {
+    public Stream<byte[]> streamObjects(Tx.Read tx, RpkiObject.Type type) {
         final List<byte[]> objectBytes = new ArrayList<>();
         getPkByType(tx, type).forEach(pk ->
                 ixMap.get(tx, pk).ifPresent(ro ->
@@ -207,7 +209,7 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     }
 
     @Override
-    public Set<Key> getPkByType(LmdbTx.Read tx, RpkiObject.Type type) {
+    public Set<Key> getPkByType(Tx.Read tx, RpkiObject.Type type) {
         return ixMap.getPkByIndex(BY_TYPE_INDEX, tx, Key.of(type.toString()));
     }
 
@@ -217,7 +219,7 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     }
 
     @Override
-    public void verify(LmdbTx.Read tx) {
+    public void verify(Tx.Read tx) {
 //        try {
 //            final Long t = Time.timed(() -> ixMap().verify(tx));
 //            log.info("Verified in {}ms", t);

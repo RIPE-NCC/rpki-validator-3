@@ -1,5 +1,6 @@
 package net.ripe.rpki.validator3.storage.lmdb;
 
+import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 
 import java.io.Serializable;
@@ -14,39 +15,39 @@ import java.util.function.Predicate;
 public interface IxMap<T extends Serializable> extends IxBase<T> {
     Optional<T> get(Key primaryKey);
 
-    Optional<T> get(LmdbTx.Read txn, Key primaryKey);
+    Optional<T> get(Tx.Read txn, Key primaryKey);
 
-    List<T> get(LmdbTx.Read txn, Set<Key> primaryKeys);
+    List<T> get(Tx.Read txn, Set<Key> primaryKeys);
 
-    Map<Key, T> getByIndex(String indexName, LmdbTx.Read tx, Key indexKey);
+    Map<Key, T> getByIndex(String indexName, Tx.Read tx, Key indexKey);
 
-    Set<Key> getPkByIndex(String indexName, LmdbTx.Read tx, Key indexKey);
+    Set<Key> getPkByIndex(String indexName, Tx.Read tx, Key indexKey);
 
-    Map<Key, T> getByIndexLess(String indexName, LmdbTx.Read tx, Key indexKey);
+    Map<Key, T> getByIndexLess(String indexName, Tx.Read tx, Key indexKey);
 
-    Map<Key, T> getByIndexGreater(String indexName, LmdbTx.Read tx, Key indexKey);
+    Map<Key, T> getByIndexGreater(String indexName, Tx.Read tx, Key indexKey);
 
-    Set<Key> getByIndexLessPk(String indexName, LmdbTx.Read tx, Key indexKey);
+    Set<Key> getByIndexLessPk(String indexName, Tx.Read tx, Key indexKey);
 
-    Set<Key> getByIndexGreaterPk(String indexName, LmdbTx.Read tx, Key indexKey);
+    Set<Key> getByIndexGreaterPk(String indexName, Tx.Read tx, Key indexKey);
 
-    Map<Key, T> getByIndexMax(String indexName, LmdbTx.Read tx, Predicate<T> p);
+    Map<Key, T> getByIndexMax(String indexName, Tx.Read tx, Predicate<T> p);
 
-    Map<Key, T> getByIndexMin(String indexName, LmdbTx.Read tx, Predicate<T> p);
+    Map<Key, T> getByIndexMin(String indexName, Tx.Read tx, Predicate<T> p);
 
-    Set<Key> getPkByIndexMax(String indexName, LmdbTx.Read tx);
+    Set<Key> getPkByIndexMax(String indexName, Tx.Read tx);
 
-    Set<Key> getPkByIndexMin(String indexName, LmdbTx.Read tx);
+    Set<Key> getPkByIndexMin(String indexName, Tx.Read tx);
 
-    Optional<T> put(LmdbTx.Write tx, Key primaryKey, T value);
+    Optional<T> put(Tx.Write tx, Key primaryKey, T value);
 
-    boolean modify(LmdbTx.Write tx, Key primaryKey, Consumer<T> modifyValue);
+    boolean modify(Tx.Write tx, Key primaryKey, Consumer<T> modifyValue);
 
-    void delete(LmdbTx.Write tx, Key primaryKey);
+    void delete(Tx.Write tx, Key primaryKey);
 
-    void onDelete(BiConsumer<LmdbTx.Write, Key> bf);
+    void onDelete(BiConsumer<Tx.Write, Key> bf);
 
-    void clear(LmdbTx.Write tx);
+    void clear(Tx.Write tx);
 
-    LmdbIxBase.Sizes sizeInfo(LmdbTx.Read tx);
+    LmdbIxBase.Sizes sizeInfo(Tx.Read tx);
 }

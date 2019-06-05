@@ -33,6 +33,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
 import net.ripe.rpki.validator3.storage.Bytes;
+import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import org.lmdbjava.CursorIterator;
@@ -40,6 +41,7 @@ import org.lmdbjava.Dbi;
 import org.lmdbjava.DbiFlags;
 import org.lmdbjava.Env;
 import org.lmdbjava.Stat;
+import org.lmdbjava.Txn;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
@@ -83,12 +85,11 @@ public abstract class LmdbIxBase<T extends Serializable> implements IxBase<T> {
         }
     }
 
-    @Override
-    public LmdbTx.Read readTx() {
+    public Tx.Read readTx() {
         return LmdbTx.read(env);
     }
 
-    public LmdbTx.Write writeTx() {
+    public Tx.Write writeTx() {
         return LmdbTx.write(env);
     }
 
@@ -102,8 +103,8 @@ public abstract class LmdbIxBase<T extends Serializable> implements IxBase<T> {
     }
 
     @Override
-    public boolean exists(LmdbTx.Read tx, Key key) {
-        return getMainDb().get(tx.txn(), key.toByteBuffer()) != null;
+    public boolean exists(Tx.Read tx, Key key) {
+        return getMainDb().get(castTxn(tx), key.toByteBuffer()) != null;
     }
 
     Dbi<ByteBuffer> getMainDb() {
@@ -126,7 +127,8 @@ public abstract class LmdbIxBase<T extends Serializable> implements IxBase<T> {
         return byteBuffer;
     }
 
-    protected T getValue(Key k, ByteBuffer bb) {
+    protected T getValue(Key k, byte[] allBytes) {
+        ByteBuffer bb = ByteBuffer.wrap(allBytes);
         long crc32 = bb.getLong();
         final byte[] valueBytes = Bytes.toBytes(bb);
         CRC32 checksum = new CRC32();
@@ -138,66 +140,74 @@ public abstract class LmdbIxBase<T extends Serializable> implements IxBase<T> {
     }
 
     @Override
-    public Set<Key> keys(LmdbTx.Read tx) {
+    public Set<Key> keys(Tx.Read tx) {
         final Set<Key> result = new HashSet<>();
         forEach(tx, (k, v) -> result.add(k));
         return result;
     }
 
     @Override
-    public List<T> values(LmdbTx.Read tx) {
+    public List<T> values(Tx.Read tx) {
         final List<T> result = new ArrayList<>();
         forEach(tx, (k, v) -> result.add(getValue(k, v)));
         return result;
     }
 
     @Override
-    public Map<Key, T> all(LmdbTx.Read tx) {
+    public Map<Key, T> all(Tx.Read tx) {
         final Map<Key, T> result = new HashMap<>();
         forEach(tx, (k, v) -> result.put(k, getValue(k, v)));
         return result;
     }
 
     @Override
-    public void clear(LmdbTx.Write tx) {
-        getMainDb().drop(tx.txn());
+    public void clear(Tx.Write tx) {
+        getMainDb().drop(castTxn(tx));
+    }
+
+    public T toValue(byte[] bytes) {
+        return getValue(null, bytes);
     }
 
     @Override
-    public T toValue(ByteBuffer bb) {
-        return getValue(null, bb);
-    }
-
-    @Override
-    public void forEach(LmdbTx.Read tx, BiConsumer<Key, ByteBuffer> c) {
-        try (final CursorIterator<ByteBuffer> ci = getMainDb().iterate(tx.txn())) {
+    public void forEach(Tx.Read tx, BiConsumer<Key, byte[]> c) {
+        try (final CursorIterator<ByteBuffer> ci = getMainDb().iterate(castTxn(tx))) {
             while (ci.hasNext()) {
                 final CursorIterator.KeyVal<ByteBuffer> next = ci.next();
-                c.accept(new Key(next.key()), next.val());
+                c.accept(new Key(next.key()), Bytes.toBytes(next.val()));
             }
         }
     }
 
     @Override
-    public long size(LmdbTx.Read tx) {
+    public long size(Tx.Read tx) {
         AtomicLong s = new AtomicLong();
         forEach(tx, (k, v) -> s.getAndIncrement());
         return s.get();
     }
 
     @Override
-    public Sizes sizeInfo(LmdbTx.Read tx) {
+    public Sizes sizeInfo(Tx.Read tx) {
         AtomicInteger count = new AtomicInteger();
         AtomicInteger size = new AtomicInteger();
         forEach(tx, (k, v) -> {
             count.getAndIncrement();
-            size.addAndGet(k.size() + v.remaining());
+            size.addAndGet(k.size() + v.length);
         });
         return new Sizes(count.get(), size.get(), getAllocatedSize(tx, getMainDb()));
     }
 
-    long getAllocatedSize(LmdbTx.Read tx, Dbi<ByteBuffer> dbi) {
-        final Stat stat = dbi.stat(tx.txn());
+    @SuppressWarnings("unchecked")
+    protected Txn<ByteBuffer> castTxn(Tx.Read tx) {
+        final Object nativeTx = tx.txn();
+        if (nativeTx instanceof Txn<?>) {
+            return (Txn<ByteBuffer>) nativeTx;
+        }
+        throw new IllegalArgumentException();
+    }
+
+    long getAllocatedSize(Tx.Read tx, Dbi<ByteBuffer> dbi) {
+        final Stat stat = dbi.stat(castTxn(tx));
         return stat.pageSize * (stat.branchPages + stat.leafPages + stat.overflowPages);
     }
 

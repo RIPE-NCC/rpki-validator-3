@@ -85,7 +85,7 @@ import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.Env.create;
 
 
-
+@Ignore
 public class LmdbTest {
 
     private static final String DB_NAME = "test-db";
@@ -414,10 +414,10 @@ public class LmdbTest {
     static class BlaCoder implements Coder<Bla> {
 
         private static final Tags tags = new Tags();
-        private final static short STUFF = tags.unique(1);
-        private final static short LONG_STRING = tags.unique(2);
-        private final static short COUNTER = tags.unique(3);
-        private final static short THINGY = tags.unique(4);
+        private final static short STUFF = tags.unique(1000);
+        private final static short LONG_STRING = tags.unique(1002);
+        private final static short COUNTER = tags.unique(1003);
+        private final static short THINGY = tags.unique(1004);
 
         private final static ThingyCoder thingyCoder = new ThingyCoder();
 

@@ -29,12 +29,13 @@
  */
 package net.ripe.rpki.validator3.storage.data;
 
+import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbIxMap;
 
 import java.io.Serializable;
 
 public class RefException extends RuntimeException {
-    public <T extends Serializable> RefException(LmdbIxMap<T> ix, Key key) {
+    public <T extends Serializable> RefException(IxMap<T> ix, Key key) {
         super("Referential integrity violation: map " + ix.getName() + " doesn't have key " + key);
     }
 }

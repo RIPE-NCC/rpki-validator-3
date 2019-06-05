@@ -1,20 +1,20 @@
 /**
  * The BSD License
- *
+ * <p>
  * Copyright (c) 2010-2018 RIPE NCC
  * All rights reserved.
- *
+ * <p>
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *   - Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimer.
- *   - Redistributions in binary form must reproduce the above copyright notice,
- *     this list of conditions and the following disclaimer in the documentation
- *     and/or other materials provided with the distribution.
- *   - Neither the name of the RIPE NCC nor the names of its contributors may be
- *     used to endorse or promote products derived from this software without
- *     specific prior written permission.
- *
+ * - Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * - Neither the name of the RIPE NCC nor the names of its contributors may be
+ * used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * <p>
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -33,8 +33,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import net.ripe.rpki.validator3.storage.Binary;
-import net.ripe.rpki.validator3.storage.lmdb.LmdbIxMap;
-import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
+import net.ripe.rpki.validator3.storage.Tx;
+import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 
 import java.io.Serializable;
 
@@ -51,7 +51,7 @@ public class Ref<T extends Serializable> implements Serializable {
         this.key = key;
     }
 
-    public static <R extends Serializable> Ref<R> of(LmdbTx.Read tx, LmdbIxMap<R> ix, Key sid) {
+    public static <R extends Serializable> Ref<R> of(Tx.Read tx, IxMap<R> ix, Key sid) {
         if (ix.exists(tx, sid)) {
             return new Ref<>(ix.getName(), sid);
         }

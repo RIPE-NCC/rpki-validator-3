@@ -31,8 +31,10 @@ package net.ripe.rpki.validator3.storage.stores.impl;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Longs;
+import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
+import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
@@ -46,7 +48,7 @@ import java.util.Optional;
 public class Sequences extends GenericStoreImpl<Long> {
 
     private final String SEQUENCES = "sequences";
-    private final LmdbIxMap<Long> ixMap;
+    private final IxMap<Long> ixMap;
 
     @Autowired
     public Sequences(Lmdb lmdb) {
@@ -67,7 +69,7 @@ public class Sequences extends GenericStoreImpl<Long> {
     }
 
 
-    public long next(LmdbTx.Write tx, String name) {
+    public long next(Tx.Write tx, String name) {
         final Key key = Key.of(name);
         final Optional<Long> seqValue = ixMap.get(tx, key);
         if (seqValue.isPresent()) {
@@ -80,7 +82,7 @@ public class Sequences extends GenericStoreImpl<Long> {
     }
 
     @Override
-    protected LmdbIxMap<Long> ixMap() {
+    protected IxMap<Long> ixMap() {
         return ixMap;
     }
 }

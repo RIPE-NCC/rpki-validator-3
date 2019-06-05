@@ -29,50 +29,49 @@
  */
 package net.ripe.rpki.validator3.storage.stores;
 
+import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
-import net.ripe.rpki.validator3.storage.lmdb.LmdbIxMap;
-import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
+import net.ripe.rpki.validator3.storage.lmdb.IxMap;
 
 import java.io.Serializable;
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
 public abstract class GenericStoreImpl<T extends Serializable> implements GenericStore<T> {
-    public Ref<T> makeRef(LmdbTx.Read tx, Key key) {
+    public Ref<T> makeRef(Tx.Read tx, Key key) {
         return Ref.of(tx, ixMap(), key);
     }
 
-    public List<T> values(LmdbTx.Read tx) {
+    public List<T> values(Tx.Read tx) {
         return ixMap().values(tx);
     }
 
-    public long size(LmdbTx.Read tx) {
+    public long size(Tx.Read tx) {
         return ixMap().size(tx);
     }
 
-    public void forEach(LmdbTx.Read tx, BiConsumer<Key, ByteBuffer> bb) {
+    public void forEach(Tx.Read tx, BiConsumer<Key, byte[]> bb) {
         ixMap().forEach(tx, bb);
     }
 
-    public void clear(LmdbTx.Write tx) {
+    public void clear(Tx.Write tx) {
         ixMap().clear(tx);
     }
 
-    public void onDelete(BiConsumer<LmdbTx.Write, Key> bf) {
+    public void onDelete(BiConsumer<Tx.Write, Key> bf) {
         ixMap().onDelete(bf);
     }
 
     @Override
-    public boolean exists(LmdbTx.Read tx, Key key) {
+    public boolean exists(Tx.Read tx, Key key) {
         return ixMap().exists(tx, key);
     }
 
-    public Set<Key> keys(LmdbTx.Read tx) {
+    public Set<Key> keys(Tx.Read tx) {
         return ixMap().keys(tx);
     }
 
-    protected abstract LmdbIxMap<T> ixMap();
+    protected abstract IxMap<T> ixMap();
 }

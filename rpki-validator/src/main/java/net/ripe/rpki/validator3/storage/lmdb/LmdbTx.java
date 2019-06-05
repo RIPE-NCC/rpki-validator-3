@@ -31,6 +31,7 @@ package net.ripe.rpki.validator3.storage.lmdb;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.storage.Tx;
 import org.lmdbjava.Env;
 import org.lmdbjava.Txn;
 
@@ -74,7 +75,7 @@ public abstract class LmdbTx implements AutoCloseable {
         return new Write(e);
     }
 
-    Txn<ByteBuffer> txn() {
+    public Txn<ByteBuffer> txn() {
         verifyState();
         return txn;
     }
@@ -100,7 +101,7 @@ public abstract class LmdbTx implements AutoCloseable {
         aborted = true;
     }
 
-    public static class Write extends Read {
+    public static class Write extends Read implements Tx.Write {
         Write(Env<ByteBuffer> e) {
             super(e);
         }
@@ -122,7 +123,7 @@ public abstract class LmdbTx implements AutoCloseable {
         }
     }
 
-    public static class Read extends LmdbTx {
+    public static class Read extends LmdbTx implements Tx.Read {
         Read(Env<ByteBuffer> e) {
             super(e);
         }

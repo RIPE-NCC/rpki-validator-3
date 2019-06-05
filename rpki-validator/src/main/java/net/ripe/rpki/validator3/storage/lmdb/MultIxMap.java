@@ -29,6 +29,8 @@
  */
 package net.ripe.rpki.validator3.storage.lmdb;
 
+import net.ripe.rpki.validator3.storage.Bytes;
+import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import org.lmdbjava.CursorIterator;
@@ -59,24 +61,24 @@ public class MultIxMap<T extends Serializable> extends LmdbIxBase<T> {
         return new DbiFlags[]{MDB_CREATE, MDB_DUPSORT};
     }
 
-    public List<T> get(LmdbTx.Read tx, Key primaryKey) {
+    public List<T> get(Tx.Read tx, Key primaryKey) {
         verifyKey(primaryKey);
         final ByteBuffer pkBuf = primaryKey.toByteBuffer();
         final List<T> result = new ArrayList<>();
-        try (final CursorIterator<ByteBuffer> iterate = getMainDb().iterate(tx.txn(), KeyRange.closed(pkBuf, pkBuf))) {
+        try (final CursorIterator<ByteBuffer> iterate = getMainDb().iterate(castTxn(tx), KeyRange.closed(pkBuf, pkBuf))) {
             while (iterate.hasNext()) {
                 final CursorIterator.KeyVal<ByteBuffer> next = iterate.next();
-                result.add(getValue(primaryKey, next.val()));
+                result.add(getValue(primaryKey, Bytes.toBytes(next.val())));
             }
         }
         return result;
     }
 
-    public int count(LmdbTx.Read txn, Key primaryKey) {
+    public int count(Tx.Read tx, Key primaryKey) {
         verifyKey(primaryKey);
         int s = 0;
         final ByteBuffer pkBuf = primaryKey.toByteBuffer();
-        try (final CursorIterator<ByteBuffer> ci = getMainDb().iterate(txn.txn(), KeyRange.closed(pkBuf, pkBuf))) {
+        try (final CursorIterator<ByteBuffer> ci = getMainDb().iterate(castTxn(tx), KeyRange.closed(pkBuf, pkBuf))) {
             while (ci.hasNext()) {
                 ci.next();
                 s++;
@@ -85,17 +87,17 @@ public class MultIxMap<T extends Serializable> extends LmdbIxBase<T> {
         return s;
     }
 
-    public void put(LmdbTx.Write tx, Key primaryKey, T value) {
+    public void put(Tx.Write tx, Key primaryKey, T value) {
         checkKeyAndValue(primaryKey, value);
-        getMainDb().put(tx.txn(), primaryKey.toByteBuffer(), valueBuf(value));
+        getMainDb().put(castTxn(tx), primaryKey.toByteBuffer(), valueBuf(value));
     }
 
-    public void delete(LmdbTx.Write tx, Key primaryKey) {
-        getMainDb().delete(tx.txn(), primaryKey.toByteBuffer());
+    public void delete(Tx.Write tx, Key primaryKey) {
+        getMainDb().delete(castTxn(tx), primaryKey.toByteBuffer());
     }
 
-    public void delete(LmdbTx.Write tx, Key primaryKey, T value) {
+    public void delete(Tx.Write tx, Key primaryKey, T value) {
         verifyKey(primaryKey);
-        getMainDb().delete(tx.txn(), primaryKey.toByteBuffer(), valueBuf(value));
+        getMainDb().delete(castTxn(tx), primaryKey.toByteBuffer(), valueBuf(value));
     }
 }

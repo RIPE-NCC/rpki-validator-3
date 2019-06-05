@@ -6,6 +6,7 @@ import jetbrains.exodus.env.Environment;
 import jetbrains.exodus.env.Environments;
 import jetbrains.exodus.env.Store;
 import net.ripe.rpki.validator3.util.Time;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -18,7 +19,7 @@ import static jetbrains.exodus.bindings.StringBinding.stringToEntry;
 import static jetbrains.exodus.env.StoreConfig.WITHOUT_DUPLICATES;
 import static org.junit.Assert.assertEquals;
 
-
+@Ignore
 public class XodusTest {
 
     @Test

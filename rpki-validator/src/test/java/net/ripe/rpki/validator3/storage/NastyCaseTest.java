@@ -77,8 +77,7 @@ public class NastyCaseTest {
         RpkiObjectCoder coder = new RpkiObjectCoder();
         AtomicInteger brokenCounter = new AtomicInteger(0);
         lmdb.readTx0(tx -> {
-            lmdbRpkiObject.forEach(tx, (k, bb) -> {
-                byte[] bytes = Bytes.toBytes(bb);
+            lmdbRpkiObject.forEach(tx, (k, bytes) -> {
                 try {
                     RpkiObject rpkiObject = coder.fromBytes(bytes);
                     assertEquals(rpkiObject.key(), k);
