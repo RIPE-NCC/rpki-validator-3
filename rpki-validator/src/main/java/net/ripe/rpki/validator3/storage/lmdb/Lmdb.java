@@ -36,6 +36,8 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.storage.Bytes;
+import net.ripe.rpki.validator3.storage.IxBase;
+import net.ripe.rpki.validator3.storage.IxMap;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;

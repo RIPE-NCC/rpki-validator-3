@@ -32,7 +32,7 @@ package net.ripe.rpki.validator3.storage.stores;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
-import net.ripe.rpki.validator3.storage.lmdb.IxMap;
+import net.ripe.rpki.validator3.storage.IxMap;
 
 import java.io.Serializable;
 import java.util.List;

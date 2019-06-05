@@ -27,13 +27,14 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.lmdb;
+package net.ripe.rpki.validator3.storage;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 
 import java.io.Serializable;
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -59,7 +60,15 @@ public interface IxBase<T extends Serializable> {
 
     long size(Tx.Read tx);
 
-    LmdbIxBase.Sizes sizeInfo(Tx.Read tx);
+    Sizes sizeInfo(Tx.Read tx);
 
     String getName();
+
+    @Data
+    @AllArgsConstructor
+    class Sizes {
+        private int count;
+        private long keysAndValuesBytes;
+        private long allocatedSize;
+    }
 }

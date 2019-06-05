@@ -29,10 +29,9 @@
  */
 package net.ripe.rpki.validator3.storage.lmdb;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.Getter;
 import net.ripe.rpki.validator3.storage.Bytes;
+import net.ripe.rpki.validator3.storage.IxBase;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
@@ -211,11 +210,4 @@ public abstract class LmdbIxBase<T extends Serializable> implements IxBase<T> {
         return stat.pageSize * (stat.branchPages + stat.leafPages + stat.overflowPages);
     }
 
-    @Data
-    @AllArgsConstructor
-    public static class Sizes {
-        private int count;
-        private long keysAndValuesBytes;
-        private long allocatedSize;
-    }
 }

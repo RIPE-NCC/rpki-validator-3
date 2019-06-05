@@ -34,7 +34,7 @@ import lombok.Getter;
 import lombok.ToString;
 import net.ripe.rpki.validator3.storage.Binary;
 import net.ripe.rpki.validator3.storage.Tx;
-import net.ripe.rpki.validator3.storage.lmdb.IxMap;
+import net.ripe.rpki.validator3.storage.IxMap;
 
 import java.io.Serializable;
 

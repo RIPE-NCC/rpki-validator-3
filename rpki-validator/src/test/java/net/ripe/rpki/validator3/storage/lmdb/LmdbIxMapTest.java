@@ -31,32 +31,19 @@ package net.ripe.rpki.validator3.storage.lmdb;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import net.ripe.rpki.validator3.storage.IxMapTest;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
-import net.ripe.rpki.validator3.util.Time;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.lmdbjava.Dbi;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Random;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
@@ -75,7 +62,7 @@ public class LmdbIxMapTest extends IxMapTest {
         lmdb = LmdbTests.makeLmdb(tmp.newFolder().getAbsolutePath());
         ixMap = lmdb.createIxMap("test",
                 ImmutableMap.of(
-                        LENGTH_INDEX, LmdbIxMapTest::stringLen,
+                        LENGTH_INDEX, IxMapTest::stringLen,
                         PAIRS_INDEX, s -> charPairSet(s).stream().map(Key::of).collect(Collectors.toSet())),
                 CoderFactory.makeCoder(String.class));
     }

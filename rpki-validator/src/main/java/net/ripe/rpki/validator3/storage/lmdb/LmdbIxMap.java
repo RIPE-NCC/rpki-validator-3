@@ -31,6 +31,7 @@ package net.ripe.rpki.validator3.storage.lmdb;
 
 import lombok.Getter;
 import net.ripe.rpki.validator3.storage.Bytes;
+import net.ripe.rpki.validator3.storage.IxMap;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
@@ -391,7 +392,7 @@ public class LmdbIxMap<T extends Serializable> extends LmdbIxBase<T> implements 
     }
 
     @Override
-    public LmdbIxBase.Sizes sizeInfo(Tx.Read tx) {
+    public Sizes sizeInfo(Tx.Read tx) {
         LmdbIxBase.Sizes sizes = super.sizeInfo(tx);
         final Map<String, LmdbIxBase.Sizes> indexSizes = new HashMap<>();
         indexes.forEach((name, ignore) -> {

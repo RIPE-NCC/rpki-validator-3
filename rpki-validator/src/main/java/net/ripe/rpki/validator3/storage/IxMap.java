@@ -27,9 +27,8 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.lmdb;
+package net.ripe.rpki.validator3.storage;
 
-import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 
 import java.io.Serializable;
@@ -78,5 +77,5 @@ public interface IxMap<T extends Serializable> extends IxBase<T> {
 
     void clear(Tx.Write tx);
 
-    LmdbIxBase.Sizes sizeInfo(Tx.Read tx);
+    Sizes sizeInfo(Tx.Read tx);
 }

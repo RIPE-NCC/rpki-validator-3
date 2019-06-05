@@ -27,15 +27,11 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.lmdb;
+package net.ripe.rpki.validator3.storage;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
-import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
 import net.ripe.rpki.validator3.util.Time;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -59,7 +55,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -406,7 +401,7 @@ public abstract class IxMapTest {
         return new Key(bb);
     }
 
-    static Key key(Object o) {
+    public static Key key(Object o) {
         return Key.of(o.toString().getBytes());
     }
 

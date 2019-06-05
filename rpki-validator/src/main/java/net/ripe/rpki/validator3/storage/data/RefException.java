@@ -29,8 +29,7 @@
  */
 package net.ripe.rpki.validator3.storage.data;
 
-import net.ripe.rpki.validator3.storage.lmdb.IxMap;
-import net.ripe.rpki.validator3.storage.lmdb.LmdbIxMap;
+import net.ripe.rpki.validator3.storage.IxMap;
 
 import java.io.Serializable;
 
