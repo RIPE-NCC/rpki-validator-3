@@ -61,13 +61,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class IxMapTest {
+public class LmdbIxMapTest {
 
     @Rule
     public final TemporaryFolder tmp = new TemporaryFolder();
 
     private Lmdb lmdb;
-    private IxMap<String> ixMap;
+    private LmdbIxMap<String> ixMap;
 
     private static final String LENGTH_INDEX = "length-index";
     private static final String PAIRS_INDEX = "pairs-index";
@@ -77,7 +77,7 @@ public class IxMapTest {
         lmdb = LmdbTests.makeLmdb(tmp.newFolder().getAbsolutePath());
         ixMap = lmdb.createIxMap("test",
                 ImmutableMap.of(
-                        LENGTH_INDEX, IxMapTest::stringLen,
+                        LENGTH_INDEX, LmdbIxMapTest::stringLen,
                         PAIRS_INDEX, s -> charPairSet(s).stream().map(Key::of).collect(Collectors.toSet())),
                 CoderFactory.makeCoder(String.class));
     }
@@ -337,7 +337,7 @@ public class IxMapTest {
     public void testReindex() {
         ixMap = lmdb.createIxMap("testReindex",
                 ImmutableMap.of(
-                        "len", IxMapTest::stringLen,
+                        "len", LmdbIxMapTest::stringLen,
                         "lower", s -> Key.keys(Key.of(s.toLowerCase()))),
                 CoderFactory.makeCoder(String.class));
 

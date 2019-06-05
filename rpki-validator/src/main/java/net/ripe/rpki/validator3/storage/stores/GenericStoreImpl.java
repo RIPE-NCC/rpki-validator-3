@@ -31,7 +31,7 @@ package net.ripe.rpki.validator3.storage.stores;
 
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
-import net.ripe.rpki.validator3.storage.lmdb.IxMap;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 
 import java.io.Serializable;
@@ -74,5 +74,5 @@ public abstract class GenericStoreImpl<T extends Serializable> implements Generi
         return ixMap().keys(tx);
     }
 
-    protected abstract IxMap<T> ixMap();
+    protected abstract LmdbIxMap<T> ixMap();
 }

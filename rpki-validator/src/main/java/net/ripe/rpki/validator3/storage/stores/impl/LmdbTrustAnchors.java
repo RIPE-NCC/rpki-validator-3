@@ -35,7 +35,7 @@ import net.ripe.rpki.validator3.api.util.Dates;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
-import net.ripe.rpki.validator3.storage.lmdb.IxMap;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
@@ -57,7 +57,7 @@ import java.util.stream.Collectors;
 @Component
 public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements TrustAnchors {
 
-    private final IxMap<TrustAnchor> ixMap;
+    private final LmdbIxMap<TrustAnchor> ixMap;
     private final Sequences sequences;
     private final ValidationRuns validationRuns;
 
@@ -146,7 +146,7 @@ public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements T
     }
 
     @Override
-    protected IxMap<TrustAnchor> ixMap() {
+    protected LmdbIxMap<TrustAnchor> ixMap() {
         return ixMap;
     }
 }

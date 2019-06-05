@@ -43,7 +43,7 @@ import java.util.List;
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.DbiFlags.MDB_DUPSORT;
 
-public class MultIxMap<T extends Serializable> extends IxBase<T> {
+public class MultIxMap<T extends Serializable> extends LmdbIxBase<T> {
 
     public MultIxMap(final Lmdb lmdb,
                      final String name,

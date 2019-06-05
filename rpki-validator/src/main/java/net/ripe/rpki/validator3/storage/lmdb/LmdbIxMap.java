@@ -27,24 +27,24 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.xodus;
+package net.ripe.rpki.validator3.storage.lmdb;
 
-import jetbrains.exodus.ByteIterable;
-import jetbrains.exodus.env.Cursor;
-import jetbrains.exodus.env.Store;
-import jetbrains.exodus.env.StoreConfig;
-import jetbrains.exodus.env.Transaction;
 import lombok.Getter;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
-import net.ripe.rpki.validator3.storage.lmdb.OnDeleteRestrictException;
 import org.apache.commons.lang3.tuple.Pair;
+import org.lmdbjava.CursorIterator;
+import org.lmdbjava.Dbi;
+import org.lmdbjava.DbiFlags;
+import org.lmdbjava.KeyRange;
+import org.lmdbjava.Txn;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -54,30 +54,31 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static net.ripe.rpki.validator3.storage.xodus.Xodus.byteBufferToIterable;
-import static net.ripe.rpki.validator3.storage.xodus.Xodus.clearStore;
-import static net.ripe.rpki.validator3.storage.xodus.Xodus.iterableToByteBuffer;
+import static org.lmdbjava.DbiFlags.MDB_CREATE;
+import static org.lmdbjava.DbiFlags.MDB_DUPSORT;
+
 /**
  *
  *
  *
  * @param <T>
  */
-public class IxMapX<T extends Serializable> extends IxBaseX<T> {
+public class LmdbIxMap<T extends Serializable> extends LmdbIxBase<T> implements IxMap<T> {
 
-    private final Map<String, Store> indexes;
+    private final Map<String, Dbi<ByteBuffer>> indexes;
     private final Map<String, Function<T, Set<Key>>> indexFunctions;
-    private final List<BiConsumer<XodusTx.Write, Key>> onDeleteTriggers = new ArrayList<>();
+    private final List<BiConsumer<LmdbTx.Write, Key>> onDeleteTriggers = new ArrayList<>();
 
-    public IxMapX(final Xodus xodus,
-                  final String name,
-                  final Coder<T> coder,
-                  final Map<String, Function<T, Set<Key>>> indexFunctions) {
-        super(xodus, name, coder);
+    public LmdbIxMap(final Lmdb lmdb,
+                     final String name,
+                     final Coder<T> coder,
+                     final Map<String, Function<T, Set<Key>>> indexFunctions) {
+        super(lmdb, name, coder);
         this.indexFunctions = indexFunctions;
-        Pair<Map<String, Store>, Boolean> p = xodus.createIndexes(name, indexFunctions, getStoreConfig());
+        Pair<Map<String, Dbi<ByteBuffer>>, Boolean> p = lmdb.createIndexes(name, indexFunctions, getIndexDbiFlags());
         indexes = p.getLeft();
         boolean reindex = p.getRight();
         if (reindex) {
@@ -85,21 +86,21 @@ public class IxMapX<T extends Serializable> extends IxBaseX<T> {
         }
     }
 
-    public IxMapX(final Xodus xodus, String name, Coder<T> coder) {
-        this(xodus, name, coder, Collections.emptyMap());
+    public LmdbIxMap(final Lmdb lmdb, String name, Coder<T> coder) {
+        this(lmdb, name, coder, Collections.emptyMap());
     }
 
     private void reindex() {
-        final XodusTx.Write tx = writeTx();
+        final LmdbTx.Write tx = writeTx();
         try {
-            Transaction txn = tx.txn();
-            indexes.forEach((name, idx) -> clearStore(txn, idx));
+            Txn<ByteBuffer> txn = tx.txn();
+            indexes.forEach((name, idx) -> idx.drop(txn));
             forEach(tx, (k, bb) -> {
                 final T value = getValue(k, bb);
                 indexFunctions.forEach((n, idxFun) ->
                         idxFun.apply(value).forEach(ik -> {
-                            final Store idx = getIdx(n);
-                            idx.put(txn, ik.toByteIterable(), k.toByteIterable());
+                            final Dbi<ByteBuffer> idx = getIdx(n);
+                            idx.put(txn, ik.toByteBuffer(), k.toByteBuffer());
                         }));
             });
             txn.commit();
@@ -108,33 +109,39 @@ public class IxMapX<T extends Serializable> extends IxBaseX<T> {
         }
     }
 
-    private Store getIdx(String name) {
+    private Dbi<ByteBuffer> getIdx(String name) {
         checkEnv();
         return indexes.get(name);
     }
 
-    private void dropIndexes(XodusTx.Write tx) {
-        indexes.forEach((name, db) -> clearStore(tx.txn(), db));
+    private void dropIndexes(LmdbTx.Write tx) {
+        indexes.forEach((name, db) -> db.drop(tx.txn()));
     }
 
-    protected StoreConfig getStoreConfig() {
-        return StoreConfig.WITH_DUPLICATES;
+    protected DbiFlags[] getMainDbCreateFlags() {
+        return new DbiFlags[]{MDB_CREATE};
     }
 
+    protected DbiFlags[] getIndexDbiFlags() {
+        return new DbiFlags[]{MDB_CREATE, MDB_DUPSORT};
+    }
+
+    @Override
     public Optional<T> get(Key primaryKey) {
         return get(readTx(), primaryKey);
     }
 
-    public Optional<T> get(XodusTx.Read txn, Key primaryKey) {
+    @Override
+    public Optional<T> get(LmdbTx.Read txn, Key primaryKey) {
         verifyKey(primaryKey);
-        final ByteIterable bi = getMainDb().get(txn.txn(), primaryKey.toByteIterable());
-        if (bi == null) {
-            return Optional.empty();
-        }
-        return Optional.of(getValue(primaryKey, iterableToByteBuffer(bi)));
+        ByteBuffer bb = getMainDb().get(txn.txn(), primaryKey.toByteBuffer());
+        return bb == null ?
+                Optional.empty() :
+                Optional.of(getValue(primaryKey, bb));
     }
 
-    public List<T> get(XodusTx.Read txn, Set<Key> primaryKeys) {
+    @Override
+    public List<T> get(LmdbTx.Read txn, Set<Key> primaryKeys) {
         return primaryKeys.stream()
                 .map(pk -> get(txn, pk))
                 .filter(Optional::isPresent)
@@ -142,61 +149,69 @@ public class IxMapX<T extends Serializable> extends IxBaseX<T> {
                 .collect(Collectors.toList());
     }
 
-    public Map<Key, T> getByIndex(String indexName, XodusTx.Read tx, Key indexKey) {
+    @Override
+    public Map<Key, T> getByIndex(String indexName, LmdbTx.Read tx, Key indexKey) {
         checkNotNull(indexKey, "Index key is null");
-        final ByteIterable idxKey = indexKey.toByteIterable();
-        return getByIndexKeyRange(indexName, tx, idxKey, idxKey);
+        final ByteBuffer idxKey = indexKey.toByteBuffer();
+        return getByIndexKeyRange(indexName, tx, KeyRange.closed(idxKey, idxKey));
     }
 
+    @Override
+    public Set<Key> getPkByIndex(String indexName, LmdbTx.Read tx, Key indexKey) {
+        checkNotNull(indexKey, "Index key is null");
+        final ByteBuffer idxKey = indexKey.toByteBuffer();
+        return getPkByIndexKeyRange(indexName, tx, KeyRange.closed(idxKey, idxKey));
+    }
 
-//    public Set<Key> getPkByIndex(String indexName, XodusTx.Read tx, Key indexKey) {
-//        checkNotNull(indexKey, "Index key is null");
-//        final ByteBuffer idxKey = indexKey.toByteBuffer();
-//        return getPkByIndexKeyRange(indexName, tx, KeyRange.closed(idxKey, idxKey));
-//    }
-//
-//    public Map<Key, T> getByIndexLess(String indexName, XodusTx.Read tx, Key indexKey) {
-//        final ByteBuffer idxKey = indexKey.toByteBuffer();
-//        return getByIndexKeyRange(indexName, tx, KeyRange.lessThan(idxKey));
-//    }
-//
-//    public Map<Key, T> getByIndexGreater(String indexName, XodusTx.Read tx, Key indexKey) {
-//        final ByteBuffer idxKey = indexKey.toByteBuffer();
-//        return getByIndexKeyRange(indexName, tx, KeyRange.greaterThan(idxKey));
-//    }
-//
-//    public Set<Key> getByIndexLessPk(String indexName, XodusTx.Read tx, Key indexKey) {
-//        final ByteBuffer idxKey = indexKey.toByteBuffer();
-//        return getPkByIndexKeyRange(indexName, tx, KeyRange.lessThan(idxKey));
-//    }
-//
-//    public Set<Key> getByIndexGreaterPk(String indexName, XodusTx.Read tx, Key indexKey) {
-//        final ByteBuffer idxKey = indexKey.toByteBuffer();
-//        return getPkByIndexKeyRange(indexName, tx, KeyRange.greaterThan(idxKey));
-//    }
-//
-//    public Map<Key, T> getByIndexMax(String indexName, XodusTx.Read tx, Predicate<T> p) {
-//        return getKeyAtTheMinOrMaxOfIndex(indexName, tx, KeyRange.allBackward(), p);
-//    }
-//
-//    public Map<Key, T> getByIndexMin(String indexName, XodusTx.Read tx, Predicate<T> p) {
-//        return getKeyAtTheMinOrMaxOfIndex(indexName, tx, KeyRange.all(), p);
-//    }
-//
-//    Set<Key> getPkByIndexMax(String indexName, XodusTx.Read tx) {
-//        return getKeyAtTheMinOrMaxOfIndex(indexName, tx, KeyRange.allBackward());
-//    }
-//
-//    Set<Key> getPkByIndexMin(String indexName, XodusTx.Read tx) {
-//        return getKeyAtTheMinOrMaxOfIndex(indexName, tx, KeyRange.all());
-//    }
+    @Override
+    public Map<Key, T> getByIndexLess(String indexName, LmdbTx.Read tx, Key indexKey) {
+        final ByteBuffer idxKey = indexKey.toByteBuffer();
+        return getByIndexKeyRange(indexName, tx, KeyRange.lessThan(idxKey));
+    }
 
-    public Optional<T> put(XodusTx.Write tx, Key primaryKey, T value) {
+    @Override
+    public Map<Key, T> getByIndexGreater(String indexName, LmdbTx.Read tx, Key indexKey) {
+        final ByteBuffer idxKey = indexKey.toByteBuffer();
+        return getByIndexKeyRange(indexName, tx, KeyRange.greaterThan(idxKey));
+    }
+
+    @Override
+    public Set<Key> getByIndexLessPk(String indexName, LmdbTx.Read tx, Key indexKey) {
+        final ByteBuffer idxKey = indexKey.toByteBuffer();
+        return getPkByIndexKeyRange(indexName, tx, KeyRange.lessThan(idxKey));
+    }
+
+    @Override
+    public Set<Key> getByIndexGreaterPk(String indexName, LmdbTx.Read tx, Key indexKey) {
+        final ByteBuffer idxKey = indexKey.toByteBuffer();
+        return getPkByIndexKeyRange(indexName, tx, KeyRange.greaterThan(idxKey));
+    }
+
+    @Override
+    public Map<Key, T> getByIndexMax(String indexName, LmdbTx.Read tx, Predicate<T> p) {
+        return getKeyAtTheMinOrMaxOfIndex(indexName, tx, KeyRange.allBackward(), p);
+    }
+
+    @Override
+    public Map<Key, T> getByIndexMin(String indexName, LmdbTx.Read tx, Predicate<T> p) {
+        return getKeyAtTheMinOrMaxOfIndex(indexName, tx, KeyRange.all(), p);
+    }
+
+    Set<Key> getPkByIndexMax(String indexName, LmdbTx.Read tx) {
+        return getKeyAtTheMinOrMaxOfIndex(indexName, tx, KeyRange.allBackward());
+    }
+
+    Set<Key> getPkByIndexMin(String indexName, LmdbTx.Read tx) {
+        return getKeyAtTheMinOrMaxOfIndex(indexName, tx, KeyRange.all());
+    }
+
+    @Override
+    public Optional<T> put(LmdbTx.Write tx, Key primaryKey, T value) {
         checkKeyAndValue(primaryKey, value);
-        final Transaction txn = tx.txn();
+        final Txn<ByteBuffer> txn = tx.txn();
         final Optional<T> oldValue = get(tx, primaryKey);
-        final ByteIterable pkBuf = primaryKey.toByteIterable();
-        final ByteIterable val = byteBufferToIterable(valueBuf(value));
+        final ByteBuffer pkBuf = primaryKey.toByteBuffer();
+        final ByteBuffer val = valueBuf(value);
         getMainDb().put(txn, pkBuf, val);
         if (oldValue.isPresent()) {
             indexFunctions.forEach((idxName, idxFun) -> {
@@ -204,14 +219,14 @@ public class IxMapX<T extends Serializable> extends IxBaseX<T> {
                 final Set<Key> indexKeys = idxFun.apply(value).stream()
                         .filter(Objects::nonNull)
                         .collect(Collectors.toSet());
-                final Store index = getIdx(idxName);
+                final Dbi<ByteBuffer> index = getIdx(idxName);
                 oldIndexKeys.stream()
                         .filter(oik -> !indexKeys.contains(oik))
-                        .forEach(oik -> index.delete(txn, oik.toByteIterable()));
+                        .forEach(oik -> index.delete(txn, oik.toByteBuffer(), pkBuf));
 
                 indexKeys.stream()
                         .filter(ik -> !oldIndexKeys.contains(ik))
-                        .forEach(ik -> index.put(txn, ik.toByteIterable(), pkBuf));
+                        .forEach(ik -> index.put(txn, ik.toByteBuffer(), pkBuf));
             });
             return oldValue;
         } else {
@@ -220,13 +235,14 @@ public class IxMapX<T extends Serializable> extends IxBaseX<T> {
                         .filter(Objects::nonNull)
                         .collect(Collectors.toSet());
 
-                indexKeys.forEach(ik -> getIdx(idxName).put(txn, ik.toByteIterable(), pkBuf));
+                indexKeys.forEach(ik -> getIdx(idxName).put(txn, ik.toByteBuffer(), pkBuf));
             });
         }
         return Optional.empty();
     }
 
-    public boolean modify(XodusTx.Write tx, Key primaryKey, Consumer<T> modifyValue) {
+    @Override
+    public boolean modify(LmdbTx.Write tx, Key primaryKey, Consumer<T> modifyValue) {
         final Optional<T> t = get(tx, primaryKey);
         t.ifPresent(v -> {
             modifyValue.accept(v);
@@ -235,23 +251,24 @@ public class IxMapX<T extends Serializable> extends IxBaseX<T> {
         return t.isPresent();
     }
 
-    public void delete(XodusTx.Write tx, Key primaryKey) {
+    @Override
+    public void delete(LmdbTx.Write tx, Key primaryKey) {
         checkNotNull(primaryKey, "Key is null");
-        final Transaction txn = tx.txn();
-        final Store mainDb = getMainDb();
-        final ByteIterable pkBuf = primaryKey.toByteIterable();
+        final Txn<ByteBuffer> txn = tx.txn();
+        final Dbi<ByteBuffer> mainDb = getMainDb();
+        final ByteBuffer pkBuf = primaryKey.toByteBuffer();
         if (indexFunctions.isEmpty()) {
             mainDb.delete(txn, pkBuf);
         } else {
-            final ByteIterable bb = mainDb.get(txn, pkBuf);
+            final ByteBuffer bb = mainDb.get(txn, pkBuf);
             if (bb != null) {
                 // TODO probably avoid deserialization, just store the
                 //  index keys next to the serialized value
-                final T value = getValue(primaryKey, iterableToByteBuffer(bb));
+                final T value = getValue(primaryKey, bb);
                 mainDb.delete(txn, pkBuf);
                 indexFunctions.forEach((idxName, idxFun) ->
                         idxFun.apply(value).forEach(ix ->
-                                getIdx(idxName).delete(txn, ix.toByteIterable())));
+                                getIdx(idxName).delete(txn, ix.toByteBuffer(), pkBuf)));
             }
         }
         try {
@@ -261,49 +278,45 @@ public class IxMapX<T extends Serializable> extends IxBaseX<T> {
         }
     }
 
-    public void onDelete(BiConsumer<XodusTx.Write, Key> bf) {
+    @Override
+    public void onDelete(BiConsumer<LmdbTx.Write, Key> bf) {
         onDeleteTriggers.add(bf);
     }
 
     @Override
-    public void clear(XodusTx.Write tx) {
-        clearStore(tx.txn(), getMainDb());
+    public void clear(LmdbTx.Write tx) {
+        getMainDb().drop(tx.txn());
         dropIndexes(tx);
     }
 
-    private Map<Key, T> getByIndexKeyRange(String indexName, XodusTx.Read tx, ByteIterable start, ByteIterable stop) {
-        final Store index = getIdx(indexName);
+    private Map<Key, T> getByIndexKeyRange(String indexName, LmdbTx.Read tx, KeyRange keyRange) {
+        final Dbi<ByteBuffer> index = getIdx(indexName);
         if (index == null) {
             return Collections.emptyMap();
         }
-        final Transaction txn = tx.txn();
+        final Txn<ByteBuffer> txn = tx.txn();
         final Map<Key, T> m = new HashMap<>();
-        final Store mainDb = getMainDb();
-
-        try (Cursor cursor = index.openCursor(txn)) {
-            ByteIterable startKey = cursor.getSearchKeyRange(start);
-            if (startKey != null) {
-                do {
-                    Key pk = new Key(cursor.getValue());
-                    if (!m.containsKey(pk)) {
-                        final ByteIterable obj = mainDb.get(txn, pk.toByteIterable());
-                        if (obj != null) {
-                            m.put(pk, getValue(pk, iterableToByteBuffer(obj)));
-                        }
+        final Dbi<ByteBuffer> mainDb = getMainDb();
+        try (final CursorIterator<ByteBuffer> iterator = index.iterate(txn, keyRange)) {
+            while (iterator.hasNext()) {
+                final Key pk = new Key(iterator.next().val());
+                if (!m.containsKey(pk)) {
+                    final ByteBuffer bb = mainDb.get(txn, pk.toByteBuffer());
+                    if (bb != null) {
+                        m.put(pk, getValue(pk, bb));
                     }
-                } while (cursor.getNext() && !cursor.getKey().equals(stop));
+                }
             }
         }
-
         return m;
     }
-/*
-    private Set<Key> getPkByIndexKeyRange(String indexName, XodusTx.Read tx, KeyRange keyRange) {
-        final Store index = getIdx(indexName);
+
+    private Set<Key> getPkByIndexKeyRange(String indexName, LmdbTx.Read tx, KeyRange keyRange) {
+        final Dbi<ByteBuffer> index = getIdx(indexName);
         if (index == null) {
             return Collections.emptySet();
         }
-        final Transaction txn = tx.txn();
+        final Txn<ByteBuffer> txn = tx.txn();
         final Set<Key> values = new HashSet<>();
         try (final CursorIterator<ByteBuffer> iterator = index.iterate(txn, keyRange)) {
             while (iterator.hasNext()) {
@@ -313,10 +326,10 @@ public class IxMapX<T extends Serializable> extends IxBaseX<T> {
         return values;
     }
 
-    private Set<Key> getKeyAtTheMinOrMaxOfIndex(String indexName, XodusTx.Read tx, KeyRange<ByteBuffer> objectKeyRange) {
-        final Store index = getIdx(indexName);
+    private Set<Key> getKeyAtTheMinOrMaxOfIndex(String indexName, LmdbTx.Read tx, KeyRange<ByteBuffer> objectKeyRange) {
+        final Dbi<ByteBuffer> index = getIdx(indexName);
         if (index != null) {
-            final Transaction txn = tx.txn();
+            final Txn<ByteBuffer> txn = tx.txn();
             try (final CursorIterator<ByteBuffer> iterator = index.iterate(txn, objectKeyRange)) {
                 final Set<Key> primaryKeys = new HashSet<>();
                 ByteBuffer currentIndexKey = null;
@@ -339,11 +352,11 @@ public class IxMapX<T extends Serializable> extends IxBaseX<T> {
         return Collections.emptySet();
     }
 
-    private Map<Key, T> getKeyAtTheMinOrMaxOfIndex(String indexName, XodusTx.Read tx, KeyRange<ByteBuffer> keyRange, Predicate<T> p) {
-        final Store index = getIdx(indexName);
+    private Map<Key, T> getKeyAtTheMinOrMaxOfIndex(String indexName, LmdbTx.Read tx, KeyRange<ByteBuffer> keyRange, Predicate<T> p) {
+        final Dbi<ByteBuffer> index = getIdx(indexName);
         if (index != null) {
-            final Store mainDb = getMainDb();
-            final Transaction txn = tx.txn();
+            final Dbi<ByteBuffer> mainDb = getMainDb();
+            final Txn<ByteBuffer> txn = tx.txn();
             try (final CursorIterator<ByteBuffer> iterator = index.iterate(txn, keyRange)) {
                 final Map<Key, T> m = new HashMap<>();
                 Key currentIndexKey = null;
@@ -372,24 +385,24 @@ public class IxMapX<T extends Serializable> extends IxBaseX<T> {
         }
         return Collections.emptyMap();
     }
-*/
+
     @Override
-    public IxBaseX.Sizes sizeInfo(XodusTx.Read tx) {
-        IxBaseX.Sizes sizes = super.sizeInfo(tx);
-        final Map<String, IxBaseX.Sizes> indexSizes = new HashMap<>();
+    public LmdbIxBase.Sizes sizeInfo(LmdbTx.Read tx) {
+        LmdbIxBase.Sizes sizes = super.sizeInfo(tx);
+        final Map<String, LmdbIxBase.Sizes> indexSizes = new HashMap<>();
         indexes.forEach((name, ignore) -> {
-            Store idx = getIdx(name);
+            Dbi<ByteBuffer> idx = getIdx(name);
             AtomicInteger count = new AtomicInteger();
             AtomicInteger size = new AtomicInteger();
-//            try (final CursorIterator<ByteBuffer> iterator = idx.iterate(tx.txn())) {
-//                while (iterator.hasNext()) {
-//                    count.incrementAndGet();
-//                    final CursorIterator.KeyVal<ByteBuffer> next = iterator.next();
-//                    size.addAndGet(next.key().remaining() + next.val().remaining());
-//                }
-//            }
+            try (final CursorIterator<ByteBuffer> iterator = idx.iterate(tx.txn())) {
+                while (iterator.hasNext()) {
+                    count.incrementAndGet();
+                    final CursorIterator.KeyVal<ByteBuffer> next = iterator.next();
+                    size.addAndGet(next.key().remaining() + next.val().remaining());
+                }
+            }
             long allocatedSize = getAllocatedSize(tx, idx);
-            indexSizes.put(name, new IxBaseX.Sizes(count.get(), size.get(), allocatedSize));
+            indexSizes.put(name, new LmdbIxBase.Sizes(count.get(), size.get(), allocatedSize));
         });
         return new Sizes(sizes.getCount(),
                 sizes.getKeysAndValuesBytes(),
@@ -397,30 +410,30 @@ public class IxMapX<T extends Serializable> extends IxBaseX<T> {
                 indexSizes);
     }
 
-//    public void verify(XodusTx.Read tx) {
-//
-//        final Map<Key, Set<Key>> indexValues = new HashMap<>();
-//        forEach(tx, (k, bb) -> {
-//            final T value = getValue(k, bb);
-//            indexFunctions.forEach((n, idxFun) -> {
-//                idxFun.apply(value).forEach(ik -> {
-//                            Set<Key> pks = indexValues.get(ik);
-//                            if (pks == null) {
-//                                pks = getPkByIndex(n, tx, ik);
-//                                indexValues.put(ik, pks);
-//                            }
-//                            if (!pks.contains(k)) {
-//                                throw new RuntimeException("PkBuf blabla");
-//                            }
-//                        }
-//                );
-//            });
-//        });
-//    }
+    public void verify(LmdbTx.Read tx) {
 
-    public static class Sizes extends IxBaseX.Sizes {
+        final Map<Key, Set<Key>> indexValues = new HashMap<>();
+        forEach(tx, (k, bb) -> {
+            final T value = getValue(k, bb);
+            indexFunctions.forEach((n, idxFun) -> {
+                idxFun.apply(value).forEach(ik -> {
+                            Set<Key> pks = indexValues.get(ik);
+                            if (pks == null) {
+                                pks = getPkByIndex(n, tx, ik);
+                                indexValues.put(ik, pks);
+                            }
+                            if (!pks.contains(k)) {
+                                throw new RuntimeException("PkBuf blabla");
+                            }
+                        }
+                );
+            });
+        });
+    }
+
+    public static class Sizes extends LmdbIxBase.Sizes {
         @Getter
-        private Map<String, IxBaseX.Sizes> indexSizes;
+        private Map<String, LmdbIxBase.Sizes> indexSizes;
 
         @Getter
         private long totalKeysAndValuesBytes;
@@ -428,7 +441,7 @@ public class IxMapX<T extends Serializable> extends IxBaseX<T> {
         @Getter
         private long totalAllocatedSize;
 
-        Sizes(int count, long sizeInBytes, long allocatedSize, Map<String, IxBaseX.Sizes> indexSizes) {
+        Sizes(int count, long sizeInBytes, long allocatedSize, Map<String, LmdbIxBase.Sizes> indexSizes) {
             super(count, sizeInBytes, allocatedSize);
             this.indexSizes = indexSizes.isEmpty() ? null : indexSizes;
             totalKeysAndValuesBytes = sizeInBytes;

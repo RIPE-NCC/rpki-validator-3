@@ -38,7 +38,7 @@ import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
-import net.ripe.rpki.validator3.storage.lmdb.IxMap;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.MultIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
@@ -73,8 +73,8 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     private static final String BY_AKI_MFT_INDEX = "by-aki-mft";
     private static final String BY_TYPE_INDEX = "by-type";
 
-    private final IxMap<RpkiObject> ixMap;
-    private final IxMap<Long> reachableMap;
+    private final LmdbIxMap<RpkiObject> ixMap;
+    private final LmdbIxMap<Long> reachableMap;
     private final MultIxMap<String> locationMap;
 
     private Set<Key> akiMftKey(RpkiObject rpkiObject) {
@@ -212,7 +212,7 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     }
 
     @Override
-    protected IxMap<RpkiObject> ixMap() {
+    protected LmdbIxMap<RpkiObject> ixMap() {
         return ixMap;
     }
 

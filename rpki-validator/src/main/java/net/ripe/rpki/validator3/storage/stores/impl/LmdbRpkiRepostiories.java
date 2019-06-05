@@ -40,7 +40,7 @@ import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.lmdb.IxMap;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
@@ -74,7 +74,7 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
     private static final String BY_URI_PREFIX = "by-uri";
     private static final String BY_TA = "by-ta";
 
-    private final IxMap<RpkiRepository> ixMap;
+    private final LmdbIxMap<RpkiRepository> ixMap;
     private final Sequences sequences;
     private final ValidationScheduler validationScheduler;
 
@@ -316,7 +316,7 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
     }
 
     @Override
-    protected IxMap<RpkiRepository> ixMap() {
+    protected LmdbIxMap<RpkiRepository> ixMap() {
         return ixMap;
     }
 }

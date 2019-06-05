@@ -45,15 +45,15 @@ import static org.lmdbjava.DbiFlags.MDB_DUPSORT;
 /**
  * Special optimised case when primary keys are of the same size: i.e. Longs or SHA256.
  */
-public class SameSizeKeyIxMap<T extends Serializable> extends IxMap<T> {
+public class SameSizeKeyLmdbIxMap<T extends Serializable> extends LmdbIxMap<T> {
 
     private final int keySizeInBytes;
 
-    public SameSizeKeyIxMap(int keySizeInBytes,
-                            Lmdb lmdb,
-                            String name,
-                            Coder<T> coder,
-                            Map<String, Function<T, Set<Key>>> indexFunctions) {
+    public SameSizeKeyLmdbIxMap(int keySizeInBytes,
+                                Lmdb lmdb,
+                                String name,
+                                Coder<T> coder,
+                                Map<String, Function<T, Set<Key>>> indexFunctions) {
         super(lmdb, name, coder, indexFunctions);
         this.keySizeInBytes = keySizeInBytes;
     }

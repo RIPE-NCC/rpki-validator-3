@@ -142,11 +142,11 @@ public abstract class Lmdb {
     @Getter
     private final Map<Long, TxInfo> txs = new ConcurrentHashMap<>();
 
-    private final Map<String, IxBase<?>> ixMaps = new ConcurrentHashMap<>();
+    private final Map<String, IxBase<? extends Serializable>> ixMaps = new ConcurrentHashMap<>();
 
-    public <T extends Serializable> IxMap<T> createIxMap(String name,
-                                                         Map<String, Function<T, Set<Key>>> indexFunctions,
-                                                         Class<T> c) {
+    public <T extends Serializable> LmdbIxMap<T> createIxMap(String name,
+                                                             Map<String, Function<T, Set<Key>>> indexFunctions,
+                                                             Class<T> c) {
         return createIxMap(name, indexFunctions, CoderFactory.makeCoder(c));
     }
 
@@ -157,10 +157,10 @@ public abstract class Lmdb {
         return ixMap;
     }
 
-    public <T extends Serializable> IxMap<T> createIxMap(final String name,
-                                                         final Map<String, Function<T, Set<Key>>> indexFunctions,
-                                                         Coder<T> c) {
-        IxMap<T> ixMap = new IxMap<>(this, name, c, indexFunctions);
+    public <T extends Serializable> LmdbIxMap<T> createIxMap(final String name,
+                                                             final Map<String, Function<T, Set<Key>>> indexFunctions,
+                                                             Coder<T> c) {
+        LmdbIxMap<T> ixMap = new LmdbIxMap<>(this, name, c, indexFunctions);
         ixMaps.put(name, ixMap);
         return ixMap;
     }
@@ -169,7 +169,7 @@ public abstract class Lmdb {
                                                                     final String name,
                                                                     final Map<String, Function<T, Set<Key>>> indexFunctions,
                                                                     Coder<T> c) {
-        SameSizeKeyIxMap<T> ixMap = new SameSizeKeyIxMap<>(keySize, this, name, c, indexFunctions);
+        SameSizeKeyLmdbIxMap<T> ixMap = new SameSizeKeyLmdbIxMap<>(keySize, this, name, c, indexFunctions);
         ixMaps.put(name, ixMap);
         return ixMap;
     }
@@ -285,7 +285,7 @@ public abstract class Lmdb {
     @AllArgsConstructor
     private class IxMapStat {
         private String name;
-        private IxBase.Sizes sizes;
+        private LmdbIxBase.Sizes sizes;
     }
 
     public Stat getStat() {

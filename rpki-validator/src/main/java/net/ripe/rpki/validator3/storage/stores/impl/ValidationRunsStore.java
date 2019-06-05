@@ -48,6 +48,7 @@ import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.lmdb.IxMap;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.MultIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
@@ -74,7 +75,7 @@ import java.util.stream.Stream;
 
 @Component
 @Slf4j
-public class LmdbValidationRuns implements ValidationRuns {
+public class ValidationRunsStore implements ValidationRuns {
 
     private static final String RPKI_VALIDATION_RUNS = "validation-runs";
     private static final String CT_RPKI_VALIDATION_RUNS = "certificate-tree-validation-runs";
@@ -87,12 +88,12 @@ public class LmdbValidationRuns implements ValidationRuns {
     private static final String BY_COMPLETED_AT_INDEX = "by-completed-at";
 
     private MultIxMap<Key> vr2ro;
-    private IxMap<Key> vr2repo;
+    private LmdbIxMap<Key> vr2repo;
 
-    private IxMap<CertificateTreeValidationRun> ctIxMap;
+    private LmdbIxMap<CertificateTreeValidationRun> ctIxMap;
     private IxMap<RsyncRepositoryValidationRun> rsIxMap;
     private IxMap<RrdpRepositoryValidationRun> rrIxMap;
-    private IxMap<TrustAnchorValidationRun> taIxMap;
+    private LmdbIxMap<TrustAnchorValidationRun> taIxMap;
 
     private final Map<String, IxMap<? extends ValidationRun>> maps = new HashMap<>();
 
@@ -101,11 +102,11 @@ public class LmdbValidationRuns implements ValidationRuns {
 
     private final Sequences sequences;
 
-    public LmdbValidationRuns(RpkiObjects rpkiObjects,
-                              @Lazy TrustAnchors trustAnchors,
-                              RpkiRepositories rpkiRepositories,
-                              Sequences sequences,
-                              Lmdb lmdb) {
+    public ValidationRunsStore(RpkiObjects rpkiObjects,
+                               @Lazy TrustAnchors trustAnchors,
+                               RpkiRepositories rpkiRepositories,
+                               Sequences sequences,
+                               Lmdb lmdb) {
         this.rpkiObjects = rpkiObjects;
         this.rpkiRepositories = rpkiRepositories;
         this.sequences = sequences;
@@ -413,12 +414,12 @@ public class LmdbValidationRuns implements ValidationRuns {
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends ValidationRun> IxMap<T> pickIxMap(String vrType) {
+    private <T extends ValidationRun> LmdbIxMap<T> pickIxMap(String vrType) {
         final IxMap<? extends ValidationRun> ixMap = maps.get(vrType);
         if (ixMap == null) {
             throw new RuntimeException("Oops, you are looking for the " + vrType + " which is not here.");
         }
-        return (IxMap<T>) ixMap;
+        return (LmdbIxMap<T>) ixMap;
     }
 
     // TODO Come up with something better than this horror

@@ -33,7 +33,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Longs;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
-import net.ripe.rpki.validator3.storage.lmdb.IxMap;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
@@ -46,7 +46,7 @@ import java.util.Optional;
 public class Sequences extends GenericStoreImpl<Long> {
 
     private final String SEQUENCES = "sequences";
-    private final IxMap<Long> ixMap;
+    private final LmdbIxMap<Long> ixMap;
 
     @Autowired
     public Sequences(Lmdb lmdb) {
@@ -80,7 +80,7 @@ public class Sequences extends GenericStoreImpl<Long> {
     }
 
     @Override
-    protected IxMap<Long> ixMap() {
+    protected LmdbIxMap<Long> ixMap() {
         return ixMap;
     }
 }

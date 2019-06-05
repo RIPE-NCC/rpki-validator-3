@@ -32,7 +32,7 @@ package net.ripe.rpki.validator3.storage.stores.impl;
 import com.google.common.collect.ImmutableMap;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.StringCoder;
-import net.ripe.rpki.validator3.storage.lmdb.IxMap;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
@@ -46,7 +46,7 @@ public class LmdbSettings extends GenericStoreImpl<String> implements Settings {
     private static final String INITIAL_VALIDATION_RUN_COMPLETED = "internal.initial.validation.run.completed";
     private static final String SETTINGS = "settings";
 
-    private final IxMap<String> ixMap;
+    private final LmdbIxMap<String> ixMap;
 
     @Autowired
     public LmdbSettings(Lmdb lmdb) {
@@ -72,7 +72,7 @@ public class LmdbSettings extends GenericStoreImpl<String> implements Settings {
     }
 
     @Override
-    protected IxMap<String> ixMap() {
+    protected LmdbIxMap<String> ixMap() {
         return ixMap;
     }
 

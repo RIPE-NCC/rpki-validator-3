@@ -41,10 +41,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.UUID;
 
-import static net.ripe.rpki.validator3.storage.lmdb.IxMapTest.key;
+import static net.ripe.rpki.validator3.storage.lmdb.LmdbIxMapTest.key;
 import static org.junit.Assert.assertEquals;
 
-public class MultIxMapTest {
+public class MultLmdbIxMapTest {
 
     @Rule
     public final TemporaryFolder tmp = new TemporaryFolder();

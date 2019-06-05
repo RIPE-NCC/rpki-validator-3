@@ -42,7 +42,7 @@ import org.junit.runner.RunWith;
 import java.util.Map;
 import java.util.Optional;
 
-import static net.ripe.rpki.validator3.storage.lmdb.IxMapTest.intKey;
+import static net.ripe.rpki.validator3.storage.lmdb.LmdbIxMapTest.intKey;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -52,9 +52,9 @@ import static org.junit.Assume.assumeThat;
 import static org.lmdbjava.Env.create;
 
 @RunWith(JUnitQuickcheck.class)
-public class IxMapPropTest {
+public class LmdbIxMapPropTest {
 
-    private static IxMap<String> ixMap;
+    private static LmdbIxMap<String> ixMap;
 
     private static Lmdb lmdb;
 
@@ -75,7 +75,7 @@ public class IxMapPropTest {
         assumeThat(key, CoreMatchers.not(equalTo("")));
         assumeThat(value, CoreMatchers.not(equalTo(null)));
 
-        Key k = IxMapTest.key(key);
+        Key k = LmdbIxMapTest.key(key);
         Optional<String> oldValue = lmdb.writeTx(tx -> ixMap.put(tx, k, value));
         lmdb.readTx0(tx -> {
             assertEquals(value, ixMap.get(tx, k).get());
