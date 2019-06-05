@@ -65,7 +65,7 @@ public class LmdbImpl extends Lmdb {
     }
 
     @PostConstruct
-    public void initLmdb() {
+    public void initLmdb() {    
         try {
             log.info("Creating LMDB environment at {}", lmdbPath);
             oneThread.submit(() -> {
