@@ -10,6 +10,9 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 public interface IxBase<T extends Serializable> {
+
+    LmdbTx.Read readTx();
+
     boolean exists(LmdbTx.Read tx, Key key);
 
     Set<Key> keys(LmdbTx.Read tx);

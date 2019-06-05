@@ -67,7 +67,7 @@ public class LmdbIxMapTest {
     public final TemporaryFolder tmp = new TemporaryFolder();
 
     private Lmdb lmdb;
-    private LmdbIxMap<String> ixMap;
+    private IxMap<String> ixMap;
 
     private static final String LENGTH_INDEX = "length-index";
     private static final String PAIRS_INDEX = "pairs-index";

@@ -85,7 +85,7 @@ import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.Env.create;
 
 
-@Ignore
+
 public class LmdbTest {
 
     private static final String DB_NAME = "test-db";
@@ -94,25 +94,27 @@ public class LmdbTest {
     public final TemporaryFolder tmp = new TemporaryFolder();
 
     @Test
-    @Ignore
     public void testLmdbSpeedTx() throws IOException {
-        final File path = tmp.newFolder();
 
+        final File path = tmp.newFolder();
         final Env<ByteBuffer> env = create()
                 .setMapSize(1024 * 1024 * 1024)
                 .setMaxDbs(1)
                 .open(path);
 
         final Dbi<ByteBuffer> db = env.openDbi(DB_NAME, MDB_CREATE);
+        final long NREPEAT = 1000_000;
 
-        try (Txn<ByteBuffer> txn = env.txnWrite()) {
-            for (long k = 1; k < 10_000_000; k++) {
-                final ByteBuffer key = uuidBB();
-                db.put(txn, key, bb("blabla_" + key));
-            }
-            txn.commit();
-        }
-
+        Long t = Time.timed(() -> {
+                    try (Txn<ByteBuffer> txn = env.txnWrite()) {
+                        for (long k = 1; k < NREPEAT; k++) {
+                            final ByteBuffer key = uuidBB();
+                            db.put(txn, key, bb("blabla_" + key));
+                        }
+                        txn.commit();
+                    }
+                });
+        System.out.printf("LMDB storing %d uuids took %d ", 100_000, t);
         env.close();
     }
 

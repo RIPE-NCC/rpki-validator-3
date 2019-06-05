@@ -34,6 +34,10 @@ public interface IxMap<T extends Serializable> extends IxBase<T> {
 
     Map<Key, T> getByIndexMin(String indexName, LmdbTx.Read tx, Predicate<T> p);
 
+    Set<Key> getPkByIndexMax(String indexName, LmdbTx.Read tx);
+
+    Set<Key> getPkByIndexMin(String indexName, LmdbTx.Read tx);
+
     Optional<T> put(LmdbTx.Write tx, Key primaryKey, T value);
 
     boolean modify(LmdbTx.Write tx, Key primaryKey, Consumer<T> modifyValue);

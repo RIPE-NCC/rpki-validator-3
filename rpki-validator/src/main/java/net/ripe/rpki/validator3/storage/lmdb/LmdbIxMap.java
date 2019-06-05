@@ -197,11 +197,13 @@ public class LmdbIxMap<T extends Serializable> extends LmdbIxBase<T> implements 
         return getKeyAtTheMinOrMaxOfIndex(indexName, tx, KeyRange.all(), p);
     }
 
-    Set<Key> getPkByIndexMax(String indexName, LmdbTx.Read tx) {
+    @Override
+    public Set<Key> getPkByIndexMax(String indexName, LmdbTx.Read tx) {
         return getKeyAtTheMinOrMaxOfIndex(indexName, tx, KeyRange.allBackward());
     }
 
-    Set<Key> getPkByIndexMin(String indexName, LmdbTx.Read tx) {
+    @Override
+    public Set<Key> getPkByIndexMin(String indexName, LmdbTx.Read tx) {
         return getKeyAtTheMinOrMaxOfIndex(indexName, tx, KeyRange.all());
     }
 
