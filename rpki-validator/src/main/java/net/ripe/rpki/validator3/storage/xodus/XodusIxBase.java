@@ -114,7 +114,7 @@ public abstract class XodusIxBase<T extends Serializable> implements IxBase<T> {
         final byte[] valueBytes = coder.toBytes(value);
         CRC32 checksum = new CRC32();
         checksum.update(valueBytes);
-        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(Long.BYTES + valueBytes.length);
+        ByteBuffer byteBuffer = ByteBuffer.allocate(Long.BYTES + valueBytes.length);
         byteBuffer.putLong(checksum.getValue());
         byteBuffer.put(valueBytes);
         byteBuffer.flip();

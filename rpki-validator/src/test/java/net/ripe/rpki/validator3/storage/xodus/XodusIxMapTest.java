@@ -36,12 +36,14 @@ import net.ripe.rpki.validator3.storage.IxMapTest;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.util.HashSet;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -57,7 +59,7 @@ public class XodusIxMapTest extends IxMapTest {
 
     private Xodus xodus;
 
-    @Test
+    @Before
     public void setUp() throws Exception {
         xodus = XodusTests.makeXodus(tmp.newFolder().getAbsolutePath());
         ixMap = xodus.createIxMap("test",
@@ -114,5 +116,12 @@ public class XodusIxMapTest extends IxMapTest {
     @Override
     protected <T> T wtx(Function<Tx.Write, T> f) {
         return xodus.writeTx(f::apply);
+    }
+
+    @Override
+    @Test
+    public void testKeySize() {
+        final String s = randomString(new Random(), 2000);
+        wtx0(tx -> ixMap.put(tx, Key.of(s), s));
     }
 }

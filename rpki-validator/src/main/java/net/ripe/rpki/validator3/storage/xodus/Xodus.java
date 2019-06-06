@@ -193,10 +193,11 @@ public abstract class Xodus {
             StoreConfig storeConfigs) {
         final Store meta = meta();
         Xodus.IxMapInfo existingIxMapInfo = readTx(tx -> {
-            ByteBuffer bb = ByteBuffer.wrap(meta.get(tx.txn(), dbMetaKey(name).toByteIterable()).getBytesUnsafe());
-            if (bb == null) {
+            ByteIterable byteIterable = meta.get(tx.txn(), dbMetaKey(name).toByteIterable());
+            if (byteIterable == null) {
                 return null;
             }
+            ByteBuffer bb = ByteBuffer.wrap(byteIterable.getBytesUnsafe());
             String json = new String(Bytes.toBytes(bb), UTF_8);
             return gson.fromJson(json, Xodus.IxMapInfo.class);
         });
@@ -266,11 +267,6 @@ public abstract class Xodus {
             this.writing = xodusTx instanceof XodusTx.Write;
             this.startedAt = Instant.now();
         }
-    }
-
-
-    public static ByteBuffer iterableToByteBuffer(byte[] bi) {
-        return ByteBuffer.wrap(bi);
     }
 
     public static ByteIterable byteBufferToIterable(ByteBuffer bb){

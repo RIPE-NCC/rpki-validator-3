@@ -301,7 +301,8 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
                             m.put(pk, getValue(pk, obj.getBytesUnsafe()));
                         }
                     }
-                } while (cursor.getNext() && !cursor.getKey().equals(stop));
+                }
+                while (cursor.getNext() && cursor.getKey().compareTo(stop) <= 0);
             }
         }
 

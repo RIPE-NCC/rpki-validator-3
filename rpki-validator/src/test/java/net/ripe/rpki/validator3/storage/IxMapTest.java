@@ -409,7 +409,7 @@ public abstract class IxMapTest {
         return randomString(r, r.nextInt(50));
     }
 
-    private String randomString(Random r, int len) {
+    public String randomString(Random r, int len) {
         StringBuilder s = new StringBuilder(len);
         for (int i = 0; i < len; i++) {
             s.append(r.nextInt(10));
