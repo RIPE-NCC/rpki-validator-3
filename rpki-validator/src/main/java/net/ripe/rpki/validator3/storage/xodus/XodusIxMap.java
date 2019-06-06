@@ -59,7 +59,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static net.ripe.rpki.validator3.storage.xodus.Xodus.byteBufferToIterable;
-import static net.ripe.rpki.validator3.storage.xodus.Xodus.clearStore;
+
 /**
  *
  *
@@ -94,7 +94,8 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
         final Tx.Write tx = writeTx();
         try {
             Transaction txn = (Transaction)tx.txn();
-            indexes.forEach((name, idx) -> clearStore(txn, idx));
+
+            indexes.forEach((name, idx) -> env.truncateStore(idx.getName(), txn));
             forEach(tx, (k, bb) -> {
                 final T value = getValue(k, bb);
                 indexFunctions.forEach((n, idxFun) ->
@@ -115,7 +116,8 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
     }
 
     private void dropIndexes(Tx.Write tx) {
-        indexes.forEach((name, db) -> clearStore((Transaction)tx.txn(), db));
+        indexes.forEach((name, db) -> env.removeStore(db.getName(), (Transaction)tx.txn()));
+        env.clear();
     }
 
     protected StoreConfig getStoreConfig() {
@@ -272,7 +274,7 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
 
     @Override
     public void clear(Tx.Write tx) {
-        clearStore((Transaction)tx.txn(), getMainDb());
+        tx.close();
         dropIndexes(tx);
     }
 
@@ -302,7 +304,7 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
                         }
                     }
                 }
-                while (cursor.getNext() && cursor.getKey().compareTo(stop) <= 0);
+                while (cursor.getNext() && cursor.getKey().compareTo(stop) == 0);
             }
         }
 
