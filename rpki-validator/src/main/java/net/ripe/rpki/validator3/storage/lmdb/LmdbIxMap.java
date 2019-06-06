@@ -36,10 +36,12 @@ import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jetbrains.annotations.NotNull;
 import org.lmdbjava.CursorIterator;
 import org.lmdbjava.Dbi;
 import org.lmdbjava.DbiFlags;
 import org.lmdbjava.KeyRange;
+import org.lmdbjava.KeyRangeType;
 import org.lmdbjava.Txn;
 
 import java.io.Serializable;
@@ -167,27 +169,32 @@ public class LmdbIxMap<T extends Serializable> extends LmdbIxBase<T> implements 
     }
 
     @Override
-    public Map<Key, T> getByIndexLess(String indexName, Tx.Read tx, Key indexKey) {
+    public Map<Key, T> getByIndexLessThan(String indexName, Tx.Read tx, Key indexKey) {
         final ByteBuffer idxKey = indexKey.toByteBuffer();
         return getByIndexKeyRange(indexName, tx, KeyRange.lessThan(idxKey));
     }
 
     @Override
-    public Map<Key, T> getByIndexGreater(String indexName, Tx.Read tx, Key indexKey) {
+    public Map<Key, T> getByIndexNotLessThan(String indexName, Tx.Read tx, Key indexKey) {
         final ByteBuffer idxKey = indexKey.toByteBuffer();
-        return getByIndexKeyRange(indexName, tx, KeyRange.greaterThan(idxKey));
+        return getByIndexKeyRange(indexName, tx, notLessThan(idxKey));
+    }
+
+    @NotNull
+    private KeyRange<ByteBuffer> notLessThan(ByteBuffer idxKey) {
+        return new KeyRange<>(KeyRangeType.FORWARD_AT_LEAST, idxKey, null);
     }
 
     @Override
-    public Set<Key> getByIndexLessPk(String indexName, Tx.Read tx, Key indexKey) {
+    public Set<Key> getPkByIndexLessThan(String indexName, Tx.Read tx, Key indexKey) {
         final ByteBuffer idxKey = indexKey.toByteBuffer();
         return getPkByIndexKeyRange(indexName, tx, KeyRange.lessThan(idxKey));
     }
 
     @Override
-    public Set<Key> getByIndexGreaterPk(String indexName, Tx.Read tx, Key indexKey) {
+    public Set<Key> getPkByIndexGreaterThan(String indexName, Tx.Read tx, Key indexKey) {
         final ByteBuffer idxKey = indexKey.toByteBuffer();
-        return getPkByIndexKeyRange(indexName, tx, KeyRange.greaterThan(idxKey));
+        return getPkByIndexKeyRange(indexName, tx, notLessThan(idxKey));
     }
 
     @Override
@@ -420,19 +427,18 @@ public class LmdbIxMap<T extends Serializable> extends LmdbIxBase<T> implements 
         final Map<Key, Set<Key>> indexValues = new HashMap<>();
         forEach(tx, (k, bb) -> {
             final T value = getValue(k, bb);
-            indexFunctions.forEach((n, idxFun) -> {
-                idxFun.apply(value).forEach(ik -> {
-                            Set<Key> pks = indexValues.get(ik);
-                            if (pks == null) {
-                                pks = getPkByIndex(n, tx, ik);
-                                indexValues.put(ik, pks);
+            indexFunctions.forEach((n, idxFun) ->
+                    idxFun.apply(value).forEach(ik -> {
+                                Set<Key> pks = indexValues.get(ik);
+                                if (pks == null) {
+                                    pks = getPkByIndex(n, tx, ik);
+                                    indexValues.put(ik, pks);
+                                }
+                                if (!pks.contains(k)) {
+                                    throw new RuntimeException("PkBuf blabla");
+                                }
                             }
-                            if (!pks.contains(k)) {
-                                throw new RuntimeException("PkBuf blabla");
-                            }
-                        }
-                );
-            });
+                    ));
         });
     }
 

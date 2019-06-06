@@ -35,10 +35,10 @@ import jetbrains.exodus.env.Store;
 import jetbrains.exodus.env.StoreConfig;
 import jetbrains.exodus.env.Transaction;
 import lombok.Getter;
+import net.ripe.rpki.validator3.storage.IxMap;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
-import net.ripe.rpki.validator3.storage.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.OnDeleteRestrictException;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -46,6 +46,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -93,7 +94,7 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
     private void reindex() {
         final Tx.Write tx = writeTx();
         try {
-            Transaction txn = (Transaction)tx.txn();
+            Transaction txn = castTxn(tx);
 
             indexes.forEach((name, idx) -> env.truncateStore(idx.getName(), txn));
             forEach(tx, (k, bb) -> {
@@ -116,7 +117,7 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
     }
 
     private void dropIndexes(Tx.Write tx) {
-        indexes.forEach((name, db) -> env.removeStore(db.getName(), (Transaction)tx.txn()));
+        indexes.forEach((name, db) -> env.removeStore(db.getName(), castTxn(tx)));
         env.clear();
     }
 
@@ -130,7 +131,7 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
 
     public Optional<T> get(Tx.Read txn, Key primaryKey) {
         verifyKey(primaryKey);
-        final ByteIterable bi = getMainDb().get((Transaction)txn.txn(), primaryKey.toByteIterable());
+        final ByteIterable bi = getMainDb().get((Transaction) txn.txn(), primaryKey.toByteIterable());
         if (bi == null) {
             return Optional.empty();
         }
@@ -146,36 +147,39 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
     }
 
     public Map<Key, T> getByIndex(String indexName, Tx.Read tx, Key indexKey) {
-        checkNotNull(indexKey, "Index key is null");
-        final ByteIterable idxKey = indexKey.toByteIterable();
-        return getByIndexKeyRange(indexName, tx, idxKey, idxKey);
+        return values(tx, getPkByIndex(indexName, tx, indexKey));
     }
 
+    public Map<Key, T> values(Tx.Read tx, Set<Key> pks) {
+        final Map<Key, T> m = new HashMap<>();
+        pks.forEach(pk -> get(tx, pk).ifPresent(v -> m.put(pk, v)));
+        return m;
+    }
 
     public Set<Key> getPkByIndex(String indexName, Tx.Read tx, Key indexKey) {
         checkNotNull(indexKey, "Index key is null");
-        // TO BE DEFINED
-        return Collections.emptySet();
+        final ByteIterable idxKey = indexKey.toByteIterable();
+        return getPkByIndexKeyRange(indexName, tx, idxKey, idxKey);
     }
 
-    public Map<Key, T> getByIndexLess(String indexName, Tx.Read tx, Key indexKey) {
-        // TO BE DEFINED
-        return Collections.emptyMap();
+    public Map<Key, T> getByIndexLessThan(String indexName, Tx.Read tx, Key indexKey) {
+        return values(tx, getPkByIndexLessThan(indexName, tx, indexKey));
     }
 
-    public Map<Key, T> getByIndexGreater(String indexName, Tx.Read tx, Key indexKey) {
-        // TO BE DEFINED
-        return Collections.emptyMap();
+    public Map<Key, T> getByIndexNotLessThan(String indexName, Tx.Read tx, Key indexKey) {
+        return values(tx, getPkByIndexGreaterThan(indexName, tx, indexKey));
     }
 
-    public Set<Key> getByIndexLessPk(String indexName, Tx.Read tx, Key indexKey) {
-        // TO BE DEFINED
-        return Collections.emptySet();
+    public Set<Key> getPkByIndexLessThan(String indexName, Tx.Read tx, Key indexKey) {
+        checkNotNull(indexKey, "Index key is null");
+        final ByteIterable idxKey = indexKey.toByteIterable();
+        return getPkByIndexKeyRange(indexName, tx, null, idxKey);
     }
 
-    public Set<Key> getByIndexGreaterPk(String indexName, Tx.Read tx, Key indexKey) {
-        // TO BE DEFINED
-        return Collections.emptySet();
+    public Set<Key> getPkByIndexGreaterThan(String indexName, Tx.Read tx, Key indexKey) {
+        checkNotNull(indexKey, "Index key is null");
+        final ByteIterable idxKey = indexKey.toByteIterable();
+        return getPkByIndexKeyRange(indexName, tx, idxKey, null);
     }
 
     public Map<Key, T> getByIndexMax(String indexName, Tx.Read tx, Predicate<T> p) {
@@ -200,10 +204,14 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
 
     public Optional<T> put(Tx.Write tx, Key primaryKey, T value) {
         checkKeyAndValue(primaryKey, value);
-        final Transaction txn = (Transaction)tx.txn();
+        final Transaction txn = castTxn(tx);
         final Optional<T> oldValue = get(tx, primaryKey);
         final ByteIterable pkBuf = primaryKey.toByteIterable();
+        // TODO Remove this one, just create ByteIterable in valueBuf
         final ByteIterable val = byteBufferToIterable(valueBuf(value));
+
+//        dumpIndexes(txn);
+
         getMainDb().put(txn, pkBuf, val);
         if (oldValue.isPresent()) {
             indexFunctions.forEach((idxName, idxFun) -> {
@@ -214,12 +222,21 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
                 final Store index = getIdx(idxName);
                 oldIndexKeys.stream()
                         .filter(oik -> !indexKeys.contains(oik))
-                        .forEach(oik -> index.delete(txn, oik.toByteIterable()));
+                        .forEach(oik -> {
+                            try (Cursor c = index.openCursor(txn)) {
+                                if (c.getSearchBoth(oik.toByteIterable(), pkBuf)) {
+                                    c.deleteCurrent();
+                                }
+                            }
+                        });
 
                 indexKeys.stream()
                         .filter(ik -> !oldIndexKeys.contains(ik))
                         .forEach(ik -> index.put(txn, ik.toByteIterable(), pkBuf));
             });
+
+//            dumpIndexes(txn);
+
             return oldValue;
         } else {
             indexFunctions.forEach((idxName, idxFun) -> {
@@ -230,6 +247,7 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
                 indexKeys.forEach(ik -> getIdx(idxName).put(txn, ik.toByteIterable(), pkBuf));
             });
         }
+
         return Optional.empty();
     }
 
@@ -244,9 +262,12 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
 
     public void delete(Tx.Write tx, Key primaryKey) {
         checkNotNull(primaryKey, "Key is null");
-        final Transaction txn = (Transaction)tx.txn();
+        final Transaction txn = castTxn(tx);
         final Store mainDb = getMainDb();
         final ByteIterable pkBuf = primaryKey.toByteIterable();
+
+//        dumpIndexes(txn);
+
         if (indexFunctions.isEmpty()) {
             mainDb.delete(txn, pkBuf);
         } else {
@@ -257,8 +278,13 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
                 final T value = getValue(primaryKey, bb.getBytesUnsafe());
                 mainDb.delete(txn, pkBuf);
                 indexFunctions.forEach((idxName, idxFun) ->
-                        idxFun.apply(value).forEach(ix ->
-                                getIdx(idxName).delete(txn, ix.toByteIterable())));
+                        idxFun.apply(value).forEach(ix -> {
+                            try (Cursor c = getIdx(idxName).openCursor(txn)) {
+                                if (c.getSearchBoth(ix.toByteIterable(), pkBuf)) {
+                                    c.deleteCurrent();
+                                }
+                            }
+                        }));
             }
         }
         try {
@@ -266,6 +292,26 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
         } catch (OnDeleteRestrictException o) {
             tx.abort();
         }
+
+//        dumpIndexes(txn);
+    }
+
+    private void dumpIndexes(Transaction txn) {
+        indexFunctions.forEach((idxName, idxFun) -> {
+            System.out.println(idxName + " = {");
+            try (Cursor c = getIdx(idxName).openCursor(txn)) {
+                while (c.getNext()) {
+                    final Key k = Key.of(c.getKey().getBytesUnsafe());
+                    final Key v = Key.of(c.getValue().getBytesUnsafe());
+                    System.out.println("(k = " + k + ", v = " + v + ")");
+                }
+            }
+            System.out.println("}");
+        });
+    }
+
+    private Transaction castTxn(Tx.Read tx) {
+        return (Transaction) tx.txn();
     }
 
     public void onDelete(BiConsumer<Tx.Write, Key> bf) {
@@ -283,32 +329,62 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
         return null;
     }
 
-    private Map<Key, T> getByIndexKeyRange(String indexName, Tx.Read tx, ByteIterable start, ByteIterable stop) {
+    private Set<Key> getPkByIndexKeyRange(String indexName, Tx.Read tx, ByteIterable start, ByteIterable stop) {
         final Store index = getIdx(indexName);
         if (index == null) {
-            return Collections.emptyMap();
+            return Collections.emptySet();
         }
-        final Transaction txn = (Transaction)tx.txn();
-        final Map<Key, T> m = new HashMap<>();
-        final Store mainDb = getMainDb();
-
+        final Transaction txn = castTxn(tx);
+        final Set<Key> pks = new HashSet<>();
         try (Cursor cursor = index.openCursor(txn)) {
-            ByteIterable startKey = cursor.getSearchKeyRange(start);
-            if (startKey != null) {
-                do {
-                    Key pk = new Key(cursor.getValue());
-                    if (!m.containsKey(pk)) {
-                        final ByteIterable obj = mainDb.get(txn, pk.toByteIterable());
-                        if (obj != null) {
-                            m.put(pk, getValue(pk, obj.getBytesUnsafe()));
+            if (start == null) {
+                if (stop == null) {
+                    while (cursor.getNext()) {
+                        pks.add(new Key(cursor.getValue()));
+                    }
+                } else {
+                    while (cursor.getNext()) {
+                        if (cursor.getKey().compareTo(stop) >= 0) {
+                            break;
+                        }
+                        pks.add(new Key(cursor.getValue()));
+                    }
+                }
+            } else {
+                if (stop == null) {
+                    ByteIterable startKey = cursor.getSearchKeyRange(start);
+                    if (startKey != null) {
+                        pks.add(new Key(cursor.getValue()));
+                        while (cursor.getNext()) {
+                            pks.add(new Key(cursor.getValue()));
+                        }
+                    }
+                } else {
+                    if (start.equals(stop)) {
+                        // special case of exact match
+                        ByteIterable startKey = cursor.getSearchKey(start);
+                        if (startKey != null) {
+                            pks.add(new Key(cursor.getValue()));
+                            while (cursor.getNextDup()) {
+                                pks.add(new Key(cursor.getValue()));
+                            }
+                        }
+                    } else {
+                        ByteIterable startKey = cursor.getSearchKeyRange(start);
+                        if (startKey != null) {
+                            pks.add(new Key(cursor.getValue()));
+                            while (cursor.getNext()) {
+                                if (cursor.getKey().compareTo(stop) >= 0) {
+                                    break;
+                                }
+                                pks.add(new Key(cursor.getValue()));
+                            }
                         }
                     }
                 }
-                while (cursor.getNext() && cursor.getKey().compareTo(stop) == 0);
             }
         }
-
-        return m;
+        return pks;
     }
 
     @Override

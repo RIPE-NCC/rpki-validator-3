@@ -51,13 +51,13 @@ public interface IxMap<T extends Serializable> extends IxBase<T> {
 
     Set<Key> getPkByIndex(String indexName, Tx.Read tx, Key indexKey);
 
-    Map<Key, T> getByIndexLess(String indexName, Tx.Read tx, Key indexKey);
+    Map<Key, T> getByIndexLessThan(String indexName, Tx.Read tx, Key indexKey);
 
-    Map<Key, T> getByIndexGreater(String indexName, Tx.Read tx, Key indexKey);
+    Map<Key, T> getByIndexNotLessThan(String indexName, Tx.Read tx, Key indexKey);
 
-    Set<Key> getByIndexLessPk(String indexName, Tx.Read tx, Key indexKey);
+    Set<Key> getPkByIndexLessThan(String indexName, Tx.Read tx, Key indexKey);
 
-    Set<Key> getByIndexGreaterPk(String indexName, Tx.Read tx, Key indexKey);
+    Set<Key> getPkByIndexGreaterThan(String indexName, Tx.Read tx, Key indexKey);
 
     Map<Key, T> getByIndexMax(String indexName, Tx.Read tx, Predicate<T> p);
 

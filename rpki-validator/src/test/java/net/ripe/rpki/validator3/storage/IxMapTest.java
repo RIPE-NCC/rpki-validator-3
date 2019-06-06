@@ -172,7 +172,9 @@ public abstract class IxMapTest {
         Key kbb = putAndGet("bb");
         Key kxxx = putAndGet("xxx");
 
+        System.out.println("--------------------");
         wtx0(tx -> ixMap.put(tx, kaa, "qqq"));
+        System.out.println("--------------------");
         rtx0(tx -> {
             assertEquals("qqq", ixMap.get(tx, kaa).get());
             assertEquals(Sets.newHashSet("bb"), new HashSet<>(getByLength(tx, 2)));
@@ -227,7 +229,7 @@ public abstract class IxMapTest {
 
         rtx0(tx -> {
             for (int len = 1; len < 50; len++) {
-                Map<Key, String> byIndexLess = ixMap.getByIndexLess(LENGTH_INDEX, tx, intKey(len));
+                Map<Key, String> byIndexLess = ixMap.getByIndexLessThan(LENGTH_INDEX, tx, intKey(len));
                 int finalLen = len;
                 assertEquals(strings.stream()
                                 .filter(s -> s.length() < finalLen)
@@ -250,10 +252,10 @@ public abstract class IxMapTest {
 
         rtx0(tx -> {
             for (int len = 1; len < 50; len++) {
-                Map<Key, String> byIndexLess = ixMap.getByIndexGreater(LENGTH_INDEX, tx, intKey(len));
+                Map<Key, String> byIndexLess = ixMap.getByIndexNotLessThan(LENGTH_INDEX, tx, intKey(len));
                 int finalLen = len;
                 assertEquals(strings.stream()
-                                .filter(s -> s.length() > finalLen)
+                                .filter(s -> s.length() >= finalLen)
                                 .collect(Collectors.toSet()),
                         new HashSet<>(byIndexLess.values()));
             }

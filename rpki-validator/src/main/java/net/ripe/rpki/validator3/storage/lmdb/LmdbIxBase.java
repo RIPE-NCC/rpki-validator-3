@@ -197,12 +197,8 @@ public abstract class LmdbIxBase<T extends Serializable> implements IxBase<T> {
     }
 
     @SuppressWarnings("unchecked")
-    protected Txn<ByteBuffer> castTxn(Tx.Read tx) {
-        final Object nativeTx = tx.txn();
-        if (nativeTx instanceof Txn<?>) {
-            return (Txn<ByteBuffer>) nativeTx;
-        }
-        throw new IllegalArgumentException();
+    Txn<ByteBuffer> castTxn(Tx.Read tx) {
+        return (Txn<ByteBuffer>) tx.txn();
     }
 
     long getAllocatedSize(Tx.Read tx, Dbi<ByteBuffer> dbi) {
