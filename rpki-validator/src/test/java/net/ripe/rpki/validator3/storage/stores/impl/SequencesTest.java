@@ -29,8 +29,8 @@
  */
 package net.ripe.rpki.validator3.storage.stores.impl;
 
-import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbTests;
+import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,22 +43,22 @@ public class SequencesTest {
     @Rule
     public final TemporaryFolder tmp = new TemporaryFolder();
 
-    private Lmdb lmdb;
+    private Storage storage;
     private Sequences sequences;
 
     @Before
     public void setUp() throws Exception {
-        lmdb = LmdbTests.makeLmdb(tmp.newFolder().getAbsolutePath());
-        this.sequences = new Sequences(lmdb);
+        storage = LmdbTests.makeLmdb(tmp.newFolder().getAbsolutePath());
+        this.sequences = new Sequences(storage);
     }
 
     @Test
     public void testNext() {
-        assertEquals(new Long(1L), lmdb.writeTx(tx ->sequences.next(tx, "seq1")));
-        assertEquals(new Long(2L), lmdb.writeTx(tx ->sequences.next(tx, "seq1")));
-        assertEquals(new Long(1L), lmdb.writeTx(tx ->sequences.next(tx, "seq2")));
-        assertEquals(new Long(2L), lmdb.writeTx(tx ->sequences.next(tx, "seq2")));
-        assertEquals(new Long(3L), lmdb.writeTx(tx ->sequences.next(tx, "seq2")));
+        assertEquals(new Long(1L), storage.writeTx(tx ->sequences.next(tx, "seq1")));
+        assertEquals(new Long(2L), storage.writeTx(tx ->sequences.next(tx, "seq1")));
+        assertEquals(new Long(1L), storage.writeTx(tx ->sequences.next(tx, "seq2")));
+        assertEquals(new Long(2L), storage.writeTx(tx ->sequences.next(tx, "seq2")));
+        assertEquals(new Long(3L), storage.writeTx(tx ->sequences.next(tx, "seq2")));
     }
 
 }

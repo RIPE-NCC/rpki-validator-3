@@ -74,7 +74,7 @@ public class LmdbDataCorruptionTest extends GenericStorageTest {
                 objectCount = objects.size();
                 // mark half of the as they are in the future
                 int finalObjectCount = objectCount;
-                getLmdb().writeTx0(tx -> {
+                getStorage().writeTx0(tx -> {
                     Set<Key> keysToUpdate = randomSubSet(objects.keySet(), finalObjectCount - deltaCount, r);
                     keysToUpdate.forEach(k -> {
                         this.getRpkiObjects().get(tx, k).ifPresent(ro -> {
@@ -91,12 +91,12 @@ public class LmdbDataCorruptionTest extends GenericStorageTest {
                 });
 
                 // it should delete the rest
-                long deletedCount = getLmdb().writeTx(tx ->
+                long deletedCount = getStorage().writeTx(tx ->
                         this.getRpkiObjects().deleteUnreachableObjects(tx, Instant.now().minus(Duration.ofHours(12))));
 
-                List<RpkiObject> extracted = getLmdb().readTx(tx -> this.getRpkiObjects().values(tx));
+                List<RpkiObject> extracted = getStorage().readTx(tx -> this.getRpkiObjects().values(tx));
 
-                getLmdb().readTx0(tx ->
+                getStorage().readTx0(tx ->
                         extracted.forEach(ro -> {
                             RpkiObject rpkiObject = objects.get(ro.key());
                             if (rpkiObject != null) {
@@ -104,7 +104,7 @@ public class LmdbDataCorruptionTest extends GenericStorageTest {
                             }
                         }));
 
-                getLmdb().readTx0(tx ->
+                getStorage().readTx0(tx ->
                         objects.forEach((sha256, rpkiObject) ->
                                 this.getRpkiObjects().findBySha256(tx, sha256.getBytes()).ifPresent(ro ->
                                         assertEquals(rpkiObject, ro))));
@@ -120,7 +120,7 @@ public class LmdbDataCorruptionTest extends GenericStorageTest {
     }
 
     public void writeRandomObjects(Map<Key, RpkiObject> keys, int objectCount) {
-        getLmdb().writeTx0(tx -> {
+        getStorage().writeTx0(tx -> {
             for (int i = 0; i < objectCount; i++) {
                 RpkiObject rpkiObject = randomRpkiObject();
                 keys.put(rpkiObject.key(), rpkiObject);

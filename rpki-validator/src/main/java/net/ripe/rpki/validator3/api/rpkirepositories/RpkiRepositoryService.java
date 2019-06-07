@@ -31,7 +31,7 @@ package net.ripe.rpki.validator3.api.rpkirepositories;
 
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
-import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -48,19 +48,19 @@ public class RpkiRepositoryService {
 
     private final ValidationScheduler validationScheduler;
 
-    private final Lmdb lmdb;
+    private final Storage storage;
 
     @Autowired
-    public RpkiRepositoryService(RpkiRepositories rpkiRepositories, ValidationScheduler validationScheduler, Lmdb lmdb) {
+    public RpkiRepositoryService(RpkiRepositories rpkiRepositories, ValidationScheduler validationScheduler, Storage storage) {
         this.rpkiRepositories = rpkiRepositories;
         this.validationScheduler = validationScheduler;
-        this.lmdb = lmdb;
+        this.storage = storage;
     }
 
     @PostConstruct
     public void scheduleRpkiRepositoryValidation() {
         log.info("Schedule RPKI validation for the existing repositories");
-        lmdb.writeTx0(tx ->
+        storage.writeTx0(tx ->
                 rpkiRepositories.findRrdpRepositories(tx).forEach(r -> {
                     tx.afterCommit(() -> validationScheduler.addRpkiRepository(r));
                     log.info("Scheduled {} for validation.", r);

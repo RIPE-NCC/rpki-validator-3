@@ -34,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -48,13 +49,13 @@ import java.util.Map;
 public class LmdbController {
 
     @Autowired
-    private Lmdb lmdb;
+    private Storage storage;
 
     @GetMapping("/tx")
     public ResponseEntity<ApiResponse<Map<Long, Lmdb.TxInfo>>> tx() {
         return ResponseEntity.ok(
                 ApiResponse.<Map<Long, Lmdb.TxInfo>>builder()
-                        .data(lmdb.getTxs())
+                        .data(storage.getTxs())
                         .build()
         );
     }
@@ -63,7 +64,7 @@ public class LmdbController {
     public ResponseEntity<ApiResponse<Lmdb.Stat>> stat() {
         return ResponseEntity.ok(
                 ApiResponse.<Lmdb.Stat>builder()
-                        .data(lmdb.getStat())
+                        .data(storage.getStat())
                         .build()
         );
     }

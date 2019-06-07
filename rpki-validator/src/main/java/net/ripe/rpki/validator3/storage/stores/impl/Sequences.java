@@ -35,7 +35,7 @@ import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.IxMap;
-import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -49,8 +49,8 @@ public class Sequences extends GenericStoreImpl<Long> {
     private final IxMap<Long> ixMap;
 
     @Autowired
-    public Sequences(Lmdb lmdb) {
-        this.ixMap = lmdb.createIxMap(
+    public Sequences(Storage storage) {
+        this.ixMap = storage.createIxMap(
                 SEQUENCES,
                 ImmutableMap.of(),
                 new Coder<Long>() {

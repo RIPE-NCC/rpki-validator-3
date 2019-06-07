@@ -36,8 +36,8 @@ import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbIxMap;
-import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
+import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
@@ -62,10 +62,10 @@ public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements T
     private final ValidationRuns validationRuns;
 
     @Autowired
-    public LmdbTrustAnchors(Lmdb lmdb,
+    public LmdbTrustAnchors(Storage storage,
                             Sequences sequences,
                             @Lazy ValidationRuns validationRuns) {
-        this.ixMap = lmdb.createIxMap(
+        this.ixMap = storage.createIxMap(
                 TrustAnchors.TRUST_ANCHORS,
                 ImmutableMap.of(),
                 TrustAnchor.class);

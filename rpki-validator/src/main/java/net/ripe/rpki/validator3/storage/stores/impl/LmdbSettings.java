@@ -33,8 +33,8 @@ import com.google.common.collect.ImmutableMap;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.StringCoder;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbIxMap;
-import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
+import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.Settings;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,8 +49,8 @@ public class LmdbSettings extends GenericStoreImpl<String> implements Settings {
     private final LmdbIxMap<String> ixMap;
 
     @Autowired
-    public LmdbSettings(Lmdb lmdb) {
-        this.ixMap = lmdb.createIxMap(SETTINGS, ImmutableMap.of(), new StringCoder());
+    public LmdbSettings(Storage storage) {
+        this.ixMap = storage.createIxMap(SETTINGS, ImmutableMap.of(), new StringCoder());
     }
 
     @Override

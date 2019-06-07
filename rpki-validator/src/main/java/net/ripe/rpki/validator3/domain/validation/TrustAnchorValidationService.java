@@ -48,7 +48,7 @@ import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
-import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
@@ -77,7 +77,7 @@ public class TrustAnchorValidationService {
     private final ValidationScheduler validationScheduler;
     private final File localRsyncStorageDirectory;
     private final RpkiRepositoryValidationService repositoryValidationService;
-    private final Lmdb lmdb;
+    private final Storage storage;
 
     private boolean firstTimeEver = true;
 
@@ -89,7 +89,7 @@ public class TrustAnchorValidationService {
             ValidationScheduler validationScheduler,
             @Value("${rpki.validator.rsync.local.storage.directory}") File localRsyncStorageDirectory,
             RpkiRepositoryValidationService repositoryValidationService,
-            Lmdb lmdb) {
+            Storage storage) {
         this.trustAnchors = trustAnchors;
         this.rpkiRepositories = rpkiRepositories;
         this.rpkiObjects = rpkiObjects;
@@ -97,11 +97,11 @@ public class TrustAnchorValidationService {
         this.validationScheduler = validationScheduler;
         this.localRsyncStorageDirectory = localRsyncStorageDirectory;
         this.repositoryValidationService = repositoryValidationService;
-        this.lmdb = lmdb;
+        this.storage = storage;
     }
 
     public void validate(long trustAnchorId) {
-        Optional<TrustAnchor> maybeTrustAnchor = lmdb.readTx(tx -> trustAnchors.get(tx, Key.of(trustAnchorId)));
+        Optional<TrustAnchor> maybeTrustAnchor = storage.readTx(tx -> trustAnchors.get(tx, Key.of(trustAnchorId)));
         if (!maybeTrustAnchor.isPresent()) {
             log.error("Trust anchor {} doesn't exist.", trustAnchorId);
             return;
@@ -110,7 +110,7 @@ public class TrustAnchorValidationService {
         TrustAnchor trustAnchor = maybeTrustAnchor.get();
         log.info("trust anchor {} located at {} with subject public key info {}", trustAnchor.getName(), trustAnchor.getLocations(), trustAnchor.getSubjectPublicKeyInfo());
 
-        TrustAnchorValidationRun validationRun = lmdb.readTx(tx -> {
+        TrustAnchorValidationRun validationRun = storage.readTx(tx -> {
             final Ref<TrustAnchor> trustAnchorRef = trustAnchors.makeRef(tx, Key.of(trustAnchorId));
             return new TrustAnchorValidationRun(trustAnchorRef, trustAnchor.getLocations().get(0));
         });
@@ -154,16 +154,16 @@ public class TrustAnchorValidationService {
             validationRun.completeWith(validationResult);
             if (firstTimeEver || updatedTrustAnchor) {
                 if (updatedTrustAnchor) {
-                    lmdb.writeTx0(tx -> trustAnchors.update(tx, trustAnchor));
+                    storage.writeTx0(tx -> trustAnchors.update(tx, trustAnchor));
                 }
                 final Set<TrustAnchor> affectedTrustAnchors = Sets.newHashSet(trustAnchor);
                 if (trustAnchor.getRsyncPrefetchUri() != null) {
-                    lmdb.readTx(tx ->
+                    storage.readTx(tx ->
                             rpkiRepositories.findByURI(tx, trustAnchor.getRsyncPrefetchUri()))
                             .ifPresent(r ->
                                     affectedTrustAnchors.addAll(repositoryValidationService.prefetchRepository(r)));
                 }
-                lmdb.readTx0(rpkiObjects::verify);
+                storage.readTx0(rpkiObjects::verify);
                 affectedTrustAnchors.forEach(validationScheduler::triggerCertificateTreeValidation);
             }
         } catch (CommandExecutionException | IOException e) {
@@ -172,7 +172,7 @@ public class TrustAnchorValidationService {
             validationRun.setFailed();
         } finally {
             firstTimeEver = false;
-            lmdb.writeTx0(tx -> validationRuns.add(tx, validationRun));
+            storage.writeTx0(tx -> validationRuns.add(tx, validationRun));
         }
     }
 

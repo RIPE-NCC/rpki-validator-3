@@ -38,7 +38,7 @@ import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
-import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,12 +64,12 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 public class RpkiRepositoriesController {
 
     private final RpkiRepositories rpkiRepositories;
-    private final Lmdb lmdb;
+    private final Storage storage;
 
     @Autowired
-    public RpkiRepositoriesController(RpkiRepositories rpkiRepositories, Lmdb lmdb) {
+    public RpkiRepositoriesController(RpkiRepositories rpkiRepositories, Storage storage) {
         this.rpkiRepositories = rpkiRepositories;
-        this.lmdb = lmdb;
+        this.storage = storage;
     }
 
     @GetMapping
@@ -87,7 +87,7 @@ public class RpkiRepositoriesController {
         final Sorting sorting = Sorting.parse(sortBy, sortDirection);
         final Paging paging = Paging.of(startFrom, pageSize);
 
-        return lmdb.readTx(tx -> {
+        return storage.readTx(tx -> {
             final Key taKey = taId == null ? null : Key.of(taId);
             final List<RpkiRepository> repositories = rpkiRepositories.findAll(tx,
                     status, taKey, hideChildrenOfDownloadedParent, searchTerm, sorting, paging)
@@ -110,7 +110,7 @@ public class RpkiRepositoriesController {
 
     @GetMapping(path = "/{id}")
     public ResponseEntity<ApiResponse<RpkiRepositoryResource>> get(@PathVariable long id) {
-        return lmdb.readTx(tx -> rpkiRepositories.get(tx, Key.of(id)))
+        return storage.readTx(tx -> rpkiRepositories.get(tx, Key.of(id)))
                 .map(r -> ResponseEntity.ok(ApiResponse.data(RpkiRepositoryResource.of(r))))
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -120,7 +120,7 @@ public class RpkiRepositoriesController {
             @PathVariable long taId,
             @RequestParam(name = "hideChildrenOfDownloadedParent", defaultValue = "true") boolean hideChildrenOfDownloadedParent
     ) {
-        final Map<RpkiRepository.Status, Long> counts = lmdb.readTx(tx ->
+        final Map<RpkiRepository.Status, Long> counts = storage.readTx(tx ->
                 rpkiRepositories.countByStatus(tx, Key.of(taId), hideChildrenOfDownloadedParent));
 
         return ApiResponse.<RepositoriesStatus>builder().data(RepositoriesStatus.of(
@@ -132,7 +132,7 @@ public class RpkiRepositoriesController {
 
     @DeleteMapping(path = "/{id}")
     public ResponseEntity<?> delete(@PathVariable long id) {
-        lmdb.writeTx0(tx -> rpkiRepositories.remove(tx, Key.of(id)));
+        storage.writeTx0(tx -> rpkiRepositories.remove(tx, Key.of(id)));
         return ResponseEntity.noContent().build();
     }
 }

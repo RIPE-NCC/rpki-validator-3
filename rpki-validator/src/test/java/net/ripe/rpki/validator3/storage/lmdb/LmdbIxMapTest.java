@@ -55,12 +55,12 @@ public class LmdbIxMapTest extends IxMapTest {
     @Rule
     public final TemporaryFolder tmp = new TemporaryFolder();
 
-    private Lmdb lmdb;
+    private Storage storage;
 
     @Before
     public void setUp() throws Exception {
-        lmdb = LmdbTests.makeLmdb(tmp.newFolder().getAbsolutePath());
-        ixMap = lmdb.createIxMap("test",
+        storage = LmdbTests.makeLmdb(tmp.newFolder().getAbsolutePath());
+        ixMap = storage.createIxMap("test",
                 ImmutableMap.of(
                         LENGTH_INDEX, IxMapTest::stringLen,
                         PAIRS_INDEX, s -> charPairSet(s).stream().map(Key::of).collect(Collectors.toSet())),
@@ -69,50 +69,50 @@ public class LmdbIxMapTest extends IxMapTest {
 
     @Test
     public void testReindex() {
-        ixMap = lmdb.createIxMap("testReindex",
+        ixMap = storage.createIxMap("testReindex",
                 ImmutableMap.of(
                         "len", IxMapTest::stringLen,
                         "lower", s -> Key.keys(Key.of(s.toLowerCase()))),
                 CoderFactory.makeCoder(String.class));
 
-        Set<String> dbNames = lmdb.getEnv().getDbiNames().stream().map(n -> new String(n, UTF_8)).collect(Collectors.toSet());
+        Set<String> dbNames = storage.getEnv().getDbiNames().stream().map(n -> new String(n, UTF_8)).collect(Collectors.toSet());
 
         assertTrue(dbNames.containsAll(Sets.newHashSet("testReindex-idx-lower", "testReindex-idx-len", "testReindex-main")));
 
         wtx0(tx -> ixMap.put(tx, Key.of(1L), "aa"));
         wtx0(tx -> ixMap.put(tx, Key.of(2L), "aBa"));
 
-        assertEquals(ImmutableMap.of(Key.of(1L), "aa"), lmdb.readTx(tx -> ixMap.getByIndex("len", tx, intKey(2))));
-        assertEquals(ImmutableMap.of(Key.of(2L), "aBa"), lmdb.readTx(tx -> ixMap.getByIndex("len", tx, intKey(3))));
-        assertEquals(ImmutableMap.of(Key.of(2L), "aBa"), lmdb.readTx(tx -> ixMap.getByIndex("lower", tx, Key.of("aba"))));
+        assertEquals(ImmutableMap.of(Key.of(1L), "aa"), storage.readTx(tx -> ixMap.getByIndex("len", tx, intKey(2))));
+        assertEquals(ImmutableMap.of(Key.of(2L), "aBa"), storage.readTx(tx -> ixMap.getByIndex("len", tx, intKey(3))));
+        assertEquals(ImmutableMap.of(Key.of(2L), "aBa"), storage.readTx(tx -> ixMap.getByIndex("lower", tx, Key.of("aba"))));
 
-        ixMap = lmdb.createIxMap("testReindex",
+        ixMap = storage.createIxMap("testReindex",
                 ImmutableMap.of(
                         "lenPlus1", s -> Key.keys(intKey(s.length() + 1)),
                         "lower", s -> Key.keys(Key.of(s.toLowerCase()))),
                 CoderFactory.makeCoder(String.class));
 
-        dbNames = lmdb.getEnv().getDbiNames().stream().map(n -> new String(n, UTF_8)).collect(Collectors.toSet());
+        dbNames = storage.getEnv().getDbiNames().stream().map(n -> new String(n, UTF_8)).collect(Collectors.toSet());
 
         assertTrue(dbNames.containsAll(Sets.newHashSet("testReindex-idx-lower", "testReindex-idx-lenPlus1", "testReindex-main")));
         assertFalse(dbNames.contains("testReindex-idx-len"));
 
-        assertEquals(Optional.of("aa"), lmdb.readTx(tx -> ixMap.get(tx, Key.of(1L))));
-        assertEquals(Optional.of("aBa"), lmdb.readTx(tx -> ixMap.get(tx, Key.of(2L))));
+        assertEquals(Optional.of("aa"), storage.readTx(tx -> ixMap.get(tx, Key.of(1L))));
+        assertEquals(Optional.of("aBa"), storage.readTx(tx -> ixMap.get(tx, Key.of(2L))));
 
-        assertEquals(ImmutableMap.of(), lmdb.readTx(tx -> ixMap.getByIndex("len", tx, intKey(2))));
-        assertEquals(ImmutableMap.of(Key.of(1L), "aa"), lmdb.readTx(tx -> ixMap.getByIndex("lenPlus1", tx, intKey(3))));
-        assertEquals(ImmutableMap.of(Key.of(2L), "aBa"), lmdb.readTx(tx -> ixMap.getByIndex("lenPlus1", tx, intKey(4))));
-        assertEquals(ImmutableMap.of(Key.of(2L), "aBa"), lmdb.readTx(tx -> ixMap.getByIndex("lower", tx, Key.of("aba"))));
+        assertEquals(ImmutableMap.of(), storage.readTx(tx -> ixMap.getByIndex("len", tx, intKey(2))));
+        assertEquals(ImmutableMap.of(Key.of(1L), "aa"), storage.readTx(tx -> ixMap.getByIndex("lenPlus1", tx, intKey(3))));
+        assertEquals(ImmutableMap.of(Key.of(2L), "aBa"), storage.readTx(tx -> ixMap.getByIndex("lenPlus1", tx, intKey(4))));
+        assertEquals(ImmutableMap.of(Key.of(2L), "aBa"), storage.readTx(tx -> ixMap.getByIndex("lower", tx, Key.of("aba"))));
     }
 
     @Override
     protected <T> T rtx(Function<Tx.Read, T> f) {
-        return lmdb.readTx(f::apply);
+        return storage.readTx(f::apply);
     }
 
     @Override
     protected <T> T wtx(Function<Tx.Write, T> f) {
-        return lmdb.writeTx(f::apply);
+        return storage.writeTx(f::apply);
     }
 }

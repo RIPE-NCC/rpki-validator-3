@@ -30,7 +30,7 @@
 package net.ripe.rpki.validator3.domain.cleanup;
 
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Time;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,12 +50,12 @@ public class ValidationRunCleanupService {
 
     private final Duration cleanupGraceDuration;
 
-    private final Lmdb lmdb;
+    private final Storage storage;
 
     public ValidationRunCleanupService(@Value("${rpki.validator.validation.run.cleanup.grace.duration}") String cleanupGraceDuration,
-                                       Lmdb lmdb) {
+                                       Storage storage) {
         this.cleanupGraceDuration = Duration.parse(cleanupGraceDuration);
-        this.lmdb = lmdb;
+        this.storage = storage;
     }
 
     public void cleanupValidationRuns() {
@@ -64,8 +64,8 @@ public class ValidationRunCleanupService {
         Instant completedBefore = Instant.now().minus(cleanupGraceDuration);
         Long t = Time.timed(() -> {
             // Delete all validation runs older than `cleanupGraceDuration` that have a later validation run.
-            oldCount.set(lmdb.writeTx(tx -> validationRuns.removeOldValidationRuns(tx, completedBefore)));
-            orphanCount.set(lmdb.writeTx(tx -> validationRuns.removeOrphanValidationRunAssociations(tx)));
+            oldCount.set(storage.writeTx(tx -> validationRuns.removeOldValidationRuns(tx, completedBefore)));
+            orphanCount.set(storage.writeTx(tx -> validationRuns.removeOrphanValidationRunAssociations(tx)));
         });
         log.info("Removed {} old validation runs and {} orphans in {}ms", oldCount.get(), orphanCount.get(), t);
     }

@@ -55,15 +55,15 @@ public class LmdbIxMapPropTest {
 
     private static LmdbIxMap<String> ixMap;
 
-    private static Lmdb lmdb;
+    private static Storage storage;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        lmdb = LmdbTests.makeLmdb(Files.temporaryFolder().getAbsolutePath());
-        ixMap = lmdb.createIxMap("test",
+        storage = LmdbTests.makeLmdb(Files.temporaryFolder().getAbsolutePath());
+        ixMap = storage.createIxMap("test",
                 ImmutableMap.of(LENGTH_INDEX, s -> Key.keys(intKey(s.length()))),
                 CoderFactory.makeCoder(String.class));
-        lmdb.writeTx0(tx -> ixMap.clear(tx));
+        storage.writeTx0(tx -> ixMap.clear(tx));
     }
 
     private static final String LENGTH_INDEX = "length-index";
@@ -75,8 +75,8 @@ public class LmdbIxMapPropTest {
         assumeThat(value, CoreMatchers.not(equalTo(null)));
 
         Key k = LmdbIxMapTest.key(key);
-        Optional<String> oldValue = lmdb.writeTx(tx -> ixMap.put(tx, k, value));
-        lmdb.readTx0(tx -> {
+        Optional<String> oldValue = storage.writeTx(tx -> ixMap.put(tx, k, value));
+        storage.readTx0(tx -> {
             assertEquals(value, ixMap.get(tx, k).get());
             Map<Key, String> byIndex = ixMap.getByIndex(LENGTH_INDEX, tx, intKey(value.length()));
             assertTrue(byIndex.values().stream().anyMatch(s -> s.equals(value)));

@@ -37,8 +37,8 @@ import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
+import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.Settings;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
@@ -76,20 +76,20 @@ public class TrustAnchorService {
     @Value("${rpki.validator.preconfigured.trust.anchors.directory}")
     private File preconfiguredTrustAnchorDirectory;
 
-    private final Lmdb lmdb;
+    private final Storage storage;
 
     @Autowired
     public TrustAnchorService(TrustAnchors trustAnchors,
                               RpkiRepositories rpkiRepositories,
                               ValidatedRpkiObjects validatedRpkiObjects, Settings settings,
                               ValidationScheduler validationScheduler,
-                              Lmdb lmdb) {
+                              Storage storage) {
         this.trustAnchors = trustAnchors;
         this.rpkiRepositories = rpkiRepositories;
         this.validatedRpkiObjects = validatedRpkiObjects;
         this.settings = settings;
         this.validationScheduler = validationScheduler;
-        this.lmdb = lmdb;
+        this.storage = storage;
     }
 
     public long execute(@Valid AddTrustAnchor command) {
@@ -98,7 +98,7 @@ public class TrustAnchorService {
         trustAnchor.setLocations(new ArrayList<>(command.getLocations()));
         trustAnchor.setSubjectPublicKeyInfo(command.getSubjectPublicKeyInfo());
         trustAnchor.setRsyncPrefetchUri(command.getRsyncPrefetchUri());
-        return lmdb.writeTx(tx -> add(tx, trustAnchor));
+        return storage.writeTx(tx -> add(tx, trustAnchor));
     }
 
     long add(LmdbTx.Write tx, TrustAnchor trustAnchor) {
@@ -115,7 +115,7 @@ public class TrustAnchorService {
     }
 
     public void remove(long trustAnchorId) {
-        lmdb.writeTx0(tx ->
+        storage.writeTx0(tx ->
                 trustAnchors.get(tx, Key.of(trustAnchorId))
                         .ifPresent(trustAnchor -> {
                             rpkiRepositories.removeAllForTrustAnchor(tx, trustAnchor);
@@ -136,7 +136,7 @@ public class TrustAnchorService {
 
         for (final File tal : tals) {
             final TrustAnchorLocator locator = TrustAnchorLocator.fromFile(tal);
-            lmdb.writeTx0(tx -> {
+            storage.writeTx0(tx -> {
                 Optional<TrustAnchor> ta = trustAnchors.findBySubjectPublicKeyInfo(tx, locator.getPublicKeyInfo());
                 if (ta.isPresent()) {
                     log.info("Preconfigured trust anchor '{}' already installed, skipping", locator.getCaName());
@@ -159,7 +159,7 @@ public class TrustAnchorService {
             });
         }
 
-        lmdb.readTx0(this::scheduleTasValidation);
+        storage.readTx0(this::scheduleTasValidation);
     }
 
     private void scheduleTasValidation(LmdbTx.Read tx) {

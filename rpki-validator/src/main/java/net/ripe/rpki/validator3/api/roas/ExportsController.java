@@ -34,7 +34,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
-import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.Settings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -62,13 +62,13 @@ public class ExportsController {
     private final ValidatedRpkiObjects validatedRpkiObjects;
 
     private final Settings settings;
-    private final Lmdb lmdb;
+    private final Storage storage;
 
     @Autowired
-    public ExportsController(ValidatedRpkiObjects validatedRpkiObjects, Settings settings, Lmdb lmdb) {
+    public ExportsController(ValidatedRpkiObjects validatedRpkiObjects, Settings settings, Storage storage) {
         this.validatedRpkiObjects = validatedRpkiObjects;
         this.settings = settings;
-        this.lmdb = lmdb;
+        this.storage = storage;
     }
 
     @GetMapping(path = "/api/export.json", produces = {JSON, APPLICATION_JSON_VALUE})
@@ -76,7 +76,7 @@ public class ExportsController {
         response.setContentType(JSON);
 
 
-        if (!lmdb.readTx(settings::isInitialValidationRunCompleted)) {
+        if (!storage.readTx(settings::isInitialValidationRunCompleted)) {
             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
             return null;
         }
@@ -99,7 +99,7 @@ public class ExportsController {
     public void exportCsv(HttpServletResponse response) throws IOException {
         response.setContentType(CSV);
 
-        if (!lmdb.readTx(settings::isInitialValidationRunCompleted)) {
+        if (!storage.readTx(settings::isInitialValidationRunCompleted)) {
             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
             return;
         }

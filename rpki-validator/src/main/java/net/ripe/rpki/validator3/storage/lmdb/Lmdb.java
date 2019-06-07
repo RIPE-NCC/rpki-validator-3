@@ -66,7 +66,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
 
 @Slf4j
-public abstract class Lmdb {
+public abstract class Lmdb implements Storage {
 
     private static final String METADATA_MAP_NAME = "meta";
 
@@ -81,6 +81,7 @@ public abstract class Lmdb {
         return metadata;
     }
 
+    @Override
     public <T> T writeTx(Function<LmdbTx.Write, T> f) {
         LmdbTx.Write tx = LmdbTx.write(getEnv());
         txs.put(tx.getId(), new TxInfo(tx));
@@ -104,6 +105,7 @@ public abstract class Lmdb {
         }
     }
 
+    @Override
     public void writeTx0(Consumer<LmdbTx.Write> c) {
         writeTx(tx -> {
             c.accept(tx);
@@ -111,6 +113,7 @@ public abstract class Lmdb {
         });
     }
 
+    @Override
     public <T> T readTx(Function<LmdbTx.Read, T> f) {
         LmdbTx.Read tx = LmdbTx.read(getEnv());
         txs.put(tx.getId(), new TxInfo(tx));
@@ -122,6 +125,7 @@ public abstract class Lmdb {
         }
     }
 
+    @Override
     public void readTx0(Consumer<LmdbTx.Read> c) {
         readTx(tx -> {
             c.accept(tx);
@@ -129,14 +133,13 @@ public abstract class Lmdb {
         });
     }
 
-    public abstract Env<ByteBuffer> getEnv();
-
     static void checkEnv(Env env) {
         if (env.isClosed()) {
             throw new LmdbClosedException();
         }
     }
 
+    @Override
     public String status() {
         return getEnv().stat().toString();
     }
@@ -146,6 +149,7 @@ public abstract class Lmdb {
 
     private final Map<String, IxBase<? extends Serializable>> ixMaps = new ConcurrentHashMap<>();
 
+    @Override
     public <T extends Serializable> LmdbIxMap<T> createIxMap(String name,
                                                              Map<String, Function<T, Set<Key>>> indexFunctions,
                                                              Class<T> c) {
@@ -153,12 +157,14 @@ public abstract class Lmdb {
     }
 
 
+    @Override
     public <T extends Serializable> MultIxMap<T> createMultIxMap(final String name, Coder<T> c) {
         MultIxMap<T> ixMap = new MultIxMap<>(this, name, c);
         ixMaps.put(name, ixMap);
         return ixMap;
     }
 
+    @Override
     public <T extends Serializable> LmdbIxMap<T> createIxMap(final String name,
                                                              final Map<String, Function<T, Set<Key>>> indexFunctions,
                                                              Coder<T> c) {
@@ -167,6 +173,7 @@ public abstract class Lmdb {
         return ixMap;
     }
 
+    @Override
     public <T extends Serializable> IxMap<T> createSameSizeKeyIxMap(final int keySize,
                                                                     final String name,
                                                                     final Map<String, Function<T, Set<Key>>> indexFunctions,
@@ -290,6 +297,7 @@ public abstract class Lmdb {
         private LmdbIxBase.Sizes sizes;
     }
 
+    @Override
     public Stat getStat() {
         final org.lmdbjava.Stat stat = getEnv().stat();
         final EnvInfo info = getEnv().info();

@@ -49,13 +49,13 @@ public class MultLmdbIxMapTest {
     @Rule
     public final TemporaryFolder tmp = new TemporaryFolder();
 
-    private Lmdb lmdb;
+    private Storage storage;
     private MultIxMap<String> multIxMap;
 
     @Before
     public void setUp() throws Exception {
-        lmdb = LmdbTests.makeLmdb(tmp.newFolder().getAbsolutePath());
-        multIxMap = lmdb.createMultIxMap("test", CoderFactory.makeCoder(String.class));
+        storage = LmdbTests.makeLmdb(tmp.newFolder().getAbsolutePath());
+        multIxMap = storage.createMultIxMap("test", CoderFactory.makeCoder(String.class));
     }
 
     @Test
@@ -63,27 +63,27 @@ public class MultLmdbIxMapTest {
         final Key k1 = key(UUID.randomUUID());
         final Key k2 = key(UUID.randomUUID());
         final Key k3 = key(UUID.randomUUID());
-        lmdb.writeTx0(tx -> multIxMap.put(tx, k1, "a"));
+        storage.writeTx0(tx -> multIxMap.put(tx, k1, "a"));
 
-        lmdb.readTx0(tx -> {
+        storage.readTx0(tx -> {
             assertEquals(Sets.newHashSet("a"), new HashSet<>(multIxMap.get(tx, k1)));
             assertEquals(Sets.newHashSet("a"), new HashSet<>(multIxMap.values(tx)));
         });
 
-        lmdb.writeTx0(tx -> multIxMap.put(tx, k1, "b"));
+        storage.writeTx0(tx -> multIxMap.put(tx, k1, "b"));
 
-        lmdb.readTx0(tx -> {
+        storage.readTx0(tx -> {
             assertEquals(Sets.newHashSet("a", "b"), new HashSet<>(multIxMap.get(tx, k1)));
             assertEquals(Sets.newHashSet("a", "b"), new HashSet<>(multIxMap.values(tx)));
         });
 
-        lmdb.writeTx0(tx -> {
+        storage.writeTx0(tx -> {
             multIxMap.put(tx, k2, "aa");
             multIxMap.put(tx, k2, "bbb");
             multIxMap.put(tx, k2, "xxx");
         });
 
-        lmdb.readTx0(tx -> {
+        storage.readTx0(tx -> {
             assertEquals(Sets.newHashSet("a", "b"), new HashSet<>(multIxMap.get(tx, k1)));
             assertEquals(Sets.newHashSet("aa", "bbb", "xxx"), new HashSet<>(multIxMap.get(tx, k2)));
             assertEquals(Sets.newHashSet("a", "b", "aa", "bbb", "xxx"), new HashSet<>(multIxMap.values(tx)));
@@ -95,31 +95,31 @@ public class MultLmdbIxMapTest {
         final Key k1 = key(UUID.randomUUID());
         final Key k2 = key(UUID.randomUUID());
         final Key k3 = key(UUID.randomUUID());
-        lmdb.writeTx0(tx -> multIxMap.put(tx, k1, "a"));
+        storage.writeTx0(tx -> multIxMap.put(tx, k1, "a"));
 
-        lmdb.readTx0(tx -> {
+        storage.readTx0(tx -> {
             assertEquals(Sets.newHashSet("a"), new HashSet<>(multIxMap.get(tx, k1)));
             assertEquals(Sets.newHashSet("a"), new HashSet<>(multIxMap.values(tx)));
         });
 
-        lmdb.writeTx0(tx -> multIxMap.delete(tx, k1));
-        lmdb.readTx0(tx -> {
+        storage.writeTx0(tx -> multIxMap.delete(tx, k1));
+        storage.readTx0(tx -> {
             assertEquals(Collections.emptySet(), new HashSet<>(multIxMap.get(tx, k1)));
             assertEquals(Collections.emptySet(), new HashSet<>(multIxMap.values(tx)));
         });
 
-        lmdb.writeTx0(tx -> {
+        storage.writeTx0(tx -> {
             multIxMap.put(tx, k1, "a");
             multIxMap.put(tx, k1, "b");
         });
 
-        lmdb.writeTx0(tx -> multIxMap.delete(tx, k1, "b"));
-        lmdb.readTx0(tx -> {
+        storage.writeTx0(tx -> multIxMap.delete(tx, k1, "b"));
+        storage.readTx0(tx -> {
             assertEquals(Sets.newHashSet("a"), new HashSet<>(multIxMap.get(tx, k1)));
             assertEquals(Sets.newHashSet("a"), new HashSet<>(multIxMap.values(tx)));
         });
 
-        lmdb.writeTx0(tx -> {
+        storage.writeTx0(tx -> {
             multIxMap.put(tx, k1, "a");
             multIxMap.put(tx, k1, "b");
             multIxMap.put(tx, k2, "aa");
@@ -130,7 +130,7 @@ public class MultLmdbIxMapTest {
             multIxMap.delete(tx, k1, "b");
         });
 
-        lmdb.readTx0(tx -> {
+        storage.readTx0(tx -> {
             assertEquals(Sets.newHashSet("a"), new HashSet<>(multIxMap.get(tx, k1)));
             assertEquals(Sets.newHashSet("a", "aa", "bb"), new HashSet<>(multIxMap.values(tx)));
         });

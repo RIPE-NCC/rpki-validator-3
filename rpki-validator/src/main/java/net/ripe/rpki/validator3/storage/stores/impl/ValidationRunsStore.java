@@ -49,8 +49,8 @@ import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbIxMap;
-import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.MultIxMap;
+import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
@@ -105,29 +105,29 @@ public class ValidationRunsStore implements ValidationRuns {
                                @Lazy TrustAnchors trustAnchors,
                                RpkiRepositories rpkiRepositories,
                                Sequences sequences,
-                               Lmdb lmdb) {
+                               Storage storage) {
         this.rpkiObjects = rpkiObjects;
         this.rpkiRepositories = rpkiRepositories;
         this.sequences = sequences;
 
-        ctIxMap = lmdb.createIxMap(
+        ctIxMap = storage.createIxMap(
                 CT_RPKI_VALIDATION_RUNS,
                 ImmutableMap.of(BY_TA_INDEX, vr -> Key.keys(vr.getTrustAnchor().key()),
                         BY_COMPLETED_AT_INDEX, this::completedAtIndexKeys),
                 CertificateTreeValidationRun.class);
 
-        taIxMap = lmdb.createIxMap(
+        taIxMap = storage.createIxMap(
                 TA_RPKI_VALIDATION_RUNS,
                 ImmutableMap.of(BY_TA_INDEX, vr -> Key.keys(vr.getTrustAnchor().key()),
                         BY_COMPLETED_AT_INDEX, this::completedAtIndexKeys),
                 TrustAnchorValidationRun.class);
 
-        rsIxMap = lmdb.createIxMap(
+        rsIxMap = storage.createIxMap(
                 RS_RPKI_VALIDATION_RUNS,
                 ImmutableMap.of(BY_COMPLETED_AT_INDEX, this::completedAtIndexKeys),
                 RsyncRepositoryValidationRun.class);
 
-        rrIxMap = lmdb.createIxMap(
+        rrIxMap = storage.createIxMap(
                 RR_RPKI_VALIDATION_RUNS,
                 ImmutableMap.of(BY_COMPLETED_AT_INDEX, this::completedAtIndexKeys),
                 RrdpRepositoryValidationRun.class);
@@ -148,8 +148,8 @@ public class ValidationRunsStore implements ValidationRuns {
                 return Key.of(bb);
             }
         };
-        vr2ro = lmdb.createMultIxMap(VALIDATION_RUNS_TO_RPKI_OBJECTS, keyCoder);
-        vr2repo = lmdb.createIxMap(VALIDATION_RUNS_TO_RPKI_REPOSITORIES, Collections.emptyMap(), keyCoder);
+        vr2ro = storage.createMultIxMap(VALIDATION_RUNS_TO_RPKI_OBJECTS, keyCoder);
+        vr2repo = storage.createIxMap(VALIDATION_RUNS_TO_RPKI_REPOSITORIES, Collections.emptyMap(), keyCoder);
 
         trustAnchors.onDelete(this::removeAllForTrustAnchor);
 

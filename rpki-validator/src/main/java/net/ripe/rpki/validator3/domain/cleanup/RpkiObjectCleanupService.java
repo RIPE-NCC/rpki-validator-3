@@ -36,8 +36,8 @@ import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
+import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.util.Time;
@@ -64,14 +64,14 @@ public class RpkiObjectCleanupService {
 
     private final Duration cleanupGraceDuration;
 
-    private final Lmdb lmdb;
+    private final Storage storage;
 
 
     public RpkiObjectCleanupService(@Value("${rpki.validator.rpki.object.cleanup.grace.duration}") String cleanupGraceDuration,
-                                    Lmdb lmdb) {
+                                    Storage storage) {
         this.cleanupGraceDuration = Duration.parse(cleanupGraceDuration);
         log.info("Configured to remove objects older than {}", cleanupGraceDuration);
-        this.lmdb = lmdb;
+        this.storage = storage;
     }
 
     /**
@@ -80,24 +80,24 @@ public class RpkiObjectCleanupService {
      */
     public long cleanupRpkiObjects() throws Exception {
         Instant now = Instant.now();
-        final List<TrustAnchor> trustAnchors = lmdb.readTx(tx -> this.trustAnchors.findAll(tx));
+        final List<TrustAnchor> trustAnchors = storage.readTx(tx -> this.trustAnchors.findAll(tx));
         final Set<Key> markThem = ConcurrentHashMap.newKeySet();
         log.info("Verify starting cleanup ");
-        lmdb.readTx0(tx -> rpkiObjects.verify(tx));
+        storage.readTx0(tx -> rpkiObjects.verify(tx));
         final Long t0 = Time.timed(() ->
                 trustAnchors.stream()
                         .peek(trustAnchor -> log.debug("tracing objects for trust anchor {}", trustAnchor))
                         .parallel()
                         .forEach(trustAnchor ->
-                                lmdb.readTx0(tx -> {
+                                storage.readTx0(tx -> {
                                     X509ResourceCertificate resourceCertificate = trustAnchor.getCertificate();
                                     if (resourceCertificate != null) {
                                         traceCertificateAuthority(tx, now, resourceCertificate, markThem);
                                     }
                                 })));
         log.info("Found {} reachable RPKI objects in {}ms, verifying", markThem.size(), t0);
-        lmdb.readTx0(tx -> rpkiObjects.verify(tx));
-        return lmdb.writeTx(tx -> {
+        storage.readTx0(tx -> rpkiObjects.verify(tx));
+        return storage.writeTx(tx -> {
             Long t = Time.timed(() -> markThem.forEach(pk -> rpkiObjects.markReachable(tx, pk, now)));
             log.info("Marked reachable {} RPKI objects in {}ms", markThem.size(), t);
             log.info("Verification before delete");

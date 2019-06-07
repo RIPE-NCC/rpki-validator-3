@@ -30,7 +30,7 @@
 package net.ripe.rpki.validator3.storage.lmdb;
 
 public class LmdbTests {
-    public static Lmdb makeLmdb(String path) throws Exception {
+    public static Storage makeLmdb(String path) throws Exception {
         LmdbImpl lmdb = new LmdbImpl(path, 1024);
         lmdb.initLmdb();
         return lmdb;

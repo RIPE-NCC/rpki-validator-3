@@ -48,8 +48,8 @@ import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
-import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
+import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
@@ -90,13 +90,13 @@ public class ValidatedRpkiObjects {
     private ValidationRuns validationRuns;
 
     @Autowired
-    private Lmdb lmdb;
+    private Storage storage;
 
     private ReentrantReadWriteLock dataLock = new ReentrantReadWriteLock();
 
     @PostConstruct
     private void initialize() {
-        Long t = Time.timed(() -> lmdb.readTx0(tx ->
+        Long t = Time.timed(() -> storage.readTx0(tx ->
                 validationRuns.findLatestSuccessful(tx, CertificateTreeValidationRun.class)
                         .forEach(vr -> {
                             final Set<Key> associatedPks = validationRuns.findAssociatedPks(tx, vr);

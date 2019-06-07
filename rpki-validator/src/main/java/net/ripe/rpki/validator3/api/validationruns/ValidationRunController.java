@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
-import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,11 +68,11 @@ public class ValidationRunController {
     private MessageSource messageSource;
 
     @Autowired
-    private Lmdb lmdb;
+    private Storage storage;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<ValidationRunResource>>> list(Locale locale) {
-        return lmdb.readTx(tx ->
+        return storage.readTx(tx ->
                 ResponseEntity.ok(ApiResponse.data(
                         new Links(linkTo(methodOn(ValidationRunController.class).list(locale)).withSelfRel()),
                         validationRuns.findAll(tx, ValidationRun.class)
@@ -86,7 +86,7 @@ public class ValidationRunController {
 
     @GetMapping(path = "/latest-successful")
     public ResponseEntity<ApiResponse<List<ValidationRunResource>>> listLatestSuccessful(Locale locale) {
-        return lmdb.readTx(tx ->
+        return storage.readTx(tx ->
                 ResponseEntity.ok(ApiResponse.data(
                         new Links(linkTo(methodOn(ValidationRunController.class).listLatestSuccessful(locale)).withSelfRel()),
                         validationRuns.findLatestSuccessful(tx, ValidationRun.class)
@@ -101,7 +101,7 @@ public class ValidationRunController {
 
     @GetMapping(path = "/latest-completed-per-ta")
     public ResponseEntity<ApiResponse<List<ValidationRunResource>>> listLatestCompletedPerTa(Locale locale) {
-        return lmdb.readTx(tx ->
+        return storage.readTx(tx ->
                 ResponseEntity.ok(ApiResponse.data(
                         new Links(linkTo(methodOn(ValidationRunController.class).listLatestCompletedPerTa(locale)).withSelfRel()),
                         trustAnchors.findAll(tx).stream().flatMap(ta ->
@@ -116,7 +116,7 @@ public class ValidationRunController {
 
     @GetMapping(path = "/{id}")
     public ResponseEntity<ApiResponse<ValidationRunResource>> get(@PathVariable long id, Locale locale) {
-        return lmdb.readTx(tx ->
+        return storage.readTx(tx ->
                 validationRuns.get(tx, ValidationRun.class, id)
                         .map(validationRun ->
                                 ResponseEntity.ok(ApiResponse.data(ValidationRunResource.of(validationRun,

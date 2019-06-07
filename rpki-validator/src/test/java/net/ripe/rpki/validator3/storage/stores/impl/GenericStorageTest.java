@@ -31,8 +31,8 @@ package net.ripe.rpki.validator3.storage.stores.impl;
 
 import lombok.Getter;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
-import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
+import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.Settings;
@@ -76,7 +76,7 @@ public class GenericStorageTest {
 
     @Getter
     @Autowired
-    private Lmdb lmdb;
+    private Storage storage;
 
     @Before
     public void setUp() throws Exception {
@@ -91,18 +91,18 @@ public class GenericStorageTest {
     }
 
     protected <T> T rtx(Function<LmdbTx.Read, T> f) {
-        return getLmdb().readTx(f);
+        return getStorage().readTx(f);
     }
 
     protected <T> T wtx(Function<LmdbTx.Write, T> f) {
-        return getLmdb().writeTx(f);
+        return getStorage().writeTx(f);
     }
 
     protected void rtx0(Consumer<LmdbTx.Read> f) {
-        getLmdb().readTx0(f);
+        getStorage().readTx0(f);
     }
 
     protected void wtx0(Consumer<LmdbTx.Write> f) {
-        getLmdb().writeTx0(f);
+        getStorage().writeTx0(f);
     }
 }

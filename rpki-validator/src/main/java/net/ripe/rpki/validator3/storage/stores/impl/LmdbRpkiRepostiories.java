@@ -41,8 +41,8 @@ import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbIxMap;
-import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
+import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
@@ -79,11 +79,11 @@ public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> imple
     private final ValidationScheduler validationScheduler;
 
     @Autowired
-    public LmdbRpkiRepostiories(Lmdb lmdb, Sequences sequences, ValidationScheduler validationScheduler) {
+    public LmdbRpkiRepostiories(Storage storage, Sequences sequences, ValidationScheduler validationScheduler) {
         this.sequences = sequences;
         this.validationScheduler = validationScheduler;
 
-        ixMap = lmdb.createIxMap(
+        ixMap = storage.createIxMap(
                 RPKI_REPOSITORIES,
                 ImmutableMap.of(
                         BY_URI_PREFIX, this::locationIndex,

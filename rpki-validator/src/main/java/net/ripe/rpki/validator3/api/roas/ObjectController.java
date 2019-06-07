@@ -42,7 +42,7 @@ import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
 import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
+import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.Settings;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -87,11 +87,11 @@ public class ObjectController {
     private Settings settings;
 
     @Autowired
-    private Lmdb lmdb;
+    private Storage storage;
 
     @GetMapping(path = "/validated")
     public ResponseEntity<ApiResponse<ValidatedObjects>> list(Locale locale) {
-        final Map<Long, TrustAnchorResource> trustAnchorsById = lmdb.readTx(tx ->
+        final Map<Long, TrustAnchorResource> trustAnchorsById = storage.readTx(tx ->
                 trustAnchors.findAll(tx).stream()
                         .collect(Collectors.toMap(
                                 ta -> ta.key().asLong(),
@@ -142,7 +142,7 @@ public class ObjectController {
 
         return ResponseEntity.ok(ApiResponse.<ValidatedObjects>builder()
                 .data(new ValidatedObjects(
-                        lmdb.readTx(settings::isInitialValidationRunCompleted),
+                        storage.readTx(settings::isInitialValidationRunCompleted),
                         trustAnchorsById.values(),
                         combinedPrefixes,
                         combinedAssertions))

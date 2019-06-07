@@ -40,8 +40,8 @@ import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
-import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
+import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
@@ -81,27 +81,27 @@ public class RrdpServiceImpl implements RrdpService {
 
     private final ValidationRuns validationRuns;
 
-    private final Lmdb lmdb;
+    private final Storage storage;
 
     @Autowired
     public RrdpServiceImpl(final RrdpClient rrdpClient,
                            final RpkiObjects rpkiObjects,
                            final RpkiRepositories rpkiRepositories,
                            final ValidationRuns validationRuns,
-                           final Lmdb lmdb) {
+                           final Storage storage) {
         this.rrdpClient = rrdpClient;
         this.rpkiObjects = rpkiObjects;
         this.rpkiRepositories = rpkiRepositories;
         this.validationRuns = validationRuns;
-        this.lmdb = lmdb;
+        this.storage = storage;
     }
 
     @Override
     public void storeRepository(final RpkiRepository rpkiRepository, final RpkiRepositoryValidationRun validationRun) {
         try {
-            lmdb.readTx0(rpkiObjects::verify);
+            storage.readTx0(rpkiObjects::verify);
             doStoreRepository(rpkiRepository, validationRun);
-            lmdb.readTx0(rpkiObjects::verify);
+            storage.readTx0(rpkiObjects::verify);
         } catch (RrdpException e) {
             log.warn("Error retrieving RRDP repository at {}: " + e.getMessage(), rpkiRepository.getRrdpNotifyUri());
             ValidationCheck validationCheck = new ValidationCheck(rpkiRepository.getRrdpNotifyUri(),
@@ -129,8 +129,8 @@ public class RrdpServiceImpl implements RrdpService {
                     verifyDeltaSerials(deltas, notification, rpkiRepository);
 
                     deltas.forEach(d -> {
-                        lmdb.readTx0(tx -> verifyDeltaIsApplicable(tx, d));
-                        lmdb.writeTx0(tx -> {
+                        storage.readTx0(tx -> verifyDeltaIsApplicable(tx, d));
+                        storage.writeTx0(tx -> {
                             storeDelta(tx, d, validationRun, rpkiRepository);
                             tx.afterCommit(() -> rpkiRepository.setRrdpSerial(rpkiRepository.getRrdpSerial().add(BigInteger.ONE)));
                         });
@@ -172,7 +172,7 @@ public class RrdpServiceImpl implements RrdpService {
 
         log.info("Downloading/hashing/parsing snapshot time {}ms", timedSnapshot.getRight());
         Long timedStoreSnapshot = Time.timed(() ->
-                lmdb.writeTx0(tx -> {
+                storage.writeTx0(tx -> {
                     storeSnapshot(tx, timedSnapshot.getLeft(), validationRun);
                     rpkiRepository.setRrdpSessionId(notification.sessionId);
                     rpkiRepository.setRrdpSerial(notification.serial);

@@ -58,8 +58,8 @@ import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
-import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
+import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
@@ -110,11 +110,11 @@ public class RpkiObjectController {
     private ValidationRuns validationRuns;
 
     @Autowired
-    private Lmdb lmdb;
+    private Storage storage;
 
     @GetMapping(path = "/")
     public ResponseEntity<ApiResponse<Stream<RpkiObj>>> all() {
-        List<RpkiObj> objects = lmdb.readTx(tx -> this.trustAnchors.findAll(tx))
+        List<RpkiObj> objects = storage.readTx(tx -> this.trustAnchors.findAll(tx))
                 .parallelStream()
                 .flatMap(this::getRpkiObjsPerTa)
                 .collect(Collectors.toList());
@@ -122,7 +122,7 @@ public class RpkiObjectController {
     }
 
     private Stream<RpkiObj> getRpkiObjsPerTa(TrustAnchor trustAnchor) {
-        return lmdb.readTx(tx ->
+        return storage.readTx(tx ->
                 validationRuns.findLatestSuccessfulCaTreeValidationRun(tx, trustAnchor)
                         .map(vr -> getAssociatedRpkiObjects(tx, vr, getCheckMap(vr)))
                         .orElse(Stream.empty())
@@ -192,7 +192,7 @@ public class RpkiObjectController {
 
         final IpResourceSet ipResources = new IpResourceSet();
 
-        final Pair<Set<String>, List<X509ResourceCertificate>> txResult = lmdb.readTx(tx -> {
+        final Pair<Set<String>, List<X509ResourceCertificate>> txResult = storage.readTx(tx -> {
             final Set<String> roaAKIs = objectStream(rpkiObjects.streamObjects(tx, RpkiObject.Type.ROA), "roa")
                     .filter(p -> p instanceof RoaCms)
                     .map(p -> Hex.format(((RoaCms) p).getCertificate().getAuthorityKeyIdentifier()))
@@ -266,7 +266,7 @@ public class RpkiObjectController {
         try (final CSVWriter writer = new CSVWriter(response.getWriter())) {
             writer.writeNext(new String[]{"Subject", "Resources"});
 
-            Stream<byte[]> byteStream = lmdb.readTx(tx -> rpkiObjects.streamObjects(tx, RpkiObject.Type.CER));
+            Stream<byte[]> byteStream = storage.readTx(tx -> rpkiObjects.streamObjects(tx, RpkiObject.Type.CER));
             objectStream(byteStream, "cer")
                     .forEachOrdered(c -> {
                         if (c instanceof X509ResourceCertificate) {
@@ -311,7 +311,7 @@ public class RpkiObjectController {
                                                                          final ValidationResult validationResult,
                                                                          final Class<T> clazz,
                                                                          final Function<T, RpkiObj> create) {
-        return lmdb.readTx(tx ->
+        return storage.readTx(tx ->
                 rpkiObjects.findCertificateRepositoryObject(tx, rpkiObject.key(), clazz, validationResult)
                         .map(create)
                         .orElse(null));

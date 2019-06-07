@@ -35,15 +35,13 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.validation.ValidationResult;
-import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbIxMap;
-import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.MultIxMap;
-import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
+import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -91,16 +89,16 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     }
 
     @Autowired
-    public LmdbRpkiObject(Lmdb lmdb) {
-        this.ixMap = lmdb.createIxMap(
+    public LmdbRpkiObject(Storage storage) {
+        this.ixMap = storage.createIxMap(
                 RPKI_OBJECTS,
                 ImmutableMap.of(
                         BY_AKI_MFT_INDEX, this::akiMftKey,
                         BY_TYPE_INDEX, this::typeKey),
                 CoderFactory.makeCoder(RpkiObject.class));
 
-        this.reachableMap = lmdb.createIxMap(REACHABLE_MAP, ImmutableMap.of(), CoderFactory.longCoder());
-        this.locationMap = lmdb.createMultIxMap(LOCATION_MAP, CoderFactory.stringCoder());
+        this.reachableMap = storage.createIxMap(REACHABLE_MAP, ImmutableMap.of(), CoderFactory.longCoder());
+        this.locationMap = storage.createMultIxMap(LOCATION_MAP, CoderFactory.stringCoder());
 
         ixMap.onDelete((tx, k) -> {
             reachableMap.delete(tx, k);

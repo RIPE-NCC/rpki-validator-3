@@ -45,8 +45,8 @@ import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.RrdpRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.RsyncRepositoryValidationRun;
-import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
+import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
@@ -93,7 +93,7 @@ public class RpkiRepositoryValidationService {
     private final RpkiObjects rpkiObjects;
     private final TrustAnchors trustAnchors;
     private final ValidationScheduler validationScheduler;
-    private final Lmdb lmdb;
+    private final Storage storage;
 
     @Autowired
     public RpkiRepositoryValidationService(
@@ -102,7 +102,7 @@ public class RpkiRepositoryValidationService {
             RpkiObjects rpkiObjects,
             RrdpService rrdpService,
             TrustAnchors trustAnchors,
-            Lmdb lmdb,
+            Storage storage,
             @Value("${rpki.validator.rsync.local.storage.directory}") File rsyncLocalStorageDirectory,
             @Value("${rpki.validator.rsync.repository.download.interval}") String rsyncRepositoryDownloadInterval,
             ValidationScheduler validationScheduler) {
@@ -113,13 +113,13 @@ public class RpkiRepositoryValidationService {
         this.trustAnchors = trustAnchors;
         this.rsyncLocalStorageDirectory = rsyncLocalStorageDirectory;
         this.rsyncRepositoryDownloadInterval = Duration.parse(rsyncRepositoryDownloadInterval);
-        this.lmdb = lmdb;
+        this.storage = storage;
         this.validationScheduler = validationScheduler;
     }
 
     public void validateRpkiRepository(long rpkiRepositoryId) {
         final Key key = Key.of(rpkiRepositoryId);
-        final RpkiRepository rpkiRepository = lmdb.readTx(tx -> rpkiRepositories.get(tx, key).orElse(null));
+        final RpkiRepository rpkiRepository = storage.readTx(tx -> rpkiRepositories.get(tx, key).orElse(null));
         if (rpkiRepository == null) {
             log.info("RPKI repository with key {} doesn't exist ", rpkiRepositoryId);
             return;
@@ -127,7 +127,7 @@ public class RpkiRepositoryValidationService {
         log.info("Starting RPKI repository validation for " + rpkiRepository);
         final ValidationResult validationResult = ValidationResult.withLocation(rpkiRepository.getRrdpNotifyUri());
 
-        final RpkiRepositoryValidationRun validationRun = lmdb.writeTx(tx -> {
+        final RpkiRepositoryValidationRun validationRun = storage.writeTx(tx -> {
             Ref<RpkiRepository> rpkiRepositoryRef = rpkiRepositories.makeRef(tx, rpkiRepository.key());
             return validationRuns.add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef));
         });
@@ -159,12 +159,12 @@ public class RpkiRepositoryValidationService {
             validationRun.setFailed();
         }
         finally {
-            lmdb.writeTx0(tx -> {
+            storage.writeTx0(tx -> {
                 rpkiRepositories.update(tx, rpkiRepository);
                 validationRuns.update(tx, validationRun);
             });
             if (triggerCaTreeAfter) {
-                lmdb.readTx0(tx -> {
+                storage.readTx0(tx -> {
                     if (validationRuns.getObjectCount(tx, validationRun) > 0) {
                         rpkiRepository.getTrustAnchors().forEach(taRef ->
                                 trustAnchors.get(tx, taRef.key())
@@ -187,7 +187,7 @@ public class RpkiRepositoryValidationService {
         final Map<URI, RpkiRepository> fetchedLocations = new HashMap<>();
 
         try {
-            ValidationResult results = lmdb.readTx(rpkiRepositories::findRsyncRepositories)
+            ValidationResult results = storage.readTx(rpkiRepositories::findRsyncRepositories)
                     .filter(repository -> {
                         boolean needsUpdate = repository.isPending() || repository.getLastDownloadedAt() == null || repository.getLastDownloadedAt().isBefore(cutoffTime);
                         if (!needsUpdate) {
@@ -195,7 +195,7 @@ public class RpkiRepositoryValidationService {
                         }
                         return needsUpdate;
                     }).map(repository -> {
-                                lmdb.writeTx0(tx -> validationRuns.associate(tx, validationRun, repository));
+                                storage.writeTx0(tx -> validationRuns.associate(tx, validationRun, repository));
                                 return processRsyncRepository(affectedTrustAnchors, validationRun, fetchedLocations, objectsBySha256, repository);
                             }
                     ).collect(
@@ -212,7 +212,7 @@ public class RpkiRepositoryValidationService {
         } catch (Exception e) {
             validationRun.setFailed();
         } finally {
-            lmdb.writeTx0(tx -> validationRuns.update(tx, validationRun));
+            storage.writeTx0(tx -> validationRuns.update(tx, validationRun));
         }
     }
 
@@ -224,7 +224,7 @@ public class RpkiRepositoryValidationService {
             final RsyncRepositoryValidationRun validationRun = makeRsyncValidationRun();
 
             final ValidationResult validationResult = ValidationResult.withLocation(URI.create(repository.getRsyncRepositoryUri()));
-            lmdb.writeTx0(tx -> validationRuns.associate(tx, validationRun, repository));
+            storage.writeTx0(tx -> validationRuns.associate(tx, validationRun, repository));
 
             final Map<String, RpkiObject> objectsBySha256 = new HashMap<>();
             try {
@@ -239,12 +239,12 @@ public class RpkiRepositoryValidationService {
                 repository.setFailed();
                 validationResult.error(ErrorCodes.RSYNC_REPOSITORY_IO, e.toString(), ExceptionUtils.getStackTrace(e));
             } finally {
-                lmdb.writeTx0(tx -> {
+                storage.writeTx0(tx -> {
                     rpkiRepositories.update(tx, repository);
                     validationRuns.add(tx, validationRun);
                 });
             }
-            lmdb.readTx0(tx ->
+            storage.readTx0(tx ->
                     repository.getTrustAnchors().forEach(taRef ->
                             trustAnchors.get(tx, taRef.key()).ifPresent(affectedTrustAnchors::add)));
         }
@@ -289,10 +289,10 @@ public class RpkiRepositoryValidationService {
             repository.setFailed();
             validationResult.error(ErrorCodes.RSYNC_REPOSITORY_IO, e.toString(), ExceptionUtils.getStackTrace(e));
         } finally {
-            lmdb.writeTx0(tx -> rpkiRepositories.update(tx, repository));
+            storage.writeTx0(tx -> rpkiRepositories.update(tx, repository));
         }
 
-        lmdb.readTx0(tx ->
+        storage.readTx0(tx ->
                 repository.getTrustAnchors().forEach(taRef ->
                         trustAnchors.get(tx, taRef.key()).ifPresent(affectedTrustAnchors::add)));
         fetchedLocations.put(URI.create(repository.getRsyncRepositoryUri()), repository);
@@ -305,7 +305,7 @@ public class RpkiRepositoryValidationService {
         for (URI parentLocation : Rsync.generateCandidateParentUris(location)) {
             RpkiRepository parentRepository = fetchedLocations.get(parentLocation);
             if (parentRepository != null) {
-                final Ref<RpkiRepository> rpkiRepositoryRef = lmdb.readTx(tx -> rpkiRepositories.makeRef(tx, parentRepository.key()));
+                final Ref<RpkiRepository> rpkiRepositoryRef = storage.readTx(tx -> rpkiRepositories.makeRef(tx, parentRepository.key()));
                 repository.setParentRepository(rpkiRepositoryRef);
                 if (parentRepository.isDownloaded()) {
                     log.debug("Already fetched {} as part of {}, skipping", repository.getLocationUri(), parentRepository.getLocationUri());
@@ -322,14 +322,14 @@ public class RpkiRepositoryValidationService {
                                 ValidationResult validationResult,
                                 Map<String, RpkiObject> objectsBySha256,
                                 RpkiRepository repository){
-        lmdb.writeTx0(tx -> {
+        storage.writeTx0(tx -> {
             try {
                 traverseFSandStore(tx, targetDirectory, validationRun, validationResult, objectsBySha256, repository);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         });
-        lmdb.readTx0(rpkiObjects::verify);
+        storage.readTx0(rpkiObjects::verify);
     }
 
     private void traverseFSandStore(LmdbTx.Write tx,
@@ -437,7 +437,7 @@ public class RpkiRepositoryValidationService {
             new ExecutorCompletionService<>(Executors.newFixedThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1)));
 
     private RsyncRepositoryValidationRun makeRsyncValidationRun() {
-        return lmdb.writeTx(tx -> validationRuns.add(tx, new RsyncRepositoryValidationRun()));
+        return storage.writeTx(tx -> validationRuns.add(tx, new RsyncRepositoryValidationRun()));
     }
 
     private boolean isRrdpUri(final String uri) {
