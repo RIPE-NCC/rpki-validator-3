@@ -231,9 +231,6 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
                         .filter(ik -> !oldIndexKeys.contains(ik))
                         .forEach(ik -> index.put(txn, ik.toByteIterable(), pkBuf));
             });
-
-//            dumpIndexes(txn);
-
             return oldValue;
         } else {
             indexFunctions.forEach((idxName, idxFun) -> {
