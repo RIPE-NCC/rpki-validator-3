@@ -270,8 +270,4 @@ public abstract class Xodus {
         }
     }
 
-    public static ByteIterable byteBufferToIterable(ByteBuffer bb){
-        return new ArrayByteIterable(Bytes.toBytes(bb));
-    }
-
 }

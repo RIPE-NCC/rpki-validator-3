@@ -29,16 +29,18 @@
  */
 package net.ripe.rpki.validator3.storage.xodus;
 
+import jetbrains.exodus.ByteBufferByteIterable;
+import jetbrains.exodus.ByteIterable;
 import jetbrains.exodus.env.Cursor;
 import jetbrains.exodus.env.Environment;
 import jetbrains.exodus.env.Store;
 import jetbrains.exodus.env.Transaction;
 import lombok.Getter;
 import net.ripe.rpki.validator3.storage.Bytes;
+import net.ripe.rpki.validator3.storage.IxBase;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
-import net.ripe.rpki.validator3.storage.IxBase;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
@@ -110,7 +112,7 @@ public abstract class XodusIxBase<T extends Serializable> implements IxBase<T> {
         Xodus.checkEnv(env);
     }
 
-    protected ByteBuffer valueBuf(T value) {
+    protected ByteIterable valueBuf(T value) {
         final byte[] valueBytes = coder.toBytes(value);
         CRC32 checksum = new CRC32();
         checksum.update(valueBytes);
@@ -118,7 +120,7 @@ public abstract class XodusIxBase<T extends Serializable> implements IxBase<T> {
         byteBuffer.putLong(checksum.getValue());
         byteBuffer.put(valueBytes);
         byteBuffer.flip();
-        return byteBuffer;
+        return new ByteBufferByteIterable(byteBuffer);
     }
 
     protected T getValue(Key k, byte[] b) {

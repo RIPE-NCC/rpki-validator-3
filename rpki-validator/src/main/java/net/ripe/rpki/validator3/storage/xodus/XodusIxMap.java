@@ -59,8 +59,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static net.ripe.rpki.validator3.storage.xodus.Xodus.byteBufferToIterable;
-
 /**
  *
  *
@@ -207,8 +205,7 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
         final Transaction txn = castTxn(tx);
         final Optional<T> oldValue = get(tx, primaryKey);
         final ByteIterable pkBuf = primaryKey.toByteIterable();
-        // TODO Remove this one, just create ByteIterable in valueBuf
-        final ByteIterable val = byteBufferToIterable(valueBuf(value));
+        final ByteIterable val =valueBuf(value);
 
 //        dumpIndexes(txn);
 
