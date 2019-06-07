@@ -209,9 +209,6 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
         final ByteIterable pkBuf = primaryKey.toByteIterable();
         // TODO Remove this one, just create ByteIterable in valueBuf
         final ByteIterable val = byteBufferToIterable(valueBuf(value));
-
-//        dumpIndexes(txn);
-
         getMainDb().put(txn, pkBuf, val);
         if (oldValue.isPresent()) {
             indexFunctions.forEach((idxName, idxFun) -> {
@@ -234,9 +231,6 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
                         .filter(ik -> !oldIndexKeys.contains(ik))
                         .forEach(ik -> index.put(txn, ik.toByteIterable(), pkBuf));
             });
-
-//            dumpIndexes(txn);
-
             return oldValue;
         } else {
             indexFunctions.forEach((idxName, idxFun) -> {
