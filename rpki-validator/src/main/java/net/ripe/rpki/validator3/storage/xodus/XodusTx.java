@@ -64,6 +64,21 @@ public abstract class XodusTx implements AutoCloseable {
         txn = makeTxn();
     }
 
+    private XodusTx(Environment env, Transaction txn) {
+        threadId = Thread.currentThread().getId();
+        this.env = env;
+        id = idseq.getAndIncrement();
+        this.txn = txn;
+    }
+
+    static Read fromRONative(Environment env, Transaction txn) {
+        return new Read(env, txn);
+    }
+
+    static Write fromRWNative(Environment env, Transaction txn) {
+        return new Write(env, txn);
+    }
+
     protected abstract Transaction makeTxn();
 
     public static Read read(Environment e) {
@@ -100,9 +115,13 @@ public abstract class XodusTx implements AutoCloseable {
         aborted = true;
     }
 
-    public static class Write extends Read  implements Tx.Write {
+    public static class Write extends Read implements Tx.Write {
         Write(Environment e) {
             super(e);
+        }
+
+        Write(Environment e, Transaction txn) {
+            super(e, txn);
         }
 
         @Override
@@ -112,19 +131,23 @@ public abstract class XodusTx implements AutoCloseable {
         }
 
         @Getter
-        private List<Runnable> afterCommit = null;
+        private List<Runnable> atCommit = null;
 
         public synchronized void afterCommit(Runnable r) {
-            if (afterCommit == null) {
-                afterCommit = new ArrayList<>();
+            if (atCommit == null) {
+                atCommit = new ArrayList<>();
             }
-            afterCommit.add(r);
+            atCommit.add(r);
         }
     }
 
-    public static class Read extends XodusTx  implements Tx.Read{
+    public static class Read extends XodusTx implements Tx.Read {
         Read(Environment e) {
             super(e);
+        }
+
+        Read(Environment e, Transaction txn) {
+            super(e, txn);
         }
 
         @Override

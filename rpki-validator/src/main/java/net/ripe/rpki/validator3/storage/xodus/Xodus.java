@@ -33,10 +33,7 @@ import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import jetbrains.exodus.ArrayByteIterable;
 import jetbrains.exodus.ByteIterable;
-import jetbrains.exodus.env.Environment;
-import jetbrains.exodus.env.EnvironmentStatistics;
-import jetbrains.exodus.env.Store;
-import jetbrains.exodus.env.StoreConfig;
+import jetbrains.exodus.env.*;
 import lombok.Data;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -84,26 +81,27 @@ public abstract class Xodus {
     protected abstract Environment getEnv();
 
     public <T> T writeTx(Function<XodusTx.Write, T> f) {
-        XodusTx.Write tx = XodusTx.write(getEnv());
-        txs.put(tx.getId(), new Xodus.TxInfo(tx));
-        try {
-            final T result = f.apply(tx);
-            tx.txn().commit();
-            if (tx.getAfterCommit() != null) {
-                tx.getAfterCommit().forEach(r -> {
-                    try {
-                        r.run();
-                    } catch (Exception ignored) {
-                        // this is just to keep the loop going, every Runnable
-                        // has to take care of exceptions themselves
-                    }
-                });
+        Environment env = getEnv();
+        return env.computeInExclusiveTransaction(txn -> {
+            XodusTx.Write tx = XodusTx.fromRWNative(env, txn);
+            txs.put(tx.getId(), new TxInfo(tx));
+            try {
+                T result = f.apply(tx);
+                if (tx.getAtCommit() != null) {
+                    tx.getAtCommit().forEach(r -> {
+                        try {
+                            r.run();
+                        } catch (Exception ignored) {
+                            // this is just to keep the loop going, every Runnable
+                            // has to take care of exceptions themselves
+                        }
+                    });
+                }
+                return result;
+            } finally {
+                txs.remove(tx.getId());
             }
-            return result;
-        } finally {
-            tx.close();
-            txs.remove(tx.getId());
-        }
+        });
     }
 
     public void writeTx0(Consumer<XodusTx.Write> c) {
@@ -114,14 +112,16 @@ public abstract class Xodus {
     }
 
     public <T> T readTx(Function<XodusTx.Read, T> f) {
-        XodusTx.Read tx = XodusTx.read(getEnv());
-        txs.put(tx.getId(), new TxInfo(tx));
-        try {
-            return f.apply(tx);
-        } finally {
-            tx.close();
-            txs.remove(tx.getId());
-        }
+        Environment env = getEnv();
+        return env.computeInReadonlyTransaction(txn -> {
+            XodusTx.Read tx = XodusTx.fromRONative(env, txn);
+            txs.put(tx.getId(), new TxInfo(tx));
+            try {
+                return f.apply(tx);
+            } finally {
+                txs.remove(tx.getId());
+            }
+        });
     }
 
     public void readTx0(Consumer<XodusTx.Read> c) {
