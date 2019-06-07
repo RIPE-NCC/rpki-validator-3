@@ -31,6 +31,7 @@ package net.ripe.rpki.validator3.storage.xodus;
 
 import jetbrains.exodus.env.Environment;
 import jetbrains.exodus.env.EnvironmentConfig;
+import jetbrains.exodus.env.EnvironmentImpl;
 import jetbrains.exodus.env.Environments;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -78,33 +79,12 @@ public class XodusImpl extends Xodus {
     @PreDestroy
     public synchronized void waitForAllTxToFinishAndClose() {
         if (env.isOpen()) {
-            log.info("Preparing to close the Xodus environment, waiting for all transactions to finish...");
-            while (!getTxs().isEmpty()) {
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException ignore) {
-                }
-            }
-            close();
+            log.info("Stuck in transaction " + ((EnvironmentImpl)env).getStuckTransactionCount());
+            env.clear();
+            env.close();
         }
     }
 
-    private synchronized void close() {
-        try {
-            oneThread.submit(() -> {
-                if (env.isOpen()) {
-                    try {
-                        log.info("Closing Xodus environment at {}", path);
-                        env.close();
-                    } catch (Throwable e) {
-                        log.error("Couldn't close Xodus", e);
-                    }
-                }
-            }).get();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     @Override
     protected Environment getEnv() {

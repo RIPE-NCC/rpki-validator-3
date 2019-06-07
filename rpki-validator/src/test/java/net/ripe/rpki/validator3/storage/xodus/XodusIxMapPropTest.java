@@ -27,22 +27,26 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.lmdb;
+package net.ripe.rpki.validator3.storage.xodus;
 
 import com.google.common.collect.ImmutableMap;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
+import net.ripe.rpki.validator3.storage.IxMap;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
 import org.assertj.core.util.Files;
 import org.hamcrest.CoreMatchers;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
 
-import static net.ripe.rpki.validator3.storage.lmdb.LmdbIxMapTest.intKey;
+import static net.ripe.rpki.validator3.storage.IxMapTest.intKey;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -51,32 +55,39 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeThat;
 
 @RunWith(JUnitQuickcheck.class)
-public class LmdbIxMapPropTest {
+public class XodusIxMapPropTest {
 
-    private static LmdbIxMap<String> ixMap;
+    private static IxMap<String> ixMap;
 
-    private static Lmdb lmdb;
+    private static Xodus xodus;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        lmdb = LmdbTests.makeLmdb(Files.temporaryFolder().getAbsolutePath());
-        ixMap = lmdb.createIxMap("test",
-                ImmutableMap.of(LENGTH_INDEX, s -> Key.keys(intKey(s.length()))),
+        Function<String, Set<Key>> idxFunction = s -> Key.keys(intKey(s.length()));
+        xodus = XodusTests.makeXodus(Files.temporaryFolder().getAbsolutePath());
+        ixMap = xodus.createIxMap("test",
+                ImmutableMap.of(LENGTH_INDEX,  idxFunction),
                 CoderFactory.makeCoder(String.class));
-        lmdb.writeTx0(tx -> ixMap.clear(tx));
     }
+
+    private static int counter = 0;
 
     private static final String LENGTH_INDEX = "length-index";
 
-    @Property
-    public void storedIsThere(String key, String value) throws Exception {
+    @AfterClass
+    public static void check(){
+        System.out.println("Running property test " + counter + " times.");
+    }
+    @Property(trials=1000)
+    public void storedIsThere(String key, String value) {
+        counter++;
         assumeThat(key, CoreMatchers.not(equalTo(null)));
         assumeThat(key, CoreMatchers.not(equalTo("")));
         assumeThat(value, CoreMatchers.not(equalTo(null)));
 
-        Key k = LmdbIxMapTest.key(key);
-        Optional<String> oldValue = lmdb.writeTx(tx -> ixMap.put(tx, k, value));
-        lmdb.readTx0(tx -> {
+        Key k = XodusIxMapTest.key(key);
+        Optional<String> oldValue = xodus.writeTx(tx -> ixMap.put(tx, k, value));
+        xodus.readTx0(tx -> {
             assertEquals(value, ixMap.get(tx, k).get());
             Map<Key, String> byIndex = ixMap.getByIndex(LENGTH_INDEX, tx, intKey(value.length()));
             assertTrue(byIndex.values().stream().anyMatch(s -> s.equals(value)));
