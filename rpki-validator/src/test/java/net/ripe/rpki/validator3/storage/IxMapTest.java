@@ -275,21 +275,6 @@ public abstract class IxMapTest {
         });
     }
 
-    @Test
-    public void testGetMinMaxByIndex() {
-        putAndGet("a");
-        putAndGet("b");
-        putAndGet("xab");
-        putAndGet("abx");
-        putAndGet("zabx");
-        putAndGet("1111");
-        putAndGet("qqqq");
-
-        rtx0(tx -> {
-            assertEquals(Sets.newHashSet("qqqq", "zabx", "1111"), getLongestStrings(tx));
-            assertEquals(Sets.newHashSet("a", "b"), getShortestStrings(tx));
-        });
-    }
 
     @Test
     public void testGetMinMaxByIndexWithPredicate() {
@@ -338,14 +323,6 @@ public abstract class IxMapTest {
     public void testKeySize() {
         final String s = randomString(new Random(), 2000);
         wtx0(tx -> ixMap.put(tx, Key.of(s), s));
-    }
-
-    private Set<String> getLongestStrings(Tx.Read tx) {
-        return getValues(tx, ixMap.getPkByIndexMax(LENGTH_INDEX, tx));
-    }
-
-    private Set<String> getShortestStrings(Tx.Read tx) {
-        return getValues(tx, ixMap.getPkByIndexMin(LENGTH_INDEX, tx));
     }
 
     private Set<String> getLongestStrings(Tx.Read tx, Predicate<String> p) {

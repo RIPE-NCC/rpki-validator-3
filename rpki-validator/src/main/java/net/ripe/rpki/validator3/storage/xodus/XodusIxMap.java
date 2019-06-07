@@ -190,14 +190,20 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
         return Collections.emptyMap();
     }
 
-    public Set<Key> getPkByIndexMax(String indexName, Tx.Read tx) {
-        // TO BE DEFINED
-        return Collections.emptySet();
+    private Set<Key> getPkByIndexMax(String indexName, Tx.Read tx) {
+        Store indexStore = indexes.get(indexName);
+        Cursor cursor = indexStore.openCursor(castTxn(tx));
+        cursor.getLast();
+        ByteIterable idxKey = cursor.getKey();
+        return getPkByIndexKeyRange(indexName, tx, idxKey, idxKey);
     }
 
-    public Set<Key> getPkByIndexMin(String indexName, Tx.Read tx) {
-        // TO BE DEFINED
-        return Collections.emptySet();
+    private Set<Key> getPkByIndexMin(String indexName, Tx.Read tx) {
+        Store indexStore = indexes.get(indexName);
+        Cursor cursor = indexStore.openCursor(castTxn(tx));
+        cursor.getNext();
+        ByteIterable idxKey = cursor.getKey();
+        return getPkByIndexKeyRange(indexName, tx, idxKey, idxKey);
     }
 
     public Optional<T> put(Tx.Write tx, Key primaryKey, T value) {

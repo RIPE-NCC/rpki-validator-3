@@ -208,16 +208,6 @@ public class LmdbIxMap<T extends Serializable> extends LmdbIxBase<T> implements 
     }
 
     @Override
-    public Set<Key> getPkByIndexMax(String indexName, Tx.Read tx) {
-        return getKeyAtTheMinOrMaxOfIndex(indexName, tx, KeyRange.allBackward());
-    }
-
-    @Override
-    public Set<Key> getPkByIndexMin(String indexName, Tx.Read tx) {
-        return getKeyAtTheMinOrMaxOfIndex(indexName, tx, KeyRange.all());
-    }
-
-    @Override
     public Optional<T> put(Tx.Write tx, Key primaryKey, T value) {
         checkKeyAndValue(primaryKey, value);
         final Txn<ByteBuffer> txn = castTxn(tx);
