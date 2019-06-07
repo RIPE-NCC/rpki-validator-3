@@ -38,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.IxBase;
 import net.ripe.rpki.validator3.storage.IxMap;
+import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
@@ -74,6 +75,8 @@ public abstract class Lmdb implements Storage {
 
     private Gson gson = new Gson();
 
+    protected abstract Env<ByteBuffer> getEnv();
+
     protected synchronized Dbi<ByteBuffer> meta() {
         if (metadata == null) {
             metadata = getEnv().openDbi(METADATA_MAP_NAME, MDB_CREATE);
@@ -82,7 +85,7 @@ public abstract class Lmdb implements Storage {
     }
 
     @Override
-    public <T> T writeTx(Function<LmdbTx.Write, T> f) {
+    public <T> T writeTx(Function<Tx.Write, T> f) {
         LmdbTx.Write tx = LmdbTx.write(getEnv());
         txs.put(tx.getId(), new TxInfo(tx));
         try {
@@ -106,7 +109,7 @@ public abstract class Lmdb implements Storage {
     }
 
     @Override
-    public void writeTx0(Consumer<LmdbTx.Write> c) {
+    public void writeTx0(Consumer<Tx.Write> c) {
         writeTx(tx -> {
             c.accept(tx);
             return null;
@@ -114,7 +117,7 @@ public abstract class Lmdb implements Storage {
     }
 
     @Override
-    public <T> T readTx(Function<LmdbTx.Read, T> f) {
+    public <T> T readTx(Function<Tx.Read, T> f) {
         LmdbTx.Read tx = LmdbTx.read(getEnv());
         txs.put(tx.getId(), new TxInfo(tx));
         try {
@@ -126,7 +129,7 @@ public abstract class Lmdb implements Storage {
     }
 
     @Override
-    public void readTx0(Consumer<LmdbTx.Read> c) {
+    public void readTx0(Consumer<Tx.Read> c) {
         readTx(tx -> {
             c.accept(tx);
             return null;
@@ -210,7 +213,7 @@ public abstract class Lmdb implements Storage {
             DbiFlags[] indexDbiFlags) {
         final Dbi<ByteBuffer> meta = meta();
         IxMapInfo existingIxMapInfo = readTx(tx -> {
-            ByteBuffer bb = meta.get(tx.txn(), dbMetaKey(name).toByteBuffer());
+            ByteBuffer bb = meta.get((Txn<ByteBuffer>)tx.txn(), dbMetaKey(name).toByteBuffer());
             if (bb == null) {
                 return null;
             }
@@ -297,7 +300,7 @@ public abstract class Lmdb implements Storage {
         private LmdbIxBase.Sizes sizes;
     }
 
-    @Override
+
     public Stat getStat() {
         final org.lmdbjava.Stat stat = getEnv().stat();
         final EnvInfo info = getEnv().info();

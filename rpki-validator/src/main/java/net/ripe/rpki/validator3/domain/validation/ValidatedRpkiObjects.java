@@ -43,12 +43,12 @@ import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.domain.RoaPrefixDefinition;
+import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
-import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
@@ -105,7 +105,7 @@ public class ValidatedRpkiObjects {
         log.info("Initialised in {}ms", t);
     }
 
-    void updateByKey(LmdbTx.Read tx, Ref<TrustAnchor> trustAnchor, Collection<Key> rpkiObjectsKeys) {
+    void updateByKey(Tx.Read tx, Ref<TrustAnchor> trustAnchor, Collection<Key> rpkiObjectsKeys) {
         Long t = Time.timed(() ->
                 trustAnchors.get(tx, trustAnchor.key())
                         .map(ta -> {
@@ -130,7 +130,7 @@ public class ValidatedRpkiObjects {
         log.info("Updated validated roas in {}ms", t);
     }
 
-    private Stream<RpkiObject> streamByType(LmdbTx.Read tx, Collection<Key> rpkiObjectsKeys, RpkiObject.Type type) {
+    private Stream<RpkiObject> streamByType(Tx.Read tx, Collection<Key> rpkiObjectsKeys, RpkiObject.Type type) {
         final Set<Key> byType = rpkiObjects.getPkByType(tx, type);
         return rpkiObjectsKeys.stream()
                 .filter(byType::contains)
@@ -219,7 +219,7 @@ public class ValidatedRpkiObjects {
         String subjectPublicKeyInfo;
     }
 
-    private ImmutableSet<RouterCertificate> toRouterCertificates(LmdbTx.Read tx, TrustAnchorData trustAnchor, Stream<RpkiObject> roaCertStream) {
+    private ImmutableSet<RouterCertificate> toRouterCertificates(Tx.Read tx, TrustAnchorData trustAnchor, Stream<RpkiObject> roaCertStream) {
         final Base64.Encoder encoder = Base64.getEncoder();
         ImmutableSet.Builder<RouterCertificate> builder = ImmutableSet.builder();
         roaCertStream
@@ -241,7 +241,7 @@ public class ValidatedRpkiObjects {
         return builder.build();
     }
 
-    private ImmutableSet<RoaPrefix> toRoaPrefixes(LmdbTx.Read tx, TrustAnchorData trustAnchor, Stream<RpkiObject> roaStream) {
+    private ImmutableSet<RoaPrefix> toRoaPrefixes(Tx.Read tx, TrustAnchorData trustAnchor, Stream<RpkiObject> roaStream) {
         ImmutableSet.Builder<RoaPrefix> builder = ImmutableSet.builder();
         roaStream
             .flatMap(

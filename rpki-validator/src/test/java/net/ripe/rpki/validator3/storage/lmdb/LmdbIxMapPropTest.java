@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.storage.lmdb;
 import com.google.common.collect.ImmutableMap;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
+import net.ripe.rpki.validator3.storage.IxMap;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
 import org.assertj.core.util.Files;
@@ -53,7 +54,7 @@ import static org.junit.Assume.assumeThat;
 @RunWith(JUnitQuickcheck.class)
 public class LmdbIxMapPropTest {
 
-    private static LmdbIxMap<String> ixMap;
+    private static IxMap<String> ixMap;
 
     private static Storage storage;
 

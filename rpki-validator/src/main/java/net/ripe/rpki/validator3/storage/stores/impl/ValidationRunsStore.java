@@ -87,12 +87,12 @@ public class ValidationRunsStore implements ValidationRuns {
     private static final String BY_COMPLETED_AT_INDEX = "by-completed-at";
 
     private MultIxMap<Key> vr2ro;
-    private LmdbIxMap<Key> vr2repo;
+    private IxMap<Key> vr2repo;
 
-    private LmdbIxMap<CertificateTreeValidationRun> ctIxMap;
+    private IxMap<CertificateTreeValidationRun> ctIxMap;
     private IxMap<RsyncRepositoryValidationRun> rsIxMap;
     private IxMap<RrdpRepositoryValidationRun> rrIxMap;
-    private LmdbIxMap<TrustAnchorValidationRun> taIxMap;
+    private IxMap<TrustAnchorValidationRun> taIxMap;
 
     private final Map<String, IxMap<? extends ValidationRun>> maps = new HashMap<>();
 

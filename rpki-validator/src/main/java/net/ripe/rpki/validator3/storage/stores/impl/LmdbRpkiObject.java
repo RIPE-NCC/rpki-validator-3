@@ -35,11 +35,11 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.validation.ValidationResult;
+import net.ripe.rpki.validator3.storage.IxMap;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
-import net.ripe.rpki.validator3.storage.lmdb.LmdbIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.MultIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
@@ -73,8 +73,8 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     private static final String BY_AKI_MFT_INDEX = "by-aki-mft";
     private static final String BY_TYPE_INDEX = "by-type";
 
-    private final LmdbIxMap<RpkiObject> ixMap;
-    private final LmdbIxMap<Long> reachableMap;
+    private final IxMap<RpkiObject> ixMap;
+    private final IxMap<Long> reachableMap;
     private final MultIxMap<String> locationMap;
 
     private Set<Key> akiMftKey(RpkiObject rpkiObject) {
@@ -212,7 +212,7 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     }
 
     @Override
-    protected LmdbIxMap<RpkiObject> ixMap() {
+    protected IxMap<RpkiObject> ixMap() {
         return ixMap;
     }
 

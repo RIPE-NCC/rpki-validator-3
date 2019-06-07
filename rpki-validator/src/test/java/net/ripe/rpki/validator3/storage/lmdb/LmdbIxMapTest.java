@@ -75,7 +75,8 @@ public class LmdbIxMapTest extends IxMapTest {
                         "lower", s -> Key.keys(Key.of(s.toLowerCase()))),
                 CoderFactory.makeCoder(String.class));
 
-        Set<String> dbNames = storage.getEnv().getDbiNames().stream().map(n -> new String(n, UTF_8)).collect(Collectors.toSet());
+        Set<String> dbNames =
+                ((Lmdb)storage).getEnv().getDbiNames().stream().map(n -> new String(n, UTF_8)).collect(Collectors.toSet());
 
         assertTrue(dbNames.containsAll(Sets.newHashSet("testReindex-idx-lower", "testReindex-idx-len", "testReindex-main")));
 
@@ -92,7 +93,7 @@ public class LmdbIxMapTest extends IxMapTest {
                         "lower", s -> Key.keys(Key.of(s.toLowerCase()))),
                 CoderFactory.makeCoder(String.class));
 
-        dbNames = storage.getEnv().getDbiNames().stream().map(n -> new String(n, UTF_8)).collect(Collectors.toSet());
+        dbNames = ((Lmdb)storage).getEnv().getDbiNames().stream().map(n -> new String(n, UTF_8)).collect(Collectors.toSet());
 
         assertTrue(dbNames.containsAll(Sets.newHashSet("testReindex-idx-lower", "testReindex-idx-lenPlus1", "testReindex-main")));
         assertFalse(dbNames.contains("testReindex-idx-len"));

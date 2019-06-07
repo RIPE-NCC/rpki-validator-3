@@ -41,10 +41,10 @@ import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.api.validationruns.ValidationCheckResource;
 import net.ripe.rpki.validator3.api.validationruns.ValidationRunController;
 import net.ripe.rpki.validator3.api.validationruns.ValidationRunResource;
+import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
-import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
@@ -214,7 +214,7 @@ public class TrustAnchorController {
         return ResponseEntity.noContent().build();
     }
 
-    private ApiResponse<TrustAnchorResource> trustAnchorResource(LmdbTx.Read tx, TrustAnchor trustAnchor, Locale locale) {
+    private ApiResponse<TrustAnchorResource> trustAnchorResource(Tx.Read tx, TrustAnchor trustAnchor, Locale locale) {
             Optional<TrustAnchorValidationRun> validationRun = validationRuns.findLatestCompletedForTrustAnchor(tx, trustAnchor);
             ArrayList<Object> includes = new ArrayList<>(1);
             validationRun.ifPresent(run -> includes.add(ValidationRunResource.of(run, vr -> validationRuns.getObjectCount(tx, vr), messageSource, locale)));

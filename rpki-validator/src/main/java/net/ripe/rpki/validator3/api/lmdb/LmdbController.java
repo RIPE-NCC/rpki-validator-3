@@ -55,7 +55,7 @@ public class LmdbController {
     public ResponseEntity<ApiResponse<Map<Long, Lmdb.TxInfo>>> tx() {
         return ResponseEntity.ok(
                 ApiResponse.<Map<Long, Lmdb.TxInfo>>builder()
-                        .data(storage.getTxs())
+                        .data(((Lmdb)storage).getTxs())
                         .build()
         );
     }
@@ -64,7 +64,7 @@ public class LmdbController {
     public ResponseEntity<ApiResponse<Lmdb.Stat>> stat() {
         return ResponseEntity.ok(
                 ApiResponse.<Lmdb.Stat>builder()
-                        .data(storage.getStat())
+                        .data(((Lmdb)storage).getStat())
                         .build()
         );
     }

@@ -30,10 +30,10 @@
 package net.ripe.rpki.validator3.storage.stores.impl;
 
 import com.google.common.collect.ImmutableMap;
+import net.ripe.rpki.validator3.storage.IxMap;
+import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.StringCoder;
-import net.ripe.rpki.validator3.storage.lmdb.LmdbIxMap;
-import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.Settings;
@@ -46,7 +46,7 @@ public class LmdbSettings extends GenericStoreImpl<String> implements Settings {
     private static final String INITIAL_VALIDATION_RUN_COMPLETED = "internal.initial.validation.run.completed";
     private static final String SETTINGS = "settings";
 
-    private final LmdbIxMap<String> ixMap;
+    private final IxMap<String> ixMap;
 
     @Autowired
     public LmdbSettings(Storage storage) {
@@ -54,25 +54,25 @@ public class LmdbSettings extends GenericStoreImpl<String> implements Settings {
     }
 
     @Override
-    public void markInitialValidationRunCompleted(LmdbTx.Write tx) {
+    public void markInitialValidationRunCompleted(Tx.Write tx) {
         setTrue(tx, INITIAL_VALIDATION_RUN_COMPLETED);
     }
 
     @Override
-    public boolean isInitialValidationRunCompleted(LmdbTx.Read tx) {
+    public boolean isInitialValidationRunCompleted(Tx.Read tx) {
         return isTrue(tx, INITIAL_VALIDATION_RUN_COMPLETED);
     }
 
-    public void setTrue(LmdbTx.Write tx, String preconfiguredTalSettingsKey) {
+    public void setTrue(Tx.Write tx, String preconfiguredTalSettingsKey) {
         ixMap.put(tx, Key.of(preconfiguredTalSettingsKey), "true");
     }
 
-    private boolean isTrue(LmdbTx.Read tx, String initialValidationRunCompleted) {
+    private boolean isTrue(Tx.Read tx, String initialValidationRunCompleted) {
         return ixMap.get(tx, Key.of(initialValidationRunCompleted)).filter("true"::equals).isPresent();
     }
 
     @Override
-    protected LmdbIxMap<String> ixMap() {
+    protected IxMap<String> ixMap() {
         return ixMap;
     }
 

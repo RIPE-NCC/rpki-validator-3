@@ -39,6 +39,7 @@ public class Tx {
 
     public interface Write extends Read {
         void abort();
+        void afterCommit(Runnable r);
     }
 
 }

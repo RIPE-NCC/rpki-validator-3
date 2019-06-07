@@ -33,11 +33,11 @@ import com.google.common.io.PatternFilenameFilter;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
+import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.Settings;
@@ -101,7 +101,7 @@ public class TrustAnchorService {
         return storage.writeTx(tx -> add(tx, trustAnchor));
     }
 
-    long add(LmdbTx.Write tx, TrustAnchor trustAnchor) {
+    long add(Tx.Write tx, TrustAnchor trustAnchor) {
         trustAnchors.add(tx, trustAnchor);
 
         final Ref<TrustAnchor> trustAnchorRef = trustAnchors.makeRef(tx, trustAnchor.key());
@@ -162,7 +162,7 @@ public class TrustAnchorService {
         storage.readTx0(this::scheduleTasValidation);
     }
 
-    private void scheduleTasValidation(LmdbTx.Read tx) {
+    private void scheduleTasValidation(Tx.Read tx) {
         log.info("Schedule TA validation that were in the database already");
         trustAnchors.findAll(tx).forEach(ta -> {
             if (!validationScheduler.scheduledTrustAnchor(ta)) {

@@ -29,9 +29,9 @@
  */
 package net.ripe.rpki.validator3.storage.stores;
 
-import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
+import net.ripe.rpki.validator3.storage.Tx;
 
 public interface Settings extends GenericStore<String> {
-    void markInitialValidationRunCompleted(LmdbTx.Write tx);
-    boolean isInitialValidationRunCompleted(LmdbTx.Read tx);
+    void markInitialValidationRunCompleted(Tx.Write tx);
+    boolean isInitialValidationRunCompleted(Tx.Read tx);
 }

@@ -37,6 +37,7 @@ import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
 import net.ripe.rpki.validator3.domain.RpkiObjectUtils;
 import net.ripe.rpki.validator3.rrdp.RrdpService;
+import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
@@ -45,7 +46,6 @@ import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.RrdpRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.RsyncRepositoryValidationRun;
-import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
@@ -332,7 +332,7 @@ public class RpkiRepositoryValidationService {
         storage.readTx0(rpkiObjects::verify);
     }
 
-    private void traverseFSandStore(LmdbTx.Write tx,
+    private void traverseFSandStore(Tx.Write tx,
                                     File targetDirectory,
                                     RsyncRepositoryValidationRun validationRun,
                                     ValidationResult validationResult,
@@ -404,7 +404,8 @@ public class RpkiRepositoryValidationService {
         }
     }
 
-    private void storeObject(LmdbTx.Write tx, RpkiRepositoryValidationRun validationRun, Map<String, RpkiObject> objectsBySha256) {
+    private void storeObject(Tx.Write tx, RpkiRepositoryValidationRun validationRun,
+                             Map<String, RpkiObject> objectsBySha256) {
         try {
             final Either<ValidationResult, Pair<String, RpkiObject>> maybeRpkiObject = asyncCreateObjects.take().get();
             if (maybeRpkiObject.isLeft()) {
