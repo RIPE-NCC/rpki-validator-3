@@ -35,6 +35,7 @@ import jetbrains.exodus.env.EnvironmentImpl;
 import jetbrains.exodus.env.Environments;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -42,6 +43,7 @@ import javax.annotation.PreDestroy;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+@Profile("!test")
 @Component
 @Slf4j
 public class XodusImpl extends Xodus {
@@ -51,8 +53,7 @@ public class XodusImpl extends Xodus {
 
     private Environment env;
 
-    public XodusImpl(
-            @Value("${rpki.validator.data.path}") String path) {
+    public XodusImpl(@Value("${rpki.validator.data.path}") String path) {
         this.path = path;
     }
 

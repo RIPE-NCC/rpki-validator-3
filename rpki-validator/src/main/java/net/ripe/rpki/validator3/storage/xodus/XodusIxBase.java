@@ -157,9 +157,8 @@ public abstract class XodusIxBase<T extends Serializable> implements IxBase<T> {
         getMainDb().close(); //
     }
 
-    public T toValue(ByteBuffer bb) {
-        //FIXME: fishy
-        return getValue(null, bb.array());
+    public T toValue(ByteIterable bb) {
+        return getValue(null, bb.getBytesUnsafe());
     }
 
 

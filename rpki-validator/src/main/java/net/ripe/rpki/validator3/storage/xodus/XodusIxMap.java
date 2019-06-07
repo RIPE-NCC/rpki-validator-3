@@ -43,15 +43,7 @@ import net.ripe.rpki.validator3.storage.lmdb.OnDeleteRestrictException;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -127,9 +119,9 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
         return get(readTx(), primaryKey);
     }
 
-    public Optional<T> get(Tx.Read txn, Key primaryKey) {
+    public Optional<T> get(Tx.Read tx, Key primaryKey) {
         verifyKey(primaryKey);
-        final ByteIterable bi = getMainDb().get((Transaction) txn.txn(), primaryKey.toByteIterable());
+        final ByteIterable bi = getMainDb().get(castTxn(tx), primaryKey.toByteIterable());
         if (bi == null) {
             return Optional.empty();
         }
@@ -143,6 +135,90 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
                 .map(Optional::get)
                 .collect(Collectors.toList());
     }
+
+    public Optional<T> put(Tx.Write tx, Key primaryKey, T value) {
+        checkKeyAndValue(primaryKey, value);
+        final Transaction txn = castTxn(tx);
+        final Optional<T> oldValue = get(tx, primaryKey);
+        final ByteIterable pkBuf = primaryKey.toByteIterable();
+        final ByteIterable val = valueBuf(value);
+
+        getMainDb().put(txn, pkBuf, val);
+        if (oldValue.isPresent()) {
+            indexFunctions.forEach((idxName, idxFun) -> {
+                final Set<Key> oldIndexKeys = idxFun.apply(oldValue.get());
+                final Set<Key> indexKeys = idxFun.apply(value).stream()
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+                final Store index = getIdx(idxName);
+                oldIndexKeys.stream()
+                        .filter(oik -> !indexKeys.contains(oik))
+                        .forEach(oik -> {
+                            try (Cursor c = index.openCursor(txn)) {
+                                if (c.getSearchBoth(oik.toByteIterable(), pkBuf)) {
+                                    c.deleteCurrent();
+                                }
+                            }
+                        });
+
+                indexKeys.stream()
+                        .filter(ik -> !oldIndexKeys.contains(ik))
+                        .forEach(ik -> index.put(txn, ik.toByteIterable(), pkBuf));
+            });
+            return oldValue;
+        }
+        indexFunctions.forEach((idxName, idxFun) -> {
+            final Set<Key> indexKeys = idxFun.apply(value).stream()
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+
+            indexKeys.forEach(ik -> getIdx(idxName).put(txn, ik.toByteIterable(), pkBuf));
+        });
+
+        return Optional.empty();
+    }
+
+    public boolean modify(Tx.Write tx, Key primaryKey, Consumer<T> modifyValue) {
+        final Optional<T> t = get(tx, primaryKey);
+        t.ifPresent(v -> {
+            modifyValue.accept(v);
+            put(tx, primaryKey, v);
+        });
+        return t.isPresent();
+    }
+
+    public void delete(Tx.Write tx, Key primaryKey) {
+        checkNotNull(primaryKey, "Key is null");
+        final Transaction txn = castTxn(tx);
+        final Store mainDb = getMainDb();
+        final ByteIterable pkBuf = primaryKey.toByteIterable();
+
+        if (indexFunctions.isEmpty()) {
+            mainDb.delete(txn, pkBuf);
+        } else {
+            final ByteIterable bb = mainDb.get(txn, pkBuf);
+            if (bb != null) {
+                // TODO probably avoid deserialization, just store the
+                //  index keys next to the serialized value
+                final T value = getValue(primaryKey, bb.getBytesUnsafe());
+                mainDb.delete(txn, pkBuf);
+                indexFunctions.forEach((idxName, idxFun) ->
+                        idxFun.apply(value).forEach(ix -> {
+                            try (Cursor c = getIdx(idxName).openCursor(txn)) {
+                                if (c.getSearchBoth(ix.toByteIterable(), pkBuf)) {
+                                    c.deleteCurrent();
+                                }
+                            }
+                        }));
+            }
+        }
+        try {
+            onDeleteTriggers.forEach(bf -> bf.accept(tx, primaryKey));
+        } catch (OnDeleteRestrictException o) {
+            tx.abort();
+        }
+    }
+
 
     public Map<Key, T> getByIndex(String indexName, Tx.Read tx, Key indexKey) {
         return values(tx, getPkByIndex(indexName, tx, indexKey));
@@ -181,119 +257,54 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
     }
 
     public Map<Key, T> getByIndexMax(String indexName, Tx.Read tx, Predicate<T> p) {
-        // TO BE DEFINED
-        return Collections.emptyMap();
+        return getKeyAtTheMinOrMaxOfIndex(indexName, tx, false, p);
     }
 
     public Map<Key, T> getByIndexMin(String indexName, Tx.Read tx, Predicate<T> p) {
+        return getKeyAtTheMinOrMaxOfIndex(indexName, tx, true, p);
+    }
+
+    public Set<Key> getPkByIndexMax(String indexName, Tx.Read tx) {
         // TO BE DEFINED
-        return Collections.emptyMap();
+        return Collections.emptySet();
     }
 
-    private Set<Key> getPkByIndexMax(String indexName, Tx.Read tx) {
-        Store indexStore = indexes.get(indexName);
-        Cursor cursor = indexStore.openCursor(castTxn(tx));
-        cursor.getLast();
-        ByteIterable idxKey = cursor.getKey();
-        return getPkByIndexKeyRange(indexName, tx, idxKey, idxKey);
+    public Set<Key> getPkByIndexMin(String indexName, Tx.Read tx) {
+        // TO BE DEFINED
+        return Collections.emptySet();
     }
 
-    private Set<Key> getPkByIndexMin(String indexName, Tx.Read tx) {
-        Store indexStore = indexes.get(indexName);
-        Cursor cursor = indexStore.openCursor(castTxn(tx));
-        cursor.getNext();
-        ByteIterable idxKey = cursor.getKey();
-        return getPkByIndexKeyRange(indexName, tx, idxKey, idxKey);
-    }
-
-    public Optional<T> put(Tx.Write tx, Key primaryKey, T value) {
-        checkKeyAndValue(primaryKey, value);
-        final Transaction txn = castTxn(tx);
-        final Optional<T> oldValue = get(tx, primaryKey);
-        final ByteIterable pkBuf = primaryKey.toByteIterable();
-        final ByteIterable val =valueBuf(value);
-
-//        dumpIndexes(txn);
-
-        getMainDb().put(txn, pkBuf, val);
-        if (oldValue.isPresent()) {
-            indexFunctions.forEach((idxName, idxFun) -> {
-                final Set<Key> oldIndexKeys = idxFun.apply(oldValue.get());
-                final Set<Key> indexKeys = idxFun.apply(value).stream()
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toSet());
-                final Store index = getIdx(idxName);
-                oldIndexKeys.stream()
-                        .filter(oik -> !indexKeys.contains(oik))
-                        .forEach(oik -> {
-                            try (Cursor c = index.openCursor(txn)) {
-                                if (c.getSearchBoth(oik.toByteIterable(), pkBuf)) {
-                                    c.deleteCurrent();
-                                }
-                            }
-                        });
-
-                indexKeys.stream()
-                        .filter(ik -> !oldIndexKeys.contains(ik))
-                        .forEach(ik -> index.put(txn, ik.toByteIterable(), pkBuf));
-            });
-            return oldValue;
-        } else {
-            indexFunctions.forEach((idxName, idxFun) -> {
-                final Set<Key> indexKeys = idxFun.apply(value).stream()
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toSet());
-
-                indexKeys.forEach(ik -> getIdx(idxName).put(txn, ik.toByteIterable(), pkBuf));
-            });
-        }
-
-        return Optional.empty();
-    }
-
-    public boolean modify(Tx.Write tx, Key primaryKey, Consumer<T> modifyValue) {
-        final Optional<T> t = get(tx, primaryKey);
-        t.ifPresent(v -> {
-            modifyValue.accept(v);
-            put(tx, primaryKey, v);
-        });
-        return t.isPresent();
-    }
-
-    public void delete(Tx.Write tx, Key primaryKey) {
-        checkNotNull(primaryKey, "Key is null");
-        final Transaction txn = castTxn(tx);
-        final Store mainDb = getMainDb();
-        final ByteIterable pkBuf = primaryKey.toByteIterable();
-
-//        dumpIndexes(txn);
-
-        if (indexFunctions.isEmpty()) {
-            mainDb.delete(txn, pkBuf);
-        } else {
-            final ByteIterable bb = mainDb.get(txn, pkBuf);
-            if (bb != null) {
-                // TODO probably avoid deserialization, just store the
-                //  index keys next to the serialized value
-                final T value = getValue(primaryKey, bb.getBytesUnsafe());
-                mainDb.delete(txn, pkBuf);
-                indexFunctions.forEach((idxName, idxFun) ->
-                        idxFun.apply(value).forEach(ix -> {
-                            try (Cursor c = getIdx(idxName).openCursor(txn)) {
-                                if (c.getSearchBoth(ix.toByteIterable(), pkBuf)) {
-                                    c.deleteCurrent();
-                                }
-                            }
-                        }));
+    private Map<Key, T> getKeyAtTheMinOrMaxOfIndex(String indexName, Tx.Read tx,
+                                                   boolean moveForward,
+                                                   Predicate<T> p) {
+        Store index = getIdx(indexName);
+        final Map<Key, T> m = new HashMap<>();
+        if (index != null) {
+            Store mainDb = getMainDb();
+            Transaction txn = castTxn(tx);
+            try (Cursor cursor = index.openCursor(txn)) {
+                boolean foundSomething = moveForward ? cursor.getNext() : cursor.getLast();
+                boolean foundResult = false;
+                while (foundSomething) {
+                    final Key indexKey = new Key(cursor.getKey());
+                    final ByteIterable pk = cursor.getValue();
+                    ByteIterable bi = mainDb.get(txn, pk);
+                    if (bi != null) {
+                        final T value = toValue(bi);
+                        if (p.test(value)) {
+                            foundResult = true;
+                            m.put(new Key(pk), value);
+                        }
+                    }
+                    if (foundResult) {
+                        foundSomething = moveForward ? cursor.getNextDup() : cursor.getPrevDup();
+                    } else {
+                        foundSomething = moveForward ? cursor.getNext() : cursor.getPrev();
+                    }
+                }
             }
         }
-        try {
-            onDeleteTriggers.forEach(bf -> bf.accept(tx, primaryKey));
-        } catch (OnDeleteRestrictException o) {
-            tx.abort();
-        }
-
-//        dumpIndexes(txn);
+        return m;
     }
 
     private void dumpIndexes(Transaction txn) {
@@ -326,7 +337,7 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
 
     @Override
     public T toValue(byte[] bb) {
-        return null;
+        return getValue(null, bb);
     }
 
     private Set<Key> getPkByIndexKeyRange(String indexName, Tx.Read tx, ByteIterable start, ByteIterable stop) {

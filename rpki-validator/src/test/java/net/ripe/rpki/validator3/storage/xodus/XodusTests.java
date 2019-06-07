@@ -29,10 +29,10 @@
  */
 package net.ripe.rpki.validator3.storage.xodus;
 
+import net.ripe.rpki.validator3.storage.stores.impl.TmpXodus;
+
 public class XodusTests {
     public static Xodus makeXodus(String path) throws Exception {
-        XodusImpl xodus = new XodusImpl(path);
-        xodus.initXodus();
-        return xodus;
+        return new TmpXodus();
     }
 }

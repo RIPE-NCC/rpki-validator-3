@@ -282,6 +282,7 @@ public abstract class IxMapTest {
         putAndGet("b");
         putAndGet("xab");
         putAndGet("ttt");
+        putAndGet("tt");
         putAndGet("zabx");
         putAndGet("1111");
         putAndGet("qqqq");
@@ -295,7 +296,7 @@ public abstract class IxMapTest {
             assertEquals(Sets.newHashSet("b"), getShortestStrings(tx, s -> s.contains("b")));
             assertEquals(Sets.newHashSet("a"), getShortestStrings(tx, s -> s.contains("a")));
             assertEquals(Sets.newHashSet("xab"), getShortestStrings(tx, s -> s.contains("xa")));
-            assertEquals(Sets.newHashSet("ttt"), getShortestStrings(tx, s -> s.contains("t")));
+            assertEquals(Sets.newHashSet("tt"), getShortestStrings(tx, s -> s.contains("t")));
             assertEquals(Sets.newHashSet("zabx"), getShortestStrings(tx, s -> s.contains("z")));
         });
     }
