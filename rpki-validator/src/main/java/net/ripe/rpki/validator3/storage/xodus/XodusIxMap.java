@@ -306,20 +306,6 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
         return m;
     }
 
-    private void dumpIndexes(Transaction txn) {
-        indexFunctions.forEach((idxName, idxFun) -> {
-            System.out.println(idxName + " = {");
-            try (Cursor c = getIdx(idxName).openCursor(txn)) {
-                while (c.getNext()) {
-                    final Key k = Key.of(c.getKey().getBytesUnsafe());
-                    final Key v = Key.of(c.getValue().getBytesUnsafe());
-                    System.out.println("(k = " + k + ", v = " + v + ")");
-                }
-            }
-            System.out.println("}");
-        });
-    }
-
     public void onDelete(BiConsumer<Tx.Write, Key> bf) {
         onDeleteTriggers.add(bf);
     }
