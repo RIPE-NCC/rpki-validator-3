@@ -50,10 +50,10 @@ import static org.lmdbjava.DbiFlags.MDB_DUPSORT;
 
 public class XodusMultIxMap<T extends Serializable> extends XodusIxBase<T> implements MultIxMap<T> {
 
-    public XodusMultIxMap(final Xodus lmdb,
+    public XodusMultIxMap(final Xodus xodus,
                           final String name,
                           final Coder<T> coder) {
-        super(lmdb, name, coder);
+        super(xodus, name, coder);
     }
 
     protected DbiFlags[] getMainDbCreateFlags() {
@@ -66,7 +66,6 @@ public class XodusMultIxMap<T extends Serializable> extends XodusIxBase<T> imple
 
     public List<T> get(Tx.Read tx, Key primaryKey) {
         verifyKey(primaryKey);
-        final ByteBuffer pkBuf = primaryKey.toByteBuffer();
         final List<T> result = new ArrayList<>();
         try (Cursor cursor = getMainDb().openCursor(castTxn(tx))) {
             ByteIterable startKey = cursor.getSearchKey(primaryKey.toByteIterable());
@@ -83,13 +82,15 @@ public class XodusMultIxMap<T extends Serializable> extends XodusIxBase<T> imple
     public int count(Tx.Read tx, Key primaryKey) {
         verifyKey(primaryKey);
         int s = 0;
-        final ByteBuffer pkBuf = primaryKey.toByteBuffer();
-//        try (final CursorIterator<ByteBuffer> ci = getMainDb().iterate(castTxn(tx), KeyRange.closed(pkBuf, pkBuf))) {
-//            while (ci.hasNext()) {
-//                ci.next();
-//                s++;
-//            }
-//        }
+        try (Cursor cursor = getMainDb().openCursor(castTxn(tx))) {
+            ByteIterable startKey = cursor.getSearchKey(primaryKey.toByteIterable());
+            if (startKey != null) {
+                s++;
+                while (cursor.getNextDup()) {
+                    s++;
+                }
+            }
+        }
         return s;
     }
 
@@ -104,16 +105,27 @@ public class XodusMultIxMap<T extends Serializable> extends XodusIxBase<T> imple
 
     public void delete(Tx.Write tx, Key primaryKey, T value) {
         verifyKey(primaryKey);
-//        getMainDb().delete(castTxn(tx), primaryKey.toByteIterable(), valueBuf(value));
+        try (Cursor c = getMainDb().openCursor(castTxn(tx))) {
+            if (c.getSearchBoth(primaryKey.toByteIterable(), valueBuf(value))) {
+                c.deleteCurrent();
+            }
+        }
     }
 
     @Override
     public void clear(Tx.Write tx) {
-
+        // TODO Probably reimplement it using something like
+        // getMainDb().getEnvironment().truncateStore(getName(), castTxn(tx));
+        try (Cursor c = getMainDb().openCursor(castTxn(tx))) {
+            while (c.getNext()) {
+                c.deleteCurrent();
+            }
+        }
     }
+
 
     @Override
     public T toValue(byte[] bb) {
-        return null;
+        return getValue(null, bb);
     }
 }

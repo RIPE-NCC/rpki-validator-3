@@ -161,7 +161,6 @@ public abstract class XodusIxBase<T extends Serializable> implements IxBase<T> {
         return getValue(null, bb.getBytesUnsafe());
     }
 
-
     @Override
     public void forEach(Tx.Read tx, BiConsumer<Key, byte[]> c){
         try (final Cursor ci = getMainDb().openCursor((Transaction) tx.txn())) {
