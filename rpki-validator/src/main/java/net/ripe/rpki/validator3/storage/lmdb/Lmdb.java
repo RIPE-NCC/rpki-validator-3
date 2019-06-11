@@ -176,16 +176,6 @@ public abstract class Lmdb implements Storage {
         return ixMap;
     }
 
-    @Override
-    public <T extends Serializable> IxMap<T> createSameSizeKeyIxMap(final int keySize,
-                                                                    final String name,
-                                                                    final Map<String, Function<T, Set<Key>>> indexFunctions,
-                                                                    Coder<T> c) {
-        SameSizeKeyLmdbIxMap<T> ixMap = new SameSizeKeyLmdbIxMap<>(keySize, this, name, c, indexFunctions);
-        ixMaps.put(name, ixMap);
-        return ixMap;
-    }
-
     Dbi<ByteBuffer> createMainMapDb(String name, DbiFlags[] mainDbCreateFlags) {
         final String dbName = name + "-main";
         final Dbi<ByteBuffer> dbi = getEnv().openDbi(dbName, mainDbCreateFlags);

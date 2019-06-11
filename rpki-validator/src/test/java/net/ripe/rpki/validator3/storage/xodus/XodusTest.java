@@ -69,7 +69,6 @@ public class XodusTest {
 
         Long t = Time.timed(() -> {
             env.executeInTransaction(txn -> {
-
                         for (int i = 0; i < NREPEAT; i++) {
                             final ByteIterable key = randomUUIDByteIterable();
                             store.put(txn, key, stringToEntry("blabla" + key.toString()));

@@ -32,9 +32,4 @@ public interface Storage {
                                                       Map<String, Function<T, Set<Key>>> indexFunctions,
                                                       Coder<T> c);
 
-    <T extends Serializable> IxMap<T> createSameSizeKeyIxMap(int keySize,
-                                                             String name,
-                                                             Map<String, Function<T, Set<Key>>> indexFunctions,
-                                                             Coder<T> c);
-
 }
