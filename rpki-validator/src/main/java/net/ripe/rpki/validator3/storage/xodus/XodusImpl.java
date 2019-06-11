@@ -89,14 +89,8 @@ public class XodusImpl extends Xodus {
         }
     }
 
-
     @Override
     protected Environment getEnv() {
         return env;
-    }
-
-    @Override
-    public <T extends Serializable> MultIxMap<T> createMultIxMap(String name, Coder<T> c) {
-        return null;
     }
 }

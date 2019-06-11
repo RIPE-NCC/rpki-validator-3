@@ -31,6 +31,7 @@ package net.ripe.rpki.validator3.storage.xodus;
 
 import jetbrains.exodus.ByteIterable;
 import jetbrains.exodus.env.Cursor;
+import jetbrains.exodus.env.StoreConfig;
 import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.MultIxMap;
 import net.ripe.rpki.validator3.storage.Tx;
@@ -56,12 +57,8 @@ public class XodusMultIxMap<T extends Serializable> extends XodusIxBase<T> imple
         super(xodus, name, coder);
     }
 
-    protected DbiFlags[] getMainDbCreateFlags() {
-        return new DbiFlags[]{MDB_CREATE, MDB_DUPSORT};
-    }
-
-    protected DbiFlags[] getIndexDbiFlags() {
-        return new DbiFlags[]{MDB_CREATE, MDB_DUPSORT};
+    protected StoreConfig getStoreConfig() {
+        return StoreConfig.WITH_DUPLICATES;
     }
 
     public List<T> get(Tx.Read tx, Key primaryKey) {

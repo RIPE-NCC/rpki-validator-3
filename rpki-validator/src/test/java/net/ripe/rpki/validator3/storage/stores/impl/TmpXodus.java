@@ -79,9 +79,4 @@ public class TmpXodus extends Xodus {
     public void close() {
         getEnv().close();
     }
-
-    @Override
-    public <T extends Serializable> MultIxMap<T> createMultIxMap(String name, Coder<T> c) {
-        return null;
-    }
 }

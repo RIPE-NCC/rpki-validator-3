@@ -49,7 +49,7 @@ public abstract class MultiIxMapTest {
     public final TemporaryFolder tmp = new TemporaryFolder();
 
     protected Storage storage;
-    protected MultIxMap <String> multIxMap;
+    protected MultIxMap<String> multIxMap;
 
     @Test
     public void putAndGetBack() {
@@ -104,6 +104,10 @@ public abstract class MultiIxMapTest {
         storage.writeTx0(tx -> {
             multIxMap.put(tx, k1, "a");
             multIxMap.put(tx, k1, "b");
+        });
+
+        storage.readTx0(tx -> {
+            assertEquals(Sets.newHashSet("a", "b"), new HashSet<>(multIxMap.get(tx, k1)));
         });
 
         storage.writeTx0(tx -> multIxMap.delete(tx, k1, "b"));

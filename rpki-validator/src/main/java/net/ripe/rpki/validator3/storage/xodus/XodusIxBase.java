@@ -29,12 +29,10 @@
  */
 package net.ripe.rpki.validator3.storage.xodus;
 
+import jetbrains.exodus.ArrayByteIterable;
 import jetbrains.exodus.ByteBufferByteIterable;
 import jetbrains.exodus.ByteIterable;
-import jetbrains.exodus.env.Cursor;
-import jetbrains.exodus.env.Environment;
-import jetbrains.exodus.env.Store;
-import jetbrains.exodus.env.Transaction;
+import jetbrains.exodus.env.*;
 import lombok.Getter;
 import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.IxBase;
@@ -71,10 +69,11 @@ public abstract class XodusIxBase<T extends Serializable> implements IxBase<T> {
         this.name = name;
         this.coder = coder;
         synchronized (xodus) {
-            this.mainDb = xodus.createMainMapDb(name);
+            this.mainDb = xodus.createMainMapDb(name, getStoreConfig());
         }
     }
 
+    protected abstract StoreConfig getStoreConfig();
 
     static void checkNotNull(Object v, String s) {
         if (v == null) {
@@ -100,7 +99,7 @@ public abstract class XodusIxBase<T extends Serializable> implements IxBase<T> {
     }
 
     public boolean exists(Tx.Read tx, Key key) {
-        return getMainDb().get((Transaction)tx.txn(), key.toByteIterable()) != null;
+        return getMainDb().get(castTxn(tx), key.toByteIterable()) != null;
     }
 
     Store getMainDb() {
@@ -116,11 +115,12 @@ public abstract class XodusIxBase<T extends Serializable> implements IxBase<T> {
         final byte[] valueBytes = coder.toBytes(value);
         CRC32 checksum = new CRC32();
         checksum.update(valueBytes);
-        ByteBuffer byteBuffer = ByteBuffer.allocate(Long.BYTES + valueBytes.length);
+        byte[] stored = new byte[Long.BYTES + valueBytes.length];
+        ByteBuffer byteBuffer = ByteBuffer.wrap(stored);
         byteBuffer.putLong(checksum.getValue());
         byteBuffer.put(valueBytes);
         byteBuffer.flip();
-        return new ByteBufferByteIterable(byteBuffer);
+        return new ArrayByteIterable(stored);
     }
 
     protected T getValue(Key k, byte[] b) {

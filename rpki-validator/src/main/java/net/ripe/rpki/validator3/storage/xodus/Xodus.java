@@ -41,10 +41,7 @@ import jetbrains.exodus.env.Transaction;
 import lombok.Data;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.storage.Bytes;
-import net.ripe.rpki.validator3.storage.IxBase;
-import net.ripe.rpki.validator3.storage.IxMap;
-import net.ripe.rpki.validator3.storage.Tx;
+import net.ripe.rpki.validator3.storage.*;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
@@ -169,10 +166,17 @@ public abstract class Xodus implements Storage {
         return ixMap;
     }
 
-    Store createMainMapDb(String name) {
+    @Override
+    public <T extends Serializable> MultIxMap<T> createMultIxMap(String name, Coder<T> c) {
+        XodusMultIxMap ixMap = new XodusMultIxMap<>(this, name, c);
+        ixMaps.put(name, ixMap);
+        return ixMap;
+    }
+
+    Store createMainMapDb(String name, StoreConfig storeConfig) {
         final String dbName = name + "-main";
         final Store store = getEnv().computeInTransaction(txn ->
-                getEnv().openStore(dbName, WITHOUT_DUPLICATES, txn));
+                getEnv().openStore(dbName, storeConfig, txn));
 
         // don't go into infinite recursion when creating IxMap for meta and do it manually
         final IxMapInfo mapInfo = new IxMapInfo();
