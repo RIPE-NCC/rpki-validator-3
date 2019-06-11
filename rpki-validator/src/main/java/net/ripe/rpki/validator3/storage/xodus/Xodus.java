@@ -33,16 +33,22 @@ import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import jetbrains.exodus.ArrayByteIterable;
 import jetbrains.exodus.ByteIterable;
-import jetbrains.exodus.env.*;
+import jetbrains.exodus.env.Environment;
+import jetbrains.exodus.env.EnvironmentStatistics;
+import jetbrains.exodus.env.Store;
+import jetbrains.exodus.env.StoreConfig;
+import jetbrains.exodus.env.Transaction;
 import lombok.Data;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.IxBase;
 import net.ripe.rpki.validator3.storage.IxMap;
+import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
+import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.Serializable;
@@ -64,7 +70,7 @@ import static jetbrains.exodus.env.StoreConfig.USE_EXISTING;
 import static jetbrains.exodus.env.StoreConfig.WITHOUT_DUPLICATES;
 
 @Slf4j
-public abstract class Xodus {
+public abstract class Xodus implements Storage {
 
     private static final String METADATA_MAP_NAME = "meta";
     private Gson gson = new Gson();
@@ -80,7 +86,7 @@ public abstract class Xodus {
 
     protected abstract Environment getEnv();
 
-    public <T> T writeTx(Function<XodusTx.Write, T> f) {
+    public <T> T writeTx(Function<Tx.Write, T> f) {
         Environment env = getEnv();
         return env.computeInExclusiveTransaction(txn -> {
             XodusTx.Write tx = XodusTx.fromRWNative(env, txn);
@@ -104,14 +110,14 @@ public abstract class Xodus {
         });
     }
 
-    public void writeTx0(Consumer<XodusTx.Write> c) {
+    public void writeTx0(Consumer<Tx.Write> c) {
         writeTx(tx -> {
             c.accept(tx);
             return null;
         });
     }
 
-    public <T> T readTx(Function<XodusTx.Read, T> f) {
+    public <T> T readTx(Function<Tx.Read, T> f) {
         Environment env = getEnv();
         return env.computeInReadonlyTransaction(txn -> {
             XodusTx.Read tx = XodusTx.fromRONative(env, txn);
@@ -124,7 +130,7 @@ public abstract class Xodus {
         });
     }
 
-    public void readTx0(Consumer<XodusTx.Read> c) {
+    public void readTx0(Consumer<Tx.Read> c) {
         readTx(tx -> {
             c.accept(tx);
             return null;
@@ -191,7 +197,7 @@ public abstract class Xodus {
             StoreConfig storeConfigs) {
         final Store meta = meta();
         Xodus.IxMapInfo existingIxMapInfo = readTx(tx -> {
-            ByteIterable byteIterable = meta.get(tx.txn(), dbMetaKey(name).toByteIterable());
+            ByteIterable byteIterable = meta.get((Transaction)tx.txn(), dbMetaKey(name).toByteIterable());
             if (byteIterable == null) {
                 return null;
             }

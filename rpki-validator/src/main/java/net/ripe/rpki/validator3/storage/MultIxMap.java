@@ -34,7 +34,7 @@ import net.ripe.rpki.validator3.storage.data.Key;
 import java.io.Serializable;
 import java.util.List;
 
-public interface MultIxMap<T extends Serializable> {
+public interface MultIxMap<T extends Serializable> extends IxBase<T> {
     List<T> get(Tx.Read tx, Key primaryKey);
 
     int count(Tx.Read tx, Key primaryKey);

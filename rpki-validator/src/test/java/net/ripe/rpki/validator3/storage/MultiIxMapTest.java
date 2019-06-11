@@ -27,12 +27,11 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.lmdb;
+package net.ripe.rpki.validator3.storage;
 
 import com.google.common.collect.Sets;
 import net.ripe.rpki.validator3.storage.data.Key;
-import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
-import org.junit.Before;
+import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -44,19 +43,13 @@ import java.util.UUID;
 import static net.ripe.rpki.validator3.storage.lmdb.LmdbIxMapTest.key;
 import static org.junit.Assert.assertEquals;
 
-public class MultLmdbIxMapTest {
+public abstract class MultiIxMapTest {
 
     @Rule
     public final TemporaryFolder tmp = new TemporaryFolder();
 
-    private Storage storage;
-    private LmdbMultIxMap<String> multIxMap;
-
-    @Before
-    public void setUp() throws Exception {
-        storage = LmdbTests.makeLmdb(tmp.newFolder().getAbsolutePath());
-        multIxMap = storage.createMultIxMap("test", CoderFactory.makeCoder(String.class));
-    }
+    protected Storage storage;
+    protected MultIxMap <String> multIxMap;
 
     @Test
     public void putAndGetBack() {

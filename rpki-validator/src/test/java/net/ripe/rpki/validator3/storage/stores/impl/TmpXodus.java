@@ -34,6 +34,8 @@ import jetbrains.exodus.env.EnvironmentConfig;
 import jetbrains.exodus.env.Environments;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.storage.MultIxMap;
+import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.xodus.Xodus;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -41,6 +43,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PreDestroy;
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -75,5 +78,10 @@ public class TmpXodus extends Xodus {
     @PreDestroy
     public void close() {
         getEnv().close();
+    }
+
+    @Override
+    public <T extends Serializable> MultIxMap<T> createMultIxMap(String name, Coder<T> c) {
+        return null;
     }
 }

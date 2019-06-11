@@ -34,6 +34,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.storage.IxMap;
+import net.ripe.rpki.validator3.storage.MultIxMap;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
@@ -47,9 +49,7 @@ import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
-import net.ripe.rpki.validator3.storage.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbIxMap;
-import net.ripe.rpki.validator3.storage.lmdb.LmdbMultIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
@@ -86,7 +86,7 @@ public class ValidationRunsStore implements ValidationRuns {
     private static final String BY_TA_INDEX = "by-ta";
     private static final String BY_COMPLETED_AT_INDEX = "by-completed-at";
 
-    private LmdbMultIxMap<Key> vr2ro;
+    private MultIxMap<Key> vr2ro;
     private IxMap<Key> vr2repo;
 
     private IxMap<CertificateTreeValidationRun> ctIxMap;

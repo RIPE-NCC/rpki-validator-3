@@ -30,6 +30,7 @@
 package net.ripe.rpki.validator3.storage.lmdb;
 
 import net.ripe.rpki.validator3.storage.IxMap;
+import net.ripe.rpki.validator3.storage.MultIxMap;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
@@ -55,7 +56,7 @@ public interface Storage {
                                                       Map<String, Function<T, Set<Key>>> indexFunctions,
                                                       Class<T> c);
 
-    <T extends Serializable> LmdbMultIxMap<T> createMultIxMap(String name, Coder<T> c);
+    <T extends Serializable> MultIxMap<T> createMultIxMap(String name, Coder<T> c);
 
     <T extends Serializable> IxMap<T> createIxMap(String name,
                                                       Map<String, Function<T, Set<Key>>> indexFunctions,
