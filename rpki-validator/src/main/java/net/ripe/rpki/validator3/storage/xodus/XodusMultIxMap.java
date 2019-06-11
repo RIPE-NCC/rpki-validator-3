@@ -32,22 +32,14 @@ package net.ripe.rpki.validator3.storage.xodus;
 import jetbrains.exodus.ByteIterable;
 import jetbrains.exodus.env.Cursor;
 import jetbrains.exodus.env.StoreConfig;
-import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.MultIxMap;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
-import org.lmdbjava.CursorIterator;
-import org.lmdbjava.DbiFlags;
-import org.lmdbjava.KeyRange;
 
 import java.io.Serializable;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.lmdbjava.DbiFlags.MDB_CREATE;
-import static org.lmdbjava.DbiFlags.MDB_DUPSORT;
 
 public class XodusMultIxMap<T extends Serializable> extends XodusIxBase<T> implements MultIxMap<T> {
 
@@ -93,7 +85,7 @@ public class XodusMultIxMap<T extends Serializable> extends XodusIxBase<T> imple
 
     public void put(Tx.Write tx, Key primaryKey, T value) {
         checkKeyAndValue(primaryKey, value);
-        getMainDb().put(castTxn(tx), primaryKey.toByteIterable(), valueBuf(value));
+        getMainDb().put(castTxn(tx), primaryKey.toByteIterable(), valueWithChecksum(value));
     }
 
     public void delete(Tx.Write tx, Key primaryKey) {
@@ -103,7 +95,7 @@ public class XodusMultIxMap<T extends Serializable> extends XodusIxBase<T> imple
     public void delete(Tx.Write tx, Key primaryKey, T value) {
         verifyKey(primaryKey);
         try (Cursor c = getMainDb().openCursor(castTxn(tx))) {
-            if (c.getSearchBoth(primaryKey.toByteIterable(), valueBuf(value))) {
+            if (c.getSearchBoth(primaryKey.toByteIterable(), valueWithChecksum(value))) {
                 c.deleteCurrent();
             }
         }

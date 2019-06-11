@@ -68,18 +68,18 @@ import java.util.stream.Stream;
 
 @Component
 @Slf4j
-public class LmdbRpkiRepostiories extends GenericStoreImpl<RpkiRepository> implements RpkiRepositories {
+public class RpkiRepositoriesStore extends GenericStoreImpl<RpkiRepository> implements RpkiRepositories {
 
     private static final String RPKI_REPOSITORIES = "rpki-repositories";
     private static final String BY_URI_PREFIX = "by-uri";
     private static final String BY_TA = "by-ta";
 
     private final IxMap<RpkiRepository> ixMap;
-    private final Sequences sequences;
+    private final SequencesStore sequences;
     private final ValidationScheduler validationScheduler;
 
     @Autowired
-    public LmdbRpkiRepostiories(Storage storage, Sequences sequences, ValidationScheduler validationScheduler) {
+    public RpkiRepositoriesStore(Storage storage, SequencesStore sequences, ValidationScheduler validationScheduler) {
         this.sequences = sequences;
         this.validationScheduler = validationScheduler;
 

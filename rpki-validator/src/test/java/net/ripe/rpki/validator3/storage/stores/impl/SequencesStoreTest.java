@@ -29,51 +29,36 @@
  */
 package net.ripe.rpki.validator3.storage.stores.impl;
 
-import com.google.common.collect.ImmutableMap;
-import net.ripe.rpki.validator3.storage.IxMap;
-import net.ripe.rpki.validator3.storage.Tx;
-import net.ripe.rpki.validator3.storage.data.Key;
-import net.ripe.rpki.validator3.storage.encoding.StringCoder;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbTests;
 import net.ripe.rpki.validator3.storage.Storage;
-import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
-import net.ripe.rpki.validator3.storage.stores.Settings;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-@Component
-public class LmdbSettings extends GenericStoreImpl<String> implements Settings {
+import static org.junit.Assert.assertEquals;
 
-    private static final String INITIAL_VALIDATION_RUN_COMPLETED = "internal.initial.validation.run.completed";
-    private static final String SETTINGS = "settings";
+public class SequencesStoreTest {
 
-    private final IxMap<String> ixMap;
+    @Rule
+    public final TemporaryFolder tmp = new TemporaryFolder();
 
-    @Autowired
-    public LmdbSettings(Storage storage) {
-        this.ixMap = storage.createIxMap(SETTINGS, ImmutableMap.of(), new StringCoder());
+    private Storage storage;
+    private SequencesStore sequences;
+
+    @Before
+    public void setUp() throws Exception {
+        storage = LmdbTests.makeLmdb(tmp.newFolder().getAbsolutePath());
+        this.sequences = new SequencesStore(storage);
     }
 
-    @Override
-    public void markInitialValidationRunCompleted(Tx.Write tx) {
-        setTrue(tx, INITIAL_VALIDATION_RUN_COMPLETED);
-    }
-
-    @Override
-    public boolean isInitialValidationRunCompleted(Tx.Read tx) {
-        return isTrue(tx, INITIAL_VALIDATION_RUN_COMPLETED);
-    }
-
-    public void setTrue(Tx.Write tx, String preconfiguredTalSettingsKey) {
-        ixMap.put(tx, Key.of(preconfiguredTalSettingsKey), "true");
-    }
-
-    private boolean isTrue(Tx.Read tx, String initialValidationRunCompleted) {
-        return ixMap.get(tx, Key.of(initialValidationRunCompleted)).filter("true"::equals).isPresent();
-    }
-
-    @Override
-    protected IxMap<String> ixMap() {
-        return ixMap;
+    @Test
+    public void testNext() {
+        assertEquals(new Long(1L), storage.writeTx(tx ->sequences.next(tx, "seq1")));
+        assertEquals(new Long(2L), storage.writeTx(tx ->sequences.next(tx, "seq1")));
+        assertEquals(new Long(1L), storage.writeTx(tx ->sequences.next(tx, "seq2")));
+        assertEquals(new Long(2L), storage.writeTx(tx ->sequences.next(tx, "seq2")));
+        assertEquals(new Long(3L), storage.writeTx(tx ->sequences.next(tx, "seq2")));
     }
 
 }

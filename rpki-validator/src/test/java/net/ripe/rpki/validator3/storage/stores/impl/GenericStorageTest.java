@@ -68,7 +68,7 @@ public class GenericStorageTest {
 
     @Autowired
     @Getter
-    private Sequences sequences;
+    private SequencesStore sequences;
 
     @Autowired
     @Getter

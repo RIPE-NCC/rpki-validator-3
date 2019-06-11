@@ -40,6 +40,13 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+/**
+ * Indexes Map of type T.
+ *
+ * Allows search by index on an underlying key map storage (LMDB or Xodus, currently)
+ *
+ * @param <T>
+ */
 public interface IxMap<T extends Serializable> extends IxBase<T> {
     Optional<T> get(Key primaryKey);
 

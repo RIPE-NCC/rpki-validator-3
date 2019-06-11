@@ -55,15 +55,15 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
-public class LmdbTrustAnchors extends GenericStoreImpl<TrustAnchor> implements TrustAnchors {
+public class TrustAnchorStore extends GenericStoreImpl<TrustAnchor> implements TrustAnchors {
 
     private final IxMap<TrustAnchor> ixMap;
-    private final Sequences sequences;
+    private final SequencesStore sequences;
     private final ValidationRuns validationRuns;
 
     @Autowired
-    public LmdbTrustAnchors(Storage storage,
-                            Sequences sequences,
+    public TrustAnchorStore(Storage storage,
+                            SequencesStore sequences,
                             @Lazy ValidationRuns validationRuns) {
         this.ixMap = storage.createIxMap(
                 TrustAnchors.TRUST_ANCHORS,

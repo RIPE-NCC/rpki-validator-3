@@ -65,7 +65,7 @@ import java.util.stream.Stream;
 
 @Component
 @Slf4j
-public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements RpkiObjects {
+public class RpkiObjectStore extends GenericStoreImpl<RpkiObject> implements RpkiObjects {
 
     private static final String RPKI_OBJECTS = "rpki-objects";
     private static final String REACHABLE_MAP = "rpki-objects-reachable";
@@ -89,7 +89,7 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
     }
 
     @Autowired
-    public LmdbRpkiObject(Storage storage) {
+    public RpkiObjectStore(Storage storage) {
         this.ixMap = storage.createIxMap(
                 RPKI_OBJECTS,
                 ImmutableMap.of(

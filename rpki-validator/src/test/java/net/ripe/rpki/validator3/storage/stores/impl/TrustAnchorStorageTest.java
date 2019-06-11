@@ -45,7 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RunWith(SpringRunner.class)
 @IntegrationTest
 @Slf4j
-public class LmdbTrustAnchorsTest extends GenericStorageTest {
+public class TrustAnchorStorageTest extends GenericStorageTest {
 
     @Test
     public void should_find_trust_anchors_by_case_insensitive_name() {

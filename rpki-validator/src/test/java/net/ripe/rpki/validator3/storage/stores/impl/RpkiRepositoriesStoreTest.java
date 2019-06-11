@@ -48,7 +48,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(SpringRunner.class)
 @IntegrationTest
 @Slf4j
-public class LmdbRpkiRepostioriesTest extends GenericStorageTest {
+public class RpkiRepositoriesStoreTest extends GenericStorageTest {
 
     private TrustAnchor trustAnchor;
     private RpkiRepository rsyncRepo;

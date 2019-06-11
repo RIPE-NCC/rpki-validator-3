@@ -37,7 +37,7 @@ import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.encoding.custom.RpkiObjectCoder;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbImpl;
-import net.ripe.rpki.validator3.storage.stores.impl.LmdbRpkiObject;
+import net.ripe.rpki.validator3.storage.stores.impl.RpkiObjectStore;
 import net.ripe.rpki.validator3.util.Sha256;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -60,13 +60,13 @@ public class NastyCaseTest {
 
     private LmdbImpl lmdb;
 
-    private LmdbRpkiObject lmdbRpkiObject;
+    private RpkiObjectStore lmdbRpkiObject;
 
     @Before
     public void setUp() throws Exception {
         lmdb = new LmdbImpl("/Users/mpuzanov/ripe/tmp/rpki/validator-3/workdb/", 8192);
         lmdb.initLmdb();
-        lmdbRpkiObject = new LmdbRpkiObject(lmdb);
+        lmdbRpkiObject = new RpkiObjectStore(lmdb);
     }
 
     // broken hash: F4D489D0E889F3A8156655DEF91AB90F8BD01EF019B0756CEAA91B0F979C985E

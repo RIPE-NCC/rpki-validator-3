@@ -43,13 +43,13 @@ import org.springframework.stereotype.Component;
 import java.util.Optional;
 
 @Component
-public class Sequences extends GenericStoreImpl<Long> {
+public class SequencesStore extends GenericStoreImpl<Long> {
 
     private final String SEQUENCES = "sequences";
     private final IxMap<Long> ixMap;
 
     @Autowired
-    public Sequences(Storage storage) {
+    public SequencesStore(Storage storage) {
         this.ixMap = storage.createIxMap(
                 SEQUENCES,
                 ImmutableMap.of(),

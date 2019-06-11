@@ -140,7 +140,7 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
         final Transaction txn = castTxn(tx);
         final Optional<T> oldValue = get(tx, primaryKey);
         final ByteIterable pkBuf = primaryKey.toByteIterable();
-        final ByteIterable val = valueBuf(value);
+        final ByteIterable val = valueWithChecksum(value);
 
         getMainDb().put(txn, pkBuf, val);
         if (oldValue.isPresent()) {

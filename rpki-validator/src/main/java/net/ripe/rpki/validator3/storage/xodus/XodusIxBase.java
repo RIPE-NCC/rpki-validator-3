@@ -30,9 +30,12 @@
 package net.ripe.rpki.validator3.storage.xodus;
 
 import jetbrains.exodus.ArrayByteIterable;
-import jetbrains.exodus.ByteBufferByteIterable;
 import jetbrains.exodus.ByteIterable;
-import jetbrains.exodus.env.*;
+import jetbrains.exodus.env.Cursor;
+import jetbrains.exodus.env.Environment;
+import jetbrains.exodus.env.Store;
+import jetbrains.exodus.env.StoreConfig;
+import jetbrains.exodus.env.Transaction;
 import lombok.Getter;
 import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.IxBase;
@@ -111,7 +114,7 @@ public abstract class XodusIxBase<T extends Serializable> implements IxBase<T> {
         Xodus.checkEnv(env);
     }
 
-    protected ByteIterable valueBuf(T value) {
+    protected ByteIterable valueWithChecksum(T value) {
         final byte[] valueBytes = coder.toBytes(value);
         CRC32 checksum = new CRC32();
         checksum.update(valueBytes);

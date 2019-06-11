@@ -84,12 +84,12 @@ public class ValidationRunsStore implements ValidationRuns {
     private final RpkiObjects rpkiObjects;
     private final RpkiRepositories rpkiRepositories;
 
-    private final Sequences sequences;
+    private final SequencesStore sequences;
 
     public ValidationRunsStore(RpkiObjects rpkiObjects,
                                @Lazy TrustAnchors trustAnchors,
                                RpkiRepositories rpkiRepositories,
-                               Sequences sequences,
+                               SequencesStore sequences,
                                Storage storage) {
         this.rpkiObjects = rpkiObjects;
         this.rpkiRepositories = rpkiRepositories;
