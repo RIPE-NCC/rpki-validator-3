@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.storage.lmdb;
 import lombok.extern.slf4j.Slf4j;
 import org.lmdbjava.Env;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -47,6 +48,7 @@ import static org.lmdbjava.Env.create;
 @Profile("!test")
 @Component
 @Slf4j
+@Primary
 public class LmdbImpl extends Lmdb {
 
     private final long dbSizeInMb;

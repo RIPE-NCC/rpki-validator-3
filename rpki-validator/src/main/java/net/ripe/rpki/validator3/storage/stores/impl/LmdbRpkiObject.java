@@ -36,11 +36,11 @@ import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.storage.IxMap;
+import net.ripe.rpki.validator3.storage.MultIxMap;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
-import net.ripe.rpki.validator3.storage.lmdb.LmdbMultIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
@@ -75,7 +75,7 @@ public class LmdbRpkiObject extends GenericStoreImpl<RpkiObject> implements Rpki
 
     private final IxMap<RpkiObject> ixMap;
     private final IxMap<Long> reachableMap;
-    private final LmdbMultIxMap<String> locationMap;
+    private final MultIxMap<String> locationMap;
 
     private Set<Key> akiMftKey(RpkiObject rpkiObject) {
         byte[] authorityKeyIdentifier = rpkiObject.getAuthorityKeyIdentifier();

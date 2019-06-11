@@ -33,6 +33,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.storage.lmdb.Lmdb;
 import org.lmdbjava.Env;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -47,6 +48,7 @@ import static org.lmdbjava.Env.create;
 
 @Profile("test")
 @Component
+@Primary
 @Slf4j
 public class TmpLmdb extends Lmdb {
 
