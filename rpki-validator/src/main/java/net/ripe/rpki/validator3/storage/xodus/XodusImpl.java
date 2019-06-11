@@ -70,7 +70,9 @@ public class XodusImpl extends Xodus {
                 final EnvironmentConfig config = new EnvironmentConfig()
                         .setLogDurableWrite(true)
                         .setEnvGatherStatistics(true)
-                        .setLogCacheUseNio(true);
+                        .setGcEnabled(true)
+                        .setLogCacheUseNio(true)
+                        .setMemoryUsage(32*1024*1024);
 
                 env = Environments.newInstance(path, config);
             }).get();
