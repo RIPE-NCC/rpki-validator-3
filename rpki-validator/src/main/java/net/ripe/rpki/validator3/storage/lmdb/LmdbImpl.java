@@ -48,7 +48,7 @@ import static org.lmdbjava.Env.create;
 @Profile("!test")
 @Component
 @Slf4j
-@Primary
+//@Primary
 public class LmdbImpl extends Lmdb {
 
     private final long dbSizeInMb;

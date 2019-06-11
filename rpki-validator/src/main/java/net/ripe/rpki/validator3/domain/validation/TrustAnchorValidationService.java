@@ -48,7 +48,7 @@ import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
-import net.ripe.rpki.validator3.storage.lmdb.Storage;
+import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;

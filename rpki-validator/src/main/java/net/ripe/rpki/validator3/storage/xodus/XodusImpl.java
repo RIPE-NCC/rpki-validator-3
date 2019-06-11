@@ -37,6 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.storage.MultIxMap;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -49,6 +50,7 @@ import java.util.concurrent.Executors;
 @Profile("!test")
 @Component
 @Slf4j
+@Primary
 public class XodusImpl extends Xodus {
 
     private final String path;

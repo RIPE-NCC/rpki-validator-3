@@ -45,7 +45,7 @@ import net.ripe.rpki.validator3.storage.*;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
-import net.ripe.rpki.validator3.storage.lmdb.Storage;
+import net.ripe.rpki.validator3.storage.Storage;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.Serializable;

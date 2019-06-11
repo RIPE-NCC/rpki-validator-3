@@ -41,16 +41,9 @@ import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
-import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidationRun;
-import net.ripe.rpki.validator3.storage.data.validation.RrdpRepositoryValidationRun;
-import net.ripe.rpki.validator3.storage.data.validation.RsyncRepositoryValidationRun;
-import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
-import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
-import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
+import net.ripe.rpki.validator3.storage.data.validation.*;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
-import net.ripe.rpki.validator3.storage.lmdb.LmdbIxMap;
-import net.ripe.rpki.validator3.storage.lmdb.Storage;
+import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
@@ -60,15 +53,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -413,12 +398,12 @@ public class ValidationRunsStore implements ValidationRuns {
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends ValidationRun> LmdbIxMap<T> pickIxMap(String vrType) {
+    private <T extends ValidationRun> IxMap<T> pickIxMap(String vrType) {
         final IxMap<? extends ValidationRun> ixMap = maps.get(vrType);
         if (ixMap == null) {
             throw new RuntimeException("Oops, you are looking for the " + vrType + " which is not here.");
         }
-        return (LmdbIxMap<T>) ixMap;
+        return (IxMap<T>) ixMap;
     }
 
     // TODO Come up with something better than this horror

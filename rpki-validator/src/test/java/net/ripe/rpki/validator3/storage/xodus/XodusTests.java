@@ -29,7 +29,7 @@
  */
 package net.ripe.rpki.validator3.storage.xodus;
 
-import net.ripe.rpki.validator3.storage.stores.impl.TmpXodus;
+import net.ripe.rpki.validator3.storage.TmpXodus;
 
 public class XodusTests {
     public static Xodus makeXodus(String path) throws Exception {

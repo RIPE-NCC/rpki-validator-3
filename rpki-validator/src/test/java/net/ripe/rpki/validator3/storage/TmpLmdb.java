@@ -48,7 +48,7 @@ import static org.lmdbjava.Env.create;
 
 @Profile("test")
 @Component
-@Primary
+//@Primary
 @Slf4j
 public class TmpLmdb extends Lmdb {
 

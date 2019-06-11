@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
-import net.ripe.rpki.validator3.storage.lmdb.Storage;
+import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import org.springframework.beans.factory.annotation.Autowired;

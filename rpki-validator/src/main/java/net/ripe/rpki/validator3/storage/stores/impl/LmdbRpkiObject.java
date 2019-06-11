@@ -41,7 +41,7 @@ import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
-import net.ripe.rpki.validator3.storage.lmdb.Storage;
+import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -27,7 +27,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.lmdb;
+package net.ripe.rpki.validator3.storage;
 
 import net.ripe.rpki.validator3.storage.IxMap;
 import net.ripe.rpki.validator3.storage.MultIxMap;

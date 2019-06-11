@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.storage.lmdb;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import net.ripe.rpki.validator3.storage.IxMapTest;
+import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;

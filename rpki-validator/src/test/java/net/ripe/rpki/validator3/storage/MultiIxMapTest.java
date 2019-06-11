@@ -31,7 +31,6 @@ package net.ripe.rpki.validator3.storage;
 
 import com.google.common.collect.Sets;
 import net.ripe.rpki.validator3.storage.data.Key;
-import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;

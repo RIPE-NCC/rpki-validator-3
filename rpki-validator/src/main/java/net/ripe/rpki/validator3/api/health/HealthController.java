@@ -38,7 +38,7 @@ import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
 import net.ripe.rpki.validator3.api.util.BuildInformation;
 import net.ripe.rpki.validator3.api.util.Dates;
 import net.ripe.rpki.validator3.background.BackgroundJobs;
-import net.ripe.rpki.validator3.storage.lmdb.Storage;
+import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

@@ -34,7 +34,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
-import net.ripe.rpki.validator3.storage.lmdb.Storage;
+import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.Settings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;

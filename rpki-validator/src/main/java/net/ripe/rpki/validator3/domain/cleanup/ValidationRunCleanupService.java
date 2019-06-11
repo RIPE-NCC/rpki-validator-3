@@ -30,7 +30,7 @@
 package net.ripe.rpki.validator3.domain.cleanup;
 
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.storage.lmdb.Storage;
+import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Time;
 import org.springframework.beans.factory.annotation.Autowired;

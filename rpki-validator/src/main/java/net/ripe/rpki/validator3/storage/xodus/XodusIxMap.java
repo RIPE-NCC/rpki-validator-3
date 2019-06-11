@@ -107,8 +107,7 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
     }
 
     private void dropIndexes(Tx.Write tx) {
-        indexes.forEach((name, db) -> env.removeStore(db.getName(), castTxn(tx)));
-        env.clear();
+        indexes.forEach((name, db) -> truncate(tx, db));
     }
 
     protected StoreConfig getStoreConfig() {

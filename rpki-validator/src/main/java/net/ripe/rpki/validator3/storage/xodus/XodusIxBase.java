@@ -153,8 +153,20 @@ public abstract class XodusIxBase<T extends Serializable> implements IxBase<T> {
         return result;
     }
 
-    public void clear(XodusTx.Write tx) {
-        getMainDb().close(); //
+    @Override
+    public void clear(Tx.Write tx) {
+        // TODO Probably reimplement it using something like
+        // getMainDb().getEnvironment().truncateStore(getName(), castTxn(tx));
+        Store mainDb = getMainDb();
+        truncate(tx, mainDb);
+    }
+
+    protected static void truncate(Tx.Write tx, Store mainDb) {
+        try (Cursor c = mainDb.openCursor(castTxn(tx))) {
+            while (c.getNext()) {
+                c.deleteCurrent();
+            }
+        }
     }
 
     public T toValue(ByteIterable bb) {
@@ -163,7 +175,7 @@ public abstract class XodusIxBase<T extends Serializable> implements IxBase<T> {
 
     @Override
     public void forEach(Tx.Read tx, BiConsumer<Key, byte[]> c){
-        try (final Cursor ci = getMainDb().openCursor((Transaction) tx.txn())) {
+        try (final Cursor ci = getMainDb().openCursor(castTxn(tx))) {
             while (ci.getNext()) {
                 c.accept(new Key(ci.getKey()), ci.getValue().getBytesUnsafe());
             }
@@ -176,7 +188,7 @@ public abstract class XodusIxBase<T extends Serializable> implements IxBase<T> {
         return s.get();
     }
 
-    protected Transaction castTxn(Tx.Read tx) {
+    protected static Transaction castTxn(Tx.Read tx) {
         return (Transaction) tx.txn();
     }
 
@@ -193,7 +205,7 @@ public abstract class XodusIxBase<T extends Serializable> implements IxBase<T> {
 
     long getAllocatedSize(Tx.Read tx, Store store) {
         // TODO: Verify
-        return store.count((Transaction)tx.txn());
+        return store.count(castTxn(tx));
     }
 
 

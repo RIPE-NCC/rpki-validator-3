@@ -27,7 +27,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.stores.impl;
+package net.ripe.rpki.validator3.storage;
 
 import jetbrains.exodus.env.Environment;
 import jetbrains.exodus.env.EnvironmentConfig;
@@ -37,6 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.storage.MultIxMap;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.xodus.Xodus;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -49,6 +50,7 @@ import java.nio.file.Path;
 
 @Profile("test")
 @Component
+@Primary
 @Slf4j
 public class TmpXodus extends Xodus {
 

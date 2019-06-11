@@ -42,7 +42,7 @@ import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
 import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.lmdb.Storage;
+import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.Settings;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import org.springframework.beans.factory.annotation.Autowired;

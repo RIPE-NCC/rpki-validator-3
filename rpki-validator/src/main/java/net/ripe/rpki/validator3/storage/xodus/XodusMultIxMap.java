@@ -110,18 +110,6 @@ public class XodusMultIxMap<T extends Serializable> extends XodusIxBase<T> imple
     }
 
     @Override
-    public void clear(Tx.Write tx) {
-        // TODO Probably reimplement it using something like
-        // getMainDb().getEnvironment().truncateStore(getName(), castTxn(tx));
-        try (Cursor c = getMainDb().openCursor(castTxn(tx))) {
-            while (c.getNext()) {
-                c.deleteCurrent();
-            }
-        }
-    }
-
-
-    @Override
     public T toValue(byte[] bb) {
         return getValue(null, bb);
     }
