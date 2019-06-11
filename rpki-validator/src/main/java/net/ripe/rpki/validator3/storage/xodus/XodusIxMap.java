@@ -326,7 +326,7 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
 
     @Override
     public void clear(Tx.Write tx) {
-        tx.close();
+        truncate(tx, getMainDb());
         dropIndexes(tx);
     }
 
