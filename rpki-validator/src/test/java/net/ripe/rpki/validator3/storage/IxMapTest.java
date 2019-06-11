@@ -32,20 +32,30 @@ package net.ripe.rpki.validator3.storage;
 import com.google.common.collect.Sets;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.util.Time;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public abstract class IxMapTest {
 
@@ -96,18 +106,17 @@ public abstract class IxMapTest {
 
 
     @Test
-    @Ignore
     public void putAndUpdateWithBiggerValue() {
         Random r = new Random();
         wtx0(tx -> {
-            for (int i = 0; i < 10_000; i++) {
+            for (int i = 0; i < 1000; i++) {
                 ixMap.put(tx, Key.of(i), randomString(r, 10));
             }
         });
 
         for (int c = 0; c < 10; c++) {
             wtx0(tx -> {
-                for (int i = 0; i < 10_000; i++) {
+                for (int i = 0; i < 1000; i++) {
                     final Key k = Key.of(i);
                     final String s = ixMap.get(tx, k).get();
                     ixMap.put(tx, k, s + s);

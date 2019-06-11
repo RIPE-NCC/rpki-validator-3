@@ -321,14 +321,12 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
         try (Cursor cursor = index.openCursor(txn)) {
             if (start == null) {
                 if (stop == null) {
+                    // This is actually getting everything.
                     while (cursor.getNext()) {
                         pks.add(new Key(cursor.getValue()));
                     }
                 } else {
-                    while (cursor.getNext()) {
-                        if (cursor.getKey().compareTo(stop) >= 0) {
-                            break;
-                        }
+                    while (cursor.getNext() && cursor.getKey().compareTo(stop) < 0) {
                         pks.add(new Key(cursor.getValue()));
                     }
                 }
@@ -355,10 +353,7 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
                         ByteIterable startKey = cursor.getSearchKeyRange(start);
                         if (startKey != null) {
                             pks.add(new Key(cursor.getValue()));
-                            while (cursor.getNext()) {
-                                if (cursor.getKey().compareTo(stop) >= 0) {
-                                    break;
-                                }
+                            while (cursor.getNext() && cursor.getKey().compareTo(stop) < 0) {
                                 pks.add(new Key(cursor.getValue()));
                             }
                         }
