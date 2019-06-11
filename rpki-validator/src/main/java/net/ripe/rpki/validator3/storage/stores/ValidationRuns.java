@@ -37,13 +37,7 @@ import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
-import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidationRun;
-import net.ripe.rpki.validator3.storage.data.validation.RsyncRepositoryValidationRun;
-import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
-import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
-import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
-import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
+import net.ripe.rpki.validator3.storage.data.validation.*;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.Instant;

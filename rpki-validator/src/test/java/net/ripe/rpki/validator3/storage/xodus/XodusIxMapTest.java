@@ -112,15 +112,14 @@ public class XodusIxMapTest extends IxMapTest {
 
     @Override
     protected <T> T rtx(Function<Tx.Read, T> f) {
-        return xodus.readTx(f::apply);
+        return xodus.readTx(f);
     }
 
     @Override
     protected <T> T wtx(Function<Tx.Write, T> f) {
-        return xodus.writeTx(f::apply);
+        return xodus.writeTx(f);
     }
 
-    @Override
     @Test
     public void testKeySize() {
         final String s = randomString(new Random(), 2000);

@@ -29,36 +29,25 @@
  */
 package net.ripe.rpki.validator3.storage.stores.impl;
 
-import net.ripe.rpki.validator3.storage.lmdb.LmdbTests;
-import net.ripe.rpki.validator3.storage.Storage;
-import org.junit.Before;
-import org.junit.Rule;
+import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.IntegrationTest;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import static org.junit.Assert.assertEquals;
 
-public class SequencesStoreTest {
-
-    @Rule
-    public final TemporaryFolder tmp = new TemporaryFolder();
-
-    private Storage storage;
-    private SequencesStore sequences;
-
-    @Before
-    public void setUp() throws Exception {
-        storage = LmdbTests.makeLmdb(tmp.newFolder().getAbsolutePath());
-        this.sequences = new SequencesStore(storage);
-    }
+@RunWith(SpringRunner.class)
+@IntegrationTest
+@Slf4j
+public class SequencesStoreTest extends GenericStorageTest {
 
     @Test
     public void testNext() {
-        assertEquals(new Long(1L), storage.writeTx(tx ->sequences.next(tx, "seq1")));
-        assertEquals(new Long(2L), storage.writeTx(tx ->sequences.next(tx, "seq1")));
-        assertEquals(new Long(1L), storage.writeTx(tx ->sequences.next(tx, "seq2")));
-        assertEquals(new Long(2L), storage.writeTx(tx ->sequences.next(tx, "seq2")));
-        assertEquals(new Long(3L), storage.writeTx(tx ->sequences.next(tx, "seq2")));
+        assertEquals(new Long(1L), wtx(tx -> getSequences().next(tx, "seq1")));
+        assertEquals(new Long(2L), wtx(tx -> getSequences().next(tx, "seq1")));
+        assertEquals(new Long(1L), wtx(tx -> getSequences().next(tx, "seq2")));
+        assertEquals(new Long(2L), wtx(tx -> getSequences().next(tx, "seq2")));
+        assertEquals(new Long(3L), wtx(tx -> getSequences().next(tx, "seq2")));
     }
-
 }

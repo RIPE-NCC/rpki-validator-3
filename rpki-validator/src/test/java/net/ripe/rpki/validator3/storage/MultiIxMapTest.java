@@ -39,7 +39,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.UUID;
 
-import static net.ripe.rpki.validator3.storage.lmdb.LmdbIxMapTest.key;
+
 import static org.junit.Assert.assertEquals;
 
 public abstract class MultiIxMapTest {
@@ -52,9 +52,9 @@ public abstract class MultiIxMapTest {
 
     @Test
     public void putAndGetBack() {
-        final Key k1 = key(UUID.randomUUID());
-        final Key k2 = key(UUID.randomUUID());
-        final Key k3 = key(UUID.randomUUID());
+        final Key k1 = Key.of(UUID.randomUUID());
+        final Key k2 = Key.of(UUID.randomUUID());
+        final Key k3 = Key.of(UUID.randomUUID());
         storage.writeTx0(tx -> multIxMap.put(tx, k1, "a"));
 
         storage.readTx0(tx -> {
@@ -84,9 +84,9 @@ public abstract class MultiIxMapTest {
 
     @Test
     public void putAndDelete() {
-        final Key k1 = key(UUID.randomUUID());
-        final Key k2 = key(UUID.randomUUID());
-        final Key k3 = key(UUID.randomUUID());
+        final Key k1 = Key.of(UUID.randomUUID());
+        final Key k2 = Key.of(UUID.randomUUID());
+        final Key k3 = Key.of(UUID.randomUUID());
         storage.writeTx0(tx -> multIxMap.put(tx, k1, "a"));
 
         storage.readTx0(tx -> {

@@ -39,7 +39,7 @@ import net.ripe.rpki.validator3.storage.IxMap;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
-import net.ripe.rpki.validator3.storage.lmdb.OnDeleteRestrictException;
+import net.ripe.rpki.validator3.storage.OnDeleteRestrictException;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.Serializable;

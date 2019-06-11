@@ -61,12 +61,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.lmdbjava</groupId>
-            <artifactId>lmdbjava</artifactId>
-            <version>0.6.3</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.jetbrains.xodus</groupId>
             <artifactId>xodus-openAPI</artifactId>
             <version>${xodus.version}</version>
@@ -458,7 +452,6 @@
                     <requires>
                         <require>java-1.8.0-openjdk</require>
                         <require>rsync</require>
-                        <require>lmdb-libs</require>
                     </requires>
                 </configuration>
             </plugin>

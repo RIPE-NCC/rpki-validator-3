@@ -35,7 +35,6 @@ import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
-import net.ripe.rpki.validator3.storage.lmdb.LmdbTx;
 
 import java.time.Instant;
 import java.util.Map;
