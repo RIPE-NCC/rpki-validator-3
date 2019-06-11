@@ -49,7 +49,7 @@ import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.IxMap;
 import net.ripe.rpki.validator3.storage.lmdb.LmdbIxMap;
-import net.ripe.rpki.validator3.storage.lmdb.MultIxMap;
+import net.ripe.rpki.validator3.storage.lmdb.LmdbMultIxMap;
 import net.ripe.rpki.validator3.storage.lmdb.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
@@ -86,7 +86,7 @@ public class ValidationRunsStore implements ValidationRuns {
     private static final String BY_TA_INDEX = "by-ta";
     private static final String BY_COMPLETED_AT_INDEX = "by-completed-at";
 
-    private MultIxMap<Key> vr2ro;
+    private LmdbMultIxMap<Key> vr2ro;
     private IxMap<Key> vr2repo;
 
     private IxMap<CertificateTreeValidationRun> ctIxMap;

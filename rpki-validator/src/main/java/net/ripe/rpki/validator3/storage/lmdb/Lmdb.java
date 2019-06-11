@@ -37,7 +37,6 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.IxBase;
-import net.ripe.rpki.validator3.storage.IxMap;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
@@ -161,8 +160,8 @@ public abstract class Lmdb implements Storage {
 
 
     @Override
-    public <T extends Serializable> MultIxMap<T> createMultIxMap(final String name, Coder<T> c) {
-        MultIxMap<T> ixMap = new MultIxMap<>(this, name, c);
+    public <T extends Serializable> LmdbMultIxMap<T> createMultIxMap(final String name, Coder<T> c) {
+        LmdbMultIxMap<T> ixMap = new LmdbMultIxMap<>(this, name, c);
         ixMaps.put(name, ixMap);
         return ixMap;
     }

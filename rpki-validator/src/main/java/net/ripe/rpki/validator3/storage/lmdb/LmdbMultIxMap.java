@@ -45,11 +45,11 @@ import java.util.List;
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.DbiFlags.MDB_DUPSORT;
 
-public class MultIxMap<T extends Serializable> extends LmdbIxBase<T> {
+public class LmdbMultIxMap<T extends Serializable> extends LmdbIxBase<T> {
 
-    public MultIxMap(final Lmdb lmdb,
-                     final String name,
-                     final Coder<T> coder) {
+    public LmdbMultIxMap(final Lmdb lmdb,
+                         final String name,
+                         final Coder<T> coder) {
         super(lmdb, name, coder);
     }
 

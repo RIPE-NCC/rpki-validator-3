@@ -50,7 +50,7 @@ public class MultLmdbIxMapTest {
     public final TemporaryFolder tmp = new TemporaryFolder();
 
     private Storage storage;
-    private MultIxMap<String> multIxMap;
+    private LmdbMultIxMap<String> multIxMap;
 
     @Before
     public void setUp() throws Exception {

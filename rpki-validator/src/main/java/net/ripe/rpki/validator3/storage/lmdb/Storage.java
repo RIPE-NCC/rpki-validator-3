@@ -26,7 +26,7 @@ public interface Storage {
                                                       Map<String, Function<T, Set<Key>>> indexFunctions,
                                                       Class<T> c);
 
-    <T extends Serializable> MultIxMap<T> createMultIxMap(String name, Coder<T> c);
+    <T extends Serializable> LmdbMultIxMap<T> createMultIxMap(String name, Coder<T> c);
 
     <T extends Serializable> IxMap<T> createIxMap(String name,
                                                       Map<String, Function<T, Set<Key>>> indexFunctions,
