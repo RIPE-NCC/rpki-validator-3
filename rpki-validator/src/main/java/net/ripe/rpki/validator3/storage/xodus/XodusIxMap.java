@@ -321,10 +321,6 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
         });
     }
 
-    private Transaction castTxn(Tx.Read tx) {
-        return (Transaction) tx.txn();
-    }
-
     public void onDelete(BiConsumer<Tx.Write, Key> bf) {
         onDeleteTriggers.add(bf);
     }

@@ -27,8 +27,10 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.lmdb;
+package net.ripe.rpki.validator3.storage.xodus;
 
+import jetbrains.exodus.ByteIterable;
+import jetbrains.exodus.env.Cursor;
 import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.MultIxMap;
 import net.ripe.rpki.validator3.storage.Tx;
@@ -46,11 +48,11 @@ import java.util.List;
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.DbiFlags.MDB_DUPSORT;
 
-public class LmdbMultIxMap<T extends Serializable> extends LmdbIxBase<T> implements MultIxMap<T> {
+public class XodusMultIxMap<T extends Serializable> extends XodusIxBase<T> implements MultIxMap<T> {
 
-    public LmdbMultIxMap(final Lmdb lmdb,
-                         final String name,
-                         final Coder<T> coder) {
+    public XodusMultIxMap(final Xodus lmdb,
+                          final String name,
+                          final Coder<T> coder) {
         super(lmdb, name, coder);
     }
 
@@ -62,48 +64,56 @@ public class LmdbMultIxMap<T extends Serializable> extends LmdbIxBase<T> impleme
         return new DbiFlags[]{MDB_CREATE, MDB_DUPSORT};
     }
 
-    @Override
     public List<T> get(Tx.Read tx, Key primaryKey) {
         verifyKey(primaryKey);
         final ByteBuffer pkBuf = primaryKey.toByteBuffer();
         final List<T> result = new ArrayList<>();
-        try (final CursorIterator<ByteBuffer> iterate = getMainDb().iterate(castTxn(tx), KeyRange.closed(pkBuf, pkBuf))) {
-            while (iterate.hasNext()) {
-                final CursorIterator.KeyVal<ByteBuffer> next = iterate.next();
-                result.add(getValue(primaryKey, Bytes.toBytes(next.val())));
+        try (Cursor cursor = getMainDb().openCursor(castTxn(tx))) {
+            ByteIterable startKey = cursor.getSearchKey(primaryKey.toByteIterable());
+            if (startKey != null) {
+                result.add(getValue(primaryKey, cursor.getValue().getBytesUnsafe()));
+                while (cursor.getNextDup()) {
+                    result.add(getValue(primaryKey, cursor.getValue().getBytesUnsafe()));
+                }
             }
         }
         return result;
     }
 
-    @Override
     public int count(Tx.Read tx, Key primaryKey) {
         verifyKey(primaryKey);
         int s = 0;
         final ByteBuffer pkBuf = primaryKey.toByteBuffer();
-        try (final CursorIterator<ByteBuffer> ci = getMainDb().iterate(castTxn(tx), KeyRange.closed(pkBuf, pkBuf))) {
-            while (ci.hasNext()) {
-                ci.next();
-                s++;
-            }
-        }
+//        try (final CursorIterator<ByteBuffer> ci = getMainDb().iterate(castTxn(tx), KeyRange.closed(pkBuf, pkBuf))) {
+//            while (ci.hasNext()) {
+//                ci.next();
+//                s++;
+//            }
+//        }
         return s;
     }
 
-    @Override
     public void put(Tx.Write tx, Key primaryKey, T value) {
         checkKeyAndValue(primaryKey, value);
-        getMainDb().put(castTxn(tx), primaryKey.toByteBuffer(), valueBuf(value));
+        getMainDb().put(castTxn(tx), primaryKey.toByteIterable(), valueBuf(value));
     }
 
-    @Override
     public void delete(Tx.Write tx, Key primaryKey) {
-        getMainDb().delete(castTxn(tx), primaryKey.toByteBuffer());
+        getMainDb().delete(castTxn(tx), primaryKey.toByteIterable());
     }
 
-    @Override
     public void delete(Tx.Write tx, Key primaryKey, T value) {
         verifyKey(primaryKey);
-        getMainDb().delete(castTxn(tx), primaryKey.toByteBuffer(), valueBuf(value));
+//        getMainDb().delete(castTxn(tx), primaryKey.toByteIterable(), valueBuf(value));
+    }
+
+    @Override
+    public void clear(Tx.Write tx) {
+
+    }
+
+    @Override
+    public T toValue(byte[] bb) {
+        return null;
     }
 }

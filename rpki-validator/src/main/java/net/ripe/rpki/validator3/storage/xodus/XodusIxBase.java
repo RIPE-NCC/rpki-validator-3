@@ -177,6 +177,10 @@ public abstract class XodusIxBase<T extends Serializable> implements IxBase<T> {
         return s.get();
     }
 
+    protected Transaction castTxn(Tx.Read tx) {
+        return (Transaction) tx.txn();
+    }
+
     @Override
     public Sizes sizeInfo(Tx.Read tx) {
         AtomicInteger count = new AtomicInteger();
