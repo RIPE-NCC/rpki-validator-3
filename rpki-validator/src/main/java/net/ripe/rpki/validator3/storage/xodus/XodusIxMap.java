@@ -77,10 +77,6 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
         }
     }
 
-    public XodusIxMap(final Xodus xodus, String name, Coder<T> coder) {
-        this(xodus, name, coder, Collections.emptyMap());
-    }
-
     private void reindex() {
         final Tx.Write tx = writeTx();
         try {
@@ -255,50 +251,44 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
         return getPkByIndexKeyRange(indexName, tx, idxKey, null);
     }
 
-    public Map<Key, T> getByIndexMax(String indexName, Tx.Read tx, Predicate<T> p) {
-        return getKeyAtTheMinOrMaxOfIndex(indexName, tx, false, p);
+    public Map<Key, T> getByIdxDescendingWhere(String indexName, Tx.Read tx, Predicate<T> p) {
+        return getOrderedMapWhere(indexName, tx, false, p);
     }
 
-    public Map<Key, T> getByIndexMin(String indexName, Tx.Read tx, Predicate<T> p) {
-        return getKeyAtTheMinOrMaxOfIndex(indexName, tx, true, p);
+    public Map<Key, T> getByIdxAscendingWhere(String indexName, Tx.Read tx, Predicate<T> p) {
+        return getOrderedMapWhere(indexName, tx, true, p);
     }
 
-    public Set<Key> getPkByIndexMax(String indexName, Tx.Read tx) {
-        // TO BE DEFINED
-        return Collections.emptySet();
-    }
+    private Map<Key, T> getOrderedMapWhere(String indexName, Tx.Read tx,
+                                           boolean ascending,
+                                           Predicate<T> predicate) {
 
-    public Set<Key> getPkByIndexMin(String indexName, Tx.Read tx) {
-        // TO BE DEFINED
-        return Collections.emptySet();
-    }
+        Function<Cursor, Boolean> getStart = c -> ascending ? c.getNext() : c.getLast();
+        Function<Cursor, Boolean> getNextValue = c -> ascending ? c.getNextDup() : c.getPrevDup();
+        Function<Cursor, Boolean> getNextIndex = c -> ascending ? c.getNext() : c.getPrev();
 
-    private Map<Key, T> getKeyAtTheMinOrMaxOfIndex(String indexName, Tx.Read tx,
-                                                   boolean moveForward,
-                                                   Predicate<T> p) {
         Store index = getIdx(indexName);
         final Map<Key, T> m = new HashMap<>();
         if (index != null) {
             Store mainDb = getMainDb();
             Transaction txn = castTxn(tx);
             try (Cursor cursor = index.openCursor(txn)) {
-                boolean foundSomething = moveForward ? cursor.getNext() : cursor.getLast();
+                boolean hasNextIndexKey = getStart.apply(cursor);
                 boolean foundResult = false;
-                while (foundSomething) {
-                    final Key indexKey = new Key(cursor.getKey());
+                while (hasNextIndexKey) {
                     final ByteIterable pk = cursor.getValue();
                     ByteIterable bi = mainDb.get(txn, pk);
                     if (bi != null) {
                         final T value = toValue(bi);
-                        if (p.test(value)) {
+                        if (predicate.test(value)) {
                             foundResult = true;
                             m.put(new Key(pk), value);
                         }
                     }
                     if (foundResult) {
-                        foundSomething = moveForward ? cursor.getNextDup() : cursor.getPrevDup();
+                        hasNextIndexKey = getNextValue.apply(cursor);
                     } else {
-                        foundSomething = moveForward ? cursor.getNext() : cursor.getPrev();
+                        hasNextIndexKey = getNextIndex.apply(cursor);
                     }
                 }
             }
@@ -387,13 +377,6 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
             Store idx = getIdx(name);
             AtomicInteger count = new AtomicInteger();
             AtomicInteger size = new AtomicInteger();
-//            try (final CursorIterator<ByteBuffer> iterator = idx.iterate(tx.txn())) {
-//                while (iterator.hasNext()) {
-//                    count.incrementAndGet();
-//                    final CursorIterator.KeyVal<ByteBuffer> next = iterator.next();
-//                    size.addAndGet(next.key().remaining() + next.val().remaining());
-//                }
-//            }
             long allocatedSize = getAllocatedSize(tx, idx);
             indexSizes.put(name, new XodusIxBase.Sizes(count.get(), size.get(), allocatedSize));
         });
@@ -403,26 +386,6 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
                 indexSizes);
     }
 
-//    public void verify(Tx.Read tx) {
-//
-//        final Map<Key, Set<Key>> indexValues = new HashMap<>();
-//        forEach(tx, (k, bb) -> {
-//            final T value = getValue(k, bb);
-//            indexFunctions.forEach((n, idxFun) -> {
-//                idxFun.apply(value).forEach(ik -> {
-//                            Set<Key> pks = indexValues.get(ik);
-//                            if (pks == null) {
-//                                pks = getPkByIndex(n, tx, ik);
-//                                indexValues.put(ik, pks);
-//                            }
-//                            if (!pks.contains(k)) {
-//                                throw new RuntimeException("PkBuf blabla");
-//                            }
-//                        }
-//                );
-//            });
-//        });
-//    }
 
     public static class Sizes extends XodusIxBase.Sizes {
         @Getter

@@ -309,11 +309,11 @@ public abstract class IxMapTest {
     }
 
     private Set<String> getLongestStrings(Tx.Read tx, Predicate<String> p) {
-        return new HashSet<>(ixMap.getByIndexMax(LENGTH_INDEX, tx, p).values());
+        return new HashSet<>(ixMap.getByIdxDescendingWhere(LENGTH_INDEX, tx, p).values());
     }
 
     private Set<String> getShortestStrings(Tx.Read tx, Predicate<String> p) {
-        return new HashSet<>(ixMap.getByIndexMin(LENGTH_INDEX, tx, p).values());
+        return new HashSet<>(ixMap.getByIdxAscendingWhere(LENGTH_INDEX, tx, p).values());
     }
 
     private Set<String> getValues(Tx.Read tx, Collection<Key> maxByIndex) {

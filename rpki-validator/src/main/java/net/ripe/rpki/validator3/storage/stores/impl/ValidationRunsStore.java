@@ -36,24 +36,39 @@ import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.storage.IxMap;
 import net.ripe.rpki.validator3.storage.MultIxMap;
+import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.data.validation.*;
+import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
+import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidationRun;
+import net.ripe.rpki.validator3.storage.data.validation.RrdpRepositoryValidationRun;
+import net.ripe.rpki.validator3.storage.data.validation.RsyncRepositoryValidationRun;
+import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
+import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
+import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
-import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
+import org.apache.commons.lang.reflect.FieldUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -187,26 +202,26 @@ public class ValidationRunsStore implements ValidationRuns {
         final List<T> result = new ArrayList<>();
         List<IxMap<ValidationRun>> ixMaps = pickIxMaps(type);
         ixMaps.forEach(ixMap ->
-                ixMap.getByIndexMax(BY_COMPLETED_AT_INDEX, tx, ValidationRun::isSucceeded)
+                ixMap.getByIdxDescendingWhere(BY_COMPLETED_AT_INDEX, tx, ValidationRun::isSucceeded)
                         .forEach((k, v) -> result.add((T) v)));
         return result;
     }
 
     @Override
     public Optional<CertificateTreeValidationRun> findLatestSuccessfulCaTreeValidationRun(Tx.Read tx, TrustAnchor trustAnchor) {
-        return ctIxMap.getByIndexMax(BY_COMPLETED_AT_INDEX, tx, vr ->
+        return ctIxMap.getByIdxDescendingWhere(BY_COMPLETED_AT_INDEX, tx, vr ->
                 vr.isSucceeded() && trustAnchor.key().equals(vr.getTrustAnchor().key())).values().stream().findFirst();
     }
 
     @Override
     public Optional<TrustAnchorValidationRun> findLatestCompletedForTrustAnchor(Tx.Read tx, TrustAnchor trustAnchor) {
-        return taIxMap.getByIndexMax(BY_COMPLETED_AT_INDEX, tx,
+        return taIxMap.getByIdxDescendingWhere(BY_COMPLETED_AT_INDEX, tx,
                 vr -> trustAnchor.key().equals(vr.getTrustAnchor().key())).values().stream().findFirst();
     }
 
     @Override
     public Optional<CertificateTreeValidationRun> findLatestCaTreeValidationRun(Tx.Read tx, TrustAnchor trustAnchor) {
-        return ctIxMap.getByIndexMax(BY_COMPLETED_AT_INDEX, tx,
+        return ctIxMap.getByIdxDescendingWhere(BY_COMPLETED_AT_INDEX, tx,
                 vr -> trustAnchor.key().equals(vr.getTrustAnchor().key())).values().stream().findFirst();
     }
 
@@ -221,7 +236,7 @@ public class ValidationRunsStore implements ValidationRuns {
         AtomicInteger count = new AtomicInteger(0);
         maps.forEach((type, ixMap) -> {
             // Don't delete the most recent one successful
-            final Set<Key> latestSuccessfulKeys = ixMap.getByIndexMax(BY_COMPLETED_AT_INDEX, tx, ValidationRun::isSucceeded).keySet();
+            final Set<Key> latestSuccessfulKeys = ixMap.getByIdxDescendingWhere(BY_COMPLETED_AT_INDEX, tx, ValidationRun::isSucceeded).keySet();
             final Set<Key> toDelete = new HashSet<>();
             ixMap.forEach(tx, (k, bb) -> {
                 ValidationRun validationRun = ixMap.toValue(bb);
@@ -285,7 +300,7 @@ public class ValidationRunsStore implements ValidationRuns {
     }
 
     private Stream<ValidationCheck> validationCheckForTaStreams(Tx.Read tx, long trustAnchorId) {
-        Stream<ValidationCheck> taChecks = taIxMap.getByIndexMax(BY_COMPLETED_AT_INDEX, tx,
+        Stream<ValidationCheck> taChecks = taIxMap.getByIdxDescendingWhere(BY_COMPLETED_AT_INDEX, tx,
                 vr -> trustAnchorId == vr.getTrustAnchor().key().asLong())
                 .values()
                 .stream()
@@ -294,7 +309,7 @@ public class ValidationRunsStore implements ValidationRuns {
                 .orElse(Collections.emptyList())
                 .stream();
 
-        Stream<ValidationCheck> ctChecks = ctIxMap.getByIndexMax(BY_COMPLETED_AT_INDEX, tx,
+        Stream<ValidationCheck> ctChecks = ctIxMap.getByIdxDescendingWhere(BY_COMPLETED_AT_INDEX, tx,
                 vr -> trustAnchorId == vr.getTrustAnchor().key().asLong())
                 .values()
                 .stream()
@@ -406,20 +421,14 @@ public class ValidationRunsStore implements ValidationRuns {
         return (IxMap<T>) ixMap;
     }
 
-    // TODO Come up with something better than this horror
     private List<IxMap<ValidationRun>> pickIxMaps(Class<? extends ValidationRun> c) {
         List<IxMap<ValidationRun>> ixMaps = new ArrayList<>();
-        if (c.isAssignableFrom(CertificateTreeValidationRun.class)) {
-            ixMaps.add(pickIxMap(CertificateTreeValidationRun.TYPE));
-        }
-        if (c.isAssignableFrom(TrustAnchorValidationRun.class)) {
-            ixMaps.add(pickIxMap(TrustAnchorValidationRun.TYPE));
-        }
-        if (c.isAssignableFrom(RrdpRepositoryValidationRun.class)) {
-            ixMaps.add(pickIxMap(RrdpRepositoryValidationRun.TYPE));
-        }
-        if (c.isAssignableFrom(RsyncRepositoryValidationRun.class)) {
-            ixMaps.add(pickIxMap(RsyncRepositoryValidationRun.TYPE));
+
+        try {
+            String validationRunType = FieldUtils.readDeclaredStaticField(c, "TYPE").toString();
+            ixMaps.add(pickIxMap(validationRunType));
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException("Validation run "+c.toGenericString()+" has not static TYPE field declared.");
         }
         return ixMaps;
     }
