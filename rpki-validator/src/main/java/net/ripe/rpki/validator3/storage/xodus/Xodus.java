@@ -73,8 +73,8 @@ public abstract class Xodus implements Storage {
     private Gson gson = new Gson();
     private Store metadata;
 
-    protected synchronized Store meta(){
-        if(metadata == null){
+    protected synchronized Store meta() {
+        if (metadata == null) {
             metadata = getEnv().computeInTransaction(txn ->
                     getEnv().openStore(METADATA_MAP_NAME, WITHOUT_DUPLICATES, txn));
         }
@@ -139,8 +139,9 @@ public abstract class Xodus implements Storage {
             throw new XodusClosedException();
         }
     }
+
     public String status() {
-        EnvironmentStatistics statistics = (EnvironmentStatistics)getEnv().getStatistics();
+        EnvironmentStatistics statistics = (EnvironmentStatistics) getEnv().getStatistics();
         return Arrays.stream(EnvironmentStatistics.Type.values())
                 .map(k -> k.name() + ":" + statistics.getStatisticsItem(k).getTotal())
                 .collect(Collectors.joining(","));
@@ -201,7 +202,7 @@ public abstract class Xodus implements Storage {
             StoreConfig storeConfigs) {
         final Store meta = meta();
         Xodus.IxMapInfo existingIxMapInfo = readTx(tx -> {
-            ByteIterable byteIterable = meta.get((Transaction)tx.txn(), dbMetaKey(name).toByteIterable());
+            ByteIterable byteIterable = meta.get((Transaction) tx.txn(), dbMetaKey(name).toByteIterable());
             if (byteIterable == null) {
                 return null;
             }
@@ -254,6 +255,7 @@ public abstract class Xodus implements Storage {
     private String idxStoreName(String name, String idx) {
         return name + "-idx-" + idx;
     }
+
     @Data
     private static class IxMapInfo {
         private String name;
