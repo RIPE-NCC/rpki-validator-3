@@ -49,8 +49,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class XodusIxMapTest extends IxMapTest {
 
@@ -70,7 +69,6 @@ public class XodusIxMapTest extends IxMapTest {
     }
 
     @Test
-    @Ignore
     public void testReindex() {
         ixMap = xodus.createIxMap("testReindex",
                 ImmutableMap.of(
@@ -78,7 +76,7 @@ public class XodusIxMapTest extends IxMapTest {
                         "lower", s -> Key.keys(Key.of(s.toLowerCase()))),
                 CoderFactory.makeCoder(String.class));
 
-        Set<String> dbNames = new HashSet<>(rtx(tx -> xodus.getEnv().getAllStoreNames((Transaction)tx.txn())));
+        Set<String> dbNames = new HashSet<>(rtx(tx -> xodus.getEnv().getAllStoreNames((Transaction) tx.txn())));
 
         assertTrue(dbNames.containsAll(Sets.newHashSet("testReindex-idx-lower", "testReindex-idx-len", "testReindex-main")));
 
@@ -95,14 +93,10 @@ public class XodusIxMapTest extends IxMapTest {
                         "lower", s -> Key.keys(Key.of(s.toLowerCase()))),
                 CoderFactory.makeCoder(String.class));
 
-        dbNames = new HashSet<>(rtx(tx -> xodus.getEnv().getAllStoreNames((Transaction)tx.txn())));
+        Set<String> dbNames1 = new HashSet<>(rtx(tx -> xodus.getEnv().getAllStoreNames((Transaction) tx.txn())));
 
-        assertTrue(dbNames.containsAll(Sets.newHashSet("testReindex-idx-lower", "testReindex-idx-lenPlus1", "testReindex-main")));
-
-
-        //FIXME: This is the only failing assertion, there is no xodus API to completely delete store once it's created.
-        // You can remove and make store useless but it won't be removed from available db names.
-        //assertFalse(dbNames.contains("testReindex-idx-len"));
+        assertTrue(dbNames1.containsAll(Sets.newHashSet("testReindex-idx-lower", "testReindex-idx-lenPlus1", "testReindex-main")));
+        assertFalse(dbNames1.contains("testReindex-idx-len"));
 
         assertEquals(Optional.of("aa"), xodus.readTx(tx -> ixMap.get(tx, Key.of(1L))));
         assertEquals(Optional.of("aBa"), xodus.readTx(tx -> ixMap.get(tx, Key.of(2L))));

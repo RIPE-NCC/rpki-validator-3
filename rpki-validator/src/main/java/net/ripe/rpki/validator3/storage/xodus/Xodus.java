@@ -202,19 +202,18 @@ public abstract class Xodus implements Storage {
             String name,
             Map<String, Function<T, Set<Key>>> indexFunctions,
             StoreConfig storeConfigs) {
+
         final Store meta = meta();
-        Xodus.IxMapInfo existingIxMapInfo = readTx(tx -> {
-            ByteIterable byteIterable = meta.get((Transaction) tx.txn(), dbMetaKey(name).toByteIterable());
+        Xodus.IxMapInfo existingIxMapInfo = getEnv().computeInReadonlyTransaction(txn -> {
+            ByteIterable byteIterable = meta.get(txn, dbMetaKey(name).toByteIterable());
             if (byteIterable == null) {
                 return null;
             }
-            ByteBuffer bb = ByteBuffer.wrap(byteIterable.getBytesUnsafe());
-            String json = new String(Bytes.toBytes(bb), UTF_8);
+            String json = new String(byteIterable.getBytesUnsafe(), UTF_8);
             return gson.fromJson(json, Xodus.IxMapInfo.class);
         });
 
         final Map<String, Store> indexes = new HashMap<>();
-        final Environment env = getEnv();
         boolean reindex = false;
         if (existingIxMapInfo != null) {
             final Set<String> existingIndexes = existingIxMapInfo.getIndexes();
@@ -224,9 +223,9 @@ public abstract class Xodus implements Storage {
                         getEnv().executeInTransaction(txn -> {
                                     String idxStoreName = idxStoreName(name, idx);
                                     if (getEnv().storeExists(idxStoreName, txn)) {
-                                        getEnv().truncateStore(idxStoreName, txn);
+                                        getEnv().removeStore(idxStoreName, txn);
                                     }
-                                    getEnv().openStore(idxStoreName, USE_EXISTING, txn);
+//                                    getEnv().openStore(idxStoreName, USE_EXISTING, txn);
                                 }
                         );
                     });

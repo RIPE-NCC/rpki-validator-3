@@ -53,8 +53,6 @@ import java.util.stream.Collectors;
 
 /**
  *
- *
- *
  * @param <T>
  */
 public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implements IxMap<T> {
@@ -78,23 +76,19 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
     }
 
     private void reindex() {
-        final Tx.Write tx = writeTx();
-        try {
-            Transaction txn = castTxn(tx);
-
+        this.env.executeInExclusiveTransaction(txn -> {
             indexes.forEach((name, idx) -> env.truncateStore(idx.getName(), txn));
-            forEach(tx, (k, bb) -> {
-                final T value = getValue(k, bb);
-                indexFunctions.forEach((n, idxFun) ->
-                        idxFun.apply(value).forEach(ik -> {
-                            final Store idx = getIdx(n);
-                            idx.put(txn, ik.toByteIterable(), k.toByteIterable());
-                        }));
-            });
-            txn.commit();
-        } finally {
-            tx.close();
-        }
+            try (final Cursor ci = getMainDb().openCursor(txn)) {
+                while (ci.getNext()) {
+                    ByteIterable pk = ci.getKey();
+                    final T value = getValue(new Key(pk), ci.getValue().getBytesUnsafe());
+                    indexFunctions.forEach((n, idxFun) -> {
+                        final Store idx = getIdx(n);
+                        idxFun.apply(value).forEach(ik -> idx.put(txn, ik.toByteIterable(), pk));
+                    });
+                }
+            }
+        });
     }
 
     private Store getIdx(String name) {
