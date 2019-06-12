@@ -69,8 +69,6 @@ public class TrustAnchorService {
 
     private final ValidatedRpkiObjects validatedRpkiObjects;
 
-    private final Settings settings;
-
     private final ValidationScheduler validationScheduler;
 
     @Value("${rpki.validator.preconfigured.trust.anchors.directory}")
@@ -81,13 +79,12 @@ public class TrustAnchorService {
     @Autowired
     public TrustAnchorService(TrustAnchors trustAnchors,
                               RpkiRepositories rpkiRepositories,
-                              ValidatedRpkiObjects validatedRpkiObjects, Settings settings,
+                              ValidatedRpkiObjects validatedRpkiObjects,
                               ValidationScheduler validationScheduler,
                               Storage storage) {
         this.trustAnchors = trustAnchors;
         this.rpkiRepositories = rpkiRepositories;
         this.validatedRpkiObjects = validatedRpkiObjects;
-        this.settings = settings;
         this.validationScheduler = validationScheduler;
         this.storage = storage;
     }
