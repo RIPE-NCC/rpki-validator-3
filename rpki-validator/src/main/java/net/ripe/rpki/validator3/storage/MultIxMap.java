@@ -30,6 +30,7 @@
 package net.ripe.rpki.validator3.storage;
 
 import net.ripe.rpki.validator3.storage.data.Key;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.Serializable;
 import java.util.List;
@@ -44,4 +45,6 @@ public interface MultIxMap<T extends Serializable> extends IxBase<T> {
     void delete(Tx.Write tx, Key primaryKey);
 
     void delete(Tx.Write tx, Key primaryKey, T value);
+
+    void deleteBatch(Tx.Write tx, List<Pair<Key, T>> toDelete);
 }

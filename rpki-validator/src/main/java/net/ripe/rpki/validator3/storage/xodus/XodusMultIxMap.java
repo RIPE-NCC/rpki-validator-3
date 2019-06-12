@@ -36,6 +36,7 @@ import net.ripe.rpki.validator3.storage.MultIxMap;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -53,6 +54,7 @@ public class XodusMultIxMap<T extends Serializable> extends XodusIxBase<T> imple
         return StoreConfig.WITH_DUPLICATES;
     }
 
+    @Override
     public List<T> get(Tx.Read tx, Key primaryKey) {
         verifyKey(primaryKey);
         final List<T> result = new ArrayList<>();
@@ -68,6 +70,7 @@ public class XodusMultIxMap<T extends Serializable> extends XodusIxBase<T> imple
         return result;
     }
 
+    @Override
     public int count(Tx.Read tx, Key primaryKey) {
         verifyKey(primaryKey);
         int s = 0;
@@ -83,21 +86,35 @@ public class XodusMultIxMap<T extends Serializable> extends XodusIxBase<T> imple
         return s;
     }
 
+    @Override
     public void put(Tx.Write tx, Key primaryKey, T value) {
         checkKeyAndValue(primaryKey, value);
         getMainDb().put(castTxn(tx), primaryKey.toByteIterable(), valueWithChecksum(value));
     }
 
+    @Override
     public void delete(Tx.Write tx, Key primaryKey) {
         getMainDb().delete(castTxn(tx), primaryKey.toByteIterable());
     }
 
+    @Override
     public void delete(Tx.Write tx, Key primaryKey, T value) {
         verifyKey(primaryKey);
         try (Cursor c = getMainDb().openCursor(castTxn(tx))) {
             if (c.getSearchBoth(primaryKey.toByteIterable(), valueWithChecksum(value))) {
                 c.deleteCurrent();
             }
+        }
+    }
+
+    @Override
+    public void deleteBatch(Tx.Write tx, List<Pair<Key, T>> toDelete) {
+        try (Cursor c = getMainDb().openCursor(castTxn(tx))) {
+            toDelete.forEach(p -> {
+                if (c.getSearchBoth(p.getKey().toByteIterable(), valueWithChecksum(p.getValue()))) {
+                    c.deleteCurrent();
+                }
+            });
         }
     }
 

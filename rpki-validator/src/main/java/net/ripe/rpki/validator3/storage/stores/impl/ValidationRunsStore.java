@@ -267,18 +267,18 @@ public class ValidationRunsStore implements ValidationRuns {
         final Set<Key> roKeys = rpkiObjects.keys(tx);
         final Set<Key> repoKeys = rpkiRepositories.keys(tx);
         final List<Pair<Key, Key>> toDelete = new ArrayList<>();
-        vr2ro.forEach(tx, (vrKey, bb) -> {
-            final Key roKey = Key.of(bb);
+        vr2ro.forEach(tx, (vrKey, bytes) -> {
+            final Key roKey = vr2ro.toValue(bytes);
             if (!roKeys.contains(roKey)) {
                 toDelete.add(Pair.of(vrKey, roKey));
             }
         });
-        toDelete.forEach(p -> vr2ro.delete(tx, p.getLeft(), p.getRight()));
         int c1 = toDelete.size();
+        vr2ro.deleteBatch(tx, toDelete);
 
         final Set<Key> reposToDelete = new HashSet<>();
-        vr2repo.forEach(tx, (vrKey, bb) -> {
-            final Key repoKey = Key.of(bb);
+        vr2repo.forEach(tx, (vrKey, bytes) -> {
+            final Key repoKey = vr2repo.toValue(bytes);
             if (!repoKeys.contains(repoKey)) {
                 reposToDelete.add(vrKey);
             }
