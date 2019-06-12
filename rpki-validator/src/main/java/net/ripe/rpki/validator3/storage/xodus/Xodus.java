@@ -38,6 +38,8 @@ import jetbrains.exodus.env.EnvironmentStatistics;
 import jetbrains.exodus.env.Store;
 import jetbrains.exodus.env.StoreConfig;
 import jetbrains.exodus.env.Transaction;
+import jetbrains.exodus.management.Statistics;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -256,6 +258,10 @@ public abstract class Xodus implements Storage {
         return name + "-idx-" + idx;
     }
 
+    public Stat getStat() {
+        return new Stat(getEnv().getStatistics());
+    }
+
     @Data
     private static class IxMapInfo {
         private String name;
@@ -282,4 +288,10 @@ public abstract class Xodus implements Storage {
         }
     }
 
+    @Data
+    public class Stat {
+        public Stat(Statistics statistics) {
+
+        }
+    }
 }
