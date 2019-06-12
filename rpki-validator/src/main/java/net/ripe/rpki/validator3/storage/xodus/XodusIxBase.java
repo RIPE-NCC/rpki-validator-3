@@ -203,7 +203,7 @@ public abstract class XodusIxBase<T extends Serializable> implements IxBase<T> {
         return s.get();
     }
 
-    protected static Transaction castTxn(Tx.Read tx) {
+    static Transaction castTxn(Tx.Read tx) {
         return (Transaction) tx.txn();
     }
 
