@@ -69,7 +69,7 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
                       final Map<String, Function<T, Set<Key>>> indexFunctions) {
         super(xodus, name, coder);
         this.indexFunctions = indexFunctions;
-        Pair<Map<String, Store>, Boolean> p = xodus.createIndexes(name, indexFunctions, StoreConfig.WITH_DUPLICATES);
+        Pair<Map<String, Store>, Boolean> p = xodus.createIndexes(name, indexFunctions, StoreConfig.WITH_DUPLICATES_WITH_PREFIXING);
         indexes = p.getLeft();
         boolean reindex = p.getRight();
         if (reindex) {
@@ -107,7 +107,7 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
     }
 
     protected StoreConfig getStoreConfig() {
-        return StoreConfig.WITHOUT_DUPLICATES;
+        return StoreConfig.WITHOUT_DUPLICATES_WITH_PREFIXING;
     }
 
     public Optional<T> get(Key primaryKey) {

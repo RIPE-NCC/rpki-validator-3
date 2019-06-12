@@ -51,7 +51,7 @@ public class XodusMultIxMap<T extends Serializable> extends XodusIxBase<T> imple
     }
 
     protected StoreConfig getStoreConfig() {
-        return StoreConfig.WITH_DUPLICATES;
+        return StoreConfig.WITH_DUPLICATES_WITH_PREFIXING;
     }
 
     @Override

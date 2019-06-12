@@ -76,6 +76,18 @@ public abstract class XodusIxBase<T extends Serializable> implements IxBase<T> {
         }
     }
 
+    XodusIxBase(final Xodus xodus,
+                final String name,
+                final Coder<T> coder,
+                StoreConfig storeConfig) {
+        this.env = xodus.getEnv();
+        this.name = name;
+        this.coder = coder;
+        synchronized (xodus) {
+            this.mainDb = xodus.createMainMapDb(name, storeConfig);
+        }
+    }
+
     protected abstract StoreConfig getStoreConfig();
 
     static void checkNotNull(Object v, String s) {
