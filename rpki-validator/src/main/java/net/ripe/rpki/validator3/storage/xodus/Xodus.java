@@ -209,7 +209,7 @@ public abstract class Xodus implements Storage {
             if (byteIterable == null) {
                 return null;
             }
-            String json = new String(byteIterable.getBytesUnsafe(), UTF_8);
+            String json = new String(Bytes.toBytes(byteIterable), UTF_8);
             return gson.fromJson(json, Xodus.IxMapInfo.class);
         });
 

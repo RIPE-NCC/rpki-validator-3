@@ -29,8 +29,11 @@
  */
 package net.ripe.rpki.validator3.storage;
 
+import jetbrains.exodus.ByteIterable;
+
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public class Bytes {
     public static ByteBuffer toDirectBuffer(byte[] bytes) {
@@ -45,5 +48,9 @@ public class Bytes {
         bb.get(bytes);
         ((Buffer)bb).flip();
         return bytes;
+    }
+
+    public static byte[] toBytes(ByteIterable bi) {
+        return Arrays.copyOf(bi.getBytesUnsafe(), bi.getLength());
     }
 }

@@ -58,7 +58,9 @@ public class Key implements Serializable {
         bytes = Bytes.toBytes(bb);
     }
 
-    public Key(ByteIterable bi) { bytes = bi.getBytesUnsafe(); }
+    public Key(ByteIterable bi) {
+        bytes = Bytes.toBytes(bi);
+    }
 
     private Key(byte[] bytes) {
         this.bytes = Arrays.copyOf(bytes, bytes.length);

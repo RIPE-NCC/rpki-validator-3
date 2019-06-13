@@ -35,6 +35,7 @@ import jetbrains.exodus.env.Store;
 import jetbrains.exodus.env.StoreConfig;
 import jetbrains.exodus.env.Transaction;
 import lombok.Getter;
+import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.IxMap;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
@@ -81,7 +82,7 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
             try (final Cursor ci = getMainDb().openCursor(txn)) {
                 while (ci.getNext()) {
                     ByteIterable pk = ci.getKey();
-                    final T value = getValue(new Key(pk), ci.getValue().getBytesUnsafe());
+                    final T value = getValue(new Key(pk), Bytes.toBytes(ci.getValue()));
                     indexFunctions.forEach((n, idxFun) -> {
                         final Store idx = getIdx(n);
                         idxFun.apply(value).forEach(ik -> idx.put(txn, ik.toByteIterable(), pk));
@@ -114,7 +115,7 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
         if (bi == null) {
             return Optional.empty();
         }
-        return Optional.of(getValue(primaryKey, bi.getBytesUnsafe()));
+        return Optional.of(getValue(primaryKey, Bytes.toBytes(bi)));
     }
 
     public List<T> get(Tx.Read txn, Set<Key> primaryKeys) {
@@ -189,7 +190,7 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
             if (bb != null) {
                 // TODO probably avoid deserialization, just store the
                 //  index keys next to the serialized value
-                final T value = getValue(primaryKey, bb.getBytesUnsafe());
+                final T value = getValue(primaryKey, Bytes.toBytes(bb));
                 mainDb.delete(txn, pkBuf);
                 indexFunctions.forEach((idxName, idxFun) ->
                         idxFun.apply(value).forEach(ix -> {

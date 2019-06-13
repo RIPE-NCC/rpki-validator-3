@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.storage.xodus;
 import jetbrains.exodus.ByteIterable;
 import jetbrains.exodus.env.Cursor;
 import jetbrains.exodus.env.StoreConfig;
+import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.MultIxMap;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
@@ -61,9 +62,9 @@ public class XodusMultIxMap<T extends Serializable> extends XodusIxBase<T> imple
         try (Cursor cursor = getMainDb().openCursor(castTxn(tx))) {
             ByteIterable startKey = cursor.getSearchKey(primaryKey.toByteIterable());
             if (startKey != null) {
-                result.add(getValue(primaryKey, cursor.getValue().getBytesUnsafe()));
+                result.add(getValue(primaryKey, Bytes.toBytes(cursor.getValue())));
                 while (cursor.getNextDup()) {
-                    result.add(getValue(primaryKey, cursor.getValue().getBytesUnsafe()));
+                    result.add(getValue(primaryKey, Bytes.toBytes(cursor.getValue())));
                 }
             }
         }

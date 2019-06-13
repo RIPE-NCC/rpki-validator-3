@@ -172,8 +172,7 @@ public abstract class XodusIxBase<T extends Serializable> implements IxBase<T> {
     public void clear(Tx.Write tx) {
         // TODO Probably reimplement it using something like
         // getMainDb().getEnvironment().truncateStore(getName(), castTxn(tx));
-        Store mainDb = getMainDb();
-        truncate(tx, mainDb);
+        truncate(tx, getMainDb());
     }
 
     protected static void truncate(Tx.Write tx, Store mainDb) {
@@ -184,15 +183,15 @@ public abstract class XodusIxBase<T extends Serializable> implements IxBase<T> {
         }
     }
 
-    public T toValue(ByteIterable bb) {
-        return getValue(null, bb.getBytesUnsafe());
+    public T toValue(ByteIterable bi) {
+        return getValue(null, Bytes.toBytes(bi));
     }
 
     @Override
-    public void forEach(Tx.Read tx, BiConsumer<Key, byte[]> c){
+    public void forEach(Tx.Read tx, BiConsumer<Key, byte[]> c) {
         try (final Cursor ci = getMainDb().openCursor(castTxn(tx))) {
             while (ci.getNext()) {
-                c.accept(new Key(ci.getKey()), ci.getValue().getBytesUnsafe());
+                c.accept(new Key(ci.getKey()), Bytes.toBytes(ci.getValue()));
             }
         }
     }
