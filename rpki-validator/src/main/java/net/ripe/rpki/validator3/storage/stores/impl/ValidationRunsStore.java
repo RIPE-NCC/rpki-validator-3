@@ -70,6 +70,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
@@ -98,6 +99,7 @@ public class ValidationRunsStore implements ValidationRuns {
 
     private final RpkiObjects rpkiObjects;
     private final RpkiRepositories rpkiRepositories;
+    private final TrustAnchors trustAnchors;
 
     private final SequencesStore sequences;
 
@@ -108,6 +110,7 @@ public class ValidationRunsStore implements ValidationRuns {
                                Storage storage) {
         this.rpkiObjects = rpkiObjects;
         this.rpkiRepositories = rpkiRepositories;
+        this.trustAnchors = trustAnchors;
         this.sequences = sequences;
 
         ctIxMap = storage.createIxMap(
@@ -233,13 +236,28 @@ public class ValidationRunsStore implements ValidationRuns {
 
     @Override
     public int removeOldValidationRuns(Tx.Write tx, Instant completedBefore) {
-        AtomicInteger count = new AtomicInteger(0);
+        final AtomicInteger count = new AtomicInteger(0);
+        final Set<Key> taKeys = trustAnchors.keys(tx);
         maps.forEach((type, ixMap) -> {
-            // Don't delete the most recent one successful
-            final Set<Key> latestSuccessfulKeys = ixMap.getByIdxDescendingWhere(BY_COMPLETED_AT_INDEX, tx, ValidationRun::isSucceeded).keySet();
+            // Don't delete the most recent one successful for every trust anchor
+            final Set<Key> latestSuccessfulKeys = taKeys.stream().flatMap(taKey ->
+                    ixMap.getByIdxDescendingWhere(BY_COMPLETED_AT_INDEX, tx, vr -> {
+                                if (vr instanceof CertificateTreeValidationRun) {
+                                    return taKey.equals(((CertificateTreeValidationRun) vr).getTrustAnchor().key()) && vr.isSucceeded();
+                                }
+                                if (vr instanceof TrustAnchorValidationRun) {
+                                    return taKey.equals(((TrustAnchorValidationRun) vr).getTrustAnchor().key()) && vr.isSucceeded();
+                                }
+                                return vr.isSucceeded();
+                            }
+                    ).keySet().stream())
+                    .collect(Collectors.toSet());
+
+//            final Set<Key> latestSuccessfulKeys = ixMap.getByIdxDescendingWhere(BY_COMPLETED_AT_INDEX, tx, ValidationRun::isSucceeded).keySet();
+
             final Set<Key> toDelete = new HashSet<>();
-            ixMap.forEach(tx, (k, bb) -> {
-                ValidationRun validationRun = ixMap.toValue(bb);
+            ixMap.forEach(tx, (k, bytes) -> {
+                ValidationRun validationRun = ixMap.toValue(bytes);
                 boolean deleteIt = false;
                 if (validationRun.getCompletedAt() != null) {
                     if (validationRun.getCompletedAt().isBefore(completedBefore)) {
