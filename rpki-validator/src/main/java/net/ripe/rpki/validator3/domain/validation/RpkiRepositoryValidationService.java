@@ -329,7 +329,6 @@ public class RpkiRepositoryValidationService {
                 throw new RuntimeException(e);
             }
         });
-        storage.readTx0(rpkiObjects::verify);
     }
 
     private void traverseFSandStore(Tx.Write tx,

@@ -163,7 +163,6 @@ public class TrustAnchorValidationService {
                             .ifPresent(r ->
                                     affectedTrustAnchors.addAll(repositoryValidationService.prefetchRepository(r)));
                 }
-                storage.readTx0(rpkiObjects::verify);
                 affectedTrustAnchors.forEach(validationScheduler::triggerCertificateTreeValidation);
             }
         } catch (CommandExecutionException | IOException e) {

@@ -183,7 +183,6 @@ public class CertificateTreeValidationService {
             if (!rpkiObjectsKeys.isEmpty()) {
                 storage.readTx0(tx -> validatedRpkiObjects.updateByKey(tx, trustAnchorRef, rpkiObjectsKeys));
             }
-            storage.readTx0(rpkiObjects::verify);
         } finally {
             validationRun.completeWith(validationResult);
             storage.writeTx0(tx -> validationRuns.update(tx, validationRun));

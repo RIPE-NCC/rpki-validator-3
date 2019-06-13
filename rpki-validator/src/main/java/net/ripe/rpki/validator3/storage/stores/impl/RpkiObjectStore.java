@@ -215,14 +215,4 @@ public class RpkiObjectStore extends GenericStoreImpl<RpkiObject> implements Rpk
     protected IxMap<RpkiObject> ixMap() {
         return ixMap;
     }
-
-    @Override
-    public void verify(Tx.Read tx) {
-//        try {
-//            final Long t = Time.timed(() -> ixMap().verify(tx));
-//            log.info("Verified in {}ms", t);
-//        } catch (Exception e) {
-//            log.error("And now the data is screwed", e);
-//        }
-    }
 }

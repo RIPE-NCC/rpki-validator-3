@@ -82,8 +82,6 @@ public class RpkiObjectCleanupService {
         Instant now = Instant.now();
         final List<TrustAnchor> trustAnchors = storage.readTx(tx -> this.trustAnchors.findAll(tx));
         final Set<Key> markThem = ConcurrentHashMap.newKeySet();
-        log.info("Verify starting cleanup ");
-        storage.readTx0(tx -> rpkiObjects.verify(tx));
         final Long t0 = Time.timed(() ->
                 trustAnchors.stream()
                         .peek(trustAnchor -> log.debug("tracing objects for trust anchor {}", trustAnchor))
@@ -95,16 +93,11 @@ public class RpkiObjectCleanupService {
                                         traceCertificateAuthority(tx, now, resourceCertificate, markThem);
                                     }
                                 })));
-        log.info("Found {} reachable RPKI objects in {}ms, verifying", markThem.size(), t0);
-        storage.readTx0(tx -> rpkiObjects.verify(tx));
+        log.info("Found {} reachable RPKI objects in {}ms", markThem.size(), t0);
         return storage.writeTx(tx -> {
             Long t = Time.timed(() -> markThem.forEach(pk -> rpkiObjects.markReachable(tx, pk, now)));
             log.info("Marked reachable {} RPKI objects in {}ms", markThem.size(), t);
-            log.info("Verification before delete");
-            rpkiObjects.verify(tx);
             long delCount = deleteUnreachableObjects(tx, now);
-            log.info("Verification after delete");
-            rpkiObjects.verify(tx);
             return delCount;
         });
     }

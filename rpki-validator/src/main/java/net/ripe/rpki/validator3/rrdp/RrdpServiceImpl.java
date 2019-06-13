@@ -99,9 +99,7 @@ public class RrdpServiceImpl implements RrdpService {
     @Override
     public void storeRepository(final RpkiRepository rpkiRepository, final RpkiRepositoryValidationRun validationRun) {
         try {
-            storage.readTx0(rpkiObjects::verify);
             doStoreRepository(rpkiRepository, validationRun);
-            storage.readTx0(rpkiObjects::verify);
         } catch (RrdpException e) {
             log.warn("Error retrieving RRDP repository at {}: " + e.getMessage(), rpkiRepository.getRrdpNotifyUri());
             ValidationCheck validationCheck = new ValidationCheck(rpkiRepository.getRrdpNotifyUri(),
