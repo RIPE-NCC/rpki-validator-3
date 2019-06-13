@@ -69,7 +69,7 @@ public class XodusImpl extends Xodus {
                         .setEnvGatherStatistics(true)
                         .setGcEnabled(true)
                         .setLogCacheUseNio(true)
-                        .setMemoryUsagePercentage(25);
+                        .setMemoryUsagePercentage(10);
 
                 env = Environments.newInstance(path, config);
             }).get();
