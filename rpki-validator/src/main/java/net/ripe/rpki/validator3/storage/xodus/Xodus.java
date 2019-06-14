@@ -139,6 +139,11 @@ public abstract class Xodus implements Storage {
 
     }
 
+    @Override
+    public void gc() {
+        getEnv().gc();
+    }
+
     @Getter
     private final Map<Long, TxInfo> txs = new ConcurrentHashMap<>();
 

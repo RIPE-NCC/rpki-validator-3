@@ -68,5 +68,6 @@ public class ValidationRunCleanupService {
             orphanCount.set(storage.writeTx(tx -> validationRuns.removeOrphanValidationRunAssociations(tx)));
         });
         log.info("Removed {} old validation runs and {} orphans in {}ms", oldCount.get(), orphanCount.get(), t);
+        storage.gc();
     }
 }

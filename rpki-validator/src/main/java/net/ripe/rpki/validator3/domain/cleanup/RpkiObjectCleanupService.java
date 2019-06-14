@@ -94,12 +94,13 @@ public class RpkiObjectCleanupService {
                                     }
                                 })));
         log.info("Found {} reachable RPKI objects in {}ms", markThem.size(), t0);
-        return storage.writeTx(tx -> {
+        final Long deletedCount = storage.writeTx(tx -> {
             Long t = Time.timed(() -> markThem.forEach(pk -> rpkiObjects.markReachable(tx, pk, now)));
             log.info("Marked reachable {} RPKI objects in {}ms", markThem.size(), t);
-            long delCount = deleteUnreachableObjects(tx, now);
-            return delCount;
+            return deleteUnreachableObjects(tx, now);
         });
+        storage.gc();
+        return deletedCount;
     }
 
     private long deleteUnreachableObjects(Tx.Write tx, Instant now) {
