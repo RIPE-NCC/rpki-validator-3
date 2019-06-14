@@ -36,6 +36,7 @@ import jetbrains.exodus.env.Environment;
 import jetbrains.exodus.env.Store;
 import jetbrains.exodus.env.StoreConfig;
 import jetbrains.exodus.env.Transaction;
+import jetbrains.exodus.management.Statistics;
 import lombok.Getter;
 import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.IxBase;
@@ -218,8 +219,8 @@ public abstract class XodusIxBase<T extends Serializable> implements IxBase<T> {
     }
 
     long getAllocatedSize(Tx.Read tx, Store store) {
-        // TODO: Verify
-        return store.count(castTxn(tx));
+        // TODO Implement somehow
+        return 0;
     }
 
 

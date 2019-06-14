@@ -33,12 +33,7 @@ import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import jetbrains.exodus.ArrayByteIterable;
 import jetbrains.exodus.ByteIterable;
-import jetbrains.exodus.env.Environment;
-import jetbrains.exodus.env.EnvironmentStatistics;
-import jetbrains.exodus.env.Store;
-import jetbrains.exodus.env.StoreConfig;
-import jetbrains.exodus.env.Transaction;
-import jetbrains.exodus.management.Statistics;
+import jetbrains.exodus.env.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
@@ -51,13 +46,8 @@ import net.ripe.rpki.validator3.storage.Storage;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.Serializable;
-import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -65,7 +55,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static jetbrains.exodus.env.StoreConfig.USE_EXISTING;
 import static jetbrains.exodus.env.StoreConfig.WITHOUT_DUPLICATES;
 
 @Slf4j
@@ -257,8 +246,22 @@ public abstract class Xodus implements Storage {
         return name + "-idx-" + idx;
     }
 
+
+    @Data
+    @AllArgsConstructor
+    private class IxMapStat {
+        private String name;
+        private IxBase.Sizes sizes;
+    }
+
     public Stat getStat() {
-        return new Stat(getEnv().getStatistics());
+        return readTx(tx -> {
+            final List<IxMapStat> ixMapStats = ixMaps.entrySet().stream()
+                    .sorted(Comparator.comparing(Map.Entry::getKey))
+                    .map(e -> new IxMapStat(e.getKey(), e.getValue().sizeInfo(tx)))
+                    .collect(Collectors.toList());
+            return new Stat(ixMapStats);
+        });
     }
 
     @Data
@@ -288,9 +291,8 @@ public abstract class Xodus implements Storage {
     }
 
     @Data
+    @AllArgsConstructor
     public class Stat {
-        public Stat(Statistics statistics) {
-
-        }
+        List<IxMapStat> statistics;
     }
 }
