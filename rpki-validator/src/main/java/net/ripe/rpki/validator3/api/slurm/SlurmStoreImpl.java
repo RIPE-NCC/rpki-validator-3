@@ -30,7 +30,7 @@
 package net.ripe.rpki.validator3.api.slurm;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -40,7 +40,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class SlurmStoreImpl extends SlurmStore {
 
-    @Autowired
+    @Inject
     public SlurmStoreImpl(@Value("${rpki.validator.data.path}") String path) {
         super(path);
     }

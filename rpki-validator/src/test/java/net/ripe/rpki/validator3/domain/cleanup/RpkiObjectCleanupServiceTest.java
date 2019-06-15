@@ -44,7 +44,7 @@ import net.ripe.rpki.validator3.storage.stores.impl.GenericStorageTest;
 import org.joda.time.DateTime;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.security.auth.x500.X500Principal;
@@ -59,13 +59,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 @IntegrationTest
 public class RpkiObjectCleanupServiceTest extends GenericStorageTest {
 
-    @Autowired
+    @Inject
     private TrustAnchorsFactory factory;
 
-    @Autowired
+    @Inject
     private RpkiObjectCleanupService subject;
 
-    @Autowired
+    @Inject
     private RpkiObjects rpkiObjects;
 
     @Test

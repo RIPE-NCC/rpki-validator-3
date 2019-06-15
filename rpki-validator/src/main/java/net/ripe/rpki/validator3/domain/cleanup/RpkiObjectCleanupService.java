@@ -42,7 +42,7 @@ import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -56,10 +56,10 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class RpkiObjectCleanupService {
 
-    @Autowired
+    @Inject
     private TrustAnchors trustAnchors;
 
-    @Autowired
+    @Inject
     private RpkiObjects rpkiObjects;
 
     private final Duration cleanupGraceDuration;

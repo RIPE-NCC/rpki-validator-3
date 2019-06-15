@@ -41,7 +41,7 @@ import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.Trigger;
 import org.quartz.listeners.JobListenerSupport;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -65,7 +65,7 @@ public class BackgroundJobs extends JobListenerSupport {
 
     private final Scheduler scheduler;
 
-    @Autowired
+    @Inject
     public BackgroundJobs(Scheduler scheduler) throws SchedulerException {
 
         this.scheduler = scheduler;

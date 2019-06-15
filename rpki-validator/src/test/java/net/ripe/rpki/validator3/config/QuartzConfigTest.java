@@ -42,7 +42,7 @@ import org.quartz.JobExecutionException;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.TriggerBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -57,9 +57,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Slf4j
 public class QuartzConfigTest {
 
-    @Autowired
+    @Inject
     private TransactionTemplate transactionTemplate;
-    @Autowired
+    @Inject
     private Scheduler scheduler;
 
     private static CountDownLatch triggeredByTestJob;

@@ -45,7 +45,7 @@ import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.Settings;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -65,28 +65,28 @@ import java.util.stream.Stream;
 @Slf4j
 public class ObjectController {
 
-    @Autowired
+    @Inject
     private ValidatedRpkiObjects validatedRpkiObjects;
 
-    @Autowired
+    @Inject
     private TrustAnchors trustAnchors;
 
-    @Autowired
+    @Inject
     private IgnoreFilterService ignoreFilters;
 
-    @Autowired
+    @Inject
     private RoaPrefixAssertionsService roaPrefixAssertions;
 
-    @Autowired
+    @Inject
     private BgpSecAssertionsService bgpSecAssertions;
 
-    @Autowired
+    @Inject
     private BgpSecFilterService bgpSecFilterService;
 
-    @Autowired
+    @Inject
     private Settings settings;
 
-    @Autowired
+    @Inject
     private Storage storage;
 
     @GetMapping(path = "/validated")

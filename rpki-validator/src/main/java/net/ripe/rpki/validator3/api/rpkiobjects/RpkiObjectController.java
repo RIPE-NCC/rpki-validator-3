@@ -66,7 +66,7 @@ import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Hex;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -100,16 +100,16 @@ import java.util.stream.StreamSupport;
 @Slf4j
 public class RpkiObjectController {
 
-    @Autowired
+    @Inject
     private RpkiObjects rpkiObjects;
 
-    @Autowired
+    @Inject
     private TrustAnchors trustAnchors;
 
-    @Autowired
+    @Inject
     private ValidationRuns validationRuns;
 
-    @Autowired
+    @Inject
     private Storage storage;
 
     @GetMapping(path = "/")

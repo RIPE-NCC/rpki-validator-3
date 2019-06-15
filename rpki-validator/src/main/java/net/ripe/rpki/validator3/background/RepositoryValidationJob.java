@@ -39,14 +39,14 @@ import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobKey;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 
 @DisallowConcurrentExecution
 public class RepositoryValidationJob implements Job {
 
     private static final String RPKI_REPOSITORY_ID = "rpkiRepositoryId";
 
-    @Autowired
+    @Inject
     private RpkiRepositoryValidationService rpkiRepositoryValidationService;
 
     @Getter

@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Time;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class ValidationRunCleanupService {
 
-    @Autowired
+    @Inject
     private ValidationRuns validationRuns;
 
     private final Duration cleanupGraceDuration;

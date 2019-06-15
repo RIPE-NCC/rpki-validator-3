@@ -40,7 +40,7 @@ import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import org.apache.commons.lang.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -56,7 +56,7 @@ import java.util.stream.Stream;
 @Slf4j
 public class BgpPreviewController {
 
-    @Autowired
+    @Inject
     private BgpPreviewService bgpPreviewService;
 
     @GetMapping(path = "/")

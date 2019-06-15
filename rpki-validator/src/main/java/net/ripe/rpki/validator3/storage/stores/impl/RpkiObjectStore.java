@@ -44,7 +44,7 @@ import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -88,7 +88,7 @@ public class RpkiObjectStore extends GenericStoreImpl<RpkiObject> implements Rpk
         return Key.keys(Key.of(rpkiObject.getType().toString()));
     }
 
-    @Autowired
+    @Inject
     public RpkiObjectStore(Storage storage) {
         this.ixMap = storage.createIxMap(
                 RPKI_OBJECTS,

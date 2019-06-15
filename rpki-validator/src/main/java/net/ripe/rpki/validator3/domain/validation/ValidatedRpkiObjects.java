@@ -56,7 +56,7 @@ import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Locks;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -80,16 +80,16 @@ public class ValidatedRpkiObjects {
 
     private Map<Long, RoaPrefixesAndRouterCertificates> validatedObjectsByTrustAnchor = new HashMap<>();
 
-    @Autowired
+    @Inject
     private RpkiObjects rpkiObjects;
 
-    @Autowired
+    @Inject
     private TrustAnchors trustAnchors;
 
-    @Autowired
+    @Inject
     private ValidationRuns validationRuns;
 
-    @Autowired
+    @Inject
     private Storage storage;
 
     private ReentrantReadWriteLock dataLock = new ReentrantReadWriteLock();

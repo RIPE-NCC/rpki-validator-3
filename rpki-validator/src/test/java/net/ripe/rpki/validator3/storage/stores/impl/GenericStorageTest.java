@@ -39,43 +39,43 @@ import net.ripe.rpki.validator3.storage.stores.Settings;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import org.junit.Before;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class GenericStorageTest {
 
-    @Autowired
+    @Inject
     @Getter
     private RpkiObjects rpkiObjects;
 
-    @Autowired
+    @Inject
     @Getter
     private RpkiRepositories rpkiRepositories;
 
-    @Autowired
+    @Inject
     @Getter
     private TrustAnchors trustAnchors;
 
-    @Autowired
+    @Inject
     @Getter
     private ValidationRuns validationRuns;
 
-    @Autowired
+    @Inject
     @Getter
     private ValidationScheduler validationScheduler;
 
-    @Autowired
+    @Inject
     @Getter
     private SequencesStore sequences;
 
-    @Autowired
+    @Inject
     @Getter
     private Settings settings;
 
     @Getter
-    @Autowired
+    @Inject
     private Storage storage;
 
     @Before

@@ -40,7 +40,7 @@ import org.joda.time.Duration;
 import org.joda.time.Instant;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.security.KeyPair;
@@ -55,7 +55,7 @@ import static org.junit.Assert.assertEquals;
 @Slf4j
 public class TrustAnchorCoderTest extends GenericStorageTest {
 
-    @Autowired
+    @Inject
     private TrustAnchorsFactory trustAnchorsFactory;
 
     @Test

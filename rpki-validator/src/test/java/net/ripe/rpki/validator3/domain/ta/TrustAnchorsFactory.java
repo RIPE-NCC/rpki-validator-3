@@ -62,7 +62,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.joda.time.Instant;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -101,7 +101,7 @@ public class TrustAnchorsFactory {
         }
     }
 
-    @Autowired
+    @Inject
     private RpkiObjects rpkiObjects;
 
     private static BigInteger nextSerial = BigInteger.ONE;

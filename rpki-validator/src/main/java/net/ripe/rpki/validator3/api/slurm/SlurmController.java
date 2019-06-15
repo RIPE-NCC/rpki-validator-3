@@ -37,7 +37,7 @@ import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
 import net.ripe.rpki.validator3.storage.encoding.GsonCoder;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -55,7 +55,7 @@ import java.util.Locale;
 @Slf4j
 public class SlurmController {
 
-    @Autowired
+    @Inject
     private SlurmService slurmService;
 
     @PostMapping(path = "/upload", consumes = "multipart/form-data")

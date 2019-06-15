@@ -39,7 +39,7 @@ import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import org.apache.commons.lang.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -55,7 +55,7 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 @RequestMapping(path = "/api/roas", produces = {Api.API_MIME_TYPE, "application/json"})
 @Slf4j
 public class ValidatedRoasController {
-    @Autowired
+    @Inject
     private ValidatedRpkiObjects validatedRpkiObjects;
 
     @GetMapping

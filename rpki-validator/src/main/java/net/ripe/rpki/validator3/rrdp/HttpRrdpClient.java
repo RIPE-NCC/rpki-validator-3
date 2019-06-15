@@ -34,7 +34,7 @@ import net.ripe.rpki.validator3.api.util.BuildInformation;
 import net.ripe.rpki.validator3.util.Http;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -55,7 +55,7 @@ public class HttpRrdpClient implements RrdpClient {
 
     private final BuildInformation buildInformation;
 
-    @Autowired
+    @Inject
     public HttpRrdpClient(Http http, BuildInformation buildInformation) {
         this.http = http;
         this.buildInformation = buildInformation;

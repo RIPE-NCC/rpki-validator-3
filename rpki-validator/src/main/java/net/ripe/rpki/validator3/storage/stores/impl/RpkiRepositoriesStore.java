@@ -47,7 +47,7 @@ import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.util.Rsync;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.stereotype.Component;
 
 import javax.validation.constraints.NotNull;
@@ -78,7 +78,7 @@ public class RpkiRepositoriesStore extends GenericStoreImpl<RpkiRepository> impl
     private final SequencesStore sequences;
     private final ValidationScheduler validationScheduler;
 
-    @Autowired
+    @Inject
     public RpkiRepositoriesStore(Storage storage, SequencesStore sequences, ValidationScheduler validationScheduler) {
         this.sequences = sequences;
         this.validationScheduler = validationScheduler;

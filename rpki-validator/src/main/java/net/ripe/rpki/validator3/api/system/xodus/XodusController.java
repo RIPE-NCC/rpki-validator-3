@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.domain.cleanup.ValidationRunCleanupService;
 import net.ripe.rpki.validator3.storage.xodus.Xodus;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -45,10 +45,10 @@ import java.util.Map;
 @Slf4j
 public class XodusController {
 
-    @Autowired
+    @Inject
     private ValidationRunCleanupService validationRunCleanupService;
 
-    @Autowired
+    @Inject
     private Xodus xodus;
 
     @GetMapping(path = "/clean-vr")

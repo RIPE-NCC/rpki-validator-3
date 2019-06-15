@@ -58,7 +58,7 @@ import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -95,7 +95,7 @@ public class RpkiRepositoryValidationService {
     private final ValidationScheduler validationScheduler;
     private final Storage storage;
 
-    @Autowired
+    @Inject
     public RpkiRepositoryValidationService(
             ValidationRuns validationRuns,
             RpkiRepositories rpkiRepositories,

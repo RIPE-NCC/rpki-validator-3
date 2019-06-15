@@ -36,7 +36,7 @@ import lombok.Value;
 import net.ripe.rpki.validator3.domain.validation.CertificateTreeValidationService;
 import net.ripe.rpki.validator3.domain.validation.RpkiRepositoryValidationService;
 import net.ripe.rpki.validator3.domain.validation.TrustAnchorValidationService;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -67,7 +67,7 @@ public class JobExecutor {
     private final CertificateTreeValidationService certificateTreeValidationService;
     private final RpkiRepositoryValidationService rpkiRepositoryValidationService;
 
-    @Autowired
+    @Inject
     public JobExecutor(TrustAnchorValidationService trustAnchorValidationService,
                        CertificateTreeValidationService certificateTreeValidationService,
                        RpkiRepositoryValidationService rpkiRepositoryValidationService) {

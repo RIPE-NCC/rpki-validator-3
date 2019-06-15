@@ -37,7 +37,7 @@ import net.ripe.rpki.validator3.storage.encoding.StringCoder;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.Settings;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -48,7 +48,7 @@ public class SettingsStore extends GenericStoreImpl<String> implements Settings 
 
     private final IxMap<String> ixMap;
 
-    @Autowired
+    @Inject
     public SettingsStore(Storage storage) {
         this.ixMap = storage.createIxMap(SETTINGS, ImmutableMap.of(), new StringCoder());
     }

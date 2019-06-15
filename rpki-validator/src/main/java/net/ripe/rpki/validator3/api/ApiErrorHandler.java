@@ -29,7 +29,7 @@
  */
 package net.ripe.rpki.validator3.api;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.context.MessageSource;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.HttpHeaders;
@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
 @ControllerAdvice(annotations = RestController.class)
 public class ApiErrorHandler extends ResponseEntityExceptionHandler {
 
-    @Autowired
+    @Inject
     private MessageSource messages;
 
     @ExceptionHandler(value = DataRetrievalFailureException.class)

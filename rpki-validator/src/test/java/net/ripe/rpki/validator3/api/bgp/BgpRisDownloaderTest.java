@@ -33,7 +33,7 @@ import net.ripe.rpki.validator3.IntegrationTest;
 import org.joda.time.DateTime;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Optional;
@@ -44,7 +44,7 @@ import static org.assertj.core.api.Assertions.*;
 @IntegrationTest
 public class BgpRisDownloaderTest {
 
-    @Autowired
+    @Inject
     private BgpRisDownloader bgpRisDownloader;
 
     @Test
