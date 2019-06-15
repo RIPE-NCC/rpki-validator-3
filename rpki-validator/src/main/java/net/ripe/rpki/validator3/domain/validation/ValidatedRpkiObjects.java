@@ -57,7 +57,7 @@ import net.ripe.rpki.validator3.util.Locks;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
 import javax.inject.Inject;
-import org.springframework.stereotype.Component;
+import javax.inject.Singleton;
 
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
@@ -72,7 +72,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-@Component
+@Singleton
 @Slf4j
 public class ValidatedRpkiObjects {
 

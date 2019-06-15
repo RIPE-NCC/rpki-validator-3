@@ -57,7 +57,7 @@ import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import org.apache.commons.lang.reflect.FieldUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Component;
+import javax.inject.Singleton;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -73,7 +73,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@Component
+@Singleton
 @Slf4j
 public class ValidationRunsStore implements ValidationRuns {
 

@@ -34,12 +34,12 @@ import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import javax.inject.Inject;
-import org.springframework.stereotype.Component;
+import javax.inject.Singleton;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.PostConstruct;
 
-@Component
+@Singleton
 @Validated
 @Slf4j
 public class RpkiRepositoryService {

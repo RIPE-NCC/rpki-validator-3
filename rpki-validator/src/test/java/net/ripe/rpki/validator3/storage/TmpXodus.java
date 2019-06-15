@@ -39,7 +39,7 @@ import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.xodus.Xodus;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Component;
+import javax.inject.Singleton;
 
 import javax.annotation.PreDestroy;
 import java.io.File;
@@ -49,7 +49,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 @Profile("test")
-@Component
+@Singleton
 @Primary
 @Slf4j
 public class TmpXodus extends Xodus {

@@ -31,13 +31,13 @@ package net.ripe.rpki.validator3.api.slurm;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Component;
+import javax.inject.Singleton;
 
 import java.io.IOException;
 import java.nio.file.Files;
 
 @Profile("test")
-@Component
+@Singleton
 @Slf4j
 public class TmpSlurmStore extends SlurmStore {
     public TmpSlurmStore() throws IOException {

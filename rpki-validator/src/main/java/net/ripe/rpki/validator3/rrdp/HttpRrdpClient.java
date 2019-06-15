@@ -35,7 +35,7 @@ import net.ripe.rpki.validator3.util.Http;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
 import javax.inject.Inject;
-import org.springframework.stereotype.Component;
+import javax.inject.Singleton;
 
 import javax.annotation.PostConstruct;
 import java.io.ByteArrayOutputStream;
@@ -45,7 +45,7 @@ import java.util.function.Function;
 
 import static org.springframework.util.StreamUtils.copy;
 
-@Component
+@Singleton
 @Slf4j
 public class HttpRrdpClient implements RrdpClient {
 

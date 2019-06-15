@@ -38,10 +38,10 @@ import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.api.slurm.SlurmStore;
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 import net.ripe.rpki.validator3.api.slurm.dtos.SlurmExt;
-import javax.inject.Inject;
-import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.validation.Valid;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -52,7 +52,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@Component
+@Singleton
 @Validated
 @Slf4j
 public class IgnoreFilterService {

@@ -32,9 +32,9 @@ package net.ripe.rpki.validator3.api.util;
 import lombok.extern.slf4j.Slf4j;
 import javax.inject.Inject;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import javax.inject.Singleton;
 
-@Component
+@Singleton
 @Slf4j
 public class BuildInformation {
 

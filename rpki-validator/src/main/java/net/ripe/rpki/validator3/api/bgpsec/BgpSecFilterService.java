@@ -35,7 +35,7 @@ import net.ripe.rpki.validator3.api.slurm.SlurmStore;
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import javax.inject.Inject;
-import org.springframework.stereotype.Component;
+import javax.inject.Singleton;
 import org.springframework.validation.annotation.Validated;
 
 import javax.validation.Valid;
@@ -44,7 +44,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@Component
+@Singleton
 @Validated
 @Slf4j
 public class BgpSecFilterService {

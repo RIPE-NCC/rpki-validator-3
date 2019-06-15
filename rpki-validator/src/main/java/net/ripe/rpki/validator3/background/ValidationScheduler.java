@@ -41,9 +41,9 @@ import org.quartz.SimpleScheduleBuilder;
 import org.quartz.TriggerBuilder;
 import javax.inject.Inject;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.stereotype.Component;
+import javax.inject.Singleton;
 
-@Component
+@Singleton
 @Slf4j
 public class ValidationScheduler {
 

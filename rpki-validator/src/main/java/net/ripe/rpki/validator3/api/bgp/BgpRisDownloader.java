@@ -39,7 +39,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import javax.inject.Inject;
-import org.springframework.stereotype.Component;
+import javax.inject.Singleton;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -60,7 +60,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
-@Component
+@Singleton
 @Slf4j
 public class BgpRisDownloader {
 
