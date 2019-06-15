@@ -29,26 +29,23 @@
  */
 package net.ripe.rpki.validator3.storage;
 
+import io.micronaut.context.annotation.Requires;
 import jetbrains.exodus.env.Environment;
 import jetbrains.exodus.env.EnvironmentConfig;
 import jetbrains.exodus.env.Environments;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.storage.MultIxMap;
-import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.xodus.Xodus;
 import org.springframework.context.annotation.Primary;
-import org.springframework.context.annotation.Profile;
-import javax.inject.Singleton;
 
 import javax.annotation.PreDestroy;
+import javax.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-@Profile("test")
+@Requires(env="test")
 @Singleton
 @Primary
 @Slf4j

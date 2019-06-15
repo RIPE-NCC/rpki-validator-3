@@ -29,13 +29,14 @@
  */
 package net.ripe.rpki.validator3.rrdp;
 
+import io.micronaut.context.annotation.Requires;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidationRun;
-import org.springframework.context.annotation.Profile;
+
 import javax.inject.Singleton;
 
 @Singleton
-@Profile("test")
+@Requires(env="test")
 public class RrdpServiceStub implements RrdpService {
     @Override
     public void storeRepository(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun) {

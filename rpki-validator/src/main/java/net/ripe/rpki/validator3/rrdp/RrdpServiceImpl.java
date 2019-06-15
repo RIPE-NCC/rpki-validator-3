@@ -32,16 +32,17 @@ package net.ripe.rpki.validator3.rrdp;
 import com.google.common.hash.Hashing;
 import com.google.common.hash.HashingInputStream;
 import fj.data.Either;
+import io.micronaut.context.annotation.Requires;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
 import net.ripe.rpki.validator3.domain.RpkiObjectUtils;
+import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
-import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
@@ -49,10 +50,9 @@ import net.ripe.rpki.validator3.util.Hex;
 import net.ripe.rpki.validator3.util.Sha256;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
-import javax.inject.Inject;
-import org.springframework.context.annotation.Profile;
-import javax.inject.Singleton;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.ByteArrayInputStream;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -68,7 +68,7 @@ import java.util.stream.Collectors;
 
 @Singleton
 @Slf4j
-@Profile("!test")
+@Requires(notEnv = "test")
 public class RrdpServiceImpl implements RrdpService {
 
     private final RrdpParser rrdpParser = new RrdpParser();
