@@ -55,7 +55,7 @@ import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Rsync;
 import org.apache.commons.lang3.ArrayUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -81,7 +81,7 @@ public class TrustAnchorValidationService {
 
     private boolean firstTimeEver = true;
 
-    @Autowired
+    @Inject
     public TrustAnchorValidationService(
             TrustAnchors trustAnchors,
             RpkiRepositories rpkiRepositories,

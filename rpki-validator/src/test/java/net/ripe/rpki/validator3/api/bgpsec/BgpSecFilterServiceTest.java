@@ -35,7 +35,7 @@ import net.ripe.rpki.validator3.IntegrationTest;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Arrays;
@@ -50,7 +50,7 @@ import static org.junit.Assert.assertEquals;
 @IntegrationTest
 public class BgpSecFilterServiceTest {
 
-    @Autowired
+    @Inject
     private BgpSecFilterService bgpSecFilterService;
 
     private static Asn ASN_1 = Asn.parse("AS123");

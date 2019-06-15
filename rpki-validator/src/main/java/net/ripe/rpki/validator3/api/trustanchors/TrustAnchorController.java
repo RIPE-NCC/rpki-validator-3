@@ -51,7 +51,7 @@ import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.TrustAnchorExtractorException;
 import net.ripe.rpki.validator3.util.TrustAnchorLocator;
 import org.apache.commons.lang.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.context.MessageSource;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
@@ -86,16 +86,16 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 @Slf4j
 public class TrustAnchorController {
 
-    @Autowired
+    @Inject
     private TrustAnchors trustAnchors;
-    @Autowired
+    @Inject
     private TrustAnchorService trustAnchorService;
-    @Autowired
+    @Inject
     private ValidationRuns validationRuns;
-    @Autowired
+    @Inject
     private MessageSource messageSource;
 
-    @Autowired
+    @Inject
     private Storage storage;
 
     @GetMapping

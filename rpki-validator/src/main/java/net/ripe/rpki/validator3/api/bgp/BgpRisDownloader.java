@@ -38,7 +38,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -68,7 +68,7 @@ public class BgpRisDownloader {
 
     private HttpClient httpClient;
 
-    @Autowired
+    @Inject
     public BgpRisDownloader(Http http) {
         this.http = http;
     }

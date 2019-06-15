@@ -38,7 +38,7 @@ import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.api.slurm.SlurmStore;
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 import net.ripe.rpki.validator3.api.slurm.dtos.SlurmExt;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
@@ -61,7 +61,7 @@ public class IgnoreFilterService {
 
     private final SlurmStore slurmStore;
 
-    @Autowired
+    @Inject
     public IgnoreFilterService(SlurmStore slurmStore) {
         this.slurmStore = slurmStore;
     }

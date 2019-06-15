@@ -41,7 +41,7 @@ import net.ripe.rpki.validator3.api.roas.ObjectController;
 import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import org.apache.commons.lang.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
@@ -68,10 +68,10 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 @RequestMapping(path = "/api/ignore-filters", produces = { Api.API_MIME_TYPE, "application/json" })
 public class IgnoreFiltersController {
 
-    @Autowired
+    @Inject
     private IgnoreFilterService ignoreFilterService;
 
-    @Autowired
+    @Inject
     private ValidatedRpkiObjects validatedRpkiObjects;
 
     @GetMapping

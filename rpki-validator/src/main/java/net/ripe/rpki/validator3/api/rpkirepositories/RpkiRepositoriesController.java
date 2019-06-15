@@ -41,7 +41,7 @@ import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import org.apache.commons.lang.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -66,7 +66,7 @@ public class RpkiRepositoriesController {
     private final RpkiRepositories rpkiRepositories;
     private final Storage storage;
 
-    @Autowired
+    @Inject
     public RpkiRepositoriesController(RpkiRepositories rpkiRepositories, Storage storage) {
         this.rpkiRepositories = rpkiRepositories;
         this.storage = storage;

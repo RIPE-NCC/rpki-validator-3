@@ -55,7 +55,7 @@ import org.joda.time.Instant;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.security.auth.x500.X500Principal;
@@ -81,13 +81,13 @@ import static org.junit.Assert.assertEquals;
 @IntegrationTest
 public class CertificateTreeValidationServiceTest extends GenericStorageTest {
 
-    @Autowired
+    @Inject
     private TrustAnchorsFactory factory;
 
-    @Autowired
+    @Inject
     private CertificateTreeValidationService subject;
 
-    @Autowired
+    @Inject
     private ValidationScheduler validationScheduler;
 
     @Override

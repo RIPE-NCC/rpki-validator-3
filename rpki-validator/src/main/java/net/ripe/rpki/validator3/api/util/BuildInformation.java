@@ -30,7 +30,7 @@
 package net.ripe.rpki.validator3.api.util;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -40,7 +40,7 @@ public class BuildInformation {
 
     private final String version;
 
-    @Autowired
+    @Inject
     public BuildInformation(@Value("${validator.version}") String version) {
         this.version = version;
         log.info("validator.version initialised with " + version);

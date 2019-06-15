@@ -32,7 +32,7 @@ package net.ripe.rpki.validator3.domain.cleanup;
 import net.ripe.rpki.validator3.IntegrationTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.test.context.junit4.SpringRunner;
 
 
@@ -40,7 +40,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 @IntegrationTest
 public class ValidationRunCleanupServiceTest {
 
-    @Autowired
+    @Inject
     private ValidationRunCleanupService subject;
 
     @Test

@@ -49,7 +49,7 @@ import net.ripe.rpki.validator3.util.Hex;
 import net.ripe.rpki.validator3.util.Sha256;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -83,7 +83,7 @@ public class RrdpServiceImpl implements RrdpService {
 
     private final Storage storage;
 
-    @Autowired
+    @Inject
     public RrdpServiceImpl(final RrdpClient rrdpClient,
                            final RpkiObjects rpkiObjects,
                            final RpkiRepositories rpkiRepositories,

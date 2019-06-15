@@ -42,7 +42,7 @@ import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.storage.stores.impl.GenericStorageTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.List;
@@ -56,13 +56,13 @@ public class TrustAnchorValidationServiceTest extends GenericStorageTest {
 
     private static final String DUMMY_RSYNC_URI = "rsync://localhost/non-existent/ta/ripe-ncc-ta.cer";
 
-    @Autowired
+    @Inject
     private TrustAnchors trustAnchors;
 
-    @Autowired
+    @Inject
     private TrustAnchorValidationService subject;
 
-    @Autowired
+    @Inject
     private ValidationRuns validationRuns;
 
     @Test

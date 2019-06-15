@@ -39,7 +39,7 @@ import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.SimpleScheduleBuilder;
 import org.quartz.TriggerBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Component;
 
@@ -50,7 +50,7 @@ public class ValidationScheduler {
     private final Scheduler scheduler;
     private boolean enabled = true;
 
-    @Autowired
+    @Inject
     public ValidationScheduler(Scheduler scheduler) {
         this.scheduler = scheduler;
     }

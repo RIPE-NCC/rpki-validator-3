@@ -50,7 +50,7 @@ import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joda.time.DateTime;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -240,7 +240,7 @@ public class BgpPreviewService {
         }
     }
 
-    @Autowired
+    @Inject
     public BgpPreviewService(
             @Value("${rpki.validator.bgp.ris.dump.urls}") String[] bgpRisDumpUrls,
             @Value("${rpki.validator.bgp.ris.visibility.threshold}") int bgpRisVisibilityThreshold,

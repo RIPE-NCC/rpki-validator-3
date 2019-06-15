@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.rpki.validator3.api.slurm.SlurmStore;
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
@@ -47,7 +47,7 @@ public class BgpSecAssertionsService {
 
     private final SlurmStore slurmStore;
 
-    @Autowired
+    @Inject
     public BgpSecAssertionsService(SlurmStore slurmStore) {
         this.slurmStore = slurmStore;
     }

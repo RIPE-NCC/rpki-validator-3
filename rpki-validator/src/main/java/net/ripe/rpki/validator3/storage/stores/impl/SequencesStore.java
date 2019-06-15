@@ -37,7 +37,7 @@ import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.IxMap;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -48,7 +48,7 @@ public class SequencesStore extends GenericStoreImpl<Long> {
     private final String SEQUENCES = "sequences";
     private final IxMap<Long> ixMap;
 
-    @Autowired
+    @Inject
     public SequencesStore(Storage storage) {
         this.ixMap = storage.createIxMap(
                 SEQUENCES,

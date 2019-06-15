@@ -39,7 +39,7 @@ import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.hateoas.Link;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
@@ -65,13 +65,13 @@ public class TrustAnchorControllerTest {
 
     private MockMvc mvc;
 
-    @Autowired
+    @Inject
     private WebApplicationContext webApplicationContext;
 
-    @Autowired
+    @Inject
     private ObjectMapper objectMapper;
 
-    @Autowired
+    @Inject
     private TrustAnchorController subject;
 
     @Before

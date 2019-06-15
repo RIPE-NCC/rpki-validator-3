@@ -42,7 +42,7 @@ import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.api.bgp.BgpPreviewController;
 import net.ripe.rpki.validator3.api.bgp.BgpPreviewService;
 import org.apache.commons.lang.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
@@ -69,10 +69,10 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 @RequestMapping(path = "/api/roa-prefix-assertions", produces = { Api.API_MIME_TYPE, "application/json" })
 public class RoaPrefixAssertionsController {
 
-    @Autowired
+    @Inject
     private RoaPrefixAssertionsService roaPrefixAssertionsService;
 
-    @Autowired
+    @Inject
     private BgpPreviewService bgpPreviewService;
 
     @GetMapping

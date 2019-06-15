@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
@@ -50,7 +50,7 @@ public class RpkiRepositoryService {
 
     private final Storage storage;
 
-    @Autowired
+    @Inject
     public RpkiRepositoryService(RpkiRepositories rpkiRepositories, ValidationScheduler validationScheduler, Storage storage) {
         this.rpkiRepositories = rpkiRepositories;
         this.validationScheduler = validationScheduler;

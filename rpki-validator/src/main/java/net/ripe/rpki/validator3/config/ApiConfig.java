@@ -39,7 +39,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiLogger;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.boot.jackson.JsonObjectDeserializer;
 import org.springframework.boot.jackson.JsonObjectSerializer;
@@ -64,7 +64,7 @@ import java.util.Map;
 @Configuration
 public class ApiConfig implements WebMvcConfigurer {
 
-    @Autowired
+    @Inject
     private ObjectMapper objectMapper;
 
     @Bean

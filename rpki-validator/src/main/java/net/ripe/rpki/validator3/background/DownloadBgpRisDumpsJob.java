@@ -34,12 +34,12 @@ import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 
 @DisallowConcurrentExecution
 class DownloadBgpRisDumpsJob implements Job {
 
-    @Autowired
+    @Inject
     private BgpPreviewService bgpPreviewService;
 
     @Override

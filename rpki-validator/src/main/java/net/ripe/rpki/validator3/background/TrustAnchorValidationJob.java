@@ -41,14 +41,14 @@ import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.quartz.JobKey;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 
 @DisallowConcurrentExecution
 public class TrustAnchorValidationJob implements Job {
 
     public static final String TRUST_ANCHOR_ID_KEY = "trustAnchorId";
 
-    @Autowired
+    @Inject
     private TrustAnchorValidationService trustAnchorValidationService;
 
     @Getter

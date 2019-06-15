@@ -36,7 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.Settings;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -64,7 +64,7 @@ public class ExportsController {
     private final Settings settings;
     private final Storage storage;
 
-    @Autowired
+    @Inject
     public ExportsController(ValidatedRpkiObjects validatedRpkiObjects, Settings settings, Storage storage) {
         this.validatedRpkiObjects = validatedRpkiObjects;
         this.settings = settings;

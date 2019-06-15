@@ -36,7 +36,7 @@ import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.context.MessageSource;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
@@ -58,16 +58,16 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 @Slf4j
 public class ValidationRunController {
 
-    @Autowired
+    @Inject
     private ValidationRuns validationRuns;
 
-    @Autowired
+    @Inject
     private TrustAnchors trustAnchors;
 
-    @Autowired
+    @Inject
     private MessageSource messageSource;
 
-    @Autowired
+    @Inject
     private Storage storage;
 
     @GetMapping

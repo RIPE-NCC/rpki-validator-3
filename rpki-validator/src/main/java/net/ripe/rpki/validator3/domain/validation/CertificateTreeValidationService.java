@@ -59,7 +59,7 @@ import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -97,7 +97,7 @@ public class CertificateTreeValidationService {
     private final Storage storage;
     private final ValidatedRpkiObjects validatedRpkiObjects;
 
-    @Autowired
+    @Inject
     public CertificateTreeValidationService(RpkiObjects rpkiObjects,
                                             RpkiRepositories rpkiRepositories,
                                             Settings settings,

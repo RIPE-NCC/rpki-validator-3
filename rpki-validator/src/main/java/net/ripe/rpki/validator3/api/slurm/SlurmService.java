@@ -30,7 +30,7 @@
 package net.ripe.rpki.validator3.api.slurm;
 
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -42,7 +42,7 @@ import java.io.OutputStream;
 @Service
 public class SlurmService {
 
-    @Autowired
+    @Inject
     private SlurmStore slurmStore;
 
     public void process(final Slurm slurm) {

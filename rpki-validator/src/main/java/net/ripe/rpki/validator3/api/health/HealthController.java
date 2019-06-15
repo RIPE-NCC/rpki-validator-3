@@ -40,7 +40,7 @@ import net.ripe.rpki.validator3.api.util.Dates;
 import net.ripe.rpki.validator3.background.BackgroundJobs;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -56,19 +56,19 @@ import java.util.stream.Collectors;
 @Slf4j
 public class HealthController {
 
-    @Autowired
+    @Inject
     private TrustAnchors trustAnchors;
 
-    @Autowired
+    @Inject
     private BgpPreviewService bgpPreviewService;
 
-    @Autowired
+    @Inject
     private BackgroundJobs backgroundJobs;
 
-    @Autowired
+    @Inject
     private BuildInformation buildInformation;
 
-    @Autowired
+    @Inject
     private Storage storage;
 
     @GetMapping
