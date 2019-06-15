@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.api.trustanchors;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
+import io.micronaut.http.annotation.QueryValue;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiCommand;
@@ -59,11 +60,9 @@ import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
+import io.micronaut.http.annotation.Delete;
+import io.micronaut.http.annotation.Post;
 import org.springframework.web.bind.annotation.RequestBody;
-import io.micronaut.http.annotation.QueryValue;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
@@ -110,7 +109,7 @@ public class TrustAnchorController {
         )));
     }
 
-    @PostMapping(consumes = { Api.API_MIME_TYPE, "application/json" })
+    @Post(consumes = { Api.API_MIME_TYPE, "application/json" })
     public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@RequestBody @Valid ApiCommand<AddTrustAnchor> command, Locale locale) {
         long id = trustAnchorService.execute(command.getData());
         return storage.readTx(tx -> {
@@ -120,7 +119,7 @@ public class TrustAnchorController {
         });
     }
 
-    @PostMapping(path = "/upload", consumes = "multipart/form-data")
+    @Post(value = "/upload", consumes = "multipart/form-data")
     public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@QueryValue("file") MultipartFile trustAnchorLocator, Locale locale) {
         try {
             TrustAnchorLocator locator = TrustAnchorLocator.fromMultipartFile(trustAnchorLocator);
@@ -151,7 +150,7 @@ public class TrustAnchorController {
     }
 
     @Get( "/{id}")
-    public ResponseEntity<ApiResponse<TrustAnchorResource>> get(@PathVariable long id, Locale locale) {
+    public ResponseEntity<ApiResponse<TrustAnchorResource>> get(long id, Locale locale) {
         return storage.readTx(tx ->
             trustAnchors.get(tx, Key.of(id))
                     .map(ta -> ResponseEntity.ok(trustAnchorResource(tx, ta, locale)))
@@ -159,7 +158,7 @@ public class TrustAnchorController {
     }
 
     @Get( "/{id}/validation-run")
-    public ResponseEntity<ApiResponse<ValidationRunResource>> validationResults(@PathVariable long id, HttpServletResponse response, Locale locale) throws IOException {
+    public ResponseEntity<ApiResponse<ValidationRunResource>> validationResults(long id, HttpServletResponse response, Locale locale) throws IOException {
         Optional<TrustAnchorValidationRun> validationRun = storage.readTx(tx ->
                 trustAnchors.get(tx, Key.of(id))
                         .flatMap(trustAnchor ->
@@ -174,7 +173,7 @@ public class TrustAnchorController {
 
     @Get( "/{id}/validation-checks")
     public ResponseEntity<ApiResponse<Stream<ValidationCheckResource>>> validationChecks(
-        @PathVariable long id,
+        long id,
         @QueryValue(value = "startFrom", defaultValue = "0") long startFrom,
         @QueryValue(value = "pageSize", defaultValue = "20") long pageSize,
         // TODO: required = false?
@@ -210,8 +209,8 @@ public class TrustAnchorController {
         return storage.readTx(tx -> ApiResponse.<List<TaStatus>>builder().data(trustAnchors.getStatuses(tx)).build());
     }
 
-    @DeleteMapping(path = "/{id}")
-    public ResponseEntity<?> delete(@PathVariable long id) {
+    @Delete( "/{id}")
+    public ResponseEntity<?> delete(long id) {
         trustAnchorService.remove(id);
         return ResponseEntity.noContent().build();
     }

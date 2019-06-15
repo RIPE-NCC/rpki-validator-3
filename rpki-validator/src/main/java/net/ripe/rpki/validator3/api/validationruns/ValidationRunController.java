@@ -42,7 +42,6 @@ import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import org.springframework.context.MessageSource;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
 
 import javax.inject.Inject;
 import java.util.List;
@@ -115,7 +114,7 @@ public class ValidationRunController {
     }
 
     @Get( "/{id}")
-    public ResponseEntity<ApiResponse<ValidationRunResource>> get(@PathVariable long id, Locale locale) {
+    public ResponseEntity<ApiResponse<ValidationRunResource>> get(long id, Locale locale) {
         return storage.readTx(tx ->
                 validationRuns.get(tx, ValidationRun.class, id)
                         .map(validationRun ->
