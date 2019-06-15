@@ -29,22 +29,22 @@
  */
 package net.ripe.rpki.validator3.storage.xodus;
 
+import io.micronaut.context.annotation.Requires;
+import io.micronaut.context.annotation.Value;
 import jetbrains.exodus.env.Environment;
 import jetbrains.exodus.env.EnvironmentConfig;
 import jetbrains.exodus.env.EnvironmentImpl;
 import jetbrains.exodus.env.Environments;
 import lombok.extern.slf4j.Slf4j;
-import io.micronaut.context.annotation.Value;
 import org.springframework.context.annotation.Primary;
-import org.springframework.context.annotation.Profile;
-import javax.inject.Singleton;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.inject.Singleton;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-@Profile("!test")
+@Requires(notEnv="test")
 @Singleton
 @Slf4j
 @Primary

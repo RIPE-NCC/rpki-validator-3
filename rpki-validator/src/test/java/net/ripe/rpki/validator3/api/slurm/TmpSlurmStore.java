@@ -29,14 +29,14 @@
  */
 package net.ripe.rpki.validator3.api.slurm;
 
+import io.micronaut.context.annotation.Requires;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Profile;
-import javax.inject.Singleton;
 
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.nio.file.Files;
 
-@Profile("test")
+@Requires(env="test")
 @Singleton
 @Slf4j
 public class TmpSlurmStore extends SlurmStore {
