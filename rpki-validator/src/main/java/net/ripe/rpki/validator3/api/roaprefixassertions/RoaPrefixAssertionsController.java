@@ -30,6 +30,9 @@
 package net.ripe.rpki.validator3.api.roaprefixassertions;
 
 import com.google.common.collect.ImmutableList;
+import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Produces;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.rpki.validator3.api.Api;
@@ -42,19 +45,16 @@ import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.api.bgp.BgpPreviewController;
 import net.ripe.rpki.validator3.api.bgp.BgpPreviewService;
 import org.apache.commons.lang.StringUtils;
-import javax.inject.Inject;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import io.micronaut.http.annotation.Controller;
 
+import javax.inject.Inject;
 import javax.validation.Valid;
 import java.net.URI;
 import java.util.List;
@@ -64,9 +64,9 @@ import java.util.stream.Stream;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
-@Controller
 @Slf4j
-@RequestMapping(path = "/api/roa-prefix-assertions", produces = { Api.API_MIME_TYPE, "application/json" })
+@Controller( "/api/roa-prefix-assertions")
+@Produces( { Api.API_MIME_TYPE, "application/json" })
 public class RoaPrefixAssertionsController {
 
     @Inject
@@ -75,7 +75,7 @@ public class RoaPrefixAssertionsController {
     @Inject
     private BgpPreviewService bgpPreviewService;
 
-    @GetMapping
+    @Get
     public ResponseEntity<ApiResponse<Stream<RoaPrefixAssertionResource>>> list(
         @RequestParam(name = "startFrom", defaultValue = "0") long startFrom,
         @RequestParam(name = "pageSize", defaultValue = "20") long pageSize,
@@ -104,7 +104,7 @@ public class RoaPrefixAssertionsController {
         );
     }
 
-    @GetMapping("/{id}")
+    @Get("/{id}")
     public ResponseEntity<ApiResponse<RoaPrefixAssertionResource>> get(@PathVariable long id) {
         return ResponseEntity.ok(ApiResponse.data(toResource(roaPrefixAssertionsService.get(id))));
     }

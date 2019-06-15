@@ -30,6 +30,9 @@
 package net.ripe.rpki.validator3.api.slurm;
 
 import com.google.common.base.Charsets;
+import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Produces;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiError;
@@ -37,21 +40,18 @@ import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
 import net.ripe.rpki.validator3.storage.encoding.GsonCoder;
-import javax.inject.Inject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import io.micronaut.http.annotation.Controller;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import javax.inject.Inject;
 import java.util.Locale;
 
-@Controller
-@RequestMapping(path = "/api/slurm", produces = {Api.API_MIME_TYPE, "application/json"})
+@Controller( "/api/slurm")
+@Produces( {Api.API_MIME_TYPE, "application/json"})
 @Slf4j
 public class SlurmController {
 
@@ -72,13 +72,13 @@ public class SlurmController {
         }
     }
 
-    @GetMapping
+    @Get
     public ResponseEntity<Slurm> slurm() {
         return ResponseEntity.ok(slurmService.get());
     }
 
     // FIXME Do something to force browser's save file prompt instead of rendering JSON
-    @GetMapping(path = "/download", produces = Api.API_MIME_TYPE)
+    @Get( "/download") @Produces( Api.API_MIME_TYPE)
     public StreamingResponseBody download() {
         return out -> slurmService.writeTo(out);
     }

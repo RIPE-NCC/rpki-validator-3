@@ -33,6 +33,9 @@ import au.com.bytecode.opencsv.CSVWriter;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.collect.Sets;
+import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Produces;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Builder;
@@ -54,25 +57,22 @@ import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificate;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
+import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
-import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Hex;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
-import javax.inject.Inject;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import io.micronaut.http.annotation.Controller;
 import springfox.documentation.annotations.ApiIgnore;
 
+import javax.inject.Inject;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -95,8 +95,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-@Controller
-@RequestMapping(path = "/api/rpki-objects", produces = { Api.API_MIME_TYPE, "application/json" })
+@Controller("/api/rpki-objects")
+@Produces( { Api.API_MIME_TYPE, "application/json" })
 @Slf4j
 public class RpkiObjectController {
 
@@ -112,7 +112,7 @@ public class RpkiObjectController {
     @Inject
     private Storage storage;
 
-    @GetMapping(path = "/")
+    @Get("/")
     public ResponseEntity<ApiResponse<Stream<RpkiObj>>> all() {
         List<RpkiObj> objects = storage.readTx(tx -> this.trustAnchors.findAll(tx))
                 .parallelStream()
@@ -185,7 +185,8 @@ public class RpkiObjectController {
                 });
     }
 
-    @GetMapping(path = "/certified.csv", produces = "text/csv; charset=UTF-8")
+    @Get("/certified.csv")
+    @Produces("text/csv; charset=UTF-8")
     @ApiIgnore
     public void certified(HttpServletResponse response) throws IOException {
         final IpResourceSet all = IpResourceSet.parse("0/0, ::/0");
@@ -258,7 +259,8 @@ public class RpkiObjectController {
     }
 
 
-    @GetMapping(path = "/certificates.csv", produces = "text/csv; charset=UTF-8")
+    @Get("/certificates.csv")
+    @Produces("text/csv; charset=UTF-8")
     @ApiIgnore
     public void certificates(HttpServletResponse response) throws IOException {
         response.setContentType("text/csv; charset=UTF-8");
