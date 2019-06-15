@@ -43,7 +43,7 @@ import net.ripe.rpki.validator3.storage.encoding.GsonCoder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import io.micronaut.http.annotation.QueryValue;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
@@ -59,7 +59,7 @@ public class SlurmController {
     private SlurmService slurmService;
 
     @PostMapping(path = "/upload", consumes = "multipart/form-data")
-    public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@RequestParam("file") MultipartFile trustAnchorLocator, Locale locale) {
+    public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@QueryValue("file") MultipartFile trustAnchorLocator, Locale locale) {
         try {
             final String contents = new String(trustAnchorLocator.getBytes(), Charsets.UTF_8);
             slurmService.process(GsonCoder.getPrettyGson().fromJson(contents, Slurm.class));

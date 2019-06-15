@@ -63,7 +63,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
+import io.micronaut.http.annotation.QueryValue;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
@@ -121,7 +121,7 @@ public class TrustAnchorController {
     }
 
     @PostMapping(path = "/upload", consumes = "multipart/form-data")
-    public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@RequestParam("file") MultipartFile trustAnchorLocator, Locale locale) {
+    public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@QueryValue("file") MultipartFile trustAnchorLocator, Locale locale) {
         try {
             TrustAnchorLocator locator = TrustAnchorLocator.fromMultipartFile(trustAnchorLocator);
             AddTrustAnchor command = AddTrustAnchor.builder()
@@ -175,11 +175,12 @@ public class TrustAnchorController {
     @Get( "/{id}/validation-checks")
     public ResponseEntity<ApiResponse<Stream<ValidationCheckResource>>> validationChecks(
         @PathVariable long id,
-        @RequestParam(name = "startFrom", defaultValue = "0") long startFrom,
-        @RequestParam(name = "pageSize", defaultValue = "20") long pageSize,
-        @RequestParam(name = "search", required = false) String searchString,
-        @RequestParam(name = "sortBy", defaultValue = "location") String sortBy,
-        @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection,
+        @QueryValue(value = "startFrom", defaultValue = "0") long startFrom,
+        @QueryValue(value = "pageSize", defaultValue = "20") long pageSize,
+        // TODO: required = false?
+        @QueryValue(value = "search") String searchString,
+        @QueryValue(value = "sortBy", defaultValue = "location") String sortBy,
+        @QueryValue(value = "sortDirection", defaultValue = "asc") String sortDirection,
         Locale locale
     ) {
         final SearchTerm searchTerm = StringUtils.isNotBlank(searchString) ? new SearchTerm(searchString) : null;
