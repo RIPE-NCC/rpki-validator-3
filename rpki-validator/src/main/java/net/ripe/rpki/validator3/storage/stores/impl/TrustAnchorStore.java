@@ -45,7 +45,7 @@ import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
 import javax.inject.Inject;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Component;
+import javax.inject.Singleton;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -54,7 +54,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@Component
+@Singleton
 public class TrustAnchorStore extends GenericStoreImpl<TrustAnchor> implements TrustAnchors {
 
     private final IxMap<TrustAnchor> ixMap;

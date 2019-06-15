@@ -37,7 +37,7 @@ import net.ripe.rpki.validator3.domain.validation.CertificateTreeValidationServi
 import net.ripe.rpki.validator3.domain.validation.RpkiRepositoryValidationService;
 import net.ripe.rpki.validator3.domain.validation.TrustAnchorValidationService;
 import javax.inject.Inject;
-import org.springframework.stereotype.Component;
+import javax.inject.Singleton;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -53,7 +53,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
-@Component
+@Singleton
 public class JobExecutor {
 
     private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);

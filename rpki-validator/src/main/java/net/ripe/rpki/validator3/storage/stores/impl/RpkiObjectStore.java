@@ -45,7 +45,7 @@ import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import javax.inject.Inject;
-import org.springframework.stereotype.Component;
+import javax.inject.Singleton;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -63,7 +63,7 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@Component
+@Singleton
 @Slf4j
 public class RpkiObjectStore extends GenericStoreImpl<RpkiObject> implements RpkiObjects {
 

@@ -38,9 +38,9 @@ import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.Settings;
 import javax.inject.Inject;
-import org.springframework.stereotype.Component;
+import javax.inject.Singleton;
 
-@Component
+@Singleton
 public class SettingsStore extends GenericStoreImpl<String> implements Settings {
 
     private static final String INITIAL_VALIDATION_RUN_COMPLETED = "internal.initial.validation.run.completed";

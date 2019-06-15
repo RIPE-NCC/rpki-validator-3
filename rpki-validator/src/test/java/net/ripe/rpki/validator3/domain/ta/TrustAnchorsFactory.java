@@ -63,7 +63,7 @@ import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.joda.time.Instant;
 import javax.inject.Inject;
-import org.springframework.stereotype.Component;
+import javax.inject.Singleton;
 
 import javax.annotation.PostConstruct;
 import javax.security.auth.x500.X500Principal;
@@ -82,7 +82,7 @@ import java.util.function.Consumer;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 
-@Component
+@Singleton
 public class TrustAnchorsFactory {
     private static final X509ResourceCertificate RIPE_NCC_TA_CERTIFICATE = loadCertificate("/ripe-ncc-ta.cer");
     public static final String TA_RRDP_NOTIFY_URI = "https://rpki.test/notification.xml";

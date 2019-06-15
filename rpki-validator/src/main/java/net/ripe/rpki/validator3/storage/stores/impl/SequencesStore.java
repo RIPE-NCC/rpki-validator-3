@@ -38,11 +38,11 @@ import net.ripe.rpki.validator3.storage.IxMap;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import javax.inject.Inject;
-import org.springframework.stereotype.Component;
+import javax.inject.Singleton;
 
 import java.util.Optional;
 
-@Component
+@Singleton
 public class SequencesStore extends GenericStoreImpl<Long> {
 
     private final String SEQUENCES = "sequences";
