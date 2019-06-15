@@ -53,7 +53,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import io.micronaut.http.annotation.Controller;
 
 import javax.validation.Valid;
 import java.net.URI;
@@ -64,7 +64,7 @@ import java.util.stream.Stream;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
-@RestController
+@Controller
 @Slf4j
 @RequestMapping(path = "/api/roa-prefix-assertions", produces = { Api.API_MIME_TYPE, "application/json" })
 public class RoaPrefixAssertionsController {

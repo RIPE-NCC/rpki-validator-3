@@ -36,11 +36,11 @@ import net.ripe.rpki.validator3.storage.xodus.Xodus;
 import javax.inject.Inject;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import io.micronaut.http.annotation.Controller;
 
 import java.util.Map;
 
-@RestController
+@Controller
 @RequestMapping(path = "/api/xodus", produces = {Api.API_MIME_TYPE, "application/json"})
 @Slf4j
 public class XodusController {

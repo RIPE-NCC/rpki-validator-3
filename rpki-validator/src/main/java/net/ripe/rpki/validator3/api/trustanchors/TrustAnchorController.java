@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.api.trustanchors;
 
+import io.micronaut.http.annotation.Controller;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiCommand;
@@ -41,17 +42,16 @@ import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.api.validationruns.ValidationCheckResource;
 import net.ripe.rpki.validator3.api.validationruns.ValidationRunController;
 import net.ripe.rpki.validator3.api.validationruns.ValidationRunResource;
+import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
-import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.TrustAnchorExtractorException;
 import net.ripe.rpki.validator3.util.TrustAnchorLocator;
 import org.apache.commons.lang.StringUtils;
-import javax.inject.Inject;
 import org.springframework.context.MessageSource;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
@@ -64,9 +64,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.inject.Inject;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
@@ -81,7 +81,7 @@ import java.util.stream.Stream;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
-@RestController
+@Controller
 @RequestMapping(path = "/api/trust-anchors", produces = { Api.API_MIME_TYPE, "application/json" })
 @Slf4j
 public class TrustAnchorController {

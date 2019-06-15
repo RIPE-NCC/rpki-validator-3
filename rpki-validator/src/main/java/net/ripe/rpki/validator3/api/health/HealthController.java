@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.api.health;
 
+import io.micronaut.http.annotation.Controller;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
@@ -40,18 +41,17 @@ import net.ripe.rpki.validator3.api.util.Dates;
 import net.ripe.rpki.validator3.background.BackgroundJobs;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
-import javax.inject.Inject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
+import javax.inject.Inject;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@RestController
+@Controller
 @RequestMapping(path = "/api/healthcheck", produces = {Api.API_MIME_TYPE, "application/json"})
 @Slf4j
 public class HealthController {

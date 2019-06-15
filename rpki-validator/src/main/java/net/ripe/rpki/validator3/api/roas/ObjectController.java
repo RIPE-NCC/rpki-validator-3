@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.api.roas;
 
+import io.micronaut.http.annotation.Controller;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -41,17 +42,16 @@ import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionsServi
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
 import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
-import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.Storage;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.stores.Settings;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
-import javax.inject.Inject;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
+import javax.inject.Inject;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -60,7 +60,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@RestController
+
+@Controller
 @RequestMapping(path = "/api/objects", produces = { Api.API_MIME_TYPE, "application/json" })
 @Slf4j
 public class ObjectController {

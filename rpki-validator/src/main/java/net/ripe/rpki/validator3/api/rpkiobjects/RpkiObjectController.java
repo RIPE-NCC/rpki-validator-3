@@ -70,7 +70,7 @@ import javax.inject.Inject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import io.micronaut.http.annotation.Controller;
 import springfox.documentation.annotations.ApiIgnore;
 
 import javax.servlet.http.HttpServletResponse;
@@ -95,7 +95,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-@RestController
+@Controller
 @RequestMapping(path = "/api/rpki-objects", produces = { Api.API_MIME_TYPE, "application/json" })
 @Slf4j
 public class RpkiObjectController {

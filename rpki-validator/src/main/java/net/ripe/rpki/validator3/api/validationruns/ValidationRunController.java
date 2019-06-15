@@ -43,7 +43,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import io.micronaut.http.annotation.Controller;
 
 import java.util.List;
 import java.util.Locale;
@@ -53,7 +53,7 @@ import java.util.stream.Stream;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
-@RestController
+@Controller
 @RequestMapping(path = "/api/validation-runs", produces = Api.API_MIME_TYPE)
 @Slf4j
 public class ValidationRunController {
