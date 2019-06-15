@@ -49,7 +49,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import io.micronaut.http.annotation.Controller;
 
 import java.util.List;
 import java.util.Map;
@@ -58,7 +58,7 @@ import java.util.stream.Stream;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
-@RestController
+@Controller
 @RequestMapping(path = "/api/rpki-repositories", produces = {Api.API_MIME_TYPE, "application/json"})
 @Slf4j
 public class RpkiRepositoriesController {

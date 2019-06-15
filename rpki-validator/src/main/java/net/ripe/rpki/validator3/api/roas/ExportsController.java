@@ -30,16 +30,16 @@
 package net.ripe.rpki.validator3.api.roas;
 
 import au.com.bytecode.opencsv.CSVWriter;
+import io.micronaut.http.annotation.Controller;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.Settings;
-import javax.inject.Inject;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
 
+import javax.inject.Inject;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.stream.Stream;
@@ -52,7 +52,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
  * The API and data format is backwards compatible with the RPKI validator 2.x (see
  * https://github.com/RIPE-NCC/rpki-validator/blob/350d939d5e18858ee6cefc0c9a99e0c70b609b6d/rpki-validator-app/src/main/scala/net/ripe/rpki/validator/controllers/ExportController.scala#L41).
  */
-@RestController
+@Controller
 @Slf4j
 public class ExportsController {
 

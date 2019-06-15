@@ -46,12 +46,12 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import io.micronaut.http.annotation.Controller;
 
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-@RestController
+@Controller
 @RequestMapping(path = "/api/bgp", produces = {Api.API_MIME_TYPE, "application/json"})
 @Slf4j
 public class BgpPreviewController {
