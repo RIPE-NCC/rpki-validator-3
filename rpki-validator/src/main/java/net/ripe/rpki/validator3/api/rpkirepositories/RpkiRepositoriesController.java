@@ -48,7 +48,7 @@ import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
+import io.micronaut.http.annotation.QueryValue;
 
 import javax.inject.Inject;
 import java.util.List;
@@ -74,14 +74,17 @@ public class RpkiRepositoriesController {
 
     @Get
     public ResponseEntity<ApiResponse<Stream<RpkiRepositoryResource>>> list(
-            @RequestParam(name = "status", required = false) RpkiRepository.Status status,
-            @RequestParam(name = "ta", required = false) Long taId,
-            @RequestParam(name = "startFrom", defaultValue = "0") long startFrom,
-            @RequestParam(name = "pageSize", defaultValue = "20") long pageSize,
-            @RequestParam(name = "search", defaultValue = "", required = false) String searchString,
-            @RequestParam(name = "sortBy", defaultValue = "location") String sortBy,
-            @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection,
-            @RequestParam(name = "hideChildrenOfDownloadedParent", defaultValue = "true") boolean hideChildrenOfDownloadedParent
+            //TODO: Required false
+            @QueryValue(value = "status") RpkiRepository.Status status,
+            //TODO: Required false
+            @QueryValue(value = "ta") Long taId,
+            @QueryValue(value = "startFrom", defaultValue = "0") long startFrom,
+            @QueryValue(value = "pageSize", defaultValue = "20") long pageSize,
+            //TODO: Required false
+            @QueryValue(value = "search", defaultValue = "") String searchString,
+            @QueryValue(value = "sortBy", defaultValue = "location") String sortBy,
+            @QueryValue(value = "sortDirection", defaultValue = "asc") String sortDirection,
+            @QueryValue(value = "hideChildrenOfDownloadedParent", defaultValue = "true") boolean hideChildrenOfDownloadedParent
     ) {
         final SearchTerm searchTerm = StringUtils.isNotBlank(searchString) ? new SearchTerm(searchString) : null;
         final Sorting sorting = Sorting.parse(sortBy, sortDirection);
@@ -118,7 +121,7 @@ public class RpkiRepositoriesController {
     @Get( "/statuses/{taId}")
     public ApiResponse<RepositoriesStatus> repositories(
             @PathVariable long taId,
-            @RequestParam(name = "hideChildrenOfDownloadedParent", defaultValue = "true") boolean hideChildrenOfDownloadedParent
+            @QueryValue(value = "hideChildrenOfDownloadedParent", defaultValue = "true") boolean hideChildrenOfDownloadedParent
     ) {
         final Map<RpkiRepository.Status, Long> counts = storage.readTx(tx ->
                 rpkiRepositories.countByStatus(tx, Key.of(taId), hideChildrenOfDownloadedParent));

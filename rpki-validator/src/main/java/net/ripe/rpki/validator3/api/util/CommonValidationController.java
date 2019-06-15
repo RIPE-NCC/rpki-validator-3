@@ -39,7 +39,7 @@ import net.ripe.rpki.validator3.api.ApiError;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestParam;
+import io.micronaut.http.annotation.QueryValue;
 
 @Slf4j
 @Controller( "/api/validate")
@@ -48,7 +48,7 @@ public class CommonValidationController {
 
     @Get( "/prefix")
     public ResponseEntity<ApiResponse<String>> validatePrefix(
-            @RequestParam(name = "p") String prefix)
+            @QueryValue(value = "p") String prefix)
     {
         try {
             IpRange.parse(prefix);

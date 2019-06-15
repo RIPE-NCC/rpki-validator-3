@@ -52,7 +52,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
+import io.micronaut.http.annotation.QueryValue;
 
 import javax.inject.Inject;
 import javax.validation.Valid;
@@ -77,11 +77,12 @@ public class RoaPrefixAssertionsController {
 
     @Get
     public ResponseEntity<ApiResponse<Stream<RoaPrefixAssertionResource>>> list(
-        @RequestParam(name = "startFrom", defaultValue = "0") long startFrom,
-        @RequestParam(name = "pageSize", defaultValue = "20") long pageSize,
-        @RequestParam(name = "search", defaultValue = "", required = false) String searchString,
-        @RequestParam(name = "sortBy", defaultValue = "prefix") String sortBy,
-        @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection) {
+        @QueryValue(value = "startFrom", defaultValue = "0") long startFrom,
+        @QueryValue(value = "pageSize", defaultValue = "20") long pageSize,
+        //TODO: Required false?
+        @QueryValue(value = "search", defaultValue = "") String searchString,
+        @QueryValue(value = "sortBy", defaultValue = "prefix") String sortBy,
+        @QueryValue(value = "sortDirection", defaultValue = "asc") String sortDirection) {
 
         final SearchTerm searchTerm = StringUtils.isNotBlank(searchString) ? new SearchTerm(searchString) : null;
         final Sorting sorting = Sorting.parse(sortBy, sortDirection);
