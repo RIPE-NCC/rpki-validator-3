@@ -29,6 +29,9 @@
  */
 package net.ripe.rpki.validator3.api.rpkirepositories;
 
+import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Produces;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
@@ -36,21 +39,18 @@ import net.ripe.rpki.validator3.api.Metadata;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
-import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import org.apache.commons.lang.StringUtils;
-import javax.inject.Inject;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import io.micronaut.http.annotation.Controller;
 
+import javax.inject.Inject;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -58,9 +58,9 @@ import java.util.stream.Stream;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
-@Controller
-@RequestMapping(path = "/api/rpki-repositories", produces = {Api.API_MIME_TYPE, "application/json"})
 @Slf4j
+@Controller( "/api/rpki-repositories")
+@Produces( {Api.API_MIME_TYPE, "application/json"})
 public class RpkiRepositoriesController {
 
     private final RpkiRepositories rpkiRepositories;
@@ -72,7 +72,7 @@ public class RpkiRepositoriesController {
         this.storage = storage;
     }
 
-    @GetMapping
+    @Get
     public ResponseEntity<ApiResponse<Stream<RpkiRepositoryResource>>> list(
             @RequestParam(name = "status", required = false) RpkiRepository.Status status,
             @RequestParam(name = "ta", required = false) Long taId,
@@ -108,14 +108,14 @@ public class RpkiRepositoriesController {
         });
     }
 
-    @GetMapping(path = "/{id}")
+    @Get( "/{id}")
     public ResponseEntity<ApiResponse<RpkiRepositoryResource>> get(@PathVariable long id) {
         return storage.readTx(tx -> rpkiRepositories.get(tx, Key.of(id)))
                 .map(r -> ResponseEntity.ok(ApiResponse.data(RpkiRepositoryResource.of(r))))
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping(path = "/statuses/{taId}")
+    @Get( "/statuses/{taId}")
     public ApiResponse<RepositoriesStatus> repositories(
             @PathVariable long taId,
             @RequestParam(name = "hideChildrenOfDownloadedParent", defaultValue = "true") boolean hideChildrenOfDownloadedParent

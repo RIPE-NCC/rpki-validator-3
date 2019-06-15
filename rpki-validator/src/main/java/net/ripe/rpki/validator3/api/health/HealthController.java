@@ -30,6 +30,8 @@
 package net.ripe.rpki.validator3.api.health;
 
 import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Produces;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
@@ -42,8 +44,6 @@ import net.ripe.rpki.validator3.background.BackgroundJobs;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 
 import javax.inject.Inject;
 import java.time.Instant;
@@ -51,9 +51,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Controller
-@RequestMapping(path = "/api/healthcheck", produces = {Api.API_MIME_TYPE, "application/json"})
 @Slf4j
+@Controller( "/api/healthcheck")
+@Produces( {Api.API_MIME_TYPE, "application/json"})
+
 public class HealthController {
 
     @Inject
@@ -71,7 +72,7 @@ public class HealthController {
     @Inject
     private Storage storage;
 
-    @GetMapping
+    @Get
     public ResponseEntity<ApiResponse<Health>> health() {
 
         final Map<String, Boolean> trustAnchorReady = storage.readTx(tx -> trustAnchors.getStatuses(tx)).stream().
@@ -93,14 +94,14 @@ public class HealthController {
                 .build());
     }
 
-    @GetMapping(path = "/backgrounds")
+    @Get( "/backgrounds")
     public ResponseEntity<ApiResponse<Map<String, BackgroundJobs.Execution>>> check() {
         return ResponseEntity.ok(ApiResponse.<Map<String, BackgroundJobs.Execution>>builder()
                 .data(backgroundJobs.getStat())
                 .build());
     }
 
-    @GetMapping(path = "/all-ta-completed")
+    @Get( "/all-ta-completed")
     public ResponseEntity<ApiResponse<String>> statuses() {
         List<TaStatus> statuses = storage.readTx(tx -> trustAnchors.getStatuses(tx));
 

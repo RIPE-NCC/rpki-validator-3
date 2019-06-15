@@ -29,20 +29,20 @@
  */
 package net.ripe.rpki.validator3.api.system.xodus;
 
+import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Produces;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.domain.cleanup.ValidationRunCleanupService;
 import net.ripe.rpki.validator3.storage.xodus.Xodus;
-import javax.inject.Inject;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import io.micronaut.http.annotation.Controller;
 
+import javax.inject.Inject;
 import java.util.Map;
 
-@Controller
-@RequestMapping(path = "/api/xodus", produces = {Api.API_MIME_TYPE, "application/json"})
 @Slf4j
+@Controller( "/api/xodus")
+@Produces( {Api.API_MIME_TYPE, "application/json"})
 public class XodusController {
 
     @Inject
@@ -51,17 +51,17 @@ public class XodusController {
     @Inject
     private Xodus xodus;
 
-    @GetMapping(path = "/clean-vr")
+    @Get( "/clean-vr")
     public void clean() {
         validationRunCleanupService.cleanupValidationRuns();
     }
 
-    @GetMapping(path = "/tx")
+    @Get( "/tx")
     public Map<Long, Xodus.TxInfo> tx() {
         return xodus.getTxs();
     }
 
-    @GetMapping(path = "/stat")
+    @Get( "/stat")
     public Xodus.Stat stat() {
         return xodus.getStat();
     }

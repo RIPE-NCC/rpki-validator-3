@@ -29,6 +29,9 @@
  */
 package net.ripe.rpki.validator3.api.bgp;
 
+import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Produces;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
@@ -40,26 +43,23 @@ import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import org.apache.commons.lang.StringUtils;
-import javax.inject.Inject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import io.micronaut.http.annotation.Controller;
 
+import javax.inject.Inject;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-@Controller
-@RequestMapping(path = "/api/bgp", produces = {Api.API_MIME_TYPE, "application/json"})
 @Slf4j
+@Controller( "/api/bgp")
+@Produces( {Api.API_MIME_TYPE, "application/json"})
 public class BgpPreviewController {
 
     @Inject
     private BgpPreviewService bgpPreviewService;
 
-    @GetMapping(path = "/")
+    @Get("/")
     public ResponseEntity<ApiResponse<Stream<BgpPreview>>> list(
             @RequestParam(name = "startFrom", defaultValue = "0") long startFrom,
             @RequestParam(name = "pageSize", defaultValue = "20") long pageSize,
@@ -83,7 +83,7 @@ public class BgpPreviewController {
                 .build());
     }
 
-    @GetMapping(path = "/validity")
+    @Get( "/validity")
     public ResponseEntity<ApiResponse<BgpPreviewService.BgpValidityWithFilteredResource>> validity(
             @RequestParam(name = "prefix") String prefix,
             @RequestParam(name = "asn") String asn

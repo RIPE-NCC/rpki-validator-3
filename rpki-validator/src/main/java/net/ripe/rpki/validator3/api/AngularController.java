@@ -29,16 +29,16 @@
  */
 package net.ripe.rpki.validator3.api;
 
+import io.micronaut.http.annotation.Produces;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-
-@Controller
+/**
+ * @see <a href="https://stackoverflow.com/a/44850886">https://stackoverflow.com/a/44850886</a>
+ */
+//TODO: Verify, originally this was on @GetMapping
+@Controller("/**/{[path:[^\\.]*}")
 public class AngularController {
 
-    /**
-     * @see <a href="https://stackoverflow.com/a/44850886">https://stackoverflow.com/a/44850886</a>
-     */
-    @GetMapping(value = "/**/{[path:[^\\.]*}", produces = "text/html")
+    @Produces( "text/html")
     public String redirect() {
         // Forward to home page so that route is preserved.
         return "forward:/";

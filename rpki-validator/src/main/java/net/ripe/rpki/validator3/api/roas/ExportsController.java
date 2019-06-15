@@ -31,13 +31,14 @@ package net.ripe.rpki.validator3.api.roas;
 
 import au.com.bytecode.opencsv.CSVWriter;
 import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Produces;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.Settings;
-import org.springframework.web.bind.annotation.GetMapping;
 
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletResponse;
@@ -71,7 +72,8 @@ public class ExportsController {
         this.storage = storage;
     }
 
-    @GetMapping(path = "/api/export.json", produces = {JSON, APPLICATION_JSON_VALUE})
+    @Get("/api/export.json")
+    @Produces({JSON, APPLICATION_JSON_VALUE})
     public JsonExport exportJson(HttpServletResponse response) {
         response.setContentType(JSON);
 
@@ -95,7 +97,7 @@ public class ExportsController {
         return new JsonExport(validatedPrefixes);
     }
 
-    @GetMapping(path = "/api/export.csv", produces = CSV)
+    @Get( "/api/export.csv") @Produces( CSV)
     public void exportCsv(HttpServletResponse response) throws IOException {
         response.setContentType(CSV);
 

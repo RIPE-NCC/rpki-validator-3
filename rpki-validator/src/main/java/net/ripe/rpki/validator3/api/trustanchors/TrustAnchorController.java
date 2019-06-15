@@ -30,6 +30,8 @@
 package net.ripe.rpki.validator3.api.trustanchors;
 
 import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Produces;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiCommand;
@@ -58,11 +60,9 @@ import org.springframework.hateoas.Links;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -81,9 +81,10 @@ import java.util.stream.Stream;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
-@Controller
-@RequestMapping(path = "/api/trust-anchors", produces = { Api.API_MIME_TYPE, "application/json" })
 @Slf4j
+@Controller( "/api/trust-anchors")
+@Produces( { Api.API_MIME_TYPE, "application/json" })
+
 public class TrustAnchorController {
 
     @Inject
@@ -98,7 +99,7 @@ public class TrustAnchorController {
     @Inject
     private Storage storage;
 
-    @GetMapping
+    @Get
     public ResponseEntity<ApiResponse<List<TrustAnchorResource>>> list(Locale locale) {
         return storage.readTx(tx -> ResponseEntity.ok(ApiResponse.data(
             new Links(linkTo(methodOn(TrustAnchorController.class).list(locale)).withSelfRel()),
@@ -149,7 +150,7 @@ public class TrustAnchorController {
         }
     }
 
-    @GetMapping(path = "/{id}")
+    @Get( "/{id}")
     public ResponseEntity<ApiResponse<TrustAnchorResource>> get(@PathVariable long id, Locale locale) {
         return storage.readTx(tx ->
             trustAnchors.get(tx, Key.of(id))
@@ -157,7 +158,7 @@ public class TrustAnchorController {
                     .orElse(ResponseEntity.notFound().build()));
     }
 
-    @GetMapping(path = "/{id}/validation-run")
+    @Get( "/{id}/validation-run")
     public ResponseEntity<ApiResponse<ValidationRunResource>> validationResults(@PathVariable long id, HttpServletResponse response, Locale locale) throws IOException {
         Optional<TrustAnchorValidationRun> validationRun = storage.readTx(tx ->
                 trustAnchors.get(tx, Key.of(id))
@@ -171,7 +172,7 @@ public class TrustAnchorController {
         return ResponseEntity.notFound().build();
     }
 
-    @GetMapping(path = "/{id}/validation-checks")
+    @Get( "/{id}/validation-checks")
     public ResponseEntity<ApiResponse<Stream<ValidationCheckResource>>> validationChecks(
         @PathVariable long id,
         @RequestParam(name = "startFrom", defaultValue = "0") long startFrom,
@@ -203,7 +204,7 @@ public class TrustAnchorController {
         });
     }
 
-    @GetMapping(path = "/statuses")
+    @Get( "/statuses")
     public ApiResponse<List<TaStatus>> statuses() {
         return storage.readTx(tx -> ApiResponse.<List<TaStatus>>builder().data(trustAnchors.getStatuses(tx)).build());
     }

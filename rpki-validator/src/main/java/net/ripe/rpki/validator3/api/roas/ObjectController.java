@@ -30,6 +30,8 @@
 package net.ripe.rpki.validator3.api.roas;
 
 import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Produces;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -48,8 +50,6 @@ import net.ripe.rpki.validator3.storage.stores.Settings;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -61,8 +61,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 
-@Controller
-@RequestMapping(path = "/api/objects", produces = { Api.API_MIME_TYPE, "application/json" })
+
+@Controller("/api/objects")
+@Produces( { Api.API_MIME_TYPE, "application/json" })
 @Slf4j
 public class ObjectController {
 
@@ -90,7 +91,8 @@ public class ObjectController {
     @Inject
     private Storage storage;
 
-    @GetMapping(path = "/validated")
+
+    @Get("/validated")
     public ResponseEntity<ApiResponse<ValidatedObjects>> list(Locale locale) {
         final Map<Long, TrustAnchorResource> trustAnchorsById = storage.readTx(tx ->
                 trustAnchors.findAll(tx).stream()
