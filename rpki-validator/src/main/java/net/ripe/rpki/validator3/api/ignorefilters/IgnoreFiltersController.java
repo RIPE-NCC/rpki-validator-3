@@ -30,8 +30,11 @@
 package net.ripe.rpki.validator3.api.ignorefilters;
 
 import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Delete;
 import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Produces;
+import io.micronaut.http.annotation.QueryValue;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiCommand;
@@ -47,11 +50,7 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import io.micronaut.http.annotation.QueryValue;
 
 import javax.inject.Inject;
 import javax.validation.Valid;
@@ -104,11 +103,11 @@ public class IgnoreFiltersController {
     }
 
     @Get("/{id}")
-    public ResponseEntity<ApiResponse<IgnoreFilterDto>> get(@PathVariable long id) {
+    public ResponseEntity<ApiResponse<IgnoreFilterDto>> get(long id) {
         return ResponseEntity.ok(ignoreFilterResource(ignoreFilterService.get(id)));
     }
 
-    @PostMapping(consumes = { Api.API_MIME_TYPE, "application/json" })
+    @Post(consumes = { Api.API_MIME_TYPE, "application/json" })
     public ResponseEntity<ApiResponse<IgnoreFilterDto>> add(@RequestBody @Valid ApiCommand<AddIgnoreFilter> command) throws Exception {
         final long id = ignoreFilterService.execute(command.getData());
         final IgnoreFilter ignoreFilter = ignoreFilterService.get(id);
@@ -116,8 +115,8 @@ public class IgnoreFiltersController {
         return ResponseEntity.created(URI.create(selfRel.getHref())).body(ignoreFilterResource(ignoreFilter));
     }
 
-    @DeleteMapping(path = "/{id}")
-    public ResponseEntity<?> delete(@PathVariable long id) {
+    @Delete( "/{id}")
+    public ResponseEntity<?> delete(long id) {
         ignoreFilterService.remove(id);
         return ResponseEntity.noContent().build();
     }

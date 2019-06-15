@@ -1,20 +1,20 @@
 /**
  * The BSD License
- *
+ * <p>
  * Copyright (c) 2010-2018 RIPE NCC
  * All rights reserved.
- *
+ * <p>
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *   - Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimer.
- *   - Redistributions in binary form must reproduce the above copyright notice,
- *     this list of conditions and the following disclaimer in the documentation
- *     and/or other materials provided with the distribution.
- *   - Neither the name of the RIPE NCC nor the names of its contributors may be
- *     used to endorse or promote products derived from this software without
- *     specific prior written permission.
- *
+ * - Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * - Neither the name of the RIPE NCC nor the names of its contributors may be
+ * used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * <p>
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -42,7 +42,7 @@ import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
 import net.ripe.rpki.validator3.storage.encoding.GsonCoder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
+import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.QueryValue;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -50,15 +50,15 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 import javax.inject.Inject;
 import java.util.Locale;
 
-@Controller( "/api/slurm")
-@Produces( {Api.API_MIME_TYPE, "application/json"})
+@Controller("/api/slurm")
+@Produces({Api.API_MIME_TYPE, "application/json"})
 @Slf4j
 public class SlurmController {
 
     @Inject
     private SlurmService slurmService;
 
-    @PostMapping(path = "/upload", consumes = "multipart/form-data")
+    @Post(value = "/upload", consumes = "multipart/form-data")
     public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@QueryValue("file") MultipartFile trustAnchorLocator, Locale locale) {
         try {
             final String contents = new String(trustAnchorLocator.getBytes(), Charsets.UTF_8);
@@ -78,7 +78,8 @@ public class SlurmController {
     }
 
     // FIXME Do something to force browser's save file prompt instead of rendering JSON
-    @Get( "/download") @Produces( Api.API_MIME_TYPE)
+    @Get("/download")
+    @Produces(Api.API_MIME_TYPE)
     public StreamingResponseBody download() {
         return out -> slurmService.writeTo(out);
     }

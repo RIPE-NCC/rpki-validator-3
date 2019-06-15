@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.api.rpkirepositories;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
+import io.micronaut.http.annotation.QueryValue;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
@@ -46,9 +47,7 @@ import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import io.micronaut.http.annotation.QueryValue;
+import io.micronaut.http.annotation.Delete;
 
 import javax.inject.Inject;
 import java.util.List;
@@ -112,7 +111,7 @@ public class RpkiRepositoriesController {
     }
 
     @Get( "/{id}")
-    public ResponseEntity<ApiResponse<RpkiRepositoryResource>> get(@PathVariable long id) {
+    public ResponseEntity<ApiResponse<RpkiRepositoryResource>> get(long id) {
         return storage.readTx(tx -> rpkiRepositories.get(tx, Key.of(id)))
                 .map(r -> ResponseEntity.ok(ApiResponse.data(RpkiRepositoryResource.of(r))))
                 .orElse(ResponseEntity.notFound().build());
@@ -120,7 +119,7 @@ public class RpkiRepositoriesController {
 
     @Get( "/statuses/{taId}")
     public ApiResponse<RepositoriesStatus> repositories(
-            @PathVariable long taId,
+            long taId,
             @QueryValue(value = "hideChildrenOfDownloadedParent", defaultValue = "true") boolean hideChildrenOfDownloadedParent
     ) {
         final Map<RpkiRepository.Status, Long> counts = storage.readTx(tx ->
@@ -133,8 +132,8 @@ public class RpkiRepositoriesController {
         )).build();
     }
 
-    @DeleteMapping(path = "/{id}")
-    public ResponseEntity<?> delete(@PathVariable long id) {
+    @Delete( "/{id}")
+    public ResponseEntity<?> delete(long id) {
         storage.writeTx0(tx -> rpkiRepositories.remove(tx, Key.of(id)));
         return ResponseEntity.noContent().build();
     }
