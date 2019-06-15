@@ -31,7 +31,7 @@ package net.ripe.rpki.validator3.api.util;
 
 import lombok.extern.slf4j.Slf4j;
 import javax.inject.Inject;
-import org.springframework.beans.factory.annotation.Value;
+import io.micronaut.context.annotation.Value;
 import javax.inject.Singleton;
 
 @Singleton

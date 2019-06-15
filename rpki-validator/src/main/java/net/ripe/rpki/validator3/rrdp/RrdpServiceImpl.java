@@ -51,7 +51,7 @@ import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
 import javax.inject.Inject;
 import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Service;
+import javax.inject.Singleton;
 
 import java.io.ByteArrayInputStream;
 import java.math.BigInteger;
@@ -66,7 +66,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 
-@Service
+@Singleton
 @Slf4j
 @Profile("!test")
 public class RrdpServiceImpl implements RrdpService {

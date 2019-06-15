@@ -34,14 +34,14 @@ import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Time;
 import javax.inject.Inject;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import io.micronaut.context.annotation.Value;
+import javax.inject.Singleton;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@Service
+@Singleton
 @Slf4j
 public class ValidationRunCleanupService {
 

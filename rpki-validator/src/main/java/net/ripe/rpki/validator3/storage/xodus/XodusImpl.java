@@ -34,7 +34,7 @@ import jetbrains.exodus.env.EnvironmentConfig;
 import jetbrains.exodus.env.EnvironmentImpl;
 import jetbrains.exodus.env.Environments;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import io.micronaut.context.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import javax.inject.Singleton;

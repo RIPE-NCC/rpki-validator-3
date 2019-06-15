@@ -45,7 +45,7 @@ import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.util.TrustAnchorLocator;
 import org.apache.commons.lang3.ArrayUtils;
 import javax.inject.Inject;
-import org.springframework.beans.factory.annotation.Value;
+import io.micronaut.context.annotation.Value;
 import javax.inject.Singleton;
 import org.springframework.validation.annotation.Validated;
 

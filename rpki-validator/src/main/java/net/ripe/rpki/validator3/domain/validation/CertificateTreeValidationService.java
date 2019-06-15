@@ -60,7 +60,7 @@ import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import javax.inject.Inject;
-import org.springframework.stereotype.Service;
+import javax.inject.Singleton;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -83,7 +83,7 @@ import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_TRUST_
 import static net.ripe.rpki.validator3.storage.data.RpkiRepository.Type.RRDP;
 import static net.ripe.rpki.validator3.storage.data.RpkiRepository.Type.RSYNC;
 
-@Service
+@Singleton
 @Slf4j
 public class CertificateTreeValidationService {
     private static final ValidationOptions VALIDATION_OPTIONS = new ValidationOptions();

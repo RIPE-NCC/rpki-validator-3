@@ -37,7 +37,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.springframework.beans.factory.annotation.Value;
+import io.micronaut.context.annotation.Value;
 import javax.inject.Singleton;
 
 import java.io.IOException;

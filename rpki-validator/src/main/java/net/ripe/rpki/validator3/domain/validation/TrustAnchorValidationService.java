@@ -56,8 +56,8 @@ import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Rsync;
 import org.apache.commons.lang3.ArrayUtils;
 import javax.inject.Inject;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import io.micronaut.context.annotation.Value;
+import javax.inject.Singleton;
 
 import java.io.File;
 import java.io.IOException;
@@ -66,7 +66,7 @@ import java.security.GeneralSecurityException;
 import java.util.Optional;
 import java.util.Set;
 
-@Service
+@Singleton
 @Slf4j
 public class TrustAnchorValidationService {
 

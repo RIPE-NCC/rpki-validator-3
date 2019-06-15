@@ -31,7 +31,7 @@ package net.ripe.rpki.validator3.api.slurm;
 
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 import javax.inject.Inject;
-import org.springframework.stereotype.Service;
+import javax.inject.Singleton;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -39,7 +39,7 @@ import java.io.OutputStream;
 /**
  TODO Add BGPSec-related functionality
  */
-@Service
+@Singleton
 public class SlurmService {
 
     @Inject
