@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.storage;
 
+import io.micronaut.context.annotation.Primary;
 import io.micronaut.context.annotation.Requires;
 import jetbrains.exodus.env.Environment;
 import jetbrains.exodus.env.EnvironmentConfig;
@@ -36,7 +37,6 @@ import jetbrains.exodus.env.Environments;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.storage.xodus.Xodus;
-import org.springframework.context.annotation.Primary;
 
 import javax.annotation.PreDestroy;
 import javax.inject.Singleton;
