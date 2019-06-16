@@ -29,8 +29,11 @@
  */
 package net.ripe.rpki.validator3.api.trustanchors;
 
+import io.micronaut.http.HttpStatus;
 import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Delete;
 import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
 import lombok.extern.slf4j.Slf4j;
@@ -58,10 +61,7 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.context.MessageSource;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import io.micronaut.http.annotation.Delete;
-import io.micronaut.http.annotation.Post;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.multipart.MultipartFile;
 
