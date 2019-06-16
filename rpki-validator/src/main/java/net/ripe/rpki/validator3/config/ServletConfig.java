@@ -29,13 +29,11 @@
  */
 package net.ripe.rpki.validator3.config;
 
+import io.micronaut.context.annotation.Bean;
 import net.ripe.rpki.validator3.api.StaticContentFixServlet;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-@Configuration
 public class ServletConfig implements WebMvcConfigurer {
     @Bean
     public ServletRegistrationBean<StaticContentFixServlet> provisioningServlet() {
