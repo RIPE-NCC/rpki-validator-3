@@ -30,8 +30,7 @@
 package net.ripe.rpki.validator3.config;
 
 import com.fasterxml.classmate.TypeResolver;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import io.micronaut.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.Links;
 import springfox.bean.validators.configuration.BeanValidatorPluginsConfiguration;
@@ -49,7 +48,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-@Configuration
 @EnableSwagger2
 @Import(value = BeanValidatorPluginsConfiguration.class)
 public class SwaggerConfig {
