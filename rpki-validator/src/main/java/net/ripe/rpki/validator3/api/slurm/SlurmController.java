@@ -36,6 +36,7 @@ import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
+import io.micronaut.http.multipart.CompletedFileUpload;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiError;
@@ -44,7 +45,6 @@ import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
 import net.ripe.rpki.validator3.storage.encoding.GsonCoder;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import javax.inject.Inject;
@@ -59,7 +59,8 @@ public class SlurmController {
     private SlurmService slurmService;
 
     @Post(value = "/upload", consumes = "multipart/form-data")
-    public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@QueryValue("file") MultipartFile trustAnchorLocator, Locale locale) {
+    public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@QueryValue("file") CompletedFileUpload trustAnchorLocator,
+                                                                Locale locale) {
         try {
             final String contents = new String(trustAnchorLocator.getBytes(), Charsets.UTF_8);
             slurmService.process(GsonCoder.getPrettyGson().fromJson(contents, Slurm.class));
