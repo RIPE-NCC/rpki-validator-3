@@ -45,8 +45,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.stream.Stream;
 
-import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
-
 /**
  * Controller to export validated ROA prefix information.
  * <p>
@@ -59,6 +57,7 @@ public class ExportsController {
 
     public static final String JSON = "text/json; charset=UTF-8";
     public static final String CSV = "text/csv; charset=UTF-8";
+    public static final String APPLICATION_JSON_VALUE = "application/json";
 
     private final ValidatedRpkiObjects validatedRpkiObjects;
 

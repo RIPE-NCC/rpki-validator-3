@@ -35,7 +35,7 @@ import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.springframework.validation.annotation.Validated;
+import io.micronaut.validation.Validated;
 
 import javax.annotation.PostConstruct;
 

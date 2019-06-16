@@ -36,7 +36,7 @@ import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.springframework.validation.annotation.Validated;
+import io.micronaut.validation.Validated;
 
 import javax.validation.Valid;
 import java.util.Collections;

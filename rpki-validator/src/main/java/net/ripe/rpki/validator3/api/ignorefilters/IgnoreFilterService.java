@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.api.ignorefilters;
 
+import io.micronaut.validation.Validated;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
@@ -38,7 +39,6 @@ import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.api.slurm.SlurmStore;
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 import net.ripe.rpki.validator3.api.slurm.dtos.SlurmExt;
-import org.springframework.validation.annotation.Validated;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
