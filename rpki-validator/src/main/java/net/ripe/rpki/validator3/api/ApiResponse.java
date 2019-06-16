@@ -44,19 +44,19 @@ import java.util.List;
 @Builder
 public class ApiResponse<T> {
 
-    @ApiModelProperty(required = false, position = 1)
+    @ApiModelProperty(position = 1)
     Links links;
 
-    @ApiModelProperty(required = false, position = 2)
+    @ApiModelProperty(position = 2)
     T data;
 
-    @ApiModelProperty(required = false, position = 3)
+    @ApiModelProperty(position = 3)
     Collection<?> includes;
 
-    @ApiModelProperty(required = false, position = 4)
+    @ApiModelProperty(position = 4)
     Collection<ApiError> errors;
 
-    @ApiModelProperty(required = false, position = 5)
+    @ApiModelProperty(position = 5)
     Metadata metadata;
 
     public static <T> ApiResponse<T> data(T data) {

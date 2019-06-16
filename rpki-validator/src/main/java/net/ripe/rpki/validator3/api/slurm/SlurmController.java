@@ -30,9 +30,12 @@
 package net.ripe.rpki.validator3.api.slurm;
 
 import com.google.common.base.Charsets;
+import io.micronaut.http.HttpStatus;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Produces;
+import io.micronaut.http.annotation.QueryValue;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiError;
@@ -40,10 +43,7 @@ import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
 import net.ripe.rpki.validator3.storage.encoding.GsonCoder;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import io.micronaut.http.annotation.Post;
-import io.micronaut.http.annotation.QueryValue;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 

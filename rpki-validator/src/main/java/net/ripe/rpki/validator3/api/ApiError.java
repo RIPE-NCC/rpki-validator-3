@@ -29,10 +29,11 @@
  */
 package net.ripe.rpki.validator3.api;
 
+import io.micronaut.http.HttpStatus;
 import io.swagger.annotations.ApiModel;
 import lombok.Builder;
 import lombok.Value;
-import org.springframework.http.HttpStatus;
+
 
 @Value(staticConstructor = "of")
 @Builder
@@ -45,10 +46,10 @@ public class ApiError {
     ApiErrorSource source;
 
     public static ApiError of(HttpStatus status) {
-        return ApiError.builder().status(String.valueOf(status.value())).title(status.getReasonPhrase()).build();
+        return ApiError.builder().status(String.valueOf(status.getCode())).title(status.getReason()).build();
     }
 
     public static ApiError of(HttpStatus status, String detail) {
-        return ApiError.builder().status(String.valueOf(status.value())).title(status.getReasonPhrase()).detail(detail).build();
+        return ApiError.builder().status(String.valueOf(status.getCode())).title(status.getReason()).detail(detail).build();
     }
 }
