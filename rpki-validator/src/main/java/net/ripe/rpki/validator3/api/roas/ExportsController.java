@@ -29,10 +29,7 @@
  */
 package net.ripe.rpki.validator3.api.roas;
 
-import au.com.bytecode.opencsv.CSVWriter;
 import io.micronaut.http.annotation.Controller;
-import io.micronaut.http.annotation.Get;
-import io.micronaut.http.annotation.Produces;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -41,8 +38,6 @@ import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.Settings;
 
 import javax.inject.Inject;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.util.stream.Stream;
 
 /**
@@ -71,6 +66,8 @@ public class ExportsController {
         this.storage = storage;
     }
 
+    // TODO: Understand HttpServletResponse, why we need it and how to replace in micronaut.
+/*
     @Get("/api/export.json")
     @Produces({JSON, APPLICATION_JSON_VALUE})
     public JsonExport exportJson(HttpServletResponse response) {
@@ -126,7 +123,7 @@ public class ExportsController {
                 });
             });
         }
-    }
+    } */
 
     @Value
     private static class CsvRoaPrefix {

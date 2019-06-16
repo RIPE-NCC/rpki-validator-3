@@ -30,6 +30,7 @@
 package net.ripe.rpki.validator3.domain.validation;
 
 import fj.data.Either;
+import io.micronaut.context.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.validation.ValidationLocation;
 import net.ripe.rpki.commons.validation.ValidationResult;
@@ -58,7 +59,6 @@ import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import io.micronaut.context.annotation.Value;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;

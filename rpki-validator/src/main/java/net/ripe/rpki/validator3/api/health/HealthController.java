@@ -43,6 +43,7 @@ import net.ripe.rpki.validator3.api.util.Dates;
 import net.ripe.rpki.validator3.background.BackgroundJobs;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
+import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import org.springframework.http.ResponseEntity;
 
 import javax.inject.Inject;
@@ -61,6 +62,9 @@ public class HealthController {
     private TrustAnchors trustAnchors;
 
     @Inject
+    private ValidationRuns validationRuns;
+
+    @Inject
     private BgpPreviewService bgpPreviewService;
 
     @Inject
@@ -75,7 +79,7 @@ public class HealthController {
     @Get
     public ResponseEntity<ApiResponse<Health>> health() {
 
-        final Map<String, Boolean> trustAnchorReady = storage.readTx(tx -> trustAnchors.getStatuses(tx)).stream().
+        final Map<String, Boolean> trustAnchorReady = storage.readTx(tx -> validationRuns.getStatuses(tx)).stream().
                 collect(Collectors.toMap(
                         TaStatus::getTaName,
                         TaStatus::isCompletedValidation)
@@ -103,7 +107,7 @@ public class HealthController {
 
     @Get( "/all-ta-completed")
     public ResponseEntity<ApiResponse<String>> statuses() {
-        List<TaStatus> statuses = storage.readTx(tx -> trustAnchors.getStatuses(tx));
+        List<TaStatus> statuses = storage.readTx(tx -> validationRuns.getStatuses(tx));
 
         Boolean allComplete = statuses.stream().filter(TaStatus::isCompletedValidation).count() >= 5;
 

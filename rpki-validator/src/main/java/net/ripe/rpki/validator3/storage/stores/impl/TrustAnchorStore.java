@@ -30,26 +30,18 @@
 package net.ripe.rpki.validator3.storage.stores.impl;
 
 import com.google.common.collect.ImmutableMap;
-import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
-import net.ripe.rpki.validator3.api.util.Dates;
 import net.ripe.rpki.validator3.storage.IxMap;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
-import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
-import net.ripe.rpki.validator3.util.Time;
-import org.apache.commons.lang3.tuple.Pair;
-import javax.inject.Inject;
-import org.springframework.context.annotation.Lazy;
-import javax.inject.Singleton;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -59,18 +51,16 @@ public class TrustAnchorStore extends GenericStoreImpl<TrustAnchor> implements T
 
     private final IxMap<TrustAnchor> ixMap;
     private final SequencesStore sequences;
-    private final ValidationRuns validationRuns;
 
     @Inject
     public TrustAnchorStore(Storage storage,
-                            SequencesStore sequences,
-                            @Lazy ValidationRuns validationRuns) {
+                            SequencesStore sequences) {
         this.ixMap = storage.createIxMap(
                 TrustAnchors.TRUST_ANCHORS,
                 ImmutableMap.of(),
                 TrustAnchor.class);
         this.sequences = sequences;
-        this.validationRuns = validationRuns;
+
     }
 
     @Override
@@ -118,31 +108,6 @@ public class TrustAnchorStore extends GenericStoreImpl<TrustAnchor> implements T
     @Override
     public boolean allInitialCertificateTreeValidationRunsCompleted(Tx.Read tx) {
         return findAll(tx).stream().allMatch(TrustAnchor::isInitialCertificateTreeValidationRunCompleted);
-    }
-
-    @Override
-    public List<TaStatus> getStatuses(Tx.Read tx) {
-        return findAll(tx).stream().map(ta ->
-                validationRuns.findLatestCaTreeValidationRun(tx, ta).map(vr -> {
-                    final List<ValidationCheck> validationChecks = vr.getValidationChecks();
-                    Pair<Integer, Long> objectCount = Time.timed(() -> validationRuns.getObjectCount(tx, vr));
-                    int warnings = Math.toIntExact(validationChecks.stream().filter(vc1 -> vc1.getStatus() == ValidationCheck.Status.WARNING).count());
-                    int errors = Math.toIntExact(validationChecks.stream().filter(vc -> vc.getStatus() == ValidationCheck.Status.ERROR).count());
-                    return TaStatus.of(
-                            String.valueOf(ta.key().asLong()),
-                            ta.getName(),
-                            errors,
-                            warnings,
-                            objectCount.getLeft(),
-                            vr.getCompletedAt() == null ? null : Dates.formatUTC(vr.getCompletedAt()),
-                            ta.isInitialCertificateTreeValidationRunCompleted()
-                    );
-                }).orElse(TaStatus.of(
-                        String.valueOf(ta.key().asLong()),
-                        ta.getName(), 0, 1, 0, null, false
-                )))
-                .sorted(Comparator.comparing(ta -> ta.getTaName().toLowerCase()))
-                .collect(Collectors.toList());
     }
 
     @Override

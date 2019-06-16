@@ -40,7 +40,6 @@ import org.quartz.SchedulerException;
 import org.quartz.SimpleScheduleBuilder;
 import org.quartz.TriggerBuilder;
 import javax.inject.Inject;
-import org.springframework.dao.EmptyResultDataAccessException;
 import javax.inject.Singleton;
 
 @Singleton
@@ -99,7 +98,7 @@ public class ValidationScheduler {
             boolean trustAnchorValidationDeleted = scheduler.deleteJob(TrustAnchorValidationJob.getJobKey(trustAnchor));
             boolean certificateTreeValidationDeleted = scheduler.deleteJob(CertificateTreeValidationJob.getJobKey(trustAnchor));
             if (!trustAnchorValidationDeleted || !certificateTreeValidationDeleted) {
-                throw new EmptyResultDataAccessException("validation job for trust anchor or certificate tree not found", 1);
+                throw new RuntimeException("validation job for trust anchor or certificate tree not found");
             }
         } catch (SchedulerException ex) {
             throw new RuntimeException(ex);
@@ -140,7 +139,7 @@ public class ValidationScheduler {
         try {
             boolean jobDeleted = scheduler.deleteJob(RepositoryValidationJob.getJobKey(repository));
             if (!jobDeleted) {
-                throw new EmptyResultDataAccessException("validation job for RPKI repository not found", 1);
+                throw new RuntimeException("validation job for RPKI repository not found");
             }
         } catch (SchedulerException ex) {
             throw new RuntimeException(ex);

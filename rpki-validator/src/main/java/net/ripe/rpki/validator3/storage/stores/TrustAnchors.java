@@ -29,7 +29,6 @@
  */
 package net.ripe.rpki.validator3.storage.stores;
 
-import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
@@ -56,7 +55,5 @@ public interface TrustAnchors extends GenericStore<TrustAnchor> {
     Optional<TrustAnchor> findBySubjectPublicKeyInfo(Tx.Read tx, String subjectPublicKeyInfo);
 
     boolean allInitialCertificateTreeValidationRunsCompleted(Tx.Read tx);
-
-    List<TaStatus> getStatuses(Tx.Read tx);
 
 }

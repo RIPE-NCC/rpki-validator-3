@@ -29,9 +29,10 @@
  */
 package net.ripe.rpki.validator3.api.util;
 
-import lombok.extern.slf4j.Slf4j;
-import javax.inject.Inject;
 import io.micronaut.context.annotation.Value;
+import lombok.extern.slf4j.Slf4j;
+
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton

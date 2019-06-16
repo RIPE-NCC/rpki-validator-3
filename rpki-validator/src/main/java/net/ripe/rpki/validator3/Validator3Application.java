@@ -29,25 +29,22 @@
  */
 package net.ripe.rpki.validator3;
 
+import io.micronaut.runtime.Micronaut;
 import org.springframework.beans.factory.BeanCreationException;
-import org.springframework.boot.Banner;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.builder.SpringApplicationBuilder;
+
 
 import java.net.BindException;
 import java.util.Locale;
 
-@SpringBootApplication
+
 public class Validator3Application {
 
     public static void main(String[] args) {
         Locale.setDefault(Locale.ENGLISH);
         try {
-            new SpringApplicationBuilder(Validator3Application.class)
-                    .bannerMode(Banner.Mode.OFF)
-                    .build()
-                    .run(args);
+            Micronaut.run(Validator3Application.class);
         } catch (Exception e) {
+            e.printStackTrace();
             terminateIfKnownProblem(e);
         }
     }

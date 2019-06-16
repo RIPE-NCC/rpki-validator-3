@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.util;
 
+import io.micronaut.context.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
@@ -37,9 +38,8 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import io.micronaut.context.annotation.Value;
-import javax.inject.Singleton;
 
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.ExecutionException;
