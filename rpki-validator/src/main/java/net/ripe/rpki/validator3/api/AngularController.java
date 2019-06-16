@@ -29,8 +29,9 @@
  */
 package net.ripe.rpki.validator3.api;
 
+import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Produces;
-import org.springframework.stereotype.Controller;
+
 /**
  * @see <a href="https://stackoverflow.com/a/44850886">https://stackoverflow.com/a/44850886</a>
  */
