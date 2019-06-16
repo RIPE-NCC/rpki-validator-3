@@ -30,12 +30,14 @@
 package net.ripe.rpki.validator3.api.trustanchors;
 
 import io.micronaut.http.HttpStatus;
+import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Delete;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
+import io.micronaut.http.multipart.CompletedFileUpload;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiCommand;
@@ -62,7 +64,6 @@ import org.springframework.context.MessageSource;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
@@ -110,7 +111,8 @@ public class TrustAnchorController {
     }
 
     @Post(consumes = { Api.API_MIME_TYPE, "application/json" })
-    public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@RequestBody @Valid ApiCommand<AddTrustAnchor> command, Locale locale) {
+    public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@Body @Valid ApiCommand<AddTrustAnchor> command,
+                                                                Locale locale) {
         long id = trustAnchorService.execute(command.getData());
         return storage.readTx(tx -> {
             TrustAnchor trustAnchor = trustAnchors.get(tx, Key.of(id)).get();
@@ -120,7 +122,8 @@ public class TrustAnchorController {
     }
 
     @Post(value = "/upload", consumes = "multipart/form-data")
-    public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@QueryValue("file") MultipartFile trustAnchorLocator, Locale locale) {
+    public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@QueryValue("file") CompletedFileUpload trustAnchorLocator,
+                                                                Locale locale) {
         try {
             TrustAnchorLocator locator = TrustAnchorLocator.fromMultipartFile(trustAnchorLocator);
             AddTrustAnchor command = AddTrustAnchor.builder()
