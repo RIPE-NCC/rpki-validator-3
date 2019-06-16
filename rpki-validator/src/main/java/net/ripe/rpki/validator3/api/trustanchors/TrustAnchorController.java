@@ -48,7 +48,6 @@ import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.api.validationruns.ValidationCheckResource;
-import net.ripe.rpki.validator3.api.validationruns.ValidationRunController;
 import net.ripe.rpki.validator3.api.validationruns.ValidationRunResource;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.Tx;
@@ -66,9 +65,7 @@ import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
 
 import javax.inject.Inject;
-import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
-import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -159,6 +156,7 @@ public class TrustAnchorController {
                     .orElse(ResponseEntity.notFound().build()));
     }
 
+    /* HttpServletResponse need tomcat deps :(
     @Get( "/{id}/validation-run")
     public ResponseEntity<ApiResponse<ValidationRunResource>> validationResults(long id, HttpServletResponse response, Locale locale) throws IOException {
         Optional<TrustAnchorValidationRun> validationRun = storage.readTx(tx ->
@@ -171,7 +169,7 @@ public class TrustAnchorController {
             return null;
         }
         return ResponseEntity.notFound().build();
-    }
+    } */
 
     @Get( "/{id}/validation-checks")
     public ResponseEntity<ApiResponse<Stream<ValidationCheckResource>>> validationChecks(
@@ -208,7 +206,7 @@ public class TrustAnchorController {
 
     @Get( "/statuses")
     public ApiResponse<List<TaStatus>> statuses() {
-        return storage.readTx(tx -> ApiResponse.<List<TaStatus>>builder().data(trustAnchors.getStatuses(tx)).build());
+        return storage.readTx(tx -> ApiResponse.<List<TaStatus>>builder().data(validationRuns.getStatuses(tx)).build());
     }
 
     @Delete( "/{id}")

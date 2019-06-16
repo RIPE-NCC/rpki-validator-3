@@ -29,7 +29,6 @@
  */
 package net.ripe.rpki.validator3.api.rpkiobjects;
 
-import au.com.bytecode.opencsv.CSVWriter;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.collect.Sets;
@@ -41,9 +40,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.ipresource.IpResource;
 import net.ripe.ipresource.IpResourceSet;
-import net.ripe.ipresource.IpResourceType;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.ValidityPeriod;
 import net.ripe.rpki.commons.crypto.cms.ghostbuster.GhostbustersCms;
@@ -67,14 +64,10 @@ import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Hex;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.springframework.http.ResponseEntity;
-import springfox.documentation.annotations.ApiIgnore;
 
 import javax.inject.Inject;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.math.BigInteger;
 import java.security.cert.X509CRLEntry;
 import java.util.Arrays;
@@ -185,6 +178,8 @@ public class RpkiObjectController {
                 });
     }
 
+    //TODO: Find how to do this without tomcat HttpServletResponse
+    /*
     @Get("/certified.csv")
     @Produces("text/csv; charset=UTF-8")
     @ApiIgnore
@@ -282,7 +277,7 @@ public class RpkiObjectController {
         }
     }
 
-
+*/
     private static <T> Set<T> oneElem(T c) {
         Set<T> a = new HashSet<>();
         a.add(c);

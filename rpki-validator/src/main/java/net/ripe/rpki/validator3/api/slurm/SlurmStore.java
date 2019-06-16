@@ -35,7 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 import net.ripe.rpki.validator3.api.slurm.dtos.SlurmExt;
 import net.ripe.rpki.validator3.storage.encoding.GsonCoder;
-import org.apache.tomcat.util.http.fileupload.IOUtils;
+import org.apache.commons.compress.utils.IOUtils;
 
 import java.io.File;
 import java.io.FileInputStream;

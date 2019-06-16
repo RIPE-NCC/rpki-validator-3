@@ -34,6 +34,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
+import net.ripe.rpki.validator3.api.util.Dates;
 import net.ripe.rpki.validator3.storage.IxMap;
 import net.ripe.rpki.validator3.storage.MultIxMap;
 import net.ripe.rpki.validator3.storage.Storage;
@@ -54,11 +56,11 @@ import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
+import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang.reflect.FieldUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.context.annotation.Lazy;
-import javax.inject.Singleton;
 
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -104,7 +106,7 @@ public class ValidationRunsStore implements ValidationRuns {
     private final SequencesStore sequences;
 
     public ValidationRunsStore(RpkiObjects rpkiObjects,
-                               @Lazy TrustAnchors trustAnchors,
+                               TrustAnchors trustAnchors,
                                RpkiRepositories rpkiRepositories,
                                SequencesStore sequences,
                                Storage storage) {
@@ -451,4 +453,28 @@ public class ValidationRunsStore implements ValidationRuns {
         return ixMaps;
     }
 
+    @Override
+    public List<TaStatus> getStatuses(Tx.Read tx) {
+        return trustAnchors.findAll(tx).stream().map(ta ->
+                findLatestCaTreeValidationRun(tx, ta).map(vr -> {
+                    final List<ValidationCheck> validationChecks = vr.getValidationChecks();
+                    Pair<Integer, Long> objectCount = Time.timed(() -> getObjectCount(tx, vr));
+                    int warnings = Math.toIntExact(validationChecks.stream().filter(vc1 -> vc1.getStatus() == ValidationCheck.Status.WARNING).count());
+                    int errors = Math.toIntExact(validationChecks.stream().filter(vc -> vc.getStatus() == ValidationCheck.Status.ERROR).count());
+                    return TaStatus.of(
+                            String.valueOf(ta.key().asLong()),
+                            ta.getName(),
+                            errors,
+                            warnings,
+                            objectCount.getLeft(),
+                            vr.getCompletedAt() == null ? null : Dates.formatUTC(vr.getCompletedAt()),
+                            ta.isInitialCertificateTreeValidationRunCompleted()
+                    );
+                }).orElse(TaStatus.of(
+                        String.valueOf(ta.key().asLong()),
+                        ta.getName(), 0, 1, 0, null, false
+                )))
+                .sorted(Comparator.comparing(ta -> ta.getTaName().toLowerCase()))
+                .collect(Collectors.toList());
+    }
 }

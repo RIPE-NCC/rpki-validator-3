@@ -30,26 +30,25 @@
 package net.ripe.rpki.validator3.api.trustanchors;
 
 import com.google.common.io.PatternFilenameFilter;
+import io.micronaut.context.annotation.Value;
+import io.micronaut.validation.Validated;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
+import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
-import net.ripe.rpki.validator3.storage.stores.Settings;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.util.TrustAnchorLocator;
 import org.apache.commons.lang3.ArrayUtils;
-import javax.inject.Inject;
-import io.micronaut.context.annotation.Value;
-import javax.inject.Singleton;
-import io.micronaut.validation.Validated;
 
 import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.validation.Valid;
 import java.io.File;
 import java.net.URI;

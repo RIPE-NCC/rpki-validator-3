@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.storage.stores;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
@@ -84,4 +85,6 @@ public interface ValidationRuns {
     int getObjectCount(Tx.Read tx, ValidationRun validationRun);
 
     int removeOrphanValidationRunAssociations(Tx.Write tx);
+
+    List<TaStatus> getStatuses(Tx.Read tx);
 }

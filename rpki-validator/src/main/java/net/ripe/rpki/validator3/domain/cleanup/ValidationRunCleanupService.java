@@ -29,14 +29,14 @@
  */
 package net.ripe.rpki.validator3.domain.cleanup;
 
+import io.micronaut.context.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Time;
-import javax.inject.Inject;
-import io.micronaut.context.annotation.Value;
-import javax.inject.Singleton;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicInteger;

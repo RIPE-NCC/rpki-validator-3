@@ -34,7 +34,6 @@ import net.ripe.rpki.validator3.IntegrationTest;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.quartz.Job;
 import org.quartz.JobBuilder;
 import org.quartz.JobExecutionContext;
@@ -42,16 +41,16 @@ import org.quartz.JobExecutionException;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.TriggerBuilder;
-import javax.inject.Inject;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import javax.inject.Inject;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
-@RunWith(SpringRunner.class)
+
 @IntegrationTest
 @Ignore("Because we don't persist quartz jobs anymore")
 @Slf4j
@@ -80,7 +79,7 @@ public class QuartzConfigTest {
                 scheduler.start();
 
                 boolean completed = triggeredByTestJob.await(1, TimeUnit.SECONDS);
-                assertThat(completed).describedAs("test job triggered before transaction completed").isFalse();
+                assertThat("test job triggered before transaction completed", completed, is(false));
 
                 status.setRollbackOnly();
 
@@ -92,7 +91,7 @@ public class QuartzConfigTest {
         log.info("Transaction rolled back");
 
         boolean completed = triggeredByTestJob.await(1, TimeUnit.SECONDS);
-        assertThat(completed).describedAs("test job triggered after transaction rollback").isFalse();
+        assertThat("test job triggered after transaction rollback", completed, is(false));
     }
 
     @Test
@@ -107,7 +106,7 @@ public class QuartzConfigTest {
                 scheduler.start();
 
                 boolean completed = triggeredByTestJob.await(1, TimeUnit.SECONDS);
-                assertThat(completed).describedAs("test job triggered before transaction completion").isFalse();
+                assertThat("test job triggered before transaction completion", completed, is(false));
             } catch (SchedulerException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -119,7 +118,7 @@ public class QuartzConfigTest {
         scheduler.start();
 
         boolean completed = triggeredByTestJob.await(1, TimeUnit.SECONDS);
-        assertThat(completed).describedAs("test job triggered after commit").isTrue();
+        assertThat("test job triggered after commit", completed, is(true));
         log.info("Test completed");
     }
 
