@@ -30,8 +30,11 @@
 package net.ripe.rpki.validator3.api.roaprefixassertions;
 
 import com.google.common.collect.ImmutableList;
+import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Delete;
 import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
 import lombok.extern.slf4j.Slf4j;
@@ -49,9 +52,6 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
-import io.micronaut.http.annotation.Delete;
-import io.micronaut.http.annotation.Post;
-import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.inject.Inject;
 import javax.validation.Valid;
@@ -110,7 +110,7 @@ public class RoaPrefixAssertionsController {
     }
 
     @Post(consumes = { Api.API_MIME_TYPE, "application/json" })
-    public ResponseEntity<ApiResponse<RoaPrefixAssertionResource>> add(@RequestBody @Valid ApiCommand<AddRoaPrefixAssertion> command) {
+    public ResponseEntity<ApiResponse<RoaPrefixAssertionResource>> add(@Body @Valid ApiCommand<AddRoaPrefixAssertion> command) {
         final long id = roaPrefixAssertionsService.execute(command.getData());
         final RoaPrefixAssertion ignoreFilter = roaPrefixAssertionsService.get(id);
         final Link selfRel = linkTo(methodOn(RoaPrefixAssertionsController.class).get(id)).withSelfRel();

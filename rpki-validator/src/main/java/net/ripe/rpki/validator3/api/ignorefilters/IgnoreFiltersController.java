@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.api.ignorefilters;
 
+import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Delete;
 import io.micronaut.http.annotation.Get;
@@ -50,7 +51,6 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.inject.Inject;
 import javax.validation.Valid;
@@ -108,7 +108,7 @@ public class IgnoreFiltersController {
     }
 
     @Post(consumes = { Api.API_MIME_TYPE, "application/json" })
-    public ResponseEntity<ApiResponse<IgnoreFilterDto>> add(@RequestBody @Valid ApiCommand<AddIgnoreFilter> command) throws Exception {
+    public ResponseEntity<ApiResponse<IgnoreFilterDto>> add(@Body @Valid ApiCommand<AddIgnoreFilter> command) throws Exception {
         final long id = ignoreFilterService.execute(command.getData());
         final IgnoreFilter ignoreFilter = ignoreFilterService.get(id);
         final Link selfRel = linkTo(methodOn(IgnoreFiltersController.class).get(id)).withSelfRel();

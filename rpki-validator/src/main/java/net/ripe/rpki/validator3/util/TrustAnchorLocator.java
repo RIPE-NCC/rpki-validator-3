@@ -33,9 +33,9 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.io.Files;
+import io.micronaut.http.multipart.CompletedFileUpload;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -63,12 +63,12 @@ public class TrustAnchorLocator {
 
     private URI fetchedCertificateUri;
 
-    public static TrustAnchorLocator fromMultipartFile(MultipartFile file) throws TrustAnchorExtractorException {
+    public static TrustAnchorLocator fromMultipartFile(CompletedFileUpload file) throws TrustAnchorExtractorException {
         try {
             String contents = new String(file.getBytes(), Charsets.UTF_8);
             String trimmed = contents.trim();
             if (looksLikeUri(trimmed)) {
-                return readStandardTrustAnchorLocator(file.getOriginalFilename(), trimmed);
+                return readStandardTrustAnchorLocator(file.getFilename(), trimmed);
             } else {
                 return readExtendedTrustAnchorLocator(contents);
             }
