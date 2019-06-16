@@ -47,7 +47,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import javax.inject.Inject;
 import io.micronaut.context.annotation.Value;
 import javax.inject.Singleton;
-import org.springframework.validation.annotation.Validated;
+import io.micronaut.validation.Validated;
 
 import javax.annotation.PostConstruct;
 import javax.validation.Valid;
