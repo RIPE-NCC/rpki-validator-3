@@ -69,6 +69,7 @@ public class XodusImpl extends Xodus {
                         .setEnvGatherStatistics(true)
                         .setGcEnabled(true)
                         .setLogCacheUseNio(true)
+                        .setEnvCloseForcedly(true)
                         .setMemoryUsagePercentage(10);
 
                 env = Environments.newInstance(path, config);
@@ -83,11 +84,7 @@ public class XodusImpl extends Xodus {
 
     @PreDestroy
     public synchronized void waitForAllTxToFinishAndClose() {
-        if (env.isOpen()) {
-            log.info("Stuck in transaction " + ((EnvironmentImpl)env).getStuckTransactionCount());
-            env.clear();
-            env.close();
-        }
+        env.close();
     }
 
     @Override
