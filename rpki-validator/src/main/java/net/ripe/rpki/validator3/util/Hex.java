@@ -47,7 +47,13 @@ public class Hex {
             return null;
         final StringBuilder s = new StringBuilder(bytes.length * 2);
         for (byte aByte : bytes) {
-            s.append(String.format("%02X", aByte & 0xff));
+            int i = aByte & 0xff;
+            String str = Integer.toHexString(i);
+            if (str.length() == 1) {
+                s.append('0').append(str);
+            } else {
+                s.append(str);
+            }
         }
         return s.toString();
     }
