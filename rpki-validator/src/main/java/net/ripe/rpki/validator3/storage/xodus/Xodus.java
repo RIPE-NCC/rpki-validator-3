@@ -219,7 +219,6 @@ public abstract class Xodus implements Storage {
                                     if (getEnv().storeExists(idxStoreName, txn)) {
                                         getEnv().removeStore(idxStoreName, txn);
                                     }
-//                                    getEnv().openStore(idxStoreName, USE_EXISTING, txn);
                                 }
                         );
                     });
