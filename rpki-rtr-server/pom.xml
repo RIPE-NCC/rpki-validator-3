@@ -36,8 +36,9 @@
         <springfox.version>2.7.0</springfox.version>
         <netty.version>4.1.19.Final</netty.version>
 
-        <maven.build.timestamp.format>yyyyMMddHHmmss</maven.build.timestamp.format>
-        <build.number>DEV${maven.build.timestamp}</build.number>
+        <maven.build.timestamp.format>yyyy.MM.dd'_'HH.mm.ss</maven.build.timestamp.format>
+        <build.version>3.1</build.version>
+        <build.release>${maven.build.timestamp}</build.release>
         <jetty-http2-client.version>9.4.11.v20180605</jetty-http2-client.version>
     </properties>
 
@@ -176,8 +177,8 @@
                     <license>BSD</license>
                     <distribution>CentOS 7</distribution>
                     <name>rpki-rtr-server</name>
-                    <version>3.0</version>
-                    <release>${build.number}</release>
+                    <version>${build.version}</version>
+                    <release>${build.release}</release>
                     <group>Applications/System</group>
                     <packager>RIPE NCC</packager>
                     <changelogFile>Changelog.txt</changelogFile>
@@ -273,7 +274,7 @@
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
-                    <finalName>rpki-rtr-server-3.0-${build.number}</finalName>
+                    <finalName>rpki-rtr-server-${build.version}-${build.release}</finalName>
                     <descriptors>
                         <descriptor>src/main/resources/packaging/generic/assembly/distribution.xml</descriptor>
                     </descriptors>
