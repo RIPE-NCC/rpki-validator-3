@@ -73,17 +73,19 @@ public class ValidationRunCleanupServiceTest extends GenericStorageTest {
     @Autowired
     private ValidationRunCleanupService subject;
 
-    private TrustAnchor testTA;
-    private Ref<TrustAnchor> testTARef;
+    private TrustAnchor testTA1;
+    private Ref<TrustAnchor> testTARef1;
+
+    private List<RoaPrefix> roaPrefixes1 = Collections.singletonList(RoaPrefix.of(IpRange.parse("127.0.0.0/8"), null, Asn.parse("123")));
+    private List<RoaPrefix> roaPrefixes2 = Collections.singletonList(RoaPrefix.of(IpRange.parse("128.0.0.0/8"), null, Asn.parse("124")));
 
     @Before
     public void setup() {
-        List<RoaPrefix> roaPrefixes = Collections.singletonList(RoaPrefix.of(IpRange.parse("127.0.0.0/8"), null, Asn.parse("123")));
 
-        testTA = wtx(tx -> factory.createTrustAnchor(tx, ta -> ta.roaPrefixes(roaPrefixes)));
-        wtx0(tx -> getTrustAnchors().add(tx, testTA));
+        testTA1 = wtx(tx -> factory.createTrustAnchor(tx, ta -> ta.roaPrefixes(roaPrefixes1)));
+        wtx0(tx -> getTrustAnchors().add(tx, testTA1));
 
-        testTARef = getStorage().readTx(tx -> getTrustAnchors().makeRef(tx, testTA.key()));
+        testTARef1 = getStorage().readTx(tx -> getTrustAnchors().makeRef(tx, testTA1.key()));
     }
 
     @Test
@@ -92,7 +94,7 @@ public class ValidationRunCleanupServiceTest extends GenericStorageTest {
         final Instant lastMonth = Instant.now().minus(Duration.ofDays(30));
         CertificateTreeValidationRun oldValidationRun =
                 wtx(tx -> {
-                            CertificateTreeValidationRun res = new CertificateTreeValidationRun(testTARef);
+                            CertificateTreeValidationRun res = new CertificateTreeValidationRun(testTARef1);
                             res.setCreatedAt(lastMonth);
                             return res;
                         }
@@ -105,12 +107,12 @@ public class ValidationRunCleanupServiceTest extends GenericStorageTest {
     }
 
     @Test
-    public void shouldCleanUpOldValidationRunDontDeleteLastSuccsessful() {
+    public void shouldCleanUpOldValidationRunDontDeleteLastSuccessful() {
 
         final Instant lastMonth = Instant.now().minus(Duration.ofDays(30));
         CertificateTreeValidationRun oldValidationRun =
                 wtx(tx -> {
-                            CertificateTreeValidationRun res = new CertificateTreeValidationRun(testTARef);
+                            CertificateTreeValidationRun res = new CertificateTreeValidationRun(testTARef1);
                             res.setCreatedAt(lastMonth);
                             res.setSucceeded();
                             return res;
@@ -124,6 +126,40 @@ public class ValidationRunCleanupServiceTest extends GenericStorageTest {
     }
 
     @Test
+    public void shouldCleanUpOldValidationRunDontDeleteLastSuccessfulPerTA() {
+
+        TrustAnchor testTA2 = wtx(tx -> factory.createTrustAnchor(tx, ta -> ta.roaPrefixes(roaPrefixes2)));
+        wtx0(tx -> getTrustAnchors().add(tx, testTA2));
+
+        Ref<TrustAnchor> testTARef2 = getStorage().readTx(tx -> getTrustAnchors().makeRef(tx, testTA1.key()));
+
+        final Instant lastMonth = Instant.now().minus(Duration.ofDays(30));
+        CertificateTreeValidationRun oldValidationRun =
+                wtx(tx -> {
+                            CertificateTreeValidationRun res = new CertificateTreeValidationRun(testTARef1);
+                            res.setCreatedAt(lastMonth);
+                            return res;
+                        }
+                );
+        oldValidationRun.setCompletedAt(lastMonth);
+        wtx0(tx -> getValidationRuns().add(tx, oldValidationRun));
+
+        CertificateTreeValidationRun oldValidationRun2 =
+                wtx(tx -> {
+                            CertificateTreeValidationRun res = new CertificateTreeValidationRun(testTARef2);
+                            res.setCreatedAt(lastMonth);
+                            res.setSucceeded();
+                            return res;
+                        }
+                );
+        oldValidationRun2.setCompletedAt(lastMonth);
+        wtx0(tx -> getValidationRuns().add(tx, oldValidationRun2));
+
+        AtomicInteger oldCount = subject.cleanupValidationRuns().getFirst();
+        assertThat(oldCount.get()).isEqualTo(1);
+    }
+
+    @Test
     public void shouldCleanUpOrphanedAssociationWithObject() {
 
         // Create validation run
@@ -134,7 +170,7 @@ public class ValidationRunCleanupServiceTest extends GenericStorageTest {
         RpkiObject associatedAndDeletedObject = new RpkiObject(
                 new X509ResourceCertificateBuilder()
                         .withResources(IpResourceSet.parse("10.0.0.0/8"))
-                        .withIssuerDN(testTA.getCertificate().getSubject())
+                        .withIssuerDN(testTA1.getCertificate().getSubject())
                         .withSubjectDN(new X500Principal("CN=orphan"))
                         .withSerial(TrustAnchorsFactory.nextSerial())
                         .withPublicKey(KEY_PAIR_FACTORY.generate().getPublic())
@@ -162,9 +198,9 @@ public class ValidationRunCleanupServiceTest extends GenericStorageTest {
         wtx0(tx -> getValidationRuns().add(tx, orphanValidationRun));
 
         // Prepare the repo that will be associated and then deleted.
-        RpkiRepository associatedAndThenDeletedRepo = new RpkiRepository(testTARef, testTA.getLocations().get(0), RpkiRepository.Type.RSYNC);
+        RpkiRepository associatedAndThenDeletedRepo = new RpkiRepository(testTARef1, testTA1.getLocations().get(0), RpkiRepository.Type.RSYNC);
         wtx0(tx -> associatedAndThenDeletedRepo.setId(Key.of(getSequences().next(tx, ":pk"))));
-        wtx0(tx -> getRpkiRepositories().register(tx, testTARef, associatedAndThenDeletedRepo.getLocationUri(), associatedAndThenDeletedRepo.getType()));
+        wtx0(tx -> getRpkiRepositories().register(tx, testTARef1, associatedAndThenDeletedRepo.getLocationUri(), associatedAndThenDeletedRepo.getType()));
 
         // Associate and remove the object, validation will be orphan.
         wtx0(tx -> getValidationRuns().associate(tx, orphanValidationRun, associatedAndThenDeletedRepo));
