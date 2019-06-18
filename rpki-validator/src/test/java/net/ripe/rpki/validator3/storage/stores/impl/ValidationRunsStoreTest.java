@@ -49,7 +49,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(SpringRunner.class)
 @IntegrationTest
 @Slf4j
-public class LmdbValidationRunsTest extends GenericStorageTest {
+public class ValidationRunsStoreTest extends GenericStorageTest {
 
     @Test
     public void testAddUpdate() {
