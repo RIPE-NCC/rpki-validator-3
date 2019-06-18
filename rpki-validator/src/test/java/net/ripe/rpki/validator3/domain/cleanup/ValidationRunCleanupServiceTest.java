@@ -92,17 +92,12 @@ public class ValidationRunCleanupServiceTest extends GenericStorageTest {
     public void shouldCleanUpOldValidationRun() {
 
         final Instant lastMonth = Instant.now().minus(Duration.ofDays(30));
-        CertificateTreeValidationRun oldValidationRun =
-                wtx(tx -> {
-                            CertificateTreeValidationRun res = new CertificateTreeValidationRun(testTARef1);
-                            res.setCreatedAt(lastMonth);
-                            return res;
-                        }
-                );
+        CertificateTreeValidationRun oldValidationRun = new CertificateTreeValidationRun(testTARef1);
+        oldValidationRun.setCreatedAt(lastMonth);
         oldValidationRun.setCompletedAt(lastMonth);
         wtx0(tx -> getValidationRuns().add(tx, oldValidationRun));
 
-        AtomicInteger oldCount = subject.cleanupValidationRuns().getFirst();
+        AtomicInteger oldCount = subject.cleanupValidationRuns().getLeft();
         assertThat(oldCount.get()).isEqualTo(1);
     }
 
@@ -110,18 +105,13 @@ public class ValidationRunCleanupServiceTest extends GenericStorageTest {
     public void shouldCleanUpOldValidationRunDontDeleteLastSuccessful() {
 
         final Instant lastMonth = Instant.now().minus(Duration.ofDays(30));
-        CertificateTreeValidationRun oldValidationRun =
-                wtx(tx -> {
-                            CertificateTreeValidationRun res = new CertificateTreeValidationRun(testTARef1);
-                            res.setCreatedAt(lastMonth);
-                            res.setSucceeded();
-                            return res;
-                        }
-                );
+        CertificateTreeValidationRun oldValidationRun = new CertificateTreeValidationRun(testTARef1);
+        oldValidationRun.setCreatedAt(lastMonth);
         oldValidationRun.setCompletedAt(lastMonth);
+        oldValidationRun.setSucceeded();
         wtx0(tx -> getValidationRuns().add(tx, oldValidationRun));
 
-        AtomicInteger oldCount = subject.cleanupValidationRuns().getFirst();
+        AtomicInteger oldCount = subject.cleanupValidationRuns().getLeft();
         assertThat(oldCount.get()).isEqualTo(0);
     }
 
@@ -134,28 +124,18 @@ public class ValidationRunCleanupServiceTest extends GenericStorageTest {
         Ref<TrustAnchor> testTARef2 = getStorage().readTx(tx -> getTrustAnchors().makeRef(tx, testTA1.key()));
 
         final Instant lastMonth = Instant.now().minus(Duration.ofDays(30));
-        CertificateTreeValidationRun oldValidationRun =
-                wtx(tx -> {
-                            CertificateTreeValidationRun res = new CertificateTreeValidationRun(testTARef1);
-                            res.setCreatedAt(lastMonth);
-                            return res;
-                        }
-                );
+        CertificateTreeValidationRun oldValidationRun = new CertificateTreeValidationRun(testTARef1);
+        oldValidationRun.setCreatedAt(lastMonth);
         oldValidationRun.setCompletedAt(lastMonth);
         wtx0(tx -> getValidationRuns().add(tx, oldValidationRun));
 
-        CertificateTreeValidationRun oldValidationRun2 =
-                wtx(tx -> {
-                            CertificateTreeValidationRun res = new CertificateTreeValidationRun(testTARef2);
-                            res.setCreatedAt(lastMonth);
-                            res.setSucceeded();
-                            return res;
-                        }
-                );
+        CertificateTreeValidationRun oldValidationRun2 = new CertificateTreeValidationRun(testTARef2);
+        oldValidationRun2.setCreatedAt(lastMonth);
         oldValidationRun2.setCompletedAt(lastMonth);
+        oldValidationRun2.setSucceeded();
         wtx0(tx -> getValidationRuns().add(tx, oldValidationRun2));
 
-        AtomicInteger oldCount = subject.cleanupValidationRuns().getFirst();
+        AtomicInteger oldCount = subject.cleanupValidationRuns().getLeft();
         assertThat(oldCount.get()).isEqualTo(1);
     }
 
@@ -187,7 +167,7 @@ public class ValidationRunCleanupServiceTest extends GenericStorageTest {
         wtx0(tx -> getRpkiObjects().delete(tx, associatedAndDeletedObject));
 
         // It should then be deleted.
-        AtomicInteger orphanCount = subject.cleanupValidationRuns().getSecond();
+        AtomicInteger orphanCount = subject.cleanupValidationRuns().getRight();
         assertThat(orphanCount.get()).isEqualTo(1);
     }
 
@@ -206,8 +186,7 @@ public class ValidationRunCleanupServiceTest extends GenericStorageTest {
         wtx0(tx -> getValidationRuns().associate(tx, orphanValidationRun, associatedAndThenDeletedRepo));
         wtx0(tx -> getRpkiRepositories().remove(tx, associatedAndThenDeletedRepo.key()));
 
-        AtomicInteger orphanCount = subject.cleanupValidationRuns().getSecond();
+        AtomicInteger orphanCount = subject.cleanupValidationRuns().getRight();
         assertThat(orphanCount.get()).isEqualTo(1);
-
     }
 }

@@ -29,11 +29,11 @@
  */
 package net.ripe.rpki.validator3.domain.cleanup;
 
-import jetbrains.exodus.core.dataStructures.Pair;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Time;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -70,6 +70,6 @@ public class ValidationRunCleanupService {
         });
         log.info("Removed {} old validation runs and {} orphans in {}ms", oldCount.get(), orphanCount.get(), t);
         storage.gc();
-        return new Pair<>(oldCount, orphanCount);
+        return Pair.of(oldCount, orphanCount);
     }
 }
