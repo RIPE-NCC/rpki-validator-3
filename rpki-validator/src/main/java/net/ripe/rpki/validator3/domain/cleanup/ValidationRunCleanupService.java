@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.domain.cleanup;
 
+import jetbrains.exodus.core.dataStructures.Pair;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
@@ -58,7 +59,7 @@ public class ValidationRunCleanupService {
         this.storage = storage;
     }
 
-    public void cleanupValidationRuns() {
+    public Pair<AtomicInteger, AtomicInteger> cleanupValidationRuns() {
         AtomicInteger oldCount = new AtomicInteger();
         AtomicInteger orphanCount = new AtomicInteger();
         Instant completedBefore = Instant.now().minus(cleanupGraceDuration);
@@ -69,5 +70,6 @@ public class ValidationRunCleanupService {
         });
         log.info("Removed {} old validation runs and {} orphans in {}ms", oldCount.get(), orphanCount.get(), t);
         storage.gc();
+        return new Pair<>(oldCount, orphanCount);
     }
 }
