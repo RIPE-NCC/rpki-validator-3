@@ -1,20 +1,20 @@
 /**
  * The BSD License
- * <p>
+ *
  * Copyright (c) 2010-2018 RIPE NCC
  * All rights reserved.
- * <p>
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * - Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
- * - Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- * - Neither the name of the RIPE NCC nor the names of its contributors may be
- * used to endorse or promote products derived from this software without
- * specific prior written permission.
- * <p>
+ *   - Redistributions of source code must retain the above copyright notice,
+ *     this list of conditions and the following disclaimer.
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *   - Neither the name of the RIPE NCC nor the names of its contributors may be
+ *     used to endorse or promote products derived from this software without
+ *     specific prior written permission.
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -70,15 +70,14 @@ public class ValidationRunCleanupServiceTest extends GenericStorageTest {
     @Autowired
     private TrustAnchorsFactory factory;
 
-
     @Autowired
     private ValidationRunCleanupService subject;
 
     private TrustAnchor testTA;
-    private  Ref<TrustAnchor> testTARef;
+    private Ref<TrustAnchor> testTARef;
 
     @Before
-    public  void setup() {
+    public void setup() {
         List<RoaPrefix> roaPrefixes = Collections.singletonList(RoaPrefix.of(IpRange.parse("127.0.0.0/8"), null, Asn.parse("123")));
 
         testTA = wtx(tx -> factory.createTrustAnchor(tx, ta -> ta.roaPrefixes(roaPrefixes)));
@@ -92,8 +91,7 @@ public class ValidationRunCleanupServiceTest extends GenericStorageTest {
 
         final Instant lastMonth = Instant.now().minus(Duration.ofDays(30));
         CertificateTreeValidationRun oldValidationRun =
-                wtx(tx ->
-                        {
+                wtx(tx -> {
                             CertificateTreeValidationRun res = new CertificateTreeValidationRun(testTARef);
                             res.setCreatedAt(lastMonth);
                             return res;
@@ -104,6 +102,25 @@ public class ValidationRunCleanupServiceTest extends GenericStorageTest {
 
         AtomicInteger oldCount = subject.cleanupValidationRuns().getFirst();
         assertThat(oldCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldCleanUpOldValidationRunDontDeleteLastSuccsessful() {
+
+        final Instant lastMonth = Instant.now().minus(Duration.ofDays(30));
+        CertificateTreeValidationRun oldValidationRun =
+                wtx(tx -> {
+                            CertificateTreeValidationRun res = new CertificateTreeValidationRun(testTARef);
+                            res.setCreatedAt(lastMonth);
+                            res.setSucceeded();
+                            return res;
+                        }
+                );
+        oldValidationRun.setCompletedAt(lastMonth);
+        wtx0(tx -> getValidationRuns().add(tx, oldValidationRun));
+
+        AtomicInteger oldCount = subject.cleanupValidationRuns().getFirst();
+        assertThat(oldCount.get()).isEqualTo(0);
     }
 
     @Test
