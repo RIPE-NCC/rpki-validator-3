@@ -171,6 +171,9 @@ public class CertificateTreeValidationService {
                 Long t = Time.timed(() -> rpkiObjectsKeys.forEach(key -> validationRuns.associateRpkiObjectKey(tx, validationRun, key)));
                 log.info("Associated {} objects with the validation run {} in {}ms", rpkiObjectsKeys.size(), validationRun.key(), t);
 
+                Long tmr = Time.timed(() -> rpkiObjects.markReachable(tx, rpkiObjectsKeys));
+                log.info("Marked {} objects as reachable in {}ms", rpkiObjectsKeys.size(), tmr);
+
                 if (isValidationRunCompleted(validationResult)) {
                     trustAnchor.markInitialCertificateTreeValidationRunCompleted();
                     trustAnchors.update(tx, trustAnchor);

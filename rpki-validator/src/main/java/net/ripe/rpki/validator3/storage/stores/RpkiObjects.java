@@ -37,10 +37,7 @@ import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 
 import java.time.Instant;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.SortedSet;
+import java.util.*;
 import java.util.stream.Stream;
 
 public interface RpkiObjects extends GenericStore<RpkiObject> {
@@ -74,4 +71,6 @@ public interface RpkiObjects extends GenericStore<RpkiObject> {
     Stream<byte[]> streamObjects(Tx.Read tx, RpkiObject.Type type);
 
     Set<Key> getPkByType(Tx.Read tx, RpkiObject.Type type);
+
+    void markReachable(Tx.Write tx, List<Key> rpkiObjectsKeys);
 }

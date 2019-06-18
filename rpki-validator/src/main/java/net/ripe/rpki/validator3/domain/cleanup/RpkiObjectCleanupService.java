@@ -30,16 +30,9 @@
 package net.ripe.rpki.validator3.domain.cleanup;
 
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
-import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
-import net.ripe.rpki.commons.validation.ValidationResult;
-import net.ripe.rpki.validator3.storage.Tx;
-import net.ripe.rpki.validator3.storage.data.Key;
-import net.ripe.rpki.validator3.storage.data.RpkiObject;
-import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.Storage;
+import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
-import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,16 +41,10 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @Slf4j
 public class RpkiObjectCleanupService {
-
-    @Autowired
-    private TrustAnchors trustAnchors;
 
     @Autowired
     private RpkiObjects rpkiObjects;
@@ -79,26 +66,7 @@ public class RpkiObjectCleanupService {
      * Objects that are no longer reachable will be deleted after a configurable grace duration.
      */
     public long cleanupRpkiObjects() throws Exception {
-        Instant now = Instant.now();
-        final List<TrustAnchor> trustAnchors = storage.readTx(tx -> this.trustAnchors.findAll(tx));
-        final Set<Key> markThem = ConcurrentHashMap.newKeySet();
-        final Long t0 = Time.timed(() ->
-                trustAnchors.stream()
-                        .peek(trustAnchor -> log.debug("tracing objects for trust anchor {}", trustAnchor))
-                        .parallel()
-                        .forEach(trustAnchor ->
-                                storage.readTx0(tx -> {
-                                    X509ResourceCertificate resourceCertificate = trustAnchor.getCertificate();
-                                    if (resourceCertificate != null) {
-                                        traceCertificateAuthority(tx, now, resourceCertificate, markThem);
-                                    }
-                                })));
-        log.info("Found {} reachable RPKI objects in {}ms", markThem.size(), t0);
-        final Long deletedCount = storage.writeTx(tx -> {
-            Long t = Time.timed(() -> markThem.forEach(pk -> rpkiObjects.markReachable(tx, pk, now)));
-            log.info("Marked reachable {} RPKI objects in {}ms", markThem.size(), t);
-            return deleteUnreachableObjects(tx, now);
-        });
+        final Long deletedCount = storage.writeTx(tx -> deleteUnreachableObjects(tx, Instant.now()));
         storage.gc();
         return deletedCount;
     }
@@ -108,49 +76,6 @@ public class RpkiObjectCleanupService {
         final Pair<Long, Long> count = Time.timed(() -> rpkiObjects.deleteUnreachableObjects(tx, unreachableSince));
         log.info("Removed {} RPKI objects that have not been marked reachable since {}, took {}ms", count.getLeft(), unreachableSince, count.getRight());
         return count.getLeft();
-    }
-
-    private void traceCertificateAuthority(Tx.Read tx, Instant now, X509ResourceCertificate resourceCertificate,
-                                           Set<Key> markThem) {
-        if (resourceCertificate == null || resourceCertificate.getManifestUri() == null) {
-            return;
-        }
-
-        rpkiObjects.findLatestMftByAKI(tx, resourceCertificate.getSubjectKeyIdentifier())
-                .ifPresent(manifest -> markAndTraceObject(tx, now, "manifest.mft", manifest, markThem));
-    }
-
-    private void markAndTraceObject(Tx.Read tx, Instant now, String name, RpkiObject rpkiObject, Set<Key> markThem) {
-        markThem.add(rpkiObject.key());
-        switch (rpkiObject.getType()) {
-            case MFT:
-                traceManifest(tx, now, name, rpkiObject, markThem);
-                break;
-            case CER:
-                traceCaCertificate(tx, now, name, rpkiObject, markThem);
-                break;
-            default:
-                break;
-        }
-    }
-
-    private void traceManifest(Tx.Read tx, Instant now, String name, RpkiObject manifest, Set<Key> markThem) {
-        rpkiObjects.findCertificateRepositoryObject(tx,
-                manifest.key(), ManifestCms.class, ValidationResult.withLocation(name))
-                .ifPresent(manifestCms ->
-                        rpkiObjects.findObjectsInManifest(tx, manifestCms)
-                                .forEach((entry, rpkiObject) ->
-                                        markAndTraceObject(tx, now, entry, rpkiObject, markThem)));
-    }
-
-    private void traceCaCertificate(Tx.Read tx, Instant now, String name, RpkiObject caCertificate, Set<Key> markThem) {
-        rpkiObjects.findCertificateRepositoryObject(tx, caCertificate.key(),
-                X509ResourceCertificate.class, ValidationResult.withLocation(name))
-                .ifPresent(certificate -> {
-                    if (certificate.isCa() && certificate.getManifestUri() != null) {
-                        traceCertificateAuthority(tx, now, certificate, markThem);
-                    }
-                });
     }
 
 }
