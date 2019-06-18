@@ -44,6 +44,7 @@ import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
 import net.ripe.rpki.validator3.storage.Storage;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
 import java.time.Instant;
@@ -264,8 +265,19 @@ public abstract class Xodus implements Storage {
                     .sorted(Comparator.comparing(Map.Entry::getKey))
                     .map(e -> new IxMapStat(e.getKey(), e.getValue().sizeInfo(tx)))
                     .collect(Collectors.toList());
-            return new Stat(ixMapStats);
+            return new Stat(getDbStats(), ixMapStats);
         });
+    }
+
+    @NotNull
+    @Override
+    public Map<String, String> getDbStats() {
+        final EnvironmentStatistics statistics = (EnvironmentStatistics) getEnv().getStatistics();
+        return Arrays.stream(EnvironmentStatistics.Type.values())
+                .collect(Collectors.toMap(
+                        Enum::name,
+                        k -> Long.toString(statistics.getStatisticsItem(k).getTotal())
+                ));
     }
 
     @Data
@@ -297,6 +309,7 @@ public abstract class Xodus implements Storage {
     @Data
     @AllArgsConstructor
     public class Stat {
+        Map<String, String> dbStats;
         List<IxMapStat> statistics;
     }
 }

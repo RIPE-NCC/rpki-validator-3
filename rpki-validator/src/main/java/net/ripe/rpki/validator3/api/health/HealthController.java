@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.api.health;
 
+import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
@@ -47,6 +48,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -86,7 +88,7 @@ public class HealthController {
                         dmp -> dmp.getLastModified() != null
                 ));
 
-        final String databaseStatus = databaseStatus();
+        final Map<String, String> databaseStatus = databaseStatus();
 
         return ResponseEntity.ok(ApiResponse.<Health>builder()
                 .data(Health.of(trustAnchorReady, bgpDumpReady, databaseStatus, buildInformation))
@@ -122,11 +124,11 @@ public class HealthController {
     }
 
 
-    private String databaseStatus() {
+    private Map<String, String> databaseStatus() {
         try {
-            return storage.status();
+            return storage.getDbStats();
         } catch (Exception e) {
-            return e.getMessage();
+            return Collections.singletonMap("error", e.getMessage());
         }
     }
 }

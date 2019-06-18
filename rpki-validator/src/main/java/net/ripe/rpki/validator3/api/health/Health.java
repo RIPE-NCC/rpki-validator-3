@@ -38,6 +38,6 @@ import java.util.Map;
 class Health {
     Map<String, Boolean> trustAnchorReady;
     Map<String, Boolean> bgpDumpReady;
-    String databaseStatus;
+    Map<String, String> databaseStatus;
     BuildInformation buildInformation; 
 }

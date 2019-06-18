@@ -215,13 +215,7 @@ public abstract class XodusIxBase<T extends Serializable> implements IxBase<T> {
             count.getAndIncrement();
             size.addAndGet(k.size() + v.length);
         });
-        return new Sizes(count.get(), size.get(), getAllocatedSize(tx, getMainDb()));
+        return new Sizes(count.get(), size.get());
     }
-
-    long getAllocatedSize(Tx.Read tx, Store store) {
-        // TODO Implement somehow
-        return 0;
-    }
-
 
 }

@@ -69,6 +69,5 @@ public interface IxBase<T extends Serializable> {
     class Sizes {
         private int count;
         private long keysAndValuesBytes;
-        private long allocatedSize;
     }
 }

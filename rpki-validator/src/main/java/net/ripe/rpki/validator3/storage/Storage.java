@@ -31,6 +31,7 @@ package net.ripe.rpki.validator3.storage;
 
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -60,4 +61,7 @@ public interface Storage {
                                                       Coder<T> c);
 
     void gc();
+
+    @NotNull
+    Map<String, String> getDbStats();
 }

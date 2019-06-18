@@ -367,12 +367,10 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
             Store idx = getIdx(name);
             AtomicInteger count = new AtomicInteger();
             AtomicInteger size = new AtomicInteger();
-            long allocatedSize = getAllocatedSize(tx, idx);
-            indexSizes.put(name, new XodusIxBase.Sizes(count.get(), size.get(), allocatedSize));
+            indexSizes.put(name, new XodusIxBase.Sizes(count.get(), size.get()));
         });
         return new Sizes(sizes.getCount(),
                 sizes.getKeysAndValuesBytes(),
-                sizes.getAllocatedSize(),
                 indexSizes);
     }
 
@@ -384,18 +382,11 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
         @Getter
         private long totalKeysAndValuesBytes;
 
-        @Getter
-        private long totalAllocatedSize;
-
-        Sizes(int count, long sizeInBytes, long allocatedSize, Map<String, XodusIxBase.Sizes> indexSizes) {
-            super(count, sizeInBytes, allocatedSize);
+        Sizes(int count, long sizeInBytes, Map<String, XodusIxBase.Sizes> indexSizes) {
+            super(count, sizeInBytes);
             this.indexSizes = indexSizes.isEmpty() ? null : indexSizes;
             totalKeysAndValuesBytes = sizeInBytes;
-            totalAllocatedSize = allocatedSize;
-            indexSizes.forEach((n, s) -> {
-                totalKeysAndValuesBytes += s.getKeysAndValuesBytes();
-                totalAllocatedSize += s.getAllocatedSize();
-            });
+            indexSizes.forEach((n, s) -> totalKeysAndValuesBytes += s.getKeysAndValuesBytes());
         }
     }
 
