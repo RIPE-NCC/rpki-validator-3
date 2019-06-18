@@ -31,7 +31,6 @@ package net.ripe.rpki.validator3.storage.xodus;
 
 import jetbrains.exodus.env.Environment;
 import jetbrains.exodus.env.EnvironmentConfig;
-import jetbrains.exodus.env.EnvironmentImpl;
 import jetbrains.exodus.env.Environments;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,6 +40,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.io.File;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -62,7 +62,8 @@ public class XodusImpl extends Xodus {
     @PostConstruct
     public void initXodus() {
         try {
-            log.info("Creating Xodus environment at {}", path);
+            final String dbPath = createDirectoryIfNeeded();
+            log.info("Creating Xodus environment at {}", dbPath);
             oneThread.submit(() -> {
                 final EnvironmentConfig config = new EnvironmentConfig()
                         .setLogDurableWrite(true)
@@ -72,7 +73,7 @@ public class XodusImpl extends Xodus {
                         .setEnvCloseForcedly(true)
                         .setMemoryUsagePercentage(10);
 
-                env = Environments.newInstance(path, config);
+                env = Environments.newInstance(dbPath, config);
             }).get();
 
             Runtime.getRuntime().addShutdownHook(new Thread(this::waitForAllTxToFinishAndClose));
@@ -80,6 +81,21 @@ public class XodusImpl extends Xodus {
             log.error("Couldn't open Xodus", e);
             throw new RuntimeException(e);
         }
+    }
+
+    private String createDirectoryIfNeeded() {
+        final File mainDir = new File(path);
+        if (!mainDir.exists() || !mainDir.isDirectory()) {
+            throw new RuntimeException("Directory " + path + " doesn't exist, please create one");
+        }
+        final File dbDir = new File(path, "db");
+        if (!dbDir.exists()) {
+            log.info("Creating directory {}", dbDir.getAbsolutePath());
+            if (!dbDir.mkdirs()) {
+                throw new RuntimeException("Couldn't create " + dbDir.getAbsolutePath());
+            }
+        }
+        return dbDir.getAbsolutePath();
     }
 
     @PreDestroy
