@@ -212,6 +212,12 @@ public class RpkiObjectStore extends GenericStoreImpl<RpkiObject> implements Rpk
     }
 
     @Override
+    public void markReachable(Tx.Write tx, List<Key> rpkiObjectsKeys) {
+        final Instant now = Instant.now();
+        rpkiObjectsKeys.forEach(pk -> markReachable(tx, pk, now));
+    }
+
+    @Override
     protected IxMap<RpkiObject> ixMap() {
         return ixMap;
     }
