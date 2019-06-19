@@ -219,7 +219,7 @@ public class CertificateTreeValidationService {
             URI manifestUri = certificate.getManifestUri();
             temporary.setLocation(new ValidationLocation(manifestUri));
 
-            Optional<RpkiObject> manifestObject = storage.readTx(tx -> rpkiObjects.findLatestMftByAKI(tx, context.getSubjectKeyIdentifier()));
+            Optional<RpkiObject> manifestObject = storage.readTx(tx -> rpkiObjects.findLatestMftByAKI(tx, certificate.getSubjectKeyIdentifier()));
 
             if (!manifestObject.isPresent()) {
                 if (rpkiRepository.getStatus() == RpkiRepository.Status.FAILED) {
@@ -340,7 +340,7 @@ public class CertificateTreeValidationService {
                     uri -> {
                         final Ref<TrustAnchor> trustAnchorRef = trustAnchors.makeRef(tx, trustAnchor.key());
                         RpkiRepository r = rpkiRepositories.register(tx, trustAnchorRef, uri.toASCIIString(), RRDP);
-                        tx.afterCommit(() -> validationScheduler.addRpkiRepository(r));
+                        tx.afterCommit(() -> validationScheduler.addRrdpRpkiRepository(r));
                         return r;
                     });
         }

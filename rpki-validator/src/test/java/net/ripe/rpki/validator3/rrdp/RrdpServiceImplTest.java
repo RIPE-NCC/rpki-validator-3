@@ -70,8 +70,7 @@ public class RrdpServiceImplTest extends GenericStorageTest {
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        subject = new RrdpServiceImpl(rrdpClient, this.getRpkiObjects(), this.getRpkiRepositories(),
-                this.getValidationRuns(), getStorage());
+        subject = new RrdpServiceImpl(rrdpClient, this.getRpkiObjects(), this.getRpkiRepositories(), getStorage());
     }
 
     @Test

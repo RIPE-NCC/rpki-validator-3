@@ -71,7 +71,7 @@ public interface ValidationRuns {
 
     void associate(Tx.Write writeTx, RpkiRepositoryValidationRun validationRun, RpkiObject o);
 
-    void associate(Tx.Write writeTx, RsyncRepositoryValidationRun validationRun, RpkiRepository r);
+    void associate(Tx.Write writeTx, RpkiRepositoryValidationRun validationRun, RpkiRepository r);
 
     void associateRpkiObjectKey(Tx.Write tx, CertificateTreeValidationRun validationRun, Key rpkiObjectKey);
 

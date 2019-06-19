@@ -123,4 +123,11 @@ public class XodusMultIxMap<T extends Serializable> extends XodusIxBase<T> imple
     public T toValue(byte[] bb) {
         return getValue(null, bb);
     }
+
+    @Override
+    public boolean exists(Tx.Read tx, Key pk, T value) {
+        try (Cursor c = getMainDb().openCursor(castTxn(tx))) {
+            return c.getSearchBoth(pk.toByteIterable(), valueWithChecksum(value));
+        }
+    }
 }

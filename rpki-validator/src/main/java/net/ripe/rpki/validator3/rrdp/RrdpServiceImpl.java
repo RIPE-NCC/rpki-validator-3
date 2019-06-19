@@ -36,15 +36,14 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
 import net.ripe.rpki.validator3.domain.RpkiObjectUtils;
+import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
-import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
-import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Hex;
 import net.ripe.rpki.validator3.util.Sha256;
 import net.ripe.rpki.validator3.util.Time;
@@ -79,20 +78,16 @@ public class RrdpServiceImpl implements RrdpService {
 
     private final RpkiRepositories rpkiRepositories;
 
-    private final ValidationRuns validationRuns;
-
     private final Storage storage;
 
     @Autowired
     public RrdpServiceImpl(final RrdpClient rrdpClient,
                            final RpkiObjects rpkiObjects,
                            final RpkiRepositories rpkiRepositories,
-                           final ValidationRuns validationRuns,
                            final Storage storage) {
         this.rrdpClient = rrdpClient;
         this.rpkiObjects = rpkiObjects;
         this.rpkiRepositories = rpkiRepositories;
-        this.validationRuns = validationRuns;
         this.storage = storage;
     }
 
@@ -242,7 +237,6 @@ public class RrdpServiceImpl implements RrdpService {
             Optional<RpkiObject> existing = rpkiObjects.findBySha256(tx, sha256);
             if (existing.isPresent()) {
                 rpkiObjects.addLocation(tx, existing.get().key(), uri);
-                validationRuns.associate(tx, validationRun, existing.get());
             } else {
                 if (workCounter.get() > threshold) {
                     storeSnapshotObject(tx, validationRun, counter);
@@ -270,7 +264,6 @@ public class RrdpServiceImpl implements RrdpService {
                 final RpkiObject object = p.getRight();
                 final String location = p.getLeft();
                 rpkiObjects.put(tx, object, location);
-                validationRuns.associate(tx, validationRun, object);
                 counter.incrementAndGet();
             }
         } catch (Exception e) {
@@ -353,7 +346,6 @@ public class RrdpServiceImpl implements RrdpService {
                     if (!Arrays.equals(object.getSha256(), sha256)) {
                         final String location = p.getLeft();
                         rpkiObjects.put(tx, object, location);
-                        validationRuns.associate(tx, validationRun, object);
                         return true;
                     } else {
                         log.debug("The object added is the same {}", object);
@@ -379,7 +371,6 @@ public class RrdpServiceImpl implements RrdpService {
                 } else {
                     final String location = p.getLeft();
                     rpkiObjects.put(tx, object, location);
-                    validationRuns.associate(tx, validationRun, object);
                     return true;
                 }
             }

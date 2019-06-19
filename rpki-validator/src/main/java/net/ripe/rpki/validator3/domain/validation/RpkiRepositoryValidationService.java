@@ -129,7 +129,9 @@ public class RpkiRepositoryValidationService {
 
         final RpkiRepositoryValidationRun validationRun = storage.writeTx(tx -> {
             Ref<RpkiRepository> rpkiRepositoryRef = rpkiRepositories.makeRef(tx, rpkiRepository.key());
-            return validationRuns.add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef));
+            RrdpRepositoryValidationRun newVR = validationRuns.add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef));
+            validationRuns.associate(tx, newVR, rpkiRepository);
+            return newVR;
         });
 
         boolean triggerCaTreeAfter = false;
@@ -392,7 +394,6 @@ public class RpkiRepositoryValidationService {
                     workCounter.incrementAndGet();
                 } else {
                     rpkiObjects.addLocation(tx, existing.key(), location);
-                    validationRuns.associate(tx, validationRun, existing);
                 }
                 return FileVisitResult.CONTINUE;
             }
@@ -421,10 +422,8 @@ public class RpkiRepositoryValidationService {
                     // re-check it for a weird case of object with the
                     // same hash inserted while this task was in the pool
                     rpkiObjects.addLocation(tx, existing.key(), location);
-                    validationRuns.associate(tx, validationRun, existing);
                 } else {
                     rpkiObjects.put(tx, object, location);
-                    validationRuns.associate(tx, validationRun, object);
                     objectsBySha256.put(key, object);
                 }
             }

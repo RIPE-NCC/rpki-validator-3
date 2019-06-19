@@ -106,16 +106,18 @@ public class ValidationScheduler {
         }
     }
 
-    public synchronized void addRpkiRepository(RpkiRepository rpkiRepository) {
+    public synchronized void addRrdpRpkiRepository(RpkiRepository rpkiRepository) {
         if (!enabled) {
             return;
         }
+        // Minutely scheduling only for RRDP
+        Preconditions.checkArgument(rpkiRepository.getType() == RpkiRepository.Type.RRDP);
+
         Preconditions.checkArgument(
             rpkiRepository.key().asLong() >= Api.MINIMUM_VALID_ID,
             "rpkiRepository id %s is not valid",
             rpkiRepository.key()
         );
-
         try {
             if (!scheduler.checkExists(RepositoryValidationJob.getJobKey(rpkiRepository))) {
                 log.info("Adding repository to the scheduler {}", rpkiRepository);

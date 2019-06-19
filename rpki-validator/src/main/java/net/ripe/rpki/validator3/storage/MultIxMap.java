@@ -47,4 +47,6 @@ public interface MultIxMap<T extends Serializable> extends IxBase<T> {
     void delete(Tx.Write tx, Key primaryKey, T value);
 
     void deleteBatch(Tx.Write tx, List<Pair<Key, T>> toDelete);
+
+    boolean exists(Tx.Read tx, Key pk, T location);
 }

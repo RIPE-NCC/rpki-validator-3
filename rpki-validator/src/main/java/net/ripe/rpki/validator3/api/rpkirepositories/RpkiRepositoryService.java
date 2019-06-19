@@ -62,7 +62,7 @@ public class RpkiRepositoryService {
         log.info("Schedule RPKI validation for the existing repositories");
         storage.writeTx0(tx ->
                 rpkiRepositories.findRrdpRepositories(tx).forEach(r -> {
-                    tx.afterCommit(() -> validationScheduler.addRpkiRepository(r));
+                    tx.afterCommit(() -> validationScheduler.addRrdpRpkiRepository(r));
                     log.info("Scheduled {} for validation.", r);
                 }));
     }

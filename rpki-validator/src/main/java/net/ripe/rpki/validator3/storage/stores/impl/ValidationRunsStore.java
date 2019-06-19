@@ -395,7 +395,7 @@ public class ValidationRunsStore implements ValidationRuns {
     }
 
     @Override
-    public void associate(Tx.Write tx, RsyncRepositoryValidationRun validationRun, RpkiRepository rpkiRepository) {
+    public void associate(Tx.Write tx, RpkiRepositoryValidationRun validationRun, RpkiRepository rpkiRepository) {
         vr2repo.put(tx, validationRun.key(), rpkiRepository.key());
     }
 

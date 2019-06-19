@@ -374,7 +374,7 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
             this.getTrustAnchors().add(tx, ta1);
             final Ref<TrustAnchor> trustAnchorRef = this.getTrustAnchors().makeRef(tx, ta1.key());
             RpkiRepository repository = this.getRpkiRepositories().register(tx, trustAnchorRef, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
-            validationScheduler.addRpkiRepository(repository);
+            validationScheduler.addRrdpRpkiRepository(repository);
             repository.setDownloaded();
             this.getRpkiRepositories().update(tx, repository);
             return ta1;
