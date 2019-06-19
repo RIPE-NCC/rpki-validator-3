@@ -104,8 +104,8 @@ public class CoderFactory {
             }
 
             @Override
-            public Key fromBytes(byte[] bb) {
-                return Key.of(bb);
+            public Key fromBytes(byte[] bytes) {
+                return Key.of(bytes);
             }
         };
     }
