@@ -50,6 +50,7 @@ import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
+import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
@@ -140,17 +141,7 @@ public class ValidationRunsStore implements ValidationRuns {
         maps.put(RsyncRepositoryValidationRun.TYPE, rsIxMap);
         maps.put(RrdpRepositoryValidationRun.TYPE, rrIxMap);
 
-        final Coder<Key> keyCoder = new Coder<Key>() {
-            @Override
-            public byte[] toBytes(Key key) {
-                return key.getBytes();
-            }
-
-            @Override
-            public Key fromBytes(byte[] bb) {
-                return Key.of(bb);
-            }
-        };
+        final Coder<Key> keyCoder = CoderFactory.keyCoder();
         vr2ro = storage.createMultIxMap(VALIDATION_RUNS_TO_RPKI_OBJECTS, keyCoder);
         vr2repo = storage.createIxMap(VALIDATION_RUNS_TO_RPKI_REPOSITORIES, Collections.emptyMap(), keyCoder);
 
