@@ -187,9 +187,12 @@ public class RpkiObjectStore extends GenericStoreImpl<RpkiObject> implements Rpk
 
     @Override
     public long deleteUnreachableObjects(Tx.Write tx, Instant unreachableSince) {
-        final Set<Key> toDelete = new HashSet<>();
-        reachableMap.forEach(tx, (k, bb) -> {
-            if (reachableMap.toValue(bb) < unreachableSince.toEpochMilli()) {
+        final List<Key> toDelete = new ArrayList<>();
+        reachableMap.forEach(tx, (k, bytes) -> {
+            if (reachableMap.toValue(bytes) < unreachableSince.toEpochMilli()) {
+                // do not do ixMap.delete(tx, k) right here -- it will cause onDelete
+                // trigger and deletion of pair at the current cursor position, which is
+                // potentially a problem
                 toDelete.add(k);
             }
         });
