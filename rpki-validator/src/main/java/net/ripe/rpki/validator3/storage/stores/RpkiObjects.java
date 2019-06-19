@@ -62,8 +62,6 @@ public interface RpkiObjects extends GenericStore<RpkiObject> {
 
     Optional<RpkiObject> findBySha256(Tx.Read tx, byte[] sha256);
 
-    Map<String, RpkiObject> findObjectsInManifest(Tx.Read tx, ManifestCms manifestCms);
-
     Optional<RpkiObject> findLatestMftByAKI(Tx.Read tx, byte[] authorityKeyIdentifier);
 
     long deleteUnreachableObjects(Tx.Write tx, Instant unreachableSince);

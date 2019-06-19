@@ -162,20 +162,6 @@ public class RpkiObjectStore extends GenericStoreImpl<RpkiObject> implements Rpk
     }
 
     @Override
-    public Map<String, RpkiObject> findObjectsInManifest(Tx.Read tx, ManifestCms manifestCms) {
-        final SortedMap<byte[], String> hashes = new TreeMap<>(UnsignedBytes.lexicographicalComparator());
-        manifestCms.getFiles().forEach((name, hash) -> hashes.put(hash, name));
-        return hashes.keySet().stream()
-                .map(sha256 -> findBySha256(tx, sha256))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .collect(Collectors.toMap(
-                        x -> hashes.get(x.getSha256()),
-                        x -> x
-                ));
-    }
-
-    @Override
     public Optional<RpkiObject> findLatestMftByAKI(Tx.Read tx, byte[] authorityKeyIdentifier) {
         return ixMap.getByIndex(BY_AKI_MFT_INDEX, tx, Key.of(authorityKeyIdentifier))
                 .values()
