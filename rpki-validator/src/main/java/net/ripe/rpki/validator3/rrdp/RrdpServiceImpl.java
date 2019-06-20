@@ -60,6 +60,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -92,9 +93,9 @@ public class RrdpServiceImpl implements RrdpService {
     }
 
     @Override
-    public void storeRepository(final RpkiRepository rpkiRepository, final RpkiRepositoryValidationRun validationRun) {
+    public boolean storeRepository(final RpkiRepository rpkiRepository, final RpkiRepositoryValidationRun validationRun) {
         try {
-            doStoreRepository(rpkiRepository, validationRun);
+            return doStoreRepository(rpkiRepository, validationRun);
         } catch (RrdpException e) {
             log.warn("Error retrieving RRDP repository at {}: " + e.getMessage(), rpkiRepository.getRrdpNotifyUri());
             ValidationCheck validationCheck = new ValidationCheck(rpkiRepository.getRrdpNotifyUri(),
@@ -102,14 +103,16 @@ public class RrdpServiceImpl implements RrdpService {
             validationRun.addCheck(validationCheck);
             validationRun.setFailed();
         }
+        return false;
     }
 
-    private void doStoreRepository(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun) {
+    private boolean doStoreRepository(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun) {
         final Notification notification = rrdpClient.readStream(rpkiRepository.getRrdpNotifyUri(), rrdpParser::notification);
 
         log.info("Repository {}: local serial is '{}', latest serial is {}",
                 rpkiRepository.getRrdpNotifyUri(), rpkiRepository.getRrdpSerial(), notification.serial);
 
+        AtomicBoolean changedObjects = new AtomicBoolean(false);
         if (notification.sessionId.equals(rpkiRepository.getRrdpSessionId())) {
             if (rpkiRepository.getRrdpSerial().compareTo(notification.serial) <= 0) {
                 try {
@@ -124,7 +127,7 @@ public class RrdpServiceImpl implements RrdpService {
                     deltas.forEach(d -> {
                         storage.readTx0(tx -> verifyDeltaIsApplicable(tx, d));
                         storage.writeTx0(tx -> {
-                            storeDelta(tx, d, validationRun, rpkiRepository);
+                            storeDelta(tx, d, validationRun, rpkiRepository, changedObjects);
                             tx.afterCommit(() -> rpkiRepository.setRrdpSerial(rpkiRepository.getRrdpSerial().add(BigInteger.ONE)));
                         });
                     });
@@ -135,21 +138,22 @@ public class RrdpServiceImpl implements RrdpService {
                     ValidationCheck validationCheck = new ValidationCheck(rpkiRepository.getRrdpNotifyUri(),
                             ValidationCheck.Status.WARNING, errorCode, e.getMessage());
                     validationRun.addCheck(validationCheck);
-                    readSnapshot(rpkiRepository, validationRun, notification);
+                    readSnapshot(rpkiRepository, validationRun, notification, changedObjects);
                 }
             } else {
                 log.info("Repository serial {} is ahead of serial in notification file {}, fetching the snapshot",
                         rpkiRepository.getRrdpSessionId(), notification.sessionId);
-                readSnapshot(rpkiRepository, validationRun, notification);
+                readSnapshot(rpkiRepository, validationRun, notification, changedObjects);
             }
         } else {
             log.info("Repository has session id '{}' but the downloaded version has session id '{}', fetching the snapshot",
                     rpkiRepository.getRrdpSessionId(), notification.sessionId);
-            readSnapshot(rpkiRepository, validationRun, notification);
+            readSnapshot(rpkiRepository, validationRun, notification, changedObjects);
         }
+        return changedObjects.get();
     }
 
-    private void readSnapshot(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun, Notification notification) {
+    private void readSnapshot(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun, Notification notification, AtomicBoolean changedObjects) {
         final AtomicReference<HashingInputStream> hashingStream = new AtomicReference<>();
         final Pair<Snapshot, Long> timedSnapshot = Time.timed(() ->
                 rrdpClient.readStream(notification.snapshotUri, is -> {
@@ -166,7 +170,7 @@ public class RrdpServiceImpl implements RrdpService {
         log.info("Downloading/hashing/parsing snapshot time {}ms", timedSnapshot.getRight());
         Long timedStoreSnapshot = Time.timed(() ->
                 storage.writeTx0(tx -> {
-                    storeSnapshot(tx, timedSnapshot.getLeft(), validationRun);
+                    storeSnapshot(tx, timedSnapshot.getLeft(), validationRun, changedObjects);
                     rpkiRepository.setRrdpSessionId(notification.sessionId);
                     rpkiRepository.setRrdpSerial(notification.serial);
                     rpkiRepositories.update(tx, rpkiRepository);
@@ -227,7 +231,7 @@ public class RrdpServiceImpl implements RrdpService {
     private final ExecutorCompletionService<Either<ValidationResult, Pair<String, RpkiObject>>> asyncCreateObjects =
             new ExecutorCompletionService<>(Executors.newFixedThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1)));
 
-    void storeSnapshot(final Tx.Write tx, final Snapshot snapshot, final RpkiRepositoryValidationRun validationRun) {
+    void storeSnapshot(final Tx.Write tx, final Snapshot snapshot, final RpkiRepositoryValidationRun validationRun, AtomicBoolean changedObjects) {
         final AtomicInteger counter = new AtomicInteger();
         final AtomicInteger workCounter = new AtomicInteger(0);
         final int threshold = 10;
@@ -251,6 +255,7 @@ public class RrdpServiceImpl implements RrdpService {
             storeSnapshotObject(tx, validationRun, counter);
         }
 
+        changedObjects.set(counter.get() > 0);
         log.info("Added (or updated locations for) {} new objects", counter.get());
     }
 
@@ -274,17 +279,20 @@ public class RrdpServiceImpl implements RrdpService {
     private void storeDelta(final Tx.Write wtx,
                             final Delta delta,
                             final RpkiRepositoryValidationRun validationRun,
-                            final RpkiRepository rpkiRepository) {
+                            final RpkiRepository rpkiRepository,
+                            AtomicBoolean changedObjectsCounter) {
         final AtomicInteger added = new AtomicInteger();
         final AtomicInteger deleted = new AtomicInteger();
         delta.asMap().forEach((uri, deltaElement) -> {
             if (deltaElement instanceof DeltaPublish) {
                 if (applyDeltaPublish(validationRun, uri, (DeltaPublish) deltaElement, wtx)) {
                     added.incrementAndGet();
+                    changedObjectsCounter.set(true);
                 }
             } else if (deltaElement instanceof DeltaWithdraw) {
                 if (applyDeltaWithdraw(validationRun, uri, (DeltaWithdraw) deltaElement, wtx)) {
                     deleted.incrementAndGet();
+                    changedObjectsCounter.set(true);
                 }
             }
         });

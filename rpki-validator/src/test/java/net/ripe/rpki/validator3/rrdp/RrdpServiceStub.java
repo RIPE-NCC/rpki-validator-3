@@ -38,7 +38,7 @@ import org.springframework.stereotype.Service;
 @Profile("test")
 public class RrdpServiceStub implements RrdpService {
     @Override
-    public void storeRepository(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun) {
-
+    public boolean storeRepository(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun) {
+        return true;
     }
 }

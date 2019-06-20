@@ -52,6 +52,7 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -89,7 +90,8 @@ public class RrdpServiceImplTest extends GenericStorageTest {
                 this.getValidationRuns().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
 
         final Snapshot snapshot = new RrdpParser().snapshot(Objects.fileIS("rrdp/snapshot2.xml"));
-        wtx0(tx -> subject.storeSnapshot(tx, snapshot, validationRun));
+        AtomicBoolean changedObjects = new AtomicBoolean();
+        wtx0(tx -> subject.storeSnapshot(tx, snapshot, validationRun, changedObjects));
 
         final List<RpkiObject> objects = rtx(tx -> this.getRpkiObjects().values(tx));
         assertEquals(3, objects.size());

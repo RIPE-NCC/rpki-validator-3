@@ -136,10 +136,11 @@ public class RpkiRepositoryValidationService {
         });
 
         boolean triggerCaTreeAfter = false;
+        boolean changedAtLeastOneObject = false;
         try {
             final String uri = rpkiRepository.getRrdpNotifyUri();
             if (isRrdpUri(uri)) {
-                rrdpService.storeRepository(rpkiRepository, validationRun);
+                changedAtLeastOneObject = rrdpService.storeRepository(rpkiRepository, validationRun);
                 if (validationRun.isFailed()) {
                     rpkiRepository.setFailed();
                 } else {
@@ -166,13 +167,11 @@ public class RpkiRepositoryValidationService {
                 rpkiRepositories.update(tx, rpkiRepository);
                 validationRuns.update(tx, validationRun);
             });
-            if (triggerCaTreeAfter) {
+            if (triggerCaTreeAfter && changedAtLeastOneObject) {
                 storage.readTx0(tx -> {
-                    if (validationRuns.getObjectCount(tx, validationRun) > 0) {
-                        rpkiRepository.getTrustAnchors().forEach(taRef ->
-                                trustAnchors.get(tx, taRef.key())
-                                        .ifPresent(validationScheduler::triggerCertificateTreeValidation));
-                    }
+                    rpkiRepository.getTrustAnchors().forEach(taRef ->
+                            trustAnchors.get(tx, taRef.key())
+                                    .ifPresent(validationScheduler::triggerCertificateTreeValidation));
                 });
             }
         }
