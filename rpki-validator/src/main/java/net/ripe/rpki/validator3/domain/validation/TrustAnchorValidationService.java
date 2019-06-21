@@ -42,14 +42,13 @@ import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.commons.validation.ValidationString;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
+import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
-import net.ripe.rpki.validator3.storage.Storage;
-import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
@@ -63,8 +62,10 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @Slf4j
@@ -72,27 +73,25 @@ public class TrustAnchorValidationService {
 
     private final TrustAnchors trustAnchors;
     private final RpkiRepositories rpkiRepositories;
-    private final RpkiObjects rpkiObjects;
     private final ValidationRuns validationRuns;
     private final ValidationScheduler validationScheduler;
     private final File localRsyncStorageDirectory;
     private final RpkiRepositoryValidationService repositoryValidationService;
     private final Storage storage;
 
-    private boolean firstTimeEver = true;
+    private Set<Key> validatedAtLeastOnce = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     @Autowired
     public TrustAnchorValidationService(
             TrustAnchors trustAnchors,
             RpkiRepositories rpkiRepositories,
-            RpkiObjects rpkiObjects, ValidationRuns validationRuns,
+            ValidationRuns validationRuns,
             ValidationScheduler validationScheduler,
             @Value("${rpki.validator.rsync.local.storage.directory}") File localRsyncStorageDirectory,
             RpkiRepositoryValidationService repositoryValidationService,
             Storage storage) {
         this.trustAnchors = trustAnchors;
         this.rpkiRepositories = rpkiRepositories;
-        this.rpkiObjects = rpkiObjects;
         this.validationRuns = validationRuns;
         this.validationScheduler = validationScheduler;
         this.localRsyncStorageDirectory = localRsyncStorageDirectory;
@@ -152,7 +151,7 @@ public class TrustAnchorValidationService {
             }
 
             validationRun.completeWith(validationResult);
-            if (firstTimeEver || updatedTrustAnchor) {
+            if (!validatedAtLeastOnce.contains(trustAnchor.getId()) || updatedTrustAnchor) {
                 if (updatedTrustAnchor) {
                     storage.writeTx0(tx -> trustAnchors.update(tx, trustAnchor));
                 }
@@ -170,7 +169,7 @@ public class TrustAnchorValidationService {
             validationRun.addCheck(new ValidationCheck(validationRun.getTrustAnchorCertificateURI(), ValidationCheck.Status.ERROR, ErrorCodes.UNHANDLED_EXCEPTION, e.toString()));
             validationRun.setFailed();
         } finally {
-            firstTimeEver = false;
+            validatedAtLeastOnce.add(trustAnchor.getId());
             storage.writeTx0(tx -> validationRuns.add(tx, validationRun));
         }
     }
