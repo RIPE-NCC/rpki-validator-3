@@ -30,6 +30,7 @@
 package net.ripe.rpki.validator3.storage.stores.impl;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.validation.ValidationResult;
@@ -42,6 +43,7 @@ import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
+import net.ripe.rpki.validator3.storage.xodus.Xodus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -69,6 +71,7 @@ public class RpkiObjectStore extends GenericStoreImpl<RpkiObject> implements Rpk
     private final IxMap<RpkiObject> ixMap;
     private final IxMap<Long> reachableMap;
     private final MultIxMap<String> locationMap;
+    private final Storage storage;
 
     private Set<Key> akiMftKey(RpkiObject rpkiObject) {
         byte[] authorityKeyIdentifier = rpkiObject.getAuthorityKeyIdentifier();
@@ -83,6 +86,7 @@ public class RpkiObjectStore extends GenericStoreImpl<RpkiObject> implements Rpk
 
     @Autowired
     public RpkiObjectStore(Storage storage) {
+        this.storage = storage;
         this.ixMap = storage.createIxMap(
                 RPKI_OBJECTS,
                 ImmutableMap.of(
@@ -167,17 +171,22 @@ public class RpkiObjectStore extends GenericStoreImpl<RpkiObject> implements Rpk
     }
 
     @Override
-    public long deleteUnreachableObjects(Tx.Write tx, Instant unreachableSince) {
+    public long deleteUnreachableObjects(Instant unreachableSince) {
         final List<Key> toDelete = new ArrayList<>();
-        reachableMap.forEach(tx, (k, bytes) -> {
-            if (reachableMap.toValue(bytes) < unreachableSince.toEpochMilli()) {
-                // do not do ixMap.delete(tx, k) right here -- it will cause onDelete
-                // trigger and deletion of pair at the current cursor position, which is
-                // potentially a problem
-                toDelete.add(k);
-            }
+
+        storage.readTx0(tx ->
+                reachableMap.forEach(tx, (k, bytes) -> {
+                    if (reachableMap.toValue(bytes) < unreachableSince.toEpochMilli()) {
+                        // do not do ixMap.delete(tx, k) right here -- it will cause onDelete
+                        // trigger and deletion of pair at the current cursor position, which is
+                        // potentially a problem
+                        toDelete.add(k);
+                    }
+                }));
+        Lists.partition(toDelete, 1000).forEach(chunk -> {
+            storage.writeTx0(tx ->
+                    chunk.forEach(pk -> ixMap.delete(tx, pk)));
         });
-        toDelete.forEach(pk -> ixMap.delete(tx, pk));
         return (long) toDelete.size();
     }
 

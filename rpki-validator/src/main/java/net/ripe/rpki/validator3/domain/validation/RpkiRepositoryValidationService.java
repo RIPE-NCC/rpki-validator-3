@@ -286,7 +286,7 @@ public class RpkiRepositoryValidationService {
                 log.info("Stored {} objects from the repository {} in {}ms", existingObjectsSha256.size(), repository, t);
                 repository.setDownloaded();
             } else {
-                log.info("Not storing any objects for the repository {} because parent repository is {}",
+                log.debug("Not storing any objects for the repository {} because parent repository is {}",
                         repository.getLocationUri(), parentRepository == null ? null : parentRepository.getType());
             }
         } catch (IOException e) {

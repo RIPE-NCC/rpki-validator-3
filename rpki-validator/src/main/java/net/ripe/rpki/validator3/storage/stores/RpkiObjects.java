@@ -64,7 +64,7 @@ public interface RpkiObjects extends GenericStore<RpkiObject> {
 
     Optional<RpkiObject> findLatestMftByAKI(Tx.Read tx, byte[] authorityKeyIdentifier);
 
-    long deleteUnreachableObjects(Tx.Write tx, Instant unreachableSince);
+    long deleteUnreachableObjects(Instant unreachableSince);
 
     Stream<byte[]> streamObjects(Tx.Read tx, RpkiObject.Type type);
 
