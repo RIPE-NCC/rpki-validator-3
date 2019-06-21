@@ -421,9 +421,8 @@ public class RpkiRepositoryValidationService {
                 final Pair<String, RpkiObject> p = maybeRpkiObject.right().value();
                 final RpkiObject object = p.getRight();
                 final String key = Hex.format(object.getSha256());
-                boolean exists = existingObjectsKeys.contains(key);
                 final String location = p.getLeft();
-                if (!exists) {
+                if (existingObjectsKeys.contains(key)) {
                     // re-check it for a weird case of object with the
                     // same hash inserted while this task was in the pool
                     rpkiObjects.addLocation(tx, Key.of(key), location);
