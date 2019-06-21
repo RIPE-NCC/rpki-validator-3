@@ -199,15 +199,18 @@ public class CertificateTreeValidationService {
 
     private void markTaObjectReachable(X509ResourceCertificate taCertificate) {
         final Instant now = Instant.now();
-        storage.writeTx0(tx ->
+        storage.writeTx0(tx -> {
             rpkiObjects.findLatestMftByAKI(tx, taCertificate.getSubjectKeyIdentifier())
-                .ifPresent(manifest ->
+                .ifPresent(manifest -> {
+                    rpkiObjects.markReachable(tx, manifest.key(), now);
                     rpkiObjects.findCertificateRepositoryObject(tx, manifest.key(), ManifestCms.class, ValidationResult.withLocation("ta-manifest.mft"))
                         .ifPresent(manifestCms ->
                             rpkiObjects.findObjectsInManifest(tx, manifestCms)
                                 .forEach((entry, rpkiObject) ->
                                     rpkiObjects.markReachable(tx, rpkiObject.key(), now))
-                        )));
+                        );
+                });
+        });
     }
 
     private boolean isValidationRunCompleted(ValidationResult validationResult) {
