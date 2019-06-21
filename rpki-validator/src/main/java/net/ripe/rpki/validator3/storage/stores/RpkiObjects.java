@@ -66,6 +66,8 @@ public interface RpkiObjects extends GenericStore<RpkiObject> {
 
     long deleteUnreachableObjects(Instant unreachableSince);
 
+    Map<String, RpkiObject> findObjectsInManifest(Tx.Read tx, ManifestCms manifestCms);
+
     Stream<byte[]> streamObjects(Tx.Read tx, RpkiObject.Type type);
 
     Set<Key> getPkByType(Tx.Read tx, RpkiObject.Type type);

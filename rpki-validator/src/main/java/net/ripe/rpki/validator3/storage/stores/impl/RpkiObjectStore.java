@@ -31,8 +31,10 @@ package net.ripe.rpki.validator3.storage.stores.impl;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.primitives.UnsignedBytes;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
+import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.storage.IxMap;
 import net.ripe.rpki.validator3.storage.MultIxMap;
@@ -188,6 +190,20 @@ public class RpkiObjectStore extends GenericStoreImpl<RpkiObject> implements Rpk
                     chunk.forEach(pk -> ixMap.delete(tx, pk)));
         });
         return (long) toDelete.size();
+    }
+
+    @Override
+    public Map<String, RpkiObject> findObjectsInManifest(Tx.Read tx, ManifestCms manifestCms) {
+        final SortedMap<byte[], String> hashes = new TreeMap<>(UnsignedBytes.lexicographicalComparator());
+        manifestCms.getFiles().forEach((name, hash) -> hashes.put(hash, name));
+        return hashes.keySet().stream()
+                .map(sha256 -> findBySha256(tx, sha256))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toMap(
+                        x -> hashes.get(x.getSha256()),
+                        x -> x
+                ));
     }
 
     @Override
