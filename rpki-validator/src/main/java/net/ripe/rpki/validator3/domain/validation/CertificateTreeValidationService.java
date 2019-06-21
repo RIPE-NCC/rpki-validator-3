@@ -150,8 +150,6 @@ public class CertificateTreeValidationService {
                     trustAnchorCertificate
             );
 
-            markTaObjectReachable(trustAnchorCertificate);
-
             trustAnchorCertificate.validate(trustAnchorLocation, context, null, null, VALIDATION_OPTIONS, validationResult);
             if (validationResult.hasFailureForCurrentLocation()) {
                 return;
@@ -173,6 +171,8 @@ public class CertificateTreeValidationService {
                 validationRuns.add(tx, validationRun);
                 Long t = Time.timed(() -> rpkiObjectsKeys.forEach(key -> validationRuns.associateRpkiObjectKey(tx, validationRun, key)));
                 log.info("Associated {} objects with the validation run {} in {}ms", rpkiObjectsKeys.size(), validationRun.key(), t);
+
+                markTaObjectsReachable(tx, trustAnchorCertificate);
 
                 Long tmr = Time.timed(() -> rpkiObjects.markReachable(tx, rpkiObjectsKeys));
                 log.info("Marked {} objects as reachable in {}ms", rpkiObjectsKeys.size(), tmr);
@@ -197,20 +197,18 @@ public class CertificateTreeValidationService {
         }
     }
 
-    private void markTaObjectReachable(X509ResourceCertificate taCertificate) {
+    private void markTaObjectsReachable(Tx.Write tx, X509ResourceCertificate taCertificate) {
         final Instant now = Instant.now();
-        storage.writeTx0(tx -> {
-            rpkiObjects.findLatestMftByAKI(tx, taCertificate.getSubjectKeyIdentifier())
-                .ifPresent(manifest -> {
-                    rpkiObjects.markReachable(tx, manifest.key(), now);
-                    rpkiObjects.findCertificateRepositoryObject(tx, manifest.key(), ManifestCms.class, ValidationResult.withLocation("ta-manifest.mft"))
-                        .ifPresent(manifestCms ->
-                            rpkiObjects.findObjectsInManifest(tx, manifestCms)
-                                .forEach((entry, rpkiObject) ->
-                                    rpkiObjects.markReachable(tx, rpkiObject.key(), now))
-                        );
-                });
-        });
+        rpkiObjects.findLatestMftByAKI(tx, taCertificate.getSubjectKeyIdentifier())
+            .ifPresent(manifest -> {
+                rpkiObjects.markReachable(tx, manifest.key(), now);
+                rpkiObjects.findCertificateRepositoryObject(tx, manifest.key(), ManifestCms.class, ValidationResult.withLocation("ta-manifest.mft"))
+                    .ifPresent(manifestCms ->
+                        rpkiObjects.findObjectsInManifest(tx, manifestCms)
+                            .forEach((entry, rpkiObject) ->
+                                rpkiObjects.markReachable(tx, rpkiObject.key(), now))
+                    );
+            });
     }
 
     private boolean isValidationRunCompleted(ValidationResult validationResult) {
