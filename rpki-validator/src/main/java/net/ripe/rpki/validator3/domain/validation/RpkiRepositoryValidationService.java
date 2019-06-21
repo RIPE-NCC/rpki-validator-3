@@ -118,7 +118,7 @@ public class RpkiRepositoryValidationService {
         this.validationScheduler = validationScheduler;
     }
 
-    public void validateRpkiRepository(long rpkiRepositoryId) {
+    public void validateRrdpRpkiRepository(long rpkiRepositoryId) {
         final Key key = Key.of(rpkiRepositoryId);
         final RpkiRepository rpkiRepository = storage.readTx(tx -> rpkiRepositories.get(tx, key).orElse(null));
         if (rpkiRepository == null) {

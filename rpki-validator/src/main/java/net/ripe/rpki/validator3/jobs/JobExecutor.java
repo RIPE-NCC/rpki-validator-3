@@ -100,7 +100,7 @@ public class JobExecutor {
                 idSeq.getAndIncrement(),
                 QueueId.of("rrdp:" + repositoryId),
                 Type.RRDP_VALIDATION,
-                () -> rpkiRepositoryValidationService.validateRpkiRepository(repositoryId));
+                () -> rpkiRepositoryValidationService.validateRrdpRpkiRepository(repositoryId));
     }
 
 

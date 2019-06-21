@@ -119,11 +119,11 @@ public class ValidationScheduler {
             rpkiRepository.key()
         );
         try {
-            if (!scheduler.checkExists(RepositoryValidationJob.getJobKey(rpkiRepository))) {
+            if (!scheduler.checkExists(RrdpRepositoryValidationJob.getJobKey(rpkiRepository))) {
                 log.info("Adding repository to the scheduler {}", rpkiRepository);
 
                 scheduler.scheduleJob(
-                        RepositoryValidationJob.buildJob(rpkiRepository),
+                        RrdpRepositoryValidationJob.buildJob(rpkiRepository),
                         TriggerBuilder.newTrigger()
                                 .startNow()
                                 .withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(1))
@@ -140,7 +140,7 @@ public class ValidationScheduler {
             return;
         }
         try {
-            boolean jobDeleted = scheduler.deleteJob(RepositoryValidationJob.getJobKey(repository));
+            boolean jobDeleted = scheduler.deleteJob(RrdpRepositoryValidationJob.getJobKey(repository));
             if (!jobDeleted) {
                 throw new EmptyResultDataAccessException("validation job for RPKI repository not found", 1);
             }

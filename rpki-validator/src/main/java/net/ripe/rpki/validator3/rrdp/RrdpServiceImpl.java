@@ -231,7 +231,8 @@ public class RrdpServiceImpl implements RrdpService {
     private final ExecutorCompletionService<Either<ValidationResult, Pair<String, RpkiObject>>> asyncCreateObjects =
             new ExecutorCompletionService<>(Executors.newFixedThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1)));
 
-    void storeSnapshot(final Tx.Write tx, final Snapshot snapshot, final RpkiRepositoryValidationRun validationRun, AtomicBoolean changedObjects) {
+    void storeSnapshot(final Tx.Write tx, final Snapshot snapshot,
+                       final RpkiRepositoryValidationRun validationRun, AtomicBoolean changedObjects) {
         final AtomicInteger counter = new AtomicInteger();
         final AtomicInteger workCounter = new AtomicInteger(0);
         final int threshold = 10;
@@ -317,6 +318,8 @@ public class RrdpServiceImpl implements RrdpService {
     private void verifyDeltaIsApplicable(Tx.Read tx, Delta d) {
         d.asMap().forEach((uri, deltaElement) -> {
                     if (deltaElement instanceof DeltaPublish) {
+                        // If hash existed it means DeltaPublish is trying to replace, thus hash must already been in
+                        // the snapshot!.
                         ((DeltaPublish) deltaElement).getHash().ifPresent(sha ->
                                 checkObjectExists(deltaElement, ErrorCodes.RRDP_REPLACE_NONEXISTENT_OBJECT, sha, tx));
                     } else if (deltaElement instanceof DeltaWithdraw) {

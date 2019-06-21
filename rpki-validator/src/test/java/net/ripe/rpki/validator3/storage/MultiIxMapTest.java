@@ -39,7 +39,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.UUID;
 
-
 import static org.junit.Assert.assertEquals;
 
 public abstract class MultiIxMapTest {
@@ -86,8 +85,9 @@ public abstract class MultiIxMapTest {
     public void putAndDelete() {
         final Key k1 = Key.of(UUID.randomUUID());
         final Key k2 = Key.of(UUID.randomUUID());
-        final Key k3 = Key.of(UUID.randomUUID());
         storage.writeTx0(tx -> multIxMap.put(tx, k1, "a"));
+        int k1Count = storage.readTx(tx -> multIxMap.count(tx, k1));
+        assertEquals(k1Count, 1);
 
         storage.readTx0(tx -> {
             assertEquals(Sets.newHashSet("a"), new HashSet<>(multIxMap.get(tx, k1)));
@@ -95,6 +95,10 @@ public abstract class MultiIxMapTest {
         });
 
         storage.writeTx0(tx -> multIxMap.delete(tx, k1));
+        k1Count = storage.readTx(tx -> multIxMap.count(tx, k1));
+        assertEquals(k1Count, 0);
+
+
         storage.readTx0(tx -> {
             assertEquals(Collections.emptySet(), new HashSet<>(multIxMap.get(tx, k1)));
             assertEquals(Collections.emptySet(), new HashSet<>(multIxMap.values(tx)));
@@ -104,6 +108,9 @@ public abstract class MultiIxMapTest {
             multIxMap.put(tx, k1, "a");
             multIxMap.put(tx, k1, "b");
         });
+
+        k1Count = storage.readTx(tx -> multIxMap.count(tx, k1));
+        assertEquals(k1Count, 2);
 
         storage.readTx0(tx -> {
             assertEquals(Sets.newHashSet("a", "b"), new HashSet<>(multIxMap.get(tx, k1)));
@@ -126,10 +133,14 @@ public abstract class MultiIxMapTest {
             multIxMap.delete(tx, k1, "b");
         });
 
+        int k2Count = storage.readTx(tx -> multIxMap.count(tx, k2));
+        assertEquals(k2Count, 2);
+
         storage.readTx0(tx -> {
             assertEquals(Sets.newHashSet("a"), new HashSet<>(multIxMap.get(tx, k1)));
             assertEquals(Sets.newHashSet("a", "aa", "bb"), new HashSet<>(multIxMap.values(tx)));
         });
+
     }
 
 }

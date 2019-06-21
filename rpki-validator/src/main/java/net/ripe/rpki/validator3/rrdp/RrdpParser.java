@@ -118,7 +118,7 @@ public class RrdpParser {
     }
 
     public Delta delta(final InputStream inputStream) {
-        final Map<String, DeltaElement> objects = new HashMap<>();
+        final Map<String, DeltaElement> uriToDeltaElement = new HashMap<>();
         try {
             final XMLInputFactory factory = XMLInputFactory.newInstance();
             final XMLEventReader eventReader = factory.createXMLEventReader(inputStream);
@@ -172,17 +172,17 @@ public class RrdpParser {
                         switch (qqName) {
                             case "publish":
                                 final byte[] decoded = decoder.decode(base64.toString());
-                                objects.put(uri, new DeltaPublish(decoded, uri, Hex.parse(hash)));
+                                uriToDeltaElement.put(uri, new DeltaPublish(decoded, uri, Hex.parse(hash)));
                                 base64 = new StringBuilder();
                                 break;
                             case "withdraw":
-                                objects.put(uri, new DeltaWithdraw(uri, Hex.parse(hash)));
+                                uriToDeltaElement.put(uri, new DeltaWithdraw(uri, Hex.parse(hash)));
                                 break;
                         }
                         break;
                 }
             }
-            return new Delta(objects, sessionId, serial);
+            return new Delta(uriToDeltaElement, sessionId, serial);
         } catch (XMLStreamException e) {
             throw new RrdpException("Couldn't parse snapshot: ", e);
         }
