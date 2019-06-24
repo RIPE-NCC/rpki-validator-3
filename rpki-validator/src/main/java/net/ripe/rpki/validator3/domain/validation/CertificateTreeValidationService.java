@@ -44,6 +44,7 @@ import net.ripe.rpki.commons.validation.ValidationString;
 import net.ripe.rpki.commons.validation.objectvalidators.CertificateRepositoryObjectValidationContext;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
+import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
@@ -51,12 +52,12 @@ import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
-import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.Settings;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
+import net.ripe.rpki.validator3.util.Bench;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -162,6 +163,7 @@ public class CertificateTreeValidationService {
             }
 
             final List<Key> rpkiObjectsKeys = validateCertificateAuthority(trustAnchor, registeredRepositories, context, validationResult);
+            log.info("Benchmark: \n{}", Bench.dump());
             if (rpkiObjectsKeys.isEmpty()) {
                 if (isValidationRunCompleted(validationResult)) {
                     log.info("No associated objects, validation run: {}, validation result: {}", validationRun.key(), validationResult);
@@ -225,7 +227,10 @@ public class CertificateTreeValidationService {
         ValidationLocation certificateLocation = validationResult.getCurrentLocation();
         ValidationResult temporary = ValidationResult.withLocation(certificateLocation);
         try {
-            RpkiRepository rpkiRepository = storage.writeTx(tx -> registerRepository(tx, trustAnchor, registeredRepositories, context));
+            RpkiRepository rpkiRepository = Bench.mark("registerRepository in TX", () ->
+                storage.writeTx(tx ->
+                    Bench.mark("registerRepository", () ->
+                        registerRepository(tx, trustAnchor, registeredRepositories, context))));
 
             temporary.warnIfTrue(rpkiRepository.isPending(), VALIDATOR_RPKI_REPOSITORY_PENDING, rpkiRepository.getLocationUri());
             if (rpkiRepository.isPending()) {
@@ -236,7 +241,8 @@ public class CertificateTreeValidationService {
             URI manifestUri = certificate.getManifestUri();
             temporary.setLocation(new ValidationLocation(manifestUri));
 
-            Optional<RpkiObject> manifestObject = storage.readTx(tx -> rpkiObjects.findLatestMftByAKI(tx, certificate.getSubjectKeyIdentifier()));
+            Optional<RpkiObject> manifestObject = Bench.mark("findLatestMftByAKI in TX", () ->
+                storage.readTx(tx -> rpkiObjects.findLatestMftByAKI(tx, certificate.getSubjectKeyIdentifier())));
 
             if (!manifestObject.isPresent()) {
                 if (rpkiRepository.getStatus() == RpkiRepository.Status.FAILED) {
@@ -246,8 +252,10 @@ public class CertificateTreeValidationService {
                 }
             }
 
-            Optional<ManifestCms> maybeManifest = storage.readTx(tx -> manifestObject.flatMap(x ->
-                    rpkiObjects.findCertificateRepositoryObject(tx, x.key(), ManifestCms.class, temporary)));
+            Optional<ManifestCms> maybeManifest = Bench.mark("findCertificateRepositoryObject in TX", () ->
+                storage.readTx(tx -> manifestObject.flatMap(x ->
+                    Bench.mark("findCertificateRepositoryObject", () ->
+                        rpkiObjects.findCertificateRepositoryObject(tx, x.key(), ManifestCms.class, temporary)))));
 
             temporary.rejectIfTrue(manifestObject.isPresent() &&
                             rpkiRepository.getStatus() == RpkiRepository.Status.FAILED &&
@@ -278,7 +286,11 @@ public class CertificateTreeValidationService {
             }
 
             temporary.setLocation(new ValidationLocation(crlUri));
-            Optional<X509Crl> crl = crlObject.flatMap(x -> storage.readTx(tx -> rpkiObjects.findCertificateRepositoryObject(tx, x.key(), X509Crl.class, temporary)));
+            Optional<X509Crl> crl = Bench.mark("findCertificateRepositoryObject in TX", () ->
+                crlObject.flatMap(x -> storage.readTx(tx ->
+                    Bench.mark("findCertificateRepositoryObject", () ->
+                        rpkiObjects.findCertificateRepositoryObject(tx, x.key(), X509Crl.class, temporary)))));
+
             if (temporary.hasFailureForCurrentLocation()) {
                 return validatedObjects;
             }
@@ -295,15 +307,16 @@ public class CertificateTreeValidationService {
             }
             validatedObjects.add(manifestObject.get().key());
 
-            List<CertificateRepositoryObjectValidationContext> objectStream = storage.readTx(tx ->
+            List<CertificateRepositoryObjectValidationContext> objectStream = Bench.mark("retrieveManifestEntries in TX", () -> storage.readTx(tx ->
+                Bench.mark("retrieveManifestEntries", () ->
                     retrieveManifestEntries(tx, manifest, manifestUri, temporary)
-                            .entrySet().stream().map(e -> {
+                        .entrySet().stream().map(e -> {
                         URI location = e.getKey();
                         RpkiObject rpkiObject = e.getValue();
                         temporary.setLocation(new ValidationLocation(location));
 
                         Optional<CertificateRepositoryObject> maybeCertificateRepositoryObject =
-                                rpkiObjects.findCertificateRepositoryObject(tx, rpkiObject.key(), CertificateRepositoryObject.class, temporary);
+                            rpkiObjects.findCertificateRepositoryObject(tx, rpkiObject.key(), CertificateRepositoryObject.class, temporary);
 
                         if (!temporary.hasFailureForCurrentLocation()) {
                             return maybeCertificateRepositoryObject.flatMap(certificateRepositoryObject -> {
@@ -314,8 +327,8 @@ public class CertificateTreeValidationService {
                                 }
 
                                 if (certificateRepositoryObject instanceof X509ResourceCertificate
-                                        && ((X509ResourceCertificate) certificateRepositoryObject).isCa()
-                                        && !temporary.hasFailureForCurrentLocation()) {
+                                    && ((X509ResourceCertificate) certificateRepositoryObject).isCa()
+                                    && !temporary.hasFailureForCurrentLocation()) {
 
                                     return Optional.of(context.createChildContext(location, (X509ResourceCertificate) certificateRepositoryObject));
                                 }
@@ -324,14 +337,14 @@ public class CertificateTreeValidationService {
                         }
                         return Optional.<CertificateRepositoryObjectValidationContext>empty();
                     })
-                            .filter(Optional::isPresent)
-                            .map(Optional::get)
-                            .collect(Collectors.toList()));
+                        .filter(Optional::isPresent)
+                        .map(Optional::get)
+                        .collect(Collectors.toList()))));
 
             objectStream
-                    .parallelStream()
-                    .map(childContext -> validateCertificateAuthority(trustAnchor, registeredRepositories, childContext, temporary))
-                    .forEachOrdered(validatedObjects::addAll);
+                .parallelStream()
+                .map(childContext -> validateCertificateAuthority(trustAnchor, registeredRepositories, childContext, temporary))
+                .forEachOrdered(validatedObjects::addAll);
 
         } catch (Exception e) {
             synchronized (this) {

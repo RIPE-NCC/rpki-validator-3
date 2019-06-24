@@ -45,6 +45,7 @@ import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
 import net.ripe.rpki.validator3.storage.stores.GenericStoreImpl;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
+import net.ripe.rpki.validator3.util.Bench;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -167,18 +168,17 @@ public class RpkiObjectStore extends GenericStoreImpl<RpkiObject> implements Rpk
 
     @Override
     public Optional<RpkiObject> findLatestMftByAKI(Tx.Read tx, byte[] authorityKeyIdentifier) {
-        return ixMap.getByIndex(BY_AKI_MFT_INDEX, tx, Key.of(authorityKeyIdentifier))
-                .values()
-                .stream()
-                .max(Comparator
-                        .comparing(RpkiObject::getSerialNumber)
-                        .thenComparing(RpkiObject::getSigningTime));
+        return Bench.mark("findLatestMftByAKI", () -> ixMap.getByIndex(BY_AKI_MFT_INDEX, tx, Key.of(authorityKeyIdentifier))
+            .values()
+            .stream()
+            .max(Comparator
+                .comparing(RpkiObject::getSerialNumber)
+                .thenComparing(RpkiObject::getSigningTime)));
     }
 
     @Override
     public long deleteUnreachableObjects(Instant unreachableSince) {
         final List<Key> toDelete = new ArrayList<>();
-
         storage.readTx0(tx ->
                 reachableMap.forEach(tx, (k, bytes) -> {
                     if (reachableMap.toValue(bytes) < unreachableSince.toEpochMilli()) {
