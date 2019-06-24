@@ -244,8 +244,7 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
                 this.getValidationRuns().findCurrentlyValidated(tx, RpkiObject.Type.CER).collect(toList()));
         assertThat(validated).hasSize(1);
         assertThat(validated.get(0).getLeft()).isEqualTo(completed.get(0));
-        Optional<X509ResourceCertificate> cro = rtx(tx -> this.getRpkiObjects().findCertificateRepositoryObject(tx,
-                validated.get(0).getRight().key(), X509ResourceCertificate.class, ValidationResult.withLocation("ignored.cer")));
+        Optional<X509ResourceCertificate> cro = validated.get(0).getRight().get(X509ResourceCertificate.class, ValidationResult.withLocation("ignored.cer"));
         assertThat(cro).isPresent().hasValueSatisfying(x -> assertThat(x.getSubject()).isEqualTo(new X500Principal("CN=child-ca")));
     }
 

@@ -33,9 +33,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedBytes;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
-import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.storage.IxMap;
 import net.ripe.rpki.validator3.storage.MultIxMap;
 import net.ripe.rpki.validator3.storage.Storage;
@@ -151,19 +149,13 @@ public class RpkiObjectStore extends GenericStoreImpl<RpkiObject> implements Rpk
     }
 
     @Override
-    public <T extends CertificateRepositoryObject> Optional<T> findCertificateRepositoryObject(
-            Tx.Read tx, Key sha256, Class<T> clazz, ValidationResult validationResult) {
-        return get(tx, sha256).flatMap(o -> o.get(clazz, validationResult));
-    }
-
-    @Override
     public Optional<RpkiObject> get(Tx.Read tx, Key key) {
         return ixMap.get(tx, key);
     }
 
     @Override
     public Optional<RpkiObject> findBySha256(Tx.Read tx, byte[] sha256) {
-        return get(tx, Key.of(sha256));
+        return Bench.mark("findBySha256", () -> get(tx, Key.of(sha256)));
     }
 
     @Override

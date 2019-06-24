@@ -57,9 +57,6 @@ public interface RpkiObjects extends GenericStore<RpkiObject> {
 
     void deleteLocation(Tx.Write tx, Key key, String uri);
 
-    <T extends CertificateRepositoryObject> Optional<T> findCertificateRepositoryObject(
-            Tx.Read tx, Key sha256, Class<T> clazz, ValidationResult validationResult);
-
     Optional<RpkiObject> findBySha256(Tx.Read tx, byte[] sha256);
 
     Optional<RpkiObject> findLatestMftByAKI(Tx.Read tx, byte[] authorityKeyIdentifier);

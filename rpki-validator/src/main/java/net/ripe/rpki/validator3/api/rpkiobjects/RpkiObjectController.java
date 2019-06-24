@@ -311,10 +311,7 @@ public class RpkiObjectController {
                                                                          final ValidationResult validationResult,
                                                                          final Class<T> clazz,
                                                                          final Function<T, RpkiObj> create) {
-        return storage.readTx(tx ->
-                rpkiObjects.findCertificateRepositoryObject(tx, rpkiObject.key(), clazz, validationResult)
-                        .map(create)
-                        .orElse(null));
+        return rpkiObject.get(clazz, validationResult).map(create).orElse(null);
     }
 
     private static String location(final RpkiObject.Type objectType, final SortedSet<String> locations) {

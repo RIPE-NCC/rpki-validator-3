@@ -114,7 +114,7 @@ public class ValidatedRpkiObjects {
                             Stream<RpkiObject> routerCertStream = streamByType(tx, rpkiObjectsKeys, RpkiObject.Type.ROUTER_CER);
                             return RoaPrefixesAndRouterCertificates.of(
                                     toRoaPrefixes(tx, trustAnchorData, roaStream),
-                                    toRouterCertificates(tx, trustAnchorData, routerCertStream)
+                                    toRouterCertificates(trustAnchorData, routerCertStream)
                             );
                         })
                         .ifPresent(roaPrefixesAndRouterCertificates -> {
@@ -219,11 +219,11 @@ public class ValidatedRpkiObjects {
         String subjectPublicKeyInfo;
     }
 
-    private ImmutableSet<RouterCertificate> toRouterCertificates(Tx.Read tx, TrustAnchorData trustAnchor, Stream<RpkiObject> roaCertStream) {
+    private ImmutableSet<RouterCertificate> toRouterCertificates(TrustAnchorData trustAnchor, Stream<RpkiObject> roaCertStream) {
         final Base64.Encoder encoder = Base64.getEncoder();
         ImmutableSet.Builder<RouterCertificate> builder = ImmutableSet.builder();
         roaCertStream
-            .map(object -> rpkiObjects.findCertificateRepositoryObject(tx, object.key(), X509RouterCertificate.class, ValidationResult.withLocation("temporary")))
+            .map(object -> object.get(X509RouterCertificate.class, ValidationResult.withLocation("temporary")))
             .filter(Optional::isPresent).map(Optional::get)
             .forEach(certificate -> {
                     final ImmutableList<String> asns = ImmutableList.copyOf(X509CertificateUtil.getAsns(certificate.getCertificate()));

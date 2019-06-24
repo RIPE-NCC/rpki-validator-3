@@ -46,6 +46,7 @@ import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificate;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.storage.Binary;
+import net.ripe.rpki.validator3.util.Bench;
 import net.ripe.rpki.validator3.util.Sha256;
 
 import javax.validation.Valid;
@@ -159,10 +160,11 @@ public class RpkiObject extends Base<RpkiObject> {
         ValidationResult temporary = ValidationResult.withLocation(location);
 
         ValidationResult ignored = ValidationResult.withLocation(location);
-        CertificateRepositoryObject candidate = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(
+        CertificateRepositoryObject candidate = Bench.mark("createCertificateRepositoryObject", () ->
+            CertificateRepositoryObjectFactory.createCertificateRepositoryObject(
                 encoded,
                 ignored // Ignore any parse errors, as all stored objects must be parsable
-        );
+            ));
 
         temporary.rejectIfNull(candidate, "rpki.object.parsable");
         if (temporary.hasFailureForCurrentLocation()) {
