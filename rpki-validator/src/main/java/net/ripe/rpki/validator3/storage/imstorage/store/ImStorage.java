@@ -58,12 +58,13 @@ public abstract class ImStorage implements Storage {
 
     @Override
     public <T> T readTx(Function<Tx.Read, T> f) {
-        return f.apply(null);
+        ImTx.Read tx = new ImTx.Read();
+        return f.apply(tx);
     }
 
     @Override
     public void readTx0(Consumer<Tx.Read> c) {
-        c.accept(null);
+        readTx(t-> {c.accept(t); return null;});
     }
 
     @Override

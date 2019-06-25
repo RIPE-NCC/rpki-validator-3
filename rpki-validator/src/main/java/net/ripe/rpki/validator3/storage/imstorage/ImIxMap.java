@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -104,32 +105,36 @@ public class ImIxMap<T extends Serializable> extends ImIxBase<T> implements IxMa
     @Override
     public Map<Key, T> getByIdxDescendingWhere(String indexName, Tx.Read tx, Predicate<T> p) {
         Map<Key,T> result = new HashMap<>();
-        for(Key k  : getIdx(indexName).toPrimaryKeys(getIdx(indexName).sortedKeysRev())) {
-            T value = mainStore.get(k);
-            if (value != null && p.test(value)) {
+        ImStoreMultiImpl<Key> idx = getIdx(indexName);
+        SortedSet<Key> descKeys = idx.sortedKeysRev();
 
-                // Wait but there is more, why do I have to break here?
-                result.put(k, value);
-                break;
+        for(Key idxKey : descKeys) {
+            for(Key pk : idx.getPrimaryKeys(idxKey)) {
+               T value = mainStore.get(pk);
+               if(p.test(value)){
+                   result.put(pk, value);
+               }
             }
+            if(!result.isEmpty()) break;
         }
-
         return result;
     }
 
     @Override
     public Map<Key, T> getByIdxAscendingWhere(String indexName, Tx.Read tx, Predicate<T> p) {
         Map<Key,T> result = new HashMap<>();
-        for(Key k  : getIdx(indexName).toPrimaryKeys(getIdx(indexName).sortedKeys())) {
-            T value = mainStore.get(k);
-            if (value != null && p.test(value)) {
+        ImStoreMultiImpl<Key> idx = getIdx(indexName);
+        SortedSet<Key> descKeys = idx.sortedKeys();
 
-                // Wait but there is more, why do I have to break here?
-                result.put(k, value);
-                break;
+        for(Key idxKey : descKeys) {
+            for(Key pk : idx.getPrimaryKeys(idxKey)) {
+                T value = mainStore.get(pk);
+                if(p.test(value)){
+                    result.put(pk, value);
+                }
             }
+            if(!result.isEmpty()) break;
         }
-
         return result;
     }
 
@@ -148,7 +153,7 @@ public class ImIxMap<T extends Serializable> extends ImIxBase<T> implements IxMa
                 final Set<Key> indexKeys = idxFun.apply(value).stream()
                         .filter(Objects::nonNull)
                         .collect(Collectors.toSet());
-                final ImStore index = getIdx(idxName);
+                final ImStoreMultiImpl<Key> index = getIdx(idxName);
                 oldIndexKeys.stream()
                         .filter(oik -> !indexKeys.contains(oik))
                         .forEach(oik -> {

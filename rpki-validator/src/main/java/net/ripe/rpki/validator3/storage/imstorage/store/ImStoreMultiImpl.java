@@ -50,12 +50,12 @@ public class ImStoreMultiImpl<T> implements ImStore<T> {
 
     @Override
     public Map<Key, T> getMap() {
-        return null;
+        throw new RuntimeException("Shouldn't force multimap into normal map, values will be multiple");
     }
 
     @Override
     public void clear() {
-
+        multimap.clear();
     }
 
     @Override
@@ -95,4 +95,12 @@ public class ImStoreMultiImpl<T> implements ImStore<T> {
         return multimap.containsEntry(key, value);
     }
 
+    public void delete(Key key){
+        multimap.removeAll(key);
+    }
+
+    @Override
+    public Collection<Map.Entry<Key, T>> entries() {
+        return multimap.entries();
+    }
 }

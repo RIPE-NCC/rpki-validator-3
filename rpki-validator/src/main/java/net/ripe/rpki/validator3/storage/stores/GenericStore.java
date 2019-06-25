@@ -46,7 +46,6 @@ public interface GenericStore<T extends Serializable> {
 
     long size(Tx.Read tx);
 
-    void forEach(Tx.Read tx, BiConsumer<Key, byte[]> c);
 
     void clear(Tx.Write tx);
 

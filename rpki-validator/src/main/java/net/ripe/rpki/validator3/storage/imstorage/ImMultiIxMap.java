@@ -41,9 +41,8 @@ public class ImMultiIxMap<T extends Serializable> extends ImIxBase<T> implements
     }
 
     @Override
-    public void delete(Tx.Write tx, Key primaryKey) {
-        T value = getMainStore().get(primaryKey);
-        mStore.delete(primaryKey, value);
+    public void delete(Tx.Write tx, Key key) {
+        mStore.delete(key);
     }
 
     @Override

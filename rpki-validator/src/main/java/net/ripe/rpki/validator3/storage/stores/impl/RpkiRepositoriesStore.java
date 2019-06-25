@@ -279,8 +279,7 @@ public class RpkiRepositoriesStore extends GenericStoreImpl<RpkiRepository> impl
 
     private Stream<RpkiRepository> findRepositoriesByPredicate(Tx.Read tx, Predicate<RpkiRepository> p) {
         final List<RpkiRepository> result = new ArrayList<>();
-        ixMap.forEach(tx, (k, bb) -> {
-            final RpkiRepository r = ixMap.toValue(bb);
+        ixMap.forEachT(tx, (k, r) -> {
             if (p.test(r)) {
                 result.add(r);
             }

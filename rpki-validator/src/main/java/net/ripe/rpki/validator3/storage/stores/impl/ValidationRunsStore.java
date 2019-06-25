@@ -185,8 +185,8 @@ public class ValidationRunsStore implements ValidationRuns {
     public <T extends ValidationRun> List<T> findAll(Tx.Read tx, Class<T> type) {
         final List<T> result = new ArrayList<>();
         pickIxMaps(type).forEach(ixMap ->
-                ixMap.forEach(tx, (k, bb) ->
-                        result.add((T) ixMap.toValue(bb))));
+                ixMap.forEachT(tx, (k, v) ->
+                        result.add((T) v)));
         return result;
     }
 
@@ -247,8 +247,8 @@ public class ValidationRunsStore implements ValidationRuns {
 //            final Set<Key> latestSuccessfulKeys = ixMap.getByIdxDescendingWhere(BY_COMPLETED_AT_INDEX, tx, ValidationRun::isSucceeded).keySet();
 
             final Set<Key> toDelete = new HashSet<>();
-            ixMap.forEach(tx, (k, bytes) -> {
-                ValidationRun validationRun = ixMap.toValue(bytes);
+            ixMap.forEachT(tx, (k, validationRun) -> {
+
                 boolean deleteIt = false;
                 if (validationRun.getCompletedAt() != null) {
                     if (validationRun.getCompletedAt().isBefore(completedBefore)) {
@@ -276,8 +276,7 @@ public class ValidationRunsStore implements ValidationRuns {
         final Set<Key> roKeys = rpkiObjects.keys(tx);
         final Set<Key> repoKeys = rpkiRepositories.keys(tx);
         final List<Pair<Key, Key>> toDelete = new ArrayList<>();
-        vr2ro.forEach(tx, (vrKey, bytes) -> {
-            final Key roKey = vr2ro.toValue(bytes);
+        vr2ro.forEachT(tx, (vrKey, roKey) -> {
             if (!roKeys.contains(roKey)) {
                 toDelete.add(Pair.of(vrKey, roKey));
             }
@@ -286,8 +285,7 @@ public class ValidationRunsStore implements ValidationRuns {
         vr2ro.deleteBatch(tx, toDelete);
 
         final Set<Key> reposToDelete = new HashSet<>();
-        vr2repo.forEach(tx, (vrKey, bytes) -> {
-            final Key repoKey = vr2repo.toValue(bytes);
+        vr2repo.forEachT(tx, (vrKey, repoKey) -> {
             if (!repoKeys.contains(repoKey)) {
                 reposToDelete.add(vrKey);
             }

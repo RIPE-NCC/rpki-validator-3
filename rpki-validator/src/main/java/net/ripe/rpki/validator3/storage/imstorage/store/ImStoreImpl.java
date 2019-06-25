@@ -21,6 +21,11 @@ public class ImStoreImpl<T> implements ImStore<T> {
     }
 
     @Override
+    public Collection<Map.Entry<Key,T>> entries() {
+        return map.entrySet();
+    }
+
+    @Override
     public void delete(Key oik, T value) {
         map.remove(oik);
     }
@@ -47,7 +52,7 @@ public class ImStoreImpl<T> implements ImStore<T> {
 
     @Override
     public Map<Key, T> getMap() {
-        return null;
+        return map;
     }
 
     @Override

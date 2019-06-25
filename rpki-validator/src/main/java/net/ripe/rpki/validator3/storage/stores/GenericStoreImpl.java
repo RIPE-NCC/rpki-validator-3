@@ -52,10 +52,6 @@ public abstract class GenericStoreImpl<T extends Serializable> implements Generi
         return ixMap().size(tx);
     }
 
-    public void forEach(Tx.Read tx, BiConsumer<Key, byte[]> bb) {
-        ixMap().forEach(tx, bb);
-    }
-
     public void clear(Tx.Write tx) {
         ixMap().clear(tx);
     }

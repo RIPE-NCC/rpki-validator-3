@@ -78,9 +78,12 @@ public abstract class ImIxBase<T extends Serializable> implements IxBase<T> {
 
     @Override
     public void forEach(Tx.Read tx, BiConsumer<Key, byte[]> c) {
-        for (Map.Entry<Key, T> kv : mainStore.getMap().entrySet()) {
-            c.accept(kv.getKey(), coder.toBytes(kv.getValue()));
-        }
+       throw new RuntimeException("We're not serializing to byte in memory, use forEachT");
+    }
+
+    @Override
+    public void forEachT(Tx.Read tx, BiConsumer<Key, T> c) {
+        mainStore.entries().forEach(e-> c.accept(e.getKey(), e.getValue()));
     }
 
     @Override

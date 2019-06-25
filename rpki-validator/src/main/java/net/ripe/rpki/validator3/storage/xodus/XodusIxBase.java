@@ -36,7 +36,6 @@ import jetbrains.exodus.env.Environment;
 import jetbrains.exodus.env.Store;
 import jetbrains.exodus.env.StoreConfig;
 import jetbrains.exodus.env.Transaction;
-import jetbrains.exodus.management.Statistics;
 import lombok.Getter;
 import net.ripe.rpki.validator3.storage.Bytes;
 import net.ripe.rpki.validator3.storage.IxBase;
@@ -195,6 +194,11 @@ public abstract class XodusIxBase<T extends Serializable> implements IxBase<T> {
                 c.accept(new Key(ci.getKey()), Bytes.toBytes(ci.getValue()));
             }
         }
+    }
+
+    @Override
+    public void forEachT(Tx.Read tx, BiConsumer<Key, T> c) {
+        throw new RuntimeException("Use the other forEach instead.");
     }
 
     public long size(Tx.Read tx) {

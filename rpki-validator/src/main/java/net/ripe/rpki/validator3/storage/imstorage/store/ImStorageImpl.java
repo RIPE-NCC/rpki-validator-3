@@ -1,6 +1,8 @@
 package net.ripe.rpki.validator3.storage.imstorage.store;
 
 import net.ripe.rpki.validator3.storage.data.Key;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -8,6 +10,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+@Component
+@Primary
 public class ImStorageImpl extends ImStorage {
 
     @Override

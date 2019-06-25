@@ -28,4 +28,6 @@ public interface ImStore<T> {
     void put(Key primaryKey, T value);
 
     void delete(Key oik, T value);
+
+    Collection<Map.Entry<Key,T>> entries();
 }

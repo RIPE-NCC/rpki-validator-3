@@ -31,7 +31,6 @@ package net.ripe.rpki.validator3.storage;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 
 import java.io.Serializable;
@@ -57,6 +56,8 @@ public interface IxBase<T extends Serializable> {
     T toValue(byte[] bb);
 
     void forEach(Tx.Read tx, BiConsumer<Key, byte[]> c);
+
+    void forEachT(Tx.Read tx, BiConsumer<Key, T> c);
 
     long size(Tx.Read tx);
 
