@@ -99,7 +99,7 @@ public abstract class ImIxBase<T extends Serializable> implements IxBase<T> {
 
     @Override
     public String getName() {
-        return null;
+        return name;
     }
 
     public static long size(ImStore map) {
