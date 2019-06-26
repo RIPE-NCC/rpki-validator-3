@@ -9,6 +9,7 @@ import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.imstorage.store.ImStorage;
 import net.ripe.rpki.validator3.storage.imstorage.store.ImStore;
 import net.ripe.rpki.validator3.storage.imstorage.store.ImStoreMultiImpl;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -94,43 +95,37 @@ public class ImIxMap<T extends Serializable> extends ImIxBase<T> implements IxMa
     @Override
     public Set<Key> getPkByIndexLessThan(String indexName, Tx.Read tx, Key indexKey) {
         ImStoreMultiImpl<Key> index = getIdx(indexName);
-        return index.getByKeys(index.sortedKeys().headSet(indexKey)).stream().collect(Collectors.toSet());
+        return new HashSet<>(index.getByKeys(index.sortedKeys().headSet(indexKey)));
     }
 
     @Override
     public Set<Key> getPkByIndexGreaterThan(String indexName, Tx.Read tx, Key indexKey) {
         ImStoreMultiImpl<Key> index = getIdx(indexName);
-        return index.getByKeys(index.sortedKeys().tailSet(indexKey)).stream().collect(Collectors.toSet());
+        return new HashSet<>(index.getByKeys(index.sortedKeys().tailSet(indexKey)));
     }
 
     @Override
     public Map<Key, T> getByIdxDescendingWhere(String indexName, Tx.Read tx, Predicate<T> p) {
-        Map<Key,T> result = new HashMap<>();
         ImStoreMultiImpl<Key> idx = getIdx(indexName);
         SortedSet<Key> descKeys = idx.sortedKeysRev();
 
-        for(Key idxKey : descKeys) {
-            for(Key pk : idx.getPrimaryKeys(idxKey)) {
-               T value = mainStore.get(pk);
-               if(p.test(value)){
-                   result.put(pk, value);
-               }
-            }
-            if(!result.isEmpty()) break;
-        }
-        return result;
+        return valuesFromKeysWithPredicate(p, idx, descKeys);
     }
 
     @Override
     public Map<Key, T> getByIdxAscendingWhere(String indexName, Tx.Read tx, Predicate<T> p) {
-        Map<Key,T> result = new HashMap<>();
         ImStoreMultiImpl<Key> idx = getIdx(indexName);
         SortedSet<Key> descKeys = idx.sortedKeys();
+        return valuesFromKeysWithPredicate(p, idx, descKeys);
+    }
 
+    @NotNull
+    private Map<Key, T> valuesFromKeysWithPredicate(Predicate<T> p, ImStoreMultiImpl<Key> idx, SortedSet<Key> descKeys) {
+        Map<Key,T> result = new HashMap<>();
         for(Key idxKey : descKeys) {
             for(Key pk : idx.getPrimaryKeys(idxKey)) {
                 T value = mainStore.get(pk);
-                if(p.test(value)){
+                if(value != null && p.test(value)){
                     result.put(pk, value);
                 }
             }
