@@ -26,7 +26,7 @@ public abstract class ImStorage implements Storage {
 
 
     @Override
-    public <T> T writeTx(Function<Tx.Write, T> f) {
+    synchronized public <T> T writeTx(Function<Tx.Write, T> f) {
         ImTx.Write tx = new ImTx.Write();
 //        txs.put(tx.getId(), new Xodus.TxInfo(tx));
         try {
