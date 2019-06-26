@@ -160,12 +160,12 @@ public class RpkiObjectStore extends GenericStoreImpl<RpkiObject> implements Rpk
 
     @Override
     public Optional<RpkiObject> findLatestMftByAKI(Tx.Read tx, byte[] authorityKeyIdentifier) {
-        return Bench.mark("findLatestMftByAKI", () -> ixMap.getByIndex(BY_AKI_MFT_INDEX, tx, Key.of(authorityKeyIdentifier))
+        return ixMap.getByIndex(BY_AKI_MFT_INDEX, tx, Key.of(authorityKeyIdentifier))
             .values()
             .stream()
             .max(Comparator
                 .comparing(RpkiObject::getSerialNumber)
-                .thenComparing(RpkiObject::getSigningTime)));
+                .thenComparing(RpkiObject::getSigningTime));
     }
 
     @Override

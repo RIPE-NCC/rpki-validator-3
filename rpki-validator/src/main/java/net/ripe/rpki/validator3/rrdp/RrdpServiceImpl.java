@@ -44,6 +44,7 @@ import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidation
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
+import net.ripe.rpki.validator3.util.Bench;
 import net.ripe.rpki.validator3.util.Hex;
 import net.ripe.rpki.validator3.util.Sha256;
 import net.ripe.rpki.validator3.util.Time;
@@ -359,7 +360,7 @@ public class RrdpServiceImpl implements RrdpService {
                         rpkiObjects.put(tx, object, location);
                         return true;
                     } else {
-                        log.debug("The object added is the same {}", object);
+//                        log.debug("The object added is the same {}", object);
                     }
                 }
             } else {
@@ -378,7 +379,7 @@ public class RrdpServiceImpl implements RrdpService {
                 final RpkiObject object = p.getRight();
                 final Optional<RpkiObject> bySha256 = rpkiObjects.findBySha256(tx, Sha256.hash(content));
                 if (bySha256.isPresent()) {
-                    log.debug("The object will not be added, there's one already existing {}", object);
+//                    log.debug("The object will not be added, there's one already existing {}", object);
                 } else {
                     final String location = p.getLeft();
                     rpkiObjects.put(tx, object, location);

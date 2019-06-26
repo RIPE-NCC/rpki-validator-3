@@ -261,7 +261,7 @@ public class RpkiRepositoryValidationService {
                                                     Set<String> existingObjectsSha256,
                                                     RpkiRepository repository) {
 
-        log.debug("Processing rsync repository {}", repository);
+//        log.debug("Processing rsync repository {}", repository);
         final ValidationResult validationResult = ValidationResult.withLocation(URI.create(repository.getRsyncRepositoryUri()));
 
         try {
@@ -286,8 +286,8 @@ public class RpkiRepositoryValidationService {
                 log.info("Stored {} objects from the repository {} in {}ms", existingObjectsSha256.size(), repository, t);
                 repository.setDownloaded();
             } else {
-                log.debug("Not storing any objects for the repository {} because parent repository is {}",
-                        repository.getLocationUri(), parentRepository == null ? null : parentRepository.getType());
+//                log.debug("Not storing any objects for the repository {} because parent repository is {}",
+//                        repository.getLocationUri(), parentRepository == null ? null : parentRepository.getType());
             }
         } catch (IOException e) {
             repository.setFailed();

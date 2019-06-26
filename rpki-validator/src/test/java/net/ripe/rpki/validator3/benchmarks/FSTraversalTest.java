@@ -35,6 +35,7 @@ import net.ripe.rpki.commons.rsync.Rsync;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.RpkiObjectUtils;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
+import net.ripe.rpki.validator3.util.Bench;
 import net.ripe.rpki.validator3.util.Hex;
 import net.ripe.rpki.validator3.util.Sha256;
 import net.ripe.rpki.validator3.util.Time;
@@ -56,7 +57,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
-@Ignore
+//@Ignore
 public class FSTraversalTest {
 
     @Rule
@@ -73,7 +74,8 @@ public class FSTraversalTest {
         final Long t3 = Time.timed(Unchecked.runnable(() -> traverse(targetDirectory, locationUri, true)));
         final Long t4 = Time.timed(Unchecked.runnable(() -> traverse(targetDirectory, locationUri, false)));
 
-        System.out.println("t1 = " + t1 + "ms, t2 = " + t2 + "ms, t3 = " + t3 + "ms, t4 = " + t4);
+        System.out.println("t1 = " + t1 + "ms, t2 = " + t2 + "ms, t3 = " + t3 + "ms, t4 = " + t4 + " \nbench = " + Bench.dump("global"));
+
     }
 
     private File fetch(String locationUri) throws IOException {
@@ -87,6 +89,8 @@ public class FSTraversalTest {
 
     private void traverse(File targetDirectory, String locationUri, boolean createObjects) throws IOException {
         AtomicInteger counter = new AtomicInteger(0);
+        AtomicInteger broken = new AtomicInteger(0);
+        AtomicInteger right = new AtomicInteger(0);
         Files.walkFileTree(targetDirectory.toPath(), new SimpleFileVisitor<Path>() {
             private URI currentLocation = URI.create(locationUri);
 
@@ -122,12 +126,13 @@ public class FSTraversalTest {
                     final String key = Hex.format(sha256);
                     final String location = currentLocation.toString();
 
-                    final Either<ValidationResult, Pair<String, RpkiObject>> rpkiObject = RpkiObjectUtils.createRpkiObject(location, content);
+                    final Either<ValidationResult, Pair<String, RpkiObject>> rpkiObject = Bench.mark(
+                        "RpkiObjectUtils.createRpkiObject", () -> RpkiObjectUtils.createRpkiObject(file.getFileName().toString(), content));
                     counter.incrementAndGet();
                     if (rpkiObject.isRight()) {
-                        // bla
+                        right.incrementAndGet();
                     } else {
-                        // blabla
+                        broken.incrementAndGet();
                     }
                 }
                 return FileVisitResult.CONTINUE;

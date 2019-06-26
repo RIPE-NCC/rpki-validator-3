@@ -31,6 +31,7 @@ package net.ripe.rpki.validator3.util;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.jetbrains.annotations.NotNull;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -43,6 +44,44 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class Bench {
+
+    private String namespace;
+
+    private Bench(String namespace) {
+        this.namespace = namespace;
+    }
+
+    public static Bench create(String namespace) {
+        return new Bench(namespace);
+    }
+
+    private static Map<String, Bench> benches  = new HashMap<>();
+
+    public static <T> T mark(String namespace, String tag, Supplier<T> s) {
+        return getBench(namespace).measure(tag, s);
+    }
+
+    public static void mark0(String namespace, String tag, Runnable r) {
+        getBench(namespace).measure0(tag, r);
+    }
+
+    public static <T> T mark(String tag, Supplier<T> s) {
+        return mark("global", tag, s);
+    }
+
+    public static void mark0(String tag, Runnable r) {
+        mark0("global", tag, r);
+    }
+
+    @NotNull
+    private static synchronized Bench getBench(String namespace) {
+        Bench bench = benches.get(namespace);
+        if (bench == null) {
+            bench = new Bench(namespace);
+            benches.put(namespace, bench);
+        }
+        return bench;
+    }
 
     @Data
     @AllArgsConstructor
@@ -57,16 +96,16 @@ public class Bench {
         }
     }
 
-    private static final Map<String, Record> records = new HashMap<>();
+    private final Map<String, Record> records = new HashMap<>();
 
-    public static void mark0(String tag, Runnable r) {
-        mark(tag, () -> {
+    public void measure0(String tag, Runnable r) {
+        measure(tag, () -> {
             r.run();
             return null;
         });
     }
 
-    public static <T> T mark(String tag, Supplier<T> s) {
+    public <T> T measure(String tag, Supplier<T> s) {
         final T v;
         long b = System.nanoTime();
         v = s.get();
@@ -83,7 +122,11 @@ public class Bench {
         return v;
     }
 
-    public static String dump() {
+    public static String dump(String namespace) {
+        return getBench(namespace).dump();
+    }
+
+    public String dump() {
         synchronized (records) {
             final String s = records.entrySet().stream()
                 .sorted(Comparator.comparing(Map.Entry::getKey))
@@ -111,7 +154,7 @@ public class Bench {
                         }
                     }
 
-                    StringBuilder sb = new StringBuilder(e.getKey()).append(": ");
+                    StringBuilder sb = new StringBuilder(namespace).append("# ").append(e.getKey()).append(": ");
                     sb.append("max = ").append(asMs(entries.get(0)));
                     sb.append(", full total = ").append(asMs(totalTime));
                     sb.append(", count = ").append(n);

@@ -124,7 +124,7 @@ public class CertificateTreeValidationService {
             log.error("Couldn't find trust anchor {}", trustAnchorId);
             return;
         }
-        validateTa(maybeTrustAnchor.get());
+        Bench.mark0("validateTa " + maybeTrustAnchor.get().getName(), () -> validateTa(maybeTrustAnchor.get()));
     }
 
     private void validateTa(TrustAnchor trustAnchor) {
@@ -194,7 +194,7 @@ public class CertificateTreeValidationService {
             validationRun.completeWith(validationResult);
             storage.writeTx0(tx -> validationRuns.update(tx, validationRun));
             long end = System.currentTimeMillis();
-            log.info("Tree validation {} for {} in {}ms, benchmark:\n{}", validationRun.getStatus().toString().toLowerCase(), trustAnchor.getName(), (end - begin), Bench.dump());
+            log.info("Tree validation {} for {} in {}ms, benchmark:\n{}", validationRun.getStatus().toString().toLowerCase(), trustAnchor.getName(), (end - begin), Bench.dump(trustAnchor.getName()));
         }
     }
 
@@ -226,10 +226,8 @@ public class CertificateTreeValidationService {
         ValidationLocation certificateLocation = validationResult.getCurrentLocation();
         ValidationResult temporary = ValidationResult.withLocation(certificateLocation);
         try {
-            RpkiRepository rpkiRepository = Bench.mark("registerRepository in TX", () ->
-                storage.writeTx(tx ->
-                    Bench.mark("registerRepository", () ->
-                        registerRepository(tx, trustAnchor, registeredRepositories, context))));
+            RpkiRepository rpkiRepository = Bench.mark(trustAnchor.getName(),"registerRepository", () ->
+                storage.writeTx(tx -> registerRepository(tx, trustAnchor, registeredRepositories, context)));
 
             temporary.warnIfTrue(rpkiRepository.isPending(), VALIDATOR_RPKI_REPOSITORY_PENDING, rpkiRepository.getLocationUri());
             if (rpkiRepository.isPending()) {
@@ -240,7 +238,7 @@ public class CertificateTreeValidationService {
             URI manifestUri = certificate.getManifestUri();
             temporary.setLocation(new ValidationLocation(manifestUri));
 
-            Optional<RpkiObject> manifestObject = Bench.mark("findLatestMftByAKI in TX", () ->
+            Optional<RpkiObject> manifestObject = Bench.mark(trustAnchor.getName(), "findLatestMftByAKI", () ->
                 storage.readTx(tx -> rpkiObjects.findLatestMftByAKI(tx, certificate.getSubjectKeyIdentifier())));
 
             if (!manifestObject.isPresent()) {
@@ -300,19 +298,20 @@ public class CertificateTreeValidationService {
             }
             validatedObjects.add(manifestObject.get().key());
 
-            List<CertificateRepositoryObjectValidationContext> objectStream = Bench.mark("retrieveManifestEntries in TX", () -> storage.readTx(tx ->
-                Bench.mark("retrieveManifestEntries", () ->
+            List<CertificateRepositoryObjectValidationContext> objectStream = Bench.mark(trustAnchor.getName(), "retrieveManifestEntries", () ->
+                storage.readTx(tx ->
                     retrieveManifestEntries(tx, manifest, manifestUri, temporary)
                         .entrySet().stream().map(e -> {
                         URI location = e.getKey();
                         RpkiObject rpkiObject = e.getValue();
                         temporary.setLocation(new ValidationLocation(location));
 
-                        final Optional<CertificateRepositoryObject> maybeCertificateRepositoryObject = rpkiObject.get(CertificateRepositoryObject.class, temporary);
+                        final Optional<CertificateRepositoryObject> maybeCertificateRepositoryObject =  Bench.mark(trustAnchor.getName(),
+                            "rpkiObject.get", () -> rpkiObject.get(CertificateRepositoryObject.class, temporary));
 
                         if (!temporary.hasFailureForCurrentLocation()) {
                             return maybeCertificateRepositoryObject.flatMap(certificateRepositoryObject -> {
-                                Bench.mark0("certificateRepositoryObject.validate", () ->
+                                Bench.mark0(trustAnchor.getName(), "certificateRepositoryObject.validate", () ->
                                     certificateRepositoryObject.validate(location.toASCIIString(), context, crl.get(), crlUri, VALIDATION_OPTIONS, temporary));
 
                                 if (!temporary.hasFailureForCurrentLocation()) {
@@ -332,7 +331,7 @@ public class CertificateTreeValidationService {
                     })
                         .filter(Optional::isPresent)
                         .map(Optional::get)
-                        .collect(Collectors.toList()))));
+                        .collect(Collectors.toList())));
 
             objectStream
                 .parallelStream()
