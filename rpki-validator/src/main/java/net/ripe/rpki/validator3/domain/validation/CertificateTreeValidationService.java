@@ -299,39 +299,39 @@ public class CertificateTreeValidationService {
             validatedObjects.add(manifestObject.get().key());
 
             Bench.mark(trustAnchor.getName(), "retrieveManifestEntries", () ->
-                storage.readTx(tx -> retrieveManifestEntries(tx, manifest, manifestUri, temporary))
-                    .entrySet()
-                    .parallelStream().map(e -> {
-                    URI location = e.getKey();
-                    RpkiObject rpkiObject = e.getValue();
-                    temporary.setLocation(new ValidationLocation(location));
+                storage.readTx(tx -> retrieveManifestEntries(tx, manifest, manifestUri, temporary)))
+                .entrySet()
+                .stream().map(e -> {
+                URI location = e.getKey();
+                RpkiObject rpkiObject = e.getValue();
+                temporary.setLocation(new ValidationLocation(location));
 
-                    final Optional<CertificateRepositoryObject> maybeCertificateRepositoryObject = Bench.mark(trustAnchor.getName(),
-                        "rpkiObject.get", () -> rpkiObject.get(CertificateRepositoryObject.class, temporary));
+                final Optional<CertificateRepositoryObject> maybeCertificateRepositoryObject = Bench.mark(trustAnchor.getName(),
+                    "rpkiObject.get", () -> rpkiObject.get(CertificateRepositoryObject.class, temporary));
 
-                    if (!temporary.hasFailureForCurrentLocation()) {
-                        return maybeCertificateRepositoryObject.flatMap(certificateRepositoryObject -> {
-                            Bench.mark0(trustAnchor.getName(), "certificateRepositoryObject.validate", () ->
-                                certificateRepositoryObject.validate(location.toASCIIString(), context, crl.get(), crlUri, VALIDATION_OPTIONS, temporary));
+                if (!temporary.hasFailureForCurrentLocation()) {
+                    return maybeCertificateRepositoryObject.flatMap(certificateRepositoryObject -> {
+                        Bench.mark0(trustAnchor.getName(), "certificateRepositoryObject.validate", () ->
+                            certificateRepositoryObject.validate(location.toASCIIString(), context, crl.get(), crlUri, VALIDATION_OPTIONS, temporary));
 
-                            if (!temporary.hasFailureForCurrentLocation()) {
-                                validatedObjects.add(rpkiObject.key());
-                            }
+                        if (!temporary.hasFailureForCurrentLocation()) {
+                            validatedObjects.add(rpkiObject.key());
+                        }
 
-                            if (certificateRepositoryObject instanceof X509ResourceCertificate
-                                && ((X509ResourceCertificate) certificateRepositoryObject).isCa()
-                                && !temporary.hasFailureForCurrentLocation()) {
+                        if (certificateRepositoryObject instanceof X509ResourceCertificate
+                            && ((X509ResourceCertificate) certificateRepositoryObject).isCa()
+                            && !temporary.hasFailureForCurrentLocation()) {
 
-                                return Optional.of(context.createChildContext(location, (X509ResourceCertificate) certificateRepositoryObject));
-                            }
-                            return Optional.empty();
-                        });
-                    }
-                    return Optional.<CertificateRepositoryObjectValidationContext>empty();
-                })
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .collect(Collectors.toList()))
+                            return Optional.of(context.createChildContext(location, (X509ResourceCertificate) certificateRepositoryObject));
+                        }
+                        return Optional.empty();
+                    });
+                }
+                return Optional.<CertificateRepositoryObjectValidationContext>empty();
+            })
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList())
                 .parallelStream()
                 .map(childContext -> validateCertificateAuthority(trustAnchor, registeredRepositories, childContext, temporary))
                 .forEachOrdered(validatedObjects::addAll);
