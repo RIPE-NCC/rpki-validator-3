@@ -70,7 +70,7 @@ public class ImStoreImpl<T> implements ImStore<T> {
         return map.get(primaryKey);
     }
 
-    public List<T> toPrimaryKeys(Collection<Key> idxKeys) {
+    public List<T> getByKeys(Collection<Key> idxKeys) {
         return idxKeys.stream().map(k->map.get(k)).collect(Collectors.toList());
     }
 }

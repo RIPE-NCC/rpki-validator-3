@@ -1,5 +1,6 @@
 package net.ripe.rpki.validator3.storage.imstorage;
 
+import com.rits.cloning.Cloner;
 import net.ripe.rpki.validator3.storage.IxMap;
 import net.ripe.rpki.validator3.storage.OnDeleteRestrictException;
 import net.ripe.rpki.validator3.storage.Tx;
@@ -60,7 +61,7 @@ public class ImIxMap<T extends Serializable> extends ImIxBase<T> implements IxMa
 
     @Override
     public List<T> get(Tx.Read txn, Set<Key> primaryKeys) {
-        return getMainStore().toPrimaryKeys(primaryKeys);
+        return getMainStore().getByKeys(primaryKeys);
     }
 
     @Override
@@ -93,13 +94,13 @@ public class ImIxMap<T extends Serializable> extends ImIxBase<T> implements IxMa
     @Override
     public Set<Key> getPkByIndexLessThan(String indexName, Tx.Read tx, Key indexKey) {
         ImStoreMultiImpl<Key> index = getIdx(indexName);
-        return index.toPrimaryKeys(index.sortedKeys().headSet(indexKey)).stream().collect(Collectors.toSet());
+        return index.getByKeys(index.sortedKeys().headSet(indexKey)).stream().collect(Collectors.toSet());
     }
 
     @Override
     public Set<Key> getPkByIndexGreaterThan(String indexName, Tx.Read tx, Key indexKey) {
         ImStoreMultiImpl<Key> index = getIdx(indexName);
-        return index.toPrimaryKeys(index.sortedKeys().tailSet(indexKey)).stream().collect(Collectors.toSet());
+        return index.getByKeys(index.sortedKeys().tailSet(indexKey)).stream().collect(Collectors.toSet());
     }
 
     @Override
@@ -139,10 +140,11 @@ public class ImIxMap<T extends Serializable> extends ImIxBase<T> implements IxMa
     }
 
     @Override
-    public Optional<T> put(Tx.Write tx, Key primaryKey, T value) {
+    public Optional<T> put(Tx.Write tx, Key primaryKey, T newValue) {
         checkNotNull(primaryKey, "PK is null");
-        checkNotNull(value, "Value is null");
+        checkNotNull(newValue, "Value is null");
 
+        final T value = cloner.deepClone(newValue);
         final Optional<T> oldValue = get(tx, primaryKey);
 
         getMainStore().put(primaryKey, value);
@@ -166,7 +168,7 @@ public class ImIxMap<T extends Serializable> extends ImIxBase<T> implements IxMa
                             index.put(ik, primaryKey);
                         });
             });
-            return oldValue;
+            return cloner.deepClone(oldValue);
         }
         indexFunctions.forEach((idxName, idxFun) -> {
             final Set<Key> indexKeys = idxFun.apply(value).stream()
@@ -219,4 +221,6 @@ public class ImIxMap<T extends Serializable> extends ImIxBase<T> implements IxMa
     public void onDelete(BiConsumer<Tx.Write, Key> bf) {
         onDeleteTriggers.add(bf);
     }
+
+    static Cloner cloner = new Cloner();
 }

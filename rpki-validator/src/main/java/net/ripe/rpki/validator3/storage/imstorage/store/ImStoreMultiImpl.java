@@ -70,7 +70,7 @@ public class ImStoreMultiImpl<T> implements ImStore<T> {
     }
 
 
-    public List<T> toPrimaryKeys(Collection<Key> idxKeys) {
+    public List<T> getByKeys(Collection<Key> idxKeys) {
         return idxKeys.stream().flatMap(k->multimap.get(k).stream()).collect(Collectors.toList());
     }
 

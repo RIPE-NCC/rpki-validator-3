@@ -4,6 +4,7 @@ import net.ripe.rpki.validator3.storage.data.Key;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Set;
@@ -19,5 +20,9 @@ public class ImStorageImpl extends ImStorage {
         ConcurrentHashMap<String, ImStoreMultiImpl> indexes = new ConcurrentHashMap<>();
         indexFunctions.keySet().forEach(n -> indexes.put(n, new ImStoreMultiImpl()));
         return indexes;
+    }
+    @PostConstruct
+    public void init() {
+        getIxMaps().clear();
     }
 }

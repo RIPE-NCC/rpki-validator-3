@@ -23,7 +23,7 @@ public interface ImStore<T> {
 
     T get(Key primaryKey);
 
-    List<T> toPrimaryKeys(Collection<Key> primaryKeys);
+    List<T> getByKeys(Collection<Key> primaryKeys);
 
     void put(Key primaryKey, T value);
 

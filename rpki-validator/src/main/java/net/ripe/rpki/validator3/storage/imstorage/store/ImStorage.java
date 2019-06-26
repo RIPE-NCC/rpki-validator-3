@@ -109,6 +109,7 @@ public abstract class ImStorage implements Storage {
     @Getter
     private final Map<Long, Xodus.TxInfo> txs = new ConcurrentHashMap<>();
 
+    @Getter
     protected final Map<String, IxBase<?>> ixMaps = new ConcurrentHashMap<>();
 
     public abstract <T extends Serializable> Map<String, ImStoreMultiImpl> createIndexes(String name, Map<String, Function<T, Set<Key>>> indexFunctions);

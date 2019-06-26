@@ -29,7 +29,6 @@
  */
 package net.ripe.rpki.validator3.storage.stores.impl;
 
-import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.IntegrationTest;
 import net.ripe.rpki.validator3.TestObjects;
@@ -131,13 +130,8 @@ public class ValidationRunsStoreTest extends GenericStorageTest {
 
         wtx0(tx -> {
 
-            // Can't just update vr3 directly since I need to clone.
-            //TODO: Think about how to deal with all updates that require clone before you can actually update.
-            Gson gson = new Gson();
-            CertificateTreeValidationRun updateVr3 =  gson.fromJson(gson.toJson(vr3),CertificateTreeValidationRun.class);
-            updateVr3.setCompletedAt(null);
-
-            this.getValidationRuns().update(tx, updateVr3);
+            vr3.setCompletedAt(null);
+            this.getValidationRuns().update(tx, vr3);
         });
 
         rtx0(tx -> {
