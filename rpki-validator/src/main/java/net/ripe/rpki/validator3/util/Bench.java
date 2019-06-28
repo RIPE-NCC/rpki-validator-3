@@ -35,10 +35,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -86,14 +84,10 @@ public class Bench {
     @Data
     @AllArgsConstructor
     private static class Record {
-        List<Long> entries;
-        Record(long t) {
-            entries = new ArrayList<>();
-            entries.add(t);
-        }
-        void add(long t) {
-            entries.add(t);
-        }
+        long count;
+        long totalTime;
+        long minTime;
+        long maxTime;
     }
 
     private final Map<String, Record> records = new HashMap<>();
@@ -112,11 +106,15 @@ public class Bench {
         long e = System.nanoTime();
         final long time = e - b;
         synchronized (records) {
-            final Record record = records.get(tag);
-            if (record == null) {
-                records.put(tag, new Record(time));
+            final Record r = records.get(tag);
+            if (r == null) {
+                records.put(tag, new Record(1, time, time, time));
             } else {
-                record.add(time);
+                records.put(tag, new Record(
+                    r.count + 1,
+                    r.totalTime + time,
+                    Math.min(r.minTime, time),
+                    Math.max(r.maxTime, time)));
             }
         }
         return v;
@@ -131,38 +129,14 @@ public class Bench {
             final String s = records.entrySet().stream()
                 .sorted(Comparator.comparing(Map.Entry::getKey))
                 .map(e -> {
-                    final Record value = e.getValue();
-                    final List<Long> entries = value.entries;
-
-                    // count percentiles
-                    final int n = entries.size();
-                    int[] percentiles = new int[]{50, 80, 90, 95, 99};
-                    int[] ps = new int[percentiles.length];
-                    long[] vs = new long[percentiles.length];
-                    for (int i = 0; i < percentiles.length; i++) {
-                        ps[i] = n * (100 - percentiles[i]) / 100;
-                    }
-
-                    entries.sort(Comparator.reverseOrder());
-                    long totalTime = 0;
-                    for (int i = 0; i < n; i++) {
-                        totalTime += entries.get(i);
-                        for (int p = 0; p < percentiles.length; p++) {
-                            if (i < ps[p]) {
-                                vs[p] += entries.get(i);
-                            }
-                        }
-                    }
+                    final Record r = e.getValue();
 
                     StringBuilder sb = new StringBuilder(namespace).append("# ").append(e.getKey()).append(": ");
-                    sb.append("max = ").append(asMs(entries.get(0)));
-                    sb.append(", full total = ").append(asMs(totalTime));
-                    sb.append(", count = ").append(n);
-                    sb.append(", avg = ").append(avgAsMs(totalTime, n));
-//                    for (int p = 0; p < percentiles.length; p++) {
-//                        sb.append("      p = ").append(percentiles[p]).append(", c = ").append(ps[p]).append(", total = ").append(asMs(vs[p])).append(", avg = ").append(asMs(vs[p] / ps[p]));
-//                        sb.append("\n");
-//                    }
+                    sb.append("max = ").append(asMs(r.maxTime));
+                    sb.append(", min = ").append(asMs(r.minTime));
+                    sb.append(", full total = ").append(asMs(r.totalTime));
+                    sb.append(", count = ").append(r.count);
+                    sb.append(", avg = ").append(avgAsMs(r.totalTime, r.count));
                     return sb.toString();
                 })
                 .collect(Collectors.joining("\n"));
@@ -171,7 +145,7 @@ public class Bench {
         }
     }
 
-    private static String avgAsMs(long total, int n) {
+    private static String avgAsMs(long total, long n) {
         final NumberFormat formatter = new DecimalFormat("#0.00");
         return formatter.format((total/1000_000.0)/n);
     }
