@@ -1,3 +1,9 @@
+* Tue July 2 2019 Mikhail Puzanov <mpuzanov@ripe.net> - 3.1
+- Minimize memory consumption and disk requirement by dropping Hibernate/H2 database, 
+and use Xodus https://github.com/JetBrains/xodus as persistence instead.
+- Prevent Out of Memory by refactoring RPKI Objects clean up procedure.
+- Improve responsiveness, set default RPKI object clean up grace period to 48H (used to be 7 days).
+
 
 * Mon Apr 8 2019 Adianto Wibisono <awibisono@@ripe.net> - 3.0
 - Avoid unique constraint violation due to redundant background jobs 
