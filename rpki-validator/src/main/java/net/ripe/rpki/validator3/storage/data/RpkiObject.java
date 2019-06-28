@@ -171,9 +171,12 @@ public class RpkiObject extends Base<RpkiObject> {
             return Optional.empty();
         }
 
-        temporary.rejectIfFalse(clazz.isInstance(candidate), "rpki.object.type.matches", clazz.getSimpleName(), candidate.getClass().getSimpleName());
-        if (temporary.hasFailureForCurrentLocation()) {
-            return Optional.empty();
+        final boolean isNeededInstance = clazz.isInstance(candidate);
+        if (!isNeededInstance) {
+            temporary.rejectIfFalse(isNeededInstance, "rpki.object.type.matches", clazz.getSimpleName(), candidate.getClass().getSimpleName());
+            if (temporary.hasFailureForCurrentLocation()) {
+                return Optional.empty();
+            }
         }
 
         return Optional.of(clazz.cast(candidate));
