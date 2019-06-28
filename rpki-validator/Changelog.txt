@@ -1,7 +1,7 @@
 * Tue July 2 2019 Mikhail Puzanov <mpuzanov@ripe.net> - 3.1
 - Minimize memory consumption and disk requirement by dropping Hibernate/H2 database, 
 and use Xodus https://github.com/JetBrains/xodus as persistence instead.
-- Prevent Out of Memory by refactoring RPKI Objects clean up procedure.
+- Prevent Out of Memory by refactoring RPKI objects clean up procedure.
 - Improve responsiveness, set default RPKI object clean up grace period to 48H (used to be 7 days).
 - Store all the ignore filters and white lists in a slurm.json file instead of the database, so now
   the database can be deleted any time without losing any user-configured data.

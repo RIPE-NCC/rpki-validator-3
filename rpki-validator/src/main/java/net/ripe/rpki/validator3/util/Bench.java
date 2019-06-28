@@ -92,7 +92,7 @@ public class Bench {
 
     private final Map<String, Record> records = new HashMap<>();
 
-    public void measure0(String tag, Runnable r) {
+    private void measure0(String tag, Runnable r) {
         measure(tag, () -> {
             r.run();
             return null;
@@ -124,7 +124,7 @@ public class Bench {
         return getBench(namespace).dump();
     }
 
-    public String dump() {
+    private String dump() {
         synchronized (records) {
             final String s = records.entrySet().stream()
                 .sorted(Comparator.comparing(Map.Entry::getKey))
