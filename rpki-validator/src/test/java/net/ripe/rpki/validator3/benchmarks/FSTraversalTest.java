@@ -41,7 +41,6 @@ import net.ripe.rpki.validator3.util.Sha256;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.lambda.Unchecked;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -126,8 +125,11 @@ public class FSTraversalTest {
                     final String key = Hex.format(sha256);
                     final String location = currentLocation.toString();
 
+                    String[] parts = file.getFileName().toString().split("\\.");
+                    String suffix = parts[parts.length-1];
                     final Either<ValidationResult, Pair<String, RpkiObject>> rpkiObject = Bench.mark(
-                        "RpkiObjectUtils.createRpkiObject", () -> RpkiObjectUtils.createRpkiObject(file.getFileName().toString(), content));
+                        "RpkiObjectUtils.createRpkiObject."+suffix,
+                            () -> RpkiObjectUtils.createRpkiObject(file.getFileName().toString(), content));
                     counter.incrementAndGet();
                     if (rpkiObject.isRight()) {
                         right.incrementAndGet();
