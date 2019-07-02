@@ -194,7 +194,7 @@ public class CertificateTreeValidationService {
             validationRun.completeWith(validationResult);
             storage.writeTx0(tx -> validationRuns.update(tx, validationRun));
             long end = System.currentTimeMillis();
-            log.info("Tree validation {} for {} in {}ms, benchmark:\n{}", validationRun.getStatus().toString().toLowerCase(), trustAnchor.getName(), (end - begin), Bench.dump(trustAnchor.getName()));
+            log.info("Tree validation {} for {} in {}ms", validationRun.getStatus().toString().toLowerCase(), trustAnchor.getName(), (end - begin));
         }
     }
 

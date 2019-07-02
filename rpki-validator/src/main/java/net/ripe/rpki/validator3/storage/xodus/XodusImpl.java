@@ -33,6 +33,7 @@ import jetbrains.exodus.env.Environment;
 import jetbrains.exodus.env.EnvironmentConfig;
 import jetbrains.exodus.env.Environments;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.storage.XodusInitialisationException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
@@ -64,35 +65,34 @@ public class XodusImpl extends Xodus {
         try {
             final String dbPath = createDirectoryIfNeeded();
             log.info("Creating Xodus environment at {}", dbPath);
-            oneThread.submit(() -> {
-                final EnvironmentConfig config = new EnvironmentConfig()
-                        .setLogDurableWrite(true)
-                        .setEnvGatherStatistics(true)
-                        .setGcEnabled(true)
-                        .setLogCacheUseNio(true)
-                        .setEnvCloseForcedly(true)
-                        .setMemoryUsagePercentage(10);
 
-                env = Environments.newInstance(dbPath, config);
-            }).get();
+            final EnvironmentConfig config = new EnvironmentConfig()
+                .setLogDurableWrite(true)
+                .setEnvGatherStatistics(true)
+                .setGcEnabled(true)
+                .setLogCacheUseNio(true)
+                .setEnvCloseForcedly(true)
+                .setMemoryUsagePercentage(10);
+
+            env = Environments.newInstance(dbPath, config);
 
             Runtime.getRuntime().addShutdownHook(new Thread(this::waitForAllTxToFinishAndClose));
         } catch (Exception e) {
             log.error("Couldn't open Xodus", e);
-            throw new RuntimeException(e);
+            throw new XodusInitialisationException(e);
         }
     }
 
     private String createDirectoryIfNeeded() {
         final File mainDir = new File(path);
         if (!mainDir.exists() || !mainDir.isDirectory()) {
-            throw new RuntimeException("Directory " + path + " doesn't exist, please create one");
+            throw new XodusInitialisationException("Directory " + path + " doesn't exist, please create one");
         }
         final File dbDir = new File(path, "db");
         if (!dbDir.exists()) {
             log.info("Creating directory {}", dbDir.getAbsolutePath());
             if (!dbDir.mkdirs()) {
-                throw new RuntimeException("Couldn't create " + dbDir.getAbsolutePath());
+                throw new XodusInitialisationException("Couldn't create " + dbDir.getAbsolutePath());
             }
         }
         return dbDir.getAbsolutePath();

@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3;
 
+import net.ripe.rpki.validator3.storage.XodusInitialisationException;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.boot.Banner;
 import org.springframework.boot.actuate.autoconfigure.amqp.RabbitHealthIndicatorAutoConfiguration;
@@ -295,19 +296,24 @@ public class Validator3Application {
             bindError = bindError || ((BeanCreationException) e).getMostSpecificCause() instanceof BindException;
         }
 
+        boolean xodusError = e instanceof XodusInitialisationException;
+
         if (bindError) {
             System.err.println("The binding address is already in use by another application.");
-            System.exit(7);
-        } else if (e.getClass().getName().equals("org.h2.jdbc.JdbcSQLException")) {
-            if (e.getMessage().contains("Database may be already in use")) {
-                System.err.println("The database is locked by another process, check if another instance of the validator is running.");
-                System.exit(7);
-            } else {
-                System.err.println("There is a problem using H2 database.");
-                System.exit(7);
-            }
+            exitPreventingRestart();
+        } else if (xodusError) {
+            System.err.println("Could not initialise the database, most probably the 'rpki.validator.data.path' setting points to an unavailable directory.");
+            exitPreventingRestart();
         } else {
             terminateIfKnownProblem(e.getCause());
         }
+    }
+
+    /**
+     * Exit code 7 is use by systemd and indicates that restarting
+     * the application is not going to solve the problem.
+     */
+    private static void exitPreventingRestart() {
+        System.exit(7);
     }
 }
