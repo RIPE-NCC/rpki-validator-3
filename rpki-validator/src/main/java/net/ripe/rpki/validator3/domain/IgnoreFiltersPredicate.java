@@ -35,6 +35,7 @@ import net.ripe.ipresource.IpResourceSet;
 import net.ripe.ipresource.etree.IntervalMap;
 import net.ripe.ipresource.etree.IpResourceIntervalStrategy;
 import net.ripe.ipresource.etree.NestedIntervalMap;
+import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilter;
 
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -46,10 +47,10 @@ public class IgnoreFiltersPredicate implements Predicate<RoaPrefixDefinition> {
 
     public IgnoreFiltersPredicate(Stream<IgnoreFilter> ignoreFilterStream) {
         ignoreFilterStream.forEach(filter -> {
-            if (filter.getPrefix() == null) {
-                ignoredAsns.add(new Asn(filter.getAsn()));
+            IpRange prefix = filter.getPrefix();
+            if (prefix == null) {
+                ignoredAsns.add(filter.getAsn());
             } else {
-                IpRange prefix = IpRange.parse(filter.getPrefix());
                 IpResourceSet existing = ignoredPrefixes.findExact(prefix);
                 if (existing == null) {
                     existing = new IpResourceSet();
@@ -58,7 +59,7 @@ public class IgnoreFiltersPredicate implements Predicate<RoaPrefixDefinition> {
                 if (filter.getAsn() == null) {
                     existing.add(new Asn(Asn.ASN_MIN_VALUE).upTo(new Asn(Asn.ASN32_MAX_VALUE)));
                 } else {
-                    existing.add(new Asn(filter.getAsn()));
+                    existing.add(filter.getAsn());
                 }
             }
         });
@@ -70,9 +71,6 @@ public class IgnoreFiltersPredicate implements Predicate<RoaPrefixDefinition> {
             return true;
         }
         IpResourceSet filter = ignoredPrefixes.findExactOrFirstLessSpecific(roaPrefix.getPrefix());
-        if (filter != null && filter.contains(roaPrefix.getAsn())) {
-            return true;
-        }
-        return false;
+        return filter != null && filter.contains(roaPrefix.getAsn());
     }
 }

@@ -30,39 +30,46 @@
 package net.ripe.rpki.validator3.domain.cleanup;
 
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.domain.ValidationRuns;
+import net.ripe.rpki.validator3.storage.Storage;
+import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
+import net.ripe.rpki.validator3.util.Time;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.EntityManager;
-import javax.transaction.Transactional;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 @Slf4j
 public class ValidationRunCleanupService {
 
     @Autowired
-    private EntityManager entityManager;
-
-    @Autowired
     private ValidationRuns validationRuns;
 
     private final Duration cleanupGraceDuration;
 
-    public ValidationRunCleanupService(@Value("${rpki.validator.validation.run.cleanup.grace.duration}") String cleanupGraceDuration) {
+    private final Storage storage;
+
+    public ValidationRunCleanupService(@Value("${rpki.validator.validation.run.cleanup.grace.duration}") String cleanupGraceDuration,
+                                       Storage storage) {
         this.cleanupGraceDuration = Duration.parse(cleanupGraceDuration);
+        this.storage = storage;
     }
 
-    @Transactional
-    public long cleanupValidationRuns() {
-        // Delete all validation runs older than `cleanupGraceDuration` that have a later validation run.
+    public Pair<AtomicInteger, AtomicInteger> cleanupValidationRuns() {
+        AtomicInteger oldCount = new AtomicInteger();
+        AtomicInteger orphanCount = new AtomicInteger();
         Instant completedBefore = Instant.now().minus(cleanupGraceDuration);
-        long removedCount = validationRuns.removeOldValidationRuns(completedBefore);
-        log.info("Removed {} old validation runs", removedCount);
-        return removedCount;
+        Long t = Time.timed(() -> {
+            // Delete all validation runs older than `cleanupGraceDuration` that have a later validation run.
+            oldCount.set(storage.writeTx(tx -> validationRuns.removeOldValidationRuns(tx, completedBefore)));
+            orphanCount.set(storage.writeTx(tx -> validationRuns.removeOrphanValidationRunAssociations(tx)));
+        });
+        log.info("Removed {} old validation runs and {} orphans in {}ms", oldCount.get(), orphanCount.get(), t);
+        storage.gc();
+        return Pair.of(oldCount, orphanCount);
     }
 }

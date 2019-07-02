@@ -29,17 +29,15 @@
  */
 package net.ripe.rpki.validator3.rrdp;
 
-public class DeltaWithdraw extends DeltaElement {
+import lombok.Getter;
 
+class DeltaWithdraw extends DeltaElement {
+
+    @Getter
     private byte[] hash;
 
-    public DeltaWithdraw(String uri, byte[] hash) {
+    DeltaWithdraw(String uri, byte[] hash) {
         super(uri);
         this.hash = hash;
     }
-
-    public byte[] getHash() {
-        return hash;
-    }
-
 }

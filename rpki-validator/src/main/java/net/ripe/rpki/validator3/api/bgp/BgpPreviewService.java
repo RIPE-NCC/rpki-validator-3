@@ -30,7 +30,6 @@
 package net.ripe.rpki.validator3.api.bgp;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
@@ -41,26 +40,24 @@ import net.ripe.ipresource.etree.NestedIntervalMap;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilter;
 import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
+import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertion;
 import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionsService;
-import net.ripe.rpki.validator3.domain.IgnoreFilter;
 import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
-import net.ripe.rpki.validator3.domain.RoaPrefixAssertion;
 import net.ripe.rpki.validator3.domain.RoaPrefixDefinition;
-import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
+import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -263,8 +260,8 @@ public class BgpPreviewService {
         );
 
         validatedRpkiObjects.addListener(objects -> updateValidatedRoaPrefixes(objects.stream().flatMap(x -> x.getRoaPrefixes().stream())));
-        ignoreFilterService.addListener(filters -> updateIgnoreFilters(filters));
-        roaPrefixAssertionsService.addListener(roaPrefixAssertions -> updateRoaPrefixAssertions(roaPrefixAssertions));
+        ignoreFilterService.addListener(this::updateIgnoreFilters);
+        roaPrefixAssertionsService.addListener(this::updateRoaPrefixAssertions);
     }
 
     private ReentrantReadWriteLock dataLock = new ReentrantReadWriteLock();
@@ -318,7 +315,7 @@ public class BgpPreviewService {
         return readLocked(() -> {
             final int count;
             if (searchTerm == null) {
-                count = bgpPreviewEntries.values().stream().map(AbstractCollection::size).reduce((s1, s2) -> s1 + s2).orElse(0);
+                count = bgpPreviewEntries.values().stream().map(AbstractCollection::size).reduce(0, Integer::sum);
              } else {
                 count = (int) bgpPreviewEntries
                         .values()
@@ -340,7 +337,7 @@ public class BgpPreviewService {
             DateTime lastModified = bgpRisDumps.stream()
                     .map(BgpRisDump::getLastModified)
                     .filter(Objects::nonNull)
-                    .min(Comparator.reverseOrder())
+                    .max(Comparator.naturalOrder())
                     .orElse(DateTime.now());
 
             return BgpPreviewResult.of(count, lastModified.getMillis(), entries);
@@ -384,7 +381,7 @@ public class BgpPreviewService {
         });
     }
 
-    public void updateValidatedRoaPrefixes(Stream<ValidatedRpkiObjects.RoaPrefix> prefixes) {
+    void updateValidatedRoaPrefixes(Stream<ValidatedRpkiObjects.RoaPrefix> prefixes) {
         sequential(() -> {
             final ImmutableList<RoaPrefix> validatedRoaPrefixes = ImmutableList.copyOf(prefixes
                     .map(p -> RoaPrefix.of(
@@ -436,10 +433,10 @@ public class BgpPreviewService {
                                     null,
                                     p.getId(),
                                     p.getComment(),
-                                    new Asn(p.getAsn()),
-                                    new PackedIpRange(IpRange.parse(p.getPrefix())),
-                                    p.getMaximumLength(),
-                                    p.getMaximumLength() == null ? IpRange.parse(p.getPrefix()).getPrefixLength() : p.getMaximumLength()
+                                    p.getAsn(),
+                                    new PackedIpRange(p.getPrefix()),
+                                    p.getMaxPrefixLength(),
+                                    p.getMaxPrefixLength() == null ? p.getPrefix().getPrefixLength() : p.getMaxPrefixLength()
                             ))
                             .iterator()
             );
@@ -534,32 +531,32 @@ public class BgpPreviewService {
             IntervalMap<IpRange, List<RoaPrefix>> roaPrefixes,
             BgpPreviewEntry bgpRisEntry
     ) {
-        List<RoaPrefix> matchingRoaPrefixes = roaPrefixes
-                .findExactAndAllLessSpecific(bgpRisEntry.getPrefix())
-                .stream()
-                .flatMap(Collection::stream)
-                .collect(Collectors.toList());
-
-        return validateBgpRisEntry(matchingRoaPrefixes, bgpRisEntry);
-    }
-
-    private static Validity validateBgpRisEntry(List<RoaPrefix> matchingRoaPrefixes, BgpPreviewEntry bgpRisEntry) {
-        List<RoaPrefix> matchingAsnRoas = matchingRoaPrefixes
-                .stream()
-                .filter(roaPrefix -> roaPrefix.getAsn().equals(bgpRisEntry.getOrigin()))
-                .collect(Collectors.toList());
-
-        final Validity validity;
-        if (matchingRoaPrefixes.isEmpty()) {
-            validity = Validity.UNKNOWN;
-        } else if (matchingAsnRoas.isEmpty()) {
-            validity = Validity.INVALID_ASN;
-        } else if (matchingAsnRoas.stream().noneMatch(roaPrefix -> roaPrefix.getEffectiveLength() >= bgpRisEntry.getPrefix().getPrefixLength())) {
-            validity = Validity.INVALID_LENGTH;
-        } else {
-            validity = Validity.VALID;
+        Validity validity = Validity.UNKNOWN;
+        final int bgpPrefixLength = bgpRisEntry.getPrefix().getPrefixLength();
+        for (List<RoaPrefix> rs : roaPrefixes.findExactAndAllLessSpecific(bgpRisEntry.getPrefix())) {
+            for (RoaPrefix r : rs) {
+                if (r.getAsn().longValue() == bgpRisEntry.origin) {
+                    if (r.getEffectiveLength() < bgpPrefixLength) {
+                        validity = Validity.INVALID_LENGTH;
+                    } else {
+                        return Validity.VALID;
+                    }
+                } else if (validity != Validity.INVALID_LENGTH) {
+                    validity = Validity.INVALID_ASN;
+                }
+            }
         }
         return validity;
+    }
+
+    private static Validity validateMatchingBgpRisEntry(RoaPrefix matchingRoaPrefix, BgpPreviewEntry bgpRisEntry) {
+        if (matchingRoaPrefix.getAsn().longValue() == bgpRisEntry.origin) {
+            if (matchingRoaPrefix.getEffectiveLength() < bgpRisEntry.getPrefix().getPrefixLength()) {
+                return Validity.INVALID_LENGTH;
+            }
+            return Validity.VALID;
+        }
+        return Validity.INVALID_ASN;
     }
 
     public BgpValidityWithFilteredResource validity(final Asn origin, final IpRange prefix) {
@@ -590,7 +587,7 @@ public class BgpPreviewService {
                 .flatMap(Collection::stream)
                 .map(r -> {
                     final BgpPreviewEntry bgpPreviewEntry = BgpPreviewEntry.of(origin, prefix, Validity.UNKNOWN);
-                    final Validity validity = validateBgpRisEntry(Collections.singletonList(r), bgpPreviewEntry);
+                    final Validity validity = validateMatchingBgpRisEntry(r, bgpPreviewEntry);
                     return Pair.of(r, validity);
                 })
                 .sorted(comparingInt(p -> {
@@ -606,7 +603,7 @@ public class BgpPreviewService {
                 }))
                 .collect(Collectors.toList());
 
-        final Validity validity = matchingRoaPrefixes.stream().findFirst().map(p -> p.getRight()).orElse(Validity.UNKNOWN);
+        final Validity validity = matchingRoaPrefixes.stream().findFirst().map(Pair::getRight).orElse(Validity.UNKNOWN);
 
         final List<ValidatingRoa> validatingRoaStream = matchingRoaPrefixes
                 .stream()

@@ -30,7 +30,7 @@
 package net.ripe.rpki.validator3.api;
 
 import lombok.Data;
-import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
+import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 
 import java.util.Comparator;
 import java.util.Locale;

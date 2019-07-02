@@ -40,62 +40,82 @@ import net.ripe.rpki.commons.rsync.CommandExecutionException;
 import net.ripe.rpki.commons.validation.ValidationLocation;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.commons.validation.ValidationString;
+import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
-import net.ripe.rpki.validator3.domain.RpkiObject;
-import net.ripe.rpki.validator3.domain.RpkiRepositories;
-import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
-import net.ripe.rpki.validator3.domain.TrustAnchors;
-import net.ripe.rpki.validator3.domain.ValidationCheck;
-import net.ripe.rpki.validator3.domain.ValidationRuns;
+import net.ripe.rpki.validator3.storage.Storage;
+import net.ripe.rpki.validator3.storage.data.Key;
+import net.ripe.rpki.validator3.storage.data.Ref;
+import net.ripe.rpki.validator3.storage.data.RpkiObject;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
+import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
+import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
+import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Rsync;
-import net.ripe.rpki.validator3.util.Transactions;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.transaction.Transactional;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
+import java.util.Collections;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @Slf4j
 public class TrustAnchorValidationService {
 
-    private final TrustAnchors trustAnchorRepository;
+    private final TrustAnchors trustAnchors;
     private final RpkiRepositories rpkiRepositories;
-    private final ValidationRuns validationRunRepository;
+    private final ValidationRuns validationRuns;
+    private final ValidationScheduler validationScheduler;
     private final File localRsyncStorageDirectory;
     private final RpkiRepositoryValidationService repositoryValidationService;
+    private final Storage storage;
+
+    private Set<Key> validatedAtLeastOnce = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     @Autowired
     public TrustAnchorValidationService(
-            TrustAnchors trustAnchorRepository,
-            RpkiRepositories rpkiRepositories, ValidationRuns validationRunRepository,
+            TrustAnchors trustAnchors,
+            RpkiRepositories rpkiRepositories,
+            ValidationRuns validationRuns,
+            ValidationScheduler validationScheduler,
             @Value("${rpki.validator.rsync.local.storage.directory}") File localRsyncStorageDirectory,
-            RpkiRepositoryValidationService repositoryValidationService) {
-        this.trustAnchorRepository = trustAnchorRepository;
+            RpkiRepositoryValidationService repositoryValidationService,
+            Storage storage) {
+        this.trustAnchors = trustAnchors;
         this.rpkiRepositories = rpkiRepositories;
-        this.validationRunRepository = validationRunRepository;
+        this.validationRuns = validationRuns;
+        this.validationScheduler = validationScheduler;
         this.localRsyncStorageDirectory = localRsyncStorageDirectory;
         this.repositoryValidationService = repositoryValidationService;
+        this.storage = storage;
     }
 
-    @Transactional(Transactional.TxType.REQUIRED)
     public void validate(long trustAnchorId) {
-        TrustAnchor trustAnchor = trustAnchorRepository.get(trustAnchorId);
+        Optional<TrustAnchor> maybeTrustAnchor = storage.readTx(tx -> trustAnchors.get(tx, Key.of(trustAnchorId)));
+        if (!maybeTrustAnchor.isPresent()) {
+            log.error("Trust anchor {} doesn't exist.", trustAnchorId);
+            return;
+        }
 
+        TrustAnchor trustAnchor = maybeTrustAnchor.get();
         log.info("trust anchor {} located at {} with subject public key info {}", trustAnchor.getName(), trustAnchor.getLocations(), trustAnchor.getSubjectPublicKeyInfo());
 
-        TrustAnchorValidationRun validationRun = new TrustAnchorValidationRun(trustAnchor);
-        validationRunRepository.add(validationRun);
+        TrustAnchorValidationRun validationRun = storage.readTx(tx -> {
+            final Ref<TrustAnchor> trustAnchorRef = trustAnchors.makeRef(tx, Key.of(trustAnchorId));
+            return new TrustAnchorValidationRun(trustAnchorRef, trustAnchor.getLocations().get(0));
+        });
 
+        boolean updatedTrustAnchor = false;
         try {
-            boolean updated = false;
 
             URI trustAnchorCertificateURI = URI.create(validationRun.getTrustAnchorCertificateURI()).normalize();
             ValidationResult validationResult = ValidationResult.withLocation(trustAnchorCertificateURI);
@@ -113,12 +133,13 @@ public class TrustAnchorValidationService {
 
                     if (!validationResult.hasFailureForCurrentLocation()) {
                         // validity time?
-                        int comparedSerial = trustAnchor.getCertificate() == null ? 1 : trustAnchor.getCertificate().getSerialNumber().compareTo(certificate.getSerialNumber());
+                        int comparedSerial = trustAnchor.getCertificate() == null ?
+                                1 : trustAnchor.getCertificate().getSerialNumber().compareTo(certificate.getSerialNumber());
                         validationResult.warnIfTrue(comparedSerial < 0, ValidationString.VALIDATOR_REPOSITORY_OBJECT_IS_OLDER_THAN_PREVIOUS_OBJECT, trustAnchorCertificateURI.toASCIIString());
                         if (comparedSerial > 0) {
                             log.info("Setting certificate {} for the TA {}", trustAnchorCertificateURI, trustAnchor.getName());
                             trustAnchor.setCertificate(certificate);
-                            updated = true;
+                            updatedTrustAnchor = true;
                         }
                     }
                 }
@@ -130,19 +151,26 @@ public class TrustAnchorValidationService {
             }
 
             validationRun.completeWith(validationResult);
-            if (updated) {
-                // TODO Do this part outside of this specific transaction
+            if (!validatedAtLeastOnce.contains(trustAnchor.getId()) || updatedTrustAnchor) {
+                if (updatedTrustAnchor) {
+                    storage.writeTx0(tx -> trustAnchors.update(tx, trustAnchor));
+                }
                 final Set<TrustAnchor> affectedTrustAnchors = Sets.newHashSet(trustAnchor);
                 if (trustAnchor.getRsyncPrefetchUri() != null) {
-                    rpkiRepositories.findByURI(trustAnchor.getRsyncPrefetchUri())
-                            .ifPresent(r -> affectedTrustAnchors.addAll(repositoryValidationService.prefetchRepository(r)));
+                    storage.readTx(tx ->
+                            rpkiRepositories.findByURI(tx, trustAnchor.getRsyncPrefetchUri()))
+                            .ifPresent(r ->
+                                    affectedTrustAnchors.addAll(repositoryValidationService.prefetchRepository(r)));
                 }
-                Transactions.afterCommit(() -> affectedTrustAnchors.forEach(validationRunRepository::runCertificateTreeValidation));
+                affectedTrustAnchors.forEach(validationScheduler::triggerCertificateTreeValidation);
             }
         } catch (CommandExecutionException | IOException e) {
             log.error("validation run for trust anchor {} failed", trustAnchor, e);
-            validationRun.addCheck(new ValidationCheck(validationRun, validationRun.getTrustAnchorCertificateURI(), ValidationCheck.Status.ERROR, ErrorCodes.UNHANDLED_EXCEPTION, e.toString()));
+            validationRun.addCheck(new ValidationCheck(validationRun.getTrustAnchorCertificateURI(), ValidationCheck.Status.ERROR, ErrorCodes.UNHANDLED_EXCEPTION, e.toString()));
             validationRun.setFailed();
+        } finally {
+            validatedAtLeastOnce.add(trustAnchor.getId());
+            storage.writeTx0(tx -> validationRuns.add(tx, validationRun));
         }
     }
 

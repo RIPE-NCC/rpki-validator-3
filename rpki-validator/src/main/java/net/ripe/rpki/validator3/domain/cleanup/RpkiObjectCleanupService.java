@@ -30,131 +30,42 @@
 package net.ripe.rpki.validator3.domain.cleanup;
 
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
-import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
-import net.ripe.rpki.commons.validation.ValidationResult;
-import net.ripe.rpki.validator3.domain.RpkiObject;
-import net.ripe.rpki.validator3.domain.RpkiObjects;
-import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.TrustAnchors;
+import net.ripe.rpki.validator3.storage.Storage;
+import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
+import net.ripe.rpki.validator3.util.Time;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.persistence.EntityManager;
-import javax.persistence.FlushModeType;
-import javax.persistence.LockModeType;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Optional;
 
 @Service
 @Slf4j
 public class RpkiObjectCleanupService {
 
     @Autowired
-    private EntityManager entityManager;
-
-    @Autowired
-    private TrustAnchors trustAnchors;
-
-    @Autowired
     private RpkiObjects rpkiObjects;
-
-    @Autowired
-    private TransactionTemplate transactionTemplate;
 
     private final Duration cleanupGraceDuration;
 
-    public RpkiObjectCleanupService(@Value("${rpki.validator.rpki.object.cleanup.grace.duration}") String cleanupGraceDuration) {
+    private final Storage storage;
+
+
+    public RpkiObjectCleanupService(@Value("${rpki.validator.rpki.object.cleanup.grace.duration}") String cleanupGraceDuration,
+                                    Storage storage) {
         this.cleanupGraceDuration = Duration.parse(cleanupGraceDuration);
+        log.info("Configured to remove objects older than {}", cleanupGraceDuration);
+        this.storage = storage;
     }
 
-    /**
-     * Marks all RPKI objects that are reachable from a trust anchor by following the entries in the manifests.
-     * Objects that are no longer reachable will be deleted after a configurable grace duration.
-     */
-    public long cleanupRpkiObjects() {
-        Instant now = Instant.now();
-        for (TrustAnchor trustAnchor : trustAnchors.findAll()) {
-            transactionTemplate.execute((status) -> {
-                entityManager.setFlushMode(FlushModeType.COMMIT);
-
-                log.debug("tracing objects for trust anchor {}", trustAnchor);
-
-                X509ResourceCertificate resourceCertificate = trustAnchor.getCertificate();
-                if (resourceCertificate != null) {
-                    traceCertificateAuthority(now, resourceCertificate);
-                }
-
-                return null;
-            });
-        }
-
-        return deleteUnreachableObjects(now);
-    }
-
-    private long deleteUnreachableObjects(Instant now) {
-        return transactionTemplate.execute((status) -> {
-            entityManager.flush();
-
-            Instant unreachableSince = now.minus(cleanupGraceDuration);
-            long count = rpkiObjects.deleteUnreachableObjects(unreachableSince);
-            log.info("Removed {} RPKI objects that have not been marked reachable since {}", count, unreachableSince);
-            return count;
-        });
-    }
-
-    private void traceCertificateAuthority(Instant now, X509ResourceCertificate resourceCertificate) {
-        if (resourceCertificate == null || resourceCertificate.getManifestUri() == null) {
-            return;
-        }
-
-        Optional<RpkiObject> maybeManifest = rpkiObjects.findLatestByTypeAndAuthorityKeyIdentifier(
-            RpkiObject.Type.MFT,
-            resourceCertificate.getSubjectKeyIdentifier()
-        );
-        maybeManifest.ifPresent(manifest -> {
-            markAndTraceObject(now, "manifest.mft", manifest);
-        });
-    }
-
-    private void markAndTraceObject(Instant now, String name, RpkiObject rpkiObject) {
-        // Compare object instance identity to see if we've already visited
-        // the `rpkiObject` in the current run.
-        if (now == rpkiObject.getLastMarkedReachableAt()) {
-            log.debug("object already marked, skipping {}", rpkiObject);
-        }
-
-        rpkiObject.markReachable(now);
-        switch (rpkiObject.getType()) {
-            case MFT:
-                traceManifest(now, name, rpkiObject);
-                break;
-            case CER:
-                traceCaCertificate(now, name, rpkiObject);
-                break;
-            default:
-                break;
-        }
-    }
-
-    private void traceManifest(Instant now, String name, RpkiObject manifest) {
-        this.rpkiObjects.findCertificateRepositoryObject(manifest.getId(), ManifestCms.class, ValidationResult.withLocation(name)).ifPresent(manifestCms -> {
-            rpkiObjects.findObjectsInManifest(manifestCms, LockModeType.PESSIMISTIC_WRITE).forEach((entry, rpkiObject) -> {
-                markAndTraceObject(now, entry, rpkiObject);
-            });
-        });
-    }
-
-    private void traceCaCertificate(Instant now, String name, RpkiObject caCertificate) {
-        this.rpkiObjects.findCertificateRepositoryObject(caCertificate.getId(), X509ResourceCertificate.class, ValidationResult.withLocation(name)).ifPresent(certificate -> {
-            if (certificate.isCa() && certificate.getManifestUri() != null) {
-                traceCertificateAuthority(now, certificate);
-            }
-        });
+    public long cleanupRpkiObjects() throws Exception {
+        final Instant unreachableSince = Instant.now().minus(cleanupGraceDuration);
+        final Pair<Long, Long> deleted = Time.timed(() -> rpkiObjects.deleteUnreachableObjects(unreachableSince));
+        log.info("Removed {} RPKI objects that have not been marked reachable since {}, took {}ms", deleted.getLeft(), unreachableSince, deleted.getRight());
+        storage.gc();
+        return deleted.getLeft();
     }
 
 }

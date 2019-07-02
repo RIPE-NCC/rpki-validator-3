@@ -51,7 +51,7 @@ public class ApiResponse<T> {
     T data;
 
     @ApiModelProperty(required = false, position = 3)
-    Collection<? extends Object> includes;
+    Collection<?> includes;
 
     @ApiModelProperty(required = false, position = 4)
     Collection<ApiError> errors;

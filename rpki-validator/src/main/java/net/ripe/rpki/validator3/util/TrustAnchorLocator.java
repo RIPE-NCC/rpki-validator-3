@@ -37,7 +37,10 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.StringReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -112,7 +115,7 @@ public class TrustAnchorLocator {
             while ((line = reader.readLine()) != null) {
                 publicKeyInfo.append(line.trim());
             }
-            return new TrustAnchorLocator(caName, certificateLocations, publicKeyInfo.toString(), Collections.<URI>emptyList());
+            return new TrustAnchorLocator(caName, certificateLocations, publicKeyInfo.toString(), Collections.emptyList());
         }
     }
 

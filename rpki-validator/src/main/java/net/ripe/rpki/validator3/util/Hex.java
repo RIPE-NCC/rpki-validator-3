@@ -47,7 +47,14 @@ public class Hex {
             return null;
         final StringBuilder s = new StringBuilder(bytes.length * 2);
         for (byte aByte : bytes) {
-            s.append(String.format("%02X", aByte & 0xff));
+            final int i = aByte & 0xff;
+            final String str = Integer.toHexString(i);
+            if (str.length() == 1) {
+                s.append('0').append(Character.toUpperCase(str.charAt(0)));
+            } else {
+                s.append(Character.toUpperCase(str.charAt(0)));
+                s.append(Character.toUpperCase(str.charAt(1)));
+            }
         }
         return s.toString();
     }

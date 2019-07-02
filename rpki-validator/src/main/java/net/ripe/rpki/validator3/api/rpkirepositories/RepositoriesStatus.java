@@ -31,8 +31,6 @@ package net.ripe.rpki.validator3.api.rpkirepositories;
 
 import lombok.Data;
 
-import java.util.Date;
-
 @Data(staticConstructor = "of")
 public class RepositoriesStatus {
     final int downloaded;

@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.api.bgp;
 
+import lombok.Getter;
 import net.ripe.ipresource.IpRange;
 import net.ripe.ipresource.Ipv4Address;
 import net.ripe.ipresource.Ipv6Address;
@@ -43,6 +44,7 @@ import static net.ripe.ipresource.IpResourceType.IPv6;
  * An experimental memory optimised way of storing IP ranges.
  */
 public class PackedIpRange {
+    @Getter
     private byte[] content;
 
     public PackedIpRange(IpRange ipRange) {
@@ -72,7 +74,11 @@ public class PackedIpRange {
         }
     }
 
-    public IpRange toIpRange() {
+    IpRange toIpRange() {
+        return of(content);
+    }
+
+    public static IpRange of(byte[] content) {
         if (content.length == 8) {
             // it's IPv4
             long s = fromBytes(content, 0);

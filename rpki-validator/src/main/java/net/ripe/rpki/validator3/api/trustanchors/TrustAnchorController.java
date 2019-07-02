@@ -41,17 +41,18 @@ import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.api.validationruns.ValidationCheckResource;
 import net.ripe.rpki.validator3.api.validationruns.ValidationRunController;
 import net.ripe.rpki.validator3.api.validationruns.ValidationRunResource;
-import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.TrustAnchorValidationRun;
-import net.ripe.rpki.validator3.domain.TrustAnchors;
-import net.ripe.rpki.validator3.domain.ValidationRun;
-import net.ripe.rpki.validator3.domain.ValidationRuns;
+import net.ripe.rpki.validator3.storage.Tx;
+import net.ripe.rpki.validator3.storage.data.Key;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
+import net.ripe.rpki.validator3.storage.Storage;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
+import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.TrustAnchorExtractorException;
 import net.ripe.rpki.validator3.util.TrustAnchorLocator;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
 import org.springframework.http.HttpStatus;
@@ -86,31 +87,36 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 public class TrustAnchorController {
 
     @Autowired
-    private TrustAnchors trustAnchorRepository;
+    private TrustAnchors trustAnchors;
     @Autowired
     private TrustAnchorService trustAnchorService;
     @Autowired
-    private ValidationRuns validationRunRepository;
+    private ValidationRuns validationRuns;
     @Autowired
     private MessageSource messageSource;
 
+    @Autowired
+    private Storage storage;
+
     @GetMapping
     public ResponseEntity<ApiResponse<List<TrustAnchorResource>>> list(Locale locale) {
-        return ResponseEntity.ok(ApiResponse.data(
+        return storage.readTx(tx -> ResponseEntity.ok(ApiResponse.data(
             new Links(linkTo(methodOn(TrustAnchorController.class).list(locale)).withSelfRel()),
-            trustAnchorRepository.findAll()
+            trustAnchors.findAll(tx)
                 .stream()
                 .map(ta -> TrustAnchorResource.of(ta, locale))
                 .collect(Collectors.toList())
-        ));
+        )));
     }
 
     @PostMapping(consumes = { Api.API_MIME_TYPE, "application/json" })
     public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@RequestBody @Valid ApiCommand<AddTrustAnchor> command, Locale locale) {
         long id = trustAnchorService.execute(command.getData());
-        TrustAnchor trustAnchor = trustAnchorRepository.get(id);
-        Link selfRel = linkTo(methodOn(TrustAnchorController.class).get(id, locale)).withSelfRel();
-        return ResponseEntity.created(URI.create(selfRel.getHref())).body(trustAnchorResource(trustAnchor, locale));
+        return storage.readTx(tx -> {
+            TrustAnchor trustAnchor = trustAnchors.get(tx, Key.of(id)).get();
+            Link selfRel = linkTo(methodOn(TrustAnchorController.class).get(id, locale)).withSelfRel();
+            return ResponseEntity.created(URI.create(selfRel.getHref())).body(trustAnchorResource(tx, trustAnchor, locale));
+        });
     }
 
     @PostMapping(path = "/upload", consumes = "multipart/form-data")
@@ -128,10 +134,13 @@ public class TrustAnchorController {
                     .findFirst().orElse(null)
                 )
                 .build();
+
             long id = trustAnchorService.execute(command);
-            TrustAnchor trustAnchor = trustAnchorRepository.get(id);
-            Link selfRel = linkTo(methodOn(TrustAnchorController.class).get(id, locale)).withSelfRel();
-            return ResponseEntity.created(URI.create(selfRel.getHref())).body(trustAnchorResource(trustAnchor, locale));
+            return storage.readTx(tx -> {
+                Optional<TrustAnchor> trustAnchor = trustAnchors.get(tx, Key.of(id));
+                Link selfRel = linkTo(methodOn(TrustAnchorController.class).get(id, locale)).withSelfRel();
+                return ResponseEntity.created(URI.create(selfRel.getHref())).body(trustAnchorResource(tx, trustAnchor.get(), locale));
+            });
         } catch (TrustAnchorExtractorException ex) {
             return ResponseEntity.badRequest().body(ApiResponse.error(ApiError.of(
                 HttpStatus.BAD_REQUEST,
@@ -142,17 +151,24 @@ public class TrustAnchorController {
 
     @GetMapping(path = "/{id}")
     public ResponseEntity<ApiResponse<TrustAnchorResource>> get(@PathVariable long id, Locale locale) {
-        TrustAnchor trustAnchor = trustAnchorRepository.get(id);
-        return ResponseEntity.ok(trustAnchorResource(trustAnchor, locale));
+        return storage.readTx(tx ->
+            trustAnchors.get(tx, Key.of(id))
+                    .map(ta -> ResponseEntity.ok(trustAnchorResource(tx, ta, locale)))
+                    .orElse(ResponseEntity.notFound().build()));
     }
 
     @GetMapping(path = "/{id}/validation-run")
     public ResponseEntity<ApiResponse<ValidationRunResource>> validationResults(@PathVariable long id, HttpServletResponse response, Locale locale) throws IOException {
-        TrustAnchor trustAnchor = trustAnchorRepository.get(id);
-        ValidationRun validationRun = validationRunRepository.findLatestCompletedForTrustAnchor(trustAnchor)
-            .orElseThrow(() -> new EmptyResultDataAccessException("latest validation run for trust anchor " + id, 1));
-        response.sendRedirect(linkTo(methodOn(ValidationRunController.class).get(validationRun.getId(), locale)).toString());
-        return null;
+        Optional<TrustAnchorValidationRun> validationRun = storage.readTx(tx ->
+                trustAnchors.get(tx, Key.of(id))
+                        .flatMap(trustAnchor ->
+                                validationRuns.findLatestCompletedForTrustAnchor(tx, trustAnchor)));
+
+        if (validationRun.isPresent()) {
+            response.sendRedirect(linkTo(methodOn(ValidationRunController.class).get(validationRun.get().key().asLong(), locale)).toString());
+            return null;
+        }
+        return ResponseEntity.notFound().build();
     }
 
     @GetMapping(path = "/{id}/validation-checks")
@@ -169,25 +185,27 @@ public class TrustAnchorController {
         final Sorting sorting = Sorting.parse(sortBy, sortDirection);
         final Paging paging = Paging.of(startFrom, pageSize);
 
-        int totalCount = validationRunRepository.countValidationChecksForValidationRun(id, searchTerm);
+        return storage.readTx(tx -> {
+            int totalCount = validationRuns.countValidationChecksForValidationRun(tx, id, searchTerm);
 
-        Stream<ValidationCheckResource> checks = validationRunRepository.findValidationChecksForValidationRun(id, paging, searchTerm, sorting)
-            .map(check -> ValidationCheckResource.of(check, messageSource.getMessage(check, locale)));
+            Stream<ValidationCheckResource> checks = validationRuns.findValidationChecksForValidationRun(tx, id, paging, searchTerm, sorting)
+                    .map(check -> ValidationCheckResource.of(check, messageSource.getMessage(check, locale)));
 
-        Links links = Paging.links(startFrom, pageSize, totalCount,
-                (sf, ps) -> methodOn(TrustAnchorController.class).validationChecks(id, sf, ps, searchString, sortBy, sortDirection, locale));
+            Links links = Paging.links(startFrom, pageSize, totalCount,
+                    (sf, ps) -> methodOn(TrustAnchorController.class).validationChecks(id, sf, ps, searchString, sortBy, sortDirection, locale));
 
-        return ResponseEntity.ok(ApiResponse.<Stream<ValidationCheckResource>>builder()
-            .links(links)
-            .data(checks)
-            .metadata(Metadata.of(totalCount))
-            .build()
-        );
+            return ResponseEntity.ok(ApiResponse.<Stream<ValidationCheckResource>>builder()
+                    .links(links)
+                    .data(checks)
+                    .metadata(Metadata.of(totalCount))
+                    .build()
+            );
+        });
     }
 
     @GetMapping(path = "/statuses")
-    public ApiResponse<List<TaStatus>> statuses(HttpServletResponse response) {
-        return ApiResponse.<List<TaStatus>>builder().data(trustAnchorRepository.getStatuses()).build();
+    public ApiResponse<List<TaStatus>> statuses() {
+        return storage.readTx(tx -> ApiResponse.<List<TaStatus>>builder().data(trustAnchors.getStatuses(tx)).build());
     }
 
     @DeleteMapping(path = "/{id}")
@@ -196,12 +214,12 @@ public class TrustAnchorController {
         return ResponseEntity.noContent().build();
     }
 
-    private ApiResponse<TrustAnchorResource> trustAnchorResource(TrustAnchor trustAnchor, Locale locale) {
-        Optional<TrustAnchorValidationRun> validationRun = validationRunRepository.findLatestCompletedForTrustAnchor(trustAnchor);
-        ArrayList<Object> includes = new ArrayList<>(1);
-        validationRun.ifPresent(run -> includes.add(ValidationRunResource.of(run, messageSource, locale)));
-        return ApiResponse.<TrustAnchorResource>builder().data(
-            TrustAnchorResource.of(trustAnchor, locale)
-        ).includes(includes).build();
+    private ApiResponse<TrustAnchorResource> trustAnchorResource(Tx.Read tx, TrustAnchor trustAnchor, Locale locale) {
+            Optional<TrustAnchorValidationRun> validationRun = validationRuns.findLatestCompletedForTrustAnchor(tx, trustAnchor);
+            ArrayList<Object> includes = new ArrayList<>(1);
+            validationRun.ifPresent(run -> includes.add(ValidationRunResource.of(run, vr -> validationRuns.getObjectCount(tx, vr), messageSource, locale)));
+            return ApiResponse.<TrustAnchorResource>builder().data(
+                    TrustAnchorResource.of(trustAnchor, locale)
+            ).includes(includes).build();
     }
 }

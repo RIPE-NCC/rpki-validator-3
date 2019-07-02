@@ -29,7 +29,6 @@
  */
 package net.ripe.rpki.validator3.rrdp;
 
-import com.pholser.junit.quickcheck.Property;
 import net.ripe.rpki.validator3.util.Hex;
 import org.junit.Test;
 
@@ -39,7 +38,6 @@ import java.math.BigInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 public class RrdpParserTest {
 

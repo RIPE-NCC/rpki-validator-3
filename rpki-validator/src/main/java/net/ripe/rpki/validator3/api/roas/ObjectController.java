@@ -32,21 +32,19 @@ package net.ripe.rpki.validator3.api.roas;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.ipresource.Asn;
-import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
+import net.ripe.rpki.validator3.api.bgpsec.BgpSecAssertionsService;
 import net.ripe.rpki.validator3.api.bgpsec.BgpSecFilterService;
+import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
+import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionsService;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
-import net.ripe.rpki.validator3.domain.BgpSecAssertions;
-import net.ripe.rpki.validator3.domain.IgnoreFilters;
 import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
-import net.ripe.rpki.validator3.domain.RoaPrefixAssertions;
-import net.ripe.rpki.validator3.domain.RpkiObjects;
-import net.ripe.rpki.validator3.domain.Settings;
-import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.TrustAnchors;
-import net.ripe.rpki.validator3.domain.ValidatedRpkiObjects;
+import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.Storage;
+import net.ripe.rpki.validator3.storage.stores.Settings;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
@@ -66,8 +64,6 @@ import java.util.stream.Stream;
 @RequestMapping(path = "/api/objects", produces = { Api.API_MIME_TYPE, "application/json" })
 @Slf4j
 public class ObjectController {
-    @Autowired
-    private RpkiObjects rpkiObjects;
 
     @Autowired
     private ValidatedRpkiObjects validatedRpkiObjects;
@@ -76,13 +72,13 @@ public class ObjectController {
     private TrustAnchors trustAnchors;
 
     @Autowired
-    private IgnoreFilters ignoreFilters;
+    private IgnoreFilterService ignoreFilters;
 
     @Autowired
-    private RoaPrefixAssertions roaPrefixAssertions;
+    private RoaPrefixAssertionsService roaPrefixAssertions;
 
     @Autowired
-    private BgpSecAssertions bgpSecAssertions;
+    private BgpSecAssertionsService bgpSecAssertions;
 
     @Autowired
     private BgpSecFilterService bgpSecFilterService;
@@ -90,18 +86,22 @@ public class ObjectController {
     @Autowired
     private Settings settings;
 
+    @Autowired
+    private Storage storage;
+
     @GetMapping(path = "/validated")
     public ResponseEntity<ApiResponse<ValidatedObjects>> list(Locale locale) {
-        final Map<Long, TrustAnchorResource> trustAnchorsById = trustAnchors.findAll().stream()
-            .collect(Collectors.toMap(
-                TrustAnchor::getId,
-                ta -> TrustAnchorResource.of(ta, locale))
-            );
+        final Map<Long, TrustAnchorResource> trustAnchorsById = storage.readTx(tx ->
+                trustAnchors.findAll(tx).stream()
+                        .collect(Collectors.toMap(
+                                ta -> ta.key().asLong(),
+                                ta -> TrustAnchorResource.of(ta, locale))
+                        ));
         final Map<Long, Links> trustAnchorLinks = trustAnchorsById.entrySet().stream()
-            .collect(Collectors.toMap(
-                entry -> entry.getKey(),
-                entry -> new Links(entry.getValue().getLinks().getLink("self").withRel(TrustAnchor.TYPE)))
-            );
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> new Links(entry.getValue().getLinks().getLink("self").withRel(TrustAnchor.TYPE)))
+                );
 
         final Stream<RoaPrefix> validatedPrefixes = validatedRpkiObjects
             .findCurrentlyValidatedRoaPrefixes(null, null, null)
@@ -121,9 +121,9 @@ public class ObjectController {
         final Stream<RoaPrefix> assertions = roaPrefixAssertions
             .all()
             .map(assertion -> new RoaPrefix(
-                new Asn(assertion.getAsn()).toString(),
-                IpRange.parse(assertion.getPrefix()).toString(),
-                assertion.getMaximumLength() != null ? assertion.getMaximumLength() : IpRange.parse(assertion.getPrefix()).getPrefixLength(),
+                assertion.getAsn().toString(),
+                assertion.getPrefix().toString(),
+                assertion.getMaxPrefixLength() != null ? assertion.getMaxPrefixLength() : assertion.getPrefix().getPrefixLength(),
                 null
             ));
 
@@ -142,7 +142,7 @@ public class ObjectController {
 
         return ResponseEntity.ok(ApiResponse.<ValidatedObjects>builder()
                 .data(new ValidatedObjects(
-                        settings.isInitialValidationRunCompleted(),
+                        storage.readTx(settings::isInitialValidationRunCompleted),
                         trustAnchorsById.values(),
                         combinedPrefixes,
                         combinedAssertions))

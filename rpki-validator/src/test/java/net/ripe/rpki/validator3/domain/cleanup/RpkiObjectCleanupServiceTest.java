@@ -35,31 +35,29 @@ import net.ripe.ipresource.IpResourceSet;
 import net.ripe.rpki.commons.crypto.ValidityPeriod;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificateBuilder;
 import net.ripe.rpki.validator3.IntegrationTest;
-import net.ripe.rpki.validator3.domain.RoaPrefix;
-import net.ripe.rpki.validator3.domain.RpkiObject;
-import net.ripe.rpki.validator3.domain.RpkiObjects;
-import net.ripe.rpki.validator3.domain.TrustAnchor;
-import net.ripe.rpki.validator3.domain.TrustAnchorsFactory;
+import net.ripe.rpki.validator3.domain.ta.TrustAnchorsFactory;
+import net.ripe.rpki.validator3.storage.data.RoaPrefix;
+import net.ripe.rpki.validator3.storage.data.RpkiObject;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
+import net.ripe.rpki.validator3.storage.stores.impl.GenericStorageTest;
 import org.joda.time.DateTime;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import javax.persistence.EntityManager;
 import javax.security.auth.x500.X500Principal;
-import javax.transaction.Transactional;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
+import java.util.Collections;
 
-import static net.ripe.rpki.validator3.domain.TrustAnchorsFactory.KEY_PAIR_FACTORY;
+import static net.ripe.rpki.validator3.domain.ta.TrustAnchorsFactory.KEY_PAIR_FACTORY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(SpringRunner.class)
 @IntegrationTest
-@Transactional
-public class RpkiObjectCleanupServiceTest {
+public class RpkiObjectCleanupServiceTest extends GenericStorageTest {
 
     @Autowired
     private TrustAnchorsFactory factory;
@@ -70,38 +68,32 @@ public class RpkiObjectCleanupServiceTest {
     @Autowired
     private RpkiObjects rpkiObjects;
 
-    @Autowired
-    private EntityManager entityManager;
-
     @Test
-    public void should_delete_objects_not_reachable_from_manifest() {
-        TrustAnchor trustAnchor = factory.createTrustAnchor(ta -> {
-            ta.roaPrefixes(Arrays.asList(RoaPrefix.of(IpRange.parse("127.0.0.0/8"), null, Asn.parse("123"))));
-        });
+    public void should_delete_objects_not_reachable_from_manifest() throws Exception {
+
+        TrustAnchor trustAnchor = wtx(tx -> factory.createTrustAnchor(tx, ta ->
+                ta.roaPrefixes(Collections.singletonList(RoaPrefix.of(IpRange.parse("127.0.0.0/8"), null, Asn.parse("123"))))));
 
         // No orphans, so nothing to delete
         assertThat(subject.cleanupRpkiObjects()).isEqualTo(0);
 
         RpkiObject orphan = new RpkiObject(
-            "rsync://localhost/orphan.cer",
             new X509ResourceCertificateBuilder()
                 .withResources(IpResourceSet.parse("10.0.0.0/8"))
                 .withIssuerDN(trustAnchor.getCertificate().getSubject())
                 .withSubjectDN(new X500Principal("CN=orphan"))
-                .withSerial(factory.nextSerial())
+                .withSerial(TrustAnchorsFactory.nextSerial())
                 .withPublicKey(KEY_PAIR_FACTORY.generate().getPublic())
                 .withSigningKeyPair(KEY_PAIR_FACTORY.generate())
                 .withValidityPeriod(new ValidityPeriod(DateTime.now(), DateTime.now().plusYears(1)))
                 .build()
         );
-        rpkiObjects.add(orphan);
-        entityManager.flush();
+        wtx0(tx -> rpkiObjects.put(tx, orphan));
 
         // Orphan is still new, so nothing to delete
         assertThat(subject.cleanupRpkiObjects()).isEqualTo(0);
 
-        orphan.markReachable(Instant.now().minus(Duration.ofDays(10)));
-        entityManager.flush();
+        wtx0(tx -> rpkiObjects.markReachable(tx, orphan.key(), Instant.now().minus(Duration.ofDays(10))));
 
         // Orphan is now old, so should be deleted
         assertThat(subject.cleanupRpkiObjects()).isEqualTo(1);

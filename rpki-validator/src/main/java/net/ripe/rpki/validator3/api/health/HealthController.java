@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.api.health;
 
+import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
@@ -38,15 +39,16 @@ import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
 import net.ripe.rpki.validator3.api.util.BuildInformation;
 import net.ripe.rpki.validator3.api.util.Dates;
 import net.ripe.rpki.validator3.background.BackgroundJobs;
-import net.ripe.rpki.validator3.domain.TrustAnchors;
+import net.ripe.rpki.validator3.storage.Storage;
+import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.persistence.EntityManager;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -57,13 +59,10 @@ import java.util.stream.Collectors;
 public class HealthController {
 
     @Autowired
-    private TrustAnchors trustAnchorRepository;
+    private TrustAnchors trustAnchors;
 
     @Autowired
     private BgpPreviewService bgpPreviewService;
-
-    @Autowired
-    private EntityManager entityManager;
 
     @Autowired
     private BackgroundJobs backgroundJobs;
@@ -71,11 +70,13 @@ public class HealthController {
     @Autowired
     private BuildInformation buildInformation;
 
+    @Autowired
+    private Storage storage;
 
     @GetMapping
     public ResponseEntity<ApiResponse<Health>> health() {
 
-        final Map<String, Boolean> trustAnchorReady = trustAnchorRepository.getStatuses().stream().
+        final Map<String, Boolean> trustAnchorReady = storage.readTx(tx -> trustAnchors.getStatuses(tx)).stream().
                 collect(Collectors.toMap(
                         TaStatus::getTaName,
                         TaStatus::isCompletedValidation)
@@ -87,7 +88,7 @@ public class HealthController {
                         dmp -> dmp.getLastModified() != null
                 ));
 
-        final String databaseStatus = databaseStatus();
+        final Map<String, String> databaseStatus = databaseStatus();
 
         return ResponseEntity.ok(ApiResponse.<Health>builder()
                 .data(Health.of(trustAnchorReady, bgpDumpReady, databaseStatus, buildInformation))
@@ -95,7 +96,7 @@ public class HealthController {
     }
 
     @GetMapping(path = "/backgrounds")
-    public ResponseEntity<ApiResponse<Map<String, BackgroundJobs.Execution>>> check(){
+    public ResponseEntity<ApiResponse<Map<String, BackgroundJobs.Execution>>> check() {
         return ResponseEntity.ok(ApiResponse.<Map<String, BackgroundJobs.Execution>>builder()
                 .data(backgroundJobs.getStat())
                 .build());
@@ -103,30 +104,31 @@ public class HealthController {
 
     @GetMapping(path = "/all-ta-completed")
     public ResponseEntity<ApiResponse<String>> statuses() {
-        List<TaStatus> statuses = trustAnchorRepository.getStatuses();
+        List<TaStatus> statuses = storage.readTx(tx -> trustAnchors.getStatuses(tx));
 
-        Boolean allComplete = statuses.stream().filter(TaStatus::isCompletedValidation).count() == 5;
+        Boolean allComplete = statuses.stream().filter(TaStatus::isCompletedValidation).count() >= 5;
 
         Instant twoHoursAgo = Instant.now().minusSeconds(7200L);
-        Boolean completedRecently = statuses.stream().map(s -> Dates.parseUTC(s.getLastUpdated()))
-                .sorted().findFirst().map(i -> i.isAfter(twoHoursAgo)).orElse(false);
+        Boolean completedRecently = statuses.stream()
+                .map(s -> Dates.parseUTC(s.getLastUpdated()))
+                .sorted()
+                .findFirst()
+                .map(i -> i.isAfter(twoHoursAgo)).orElse(false);
 
-        if(allComplete && completedRecently)
+        if (allComplete && completedRecently)
             return ResponseEntity.ok(ApiResponse.<String>builder()
-                .data("OK")
-                .build());
+                    .data("OK")
+                    .build());
         else
             return ResponseEntity.noContent().build();
-
     }
 
 
-    private String databaseStatus() {
+    private Map<String, String> databaseStatus() {
         try {
-            entityManager.createNativeQuery("SELECT 1").getSingleResult();
-            return "OK";
+            return storage.getDbStats();
         } catch (Exception e) {
-            return e.getMessage();
+            return Collections.singletonMap("error", e.getMessage());
         }
     }
 }

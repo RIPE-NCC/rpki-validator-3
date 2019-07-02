@@ -36,8 +36,10 @@ import net.ripe.rpki.validator3.api.Metadata;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
-import net.ripe.rpki.validator3.domain.RpkiRepositories;
-import net.ripe.rpki.validator3.domain.RpkiRepository;
+import net.ripe.rpki.validator3.storage.data.Key;
+import net.ripe.rpki.validator3.storage.data.RpkiRepository;
+import net.ripe.rpki.validator3.storage.Storage;
+import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.Links;
@@ -49,27 +51,32 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @RestController
-@RequestMapping(path = "/api/rpki-repositories", produces = { Api.API_MIME_TYPE, "application/json" })
+@RequestMapping(path = "/api/rpki-repositories", produces = {Api.API_MIME_TYPE, "application/json"})
 @Slf4j
 public class RpkiRepositoriesController {
 
     private final RpkiRepositories rpkiRepositories;
+    private final Storage storage;
 
     @Autowired
-    public RpkiRepositoriesController(RpkiRepositories rpkiRepositories) {
+    public RpkiRepositoriesController(RpkiRepositories rpkiRepositories, Storage storage) {
         this.rpkiRepositories = rpkiRepositories;
+        this.storage = storage;
     }
 
     @GetMapping
     public ResponseEntity<ApiResponse<Stream<RpkiRepositoryResource>>> list(
             @RequestParam(name = "status", required = false) RpkiRepository.Status status,
-            @RequestParam(name = "ta", required = false) Long taId,@RequestParam(name = "startFrom", defaultValue = "0") long startFrom,
+            @RequestParam(name = "ta", required = false) Long taId,
+            @RequestParam(name = "startFrom", defaultValue = "0") long startFrom,
             @RequestParam(name = "pageSize", defaultValue = "20") long pageSize,
             @RequestParam(name = "search", defaultValue = "", required = false) String searchString,
             @RequestParam(name = "sortBy", defaultValue = "location") String sortBy,
@@ -79,26 +86,33 @@ public class RpkiRepositoriesController {
         final SearchTerm searchTerm = StringUtils.isNotBlank(searchString) ? new SearchTerm(searchString) : null;
         final Sorting sorting = Sorting.parse(sortBy, sortDirection);
         final Paging paging = Paging.of(startFrom, pageSize);
-        final Stream<RpkiRepository> repositories = rpkiRepositories.findAll(status, taId, hideChildrenOfDownloadedParent, searchTerm, sorting, paging);
 
-        final int totalSize = (int) rpkiRepositories.countAll(status, taId, hideChildrenOfDownloadedParent, searchTerm);
-        final Links links = Paging.links(
-                startFrom, pageSize, totalSize,
-                (sf, ps) -> methodOn(RpkiRepositoriesController.class).list(status, taId, sf, ps, searchString, sortBy, sortDirection, hideChildrenOfDownloadedParent));
+        return storage.readTx(tx -> {
+            final Key taKey = taId == null ? null : Key.of(taId);
+            final List<RpkiRepository> repositories = rpkiRepositories.findAll(tx,
+                    status, taKey, hideChildrenOfDownloadedParent, searchTerm, sorting, paging)
+                    .collect(Collectors.toList());
 
-        final Stream<RpkiRepositoryResource> data = repositories.map(RpkiRepositoryResource::of);
+            final int totalSize = (int) rpkiRepositories.countAll(tx, status, taKey, hideChildrenOfDownloadedParent, searchTerm);
+            final Links links = Paging.links(
+                    startFrom, pageSize, totalSize,
+                    (sf, ps) -> methodOn(RpkiRepositoriesController.class).list(status, taId, sf, ps, searchString, sortBy, sortDirection, hideChildrenOfDownloadedParent));
 
-        return ResponseEntity.ok(ApiResponse.<Stream<RpkiRepositoryResource>>builder()
-                .data(data)
-                .links(links)
-                .metadata(Metadata.of(totalSize))
-                .build());
+            final Stream<RpkiRepositoryResource> data = repositories.stream().map(RpkiRepositoryResource::of);
+
+            return ResponseEntity.ok(ApiResponse.<Stream<RpkiRepositoryResource>>builder()
+                    .data(data)
+                    .links(links)
+                    .metadata(Metadata.of(totalSize))
+                    .build());
+        });
     }
 
     @GetMapping(path = "/{id}")
     public ResponseEntity<ApiResponse<RpkiRepositoryResource>> get(@PathVariable long id) {
-        RpkiRepository rpkiRepository = rpkiRepositories.get(id);
-        return ResponseEntity.ok(ApiResponse.data(RpkiRepositoryResource.of(rpkiRepository)));
+        return storage.readTx(tx -> rpkiRepositories.get(tx, Key.of(id)))
+                .map(r -> ResponseEntity.ok(ApiResponse.data(RpkiRepositoryResource.of(r))))
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping(path = "/statuses/{taId}")
@@ -106,7 +120,8 @@ public class RpkiRepositoriesController {
             @PathVariable long taId,
             @RequestParam(name = "hideChildrenOfDownloadedParent", defaultValue = "true") boolean hideChildrenOfDownloadedParent
     ) {
-        final Map<RpkiRepository.Status, Long> counts = rpkiRepositories.countByStatus(taId, hideChildrenOfDownloadedParent);
+        final Map<RpkiRepository.Status, Long> counts = storage.readTx(tx ->
+                rpkiRepositories.countByStatus(tx, Key.of(taId), hideChildrenOfDownloadedParent));
 
         return ApiResponse.<RepositoriesStatus>builder().data(RepositoriesStatus.of(
                 counts.getOrDefault(RpkiRepository.Status.DOWNLOADED, 0L).intValue(),
@@ -117,7 +132,7 @@ public class RpkiRepositoriesController {
 
     @DeleteMapping(path = "/{id}")
     public ResponseEntity<?> delete(@PathVariable long id) {
-        rpkiRepositories.remove(id);
+        storage.writeTx0(tx -> rpkiRepositories.remove(tx, Key.of(id)));
         return ResponseEntity.noContent().build();
     }
 }
