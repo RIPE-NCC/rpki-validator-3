@@ -2,9 +2,9 @@
 
 We finally released version 3.1. Feel free to give it a try:
 
-Docker image: https://hub.docker.com/r/ripencc/rpki-validator-3-docker
-RPM: https://ftp.ripe.net/tools/rpki/validator3/prod/centos7/repo/
-Tarball: https://ftp.ripe.net/tools/rpki/validator3/prod/generic/
+* Docker image: https://hub.docker.com/r/ripencc/rpki-validator-3-docker
+* RPM: https://ftp.ripe.net/tools/rpki/validator3/prod/centos7/repo/
+* Tarball: https://ftp.ripe.net/tools/rpki/validator3/prod/generic/
 
 Change logs:
 
