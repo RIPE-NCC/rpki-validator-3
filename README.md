@@ -11,7 +11,7 @@ Change logs:
 * Minimize memory consumption and disk requirement by dropping Hibernate/H2 database, and use Xodus https://github.com/JetBrains/xodus as persistence instead.
 * Improve responsiveness, set default RPKI object clean up grace period to 48 hours (used to be 7 days).
 * Store all the ignore filters and white lists in a slurm.json file instead of the database, so now the database can be deleted any time without losing any user-configured data.
-* For migration, the content of the 'db' directory should be remove and export and re-import of SLURM is required.
+* For migration, the content of the 'db' directory should be removed and export and re-import of SLURM is required.
 
 
 More information on the RPKI Validator 3 project is documented in the wiki:
