@@ -359,8 +359,6 @@ public class RrdpServiceImpl implements RrdpService {
                         final String location = p.getLeft();
                         rpkiObjects.put(tx, object, location);
                         return true;
-                    } else {
-//                        log.debug("The object added is the same {}", object);
                     }
                 }
             } else {
@@ -378,11 +376,8 @@ public class RrdpServiceImpl implements RrdpService {
                 final Pair<String, RpkiObject> p = maybeRpkiObject.right().value();
                 final RpkiObject object = p.getRight();
                 final Optional<RpkiObject> bySha256 = rpkiObjects.findBySha256(tx, Sha256.hash(content));
-                if (bySha256.isPresent()) {
-//                    log.debug("The object will not be added, there's one already existing {}", object);
-                } else {
-                    final String location = p.getLeft();
-                    rpkiObjects.put(tx, object, location);
+                if (!bySha256.isPresent()) {
+                    rpkiObjects.put(tx, object, p.getLeft());
                     return true;
                 }
             }
