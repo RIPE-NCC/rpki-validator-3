@@ -4,13 +4,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>net.ripe.rpki</groupId>
-    <artifactId>rpki-validator</artifactId>
+    <artifactId>rpki-validator-3</artifactId>
     <version>3.1-SNAPSHOT</version>
     <packaging>jar</packaging>
-
+    <inceptionYear>2017</inceptionYear>
     <name>rpki-validator-3</name>
     <description>RPKI Validator</description>
-
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -20,7 +19,7 @@
 
     <licenses>
         <license>
-            <name>The BSD License</name>
+            <name>BSD</name>
             <url>https://raw.github.com/RIPE-NCC/rpki-validator-3/master/LICENSE.txt</url>
             <distribution>repo</distribution>
         </license>
@@ -449,7 +448,51 @@
                     </execution>
                 </executions>
             </plugin>
-
+            <plugin>
+                <groupId>com.aerse.maven</groupId>
+                <artifactId>deb-maven-plugin</artifactId>
+                <version>1.9</version>
+                <executions>
+                    <execution>
+                        <id>package</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>package</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <unixUserId>rpki</unixUserId>
+                    <unixGroupId>rpki</unixGroupId>
+                    <osDependencies>
+                        <openjdk-8-jdk></openjdk-8-jdk>
+                        <coreutils>>=8.26</coreutils>
+                        <systemd></systemd>
+                        <rsync></rsync>
+                    </osDependencies>
+                    <installDir>/opt/</installDir>
+                    <attachArtifact>true</attachArtifact>
+                    <javaServiceWrapper>false</javaServiceWrapper>
+                    <fileSets>
+                        <fileSet>
+                            <source>${basedir}/src/main/resources/packaging/deb/scripts</source>
+                            <target>scripts</target>
+                        </fileSet>
+                        <fileSet>
+                            <source>${basedir}/src/main/resources/packaging/deb/conf</source>
+                            <target>conf</target>
+                        </fileSet>
+                        <fileSet>
+                            <source>${basedir}/src/main/resources/packaging/generic/workdirs</source>
+                            <target>data</target>
+                        </fileSet>
+                        <fileSet>
+                            <source>${basedir}/target/rpki-validator-3.1-SNAPSHOT.jar</source>
+                            <target>rpki-validator-3.jar</target>
+                        </fileSet>
+                    </fileSets>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
