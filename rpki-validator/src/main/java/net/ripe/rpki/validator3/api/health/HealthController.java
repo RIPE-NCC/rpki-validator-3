@@ -74,25 +74,32 @@ public class HealthController {
     private Storage storage;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<Health>> health() {
+    public ResponseEntity<ApiResponse<?>> health() {
 
-        final Map<String, Boolean> trustAnchorReady = storage.readTx(tx -> trustAnchors.getStatuses(tx)).stream().
+        try {
+            final Map<String, Boolean> trustAnchorReady = storage.readTx(tx -> trustAnchors.getStatuses(tx)).stream().
                 collect(Collectors.toMap(
-                        TaStatus::getTaName,
-                        TaStatus::isCompletedValidation)
+                    TaStatus::getTaName,
+                    TaStatus::isCompletedValidation)
                 );
 
-        final Map<String, Boolean> bgpDumpReady = bgpPreviewService.getBgpDumps().stream().
+            final Map<String, Boolean> bgpDumpReady = bgpPreviewService.getBgpDumps().stream().
                 collect(Collectors.toMap(
-                        BgpRisDump::getUrl,
-                        dmp -> dmp.getLastModified() != null
+                    BgpRisDump::getUrl,
+                    dmp -> dmp.getLastModified() != null
                 ));
 
-        final Map<String, String> databaseStatus = databaseStatus();
+            final Map<String, String> databaseStatus = databaseStatus();
 
-        return ResponseEntity.ok(ApiResponse.<Health>builder()
-                .data(Health.of(trustAnchorReady, bgpDumpReady, databaseStatus, buildInformation))
+
+            return ResponseEntity.ok(ApiResponse.<Health>builder()
+                .data(Health.of("OK", trustAnchorReady, bgpDumpReady, databaseStatus, buildInformation))
                 .build());
+        } catch (Exception e) {
+            return ResponseEntity.ok(ApiResponse.<String>builder()
+                .data("ERROR: " + e.getMessage())
+                .build());
+        }
     }
 
     @GetMapping(path = "/backgrounds")

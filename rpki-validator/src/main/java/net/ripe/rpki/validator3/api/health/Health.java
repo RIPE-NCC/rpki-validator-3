@@ -36,6 +36,7 @@ import java.util.Map;
 
 @Value(staticConstructor = "of")
 class Health {
+    private String overalStatus;
     Map<String, Boolean> trustAnchorReady;
     Map<String, Boolean> bgpDumpReady;
     Map<String, String> databaseStatus;
