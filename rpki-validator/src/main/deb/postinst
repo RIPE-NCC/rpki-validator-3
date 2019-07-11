@@ -1,0 +1,11 @@
+
+chown -R  ${config.user}:${config.group} ${config.installDir}
+chmod +x  ${config.installDir}/scripts/*.sh
+chmod 640 ${config.installDir}/*.jar
+
+cp ${config.installDir}/scripts/rpki-validator-3.service /etc/systemd/system/rpki-validator-3.service
+
+systemctl enable rpki-validator-3.service
+if [ -d /run/systemd/system ]; then
+	systemctl start rpki-validator-3.service
+fi
