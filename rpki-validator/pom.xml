@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>net.ripe.rpki</groupId>
-    <artifactId>rpki-validator-3</artifactId>
+    <artifactId>rpki-validator</artifactId>
     <version>3.1-SNAPSHOT</version>
     <packaging>jar</packaging>
     <inceptionYear>2017</inceptionYear>
@@ -487,7 +487,7 @@
                             <target>data</target>
                         </fileSet>
                         <fileSet>
-                            <source>${basedir}/target/rpki-validator-3.1-SNAPSHOT.jar</source>
+                            <source>${basedir}/target/rpki-validator-${project.version}.jar</source>
                             <target>rpki-validator-3.jar</target>
                         </fileSet>
                     </fileSets>

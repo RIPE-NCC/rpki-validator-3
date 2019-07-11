@@ -4,9 +4,9 @@ After=network.target
 
 [Service]
 Environment=JAVA_CMD=/usr/bin/java
-Environment=CONFIG_DIR=/opt/rpki-validator-3/conf
-Environment=JAR=/opt/rpki-validator-3/rpki-validator-3.jar
-ExecStart=/opt/rpki-validator-3/scripts/rpki-validator-3.sh
+Environment=CONFIG_DIR=/opt/rpki-validator/conf
+Environment=JAR=/opt/rpki-validator/rpki-validator-3.jar
+ExecStart=/opt/rpki-validator/scripts/rpki-validator-3.sh
 
 # prevent restart in case there's a problem
 # with the database or binding to socket

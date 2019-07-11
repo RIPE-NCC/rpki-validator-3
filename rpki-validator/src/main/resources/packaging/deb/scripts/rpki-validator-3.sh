@@ -56,8 +56,8 @@ if [ ! -x $JAVA_CMD ]; then
   error_exit "Cannot find java, please install java 8 or higher"
 fi
 
-JAR=${JAR:-"/opt/rpki-validator-3/rpki-validator-3.jar"}
-CONFIG_DIR=${CONFIG_DIR:-"/opt/rpki-validator-3/conf"}
+JAR=${JAR:-"/opt/rpki-validator/rpki-validator-3.jar"}
+CONFIG_DIR=${CONFIG_DIR:-"/opt/rpki-validator/conf"}
 
 CONFIG_FILE="${CONFIG_DIR}/application.properties"
 CONFIG_DEFAULT_FILE="${CONFIG_DIR}/application-defaults.properties"
