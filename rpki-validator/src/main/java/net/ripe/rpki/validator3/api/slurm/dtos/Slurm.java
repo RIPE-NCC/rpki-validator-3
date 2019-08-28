@@ -40,9 +40,7 @@ import java.util.List;
 
 @Data
 public class Slurm {
-    private final String slurmVersion = "1";
-
-    private List<SlurmTarget> slurmTarget;
+    private final int slurmVersion = 1;
 
     private SlurmOutputFilters validationOutputFilters;
 
@@ -68,7 +66,7 @@ public class Slurm {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class SlurmBgpSecAssertion {
-        private Asn asn;
+        private Long asn;
         private String comment;
         @SerializedName("SKI")
         private String ski;
@@ -79,7 +77,7 @@ public class Slurm {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class SlurmBgpSecFilter {
-        private Asn asn;
+        private Long asn;
         @SerializedName("SKI")
         private String ski;
         private String comment;
@@ -89,7 +87,7 @@ public class Slurm {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class SlurmPrefixAssertion {
-        private Asn asn;
+        private Long asn;
         private IpRange prefix;
         private Integer maxPrefixLength;
         private String comment;
@@ -99,7 +97,7 @@ public class Slurm {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class SlurmPrefixFilter {
-        Asn asn;
+        Long asn;
         IpRange prefix;
         String comment;
     }

@@ -73,7 +73,7 @@ public class ValidatedRoasController {
         ValidatedRpkiObjects.ValidatedObjects<ValidatedRpkiObjects.RoaPrefix> currentlyValidatedRoaPrefixes = validatedRpkiObjects.findCurrentlyValidatedRoaPrefixes(searchTerm, sorting, paging);
         final Stream<RoaPrefix> roas = currentlyValidatedRoaPrefixes.getObjects()
             .map(prefix -> new RoaPrefix(
-                prefix.getAsn().toString(),
+                String.valueOf(prefix.getAsn()),
                 prefix.getPrefix().toString(),
                 prefix.getEffectiveLength(),
                 prefix.getTrustAnchor().getName(),

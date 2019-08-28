@@ -142,7 +142,7 @@ public class BgpPreviewService {
         Long roaPrefixAssertionId;
         String comment;
 
-        Asn asn;
+        long asn;
         PackedIpRange prefix;
         Integer maximumLength;
         int effectiveLength;
@@ -180,8 +180,8 @@ public class BgpPreviewService {
                 return x -> true;
             }
             if (searchTerm.asAsn() != null) {
-                Asn asn = searchTerm.asAsn();
-                return x -> asn.longValue() == x.origin;
+                Long asn = searchTerm.asAsn();
+                return x -> asn == x.origin;
             }
             if (searchTerm.asIpRange() != null) {
                 IpRange range = searchTerm.asIpRange();
@@ -344,7 +344,7 @@ public class BgpPreviewService {
         });
     }
 
-    public List<BgpPreviewEntry> findAffected(Asn asn, IpRange prefix, Integer maximumLength) {
+    public List<BgpPreviewEntry> findAffected(IpRange prefix, Integer maximumLength) {
         return readLocked(() -> bgpPreviewEntries
                 .values()
                 .parallelStream()
@@ -535,7 +535,7 @@ public class BgpPreviewService {
         final int bgpPrefixLength = bgpRisEntry.getPrefix().getPrefixLength();
         for (List<RoaPrefix> rs : roaPrefixes.findExactAndAllLessSpecific(bgpRisEntry.getPrefix())) {
             for (RoaPrefix r : rs) {
-                if (r.getAsn().longValue() == bgpRisEntry.origin) {
+                if (r.getAsn() == bgpRisEntry.origin) {
                     if (r.getEffectiveLength() < bgpPrefixLength) {
                         validity = Validity.INVALID_LENGTH;
                     } else {
@@ -550,7 +550,7 @@ public class BgpPreviewService {
     }
 
     private static Validity validateMatchingBgpRisEntry(RoaPrefix matchingRoaPrefix, BgpPreviewEntry bgpRisEntry) {
-        if (matchingRoaPrefix.getAsn().longValue() == bgpRisEntry.origin) {
+        if (matchingRoaPrefix.getAsn() == bgpRisEntry.origin) {
             if (matchingRoaPrefix.getEffectiveLength() < bgpRisEntry.getPrefix().getPrefixLength()) {
                 return Validity.INVALID_LENGTH;
             }
@@ -611,7 +611,7 @@ public class BgpPreviewService {
                     final RoaPrefix r = p.getLeft();
                     if (r.getTrustAnchor() != null) {
                         return r.getLocations().stream().map(loc -> ValidatingRoa.of(
-                                r.getAsn().toString(),
+                                String.valueOf(r.getAsn()),
                                 r.getPrefix().toString(),
                                 p.getRight().toString(),
                                 r.getMaximumLength(),
@@ -621,7 +621,7 @@ public class BgpPreviewService {
                                 null));
                     } else if (r.getRoaPrefixAssertionId() != null) {
                         return Stream.of(ValidatingRoa.of(
-                                r.getAsn().toString(),
+                                String.valueOf(r.getAsn()),
                                 r.getPrefix().toString(),
                                 p.getRight().toString(),
                                 r.getMaximumLength(),

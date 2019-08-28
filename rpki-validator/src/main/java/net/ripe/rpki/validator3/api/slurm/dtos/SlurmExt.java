@@ -45,7 +45,6 @@ import java.util.stream.Collectors;
  */
 @Data
 public class SlurmExt {
-    private List<Slurm.SlurmTarget> slurmTarget = new ArrayList<>();
 
     private Map<Long, Slurm.SlurmPrefixFilter> prefixFilters = new HashMap<>();
 
@@ -63,7 +62,6 @@ public class SlurmExt {
         slurm.setValidationOutputFilters(new Slurm.SlurmOutputFilters(
                 extract(prefixFilters, slurmPrefixFilterComparator),
                 extract(bgpsecFilters, slurmBgpSecFilterComparator)));
-        slurm.setSlurmTarget(slurmTarget);
         return slurm;
     }
 

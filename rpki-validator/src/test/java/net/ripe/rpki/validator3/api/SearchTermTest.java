@@ -40,11 +40,11 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 public class SearchTermTest {
 
-    private final RoaPrefix prefixTest = RoaPrefix.of(null, null, IpRange.parse("10.0.0.0/8"), 32, 32, null);
-    private final RoaPrefix asnTest = RoaPrefix.of(null, Asn.parse("3642"), null, 32, 32, null);
+    private final RoaPrefix prefixTest = RoaPrefix.of(null, 0, IpRange.parse("10.0.0.0/8"), 32, 32, null);
+    private final RoaPrefix asnTest = RoaPrefix.of(null, 3642, null, 32, 32, null);
     private final RoaPrefix genericTest = RoaPrefix.of(
             ValidatedRpkiObjects.TrustAnchorData.of(1L, "Bla Anchor"),
-            Asn.parse("3642"),
+            3642,
             null, 32, 32,
             ImmutableSortedSet.of("Some location"));
 

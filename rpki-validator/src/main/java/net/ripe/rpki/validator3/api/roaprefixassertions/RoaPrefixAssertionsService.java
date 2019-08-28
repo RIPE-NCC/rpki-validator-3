@@ -68,7 +68,7 @@ public class RoaPrefixAssertionsService {
     public long execute(@Valid AddRoaPrefixAssertion command) {
         final Long rpId = slurmStore.updateWith(slurmExt -> {
             final Slurm.SlurmPrefixAssertion prefixAssertion = new Slurm.SlurmPrefixAssertion();
-            prefixAssertion.setAsn(Asn.parse(command.getAsn()));
+            prefixAssertion.setAsn(Long.parseLong(command.getAsn()));
             prefixAssertion.setPrefix(IpRange.parse(command.getPrefix()));
             prefixAssertion.setComment(command.getComment());
             prefixAssertion.setMaxPrefixLength(command.getMaximumLength());

@@ -53,8 +53,8 @@ public class BgpSecFilterServiceTest {
     @Autowired
     private BgpSecFilterService bgpSecFilterService;
 
-    private static Asn ASN_1 = Asn.parse("AS123");
-    private static Asn ASN_2 = Asn.parse("AS456");
+    private static Long ASN_1 = 123L;
+    private static Long ASN_2 = 456L;
 
     private static final String SKI_1 = "nvln23d";
     private static final String SKI_2 = "plspdpc";
@@ -79,7 +79,7 @@ public class BgpSecFilterServiceTest {
     @Test
     public void should_not_filter_out_unrelated_certificate() {
         final List<ValidatedRpkiObjects.RouterCertificate> certificates = Collections.singletonList(CERTIFICATE_1);
-        final List<BgpSecFilter> filters = Collections.singletonList(new BgpSecFilter(1L, new Asn(12L), null, null));
+        final List<BgpSecFilter> filters = Collections.singletonList(new BgpSecFilter(1L, 12L, null, null));
         final Stream<ValidatedRpkiObjects.RouterCertificate> s = bgpSecFilterService.filterCertificates(certificates.stream(), filters);
         assertEquals(certificates, s.collect(Collectors.toList()));
     }
