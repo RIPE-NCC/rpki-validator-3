@@ -97,14 +97,8 @@ public class Slurm {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class SlurmPrefixFilter {
-        Long asn;
-        IpRange prefix;
-        String comment;
-    }
-
-    @Data
-    static class SlurmTarget {
         private Long asn;
-        private String hostname;
+        private IpRange prefix;
+        private String comment;
     }
 }

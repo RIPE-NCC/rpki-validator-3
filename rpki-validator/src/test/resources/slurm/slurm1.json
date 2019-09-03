@@ -1,13 +1,5 @@
 {
   "slurmVersion": 1,
-  "slurmTarget": [
-    {
-      "asn": 65536
-    },
-    {
-      "hostname": "rpki.example.com"
-    }
-  ],
   "validationOutputFilters": {
     "prefixFilters": [
       {

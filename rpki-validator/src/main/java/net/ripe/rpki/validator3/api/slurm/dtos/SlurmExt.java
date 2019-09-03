@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.api.slurm.dtos;
 
+import fj.P;
 import lombok.Data;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
@@ -78,23 +79,30 @@ public class SlurmExt {
                 .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
     }
 
+    private static <T extends Comparable<T>> int compareWithNulls(T asn1, T asn2) {
+        if (asn1 == null) {
+            return asn2 == null ? 0 : 1;
+        }
+        return asn2 == null ? -1 : asn1.compareTo(asn2);
+    }
+
     private static Comparator<Slurm.SlurmPrefixFilter> slurmPrefixFilterComparator =
-            Comparator.nullsFirst(Comparator.comparing(Slurm.SlurmPrefixFilter::getAsn))
-                    .thenComparing(Comparator.nullsFirst(Comparator.comparing(Slurm.SlurmPrefixFilter::getPrefix)));
+        ((Comparator<Slurm.SlurmPrefixFilter>) (o1, o2) -> compareWithNulls(o1.getAsn(), o2.getAsn()))
+            .thenComparing((o1, o2) -> compareWithNulls(o1.getPrefix(), o2.getPrefix()));
 
     private static Comparator<Slurm.SlurmBgpSecFilter> slurmBgpSecFilterComparator =
-        Comparator.nullsFirst(Comparator.comparing(Slurm.SlurmBgpSecFilter::getAsn))
-                    .thenComparing(Comparator.nullsFirst(Comparator.comparing(Slurm.SlurmBgpSecFilter::getSki)));
+        ((Comparator<Slurm.SlurmBgpSecFilter>) (o1, o2) -> compareWithNulls(o1.getAsn(), o2.getAsn()))
+            .thenComparing((o1, o2) -> compareWithNulls(o1.getSki(), o2.getSki()));
 
     private static Comparator<Slurm.SlurmPrefixAssertion> slurmPrefixAssertionComparator =
-        Comparator.nullsFirst(Comparator.comparing(Slurm.SlurmPrefixAssertion::getAsn))
-                    .thenComparing(Comparator.nullsFirst(Comparator.comparing(Slurm.SlurmPrefixAssertion::getPrefix)))
-                    .thenComparing(Comparator.nullsFirst(Comparator.comparing(Slurm.SlurmPrefixAssertion::getMaxPrefixLength)));
+        ((Comparator<Slurm.SlurmPrefixAssertion>) (o1, o2) -> compareWithNulls(o1.getAsn(), o2.getAsn()))
+            .thenComparing((o1, o2) -> compareWithNulls(o1.getPrefix(), o2.getPrefix()))
+            .thenComparing((o1, o2) -> compareWithNulls(o1.getMaxPrefixLength(), o2.getMaxPrefixLength()));
 
     private static Comparator<Slurm.SlurmBgpSecAssertion> slurmBgpSecAssertionComparator =
-            Comparator.nullsFirst(Comparator.comparing(Slurm.SlurmBgpSecAssertion::getAsn))
-                    .thenComparing(Comparator.nullsFirst(Comparator.comparing(Slurm.SlurmBgpSecAssertion::getPublicKey)))
-                    .thenComparing(Comparator.nullsFirst(Comparator.comparing(Slurm.SlurmBgpSecAssertion::getSki)));
+        ((Comparator<Slurm.SlurmBgpSecAssertion>) (o1, o2) -> compareWithNulls(o1.getAsn(), o2.getAsn()))
+            .thenComparing((o1, o2) -> compareWithNulls(o1.getPublicKey(), o2.getPublicKey()))
+            .thenComparing((o1, o2) -> compareWithNulls(o1.getSki(), o2.getSki()));
 
     public static SlurmExt fromSlurm(Slurm slurm, AtomicLong idSeq) {
         final SlurmExt slurmExt = new SlurmExt();

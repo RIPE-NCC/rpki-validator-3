@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.api.slurm;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
+import net.ripe.rpki.validator3.api.slurm.dtos.SlurmExt;
 import net.ripe.rpki.validator3.storage.encoding.GsonCoder;
 import org.junit.Test;
 
@@ -40,9 +41,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 
 public class SlurmParserTest {
@@ -52,7 +56,7 @@ public class SlurmParserTest {
         final Slurm slurm = GsonCoder.getPrettyGson().fromJson(read("slurm/slurm1.json"), Slurm.class);
 
         final List<Slurm.SlurmPrefixFilter> prefixFilters = slurm.getValidationOutputFilters().getPrefixFilters();
-        assertEquals(null, prefixFilters.get(0).getAsn());
+        assertNull(prefixFilters.get(0).getAsn());
         assertEquals(new Long(64496), prefixFilters.get(1).getAsn());
         assertEquals(new Long(64497), prefixFilters.get(2).getAsn());
         assertEquals(IpRange.parse("198.51.100.0/24"), prefixFilters.get(2).getPrefix());
@@ -60,7 +64,7 @@ public class SlurmParserTest {
 
         final List<Slurm.SlurmBgpSecFilter> bgpsecFilters = slurm.getValidationOutputFilters().getBgpsecFilters();
         assertEquals(new Long(64496), bgpsecFilters.get(0).getAsn());
-        assertEquals(null, bgpsecFilters.get(1).getAsn());
+        assertNull(bgpsecFilters.get(1).getAsn());
         assertEquals("Zm9v", bgpsecFilters.get(1).getSki());
         assertEquals(new Long(64497), bgpsecFilters.get(2).getAsn());
         assertEquals("YmFy", bgpsecFilters.get(2).getSki());
@@ -70,7 +74,7 @@ public class SlurmParserTest {
         assertEquals(new Long(64496), prefixAssertions.get(0).getAsn());
         assertEquals(IpRange.parse("198.51.100.0/24"), prefixAssertions.get(0).getPrefix());
         assertEquals("My other important route", prefixAssertions.get(0).getComment());
-        assertEquals(null, prefixAssertions.get(0).getMaxPrefixLength());
+        assertNull(prefixAssertions.get(0).getMaxPrefixLength());
         assertEquals(new Long(64496), prefixAssertions.get(1).getAsn());
         assertEquals(IpRange.parse("2001:DB8::/32"), prefixAssertions.get(1).getPrefix());
         assertEquals(new Integer(48), prefixAssertions.get(1).getMaxPrefixLength());
@@ -82,6 +86,15 @@ public class SlurmParserTest {
         assertEquals("<some base64 public key>", bgpsecAssertions.get(0).getPublicKey());
         assertEquals("My known key for my important ASN", bgpsecAssertions.get(0).getComment());
     }
+
+    @Test
+    public void createSlurmExt() throws IOException {
+        final Slurm slurm = GsonCoder.getPrettyGson().fromJson(read("slurm/slurm1.json"), Slurm.class);
+        AtomicLong idSeq = new AtomicLong(1);
+        final SlurmExt slurmExt = SlurmExt.fromSlurm(slurm, idSeq);
+        assertNotNull(slurmExt);
+    }
+
 
     private static String read(final String path) throws IOException {
         final InputStream resource = Thread.currentThread().getContextClassLoader().getResourceAsStream(path);
