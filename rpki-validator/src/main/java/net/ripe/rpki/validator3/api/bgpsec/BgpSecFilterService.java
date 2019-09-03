@@ -60,7 +60,7 @@ public class BgpSecFilterService {
         final long id = slurmStore.nextId();
         return slurmStore.updateWith(slurmExt -> {
             final Slurm.SlurmBgpSecFilter slurmBgpSecFilter = new Slurm.SlurmBgpSecFilter();
-            slurmBgpSecFilter.setAsn(Long.parseLong(command.getAsn()));
+            slurmBgpSecFilter.setAsn(Asn.parse(command.getAsn()).longValue());
             slurmBgpSecFilter.setSki(command.getSki());
             slurmBgpSecFilter.setComment(command.getComment());
             slurmExt.getBgpsecFilters().put(id, slurmBgpSecFilter);

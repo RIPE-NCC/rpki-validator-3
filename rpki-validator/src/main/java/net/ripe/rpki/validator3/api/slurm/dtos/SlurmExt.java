@@ -30,6 +30,8 @@
 package net.ripe.rpki.validator3.api.slurm.dtos;
 
 import lombok.Data;
+import net.ripe.ipresource.Asn;
+import net.ripe.ipresource.IpRange;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
@@ -77,22 +79,22 @@ public class SlurmExt {
     }
 
     private static Comparator<Slurm.SlurmPrefixFilter> slurmPrefixFilterComparator =
-            Comparator.comparing(Slurm.SlurmPrefixFilter::getAsn)
-                    .thenComparing(Slurm.SlurmPrefixFilter::getPrefix);
+            Comparator.nullsFirst(Comparator.comparing(Slurm.SlurmPrefixFilter::getAsn))
+                    .thenComparing(Comparator.nullsFirst(Comparator.comparing(Slurm.SlurmPrefixFilter::getPrefix)));
 
     private static Comparator<Slurm.SlurmBgpSecFilter> slurmBgpSecFilterComparator =
-            Comparator.comparing(Slurm.SlurmBgpSecFilter::getAsn)
-                    .thenComparing(Slurm.SlurmBgpSecFilter::getSki);
+        Comparator.nullsFirst(Comparator.comparing(Slurm.SlurmBgpSecFilter::getAsn))
+                    .thenComparing(Comparator.nullsFirst(Comparator.comparing(Slurm.SlurmBgpSecFilter::getSki)));
 
     private static Comparator<Slurm.SlurmPrefixAssertion> slurmPrefixAssertionComparator =
-            Comparator.comparing(Slurm.SlurmPrefixAssertion::getAsn)
-                    .thenComparing(Slurm.SlurmPrefixAssertion::getPrefix)
-                    .thenComparing(Slurm.SlurmPrefixAssertion::getMaxPrefixLength);
+        Comparator.nullsFirst(Comparator.comparing(Slurm.SlurmPrefixAssertion::getAsn))
+                    .thenComparing(Comparator.nullsFirst(Comparator.comparing(Slurm.SlurmPrefixAssertion::getPrefix)))
+                    .thenComparing(Comparator.nullsFirst(Comparator.comparing(Slurm.SlurmPrefixAssertion::getMaxPrefixLength)));
 
     private static Comparator<Slurm.SlurmBgpSecAssertion> slurmBgpSecAssertionComparator =
-            Comparator.comparing(Slurm.SlurmBgpSecAssertion::getAsn)
-                    .thenComparing(Slurm.SlurmBgpSecAssertion::getPublicKey)
-                    .thenComparing(Slurm.SlurmBgpSecAssertion::getSki);
+            Comparator.nullsFirst(Comparator.comparing(Slurm.SlurmBgpSecAssertion::getAsn))
+                    .thenComparing(Comparator.nullsFirst(Comparator.comparing(Slurm.SlurmBgpSecAssertion::getPublicKey)))
+                    .thenComparing(Comparator.nullsFirst(Comparator.comparing(Slurm.SlurmBgpSecAssertion::getSki)));
 
     public static SlurmExt fromSlurm(Slurm slurm, AtomicLong idSeq) {
         final SlurmExt slurmExt = new SlurmExt();

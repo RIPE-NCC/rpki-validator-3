@@ -56,7 +56,7 @@ public class BgpSecAssertionsService {
         final long id = slurmStore.nextId();
         return slurmStore.updateWith(slurmExt -> {
             final Slurm.SlurmBgpSecAssertion slurmBgpSecAssertion = new Slurm.SlurmBgpSecAssertion();
-            slurmBgpSecAssertion.setAsn(Long.parseLong(command.getAsn()));
+            slurmBgpSecAssertion.setAsn(Asn.parse(command.getAsn()).longValue());
             slurmBgpSecAssertion.setPublicKey(command.getPublicKey());
             slurmBgpSecAssertion.setSki(command.getSki());
             slurmBgpSecAssertion.setComment(command.getComment());
