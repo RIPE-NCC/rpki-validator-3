@@ -179,7 +179,7 @@ public class BgpPreviewServiceTest {
     }
 
     private ValidatedRpkiObjects.RoaPrefix roa(Asn asn, String prefix, Integer maximumLength) {
-        return ValidatedRpkiObjects.RoaPrefix.of(null, asn, IpRange.parse(prefix), maximumLength, maximumLength != null ? maximumLength : IpRange.parse(prefix).getPrefixLength(), ImmutableSortedSet.of());
+        return ValidatedRpkiObjects.RoaPrefix.of(null, asn.longValue(), IpRange.parse(prefix), maximumLength, maximumLength != null ? maximumLength : IpRange.parse(prefix).getPrefixLength(), ImmutableSortedSet.of());
     }
 
     private BgpPreviewService createBgpPreviewService() {
@@ -211,7 +211,7 @@ public class BgpPreviewServiceTest {
 
     private IgnoreFilter ignoreFilter(Long asn, String prefix) {
         return new IgnoreFilter(10L,
-                asn == null ? null : new Asn(asn),
+                asn,
                 prefix == null ? null : IpRange.parse(prefix),
                 "comment");
     }

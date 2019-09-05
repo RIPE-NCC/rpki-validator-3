@@ -37,7 +37,7 @@ public class BgpSecFilter extends Slurm.SlurmBgpSecFilter {
     @Getter
     private Long id;
 
-    public BgpSecFilter(Long id, Asn asn, String ski, String comment) {
+    public BgpSecFilter(Long id, Long asn, String ski, String comment) {
         super(asn, ski, comment);
         this.id = id;
     }

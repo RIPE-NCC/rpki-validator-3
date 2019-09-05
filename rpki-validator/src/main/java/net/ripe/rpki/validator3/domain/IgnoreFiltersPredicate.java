@@ -49,7 +49,7 @@ public class IgnoreFiltersPredicate implements Predicate<RoaPrefixDefinition> {
         ignoreFilterStream.forEach(filter -> {
             IpRange prefix = filter.getPrefix();
             if (prefix == null) {
-                ignoredAsns.add(filter.getAsn());
+                ignoredAsns.add(new Asn(filter.getAsn()));
             } else {
                 IpResourceSet existing = ignoredPrefixes.findExact(prefix);
                 if (existing == null) {
@@ -59,7 +59,7 @@ public class IgnoreFiltersPredicate implements Predicate<RoaPrefixDefinition> {
                 if (filter.getAsn() == null) {
                     existing.add(new Asn(Asn.ASN_MIN_VALUE).upTo(new Asn(Asn.ASN32_MAX_VALUE)));
                 } else {
-                    existing.add(filter.getAsn());
+                    existing.add(new Asn(filter.getAsn()));
                 }
             }
         });
@@ -67,10 +67,10 @@ public class IgnoreFiltersPredicate implements Predicate<RoaPrefixDefinition> {
 
     @Override
     public boolean test(RoaPrefixDefinition roaPrefix) {
-        if (ignoredAsns.contains(roaPrefix.getAsn())) {
+        if (ignoredAsns.contains(new Asn(roaPrefix.getAsn()))) {
             return true;
         }
         IpResourceSet filter = ignoredPrefixes.findExactOrFirstLessSpecific(roaPrefix.getPrefix());
-        return filter != null && filter.contains(roaPrefix.getAsn());
+        return filter != null && filter.contains(new Asn(roaPrefix.getAsn()));
     }
 }

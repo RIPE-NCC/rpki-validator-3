@@ -204,7 +204,7 @@ public class ValidatedRpkiObjects {
     @Value(staticConstructor = "of")
     public static class RoaPrefix implements RoaPrefixDefinition {
         TrustAnchorData trustAnchor;
-        Asn asn;
+        long asn;
         IpRange prefix;
         Integer maximumLength;
         int effectiveLength;
@@ -254,7 +254,7 @@ public class ValidatedRpkiObjects {
                 net.ripe.rpki.validator3.storage.data.RoaPrefix prefix = data.getRight();
                 builder.add(RoaPrefix.of(
                     trustAnchor,
-                    new Asn(prefix.getAsn()),
+                    prefix.getAsn(),
                     prefix.getPrefix(),
                     prefix.getMaximumLength(),
                     prefix.getEffectiveLength(),

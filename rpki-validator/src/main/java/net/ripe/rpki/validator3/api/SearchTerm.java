@@ -41,7 +41,7 @@ import static net.ripe.ipresource.IpResourceType.IPv4;
 public class SearchTerm implements Predicate<ValidatedRpkiObjects.RoaPrefix> {
     private final String term;
     private final IpRange range;
-    private final Asn asn;
+    private final Long asn;
     private final Predicate<ValidatedRpkiObjects.RoaPrefix> actualPredicate;
 
     private final static int IPv4_PREFIX_LENGTH = 32;
@@ -56,7 +56,7 @@ public class SearchTerm implements Predicate<ValidatedRpkiObjects.RoaPrefix> {
 
     private Predicate<ValidatedRpkiObjects.RoaPrefix> createPredicate() {
         if (asn != null) {
-            return prefix -> asn.equals(prefix.getAsn());
+            return prefix -> asn == prefix.getAsn();
         }
 
         if (range != null) {
@@ -68,7 +68,7 @@ public class SearchTerm implements Predicate<ValidatedRpkiObjects.RoaPrefix> {
                         prefix.getLocations().stream().anyMatch(uri -> uri.contains(term));
     }
 
-    public Asn asAsn() {
+    public Long asAsn() {
         return asn;
     }
 
@@ -84,9 +84,9 @@ public class SearchTerm implements Predicate<ValidatedRpkiObjects.RoaPrefix> {
         return actualPredicate.test(prefix);
     }
 
-    private Asn convertAsn(String value) {
+    private Long convertAsn(String value) {
         try {
-            return Asn.parse(value);
+            return Asn.parse(value).longValue();
         } catch (Exception e) {
             return null;
         }

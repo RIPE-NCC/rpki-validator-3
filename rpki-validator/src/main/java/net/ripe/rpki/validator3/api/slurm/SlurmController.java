@@ -73,8 +73,8 @@ public class SlurmController {
     }
 
     @GetMapping
-    public ResponseEntity<Slurm> slurm() {
-        return ResponseEntity.ok(slurmService.get());
+    public ResponseEntity<String> slurm() {
+        return ResponseEntity.ok(GsonCoder.getGson().toJson(slurmService.get()));
     }
 
     // FIXME Do something to force browser's save file prompt instead of rendering JSON
