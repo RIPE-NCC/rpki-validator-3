@@ -123,7 +123,7 @@ public class ValidatedRpkiObjects {
                                     roaPrefixesAndRouterCertificates.getRoaPrefixes().size(),
                                     roaPrefixesAndRouterCertificates.getRouterCertificates().size()
                             );
-                            Locks.locked(dataLock.writeLock(), () ->
+                            Locks.locked(dataLock.writeLock(), (Runnable)() ->
                                     validatedObjectsByTrustAnchor.put(trustAnchor.key().asLong(), roaPrefixesAndRouterCertificates));
                             notifyListeners();
                         }));

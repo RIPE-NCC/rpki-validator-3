@@ -159,10 +159,5 @@ public abstract class XodusTx implements AutoCloseable {
 
     @Override
     public void close() {
-//        jetbrains.exodus.ExodusException: Transaction is already finished ???
-//        final Transaction txn = txn();
-//        if (!txn.isReadonly()) {
-//            txn.flush();
-//        }
     }
 }
