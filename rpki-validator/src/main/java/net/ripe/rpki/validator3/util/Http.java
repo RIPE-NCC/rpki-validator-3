@@ -72,6 +72,7 @@ public class Http {
             HttpProxy proxy = new HttpProxy(proxyHost, proxyPort);
             proxyConfig.getProxies().add(proxy);
         }
+        httpClient.setSocketAddressResolver(new HappyEyeballsResolver());
         return httpClient;
     }
 
