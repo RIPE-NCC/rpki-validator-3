@@ -171,20 +171,23 @@ public class HappyEyeballsResolver implements SocketAddressResolver {
 
     private static Runnable dnsLookupRunnable(Name hostname, int queryType, Queue<InetAddress> resolvedAddresses) {
         return () -> {
-            final Lookup lookup = new Lookup(hostname, queryType, DClass.IN);
-            final Record[] records = lookup.run();
-            if (records != null) {
-                for (Record record : records) {
-                    InetAddress address = null;
-                    if (record instanceof AAAARecord) {
-                        address = ((AAAARecord) record).getAddress();
-                    } else if (record instanceof ARecord) {
-                        address = ((ARecord) record).getAddress();
+            try {
+                final Lookup lookup = new Lookup(hostname, queryType, DClass.IN);
+                final Record[] records = lookup.run();
+                if (records != null) {
+                    for (Record record : records) {
+                        InetAddress address = null;
+                        if (record instanceof AAAARecord) {
+                            address = ((AAAARecord) record).getAddress();
+                        } else if (record instanceof ARecord) {
+                            address = ((ARecord) record).getAddress();
+                        }
+                        if (address != null) resolvedAddresses.add(address);
                     }
-                    if (address != null) resolvedAddresses.add(address);
                 }
+            } finally {
+                resolvedAddresses.add(ADDRESSES_TERMINATOR);
             }
-            resolvedAddresses.add(ADDRESSES_TERMINATOR);
         };
     }
 
