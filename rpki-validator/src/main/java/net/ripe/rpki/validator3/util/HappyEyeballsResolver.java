@@ -237,7 +237,7 @@ public class HappyEyeballsResolver implements SocketAddressResolver {
     }
 
     private static boolean queueExhausted(Queue<InetAddress> queue) {
-        return !queue.isEmpty() && queue.peek() == ADDRESSES_TERMINATOR;
+        return queue.peek() == ADDRESSES_TERMINATOR;
     }
 
     private static InetAddress addressesTerminator() {
