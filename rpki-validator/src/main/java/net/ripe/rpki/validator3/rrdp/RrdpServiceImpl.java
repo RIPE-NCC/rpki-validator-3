@@ -117,9 +117,10 @@ public class RrdpServiceImpl implements RrdpService {
         if (notification.sessionId.equals(rpkiRepository.getRrdpSessionId())) {
             if (rpkiRepository.getRrdpSerial().compareTo(notification.serial) <= 0) {
                 try {
-                    final List<Delta> deltas = notification.deltas.parallelStream().
+                    final List<Delta> deltas = notification.deltas.stream().
                             filter(d -> d.getSerial().compareTo(rpkiRepository.getRrdpSerial()) > 0).
                             sorted(Comparator.comparing(DeltaInfo::getSerial)).
+                            parallel().
                             map(di -> readDelta(notification, di)).
                             collect(Collectors.toList());
 
