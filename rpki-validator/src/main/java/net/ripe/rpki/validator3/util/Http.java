@@ -37,6 +37,8 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -72,7 +74,7 @@ public class Http {
             HttpProxy proxy = new HttpProxy(proxyHost, proxyPort);
             proxyConfig.getProxies().add(proxy);
         }
-        httpClient.setSocketAddressResolver(new HappyEyeballsResolver());
+        httpClient.setSocketAddressResolver(new HappyEyeballsResolver(httpClient));
         return httpClient;
     }
 

@@ -30,6 +30,7 @@
 package net.ripe.rpki.validator3.util;
 
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.xbill.DNS.AAAARecord;
@@ -52,6 +53,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -65,57 +67,68 @@ public class HappyEyeballsResolver implements SocketAddressResolver {
     // delays from RFC8305/Section 8
     private static final long RESOLUTION_DELAY_MILLIS = 50L;
     private static final long CONNECTION_ATTEMPT_DELAY_MS = 250L;
+    private final HttpClient httpClient;
+
+    public HappyEyeballsResolver(HttpClient httpClient) {
+        this.httpClient = httpClient;
+    }
 
     @Override
     public void resolve(String host, int port, Promise<List<InetSocketAddress>> promise) {
-        try {
-            final Name hostname = Name.fromString(host);
-            InetSocketAddress bestAddress;
-
-            final ConcurrentLinkedQueue<Optional<InetAddress>> resolvedAddressesV6 = new ConcurrentLinkedQueue<>();
-            final Thread v6thread = new Thread(dnsLookupRunnable(hostname, Type.AAAA, resolvedAddressesV6));
-            v6thread.start();
-
-            final ConcurrentLinkedQueue<Optional<InetAddress>> resolvedAddressesV4 = new ConcurrentLinkedQueue<>();
-            final Thread v4thread = new Thread(dnsLookupRunnable(hostname, Type.A, resolvedAddressesV4));
-            v4thread.start();
-
-            awaitDnsResponses(resolvedAddressesV6, resolvedAddressesV4);
-
-            if (log.isDebugEnabled()) {
-                log.debug("Resolved v6 addresses: {}",
-                        joinAddresses(resolvedAddressesV6));
-                log.debug("Resolved v4 addresses: {}",
-                        joinAddresses(resolvedAddressesV4));
-            }
-
+        final Executor executor = httpClient.getExecutor();
+        executor.execute(() -> {
             final ConcurrentLinkedQueue<Optional<SocketChannel>> sockets = new ConcurrentLinkedQueue<>();
-            final Thread connectionsThread =
+            try {
+                final Name hostname = Name.fromString(host);
+                InetSocketAddress bestAddress;
+
+                final ConcurrentLinkedQueue<Optional<InetAddress>> resolvedAddressesV6 = new ConcurrentLinkedQueue<>();
+                executor.execute(dnsLookupRunnable(hostname, Type.AAAA, resolvedAddressesV6));
+
+                final ConcurrentLinkedQueue<Optional<InetAddress>> resolvedAddressesV4 = new ConcurrentLinkedQueue<>();
+                executor.execute(dnsLookupRunnable(hostname, Type.A, resolvedAddressesV4));
+
+                awaitDnsResponses(resolvedAddressesV6, resolvedAddressesV4);
+
+                if (log.isDebugEnabled()) {
+                    log.debug("Resolved v6 addresses: {} for host {}", joinAddresses(resolvedAddressesV6), host);
+                    log.debug("Resolved v4 addresses: {} for host {}", joinAddresses(resolvedAddressesV4), host);
+                }
+
+                final Thread connectionsThread =
                     new Thread(connectAttemptsRunnable(resolvedAddressesV6, resolvedAddressesV4, sockets, port));
-            connectionsThread.start();
+                connectionsThread.start();
 
-            bestAddress = (InetSocketAddress) awaitSuccessfulConnection(sockets);
-            if (bestAddress == null) {
-                promise.failed(new UnknownHostException(host));
-            } else {
-                promise.succeeded(Collections.singletonList(bestAddress));
-            }
+                bestAddress = (InetSocketAddress) awaitSuccessfulConnection(sockets);
+                if (bestAddress == null) {
+                    promise.failed(new UnknownHostException(host));
+                } else {
+                    promise.succeeded(Collections.singletonList(bestAddress));
+                }
 
-            connectionsThread.interrupt();
-            v6thread.interrupt();
-            v4thread.interrupt();
-            for (Optional<SocketChannel> channelOptional : sockets) {
-                channelOptional.ifPresent(channel -> {
-                    try {
-                        channel.close();
-                    } catch (Exception e) {
-                        // ignore
-                    }
-                });
+                connectionsThread.interrupt();
+
+                try {
+                    connectionsThread.join();
+                } catch (Exception ignore) {
+                }
+
+            } catch (Exception e) {
+                log.warn("Error during looking for happy eyeballs: ", e);
+                promise.failed(e);
+            } finally {
+                for (Optional<SocketChannel> channelOptional : sockets) {
+                    channelOptional.ifPresent(HappyEyeballsResolver::closeAnyway);
+                }
             }
+        });
+    }
+
+    private static void closeAnyway(SocketChannel channel) {
+        try {
+            channel.close();
         } catch (Exception e) {
-            log.warn("Error during looking for happy eyeballs: ", e);
-            promise.failed(e);
+            // ignore
         }
     }
 
@@ -148,6 +161,7 @@ public class HappyEyeballsResolver implements SocketAddressResolver {
                         if (log.isDebugEnabled()) {
                             log.debug("Error connecting to " + socketChannel.getRemoteAddress(), e);
                         }
+                        closeAnyway(socketChannel);
                         iterator.remove();
                     }
                 } else {
