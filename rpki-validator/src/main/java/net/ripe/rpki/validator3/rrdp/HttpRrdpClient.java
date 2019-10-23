@@ -73,9 +73,8 @@ public class HttpRrdpClient implements RrdpClient {
             return Http.readStream(() -> {
                 final Request request = httpClient.newRequest(uri);
                 final String version = buildInformation.getVersion();
-                request.header("User-Agent", "RIPE NCC RPKI Validator/" +
-                        version +
-                        " (+https://github.com/RIPE-NCC/rpki-validator-3)");
+                request.header("User-Agent", null);
+                request.header("User-Agent", "RIPE NCC RPKI Validator/" + version);
                 return request;
             }, reader);
         } catch (Exception e) {

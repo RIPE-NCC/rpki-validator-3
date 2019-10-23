@@ -29,7 +29,6 @@
  */
 package net.ripe.rpki.validator3.api.health;
 
-import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
@@ -48,6 +47,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -74,25 +75,32 @@ public class HealthController {
     private Storage storage;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<Health>> health() {
+    public ResponseEntity<ApiResponse<?>> health() {
 
-        final Map<String, Boolean> trustAnchorReady = storage.readTx(tx -> trustAnchors.getStatuses(tx)).stream().
+        try {
+            final Map<String, Boolean> trustAnchorReady = storage.readTx(tx -> trustAnchors.getStatuses(tx)).stream().
                 collect(Collectors.toMap(
-                        TaStatus::getTaName,
-                        TaStatus::isCompletedValidation)
+                    TaStatus::getTaName,
+                    TaStatus::isCompletedValidation)
                 );
 
-        final Map<String, Boolean> bgpDumpReady = bgpPreviewService.getBgpDumps().stream().
+            final Map<String, Boolean> bgpDumpReady = bgpPreviewService.getBgpDumps().stream().
                 collect(Collectors.toMap(
-                        BgpRisDump::getUrl,
-                        dmp -> dmp.getLastModified() != null
+                    BgpRisDump::getUrl,
+                    dmp -> dmp.getLastModified() != null
                 ));
 
-        final Map<String, String> databaseStatus = databaseStatus();
+            final Map<String, String> databaseStatus = databaseStatus();
 
-        return ResponseEntity.ok(ApiResponse.<Health>builder()
-                .data(Health.of(trustAnchorReady, bgpDumpReady, databaseStatus, buildInformation))
+
+            return ResponseEntity.ok(ApiResponse.<Health>builder()
+                .data(Health.of("OK", trustAnchorReady, bgpDumpReady, databaseStatus, buildInformation))
                 .build());
+        } catch (Exception e) {
+            return ResponseEntity.ok(ApiResponse.<String>builder()
+                .data("ERROR: " + e.getMessage())
+                .build());
+        }
     }
 
     @GetMapping(path = "/backgrounds")
@@ -103,24 +111,25 @@ public class HealthController {
     }
 
     @GetMapping(path = "/all-ta-completed")
-    public ResponseEntity<ApiResponse<String>> statuses() {
+    public ResponseEntity<ApiResponse<?>> statuses() {
         List<TaStatus> statuses = storage.readTx(tx -> trustAnchors.getStatuses(tx));
 
-        Boolean allComplete = statuses.stream().filter(TaStatus::isCompletedValidation).count() >= 5;
+        boolean allComplete = statuses.stream().filter(TaStatus::isCompletedValidation).count() >= 4;
 
-        Instant twoHoursAgo = Instant.now().minusSeconds(7200L);
-        Boolean completedRecently = statuses.stream()
-                .map(s -> Dates.parseUTC(s.getLastUpdated()))
-                .sorted()
-                .findFirst()
-                .map(i -> i.isAfter(twoHoursAgo)).orElse(false);
+        final OffsetDateTime utc = OffsetDateTime.now(ZoneOffset.UTC);
+        final Instant twoHoursAgo = utc.toInstant().minusSeconds(7200L);
+        final Map<String, String> lateTAs = statuses.stream().
+            filter(s -> Dates.parseUTC(s.getLastUpdated()).isBefore(twoHoursAgo))
+            .collect(Collectors.toMap(TaStatus::getTaName, TaStatus::getLastUpdated));
 
-        if (allComplete && completedRecently)
-            return ResponseEntity.ok(ApiResponse.<String>builder()
-                    .data("OK")
-                    .build());
-        else
-            return ResponseEntity.noContent().build();
+        if (allComplete && lateTAs.isEmpty()) {
+            return ResponseEntity.ok(ApiResponse.builder()
+                .data("OK")
+                .build());
+        }
+        return ResponseEntity.ok(ApiResponse.builder()
+            .data(lateTAs)
+            .build());
     }
 
 

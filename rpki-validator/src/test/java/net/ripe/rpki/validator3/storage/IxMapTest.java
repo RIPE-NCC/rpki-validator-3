@@ -59,9 +59,6 @@ import static org.junit.Assert.assertTrue;
 
 public abstract class IxMapTest {
 
-    @Rule
-    public final TemporaryFolder tmp = new TemporaryFolder();
-
     protected IxMap<String> ixMap;
 
     protected static final String LENGTH_INDEX = "length-index";

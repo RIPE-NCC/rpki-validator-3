@@ -43,6 +43,7 @@ import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSSignedDataParser;
 import org.bouncycastle.cms.CMSTypedStream;
 import org.jooq.lambda.Unchecked;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -65,6 +66,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
+@Ignore
 public class FSTraversalBCNoValidateTest {
 
 

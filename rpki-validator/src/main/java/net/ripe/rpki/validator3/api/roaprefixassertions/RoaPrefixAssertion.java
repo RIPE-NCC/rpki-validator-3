@@ -43,7 +43,7 @@ public class RoaPrefixAssertion extends Slurm.SlurmPrefixAssertion {
     @Getter
     private Long id;
 
-    public RoaPrefixAssertion(Long id, Asn asn, IpRange prefix,
+    public RoaPrefixAssertion(Long id, Long asn, IpRange prefix,
                               @Min(0) @Max(128) Integer maxPrefixLength,
                               @Size(max = 2000) String comment) {
         super(asn, prefix, maxPrefixLength, comment);

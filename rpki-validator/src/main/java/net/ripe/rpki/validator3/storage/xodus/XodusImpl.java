@@ -42,8 +42,6 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.io.File;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @Profile("!test")
 @Component
@@ -52,7 +50,6 @@ import java.util.concurrent.Executors;
 public class XodusImpl extends Xodus {
 
     private final String path;
-    private ExecutorService oneThread = Executors.newSingleThreadExecutor();
 
     private Environment env;
 

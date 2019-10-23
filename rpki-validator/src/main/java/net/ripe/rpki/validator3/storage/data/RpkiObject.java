@@ -48,6 +48,7 @@ import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.storage.Binary;
 import net.ripe.rpki.validator3.util.Bench;
 import net.ripe.rpki.validator3.util.Sha256;
+import org.joda.time.DateTime;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -119,12 +120,14 @@ public class RpkiObject extends Base<RpkiObject> {
             this.type = Type.ROUTER_CER;
         } else if (object instanceof X509Crl) {
             this.serialNumber = ((X509Crl) object).getNumber();
-            this.signingTime = Instant.ofEpochMilli(((X509Crl) object).getThisUpdateTime().getMillis());
+            final DateTime signingTime = ((X509Crl) object).getThisUpdateTime();
+            this.signingTime = signingTime != null ? Instant.ofEpochMilli(signingTime.getMillis()) : null;
             this.authorityKeyIdentifier = ((X509Crl) object).getAuthorityKeyIdentifier();
             this.type = Type.CRL;
         } else if (object instanceof RpkiSignedObject) {
             this.serialNumber = ((RpkiSignedObject) object).getCertificate().getSerialNumber();
-            this.signingTime = Instant.ofEpochMilli(((RpkiSignedObject) object).getSigningTime().getMillis());
+            final DateTime signingTime = ((RpkiSignedObject) object).getSigningTime();
+            this.signingTime = signingTime != null ? Instant.ofEpochMilli(signingTime.getMillis()) : null;
             this.authorityKeyIdentifier = ((RpkiSignedObject) object).getCertificate().getAuthorityKeyIdentifier();
             if (object instanceof ManifestCms) {
                 this.type = Type.MFT;

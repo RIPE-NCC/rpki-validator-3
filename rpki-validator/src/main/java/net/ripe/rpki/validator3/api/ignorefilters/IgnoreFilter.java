@@ -45,12 +45,12 @@ public class IgnoreFilter extends Slurm.SlurmPrefixFilter {
     @Getter
     private List<ObjectController.RoaPrefix> affectedRoas;
 
-    public IgnoreFilter(long id, Asn asn, IpRange prefix, String comment) {
+    public IgnoreFilter(long id, Long asn, IpRange prefix, String comment) {
         super(asn, prefix, comment);
         this.id = id;
     }
 
-    public IgnoreFilter(long id, Asn asn, IpRange prefix, String comment, List<ObjectController.RoaPrefix> affectedRoas) {
+    public IgnoreFilter(long id, Long asn, IpRange prefix, String comment, List<ObjectController.RoaPrefix> affectedRoas) {
         super(asn, prefix, comment);
         this.id = id;
         this.affectedRoas = affectedRoas;

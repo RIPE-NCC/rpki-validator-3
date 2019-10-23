@@ -37,7 +37,7 @@ public class BgpSecAssertion extends Slurm.SlurmBgpSecAssertion {
     @Getter
     private Long id;
 
-    public BgpSecAssertion(Long id, Asn asn, String comment, String ski, String publicKey) {
+    public BgpSecAssertion(Long id, Long asn, String comment, String ski, String publicKey) {
         super(asn, comment, ski, publicKey);
         this.id = id;
     }

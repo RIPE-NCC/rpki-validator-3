@@ -124,9 +124,8 @@ public class RoaPrefixAssertionsController {
     }
 
     private RoaPrefixAssertionResource toResource(RoaPrefixAssertion assertion) {
-        Asn asn = assertion.getAsn();
+        Long asn = assertion.getAsn();
         List<BgpPreviewService.BgpPreviewEntry> affected = bgpPreviewService.findAffected(
-            asn,
             assertion.getPrefix(),
             assertion.getMaxPrefixLength()
         );

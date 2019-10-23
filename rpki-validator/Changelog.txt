@@ -1,3 +1,9 @@
+* Fri Oct 18 2019 Oleg Muravskiy <oleg@ripe.net> - 3.1
+- Add Happy Eeyballs address resolver for HTTP requests from the validator.
+
+* Fri Oct 18 2019 Mikhail Puzanov <mpuzanovg@ripe.net> - 3.1
+- Fix SLURM support according to RFC 8416.
+
 * Tue Jul 2 2019 Mikhail Puzanov <mpuzanov@ripe.net> - 3.1
 - Minimize memory consumption and disk requirement by dropping Hibernate/H2 database,
   and use Xodus https://github.com/JetBrains/xodus as persistence instead.

@@ -29,8 +29,9 @@
  */
 package net.ripe.rpki.validator3.util;
 
-import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
+import java.util.function.Supplier;
 
 public class Locks {
     public static void locked(Lock lock, Runnable s) {
@@ -42,17 +43,10 @@ public class Locks {
         }
     }
 
-    public static <T> T locked(Lock lock, Callable<T> c) {
-        lock.lock();
-        try {
-            try {
-                return c.call();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        } finally {
-            lock.unlock();
-        }
+    public static <T> T locked(Lock lock, Supplier<T> s) {
+        AtomicReference<T> r = new AtomicReference<>();
+        locked(lock, () -> r.set(s.get()));
+        return r.get();
     }
 
 }

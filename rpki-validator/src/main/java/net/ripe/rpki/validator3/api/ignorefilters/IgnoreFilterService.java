@@ -69,7 +69,7 @@ public class IgnoreFilterService {
     public long execute(@Valid AddIgnoreFilter command) {
         return slurmStore.updateWith(slurmExt -> {
             final Slurm.SlurmPrefixFilter ignoreFilter = new Slurm.SlurmPrefixFilter();
-            ignoreFilter.setAsn(Asn.parse(command.getAsn()));
+            ignoreFilter.setAsn(Asn.parse(command.getAsn()).longValue());
             ignoreFilter.setPrefix(IpRange.parse(command.getPrefix()));
             ignoreFilter.setComment(command.getComment());
 
