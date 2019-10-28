@@ -10,5 +10,8 @@ ExecStart=/usr/bin/rpki-rtr-server.sh
 User=rpki
 Group=rpki
 
+# restart on OOM
+RestartForceExitStatus=3
+
 [Install]
 WantedBy=multi-user.target
