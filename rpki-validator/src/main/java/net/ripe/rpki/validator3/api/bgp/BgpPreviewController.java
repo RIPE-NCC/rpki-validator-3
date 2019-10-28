@@ -44,11 +44,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.validation.Valid;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @RestController
@@ -98,12 +104,35 @@ public class BgpPreviewController {
                 .build());
     }
 
+
+    @PostMapping(path = "/bulk-validity", consumes = {Api.API_MIME_TYPE, "application/json"})
+    public ResponseEntity<ApiResponse<Set<BgpPreviewService.BgpValidityWithFilteredResource>>> validity(
+        @RequestBody @Valid List<ValidityRequest> asnAndPrefix) {
+
+        Set<BgpPreviewService.BgpValidityWithFilteredResource> validity = asnAndPrefix.stream().map(d ->
+            bgpPreviewService.validity(
+                arg(() -> Asn.parse(d.asn)),
+                arg(() -> IpRange.parse(d.prefix))
+            )).collect(Collectors.toSet());
+
+        return ResponseEntity.ok(ApiResponse.<Set<BgpPreviewService.BgpValidityWithFilteredResource>>builder()
+            .data(validity)
+            .metadata(Metadata.of(validity.size()))
+            .build());
+    }
+
     private static <T> T arg(Supplier<T> s) {
         try  {
             return s.get();
         } catch (Exception e) {
             throw new HttpMessageNotReadableException(e.getMessage());
         }
+    }
+
+    @Value
+    public static class ValidityRequest {
+        private String asn;
+        private String prefix;
     }
 
     @Value(staticConstructor = "of")
