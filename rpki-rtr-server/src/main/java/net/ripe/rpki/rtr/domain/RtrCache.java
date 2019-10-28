@@ -50,6 +50,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component
 @Slf4j
@@ -91,6 +92,10 @@ public class RtrCache {
     }
 
     public Optional<SerialNumber> update(Collection<RtrDataUnit> updatedPdus) {
+        return update(updatedPdus.stream());
+    }
+
+    public Optional<SerialNumber> update(Stream<RtrDataUnit> updatedPdus) {
         return Locks.locked(lock.writeLock(), () -> {
             ready = true;
             if (data.updateValues(updatedPdus)) {
