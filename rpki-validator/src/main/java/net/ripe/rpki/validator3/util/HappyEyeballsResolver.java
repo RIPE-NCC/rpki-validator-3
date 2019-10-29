@@ -141,8 +141,11 @@ public class HappyEyeballsResolver implements SocketAddressResolver {
     }
 
     private static SocketAddress awaitSuccessfulConnection(ConcurrentLinkedQueue<Optional<SocketChannel>> sockets) throws IOException {
+        final long startTime = System.nanoTime();
+        final long sleepDeadline = startTime + TimeUnit.MILLISECONDS.toNanos(100);
+        final long deadline = startTime + TimeUnit.SECONDS.toNanos(10);
         boolean keepGoing = true;
-        while (keepGoing) {
+        while (keepGoing && haveTime(deadline)) {
             final Iterator<Optional<SocketChannel>> iterator = sockets.iterator();
             int count = 0;
             while (iterator.hasNext()) {
@@ -171,12 +174,21 @@ public class HappyEyeballsResolver implements SocketAddressResolver {
                     break;
                 }
             }
+            if (!haveTime(sleepDeadline)) {
+                try {
+                    TimeUnit.MILLISECONDS.sleep(100);
+                } catch (InterruptedException ignored) {
+                    keepGoing = false;
+                }
+            }
         }
         return null;
     }
 
     private static void awaitDnsResponses(ConcurrentLinkedQueue<Optional<InetAddress>> resolvedAddressesV6,
                                           ConcurrentLinkedQueue<Optional<InetAddress>> resolvedAddressesV4) {
+        final long startTime = System.nanoTime();
+        final long sleepDeadline = startTime + TimeUnit.MILLISECONDS.toNanos(100);
         boolean keepGoing = true;
         while (resolvedAddressesV6.isEmpty() && keepGoing) {
             if (!resolvedAddressesV4.isEmpty()) {
@@ -185,6 +197,13 @@ public class HappyEyeballsResolver implements SocketAddressResolver {
                     if (!resolvedAddressesV6.isEmpty()) break;
                 }
                 keepGoing = false;
+            }
+            if (!haveTime(sleepDeadline)) {
+                try {
+                    TimeUnit.MILLISECONDS.sleep(100);
+                } catch (InterruptedException ignored) {
+                    keepGoing = false;
+                }
             }
         }
     }
