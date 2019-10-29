@@ -1,3 +1,10 @@
+* Tue Oct 29 2019 Oleg Muravskiy <oleg@ripe.net> - 3.1
+- Fix CPU utilisation by the Happy Eeyballs resolver.
+
+* Tue Oct 29 2019 Mikhail Puzanov <mpuzanovg@ripe.net> - 3.1
+- Property 'rpki.validator.rrdp.repository.download.interval' added to tune the period between
+  RRDP trust anchors re-validations.
+
 * Fri Oct 18 2019 Oleg Muravskiy <oleg@ripe.net> - 3.1
 - Add Happy Eeyballs address resolver for HTTP requests from the validator.
 
