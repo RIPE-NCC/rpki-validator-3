@@ -44,6 +44,7 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class VersionedSet<T extends Comparable<T>> {
 
@@ -67,6 +68,10 @@ public class VersionedSet<T extends Comparable<T>> {
     }
 
     public boolean updateValues(Collection<T> newValues) {
+        return updateValues(newValues.stream());
+    }
+
+    public boolean updateValues(Stream<T> newValues) {
         SortedSet<T> updatedValues = Collections.unmodifiableSortedSet(newSortedSet(newValues));
         if (values.equals(updatedValues)) {
             return false;
@@ -156,5 +161,9 @@ public class VersionedSet<T extends Comparable<T>> {
 
     private static <T> SortedSet<T> newSortedSet(Collection<? extends T> values) {
         return new TreeSet<>(values);
+    }
+
+    private static <T> SortedSet<T> newSortedSet(Stream<? extends T> values) {
+        return values.collect(Collectors.toCollection(TreeSet::new));
     }
 }

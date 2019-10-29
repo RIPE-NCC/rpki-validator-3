@@ -69,7 +69,6 @@ import java.util.TreeMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -340,7 +339,7 @@ public class BgpPreviewService {
                 dump.getEntries().ifPresent(entries -> {
                     ImmutableList.Builder<BgpPreviewEntry> bgpRisEntries = ImmutableList.builder();
                     for (BgpRisEntry entry : entries) {
-                        if (entry.getVisibility() >= bgpRisVisibilityThreshold) {
+                        if (entry.getVisibility() >= bgpRisVisibilityThreshold && makesSenseToShowInPreview(entry)) {
                             bgpRisEntries.add(BgpPreviewEntry.of(
                                     entry.getOrigin(),
                                     entry.getPrefix(),
@@ -359,6 +358,11 @@ public class BgpPreviewService {
                     this.bgpRisDumps = updatedBgpDumps;
                 });
         });
+    }
+
+    private static boolean makesSenseToShowInPreview(BgpRisEntry entry) {
+        return !DEFAULT_IPV4_ROUTE.equals(entry.getPrefix()) &&
+            !DEFAULT_IPV6_ROUTE.equals(entry.getPrefix());
     }
 
     void updateValidatedRoaPrefixes(Stream<ValidatedRpkiObjects.RoaPrefix> prefixes) {

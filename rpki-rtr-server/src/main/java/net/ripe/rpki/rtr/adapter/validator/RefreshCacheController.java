@@ -47,8 +47,6 @@ import java.util.Base64;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toList;
-
 @Service
 @Slf4j
 public class RefreshCacheController {
@@ -85,7 +83,7 @@ public class RefreshCacheController {
                 Asn.parse(prefix.getAsn()),
                 IpRange.parse(prefix.getPrefix()),
                 prefix.getMaxLength()
-        )).distinct();
+        ));
 
         final Base64.Decoder decoder = Base64.getDecoder();
         final Stream<? extends RtrDataUnit> routerCertificates = validatedObjects.getRouterCertificates().stream().flatMap(rc ->
@@ -94,10 +92,9 @@ public class RefreshCacheController {
                     return RtrRouterKey.of(decoder.decode(rc.subjectKeyIdentifier), decoder.decode(rc.subjectPublicKeyInfo), asn);
                 }));
 
-        final List<RtrDataUnit> cacheEntries = Stream.concat(roaPrefixes, routerCertificates).collect(toList());
-        cache.update(cacheEntries).ifPresent(updatedSerialNumber -> {
-            clients.cacheUpdated(cache.getSessionId(), updatedSerialNumber);
-        });
+        cache.update(Stream.concat(roaPrefixes, routerCertificates))
+            .ifPresent(updatedSerialNumber ->
+                clients.cacheUpdated(cache.getSessionId(), updatedSerialNumber));
     }
 
     @lombok.Value
