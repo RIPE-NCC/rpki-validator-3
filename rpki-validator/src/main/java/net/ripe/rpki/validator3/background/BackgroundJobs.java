@@ -50,6 +50,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
+import java.util.SortedMap;
 import java.util.TreeMap;
 
 import static org.quartz.DateBuilder.IntervalUnit.MINUTE;
@@ -160,7 +161,7 @@ public class BackgroundJobs extends JobListenerSupport {
         return "Background jobs stat collector";
     }
 
-    public Map<String, Execution> getStat() {
+    public SortedMap<String, Execution> getStat() {
         synchronized (backgroundJobStats) {
             return backgroundJobStats;
         }

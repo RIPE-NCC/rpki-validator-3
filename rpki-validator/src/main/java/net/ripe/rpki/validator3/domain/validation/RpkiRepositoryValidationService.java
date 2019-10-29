@@ -88,7 +88,6 @@ public class RpkiRepositoryValidationService {
 
     private final RrdpService rrdpService;
     private final File rsyncLocalStorageDirectory;
-    private final Duration rsyncRepositoryDownloadInterval;
     private final ValidationRuns validationRuns;
     private final RpkiRepositories rpkiRepositories;
     private final RpkiObjects rpkiObjects;
@@ -105,7 +104,6 @@ public class RpkiRepositoryValidationService {
             TrustAnchors trustAnchors,
             Storage storage,
             @Value("${rpki.validator.rsync.local.storage.directory}") File rsyncLocalStorageDirectory,
-            @Value("${rpki.validator.rsync.repository.download.interval}") String rsyncRepositoryDownloadInterval,
             ValidationScheduler validationScheduler) {
         this.validationRuns = validationRuns;
         this.rpkiRepositories = rpkiRepositories;
@@ -113,7 +111,6 @@ public class RpkiRepositoryValidationService {
         this.rrdpService = rrdpService;
         this.trustAnchors = trustAnchors;
         this.rsyncLocalStorageDirectory = rsyncLocalStorageDirectory;
-        this.rsyncRepositoryDownloadInterval = Duration.parse(rsyncRepositoryDownloadInterval);
         this.storage = storage;
         this.validationScheduler = validationScheduler;
     }
@@ -178,7 +175,7 @@ public class RpkiRepositoryValidationService {
     }
 
     public void validateRsyncRepositories() {
-        Instant cutoffTime = Instant.now().minus(rsyncRepositoryDownloadInterval);
+        Instant cutoffTime = Instant.now().minus(validationScheduler.getRsyncRepositoryDownloadInterval());
         log.info("updating all rsync repositories that have not been downloaded since {}", cutoffTime);
 
         Set<TrustAnchor> affectedTrustAnchors = new HashSet<>();
