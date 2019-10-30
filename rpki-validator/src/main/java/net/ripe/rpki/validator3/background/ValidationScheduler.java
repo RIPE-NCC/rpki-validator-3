@@ -30,6 +30,7 @@
 package net.ripe.rpki.validator3.background;
 
 import com.google.common.base.Preconditions;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
@@ -40,19 +41,30 @@ import org.quartz.SchedulerException;
 import org.quartz.SimpleScheduleBuilder;
 import org.quartz.TriggerBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Component;
+
+import java.time.Duration;
+import java.time.temporal.TemporalUnit;
 
 @Component
 @Slf4j
 public class ValidationScheduler {
 
     private final Scheduler scheduler;
+    @Getter
+    private final Duration rsyncRepositoryDownloadInterval;
+    private final Duration rrpdRepositoryDownloadInterval;
     private boolean enabled = true;
 
     @Autowired
-    public ValidationScheduler(Scheduler scheduler) {
+    public ValidationScheduler(Scheduler scheduler,
+                               @Value("${rpki.validator.rsync.repository.download.interval:PT10M}") String rsyncRepositoryDownloadInterval,
+                               @Value("${rpki.validator.rrdp.repository.download.interval:PT2M}") String rrpdRepositoryDownloadInterval) {
         this.scheduler = scheduler;
+        this.rsyncRepositoryDownloadInterval = Duration.parse(rsyncRepositoryDownloadInterval);
+        this.rrpdRepositoryDownloadInterval = Duration.parse(rrpdRepositoryDownloadInterval);
     }
 
     public void addTrustAnchor(TrustAnchor trustAnchor) {
@@ -70,7 +82,7 @@ public class ValidationScheduler {
                 TrustAnchorValidationJob.buildJob(trustAnchor),
                 TriggerBuilder.newTrigger()
                     .startNow()
-                    .withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(10))
+                    .withSchedule(SimpleScheduleBuilder.repeatSecondlyForever((int)rsyncRepositoryDownloadInterval.getSeconds()))
                     .build()
             );
             scheduler.addJob(CertificateTreeValidationJob.buildJob(trustAnchor), true);
@@ -126,7 +138,7 @@ public class ValidationScheduler {
                         RrdpRepositoryValidationJob.buildJob(rpkiRepository),
                         TriggerBuilder.newTrigger()
                                 .startNow()
-                                .withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(1))
+                                .withSchedule(SimpleScheduleBuilder.repeatSecondlyForever((int)rrpdRepositoryDownloadInterval.getSeconds()))
                                 .build()
                 );
             }
