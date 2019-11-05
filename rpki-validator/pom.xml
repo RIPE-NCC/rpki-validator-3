@@ -541,8 +541,10 @@
                                     <includes/>
                                     <excludes>**/.ignore.me</excludes>                                    
                                     <mapper>
-                                        <type>ls</type>
-                                        <prefix>/var/lib/</prefix>
+                                        <user>rpki</user>
+                                        <group>rpki</group>
+                                        <type>perm</type>
+                                        <prefix>/var/lib/rpki-validator</prefix>
                                     </mapper>
                                 </data>                                
                             </dataSet>
