@@ -1,18 +1,4 @@
 #!/bin/bash -e
 
-#chown -R  rpki:rpki /home/rpki/rpki-validator
-#chmod +x  /home/rpki/rpki-validator/scripts/*.sh
-#chmod 640 /home/rpki/rpki-validator/*.jar
-
-#cp /home/rpki/rpki-validator/scripts/rpki-validator-3.service /etc/systemd/system/rpki-validator-3.service
-
-#systemctl enable rpki-validator-3.service
-#if [ -d /run/systemd/system ]; then
-#        systemctl start rpki-validator-3.service
-#fi
-
-#case "$1" in
-#        configure)
-#        chown -R rpki:rpki "/home/rpki/rpki-validator"
-#;;
-#esac
+/bin/systemctl daemon-reload
+/bin/systemctl try-restart rpki-validator-3
