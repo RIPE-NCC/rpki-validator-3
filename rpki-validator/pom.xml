@@ -552,60 +552,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-<!--            <plugin>-->
-<!--                <groupId>com.aerse.maven</groupId>-->
-<!--                <artifactId>deb-maven-plugin</artifactId>-->
-<!--                <version>1.9</version>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <id>package</id>-->
-<!--                        <phase>package</phase>-->
-<!--                        <goals>-->
-<!--                            <goal>package</goal>-->
-<!--                        </goals>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--                <configuration>-->
-<!--                    <unixUserId>rpki</unixUserId>-->
-<!--                    <unixGroupId>rpki</unixGroupId>-->
-<!--                    <osDependencies>-->
-<!--                        <default-jre>>=8</default-jre>-->
-<!--                        <coreutils>>=8.26</coreutils>-->
-<!--                        <systemd></systemd>-->
-<!--                        <rsync></rsync>-->
-<!--                    </osDependencies>-->
-<!--&lt;!&ndash;                    <installDir>/</installDir>&ndash;&gt;-->
-<!--&lt;!&ndash;                    <attachArtifact>true</attachArtifact>&ndash;&gt;-->
-<!--                    <javaServiceWrapper>false</javaServiceWrapper>-->
-<!--                    <fileSets>-->
-<!--                        <fileSet>-->
-<!--                            <source>${basedir}/src/main/resources/packaging/deb/scripts/rpki-validator-3.sh</source>-->
-<!--                            <target>usr/bin/rpki-validator-3.sh</target>-->
-<!--                        </fileSet>-->
-<!--                        <fileSet>-->
-<!--                            <source>${basedir}/src/main/resources/packaging/deb/scripts/upload-tal.sh</source>-->
-<!--                            <target>usr/bin/upload-tal.sh</target>-->
-<!--                        </fileSet>-->
-<!--                        <fileSet>-->
-<!--                            <source>${basedir}/src/main/resources/packaging/deb/scripts/rpki-validator-3.service</source>-->
-<!--                            <target>usr/bin/upload-tal.sh</target>-->
-<!--                        </fileSet>-->
-<!--                        <fileSet>-->
-<!--                            <source>${basedir}/src/main/resources/packaging/deb/conf</source>-->
-<!--                            <target>etc/systemd/system/</target>-->
-<!--                        </fileSet>-->
-<!--                        <fileSet>-->
-<!--                            <source>${basedir}/src/main/resources/packaging/generic/workdirs</source>-->
-<!--                            <target>var/lib/rpki-validator-3/</target>-->
-<!--                        </fileSet>-->
-<!--                        <fileSet>-->
-<!--                            <source>${basedir}/target/rpki-validator-${project.version}.jar</source>-->
-<!--                            <target>usr/lib/rpki-validator-3.jar</target>-->
-<!--                        </fileSet>-->
-<!--                    </fileSets>-->
-<!--                </configuration>-->
-<!--            </plugin>-->
         </plugins>
     </build>
 
