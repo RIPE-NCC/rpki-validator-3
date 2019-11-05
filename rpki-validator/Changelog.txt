@@ -1,3 +1,7 @@
+* Tue Nov 5 2019 Adianto Wibisono <awibisono@ripe.net> - 3.1
+- Alpine based docker image based on generic image, no systemd.
+- Docker hub image: ripencc/rpki-validator-3-docker:alpine
+
 * Tue Oct 29 2019 Oleg Muravskiy <oleg@ripe.net> - 3.1
 - Fix CPU utilisation by the Happy Eeyballs resolver.
 
