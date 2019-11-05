@@ -477,6 +477,7 @@
                 <version>1.8</version>
                 <configuration>
                     <controlDir>${basedir}/src/main/resources/packaging/deb/control</controlDir>
+                    <deb>${basedir}/target/rpki-validator-${build.version}-${build.release}.deb</deb>
                 </configuration>
                 <executions>
                     <execution>
