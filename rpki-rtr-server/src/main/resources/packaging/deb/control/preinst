@@ -1,0 +1,4 @@
+#!/bin/bash -e
+if ! id rpki > /dev/null 2>&1 ; then
+    useradd -m rpki --shell /sbin/nologin
+fi
