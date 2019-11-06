@@ -5,7 +5,7 @@
 
     <groupId>net.ripe.rpki</groupId>
     <artifactId>rpki-rtr-server</artifactId>
-    <version>3.0-SNAPSHOT</version>
+    <version>3.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>rpki-rtr-server</name>
@@ -36,7 +36,7 @@
         <springfox.version>2.7.0</springfox.version>
         <netty.version>4.1.19.Final</netty.version>
 
-        <maven.build.timestamp.format>yyyy.MM.dd'_'HH.mm.ss</maven.build.timestamp.format>
+        <maven.build.timestamp.format>yyyy.MM.dd'.'HH.mm.ss</maven.build.timestamp.format>
         <build.version>3.1</build.version>
         <build.release>${maven.build.timestamp}</build.release>
         <jetty-http2-client.version>9.4.11.v20180605</jetty-http2-client.version>

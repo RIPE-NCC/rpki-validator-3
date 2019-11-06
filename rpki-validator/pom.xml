@@ -33,7 +33,7 @@
         <maven.test.redirectTestOutputToFile>true</maven.test.redirectTestOutputToFile>
 
         <springfox.version>2.7.0</springfox.version>
-        <maven.build.timestamp.format>yyyy.MM.dd'_'HH.mm.ss</maven.build.timestamp.format>
+        <maven.build.timestamp.format>yyyy.MM.dd'.'HH.mm.ss</maven.build.timestamp.format>
         <build.version>3.1</build.version>
         <build.release>${maven.build.timestamp}</build.release>
         <jetty-http2-client.version>9.4.11.v20180605</jetty-http2-client.version>

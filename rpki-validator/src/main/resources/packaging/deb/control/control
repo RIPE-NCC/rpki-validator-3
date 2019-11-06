@@ -1,5 +1,5 @@
 Package: [[name]]
-Version: [[version]]
+Version: [[build.version]].[[build.release]]
 Section: java
 Priority: standard
 Architecture: all
@@ -8,3 +8,4 @@ Maintainer: RIPE NCC <swe-rpki@ripe.net>
 Depends: coreutils (>=8.26), default-jre (>=8), rsync, systemd
 Description: rpki-validator-3
  RPKI Validator
+Homepage: https://github.com/RIPE-NCC/rpki-validator-3/
