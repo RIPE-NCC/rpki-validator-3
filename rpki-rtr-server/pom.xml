@@ -296,7 +296,7 @@
                 <version>1.8</version>
                 <configuration>
                     <controlDir>${basedir}/src/main/resources/packaging/deb/control</controlDir>
-                    <deb>${basedir}/rpki-rtr-server-${build.version}-${build.release}.deb</deb>
+                    <deb>${basedir}/target/rpki-rtr-server-${build.version}-${build.release}.deb</deb>
                 </configuration>
                 <executions>
                     <execution>
