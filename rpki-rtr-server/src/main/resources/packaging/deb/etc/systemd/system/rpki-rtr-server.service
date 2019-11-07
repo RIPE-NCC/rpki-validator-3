@@ -1,5 +1,5 @@
 [Unit]
-Description=RPKI Validator
+Description=RPKI RTR Server
 After=network.target
 
 [Service]
