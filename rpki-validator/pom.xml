@@ -7,10 +7,9 @@
     <artifactId>rpki-validator</artifactId>
     <version>3.1-SNAPSHOT</version>
     <packaging>jar</packaging>
-
+    <inceptionYear>2017</inceptionYear>
     <name>rpki-validator-3</name>
     <description>RPKI Validator</description>
-
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -20,7 +19,7 @@
 
     <licenses>
         <license>
-            <name>The BSD License</name>
+            <name>BSD</name>
             <url>https://raw.github.com/RIPE-NCC/rpki-validator-3/master/LICENSE.txt</url>
             <distribution>repo</distribution>
         </license>
@@ -34,7 +33,7 @@
         <maven.test.redirectTestOutputToFile>true</maven.test.redirectTestOutputToFile>
 
         <springfox.version>2.7.0</springfox.version>
-        <maven.build.timestamp.format>yyyy.MM.dd'_'HH.mm.ss</maven.build.timestamp.format>
+        <maven.build.timestamp.format>yyyy.MM.dd'.'HH.mm.ss</maven.build.timestamp.format>
         <build.version>3.1</build.version>
         <build.release>${maven.build.timestamp}</build.release>
         <jetty-http2-client.version>9.4.11.v20180605</jetty-http2-client.version>
@@ -268,6 +267,23 @@
                             </resources>
                         </configuration>
                     </execution>
+
+                    <execution>
+                        <id>copy-deb-conf</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>target/deb-conf</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>src/main/resources/packaging/deb/etc/rpki-validator-3</directory>
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>                    
                 </executions>
             </plugin>
             <plugin>
@@ -455,7 +471,88 @@
                     </execution>
                 </executions>
             </plugin>
-
+            <plugin>
+                <artifactId>jdeb</artifactId>
+                <groupId>org.vafer</groupId>
+                <version>1.8</version>
+                <configuration>
+                    <controlDir>${basedir}/src/main/resources/packaging/deb/control</controlDir>
+                    <deb>${basedir}/target/rpki-validator-${build.version}-${build.release}.deb</deb>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jdeb</goal>
+                        </goals>
+                        <configuration>
+                            <dataSet>
+                                <data>
+                                    <type>files</type>
+                                    <paths>
+                                        <path>${basedir}/src/main/resources/packaging/generic/bin/rpki-validator-3.sh</path>
+                                        <path>${basedir}/src/main/resources/packaging/generic/bin/upload-tal.sh</path>
+                                    </paths>
+                                    <dst>/usr/bin/</dst>                                    
+                                    <mapper>
+                                        <type>perm</type>
+                                        <filemode>755</filemode>
+                                    </mapper>
+                                </data>                              
+                                <data>
+                                    <src>${basedir}/target/rpki-validator-${project.version}.jar</src>
+                                    <dst>/usr/lib/rpki-validator-3.jar</dst>
+                                    <type>file</type>
+                                    <mapper>
+                                        <type>perm</type>                                        
+                                        <filemode>755</filemode>
+                                    </mapper>
+                                </data>
+                                <data>
+                                    <src>${basedir}/target/deb-conf/application.properties</src>
+                                    <type>file</type>
+                                    <mapper>
+                                        <type>perm</type>
+                                        <prefix>/etc/rpki-validator-3/</prefix>
+                                        <filemode>755</filemode>
+                                    </mapper>
+                                </data>
+                                <data>
+                                    <src>${basedir}/target/generic-conf/application-defaults.properties</src>
+                                    <type>file</type>
+                                    <conffile>true</conffile>
+                                    <mapper>
+                                        <type>perm</type>
+                                        <prefix>/etc/rpki-validator-3/</prefix>
+                                        <filemode>444</filemode>
+                                    </mapper>
+                                </data>
+                                <data>
+                                    <src>${basedir}/src/main/resources/packaging/deb/etc/systemd/system/rpki-validator-3.service</src>
+                                    <type>file</type>
+                                    <mapper>
+                                        <type>perm</type>
+                                        <prefix>/etc/systemd/system/</prefix>
+                                        <filemode>755</filemode>
+                                    </mapper>
+                                </data>
+                                <data>
+                                    <type>directory</type>                                    
+                                    <src>${basedir}/src/main/resources/packaging/generic/workdirs</src>
+                                    <includes/>
+                                    <excludes>**/.ignore.me</excludes>                                    
+                                    <mapper>
+                                        <user>rpki</user>
+                                        <group>rpki</group>
+                                        <type>perm</type>
+                                        <prefix>/var/lib/rpki-validator</prefix>
+                                    </mapper>
+                                </data>                                
+                            </dataSet>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 

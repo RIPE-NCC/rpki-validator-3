@@ -1,0 +1,4 @@
+#!/bin/bash -e
+
+/bin/systemctl daemon-reload
+/bin/systemctl try-restart rpki-rtr-server

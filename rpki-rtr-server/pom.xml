@@ -5,7 +5,7 @@
 
     <groupId>net.ripe.rpki</groupId>
     <artifactId>rpki-rtr-server</artifactId>
-    <version>3.0-SNAPSHOT</version>
+    <version>3.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>rpki-rtr-server</name>
@@ -36,7 +36,7 @@
         <springfox.version>2.7.0</springfox.version>
         <netty.version>4.1.19.Final</netty.version>
 
-        <maven.build.timestamp.format>yyyy.MM.dd'_'HH.mm.ss</maven.build.timestamp.format>
+        <maven.build.timestamp.format>yyyy.MM.dd'.'HH.mm.ss</maven.build.timestamp.format>
         <build.version>3.1</build.version>
         <build.release>${maven.build.timestamp}</build.release>
         <jetty-http2-client.version>9.4.11.v20180605</jetty-http2-client.version>
@@ -286,6 +286,76 @@
                         <goals>
                             <goal>single</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>jdeb</artifactId>
+                <groupId>org.vafer</groupId>
+                <version>1.8</version>
+                <configuration>
+                    <controlDir>${basedir}/src/main/resources/packaging/deb/control</controlDir>
+                    <deb>${basedir}/target/rpki-rtr-server-${build.version}-${build.release}.deb</deb>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jdeb</goal>
+                        </goals>
+                        <configuration>
+                            <dataSet>
+                                <data>
+                                    <type>files</type>
+                                    <paths>
+                                        <path>${basedir}/src/main/resources/packaging/generic/bin/rpki-rtr-server.sh</path>
+                                    </paths>
+                                    <dst>/usr/bin/</dst>                                    
+                                    <mapper>
+                                        <type>perm</type>
+                                        <filemode>755</filemode>
+                                    </mapper>
+                                </data>                              
+                                <data>
+                                    <src>${basedir}/target/rpki-rtr-server-${project.version}.jar</src>
+                                    <dst>/usr/lib/rpki-rtr-server.jar</dst>
+                                    <type>file</type>
+                                    <mapper>
+                                        <type>perm</type>                                        
+                                        <filemode>755</filemode>
+                                    </mapper>
+                                </data>
+                                <data>
+                                    <src>${basedir}/src/main/resources/packaging/generic/conf/application.properties</src>
+                                    <type>file</type>
+                                    <mapper>
+                                        <type>perm</type>
+                                        <prefix>/etc/rpki-rtr-server/</prefix>
+                                        <filemode>755</filemode>
+                                    </mapper>
+                                </data>
+                                <data>
+                                    <src>${basedir}/src/main/resources/packaging/generic/conf/application-defaults.properties</src>
+                                    <type>file</type>
+                                    <conffile>true</conffile>
+                                    <mapper>
+                                        <type>perm</type>
+                                        <prefix>/etc/rpki-rtr-server/</prefix>
+                                        <filemode>444</filemode>
+                                    </mapper>
+                                </data>
+                                <data>
+                                    <src>${basedir}/src/main/resources/packaging/deb/etc/systemd/system/rpki-rtr-server.service</src>
+                                    <type>file</type>
+                                    <mapper>
+                                        <type>perm</type>
+                                        <prefix>/etc/systemd/system/</prefix>
+                                        <filemode>755</filemode>
+                                    </mapper>
+                                </data>
+                            </dataSet>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
