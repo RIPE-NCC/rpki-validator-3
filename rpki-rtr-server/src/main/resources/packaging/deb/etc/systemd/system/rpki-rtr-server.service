@@ -1,5 +1,5 @@
 [Unit]
-Description=RPKI Validator
+Description=RPKI RTR Server
 After=network.target
 
 [Service]
@@ -8,8 +8,8 @@ Environment=CONFIG_DIR=/etc/rpki-rtr-server
 Environment=JAR=/usr/lib/rpki-rtr-server.jar
 ExecStart=/usr/bin/rpki-rtr-server.sh
 
-# prevent restart in case there's a problem
-# with the database or binding to socket
+# prevent restart in case there's a problem with the database or binding to socket,
+# it will result in an infinite loop of restarts
 RestartPreventExitStatus=7
 
 # restart on OOM
