@@ -55,6 +55,8 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -69,12 +71,49 @@ public class HappyEyeballsResolver implements SocketAddressResolver {
     private static final long CONNECTION_ATTEMPT_DELAY_MS = 250L;
     private final HttpClient httpClient;
 
+    private static final Pattern IPV4_ADDRESS_PATTERN = Pattern.compile("\\d{1,3}(?:\\.\\d{1,3}){3}");
+    private final static Pattern IPV6_ADDRESS_PATTERN =
+            Pattern.compile("( [0-9A-Fa-f:.]+ (?: % [0-9A-Za-z][-0-9A-Za-z_\\ ]*)? )", Pattern.COMMENTS);
+
     public HappyEyeballsResolver(HttpClient httpClient) {
         this.httpClient = httpClient;
     }
 
     @Override
     public void resolve(String host, int port, Promise<List<InetSocketAddress>> promise) {
+        final Optional<String> literalIpAddress = isLiteralIpAddress(host);
+        if (literalIpAddress.isPresent()) {
+            completePromise(literalIpAddress.get(), port, promise);
+        } else {
+            resolveAsynchronously(host, port, promise);
+        }
+    }
+
+    Optional<String> isLiteralIpAddress(String host) {
+        if (isLiteralV4Address(host)) return Optional.of(host);
+        else if (host.contains(":")) {
+            final Matcher matcher = IPV6_ADDRESS_PATTERN.matcher(host);
+            if (matcher.matches()) return Optional.of(matcher.group(1));
+        }
+        return Optional.empty();
+    }
+
+    private boolean isLiteralV4Address(String host) {
+        return IPV4_ADDRESS_PATTERN.matcher(host).matches();
+    }
+
+    private void completePromise(String ipAddress, int port, Promise<List<InetSocketAddress>> promise) {
+        try {
+            final InetAddress inetAddress = InetAddress.getByName(ipAddress);
+            final InetSocketAddress socketAddress = new InetSocketAddress(inetAddress, port);
+            promise.succeeded(Collections.singletonList(socketAddress));
+        } catch (Exception e) {
+            log.error("Error creating socket for " + ipAddress, e);
+            promise.failed(e);
+        }
+    }
+
+    private void resolveAsynchronously(String host, int port, Promise<List<InetSocketAddress>> promise) {
         final Executor executor = httpClient.getExecutor();
         executor.execute(() -> {
             final ConcurrentLinkedQueue<Optional<SocketChannel>> sockets = new ConcurrentLinkedQueue<>();
