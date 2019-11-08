@@ -1,0 +1,22 @@
+[Unit]
+Description=RPKI Validator
+After=network.target
+
+[Service]
+Environment=JAVA_CMD=/usr/bin/java
+Environment=CONFIG_DIR=/etc/rpki-validator-3
+Environment=JAR=/usr/lib/rpki-validator-3.jar
+ExecStart=/usr/bin/rpki-validator-3.sh
+
+# prevent restart in case there's a problem
+# with the database or binding to socket
+RestartPreventExitStatus=7
+
+# restart on OOM
+RestartForceExitStatus=3
+
+User=rpki
+Group=rpki
+
+[Install]
+WantedBy=multi-user.target

@@ -1,3 +1,10 @@
+* Fri Nov 8 2019 Mikhail Puzanov <mpuzanovg@ripe.net> - 3.1
+- Debian packages are now generated with every release.
+
+* Tue Nov 5 2019 Adianto Wibisono <awibisono@ripe.net> - 3.1
+- Alpine based docker image based on generic image, not systemd.
+- Docker hub image: ripencc/rpki-validator-3-docker:alpine
+
 * Wed Oct 30 2019 Oleg Muravskiy <oleg@ripe.net> - 3.1
 - Happy Eyeballs resolver will not try to resolve literal IP addresses passed to it.
 
