@@ -29,6 +29,8 @@
  */
 package net.ripe.rpki.validator3.api.health;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Api;
 import net.ripe.rpki.validator3.api.ApiResponse;
@@ -78,11 +80,10 @@ public class HealthController {
     public ResponseEntity<ApiResponse<?>> health() {
 
         try {
-            final Map<String, Boolean> trustAnchorReady = storage.readTx(tx -> trustAnchors.getStatuses(tx)).stream().
-                collect(Collectors.toMap(
-                    TaStatus::getTaName,
-                    TaStatus::isCompletedValidation)
-                );
+            final List<TaHealth> trustAnchorReady = storage.readTx(tx -> trustAnchors.getStatuses(tx))
+                .stream()
+                .map(taStatus -> new TaHealth(taStatus.getTaName(), taStatus.isCompletedValidation()))
+                .collect(Collectors.toList());
 
             final Map<String, Boolean> bgpDumpReady = bgpPreviewService.getBgpDumps().stream().
                 collect(Collectors.toMap(
@@ -101,6 +102,13 @@ public class HealthController {
                 .data("ERROR: " + e.getMessage())
                 .build());
         }
+    }
+
+    @Data
+    @AllArgsConstructor
+    static class TaHealth {
+        private String taName;
+        private boolean complete;
     }
 
     @GetMapping(path = "/backgrounds")

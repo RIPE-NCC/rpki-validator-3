@@ -32,12 +32,13 @@ package net.ripe.rpki.validator3.api.health;
 import lombok.Value;
 import net.ripe.rpki.validator3.api.util.BuildInformation;
 
+import java.util.List;
 import java.util.Map;
 
 @Value(staticConstructor = "of")
 class Health {
     private String overalStatus;
-    Map<String, Boolean> trustAnchorReady;
+    List<HealthController.TaHealth> trustAnchorReady;
     Map<String, Boolean> bgpDumpReady;
     Map<String, String> databaseStatus;
     BuildInformation buildInformation; 
