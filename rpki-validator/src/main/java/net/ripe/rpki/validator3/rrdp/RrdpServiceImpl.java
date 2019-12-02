@@ -44,7 +44,6 @@ import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidation
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
-import net.ripe.rpki.validator3.util.Bench;
 import net.ripe.rpki.validator3.util.Hex;
 import net.ripe.rpki.validator3.util.Sha256;
 import net.ripe.rpki.validator3.util.Time;
@@ -189,12 +188,16 @@ public class RrdpServiceImpl implements RrdpService {
                     ", but notification file says " + di.getHash());
         }
 
-        final Delta d = rrdpParser.delta(new ByteArrayInputStream(deltaBody));
-        if (!d.getSessionId().equals(notification.sessionId)) {
-            throw new RrdpException(ErrorCodes.RRDP_WRONG_DELTA_SESSION, "Session id of the delta (" + di +
+        try {
+            final Delta d = rrdpParser.delta(new ByteArrayInputStream(deltaBody));
+            if (!d.getSessionId().equals(notification.sessionId)) {
+                throw new RrdpException(ErrorCodes.RRDP_WRONG_DELTA_SESSION, "Session id of the delta (" + di +
                     ") is not the same as in the notification file: " + notification.sessionId);
+            }
+            return d;
+        } catch (Exception e) {
+            throw new RrdpException("Error parsing delta (" + di + "): " + notification.sessionId, e);
         }
-        return d;
     }
 
     private void verifyDeltaSerials(final List<Delta> orderedDeltas, final Notification notification, RpkiRepository rpkiRepository) {
