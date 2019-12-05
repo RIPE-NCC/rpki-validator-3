@@ -129,16 +129,17 @@ public class TrustAnchorValidationService {
                 } else if (trustAnchorCertificateSize > RpkiObject.MAX_SIZE) {
                     validationResult.error(ErrorCodes.REPOSITORY_OBJECT_MAXIMUM_SIZE, trustAnchorCertificateURI.toASCIIString(), String.valueOf(trustAnchorCertificateSize), String.valueOf(RpkiObject.MAX_SIZE));
                 } else {
-                    final X509ResourceCertificate certificate = parseCertificate(trustAnchor, targetFile, validationResult);
+                    final X509ResourceCertificate parsedCertificate = parseCertificate(trustAnchor, targetFile, validationResult);
 
                     if (!validationResult.hasFailureForCurrentLocation()) {
-                        // validity time?
+                        // validate(..) is called multiple times for the same trust anchor certificate (e.g. when the
+                        // application restarts).
                         int comparedSerial = trustAnchor.getCertificate() == null ?
-                                1 : trustAnchor.getCertificate().getSerialNumber().compareTo(certificate.getSerialNumber());
+                                1 : parsedCertificate.getSerialNumber().compareTo(trustAnchor.getCertificate().getSerialNumber());
                         validationResult.warnIfTrue(comparedSerial < 0, ValidationString.VALIDATOR_REPOSITORY_OBJECT_IS_OLDER_THAN_PREVIOUS_OBJECT, trustAnchorCertificateURI.toASCIIString());
                         if (comparedSerial > 0) {
                             log.info("Setting certificate {} for the TA {}", trustAnchorCertificateURI, trustAnchor.getName());
-                            trustAnchor.setCertificate(certificate);
+                            trustAnchor.setCertificate(parsedCertificate);
                             updatedTrustAnchor = true;
                         }
                     }
