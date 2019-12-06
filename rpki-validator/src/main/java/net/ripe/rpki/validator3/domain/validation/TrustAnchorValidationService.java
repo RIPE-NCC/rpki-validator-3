@@ -137,7 +137,7 @@ public class TrustAnchorValidationService {
                         int comparedSerial = trustAnchor.getCertificate() == null ?
                                 1 : parsedCertificate.getSerialNumber().compareTo(trustAnchor.getCertificate().getSerialNumber());
                         validationResult.warnIfTrue(comparedSerial < 0, ValidationString.VALIDATOR_REPOSITORY_OBJECT_IS_OLDER_THAN_PREVIOUS_OBJECT, trustAnchorCertificateURI.toASCIIString());
-                        if (comparedSerial > 0) {
+                        if (comparedSerial != 0) {
                             log.info("Setting certificate {} for the TA {}", trustAnchorCertificateURI, trustAnchor.getName());
                             trustAnchor.setCertificate(parsedCertificate);
                             updatedTrustAnchor = true;
