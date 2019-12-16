@@ -163,7 +163,8 @@ public class RpkiObjectStore extends GenericStoreImpl<RpkiObject> implements Rpk
         return ixMap.getByIndex(BY_AKI_MFT_INDEX, tx, Key.of(authorityKeyIdentifier))
             .values()
             .stream()
-            .max(Comparator.comparing(RpkiObject::getSigningTime));
+            .max(Comparator.comparing(RpkiObject::getSigningTime)
+                .thenComparing(RpkiObject::getSerialNumber));
     }
 
     @Override
@@ -179,10 +180,9 @@ public class RpkiObjectStore extends GenericStoreImpl<RpkiObject> implements Rpk
                     }
                 }));
         // Divide the list to smaller chunks to avoid very long writing transaction
-        Lists.partition(toDelete, 1000).forEach(chunk -> {
+        Lists.partition(toDelete, 1000).forEach(chunk ->
             storage.writeTx0(tx ->
-                    chunk.forEach(pk -> ixMap.delete(tx, pk)));
-        });
+                chunk.forEach(pk -> ixMap.delete(tx, pk))));
         return (long) toDelete.size();
     }
 

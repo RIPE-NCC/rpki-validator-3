@@ -70,7 +70,7 @@ import java.util.stream.Collectors;
 public class RpkiObject extends Base<RpkiObject> {
 
     public static final int MIN_SIZE = 1;
-    public static final int MAX_SIZE = 1024 * 1024;
+    public static final int MAX_SIZE = 10 * 1024 * 1024;
 
     public enum Type {
         CER, MFT, CRL, ROA, GBR, ROUTER_CER, OTHER
@@ -131,6 +131,7 @@ public class RpkiObject extends Base<RpkiObject> {
             this.authorityKeyIdentifier = ((RpkiSignedObject) object).getCertificate().getAuthorityKeyIdentifier();
             if (object instanceof ManifestCms) {
                 this.type = Type.MFT;
+                this.serialNumber = ((ManifestCms) object).getNumber();
             } else if (object instanceof RoaCms) {
                 RoaCms roaCms = (RoaCms) object;
                 this.type = Type.ROA;
