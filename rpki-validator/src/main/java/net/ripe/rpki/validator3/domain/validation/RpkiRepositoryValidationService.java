@@ -377,25 +377,31 @@ public class RpkiRepositoryValidationService {
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                 super.visitFile(file, attrs);
 
-                validationResult.setLocation(new ValidationLocation(currentLocation.resolve(file.getFileName().toString())));
+                final URI objectLocation = currentLocation.resolve(file.getFileName().toString());
+                validationResult.setLocation(new ValidationLocation(objectLocation));
 
-                final byte[] content = Files.readAllBytes(file);
-                final byte[] sha256 = Sha256.hash(content);
-
-                final String key = Hex.format(sha256);
-                final String location = validationResult.getCurrentLocation().getName();
-
-                boolean exists = existingObjectsKeys.contains(key);
-
-                if (!exists) {
-                    if (workCounter.get() > threshold) {
-                        storeObject(tx, validationRun, existingObjectsKeys);
-                        workCounter.decrementAndGet();
-                    }
-                    asyncCreateObjects.submit(() -> RpkiObjectUtils.createRpkiObject(location, content));
-                    workCounter.incrementAndGet();
+                final long objectSize = file.toFile().length();
+                if (objectSize > RpkiObject.MAX_SIZE) {
+                    validationResult.error(ErrorCodes.REPOSITORY_OBJECT_MAXIMUM_SIZE, objectLocation.toASCIIString(), String.valueOf(objectSize), String.valueOf(RpkiObject.MAX_SIZE));
                 } else {
-                    rpkiObjects.addLocation(tx, Key.of(key), location);
+                    final byte[] content = Files.readAllBytes(file);
+                    final byte[] sha256 = Sha256.hash(content);
+
+                    final String key = Hex.format(sha256);
+                    final String location = validationResult.getCurrentLocation().getName();
+
+                    boolean exists = existingObjectsKeys.contains(key);
+
+                    if (!exists) {
+                        if (workCounter.get() > threshold) {
+                            storeObject(tx, validationRun, existingObjectsKeys);
+                            workCounter.decrementAndGet();
+                        }
+                        asyncCreateObjects.submit(() -> RpkiObjectUtils.createRpkiObject(location, content));
+                        workCounter.incrementAndGet();
+                    } else {
+                        rpkiObjects.addLocation(tx, Key.of(key), location);
+                    }
                 }
                 return FileVisitResult.CONTINUE;
             }
