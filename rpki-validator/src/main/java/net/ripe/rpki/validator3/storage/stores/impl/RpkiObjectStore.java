@@ -163,9 +163,7 @@ public class RpkiObjectStore extends GenericStoreImpl<RpkiObject> implements Rpk
         return ixMap.getByIndex(BY_AKI_MFT_INDEX, tx, Key.of(authorityKeyIdentifier))
             .values()
             .stream()
-            .max(Comparator
-                .comparing(RpkiObject::getSerialNumber)
-                .thenComparing(RpkiObject::getSigningTime));
+            .max(Comparator.comparing(RpkiObject::getSigningTime));
     }
 
     @Override
