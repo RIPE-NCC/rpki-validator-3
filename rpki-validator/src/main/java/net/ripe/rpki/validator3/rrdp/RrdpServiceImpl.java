@@ -188,16 +188,17 @@ public class RrdpServiceImpl implements RrdpService {
                     ", but notification file says " + di.getHash());
         }
 
+        final Delta d;
         try {
-            final Delta d = rrdpParser.delta(new ByteArrayInputStream(deltaBody));
-            if (!d.getSessionId().equals(notification.sessionId)) {
-                throw new RrdpException(ErrorCodes.RRDP_WRONG_DELTA_SESSION, "Session id of the delta (" + di +
-                    ") is not the same as in the notification file: " + notification.sessionId);
-            }
-            return d;
+            d = rrdpParser.delta(new ByteArrayInputStream(deltaBody));
         } catch (Exception e) {
             throw new RrdpException("Error parsing delta (" + di + "): " + notification.sessionId, e);
         }
+        if (!d.getSessionId().equals(notification.sessionId)) {
+            throw new RrdpException(ErrorCodes.RRDP_WRONG_DELTA_SESSION, "Session id of the delta (" + di +
+                ") is not the same as in the notification file: " + notification.sessionId);
+        }
+        return d;
     }
 
     private void verifyDeltaSerials(final List<Delta> orderedDeltas, final Notification notification, RpkiRepository rpkiRepository) {
