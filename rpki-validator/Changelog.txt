@@ -1,6 +1,7 @@
 * Mon Dec 16 2019 Mikhail Puzanov <mpuzanovg@ripe.net> - 3.1
 - Fix picking up the latest manifest (don't rely on increasing serial numbers).
 - Fix healthcehck page for the case of multiple TAs with the same name.
+- Improve error handling when parsing RRDP deltas.
 
 * Fri Nov 8 2019 Mikhail Puzanov <mpuzanovg@ripe.net> - 3.1
 - Debian packages are now generated with every release.
