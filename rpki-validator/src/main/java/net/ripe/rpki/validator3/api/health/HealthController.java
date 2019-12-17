@@ -122,7 +122,7 @@ public class HealthController {
     public ResponseEntity<ApiResponse<?>> statuses() {
         List<TaStatus> statuses = storage.readTx(tx -> trustAnchors.getStatuses(tx));
 
-        boolean allComplete = statuses.stream().filter(TaStatus::isCompletedValidation).count() >= 4;
+        boolean allComplete = statuses.stream().filter(TaStatus::isCompletedValidation).count() >= 5;
 
         final OffsetDateTime utc = OffsetDateTime.now(ZoneOffset.UTC);
         final Instant twoHoursAgo = utc.toInstant().minusSeconds(7200L);
