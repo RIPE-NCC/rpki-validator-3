@@ -67,7 +67,7 @@
   },
   "TrustAnchors": {
     "PROCESSED_ITEMS": "Processed Items",
-    "LAST_UPDATED": "Last Updated",
+    "LAST_UPDATED": "Last Updated (UTC)",
     "TOOLTIP_CLICK": "Click for overview"
   },
   "Monitoring": {
