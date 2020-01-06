@@ -60,15 +60,15 @@ public class SettingsStore extends GenericStoreImpl<String> implements Settings 
 
     @Override
     public boolean isInitialValidationRunCompleted(Tx.Read tx) {
-        return isTrue(tx, INITIAL_VALIDATION_RUN_COMPLETED);
+        return isTrue(tx);
     }
 
     public void setTrue(Tx.Write tx, String preconfiguredTalSettingsKey) {
         ixMap.put(tx, Key.of(preconfiguredTalSettingsKey), "true");
     }
 
-    private boolean isTrue(Tx.Read tx, String initialValidationRunCompleted) {
-        return ixMap.get(tx, Key.of(initialValidationRunCompleted)).filter("true"::equals).isPresent();
+    private boolean isTrue(Tx.Read tx) {
+        return ixMap.get(tx, Key.of(SettingsStore.INITIAL_VALIDATION_RUN_COMPLETED)).filter("true"::equals).isPresent();
     }
 
     @Override

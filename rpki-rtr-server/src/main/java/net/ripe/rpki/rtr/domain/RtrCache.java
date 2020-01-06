@@ -106,7 +106,7 @@ public class RtrCache {
                         data.getDelta(data.getCurrentVersion().previous()).map(x -> x.getAdditions().size()).orElse(0),
                         data.getDelta(data.getCurrentVersion().previous()).map(x -> x.getRemovals().size()).orElse(0)
                 );
-                return Optional.of(getSerialNumber());
+                return Optional.of(data.getCurrentVersion());
             } else {
                 log.info("no updates to cached data");
                 return Optional.empty();
