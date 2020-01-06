@@ -134,7 +134,7 @@ public class ObjectController {
             trustAnchorList.stream().allMatch(ta -> {
                 final Map<RpkiRepository.Status, Long> statusLongMap = rpkiRepositories.countByStatus(tx, ta.key(), true);
                 final Long pendingRepoNumber = statusLongMap.get(RpkiRepository.Status.PENDING);
-                return ta.isInitialCertificateTreeValidationRunCompleted() && pendingRepoNumber == null || pendingRepoNumber == 0L;
+                return ta.isInitialCertificateTreeValidationRunCompleted() && (pendingRepoNumber == null || pendingRepoNumber == 0L);
             })));
 
         final List<TrustAnchorResource> trustAnchorResources = trustAnchorList.stream()
