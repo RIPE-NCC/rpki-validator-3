@@ -124,15 +124,14 @@ public class IgnoreFiltersController {
     private IgnoreFilterDto toIgnoreFilter(IgnoreFilter f) {
         final IgnoreFiltersPredicate ignoreFiltersPredicate = new IgnoreFiltersPredicate(Stream.of(f));
         final List<ObjectController.RoaPrefix> affectedRoas = validatedRpkiObjects
-                .findCurrentlyValidatedRoaPrefixes(null, null, null)
-                .getObjects()
-                .filter(ignoreFiltersPredicate)
-                .map(prefix -> new ObjectController.RoaPrefix(
-                        String.valueOf(prefix.getAsn()),
-                        prefix.getPrefix().toString(),
-                        prefix.getEffectiveLength(),
-                        null)
-                ).collect(Collectors.toList());
+            .findCurrentlyValidatedRoaPrefixes(null, null, null)
+            .getObjects()
+            .filter(ignoreFiltersPredicate)
+            .map(prefix -> new ObjectController.RoaPrefix(
+                String.valueOf(prefix.getAsn()),
+                prefix.getPrefix().toString(),
+                prefix.getEffectiveLength())
+            ).collect(Collectors.toList());
         return new IgnoreFilterDto(f, affectedRoas);
     }
 
