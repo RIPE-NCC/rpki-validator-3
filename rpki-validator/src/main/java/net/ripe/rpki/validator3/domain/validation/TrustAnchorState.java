@@ -22,7 +22,7 @@ public class TrustAnchorState {
 
     private final Map<String, State> states = new HashMap<>();
 
-    public boolean allValidated() {
+    public boolean allTAsValidatedAfterRepositoryLoading() {
         synchronized (states) {
             return states.values().stream().allMatch(s -> s.equals(State.VALIDATED));
         }

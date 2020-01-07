@@ -46,10 +46,7 @@ import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
-import net.ripe.rpki.validator3.storage.stores.Settings;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
-import net.ripe.rpki.validator3.util.Time;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -146,7 +143,7 @@ public class ObjectController {
 
         return ResponseEntity.ok(ApiResponse.<ValidatedObjects>builder()
             .data(new ValidatedObjects(
-                allTasDoneInitialLoading && noPendingRepositories && trustAnchorState.allValidated(),
+                allTasDoneInitialLoading && noPendingRepositories && trustAnchorState.allTAsValidatedAfterRepositoryLoading(),
                 trustAnchorResources,
                 combinedPrefixes,
                 combinedAssertions))
