@@ -40,13 +40,14 @@ import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
 import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionsService;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
 import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
+import net.ripe.rpki.validator3.domain.validation.TrustAnchorState;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
-import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.Storage;
-import net.ripe.rpki.validator3.storage.stores.Settings;
+import net.ripe.rpki.validator3.storage.data.RpkiRepository;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -72,6 +73,9 @@ public class ObjectController {
     private TrustAnchors trustAnchors;
 
     @Autowired
+    private RpkiRepositories rpkiRepositories;
+
+    @Autowired
     private IgnoreFilterService ignoreFilters;
 
     @Autowired
@@ -84,38 +88,23 @@ public class ObjectController {
     private BgpSecFilterService bgpSecFilterService;
 
     @Autowired
-    private Settings settings;
+    private TrustAnchorState trustAnchorState;
 
     @Autowired
     private Storage storage;
 
     @GetMapping(path = "/validated")
     public ResponseEntity<ApiResponse<ValidatedObjects>> list(Locale locale) {
-        final Map<Long, TrustAnchorResource> trustAnchorsById = storage.readTx(tx ->
-                trustAnchors.findAll(tx).stream()
-                        .collect(Collectors.toMap(
-                                ta -> ta.key().asLong(),
-                                ta -> TrustAnchorResource.of(ta, locale))
-                        ));
-        final Map<Long, Links> trustAnchorLinks = trustAnchorsById.entrySet().stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        entry -> new Links(entry.getValue().getLinks().getLink("self").withRel(TrustAnchor.TYPE)))
-                );
+        final List<TrustAnchor> trustAnchorList = storage.readTx(tx -> trustAnchors.findAll(tx));
 
         final Stream<RoaPrefix> validatedPrefixes = validatedRpkiObjects
             .findCurrentlyValidatedRoaPrefixes(null, null, null)
             .getObjects()
             .filter(new IgnoreFiltersPredicate(ignoreFilters.all()).negate())
-            .map(prefix -> {
-                    Links links = trustAnchorLinks.get(prefix.getTrustAnchor().getId());
-                    return new RoaPrefix(
-                        String.valueOf(prefix.getAsn()),
-                        prefix.getPrefix().toString(),
-                        prefix.getEffectiveLength(),
-                        links
-                    );
-                }
+            .map(prefix -> new RoaPrefix(
+                String.valueOf(prefix.getAsn()),
+                prefix.getPrefix().toString(),
+                prefix.getEffectiveLength())
             );
 
         final Stream<RoaPrefix> assertions = roaPrefixAssertions
@@ -123,8 +112,7 @@ public class ObjectController {
             .map(assertion -> new RoaPrefix(
                 assertion.getAsn().toString(),
                 assertion.getPrefix().toString(),
-                assertion.getMaxPrefixLength() != null ? assertion.getMaxPrefixLength() : assertion.getPrefix().getPrefixLength(),
-                null
+                assertion.getMaxPrefixLength() != null ? assertion.getMaxPrefixLength() : assertion.getPrefix().getPrefixLength()
             ));
 
         final Stream<RoaPrefix> combinedPrefixes = Stream.concat(validatedPrefixes, assertions).distinct();
@@ -140,13 +128,26 @@ public class ObjectController {
 
         final Stream<RouterCertificate> combinedAssertions = Stream.concat(filteredRouterCertificates, bgpSecAssertions).distinct();
 
+        final boolean noPendingRepositories = storage.readTx(tx ->
+            trustAnchorList.stream().allMatch(ta -> {
+                final Map<RpkiRepository.Status, Long> statusLongMap = rpkiRepositories.countByStatus(tx, ta.key(), true);
+                final Long pendingRepoNumber = statusLongMap.get(RpkiRepository.Status.PENDING);
+                return pendingRepoNumber == null || pendingRepoNumber == 0L;
+            }));
+
+        final boolean allTasDoneInitialLoading = storage.readTx(tx -> trustAnchors.allInitialCertificateTreeValidationRunsCompleted(tx));
+
+        final List<TrustAnchorResource> trustAnchorResources = trustAnchorList.stream()
+            .map(ta -> TrustAnchorResource.of(ta, Locale.ROOT))
+            .collect(Collectors.toList());
+
         return ResponseEntity.ok(ApiResponse.<ValidatedObjects>builder()
-                .data(new ValidatedObjects(
-                        storage.readTx(settings::isInitialValidationRunCompleted),
-                        trustAnchorsById.values(),
-                        combinedPrefixes,
-                        combinedAssertions))
-                .build());
+            .data(new ValidatedObjects(
+                allTasDoneInitialLoading && noPendingRepositories && trustAnchorState.allTAsValidatedAfterRepositoryLoading(),
+                trustAnchorResources,
+                combinedPrefixes,
+                combinedAssertions))
+            .build());
     }
 
     @Value
@@ -166,7 +167,6 @@ public class ObjectController {
         private String asn;
         private String prefix;
         private int maxLength;
-        private Links links;
     }
 
     @Value

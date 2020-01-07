@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.api.trustanchors;
 import com.google.common.io.PatternFilenameFilter;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
+import net.ripe.rpki.validator3.domain.validation.TrustAnchorState;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
@@ -40,7 +41,6 @@ import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
-import net.ripe.rpki.validator3.storage.stores.Settings;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.util.TrustAnchorLocator;
 import org.apache.commons.lang3.ArrayUtils;
@@ -71,6 +71,8 @@ public class TrustAnchorService {
 
     private final ValidationScheduler validationScheduler;
 
+    private final TrustAnchorState trustAnchorState;
+
     @Value("${rpki.validator.preconfigured.trust.anchors.directory}")
     private File preconfiguredTrustAnchorDirectory;
 
@@ -81,11 +83,12 @@ public class TrustAnchorService {
                               RpkiRepositories rpkiRepositories,
                               ValidatedRpkiObjects validatedRpkiObjects,
                               ValidationScheduler validationScheduler,
-                              Storage storage) {
+                              TrustAnchorState trustAnchorState, Storage storage) {
         this.trustAnchors = trustAnchors;
         this.rpkiRepositories = rpkiRepositories;
         this.validatedRpkiObjects = validatedRpkiObjects;
         this.validationScheduler = validationScheduler;
+        this.trustAnchorState = trustAnchorState;
         this.storage = storage;
     }
 
@@ -156,16 +159,16 @@ public class TrustAnchorService {
             });
         }
 
-        storage.readTx0(this::scheduleTasValidation);
-    }
-
-    private void scheduleTasValidation(Tx.Read tx) {
-        log.info("Schedule TA validation that were in the database already");
-        trustAnchors.findAll(tx).forEach(ta -> {
-            if (!validationScheduler.scheduledTrustAnchor(ta)) {
-                log.info("Adding " + ta.getName() + " to the validation scheduler");
-                validationScheduler.addTrustAnchor(ta);
-            }
+        storage.readTx0(tx -> {
+            log.info("Schedule TA validation that were in the database already");
+            trustAnchors.findAll(tx).forEach(ta -> {
+                trustAnchorState.setUnknown(ta);
+                if (!validationScheduler.scheduledTrustAnchor(ta)) {
+                    log.info("Adding " + ta.getName() + " to the validation scheduler");
+                    validationScheduler.addTrustAnchor(ta);
+                }
+            });
         });
     }
+
 }

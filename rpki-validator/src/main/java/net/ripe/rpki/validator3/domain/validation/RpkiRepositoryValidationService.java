@@ -37,6 +37,7 @@ import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
 import net.ripe.rpki.validator3.domain.RpkiObjectUtils;
 import net.ripe.rpki.validator3.rrdp.RrdpService;
+import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
@@ -46,7 +47,6 @@ import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.RrdpRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.RsyncRepositoryValidationRun;
-import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
@@ -70,7 +70,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -94,17 +93,19 @@ public class RpkiRepositoryValidationService {
     private final TrustAnchors trustAnchors;
     private final ValidationScheduler validationScheduler;
     private final Storage storage;
+    private final TrustAnchorState trustAnchorState;
 
     @Autowired
     public RpkiRepositoryValidationService(
-            ValidationRuns validationRuns,
-            RpkiRepositories rpkiRepositories,
-            RpkiObjects rpkiObjects,
-            RrdpService rrdpService,
-            TrustAnchors trustAnchors,
-            Storage storage,
-            @Value("${rpki.validator.rsync.local.storage.directory}") File rsyncLocalStorageDirectory,
-            ValidationScheduler validationScheduler) {
+        ValidationRuns validationRuns,
+        RpkiRepositories rpkiRepositories,
+        RpkiObjects rpkiObjects,
+        RrdpService rrdpService,
+        TrustAnchors trustAnchors,
+        Storage storage,
+        @Value("${rpki.validator.rsync.local.storage.directory}") File rsyncLocalStorageDirectory,
+        TrustAnchorState trustAnchorState,
+        ValidationScheduler validationScheduler) {
         this.validationRuns = validationRuns;
         this.rpkiRepositories = rpkiRepositories;
         this.rpkiObjects = rpkiObjects;
@@ -112,6 +113,7 @@ public class RpkiRepositoryValidationService {
         this.trustAnchors = trustAnchors;
         this.rsyncLocalStorageDirectory = rsyncLocalStorageDirectory;
         this.storage = storage;
+        this.trustAnchorState = trustAnchorState;
         this.validationScheduler = validationScheduler;
     }
 
@@ -158,18 +160,21 @@ public class RpkiRepositoryValidationService {
         } catch (Exception e) {
             log.error("Error validating repository " + rpkiRepository, e);
             validationRun.setFailed();
-        }
-        finally {
+        } finally {
+            if (triggerCaTreeAfter && changedAtLeastOneObject) {
+                storage.readTx0(tx ->
+                    rpkiRepository.getTrustAnchors().forEach(taRef ->
+                        trustAnchors.get(tx, taRef.key()).ifPresent(trustAnchorState::setUnknown)));
+            }
             storage.writeTx0(tx -> {
                 rpkiRepositories.update(tx, rpkiRepository);
                 validationRuns.update(tx, validationRun);
             });
             if (triggerCaTreeAfter && changedAtLeastOneObject) {
-                storage.readTx0(tx -> {
+                storage.readTx0(tx ->
                     rpkiRepository.getTrustAnchors().forEach(taRef ->
-                            trustAnchors.get(tx, taRef.key())
-                                    .ifPresent(validationScheduler::triggerCertificateTreeValidation));
-                });
+                        trustAnchors.get(tx, taRef.key())
+                            .ifPresent(validationScheduler::triggerCertificateTreeValidation)));
             }
         }
     }
@@ -187,23 +192,23 @@ public class RpkiRepositoryValidationService {
 
         try {
             Stream<RpkiRepository> repositoriesNeedingUpdate = storage.readTx(rpkiRepositories::findRsyncRepositories)
-                    .filter(repository -> {
-                        boolean needsUpdate = repository.isPending() || repository.getLastDownloadedAt() == null || repository.getLastDownloadedAt().isBefore(cutoffTime);
-                        if (!needsUpdate) {
-                            fetchedLocations.put(URI.create(repository.getRsyncRepositoryUri()), repository);
-                        }
-                        return needsUpdate;
-                    });
+                .filter(repository -> {
+                    boolean needsUpdate = repository.isPending() || repository.getLastDownloadedAt() == null || repository.getLastDownloadedAt().isBefore(cutoffTime);
+                    if (!needsUpdate) {
+                        fetchedLocations.put(URI.create(repository.getRsyncRepositoryUri()), repository);
+                    }
+                    return needsUpdate;
+                });
 
             ValidationResult results = repositoriesNeedingUpdate.map(repository -> {
-                                storage.writeTx0(tx -> validationRuns.associate(tx, validationRun, repository));
-                                return processRsyncRepository(affectedTrustAnchors, validationRun, fetchedLocations, existingObjectKeys, repository);
-                            }
-                    ).collect(
-                            () -> ValidationResult.withLocation("placeholder"),
-                            ValidationResult::addAll,
-                            ValidationResult::addAll
-                    );
+                    storage.writeTx0(tx -> validationRuns.associate(tx, validationRun, repository));
+                    return processRsyncRepository(affectedTrustAnchors, validationRun, fetchedLocations, existingObjectKeys, repository);
+                }
+            ).collect(
+                () -> ValidationResult.withLocation("placeholder"),
+                ValidationResult::addAll,
+                ValidationResult::addAll
+            );
 
             validationRun.completeWith(results);
             affectedTrustAnchors.forEach(ta -> {
@@ -246,8 +251,8 @@ public class RpkiRepositoryValidationService {
                 });
             }
             storage.readTx0(tx ->
-                    repository.getTrustAnchors().forEach(taRef ->
-                            trustAnchors.get(tx, taRef.key()).ifPresent(affectedTrustAnchors::add)));
+                repository.getTrustAnchors().forEach(taRef ->
+                    trustAnchors.get(tx, taRef.key()).ifPresent(affectedTrustAnchors::add)));
         }
         return affectedTrustAnchors;
     }
@@ -258,13 +263,12 @@ public class RpkiRepositoryValidationService {
                                                     Set<String> existingObjectsSha256,
                                                     RpkiRepository repository) {
 
-//        log.debug("Processing rsync repository {}", repository);
         final ValidationResult validationResult = ValidationResult.withLocation(URI.create(repository.getRsyncRepositoryUri()));
 
         try {
             File targetDirectory = Rsync.localFileFromRsyncUri(
-                    rsyncLocalStorageDirectory,
-                    URI.create(repository.getRsyncRepositoryUri())
+                rsyncLocalStorageDirectory,
+                URI.create(repository.getRsyncRepositoryUri())
             );
 
             RpkiRepository parentRepository = findDownloadedParentRepository(fetchedLocations, repository);
@@ -276,15 +280,12 @@ public class RpkiRepositoryValidationService {
             }
 
             if (repository.getType() == RpkiRepository.Type.RSYNC_PREFETCH ||
-                    repository.getType() == RpkiRepository.Type.RSYNC &&
-                            (parentRepository == null || parentRepository.getType() == RpkiRepository.Type.RSYNC_PREFETCH)) {
+                repository.getType() == RpkiRepository.Type.RSYNC &&
+                    (parentRepository == null || parentRepository.getType() == RpkiRepository.Type.RSYNC_PREFETCH)) {
                 log.info("Storing objects downloaded for {}", repository.getLocationUri());
                 Long t = Time.timed(() -> storeObjects(targetDirectory, validationRun, validationResult, existingObjectsSha256, repository));
                 log.info("Stored {} objects from the repository {} in {}ms", existingObjectsSha256.size(), repository, t);
                 repository.setDownloaded();
-            } else {
-//                log.debug("Not storing any objects for the repository {} because parent repository is {}",
-//                        repository.getLocationUri(), parentRepository == null ? null : parentRepository.getType());
             }
         } catch (IOException e) {
             repository.setFailed();
@@ -294,8 +295,12 @@ public class RpkiRepositoryValidationService {
         }
 
         storage.readTx0(tx ->
-                repository.getTrustAnchors().forEach(taRef ->
-                        trustAnchors.get(tx, taRef.key()).ifPresent(affectedTrustAnchors::add)));
+            repository.getTrustAnchors().forEach(taRef ->
+                trustAnchors.get(tx, taRef.key()).ifPresent(ta -> {
+                    trustAnchorState.setUnknown(ta);
+                    affectedTrustAnchors.add(ta);
+                })));
+
         fetchedLocations.put(URI.create(repository.getRsyncRepositoryUri()), repository);
 
         return validationResult;
@@ -319,10 +324,10 @@ public class RpkiRepositoryValidationService {
     }
 
     private void storeObjects(File targetDirectory,
-                                RsyncRepositoryValidationRun validationRun,
-                                ValidationResult validationResult,
-                                Set<String> existingObjectsKeys,
-                                RpkiRepository repository){
+                              RsyncRepositoryValidationRun validationRun,
+                              ValidationResult validationResult,
+                              Set<String> existingObjectsKeys,
+                              RpkiRepository repository) {
         storage.writeTx0(tx -> {
             try {
                 traverseFSandStore(tx, targetDirectory, validationRun, validationResult, existingObjectsKeys, repository);
@@ -440,7 +445,7 @@ public class RpkiRepositoryValidationService {
     }
 
     private ExecutorCompletionService<Either<ValidationResult, Pair<String, RpkiObject>>> asyncCreateObjects =
-            new ExecutorCompletionService<>(Executors.newFixedThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1)));
+        new ExecutorCompletionService<>(Executors.newFixedThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1)));
 
     private RsyncRepositoryValidationRun makeAndStoreRsyncValidationRun() {
         return storage.writeTx(tx -> validationRuns.add(tx, new RsyncRepositoryValidationRun()));
