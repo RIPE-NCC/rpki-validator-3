@@ -124,8 +124,8 @@ public class ValidatedRpkiObjects {
                         roaPrefixesAndRouterCertificates.getRoaPrefixes().size(),
                         roaPrefixesAndRouterCertificates.getRouterCertificates().size()
                     );
-                    Locks.locked(dataLock.writeLock(), (Runnable) () ->
-                        validatedObjectsByTrustAnchor.put(trustAnchor.key().asLong(), roaPrefixesAndRouterCertificates));
+                    Locks.locked(dataLock.writeLock(),
+                        () -> validatedObjectsByTrustAnchor.put(trustAnchor.key().asLong(), roaPrefixesAndRouterCertificates));
                     notifyListeners();
                 }));
         log.info("Updated validated roas in {}ms", t);
@@ -142,10 +142,8 @@ public class ValidatedRpkiObjects {
 
     public void remove(TrustAnchor trustAnchor) {
         long trustAnchorId = trustAnchor.key().asLong();
-        Locks.locked(dataLock.writeLock(), () -> {
-            validatedObjectsByTrustAnchor.remove(trustAnchorId);
-            notifyListeners();
-        });
+        Locks.locked(dataLock.writeLock(), () -> validatedObjectsByTrustAnchor.remove(trustAnchorId));
+        notifyListeners();
     }
 
     public ValidatedObjects<RoaPrefix> findCurrentlyValidatedRoaPrefixes() {
