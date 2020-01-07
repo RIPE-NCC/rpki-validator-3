@@ -40,6 +40,7 @@ import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
 import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionsService;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
 import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
+import net.ripe.rpki.validator3.domain.validation.TrustAnchorState;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
@@ -90,7 +91,7 @@ public class ObjectController {
     private BgpSecFilterService bgpSecFilterService;
 
     @Autowired
-    private Settings settings;
+    private TrustAnchorState trustAnchorState;
 
     @Autowired
     private Storage storage;
@@ -130,12 +131,14 @@ public class ObjectController {
 
         final Stream<RouterCertificate> combinedAssertions = Stream.concat(filteredRouterCertificates, bgpSecAssertions).distinct();
 
-        Pair<Boolean, Long> allDoneForTa = Time.timed(() -> storage.readTx(tx ->
+        final boolean noPendingRepositories = storage.readTx(tx ->
             trustAnchorList.stream().allMatch(ta -> {
                 final Map<RpkiRepository.Status, Long> statusLongMap = rpkiRepositories.countByStatus(tx, ta.key(), true);
                 final Long pendingRepoNumber = statusLongMap.get(RpkiRepository.Status.PENDING);
-                return ta.isInitialCertificateTreeValidationRunCompleted() && (pendingRepoNumber == null || pendingRepoNumber == 0L);
-            })));
+                return pendingRepoNumber == null || pendingRepoNumber == 0L;
+            }));
+
+        final boolean allTasDoneInitialLoading = storage.readTx(tx -> trustAnchors.allInitialCertificateTreeValidationRunsCompleted(tx));
 
         final List<TrustAnchorResource> trustAnchorResources = trustAnchorList.stream()
             .map(ta -> TrustAnchorResource.of(ta, Locale.ROOT))
@@ -143,7 +146,7 @@ public class ObjectController {
 
         return ResponseEntity.ok(ApiResponse.<ValidatedObjects>builder()
             .data(new ValidatedObjects(
-                allDoneForTa.getKey(),
+                allTasDoneInitialLoading && noPendingRepositories && trustAnchorState.allValidated(),
                 trustAnchorResources,
                 combinedPrefixes,
                 combinedAssertions))
