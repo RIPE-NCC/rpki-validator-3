@@ -60,6 +60,8 @@ import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Bench;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.jooq.lambda.tuple.Tuple2;
+import org.jooq.lambda.tuple.Tuple3;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -67,12 +69,10 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_CRL_FOUND;
@@ -290,68 +290,105 @@ public class CertificateTreeValidationService {
                 return validatedObjects;
             }
 
-            crl.get().validate(crlUri.toASCIIString(), context, null, VALIDATION_OPTIONS, temporary);
+            final X509Crl x509Crl = crl.get();
+            x509Crl.validate(crlUri.toASCIIString(), context, null, VALIDATION_OPTIONS, temporary);
             if (temporary.hasFailureForCurrentLocation()) {
                 return validatedObjects;
             }
 
             temporary.setLocation(new ValidationLocation(manifestUri));
-            manifest.validate(manifestUri.toASCIIString(), context, crl.get(), manifest.getCrlUri(), VALIDATION_OPTIONS, temporary);
+            manifest.validate(manifestUri.toASCIIString(), context, x509Crl, manifest.getCrlUri(), VALIDATION_OPTIONS, temporary);
             if (temporary.hasFailureForCurrentLocation()) {
                 return validatedObjects;
             }
             validatedObjects.add(manifestObject.get().key());
 
-            Bench.mark(trustAnchor.getName(), "retrieveManifestEntries", () ->
-                storage.readTx(tx -> retrieveManifestEntries(tx, manifest, manifestUri, temporary)))
-                .entrySet()
-                .stream().map(e -> {
-                URI location = e.getKey();
-                RpkiObject rpkiObject = e.getValue();
-                temporary.setLocation(new ValidationLocation(location));
-
-                final Optional<CertificateRepositoryObject> maybeCertificateRepositoryObject = Bench.mark(trustAnchor.getName(),
-                    "rpkiObject.get", () -> rpkiObject.get(CertificateRepositoryObject.class, temporary));
-
-                if (!temporary.hasFailureForCurrentLocation()) {
-                    return maybeCertificateRepositoryObject.flatMap(certificateRepositoryObject -> {
-                        Bench.mark0(trustAnchor.getName(), "certificateRepositoryObject.validate", () ->
-                            certificateRepositoryObject.validate(location.toASCIIString(), context, crl.get(), crlUri, VALIDATION_OPTIONS, temporary));
-
-                        if (!temporary.hasFailureForCurrentLocation()) {
-                            validatedObjects.add(rpkiObject.key());
-                        }
-
-                        if (certificateRepositoryObject instanceof X509ResourceCertificate
-                            && ((X509ResourceCertificate) certificateRepositoryObject).isCa()
-                            && !temporary.hasFailureForCurrentLocation()) {
-
-                            return Optional.of(context.createChildContext(location, (X509ResourceCertificate) certificateRepositoryObject));
-                        }
-                        return Optional.empty();
-                    });
-                }
-                return Optional.<CertificateRepositoryObjectValidationContext>empty();
-            })
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .collect(Collectors.toList())
+            manifest.getFiles().entrySet()
                 .parallelStream()
-                .map(childContext -> validateCertificateAuthority(trustAnchor, registeredRepositories, childContext, temporary))
-                .forEachOrdered(validatedObjects::addAll);
+                .map(entry -> getManifestEntry(manifestUri, entry))
+                .filter(t -> t.v2().isPresent())
+                .map(t -> t.map2(Optional::get))
+                .map(t -> getCertificateRepositoryObjectValidationContext(trustAnchor, context, validatedObjects, crlUri, x509Crl, t))
+                .filter(t -> t.v1().isPresent())
+                .map(t -> t.map1(Optional::get))
+                .map(tuple -> {
+                    final ValidationResult vr = tuple.v2();
+                    final List<Key> keys = validateCertificateAuthority(trustAnchor, registeredRepositories, tuple.v1(), vr);
+                    return new Tuple2<>(keys, vr);
+                })
+                .forEachOrdered(t -> {
+                    validatedObjects.addAll(t.v1());
+                    synchronized (temporary) {
+                        temporary.addAll(t.v2());
+                    }
+                });
 
         } catch (Exception e) {
-            synchronized (this) {
+            synchronized (validationResult) {
                 validationResult.error(ErrorCodes.UNHANDLED_EXCEPTION, e.toString(), ExceptionUtils.getStackTrace(e));
             }
         } finally {
-            synchronized (this) {
+            synchronized (validationResult) {
                 validationResult.addAll(temporary);
             }
         }
 
         return validatedObjects;
     }
+
+    private Tuple3<URI, Optional<RpkiObject>, ValidationResult> getManifestEntry(URI manifestUri, Map.Entry<String, byte[]> entry) {
+        URI location = manifestUri.resolve(entry.getKey());
+        ValidationResult temporary = ValidationResult.withLocation(new ValidationLocation(location));
+
+        Optional<RpkiObject> object = storage.readTx(tx -> rpkiObjects.findBySha256(tx, entry.getValue()));
+        temporary.rejectIfFalse(object.isPresent(), VALIDATOR_MANIFEST_ENTRY_FOUND, manifestUri.toASCIIString());
+
+        Optional<RpkiObject> actualObject = object.flatMap(obj -> {
+            boolean hashMatches = Arrays.equals(obj.getSha256(), entry.getValue());
+            temporary.rejectIfFalse(hashMatches, VALIDATOR_MANIFEST_ENTRY_HASH_MATCHES, entry.getKey());
+            return hashMatches ? object : Optional.empty();
+        });
+        return new Tuple3<>(location, actualObject, temporary);
+    }
+
+    private Tuple2<Optional<CertificateRepositoryObjectValidationContext>, ValidationResult>
+        getCertificateRepositoryObjectValidationContext(TrustAnchor trustAnchor,
+                                                        CertificateRepositoryObjectValidationContext context,
+                                                        List<Key> validatedObjects,
+                                                        URI crlUri,
+                                                        X509Crl crl,
+                                                        Tuple3<URI, RpkiObject, ValidationResult> e) {
+        final URI location = e.v1();
+        final RpkiObject rpkiObject = e.v2();
+        final ValidationResult temporary = e.v3();
+
+        final Optional<CertificateRepositoryObject> maybeCertificateRepositoryObject = Bench.mark(trustAnchor.getName(),
+            "rpkiObject.get", () -> rpkiObject.get(CertificateRepositoryObject.class, temporary));
+
+        if (!temporary.hasFailureForCurrentLocation()) {
+            if (maybeCertificateRepositoryObject.isPresent()) {
+                CertificateRepositoryObject certificateRepositoryObject = maybeCertificateRepositoryObject.get();
+                Bench.mark0(trustAnchor.getName(), "certificateRepositoryObject.validate", () ->
+                    certificateRepositoryObject.validate(location.toASCIIString(), context, crl, crlUri, VALIDATION_OPTIONS, temporary));
+
+                if (!temporary.hasFailureForCurrentLocation()) {
+                    synchronized (validatedObjects) {
+                        validatedObjects.add(rpkiObject.key());
+                    }
+                }
+
+                if (certificateRepositoryObject instanceof X509ResourceCertificate
+                    && ((X509ResourceCertificate) certificateRepositoryObject).isCa()
+                    && !temporary.hasFailureForCurrentLocation()) {
+
+                    final CertificateRepositoryObjectValidationContext childContext = context.createChildContext(location, (X509ResourceCertificate) certificateRepositoryObject);
+                    return new Tuple2<>(Optional.of(childContext), temporary);
+                }
+            }
+        }
+        return new Tuple2<>(Optional.empty(), temporary);
+    }
+
 
     private RpkiRepository registerRepository(Tx.Write tx,
                                               TrustAnchor trustAnchor,
@@ -389,23 +426,4 @@ public class CertificateTreeValidationService {
         return registeredRepositories;
     }
 
-    private Map<URI, RpkiObject> retrieveManifestEntries(Tx.Read tx, ManifestCms manifest, URI manifestUri, ValidationResult validationResult) {
-        Map<URI, RpkiObject> result = new LinkedHashMap<>();
-        for (Map.Entry<String, byte[]> entry : manifest.getFiles().entrySet()) {
-            URI location = manifestUri.resolve(entry.getKey());
-            validationResult.setLocation(new ValidationLocation(location));
-
-            Optional<RpkiObject> object = rpkiObjects.findBySha256(tx, entry.getValue());
-            validationResult.rejectIfFalse(object.isPresent(), VALIDATOR_MANIFEST_ENTRY_FOUND, manifestUri.toASCIIString());
-
-            object.ifPresent(obj -> {
-                boolean hashMatches = Arrays.equals(obj.getSha256(), entry.getValue());
-                validationResult.rejectIfFalse(hashMatches, VALIDATOR_MANIFEST_ENTRY_HASH_MATCHES, entry.getKey());
-                if (hashMatches) {
-                    result.put(location, obj);
-                }
-            });
-        }
-        return result;
-    }
 }
