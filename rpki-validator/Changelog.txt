@@ -1,3 +1,8 @@
+* Tue Jan 8 2020 Mikhail Puzanov <mpuzanovg@ripe.net> - 3.1
+- Fix deciding when to return "ready: true" from validator to rtr-server.
+  After the fix, users should not experience temporary drops in the the amount of VRPs
+  when restarting validator (https://github.com/RIPE-NCC/rpki-validator-3/issues/124).
+
 * Mon Dec 16 2019 Mikhail Puzanov <mpuzanovg@ripe.net> - 3.1
 - Fix picking up the latest manifest (don't rely on increasing serial numbers).
 - Fix healthcehck page for the case of multiple TAs with the same name.
