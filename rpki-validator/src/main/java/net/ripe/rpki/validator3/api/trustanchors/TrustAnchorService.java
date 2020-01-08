@@ -160,11 +160,11 @@ public class TrustAnchorService {
         }
 
         storage.readTx0(tx -> {
-            log.info("Schedule TA validation that were in the database already");
+            log.info("Schedule validation for TAs that were in the database already");
             trustAnchors.findAll(tx).forEach(ta -> {
                 trustAnchorState.setUnknown(ta);
                 if (!validationScheduler.scheduledTrustAnchor(ta)) {
-                    log.info("Adding " + ta.getName() + " to the validation scheduler");
+                    log.info("Adding {} to the validation scheduler", ta.getName());
                     validationScheduler.addTrustAnchor(ta);
                 }
             });
