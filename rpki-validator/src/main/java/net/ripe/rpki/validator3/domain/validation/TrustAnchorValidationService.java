@@ -53,6 +53,7 @@ import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Rsync;
+import net.ripe.rpki.validator3.util.RsyncFactory;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -78,18 +79,20 @@ public class TrustAnchorValidationService {
     private final File localRsyncStorageDirectory;
     private final RpkiRepositoryValidationService repositoryValidationService;
     private final Storage storage;
+    private final RsyncFactory rsyncFactory;
 
     private Set<Key> validatedAtLeastOnce = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     @Autowired
     public TrustAnchorValidationService(
-            TrustAnchors trustAnchors,
-            RpkiRepositories rpkiRepositories,
-            ValidationRuns validationRuns,
-            ValidationScheduler validationScheduler,
-            @Value("${rpki.validator.rsync.local.storage.directory}") File localRsyncStorageDirectory,
-            RpkiRepositoryValidationService repositoryValidationService,
-            Storage storage) {
+        TrustAnchors trustAnchors,
+        RpkiRepositories rpkiRepositories,
+        ValidationRuns validationRuns,
+        ValidationScheduler validationScheduler,
+        @Value("${rpki.validator.rsync.local.storage.directory}") File localRsyncStorageDirectory,
+        RpkiRepositoryValidationService repositoryValidationService,
+        Storage storage,
+        RsyncFactory rsyncFactory) {
         this.trustAnchors = trustAnchors;
         this.rpkiRepositories = rpkiRepositories;
         this.validationRuns = validationRuns;
@@ -97,6 +100,7 @@ public class TrustAnchorValidationService {
         this.localRsyncStorageDirectory = localRsyncStorageDirectory;
         this.repositoryValidationService = repositoryValidationService;
         this.storage = storage;
+        this.rsyncFactory = rsyncFactory;
     }
 
     public void validate(long trustAnchorId) {
@@ -206,8 +210,7 @@ public class TrustAnchorValidationService {
             log.info("created local rsync storage directory {} for trust anchor {}", targetFile.getParentFile(), trustAnchorCertificateURI);
         }
 
-        net.ripe.rpki.commons.rsync.Rsync rsync = new net.ripe.rpki.commons.rsync.Rsync(trustAnchorCertificateURI.toASCIIString(), targetFile.getPath());
-        rsync.addOptions("--update", "--times", "--copy-links");
+        net.ripe.rpki.commons.rsync.Rsync rsync = rsyncFactory.rsyncDirectory(trustAnchorCertificateURI.toASCIIString(), targetFile.getPath());
         int exitStatus = rsync.execute();
         if (exitStatus != 0) {
             validationResult.error(ErrorCodes.RSYNC_FETCH, String.valueOf(exitStatus), ArrayUtils.toString(rsync.getErrorLines()));
