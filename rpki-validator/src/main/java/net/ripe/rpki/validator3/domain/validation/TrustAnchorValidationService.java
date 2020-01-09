@@ -210,7 +210,7 @@ public class TrustAnchorValidationService {
             log.info("created local rsync storage directory {} for trust anchor {}", targetFile.getParentFile(), trustAnchorCertificateURI);
         }
 
-        net.ripe.rpki.commons.rsync.Rsync rsync = rsyncFactory.rsyncDirectory(trustAnchorCertificateURI.toASCIIString(), targetFile.getPath());
+        net.ripe.rpki.commons.rsync.Rsync rsync = rsyncFactory.rsyncFile(trustAnchorCertificateURI.toASCIIString(), targetFile.getPath());
         int exitStatus = rsync.execute();
         if (exitStatus != 0) {
             validationResult.error(ErrorCodes.RSYNC_FETCH, String.valueOf(exitStatus), ArrayUtils.toString(rsync.getErrorLines()));
