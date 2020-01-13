@@ -51,6 +51,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -124,10 +126,11 @@ public class HealthController {
 
         boolean allComplete = statuses.stream().filter(TaStatus::isCompletedValidation).count() >= 5;
 
+        // We use 8 hours as the time when at least manifests and CRL are to be updated
         final OffsetDateTime utc = OffsetDateTime.now(ZoneOffset.UTC);
-        final Instant twoHoursAgo = utc.toInstant().minusSeconds(7200L);
+        final Instant eightHoursAgo = utc.toInstant().minus(8, ChronoUnit.HOURS);
         final Map<String, String> lateTAs = statuses.stream().
-            filter(s -> Dates.parseUTC(s.getLastUpdated()).isBefore(twoHoursAgo))
+            filter(s -> Dates.parseUTC(s.getLastUpdated()).isBefore(eightHoursAgo))
             .collect(Collectors.toMap(TaStatus::getTaName, TaStatus::getLastUpdated));
 
         if (allComplete && lateTAs.isEmpty()) {

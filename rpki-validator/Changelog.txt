@@ -1,3 +1,7 @@
+* Mon Jan 13 2020 Mikhail Puzanov <mpuzanovg@ripe.net> - 3.1
+- Add "rpki.validator.rsync.proxy.host" and "rpki.validator.rsync.proxy.port" settings to support HTTP and rsync
+  proxies in uniform way.
+
 * Tue Jan 8 2020 Mikhail Puzanov <mpuzanovg@ripe.net> - 3.1
 - Fix deciding when to return "ready: true" from validator to rtr-server.
   After the fix, users should not experience temporary drops in the the amount of VRPs
