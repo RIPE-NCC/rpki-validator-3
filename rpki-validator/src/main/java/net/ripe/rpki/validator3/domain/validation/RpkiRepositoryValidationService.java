@@ -53,6 +53,7 @@ import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Hex;
 import net.ripe.rpki.validator3.util.Rsync;
+import net.ripe.rpki.validator3.util.RsyncFactory;
 import net.ripe.rpki.validator3.util.Sha256;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.ArrayUtils;
@@ -94,6 +95,7 @@ public class RpkiRepositoryValidationService {
     private final ValidationScheduler validationScheduler;
     private final Storage storage;
     private final TrustAnchorState trustAnchorState;
+    private final RsyncFactory rsyncFactory;
 
     @Autowired
     public RpkiRepositoryValidationService(
@@ -105,7 +107,7 @@ public class RpkiRepositoryValidationService {
         Storage storage,
         @Value("${rpki.validator.rsync.local.storage.directory}") File rsyncLocalStorageDirectory,
         TrustAnchorState trustAnchorState,
-        ValidationScheduler validationScheduler) {
+        ValidationScheduler validationScheduler, RsyncFactory rsyncFactory) {
         this.validationRuns = validationRuns;
         this.rpkiRepositories = rpkiRepositories;
         this.rpkiObjects = rpkiObjects;
@@ -115,6 +117,7 @@ public class RpkiRepositoryValidationService {
         this.storage = storage;
         this.trustAnchorState = trustAnchorState;
         this.validationScheduler = validationScheduler;
+        this.rsyncFactory = rsyncFactory;
     }
 
     public void validateRrdpRpkiRepository(long rpkiRepositoryId) {
@@ -463,9 +466,7 @@ public class RpkiRepositoryValidationService {
         if (targetDirectory.mkdirs()) {
             log.info("created local rsync storage directory {} for repository {}", targetDirectory, rpkiRepository);
         }
-
-        net.ripe.rpki.commons.rsync.Rsync rsync = new net.ripe.rpki.commons.rsync.Rsync(rpkiRepository.getLocationUri(), targetDirectory.getPath());
-        rsync.addOptions("--update", "--times", "--copy-links", "--recursive", "--delete");
+        net.ripe.rpki.commons.rsync.Rsync rsync = rsyncFactory.rsyncDirectory(rpkiRepository.getLocationUri(), targetDirectory.getPath());
         int exitStatus = rsync.execute();
         validationResult.rejectIfTrue(exitStatus != 0, ErrorCodes.RSYNC_FETCH, String.valueOf(exitStatus), ArrayUtils.toString(rsync.getErrorLines()));
         if (validationResult.hasFailureForCurrentLocation()) {
