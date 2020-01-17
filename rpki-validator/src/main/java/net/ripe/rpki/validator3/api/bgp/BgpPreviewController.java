@@ -29,16 +29,13 @@
  */
 package net.ripe.rpki.validator3.api.bgp;
 
+import io.swagger.annotations.*;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
-import net.ripe.rpki.validator3.api.Api;
+import net.ripe.rpki.validator3.api.*;
 import net.ripe.rpki.validator3.api.ApiResponse;
-import net.ripe.rpki.validator3.api.Metadata;
-import net.ripe.rpki.validator3.api.Paging;
-import net.ripe.rpki.validator3.api.SearchTerm;
-import net.ripe.rpki.validator3.api.Sorting;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -51,9 +48,15 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.*;
+
+@PublicApiCall
 @RestController
-@RequestMapping(path = "/api/bgp", produces = {Api.API_MIME_TYPE, "application/json"})
+@RequestMapping(path = "/api/bgp", produces = {ValidatorApi.API_MIME_TYPE, "application/json"})
 @Slf4j
+@Api(
+        tags ="BGP preview"
+)
 public class BgpPreviewController {
 
     @Autowired
@@ -64,7 +67,9 @@ public class BgpPreviewController {
             @RequestParam(name = "startFrom", defaultValue = "0") long startFrom,
             @RequestParam(name = "pageSize", defaultValue = "20") long pageSize,
             @RequestParam(name = "search", defaultValue = "", required = false) String searchString,
+            @ApiParam(SORT_BY_ALLOWABLE_VALUES)
             @RequestParam(name = "sortBy", defaultValue = "prefix") String sortBy,
+            @ApiParam(SORT_DIRECTION_ALLOWABLE_VALUES)
             @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection
     ) {
         final SearchTerm searchTerm = StringUtils.isNotBlank(searchString) ? new SearchTerm(searchString) : null;
@@ -108,8 +113,10 @@ public class BgpPreviewController {
 
     @Value(staticConstructor = "of")
     public static class BgpPreview {
+        @ApiModelProperty(value = ASN_PREFIXED_PROPERTY, example = ASN_PREFIXED_EXAMPLE)
         private String asn;
         private String prefix;
+        @ApiModelProperty(allowableValues = VALIDITY_ALLOWABLE_VALUES)
         private String validity;
     }
 }

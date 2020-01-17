@@ -41,21 +41,23 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
+import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.*;
+
 @Data(staticConstructor = "of")
 @Builder
 @ValidAddRoaPrefixAssertion
 public class AddRoaPrefixAssertion {
-    @ApiModelProperty(position = 1, required = true)
+    @ApiModelProperty(position = 1, required = true, value = ASN_PROPERTY, example = ASN_EXAMPLE)
     @NotNull
     @ValidAsn
     String asn;
 
-    @ApiModelProperty(position = 2, required = true)
+    @ApiModelProperty(position = 2, required = true, example = PREFIX_EXAMPLE)
     @NotNull
     @ValidPrefix
     String prefix;
 
-    @ApiModelProperty(position = 3)
+    @ApiModelProperty(position = 3, value = MAXLENGTH_PROPERTY)
     @Min(0)
     @Max(128)
     Integer maximumLength;

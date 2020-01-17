@@ -30,6 +30,9 @@
 package net.ripe.rpki.validator3.config;
 
 import com.fasterxml.classmate.TypeResolver;
+
+import net.ripe.rpki.validator3.api.InternalApiCall;
+import net.ripe.rpki.validator3.api.PublicApiCall;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -41,8 +44,11 @@ import springfox.documentation.schema.AlternateTypeRule;
 import springfox.documentation.schema.AlternateTypeRules;
 import springfox.documentation.schema.WildcardType;
 import springfox.documentation.spi.DocumentationType;
+import springfox.documentation.spring.web.plugins.ApiSelectorBuilder;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
+
+import springfox.documentation.service.Tag;
 
 import java.net.URI;
 import java.util.List;
@@ -53,22 +59,48 @@ import java.util.stream.Stream;
 @EnableSwagger2
 @Import(value = BeanValidatorPluginsConfiguration.class)
 public class SwaggerConfig {
-    @Bean
-    public Docket api() {
-        TypeResolver typeResolver = new TypeResolver();
+    private Docket docketBuilder() {
+        final TypeResolver typeResolver = new TypeResolver();
+
         return new Docket(DocumentationType.SWAGGER_2)
-            .alternateTypeRules(AlternateTypeRules.newRule(typeResolver.resolve(Optional.class, URI.class), String.class, AlternateTypeRule.HIGHEST_PRECEDENCE + 1000))
-            .alternateTypeRules(AlternateTypeRules.newRule(
-                typeResolver.resolve(Stream.class, WildcardType.class),
-                typeResolver.resolve(List.class, WildcardType.class),
-                AlternateTypeRule.HIGHEST_PRECEDENCE + 1002
-            ))
-            .directModelSubstitute(URI.class, String.class)
-            .directModelSubstitute(Links.class, Object.class)
-            .genericModelSubstitutes(Optional.class)
-            .select()
-            .apis(RequestHandlerSelectors.any())
-            .paths(PathSelectors.any())
-            .build();
+                .alternateTypeRules(AlternateTypeRules.newRule(typeResolver.resolve(Optional.class, URI.class), String.class, AlternateTypeRule.HIGHEST_PRECEDENCE + 1000))
+                .alternateTypeRules(AlternateTypeRules.newRule(
+                        typeResolver.resolve(Stream.class, WildcardType.class),
+                        typeResolver.resolve(List.class, WildcardType.class),
+                        AlternateTypeRule.HIGHEST_PRECEDENCE + 1002
+                ))
+                .directModelSubstitute(URI.class, String.class)
+                .directModelSubstitute(Links.class, Object.class)
+                .genericModelSubstitutes(Optional.class);
+    }
+
+    @Bean
+    public Docket mainApi() {
+        return docketBuilder()
+                .tags(
+                    new Tag("BGP preview", "Provides a preview of the likely RPKI valdidity state your routers will associate with BGP announcements."),
+                    new Tag("Ignore filters", "Ignore filters (filters that exclude ROAs)"),
+                    new Tag("RPKI repositories", "RPKI repositories"),
+                    new Tag("RPKI objects", "All valid RPKI objects"),
+                    new Tag("Trust Anchors", "Trust Anchors"),
+                    new Tag("Validated objects", "Validated objects (rpki-rtr-server API)"),
+                    new Tag("VRP export", "Validated ROA Payload export"),
+                    new Tag("Whitelist", "Whitelist entries")
+                )
+                .groupName("Public APIs")
+                .select()
+                .apis(RequestHandlerSelectors.withClassAnnotation(PublicApiCall.class))
+                .paths(PathSelectors.any())
+                .build();
+    }
+
+    @Bean
+    public Docket internalApi() {
+        return docketBuilder()
+                .groupName("Status and health check APIs")
+                .select()
+                .apis(RequestHandlerSelectors.withClassAnnotation(InternalApiCall.class))
+                .paths(PathSelectors.any())
+                .build();
     }
 }

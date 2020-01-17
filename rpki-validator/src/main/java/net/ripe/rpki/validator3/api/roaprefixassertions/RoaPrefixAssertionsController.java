@@ -30,15 +30,11 @@
 package net.ripe.rpki.validator3.api.roaprefixassertions;
 
 import com.google.common.collect.ImmutableList;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.ipresource.Asn;
-import net.ripe.rpki.validator3.api.Api;
-import net.ripe.rpki.validator3.api.ApiCommand;
-import net.ripe.rpki.validator3.api.ApiResponse;
-import net.ripe.rpki.validator3.api.Metadata;
-import net.ripe.rpki.validator3.api.Paging;
-import net.ripe.rpki.validator3.api.SearchTerm;
-import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.api.*;
 import net.ripe.rpki.validator3.api.bgp.BgpPreviewController;
 import net.ripe.rpki.validator3.api.bgp.BgpPreviewService;
 import org.apache.commons.lang.StringUtils;
@@ -61,12 +57,16 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.SORT_BY_ALLOWABLE_VALUES;
+import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.SORT_DIRECTION_ALLOWABLE_VALUES;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
+@PublicApiCall
 @RestController
 @Slf4j
-@RequestMapping(path = "/api/roa-prefix-assertions", produces = { Api.API_MIME_TYPE, "application/json" })
+@Api(tags = "Whitelist")
+@RequestMapping(path = "/api/roa-prefix-assertions", produces = { ValidatorApi.API_MIME_TYPE, "application/json" })
 public class RoaPrefixAssertionsController {
 
     @Autowired
@@ -75,12 +75,15 @@ public class RoaPrefixAssertionsController {
     @Autowired
     private BgpPreviewService bgpPreviewService;
 
+    @ApiOperation("Get current entries")
     @GetMapping
     public ResponseEntity<ApiResponse<Stream<RoaPrefixAssertionResource>>> list(
         @RequestParam(name = "startFrom", defaultValue = "0") long startFrom,
         @RequestParam(name = "pageSize", defaultValue = "20") long pageSize,
         @RequestParam(name = "search", defaultValue = "", required = false) String searchString,
+        @ApiParam(allowableValues = SORT_BY_ALLOWABLE_VALUES)
         @RequestParam(name = "sortBy", defaultValue = "prefix") String sortBy,
+        @ApiParam(allowableValues = SORT_DIRECTION_ALLOWABLE_VALUES)
         @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection) {
 
         final SearchTerm searchTerm = StringUtils.isNotBlank(searchString) ? new SearchTerm(searchString) : null;
@@ -109,7 +112,11 @@ public class RoaPrefixAssertionsController {
         return ResponseEntity.ok(ApiResponse.data(toResource(roaPrefixAssertionsService.get(id))));
     }
 
-    @PostMapping(consumes = { Api.API_MIME_TYPE, "application/json" })
+    @ApiOperation(value = "Add whitelist entry", notes =
+            "By adding a whitelist entry you can manually authorise an ASN to originate a prefix in addition to the validated ROAs from the repository.\n" +
+            "Please note that whitelist entries may invalidate announcements for this prefix from other ASNs, just like ROAs. This may be intentional\n" +
+            "(you are whitelisting ASN A, ASN B is hijacking), or not (ASN B should also be authorised, or you made a mistake).")
+    @PostMapping(consumes = { ValidatorApi.API_MIME_TYPE, "application/json" })
     public ResponseEntity<ApiResponse<RoaPrefixAssertionResource>> add(@RequestBody @Valid ApiCommand<AddRoaPrefixAssertion> command) {
         final long id = roaPrefixAssertionsService.execute(command.getData());
         final RoaPrefixAssertion ignoreFilter = roaPrefixAssertionsService.get(id);

@@ -29,10 +29,12 @@
  */
 package net.ripe.rpki.validator3.api.roas;
 
+import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiModelProperty;
+import io.swagger.annotations.ApiOperation;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.api.Api;
+import net.ripe.rpki.validator3.api.ValidatorApi;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.bgpsec.BgpSecAssertionsService;
 import net.ripe.rpki.validator3.api.bgpsec.BgpSecFilterService;
@@ -61,8 +63,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.*;
+
 @RestController
-@RequestMapping(path = "/api/objects", produces = { Api.API_MIME_TYPE, "application/json" })
+@Api(tags = "Validated objects")
+@RequestMapping(path = "/api/objects", produces = { ValidatorApi.API_MIME_TYPE, "application/json" })
 @Slf4j
 public class ObjectController {
 
@@ -93,6 +98,7 @@ public class ObjectController {
     @Autowired
     private Storage storage;
 
+    @ApiOperation("get all validated objects (used by rpki-rtr-server)")
     @GetMapping(path = "/validated")
     public ResponseEntity<ApiResponse<ValidatedObjects>> list(Locale locale) {
         final List<TrustAnchor> trustAnchorList = storage.readTx(tx -> trustAnchors.findAll(tx));
@@ -164,13 +170,16 @@ public class ObjectController {
 
     @Value
     public static class RoaPrefix {
+        @ApiModelProperty(value = ASN_PROPERTY, example = ASN_EXAMPLE)
         private String asn;
+        @ApiModelProperty(PREFIX_EXAMPLE)
         private String prefix;
         private int maxLength;
     }
 
     @Value
     public static class RouterCertificate {
+        @ApiModelProperty(ASN_LIST_PROPERTY)
         private List<String> asn;
         private String subjectKeyIdentifier;
         private String subjectPublicKeyInfo;

@@ -30,8 +30,9 @@
 package net.ripe.rpki.validator3.api.validationruns;
 
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.api.Api;
+import net.ripe.rpki.validator3.api.ValidatorApi;
 import net.ripe.rpki.validator3.api.ApiResponse;
+import net.ripe.rpki.validator3.api.PublicApiCall;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
@@ -53,8 +54,9 @@ import java.util.stream.Stream;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
+@PublicApiCall
 @RestController
-@RequestMapping(path = "/api/validation-runs", produces = Api.API_MIME_TYPE)
+@RequestMapping(path = "/api/validation-runs", produces = ValidatorApi.API_MIME_TYPE)
 @Slf4j
 public class ValidationRunController {
 

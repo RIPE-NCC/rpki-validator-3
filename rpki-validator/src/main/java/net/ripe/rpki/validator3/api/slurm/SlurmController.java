@@ -31,9 +31,10 @@ package net.ripe.rpki.validator3.api.slurm;
 
 import com.google.common.base.Charsets;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.api.Api;
+import net.ripe.rpki.validator3.api.ValidatorApi;
 import net.ripe.rpki.validator3.api.ApiError;
 import net.ripe.rpki.validator3.api.ApiResponse;
+import net.ripe.rpki.validator3.api.PublicApiCall;
 import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
 import net.ripe.rpki.validator3.storage.encoding.GsonCoder;
@@ -50,8 +51,9 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import java.util.Locale;
 
+@PublicApiCall
 @RestController
-@RequestMapping(path = "/api/slurm", produces = {Api.API_MIME_TYPE, "application/json"})
+@RequestMapping(path = "/api/slurm", produces = {ValidatorApi.API_MIME_TYPE, "application/json"})
 @Slf4j
 public class SlurmController {
 
@@ -78,7 +80,7 @@ public class SlurmController {
     }
 
     // FIXME Do something to force browser's save file prompt instead of rendering JSON
-    @GetMapping(path = "/download", produces = Api.API_MIME_TYPE)
+    @GetMapping(path = "/download", produces = ValidatorApi.API_MIME_TYPE)
     public StreamingResponseBody download() {
         return out -> slurmService.writeTo(out);
     }

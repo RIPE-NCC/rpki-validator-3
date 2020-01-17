@@ -58,7 +58,7 @@ public class ApiErrorHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(value = DataRetrievalFailureException.class)
     protected ResponseEntity<ApiResponse<?>> handleDataRetrievalFailureException(DataRetrievalFailureException ex, WebRequest request) {
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.valueOf(Api.API_MIME_TYPE));
+        headers.setContentType(MediaType.valueOf(ValidatorApi.API_MIME_TYPE));
         return new ResponseEntity<>(ApiResponse.error(ApiError.of(HttpStatus.NOT_FOUND)), headers, HttpStatus.NOT_FOUND);
     }
 
@@ -77,7 +77,7 @@ public class ApiErrorHandler extends ResponseEntityExceptionHandler {
                 .build()
         ).collect(Collectors.toList());
         return ResponseEntity.badRequest()
-            .contentType(MediaType.valueOf(Api.API_MIME_TYPE))
+            .contentType(MediaType.valueOf(ValidatorApi.API_MIME_TYPE))
             .body(ApiResponse.error(errors));
     }
 
@@ -102,7 +102,7 @@ public class ApiErrorHandler extends ResponseEntityExceptionHandler {
             )
             .build();
         return ResponseEntity.badRequest()
-            .contentType(MediaType.valueOf(Api.API_MIME_TYPE))
+            .contentType(MediaType.valueOf(ValidatorApi.API_MIME_TYPE))
             .body(ApiResponse.error(error));
     }
 }
