@@ -79,7 +79,7 @@ public class ValidationRunController {
         return storage.readTx(tx ->
                 ResponseEntity.ok(ApiResponse.data(
                         new Links(linkTo(methodOn(ValidationRunController.class).list(locale)).withSelfRel()),
-                        validationRuns.findAll(tx, ValidationRun.class)
+                        validationRuns.findAll(tx)
                                 .stream()
                                 .map(validationRun -> ValidationRunResource.of(validationRun,
                                         vr -> validationRuns.getObjectCount(tx, vr),
