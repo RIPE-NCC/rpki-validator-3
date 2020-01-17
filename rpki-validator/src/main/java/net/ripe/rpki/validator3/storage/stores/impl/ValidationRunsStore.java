@@ -436,7 +436,7 @@ public class ValidationRunsStore implements ValidationRuns {
         try {
             String validationRunType = FieldUtils.readDeclaredStaticField(c, "TYPE").toString();
             ixMaps.add(pickIxMap(validationRunType));
-        } catch (IllegalAccessException e) {
+        } catch (IllegalAccessException|IllegalArgumentException e) {
             throw new RuntimeException("Validation run "+c.toGenericString()+" has not static TYPE field declared.");
         }
         return ixMaps;
