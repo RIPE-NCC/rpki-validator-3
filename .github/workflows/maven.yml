@@ -31,4 +31,4 @@ jobs:
       with:
         java-version: ${{ matrix.jdk }}
     - name: Test with Maven
-      run: mvn -B test --file pom.xml
+      run: mvn -B verify --file pom.xml
