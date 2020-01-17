@@ -78,12 +78,15 @@ public class SwaggerConfig {
     public Docket mainApi() {
         return docketBuilder()
                 .tags(
-                    new Tag("BGP preview", "Provides a preview of the likely RPKI valdidity state your routers will associate with BGP announcements."),
+                    new Tag("BGP preview", "Preview of the likely RPKI valdidity state for BGP announcements"),
                     new Tag("Ignore filters", "Ignore filters (filters that exclude ROAs)"),
+                    new Tag("Input validation", "Validate that objects are valid inputs"),
                     new Tag("RPKI repositories", "RPKI repositories"),
                     new Tag("RPKI objects", "All valid RPKI objects"),
+                    new Tag("SLURM", "Simplified Local Internet Number Resource Management with the RPKI"),
                     new Tag("Trust Anchors", "Trust Anchors"),
                     new Tag("Validated objects", "Validated objects (rpki-rtr-server API)"),
+                    new Tag("Validation runs", "Validation run results"),
                     new Tag("VRP export", "Validated ROA Payload export"),
                     new Tag("Whitelist", "Whitelist entries")
                 )

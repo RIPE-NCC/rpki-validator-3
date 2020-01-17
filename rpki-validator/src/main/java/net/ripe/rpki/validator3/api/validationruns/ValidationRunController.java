@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.api.validationruns;
 
+import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.ValidatorApi;
 import net.ripe.rpki.validator3.api.ApiResponse;
@@ -54,6 +55,7 @@ import java.util.stream.Stream;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
+@Api(tags = "Validation runs")
 @PublicApiCall
 @RestController
 @RequestMapping(path = "/api/validation-runs", produces = ValidatorApi.API_MIME_TYPE)

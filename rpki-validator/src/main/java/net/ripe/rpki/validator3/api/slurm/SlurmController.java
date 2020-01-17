@@ -30,6 +30,7 @@
 package net.ripe.rpki.validator3.api.slurm;
 
 import com.google.common.base.Charsets;
+import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.ValidatorApi;
 import net.ripe.rpki.validator3.api.ApiError;
@@ -51,6 +52,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import java.util.Locale;
 
+@Api(tags = "SLURM")
 @PublicApiCall
 @RestController
 @RequestMapping(path = "/api/slurm", produces = {ValidatorApi.API_MIME_TYPE, "application/json"})
