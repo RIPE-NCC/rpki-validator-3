@@ -67,9 +67,9 @@ public class BgpPreviewController {
             @RequestParam(name = "startFrom", defaultValue = "0") long startFrom,
             @RequestParam(name = "pageSize", defaultValue = "20") long pageSize,
             @RequestParam(name = "search", defaultValue = "", required = false) String searchString,
-            @ApiParam(SORT_BY_ALLOWABLE_VALUES)
+            @ApiParam(allowableValues = SORT_BY_ALLOWABLE_VALUES)
             @RequestParam(name = "sortBy", defaultValue = "prefix") String sortBy,
-            @ApiParam(SORT_DIRECTION_ALLOWABLE_VALUES)
+            @ApiParam(allowableValues = SORT_DIRECTION_ALLOWABLE_VALUES)
             @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection
     ) {
         final SearchTerm searchTerm = StringUtils.isNotBlank(searchString) ? new SearchTerm(searchString) : null;
