@@ -31,16 +31,17 @@ package net.ripe.rpki.validator3.storage.data;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Setter;
+import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 
 import java.io.Serializable;
-import java.time.Instant;
 
 @Data
 @EqualsAndHashCode
 public class Base<T extends Base> implements Serializable {
     private Key id;
-    private Instant createdAt = Instant.now();
-    private Instant updatedAt;
+    private InstantWithoutNanos createdAt = InstantWithoutNanos.now();
+    private InstantWithoutNanos updatedAt;
 
     public Key key() {
         return id;

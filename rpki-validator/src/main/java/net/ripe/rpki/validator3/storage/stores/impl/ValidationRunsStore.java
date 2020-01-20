@@ -34,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.storage.IxMap;
 import net.ripe.rpki.validator3.storage.MultIxMap;
 import net.ripe.rpki.validator3.storage.Storage;
@@ -60,7 +61,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -155,7 +155,7 @@ public class ValidationRunsStore implements ValidationRuns {
     }
 
     private Set<Key> completedAtIndexKeys(ValidationRun vr) {
-        Instant completedAt = vr.getCompletedAt();
+        InstantWithoutNanos completedAt = vr.getCompletedAt();
         return completedAt != null ? Key.keys(Key.of(completedAt.toEpochMilli())) : Collections.emptySet();
     }
 
@@ -168,7 +168,7 @@ public class ValidationRunsStore implements ValidationRuns {
 
     @Override
     public <T extends ValidationRun> void update(Tx.Write tx, T vr) {
-        vr.setUpdatedAt(Instant.now());
+        vr.setUpdatedAt(InstantWithoutNanos.now());
         pickIxMap(vr.getType()).put(tx, vr.key(), vr);
     }
 
@@ -226,7 +226,7 @@ public class ValidationRunsStore implements ValidationRuns {
     }
 
     @Override
-    public int removeOldValidationRuns(Tx.Write tx, Instant completedBefore) {
+    public int removeOldValidationRuns(Tx.Write tx, InstantWithoutNanos completedBefore) {
         final AtomicInteger count = new AtomicInteger(0);
         final Set<Key> taKeys = trustAnchors.keys(tx);
         maps.forEach((type, ixMap) -> {

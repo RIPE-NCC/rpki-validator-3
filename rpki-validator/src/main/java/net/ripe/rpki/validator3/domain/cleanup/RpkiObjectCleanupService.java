@@ -30,6 +30,7 @@
 package net.ripe.rpki.validator3.domain.cleanup;
 
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.util.Time;
@@ -61,7 +62,7 @@ public class RpkiObjectCleanupService {
     }
 
     public long cleanupRpkiObjects() throws Exception {
-        final Instant unreachableSince = Instant.now().minus(cleanupGraceDuration);
+        final InstantWithoutNanos unreachableSince = InstantWithoutNanos.now().minus(cleanupGraceDuration);
         final Pair<Long, Long> deleted = Time.timed(() -> rpkiObjects.deleteUnreachableObjects(unreachableSince));
         log.info("Removed {} RPKI objects that have not been marked reachable since {}, took {}ms", deleted.getLeft(), unreachableSince, deleted.getRight());
         storage.gc();

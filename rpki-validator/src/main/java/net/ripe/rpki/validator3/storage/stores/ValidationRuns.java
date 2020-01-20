@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.storage.stores;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
@@ -40,7 +41,6 @@ import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.*;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -63,7 +63,7 @@ public interface ValidationRuns {
 
     Optional<CertificateTreeValidationRun> findLatestCaTreeValidationRun(Tx.Read tx, TrustAnchor trustAnchor);
 
-    int removeOldValidationRuns(Tx.Write tx, Instant completedBefore);
+    int removeOldValidationRuns(Tx.Write tx, InstantWithoutNanos completedBefore);
 
     Stream<ValidationCheck> findValidationChecksForValidationRun(Tx.Read tx, long validationRunId, Paging paging, SearchTerm searchTerm, Sorting sorting);
 

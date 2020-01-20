@@ -33,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.IpResourceSet;
 import net.ripe.rpki.commons.crypto.ValidityPeriod;
 import net.ripe.rpki.validator3.IntegrationTest;
+import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.domain.ta.TrustAnchorsFactory;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.stores.impl.GenericStorageTest;
@@ -76,6 +77,8 @@ public class TrustAnchorCoderTest extends GenericStorageTest {
                 Instant.now().minus(Duration.standardDays(1))
         );
 
+        final InstantWithoutNanos now = InstantWithoutNanos.now();
+
         return wtx(tx -> {
             TrustAnchor ta1 = trustAnchorsFactory.createTrustAnchor(tx, x -> {
                 TrustAnchorsFactory.CertificateAuthority child = TrustAnchorsFactory.CertificateAuthority.builder()
@@ -91,8 +94,8 @@ public class TrustAnchorCoderTest extends GenericStorageTest {
                 x.children(Collections.singletonList(child));
             }, mftValidityPeriod);
             ta1.setInitialCertificateTreeValidationRunCompleted(true);
-            ta1.setUpdatedAt(java.time.Instant.now());
-            ta1.setCreatedAt(java.time.Instant.now().minus(java.time.Duration.ofDays(1)));
+            ta1.setUpdatedAt(now);
+            ta1.setCreatedAt(now.minus(java.time.Duration.ofDays(1)));
             this.getTrustAnchors().add(tx, ta1);
             return ta1;
         });

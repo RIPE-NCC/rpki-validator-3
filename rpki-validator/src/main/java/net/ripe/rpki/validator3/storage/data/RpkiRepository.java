@@ -33,13 +33,13 @@ import com.google.common.base.Objects;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.storage.Binary;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.math.BigInteger;
-import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -65,7 +65,7 @@ public class RpkiRepository extends Base<RpkiRepository> {
     @NotNull
     private String status;
 
-    private Instant lastDownloadedAt;
+    private InstantWithoutNanos lastDownloadedAt;
 
     @NotEmpty
     private Set<Ref<TrustAnchor>> trustAnchors = new HashSet<>();
@@ -126,20 +126,20 @@ public class RpkiRepository extends Base<RpkiRepository> {
     }
 
     public void setFailed() {
-        setFailed(Instant.now());
+        setFailed(InstantWithoutNanos.now());
     }
 
-    public void setFailed(Instant lastDownloadedAt) {
+    public void setFailed(InstantWithoutNanos lastDownloadedAt) {
         this.status = Status.FAILED.name();
         this.lastDownloadedAt = lastDownloadedAt;
     }
 
 
     public void setDownloaded() {
-        setDownloaded(Instant.now());
+        setDownloaded(InstantWithoutNanos.now());
     }
 
-    public void setDownloaded(Instant lastDownloadedAt) {
+    public void setDownloaded(InstantWithoutNanos lastDownloadedAt) {
         this.status = Status.DOWNLOADED.name();
         this.lastDownloadedAt = lastDownloadedAt;
     }

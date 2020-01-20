@@ -33,10 +33,11 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
 
 public class Dates {
-
     static final DateTimeFormatter UTCFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC);
+
     public static String formatUTC(Object o) {
         if (o == null) {
             return null;
@@ -44,7 +45,7 @@ public class Dates {
         return formatUTC(((Timestamp) o).toInstant());
     }
 
-    public static String formatUTC(Instant i) {
+    public static String formatUTC(TemporalAccessor i) {
         if (i == null) {
             return null;
         }
