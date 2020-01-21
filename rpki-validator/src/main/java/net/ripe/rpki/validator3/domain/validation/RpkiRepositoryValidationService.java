@@ -33,6 +33,7 @@ import fj.data.Either;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.validation.ValidationLocation;
 import net.ripe.rpki.commons.validation.ValidationResult;
+import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
 import net.ripe.rpki.validator3.domain.RpkiObjectUtils;
@@ -71,7 +72,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
@@ -183,7 +183,7 @@ public class RpkiRepositoryValidationService {
     }
 
     public void validateRsyncRepositories() {
-        Instant cutoffTime = Instant.now().minus(validationScheduler.getRsyncRepositoryDownloadInterval());
+        InstantWithoutNanos cutoffTime = InstantWithoutNanos.now().minus(validationScheduler.getRsyncRepositoryDownloadInterval());
         log.info("updating all rsync repositories that have not been downloaded since {}", cutoffTime);
 
         Set<TrustAnchor> affectedTrustAnchors = new HashSet<>();
