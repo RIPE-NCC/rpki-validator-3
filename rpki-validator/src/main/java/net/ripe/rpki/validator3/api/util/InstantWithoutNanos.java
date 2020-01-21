@@ -44,6 +44,11 @@ public class InstantWithoutNanos implements Temporal, TemporalAdjuster, Comparab
     public int compareTo(@NotNull InstantWithoutNanos that) {
         return this.instant.compareTo(that.instant);
     }
+
+    @Override
+    public String toString() {
+        return instant.toString();
+    }
 }
 
 interface SkippedDelegatedMethods {
