@@ -43,7 +43,7 @@ public class ValidationCheckResource {
     final String location;
     @ApiModelProperty(required = true, position = 2, example = "WARNING")
     final ValidationCheck.Status status;
-    @ApiModelProperty(required = true, position = 4, example = "rl.next.update.before.now")
+    @ApiModelProperty(required = true, position = 4, example = "crl.next.update.before.now")
     final String key;
     @ApiModelProperty(required = true, position = 3, example = "[\"2020-01-09T23:15:45.000Z\"]")
     final List<String> parameters;
