@@ -40,6 +40,7 @@ import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.schema.AlternateTypeRule;
 import springfox.documentation.schema.AlternateTypeRules;
 import springfox.documentation.schema.WildcardType;
+import springfox.documentation.service.Tag;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
@@ -66,8 +67,12 @@ public class SwaggerConfig {
             .directModelSubstitute(URI.class, String.class)
             .directModelSubstitute(Links.class, Object.class)
             .genericModelSubstitutes(Optional.class)
+            .tags(
+                new Tag("Cache", "Cache status"),
+                new Tag("Clients", "Client status")
+            )
             .select()
-            .apis(RequestHandlerSelectors.any())
+            .apis(RequestHandlerSelectors.basePackage("net.ripe"))
             .paths(PathSelectors.any())
             .build();
     }
