@@ -116,8 +116,10 @@ public class RoaPrefixAssertionsController {
             "By adding a whitelist entry you can manually authorise an ASN to originate a prefix, in addition to the " +
             "validated ROAs from the repository.\n" +
             "Please note that whitelist entries may invalidate announcements for this prefix from other ASNs (just like" +
-            " ROAs). This may be intentional (when you whitelist ASN A, which ASN B is hijacking), or not (when you make" +
-            " a mistake).")
+            " ROAs). This may be intentional (when you whitelist ASN A, which ASN B is hijacking), or not (when ASN B " +
+            "should also be authorised, or you made a mistake).\n" +
+            "When you modify the whitelist please validate its effects using `/api/roa-prefix-assertions` to find the number" +
+            " of prefixes validated and invalidated, and verify that there are no unintentional side-effects.")
     @PostMapping(consumes = { ValidatorApi.API_MIME_TYPE, "application/json" })
     public ResponseEntity<ApiResponse<RoaPrefixAssertionResource>> add(@RequestBody @Valid ApiCommand<AddRoaPrefixAssertion> command) {
         final long id = roaPrefixAssertionsService.execute(command.getData());
