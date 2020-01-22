@@ -42,9 +42,9 @@ public class ApiError {
     @ApiModelProperty(value = "(HTTP) status code", example = "500", required = true)
     String status;
     String code;
-    @ApiModelProperty(value = "Description of the error", example = "Internal Server Error", required = true)
+    @ApiModelProperty(value = "Reason for the error", example = "Internal Server Error", required = true)
     String title;
-    @ApiModelProperty(value = "Detailed description of error", required = false)
+    @ApiModelProperty(value = "More detailed description of the error", required = false)
     String detail;
     ApiErrorSource source;
 
