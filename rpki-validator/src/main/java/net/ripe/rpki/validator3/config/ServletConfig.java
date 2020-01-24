@@ -33,6 +33,7 @@ import net.ripe.rpki.validator3.api.StaticContentFixServlet;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
@@ -40,5 +41,25 @@ public class ServletConfig implements WebMvcConfigurer {
     @Bean
     public ServletRegistrationBean<StaticContentFixServlet> provisioningServlet() {
         return new ServletRegistrationBean<>(new StaticContentFixServlet(), "/index.html");
+    }
+
+    /**
+     * Mapping for Single Page Application.
+     * When a browser requests the path of a client-side route, return index.js. The Angular application will render
+     * the correct client side route.
+     *
+     * From https://stackoverflow.com/questions/39331929/spring-catch-all-route-for-index-html/42998817#42998817
+     */
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        // Root
+        registry.addViewController("/")
+                .setViewName("forward:/index.html");
+        // Single directory level
+        registry.addViewController("/{x:(?!(?:api|cache|clients|actuator)$)[^\\.]+}")
+                .setViewName("forward:/index.html");
+        // Multi-level directory path, need to exclude "api" on the first part of the path
+        registry.addViewController("/{x:^(?!(?:api|cache|clients|actuator)$).*$}/**/{y:[^\\.]*}")
+                .setViewName("forward:/index.html");
     }
 }
