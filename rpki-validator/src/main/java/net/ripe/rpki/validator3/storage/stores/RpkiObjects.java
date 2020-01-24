@@ -29,14 +29,12 @@
  */
 package net.ripe.rpki.validator3.storage.stores;
 
-import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
-import net.ripe.rpki.commons.validation.ValidationResult;
+import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 
-import java.time.Instant;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -49,7 +47,7 @@ public interface RpkiObjects extends GenericStore<RpkiObject> {
 
     void delete(Tx.Write tx, RpkiObject o);
 
-    void markReachable(Tx.Write tx, Key pk, Instant i);
+    void markReachable(Tx.Write tx, Key pk, InstantWithoutNanos i);
 
     void addLocation(Tx.Write tx, Key pk, String location);
 
@@ -61,7 +59,7 @@ public interface RpkiObjects extends GenericStore<RpkiObject> {
 
     Optional<RpkiObject> findLatestMftByAKI(Tx.Read tx, byte[] authorityKeyIdentifier);
 
-    long deleteUnreachableObjects(Instant unreachableSince);
+    long deleteUnreachableObjects(InstantWithoutNanos unreachableSince);
 
     Map<String, RpkiObject> findObjectsInManifest(Tx.Read tx, ManifestCms manifestCms);
 

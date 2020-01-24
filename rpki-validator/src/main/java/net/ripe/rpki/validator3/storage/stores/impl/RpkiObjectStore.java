@@ -34,6 +34,7 @@ import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedBytes;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
+import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.storage.IxMap;
 import net.ripe.rpki.validator3.storage.MultIxMap;
 import net.ripe.rpki.validator3.storage.Storage;
@@ -47,7 +48,6 @@ import net.ripe.rpki.validator3.util.Bench;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -127,7 +127,7 @@ public class RpkiObjectStore extends GenericStoreImpl<RpkiObject> implements Rpk
     }
 
     @Override
-    public void markReachable(Tx.Write tx, Key pk, Instant i) {
+    public void markReachable(Tx.Write tx, Key pk, InstantWithoutNanos i) {
         reachableMap.put(tx, pk, i.toEpochMilli());
     }
 
@@ -168,7 +168,7 @@ public class RpkiObjectStore extends GenericStoreImpl<RpkiObject> implements Rpk
     }
 
     @Override
-    public long deleteUnreachableObjects(Instant unreachableSince) {
+    public long deleteUnreachableObjects(InstantWithoutNanos unreachableSince) {
         final List<Key> toDelete = new ArrayList<>();
         storage.readTx0(tx ->
                 reachableMap.forEach(tx, (k, bytes) -> {
@@ -216,7 +216,7 @@ public class RpkiObjectStore extends GenericStoreImpl<RpkiObject> implements Rpk
 
     @Override
     public void markReachable(Tx.Write tx, List<Key> rpkiObjectsKeys) {
-        final Instant now = Instant.now();
+        final InstantWithoutNanos now = InstantWithoutNanos.now();
         rpkiObjectsKeys.forEach(pk -> markReachable(tx, pk, now));
     }
 

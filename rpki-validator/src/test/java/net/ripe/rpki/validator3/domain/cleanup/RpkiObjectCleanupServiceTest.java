@@ -35,6 +35,7 @@ import net.ripe.ipresource.IpResourceSet;
 import net.ripe.rpki.commons.crypto.ValidityPeriod;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificateBuilder;
 import net.ripe.rpki.validator3.IntegrationTest;
+import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.domain.ta.TrustAnchorsFactory;
 import net.ripe.rpki.validator3.storage.data.RoaPrefix;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
@@ -49,7 +50,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.security.auth.x500.X500Principal;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Collections;
 
 import static net.ripe.rpki.validator3.domain.ta.TrustAnchorsFactory.KEY_PAIR_FACTORY;
@@ -93,7 +93,7 @@ public class RpkiObjectCleanupServiceTest extends GenericStorageTest {
         // Orphan is still new, so nothing to delete
         assertThat(subject.cleanupRpkiObjects()).isEqualTo(0);
 
-        wtx0(tx -> rpkiObjects.markReachable(tx, orphan.key(), Instant.now().minus(Duration.ofDays(10))));
+        wtx0(tx -> rpkiObjects.markReachable(tx, orphan.key(), InstantWithoutNanos.now().minus(Duration.ofDays(10))));
 
         // Orphan is now old, so should be deleted
         assertThat(subject.cleanupRpkiObjects()).isEqualTo(1);

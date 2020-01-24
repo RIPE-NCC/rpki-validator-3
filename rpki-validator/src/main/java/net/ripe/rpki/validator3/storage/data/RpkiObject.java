@@ -44,6 +44,7 @@ import net.ripe.rpki.commons.crypto.util.CertificateRepositoryObjectFactory;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificate;
 import net.ripe.rpki.commons.validation.ValidationResult;
+import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.storage.Binary;
 import net.ripe.rpki.validator3.util.Bench;
@@ -55,7 +56,6 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.math.BigInteger;
 import java.net.URI;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -87,7 +87,7 @@ public class RpkiObject extends Base<RpkiObject> {
 
     private BigInteger serialNumber;
 
-    private Instant signingTime;
+    private InstantWithoutNanos signingTime;
 
     private byte[] authorityKeyIdentifier;
 
@@ -121,13 +121,13 @@ public class RpkiObject extends Base<RpkiObject> {
         } else if (object instanceof X509Crl) {
             this.serialNumber = ((X509Crl) object).getNumber();
             final DateTime signingTime = ((X509Crl) object).getThisUpdateTime();
-            this.signingTime = signingTime != null ? Instant.ofEpochMilli(signingTime.getMillis()) : null;
+            this.signingTime = signingTime != null ? InstantWithoutNanos.ofEpochMilli(signingTime.getMillis()) : null;
             this.authorityKeyIdentifier = ((X509Crl) object).getAuthorityKeyIdentifier();
             this.type = Type.CRL;
         } else if (object instanceof RpkiSignedObject) {
             this.serialNumber = ((RpkiSignedObject) object).getCertificate().getSerialNumber();
             final DateTime signingTime = ((RpkiSignedObject) object).getSigningTime();
-            this.signingTime = signingTime != null ? Instant.ofEpochMilli(signingTime.getMillis()) : null;
+            this.signingTime = signingTime != null ? InstantWithoutNanos.ofEpochMilli(signingTime.getMillis()) : null;
             this.authorityKeyIdentifier = ((RpkiSignedObject) object).getCertificate().getAuthorityKeyIdentifier();
             if (object instanceof ManifestCms) {
                 this.type = Type.MFT;

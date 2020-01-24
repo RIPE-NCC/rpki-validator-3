@@ -33,9 +33,9 @@ import lombok.Getter;
 import lombok.Setter;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.commons.validation.ValidationStatus;
+import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.storage.data.Base;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,7 +53,7 @@ public abstract class ValidationRun extends Base<ValidationRun> {
 
     @Getter
     @Setter
-    private Instant completedAt;
+    private InstantWithoutNanos completedAt;
 
     @Setter
     private String status = Status.RUNNING.name();
@@ -72,12 +72,12 @@ public abstract class ValidationRun extends Base<ValidationRun> {
     }
 
     public void setSucceeded() {
-        this.completedAt = Instant.now();
+        this.completedAt = InstantWithoutNanos.now();
         this.status = Status.SUCCEEDED.name();
     }
 
     public void setFailed() {
-        this.completedAt = Instant.now();
+        this.completedAt = InstantWithoutNanos.now();
         this.status = Status.FAILED.name();
     }
 

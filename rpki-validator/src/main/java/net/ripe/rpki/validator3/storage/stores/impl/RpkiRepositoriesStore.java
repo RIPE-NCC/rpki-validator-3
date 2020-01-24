@@ -34,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.storage.IxMap;
@@ -52,7 +53,6 @@ import org.springframework.stereotype.Component;
 
 import javax.validation.constraints.NotNull;
 import java.net.URI;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -146,7 +146,7 @@ public class RpkiRepositoriesStore extends GenericStoreImpl<RpkiRepository> impl
 
     @Override
     public void update(Tx.Write tx, RpkiRepository rpkiRepository) {
-        rpkiRepository.setUpdatedAt(Instant.now());
+        rpkiRepository.setUpdatedAt(InstantWithoutNanos.now());
         ixMap.put(tx, rpkiRepository.key(), rpkiRepository);
     }
 
