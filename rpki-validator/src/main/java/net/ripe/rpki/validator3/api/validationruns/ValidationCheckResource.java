@@ -39,15 +39,15 @@ import java.util.List;
 @Data(staticConstructor = "of")
 @ApiModel(value = "ValidationCheck")
 public class ValidationCheckResource {
-    @ApiModelProperty(required = true, position = 1)
+    @ApiModelProperty(required = true, position = 1, example = "rsync://rpki.cnnic.cn/rpki/A9162E3D0000/BBYptqnqt8sTJOo5ePA3lviJtUA.crl")
     final String location;
-    @ApiModelProperty(required = true, position = 2)
+    @ApiModelProperty(required = true, position = 2, example = "WARNING")
     final ValidationCheck.Status status;
-    @ApiModelProperty(required = true, position = 4)
+    @ApiModelProperty(required = true, position = 4, example = "crl.next.update.before.now")
     final String key;
-    @ApiModelProperty(required = true, position = 3)
+    @ApiModelProperty(required = true, position = 3, example = "[\"2020-01-09T23:15:45.000Z\"]")
     final List<String> parameters;
-    @ApiModelProperty(required = false, position = 5)
+    @ApiModelProperty(required = false, position = 5, example = "CRL next update was expected on or before 2020-01-09T23:15:45.000Z")
     final String formattedMessage;
 
     public static ValidationCheckResource of(ValidationCheck check, String formattedMessage) {

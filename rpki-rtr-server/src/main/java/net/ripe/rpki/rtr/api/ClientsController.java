@@ -41,6 +41,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Comparator;
 import java.util.stream.Stream;
 
+@io.swagger.annotations.Api(tags = "Clients")
 @RestController
 @RequestMapping(path = "/clients", produces = Api.API_MIME_TYPE)
 @Slf4j

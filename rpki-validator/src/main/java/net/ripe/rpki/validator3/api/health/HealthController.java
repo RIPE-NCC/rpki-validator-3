@@ -29,11 +29,13 @@
  */
 package net.ripe.rpki.validator3.api.health;
 
+import io.swagger.annotations.ApiOperation;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.api.Api;
+import net.ripe.rpki.validator3.api.ValidatorApi;
 import net.ripe.rpki.validator3.api.ApiResponse;
+import net.ripe.rpki.validator3.api.InternalApiCall;
 import net.ripe.rpki.validator3.api.bgp.BgpPreviewService;
 import net.ripe.rpki.validator3.api.bgp.BgpRisDump;
 import net.ripe.rpki.validator3.api.trustanchors.TaStatus;
@@ -52,14 +54,14 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@InternalApiCall
 @RestController
-@RequestMapping(path = "/api/healthcheck", produces = {Api.API_MIME_TYPE, "application/json"})
+@RequestMapping(path = "/api/healthcheck", produces = {ValidatorApi.API_MIME_TYPE, "application/json"})
 @Slf4j
 public class HealthController {
 
@@ -78,9 +80,9 @@ public class HealthController {
     @Autowired
     private Storage storage;
 
+    @ApiOperation("Get result of validator health checks")
     @GetMapping
     public ResponseEntity<ApiResponse<?>> health() {
-
         try {
             final List<TaHealth> trustAnchorReady = storage.readTx(tx -> trustAnchors.getStatuses(tx))
                 .stream()

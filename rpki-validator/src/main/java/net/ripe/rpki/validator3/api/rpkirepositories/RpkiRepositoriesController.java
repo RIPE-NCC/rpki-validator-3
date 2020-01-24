@@ -29,13 +29,11 @@
  */
 package net.ripe.rpki.validator3.api.rpkirepositories;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.api.Api;
-import net.ripe.rpki.validator3.api.ApiResponse;
-import net.ripe.rpki.validator3.api.Metadata;
-import net.ripe.rpki.validator3.api.Paging;
-import net.ripe.rpki.validator3.api.SearchTerm;
-import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.api.*;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.Storage;
@@ -56,10 +54,14 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.SORT_BY_ALLOWABLE_VALUES;
+import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.SORT_DIRECTION_ALLOWABLE_VALUES;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
+@PublicApiCall
 @RestController
-@RequestMapping(path = "/api/rpki-repositories", produces = {Api.API_MIME_TYPE, "application/json"})
+@Api(tags = "RPKI repositories")
+@RequestMapping(path = "/api/rpki-repositories", produces = {ValidatorApi.API_MIME_TYPE, "application/json"})
 @Slf4j
 public class RpkiRepositoriesController {
 
@@ -72,14 +74,19 @@ public class RpkiRepositoriesController {
         this.storage = storage;
     }
 
+    @ApiOperation("Get repositories (matching parameters)")
     @GetMapping
     public ResponseEntity<ApiResponse<Stream<RpkiRepositoryResource>>> list(
+            @ApiParam("Validation status")
             @RequestParam(name = "status", required = false) RpkiRepository.Status status,
+            @ApiParam("Trust anchor id")
             @RequestParam(name = "ta", required = false) Long taId,
             @RequestParam(name = "startFrom", defaultValue = "0") long startFrom,
             @RequestParam(name = "pageSize", defaultValue = "20") long pageSize,
             @RequestParam(name = "search", defaultValue = "", required = false) String searchString,
+            @ApiParam(allowableValues = SORT_BY_ALLOWABLE_VALUES)
             @RequestParam(name = "sortBy", defaultValue = "location") String sortBy,
+            @ApiParam(allowableValues = SORT_DIRECTION_ALLOWABLE_VALUES)
             @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection,
             @RequestParam(name = "hideChildrenOfDownloadedParent", defaultValue = "true") boolean hideChildrenOfDownloadedParent
     ) {
@@ -108,6 +115,7 @@ public class RpkiRepositoriesController {
         });
     }
 
+    @ApiOperation("Get repository by id")
     @GetMapping(path = "/{id}")
     public ResponseEntity<ApiResponse<RpkiRepositoryResource>> get(@PathVariable long id) {
         return storage.readTx(tx -> rpkiRepositories.get(tx, Key.of(id)))
@@ -115,6 +123,7 @@ public class RpkiRepositoriesController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @ApiOperation("Repository status by trust anchor")
     @GetMapping(path = "/statuses/{taId}")
     public ApiResponse<RepositoriesStatus> repositories(
             @PathVariable long taId,
@@ -130,6 +139,7 @@ public class RpkiRepositoriesController {
         )).build();
     }
 
+    @ApiOperation("Delete repository by id")
     @DeleteMapping(path = "/{id}")
     public ResponseEntity<?> delete(@PathVariable long id) {
         storage.writeTx0(tx -> rpkiRepositories.remove(tx, Key.of(id)));

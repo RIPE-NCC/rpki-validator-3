@@ -29,11 +29,15 @@
  */
 package net.ripe.rpki.validator3.api.util;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.IpRange;
-import net.ripe.rpki.validator3.api.Api;
+import net.ripe.rpki.validator3.api.ValidatorApi;
 import net.ripe.rpki.validator3.api.ApiError;
 import net.ripe.rpki.validator3.api.ApiResponse;
+import net.ripe.rpki.validator3.api.PublicApiCall;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,11 +45,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Api(tags = "Input validation")
+@PublicApiCall
 @RestController
-@RequestMapping(path = "/api/validate", produces = {Api.API_MIME_TYPE, "application/json"})
+@RequestMapping(path = "/api/validate", produces = {ValidatorApi.API_MIME_TYPE, "application/json"})
 @Slf4j
 public class CommonValidationController {
 
+    @ApiOperation("Validate that value is a valid prefix")
     @GetMapping(path = "/prefix")
     public ResponseEntity<ApiResponse<String>> validatePrefix(
             @RequestParam(name = "p") String prefix)

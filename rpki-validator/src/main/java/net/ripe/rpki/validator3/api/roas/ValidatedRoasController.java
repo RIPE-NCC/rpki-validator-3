@@ -29,9 +29,11 @@
  */
 package net.ripe.rpki.validator3.api.roas;
 
+import io.swagger.annotations.ApiModelProperty;
+import io.swagger.annotations.ApiParam;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.api.Api;
+import net.ripe.rpki.validator3.api.ValidatorApi;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.api.Metadata;
 import net.ripe.rpki.validator3.api.Paging;
@@ -49,10 +51,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.stream.Stream;
 
+import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.*;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @RestController
-@RequestMapping(path = "/api/roas", produces = {Api.API_MIME_TYPE, "application/json"})
+@RequestMapping(path = "/api/roas", produces = {ValidatorApi.API_MIME_TYPE, "application/json"})
 @Slf4j
 public class ValidatedRoasController {
     @Autowired
@@ -63,7 +66,9 @@ public class ValidatedRoasController {
             @RequestParam(name = "startFrom", defaultValue = "0") long startFrom,
             @RequestParam(name = "pageSize", defaultValue = "20") long pageSize,
             @RequestParam(name = "search", defaultValue = "", required = false) String searchString,
+            @ApiParam(allowableValues = SORT_BY_ALLOWABLE_VALUES)
             @RequestParam(name = "sortBy", defaultValue = "prefix") String sortBy,
+            @ApiParam(allowableValues = SORT_DIRECTION_ALLOWABLE_VALUES)
             @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection) {
 
         final SearchTerm searchTerm = StringUtils.isNotBlank(searchString) ? new SearchTerm(searchString) : null;
@@ -94,9 +99,12 @@ public class ValidatedRoasController {
 
     @Value
     class RoaPrefix {
+        @ApiModelProperty(value = ASN_PROPERTY, example = ASN_EXAMPLE)
         private String asn;
         private String prefix;
+        @ApiModelProperty(MAXLENGTH_PROPERTY)
         private int length;
+        @ApiModelProperty(value = TRUST_ANCHOR, example = TRUST_ANCHOR_EXAMPLE)
         private String trustAnchor;
         private String uri;
     }

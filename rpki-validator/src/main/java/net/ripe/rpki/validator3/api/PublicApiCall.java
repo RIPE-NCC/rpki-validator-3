@@ -27,42 +27,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.api.roaprefixassertions;
+package net.ripe.rpki.validator3.api;
 
-import io.swagger.annotations.ApiModelProperty;
-import lombok.Builder;
-import lombok.Data;
-import net.ripe.rpki.validator3.domain.constraints.ValidAddRoaPrefixAssertion;
-import net.ripe.rpki.validator3.domain.constraints.ValidAsn;
-import net.ripe.rpki.validator3.domain.constraints.ValidPrefix;
+import java.lang.annotation.*;
 
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
-
-import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.*;
-
-@Data(staticConstructor = "of")
-@Builder
-@ValidAddRoaPrefixAssertion
-public class AddRoaPrefixAssertion {
-    @ApiModelProperty(position = 1, required = true, value = ASN_PROPERTY, example = ASN_EXAMPLE)
-    @NotNull
-    @ValidAsn
-    String asn;
-
-    @ApiModelProperty(position = 2, required = true, example = PREFIX_EXAMPLE)
-    @NotNull
-    @ValidPrefix
-    String prefix;
-
-    @ApiModelProperty(position = 3, value = MAXLENGTH_PROPERTY)
-    @Min(0)
-    @Max(128)
-    Integer maximumLength;
-
-    @ApiModelProperty(position = 4)
-    @Size(max = 2000)
-    String comment;
+@Target({ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface PublicApiCall {
 }

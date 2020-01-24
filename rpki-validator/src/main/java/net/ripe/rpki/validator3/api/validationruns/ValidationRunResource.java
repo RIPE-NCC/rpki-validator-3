@@ -56,7 +56,10 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @Data
 @Builder
-@ApiModel(value = "ValidationRun")
+@ApiModel(
+        value = "ValidationRun",
+        description = "The result of a validation run (at a point in time) of the validator."
+)
 public class ValidationRunResource {
     @ApiModelProperty(
             allowableValues = TrustAnchorValidationRun.TYPE + "," +
@@ -70,6 +73,10 @@ public class ValidationRunResource {
 
     Instant completedAt;
 
+    @ApiModelProperty(
+            allowableValues = "RUNNING, SUCCEEDED, FAILED",
+            example = "SUCCEEDED"
+    )
     String status;
 
     List<ValidationCheckResource> validationChecks;

@@ -167,14 +167,14 @@ public class JobExecutor {
         private Job job;
     }
 
-    @EqualsAndHashCode
+    @EqualsAndHashCode(callSuper = true)
     public static class Just extends JobWrap {
         public Just(Job job) {
             super(job);
         }
     }
 
-    @EqualsAndHashCode
+    @EqualsAndHashCode(callSuper = true)
     public static class Repeat extends JobWrap {
         private final Duration interval;
 

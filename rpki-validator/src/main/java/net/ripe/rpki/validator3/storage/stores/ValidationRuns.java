@@ -53,6 +53,8 @@ public interface ValidationRuns {
 
     <T extends ValidationRun> Optional<T> get(Tx.Read tx, Class<T> type, long id);
 
+    <T extends ValidationRun> List<T> findAll(Tx.Read tx);
+
     <T extends ValidationRun> List<T> findAll(Tx.Read tx, Class<T> type);
 
     <T extends ValidationRun> List<T> findLatestSuccessful(Tx.Read tx, Class<T> type);

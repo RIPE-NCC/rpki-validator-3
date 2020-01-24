@@ -182,6 +182,15 @@ public class ValidationRunsStore implements ValidationRuns {
     }
 
     @Override
+    public <T extends ValidationRun> List<T> findAll(Tx.Read tx) {
+        final List<T> result = new ArrayList<>();
+        maps.values().forEach(ixMap ->
+                ixMap.forEach(tx, (k, bb) ->
+                        result.add((T) ixMap.toValue(bb))));
+        return result;
+    }
+
+    @Override
     public <T extends ValidationRun> List<T> findAll(Tx.Read tx, Class<T> type) {
         final List<T> result = new ArrayList<>();
         pickIxMaps(type).forEach(ixMap ->
@@ -194,7 +203,7 @@ public class ValidationRunsStore implements ValidationRuns {
     @SuppressWarnings("unchecked")
     public <T extends ValidationRun> List<T> findLatestSuccessful(Tx.Read tx, Class<T> type) {
         final List<T> result = new ArrayList<>();
-        List<IxMap<ValidationRun>> ixMaps = pickIxMaps(type);
+        List<IxMap<? extends ValidationRun>> ixMaps = pickIxMaps(type);
         ixMaps.forEach(ixMap ->
                 ixMap.getByIdxDescendingWhere(BY_COMPLETED_AT_INDEX, tx, ValidationRun::isSucceeded)
                         .forEach((k, v) -> result.add((T) v)));
@@ -430,14 +439,13 @@ public class ValidationRunsStore implements ValidationRuns {
         return (IxMap<T>) ixMap;
     }
 
-    private List<IxMap<ValidationRun>> pickIxMaps(Class<? extends ValidationRun> c) {
-        List<IxMap<ValidationRun>> ixMaps = new ArrayList<>();
-
+    private List<IxMap<? extends ValidationRun>> pickIxMaps(Class<? extends ValidationRun> c) {
+        List<IxMap<? extends ValidationRun>> ixMaps = new ArrayList<>();
         try {
             String validationRunType = FieldUtils.readDeclaredStaticField(c, "TYPE").toString();
             ixMaps.add(pickIxMap(validationRunType));
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException("Validation run "+c.toGenericString()+" has not static TYPE field declared.");
+        } catch (IllegalAccessException | IllegalArgumentException e) {
+            ixMaps.addAll(maps.values());
         }
         return ixMaps;
     }

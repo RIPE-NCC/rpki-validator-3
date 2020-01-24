@@ -39,6 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.stream.Stream;
 
+@io.swagger.annotations.Api(tags = "Cache")
 @RestController
 @RequestMapping(path = "/cache", produces = Api.API_MIME_TYPE)
 @Slf4j

@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.api.ignorefilters;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Builder;
 import lombok.Data;
+import net.ripe.rpki.validator3.api.ModelPropertyDescriptions;
 import net.ripe.rpki.validator3.domain.constraints.ValidAddIgnoreFilter;
 import net.ripe.rpki.validator3.domain.constraints.ValidAsn;
 import net.ripe.rpki.validator3.domain.constraints.ValidPrefix;
@@ -40,12 +41,11 @@ import net.ripe.rpki.validator3.domain.constraints.ValidPrefix;
 @Builder
 @ValidAddIgnoreFilter
 public class AddIgnoreFilter {
-
-    @ApiModelProperty(position = 1)
+    @ApiModelProperty(position = 1, value = ModelPropertyDescriptions.ASN_PROPERTY, example = ModelPropertyDescriptions.ASN_EXAMPLE)
     @ValidAsn
     String asn;
 
-    @ApiModelProperty(position = 2)
+    @ApiModelProperty(position = 2, example = ModelPropertyDescriptions.PREFIX_EXAMPLE)
     @ValidPrefix
     String prefix;
 
