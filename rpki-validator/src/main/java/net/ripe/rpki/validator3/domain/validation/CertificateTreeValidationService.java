@@ -67,7 +67,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -318,7 +317,9 @@ public class CertificateTreeValidationService {
                     return new Tuple2<>(keys, vr);
                 })
                 .forEachOrdered(t -> {
-                    validatedObjects.addAll(t.v1());
+                    synchronized (validatedObjects) {
+                        validatedObjects.addAll(t.v1());
+                    }
                     synchronized (temporary) {
                         temporary.addAll(t.v2());
                     }
