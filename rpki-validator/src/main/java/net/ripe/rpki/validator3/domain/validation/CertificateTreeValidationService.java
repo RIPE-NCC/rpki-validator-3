@@ -73,6 +73,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_CRL_FOUND;
@@ -305,12 +306,8 @@ public class CertificateTreeValidationService {
 
             manifest.getFiles().entrySet()
                 .parallelStream()
-                .map(entry -> getManifestEntry(manifestUri, entry))
-                .filter(t -> t.v2().isPresent())
-                .map(t -> t.map2(Optional::get))
-                .map(t -> getCertificateRepositoryObjectValidationContext(trustAnchor, context, validatedObjects, crlUri, x509Crl, t))
-                .filter(t -> t.v1().isPresent())
-                .map(t -> t.map1(Optional::get))
+                .flatMap(entry -> getManifestEntry(manifestUri, entry))
+                .flatMap(t -> getCertificateRepositoryObjectValidationContext(trustAnchor, context, validatedObjects, crlUri, x509Crl, t))
                 .map(tuple -> {
                     final ValidationResult vr = tuple.v2();
                     final List<Key> keys = validateCertificateAuthority(trustAnchor, registeredRepositories, tuple.v1(), vr);
@@ -338,22 +335,24 @@ public class CertificateTreeValidationService {
         return validatedObjects;
     }
 
-    private Tuple3<URI, Optional<RpkiObject>, ValidationResult> getManifestEntry(URI manifestUri, Map.Entry<String, byte[]> entry) {
+    private Stream<Tuple3<URI, RpkiObject, ValidationResult>> getManifestEntry(URI manifestUri,
+                                                                               Map.Entry<String, byte[]> entry) {
         URI location = manifestUri.resolve(entry.getKey());
         ValidationResult temporary = ValidationResult.withLocation(new ValidationLocation(location));
 
         Optional<RpkiObject> object = storage.readTx(tx -> rpkiObjects.findBySha256(tx, entry.getValue()));
         temporary.rejectIfFalse(object.isPresent(), VALIDATOR_MANIFEST_ENTRY_FOUND, manifestUri.toASCIIString());
 
-        Optional<RpkiObject> actualObject = object.flatMap(obj -> {
+        Optional<RpkiObject> rpkiObject = object.flatMap(obj -> {
             boolean hashMatches = Arrays.equals(obj.getSha256(), entry.getValue());
             temporary.rejectIfFalse(hashMatches, VALIDATOR_MANIFEST_ENTRY_HASH_MATCHES, entry.getKey());
             return hashMatches ? object : Optional.empty();
         });
-        return new Tuple3<>(location, actualObject, temporary);
+
+        return rpkiObject.stream().map(value -> new Tuple3<>(location, value, temporary));
     }
 
-    private Tuple2<Optional<CertificateRepositoryObjectValidationContext>, ValidationResult>
+    private Stream<Tuple2<CertificateRepositoryObjectValidationContext, ValidationResult>>
         getCertificateRepositoryObjectValidationContext(TrustAnchor trustAnchor,
                                                         CertificateRepositoryObjectValidationContext context,
                                                         List<Key> validatedObjects,
@@ -374,9 +373,7 @@ public class CertificateTreeValidationService {
                     certificateRepositoryObject.validate(location.toASCIIString(), context, crl, crlUri, VALIDATION_OPTIONS, temporary));
 
                 if (!temporary.hasFailureForCurrentLocation()) {
-                    synchronized (validatedObjects) {
                         validatedObjects.add(rpkiObject.key());
-                    }
                 }
 
                 if (certificateRepositoryObject instanceof X509ResourceCertificate
@@ -384,11 +381,11 @@ public class CertificateTreeValidationService {
                     && !temporary.hasFailureForCurrentLocation()) {
 
                     final CertificateRepositoryObjectValidationContext childContext = context.createChildContext(location, (X509ResourceCertificate) certificateRepositoryObject);
-                    return new Tuple2<>(Optional.of(childContext), temporary);
+                    return Stream.of(new Tuple2<>(childContext, temporary));
                 }
             }
         }
-        return new Tuple2<>(Optional.empty(), temporary);
+        return Stream.empty();
     }
 
 
