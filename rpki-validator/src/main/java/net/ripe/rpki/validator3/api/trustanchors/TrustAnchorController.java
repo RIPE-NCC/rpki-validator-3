@@ -29,15 +29,11 @@
  */
 package net.ripe.rpki.validator3.api.trustanchors;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.api.Api;
-import net.ripe.rpki.validator3.api.ApiCommand;
-import net.ripe.rpki.validator3.api.ApiError;
-import net.ripe.rpki.validator3.api.ApiResponse;
-import net.ripe.rpki.validator3.api.Metadata;
-import net.ripe.rpki.validator3.api.Paging;
-import net.ripe.rpki.validator3.api.SearchTerm;
-import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.api.*;
 import net.ripe.rpki.validator3.api.validationruns.ValidationCheckResource;
 import net.ripe.rpki.validator3.api.validationruns.ValidationRunController;
 import net.ripe.rpki.validator3.api.validationruns.ValidationRunResource;
@@ -78,11 +74,15 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.SORT_BY_ALLOWABLE_VALUES;
+import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.SORT_DIRECTION_ALLOWABLE_VALUES;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
+@PublicApiCall
 @RestController
-@RequestMapping(path = "/api/trust-anchors", produces = { Api.API_MIME_TYPE, "application/json" })
+@Api(tags = "Trust Anchors")
+@RequestMapping(path = "/api/trust-anchors", produces = { ValidatorApi.API_MIME_TYPE, "application/json" })
 @Slf4j
 public class TrustAnchorController {
 
@@ -98,6 +98,7 @@ public class TrustAnchorController {
     @Autowired
     private Storage storage;
 
+    @ApiOperation("List the configured Trust Anchors")
     @GetMapping
     public ResponseEntity<ApiResponse<List<TrustAnchorResource>>> list(Locale locale) {
         return storage.readTx(tx -> ResponseEntity.ok(ApiResponse.data(
@@ -109,7 +110,8 @@ public class TrustAnchorController {
         )));
     }
 
-    @PostMapping(consumes = { Api.API_MIME_TYPE, "application/json" })
+    @ApiOperation("Add a Trust Anchor using a JSON payload")
+    @PostMapping(consumes = { ValidatorApi.API_MIME_TYPE, "application/json" })
     public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@RequestBody @Valid ApiCommand<AddTrustAnchor> command, Locale locale) {
         long id = trustAnchorService.execute(command.getData());
         return storage.readTx(tx -> {
@@ -119,6 +121,7 @@ public class TrustAnchorController {
         });
     }
 
+    @ApiOperation("Add a Trust Anchor from a file")
     @PostMapping(path = "/upload", consumes = "multipart/form-data")
     public ResponseEntity<ApiResponse<TrustAnchorResource>> add(@RequestParam("file") MultipartFile trustAnchorLocator, Locale locale) {
         try {
@@ -149,6 +152,7 @@ public class TrustAnchorController {
         }
     }
 
+    @ApiOperation("Get a trust anchor by (numeric) identifier")
     @GetMapping(path = "/{id}")
     public ResponseEntity<ApiResponse<TrustAnchorResource>> get(@PathVariable long id, Locale locale) {
         return storage.readTx(tx ->
@@ -171,13 +175,16 @@ public class TrustAnchorController {
         return ResponseEntity.notFound().build();
     }
 
+    @ApiOperation("Get validation issues")
     @GetMapping(path = "/{id}/validation-checks")
     public ResponseEntity<ApiResponse<Stream<ValidationCheckResource>>> validationChecks(
         @PathVariable long id,
         @RequestParam(name = "startFrom", defaultValue = "0") long startFrom,
         @RequestParam(name = "pageSize", defaultValue = "20") long pageSize,
         @RequestParam(name = "search", required = false) String searchString,
+        @ApiParam(allowableValues = SORT_BY_ALLOWABLE_VALUES)
         @RequestParam(name = "sortBy", defaultValue = "location") String sortBy,
+        @ApiParam(allowableValues = SORT_DIRECTION_ALLOWABLE_VALUES)
         @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection,
         Locale locale
     ) {
@@ -203,11 +210,13 @@ public class TrustAnchorController {
         });
     }
 
+    @ApiOperation("Get the statuses of all configured trust anchors")
     @GetMapping(path = "/statuses")
     public ApiResponse<List<TaStatus>> statuses() {
         return storage.readTx(tx -> ApiResponse.<List<TaStatus>>builder().data(trustAnchors.getStatuses(tx)).build());
     }
 
+    @ApiOperation("Delete a trust anchor by id")
     @DeleteMapping(path = "/{id}")
     public ResponseEntity<?> delete(@PathVariable long id) {
         trustAnchorService.remove(id);

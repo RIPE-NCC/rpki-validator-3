@@ -33,6 +33,7 @@ import net.ripe.rpki.validator3.api.StaticContentFixServlet;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
@@ -40,5 +41,40 @@ public class ServletConfig implements WebMvcConfigurer {
     @Bean
     public ServletRegistrationBean<StaticContentFixServlet> provisioningServlet() {
         return new ServletRegistrationBean<>(new StaticContentFixServlet(), "/index.html");
+    }
+
+    /**
+     * Mapping for Single Page Application (SPA).
+     * When a browser requests the path of a client-side route, return index.js. The Angular application will render
+     * the correct client side route. A number of paths are blacklisted from this (internal) redirect.
+     *
+     * From https://stackoverflow.com/questions/39331929/spring-catch-all-route-for-index-html/42998817#42998817
+     *
+     * Spring's route regex support (intended to capture variables from the path) is used here to white/blacklist
+     * paths that should not go to the SPA.
+     *
+     * The regex:
+     *   * Ignores names ending with an extension ([^\\.]+)
+     *   * <pre>{x:<regex>}</pre> syntax: Spring parses this part of the url path as a regex, captures it so it can be
+           used by a @PathParam with the given name (e.g. <pre>x</pre>).
+     *   * Blacklists a number of tokens, using:
+     *     * <pre>(?!<regex>)</pre>: Negative match.
+     *     * <pre>(?:<regex>)</pre>: Non-capturing group.
+     *       * Needed here for correct behaviour.
+     *
+     */
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        final String blackListedPaths = String.join("|", "api", "cache", "clients", "actuator");
+
+        // Root
+        registry.addViewController("/")
+                .setViewName("forward:/index.html");
+        // Single directory level
+        registry.addViewController(String.format("/{x:(?!(?:%s)$)[^\\.]+}", blackListedPaths))
+                .setViewName("forward:/index.html");
+        // Multi-level directory path (/first/second/.../n-th)
+        registry.addViewController(String.format("/{x:^(?!(?:%s)$).*$}/**/{y:[^\\.]*}", blackListedPaths))
+                .setViewName("forward:/index.html");
     }
 }

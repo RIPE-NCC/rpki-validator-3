@@ -27,46 +27,59 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.domain.cleanup;
+package net.ripe.rpki.validator3.api.util;
 
-import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
-import net.ripe.rpki.validator3.storage.Storage;
-import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
-import net.ripe.rpki.validator3.util.Time;
-import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import lombok.EqualsAndHashCode;
+import lombok.experimental.Delegate;
+import org.jetbrains.annotations.NotNull;
 
-import java.time.Duration;
+import java.io.Serializable;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAdjuster;
+import java.time.temporal.TemporalAmount;
 
-@Service
-@Slf4j
-public class RpkiObjectCleanupService {
+@EqualsAndHashCode
+public class InstantWithoutNanos implements Temporal, TemporalAdjuster, Comparable<InstantWithoutNanos>, Serializable {
+    @Delegate(excludes = SkippedDelegatedMethods.class)
+    private final Instant instant;
 
-    @Autowired
-    private RpkiObjects rpkiObjects;
-
-    private final Duration cleanupGraceDuration;
-
-    private final Storage storage;
-
-
-    public RpkiObjectCleanupService(@Value("${rpki.validator.rpki.object.cleanup.grace.duration}") String cleanupGraceDuration,
-                                    Storage storage) {
-        this.cleanupGraceDuration = Duration.parse(cleanupGraceDuration);
-        log.info("Configured to remove objects older than {}", cleanupGraceDuration);
-        this.storage = storage;
+    private InstantWithoutNanos(Instant instant) {
+        this.instant = instant;
     }
 
-    public long cleanupRpkiObjects() throws Exception {
-        final InstantWithoutNanos unreachableSince = InstantWithoutNanos.now().minus(cleanupGraceDuration);
-        final Pair<Long, Long> deleted = Time.timed(() -> rpkiObjects.deleteUnreachableObjects(unreachableSince));
-        log.info("Removed {} RPKI objects that have not been marked reachable since {}, took {}ms", deleted.getLeft(), unreachableSince, deleted.getRight());
-        storage.gc();
-        return deleted.getLeft();
+    public static InstantWithoutNanos now() {
+        return from(Instant.now());
     }
 
+    public static InstantWithoutNanos from(Instant then) {
+        return new InstantWithoutNanos(then.truncatedTo(ChronoUnit.MILLIS));
+    }
+
+    public static InstantWithoutNanos ofEpochMilli(long fromByteArray) {
+        return from(Instant.ofEpochMilli(fromByteArray));
+    }
+
+    public boolean isBefore(InstantWithoutNanos then) {
+        return instant.isBefore(then.instant);
+    }
+
+    public InstantWithoutNanos minus(TemporalAmount amountToSubtract) {
+        return from(instant.minus(amountToSubtract));
+    }
+
+    @Override
+    public int compareTo(@NotNull InstantWithoutNanos that) {
+        return this.instant.compareTo(that.instant);
+    }
+
+    @Override
+    public String toString() {
+        return instant.toString();
+    }
+}
+
+interface SkippedDelegatedMethods {
+    public Instant minus(TemporalAmount amountToSubtract);
 }

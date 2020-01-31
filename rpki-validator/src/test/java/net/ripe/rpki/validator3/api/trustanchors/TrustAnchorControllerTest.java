@@ -32,7 +32,7 @@ package net.ripe.rpki.validator3.api.trustanchors;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.ripe.rpki.validator3.IntegrationTest;
-import net.ripe.rpki.validator3.api.Api;
+import net.ripe.rpki.validator3.api.ValidatorApi;
 import net.ripe.rpki.validator3.api.ApiCommand;
 import net.ripe.rpki.validator3.api.ApiResponse;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
@@ -83,8 +83,8 @@ public class TrustAnchorControllerTest {
     public void should_add_trust_anchor() throws Exception {
         ResultActions result = mvc.perform(
             post("/api/trust-anchors")
-                .accept(Api.API_MIME_TYPE)
-                .contentType(Api.API_MIME_TYPE)
+                .accept(ValidatorApi.API_MIME_TYPE)
+                .contentType(ValidatorApi.API_MIME_TYPE)
                 .content(objectMapper.writeValueAsString(ApiCommand.of(AddTrustAnchor.builder()
                     .type(TrustAnchor.TYPE)
                     .name(TEST_CA_NAME)
@@ -96,7 +96,7 @@ public class TrustAnchorControllerTest {
 
         result
             .andExpect(status().isCreated())
-            .andExpect(content().contentType(Api.API_MIME_TYPE));
+            .andExpect(content().contentType(ValidatorApi.API_MIME_TYPE));
 
         ApiResponse<TrustAnchorResource> response = addTrustAnchorResponse(result);
         assertThat(response.getData()).isNotNull();
@@ -106,10 +106,10 @@ public class TrustAnchorControllerTest {
         Link selfRel = resource.getLinks().getLink("self");
         mvc.perform(
             get(selfRel.getHref())
-                .accept(Api.API_MIME_TYPE)
+                .accept(ValidatorApi.API_MIME_TYPE)
         )
             .andExpect(status().isOk())
-            .andExpect(content().contentType(Api.API_MIME_TYPE))
+            .andExpect(content().contentType(ValidatorApi.API_MIME_TYPE))
             .andExpect(jsonPath("$.data.name").value(TEST_CA_NAME));
     }
 
@@ -117,8 +117,8 @@ public class TrustAnchorControllerTest {
     public void should_fail_on_invalid_request() throws Exception {
         ResultActions result = mvc.perform(
             post("/api/trust-anchors")
-                .accept(Api.API_MIME_TYPE)
-                .contentType(Api.API_MIME_TYPE)
+                .accept(ValidatorApi.API_MIME_TYPE)
+                .contentType(ValidatorApi.API_MIME_TYPE)
                 .content(objectMapper.writeValueAsString(ApiCommand.of(AddTrustAnchor.builder()
                     .type(TrustAnchor.TYPE)
                     .name(TEST_CA_NAME)
@@ -130,7 +130,7 @@ public class TrustAnchorControllerTest {
 
         result
             .andExpect(status().isBadRequest())
-            .andExpect(content().contentType(Api.API_MIME_TYPE));
+            .andExpect(content().contentType(ValidatorApi.API_MIME_TYPE));
 
         ApiResponse<TrustAnchorResource> response = addTrustAnchorResponse(result);
 

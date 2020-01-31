@@ -30,11 +30,11 @@
 package net.ripe.rpki.validator3.storage.encoding.custom;
 
 import com.google.common.primitives.Longs;
+import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -47,7 +47,7 @@ public class Coders {
         return s.getBytes(StandardCharsets.UTF_8);
     }
 
-    public static byte[] toBytes(Instant instant) {
+    public static byte[] toBytes(InstantWithoutNanos instant) {
         return Longs.toByteArray(instant.toEpochMilli());
     }
 
@@ -113,8 +113,8 @@ public class Coders {
         return ByteBuffer.wrap(bytes).getShort();
     }
 
-    public static Instant toInstant(byte[] bytes) {
-        return Instant.ofEpochMilli(Longs.fromByteArray(bytes));
+    public static InstantWithoutNanos toInstant(byte[] bytes) {
+        return InstantWithoutNanos.ofEpochMilli(Longs.fromByteArray(bytes));
     }
 
     public static String toString(byte[] bytes) {

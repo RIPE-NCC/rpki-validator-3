@@ -111,6 +111,9 @@ public class TrustAnchorsFactory {
         Security.addProvider(new BouncyCastleProvider());
     }
 
+    /**
+     * Instant is truncated to millis in ValidityPeriod constructor
+     */
     public ValidityPeriod typicalValidityPeriod() {
         return new ValidityPeriod(Instant.now(), Instant.now().plus(Duration.standardDays(1)));
     }

@@ -35,6 +35,7 @@ import net.ripe.ipresource.IpResourceSet;
 import net.ripe.rpki.commons.crypto.ValidityPeriod;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificateBuilder;
 import net.ripe.rpki.validator3.IntegrationTest;
+import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.domain.ta.TrustAnchorsFactory;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
@@ -54,7 +55,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.security.auth.x500.X500Principal;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -91,7 +91,7 @@ public class ValidationRunCleanupServiceTest extends GenericStorageTest {
     @Test
     public void shouldCleanUpOldValidationRun() {
 
-        final Instant lastMonth = Instant.now().minus(Duration.ofDays(30));
+        final InstantWithoutNanos lastMonth = InstantWithoutNanos.now().minus(Duration.ofDays(30));
         CertificateTreeValidationRun oldValidationRun = new CertificateTreeValidationRun(testTARef1);
         oldValidationRun.setCreatedAt(lastMonth);
         oldValidationRun.setCompletedAt(lastMonth);
@@ -104,7 +104,7 @@ public class ValidationRunCleanupServiceTest extends GenericStorageTest {
     @Test
     public void shouldCleanUpOldValidationRunDontDeleteLastSuccessful() {
 
-        final Instant lastMonth = Instant.now().minus(Duration.ofDays(30));
+        final InstantWithoutNanos lastMonth = InstantWithoutNanos.now().minus(Duration.ofDays(30));
         CertificateTreeValidationRun oldValidationRun = new CertificateTreeValidationRun(testTARef1);
         oldValidationRun.setCreatedAt(lastMonth);
         oldValidationRun.setCompletedAt(lastMonth);
@@ -123,7 +123,7 @@ public class ValidationRunCleanupServiceTest extends GenericStorageTest {
 
         Ref<TrustAnchor> testTARef2 = getStorage().readTx(tx -> getTrustAnchors().makeRef(tx, testTA1.key()));
 
-        final Instant lastMonth = Instant.now().minus(Duration.ofDays(30));
+        final InstantWithoutNanos lastMonth = InstantWithoutNanos.now().minus(Duration.ofDays(30));
         CertificateTreeValidationRun oldValidationRun = new CertificateTreeValidationRun(testTARef1);
         oldValidationRun.setCreatedAt(lastMonth);
         oldValidationRun.setCompletedAt(lastMonth);

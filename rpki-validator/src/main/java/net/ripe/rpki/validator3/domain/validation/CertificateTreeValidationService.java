@@ -42,6 +42,7 @@ import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.commons.validation.ValidationStatus;
 import net.ripe.rpki.commons.validation.ValidationString;
 import net.ripe.rpki.commons.validation.objectvalidators.CertificateRepositoryObjectValidationContext;
+import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
 import net.ripe.rpki.validator3.storage.Storage;
@@ -203,7 +204,7 @@ public class CertificateTreeValidationService {
     }
 
     private void markTaObjectsReachable(Tx.Write tx, X509ResourceCertificate taCertificate) {
-        final Instant now = Instant.now();
+        final InstantWithoutNanos now = InstantWithoutNanos.now();
         rpkiObjects.findLatestMftByAKI(tx, taCertificate.getSubjectKeyIdentifier())
             .ifPresent(manifest -> {
                 rpkiObjects.markReachable(tx, manifest.key(), now);

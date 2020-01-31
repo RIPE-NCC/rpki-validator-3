@@ -34,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.storage.IxMap;
 import net.ripe.rpki.validator3.storage.MultIxMap;
 import net.ripe.rpki.validator3.storage.Storage;
@@ -60,7 +61,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -155,7 +155,7 @@ public class ValidationRunsStore implements ValidationRuns {
     }
 
     private Set<Key> completedAtIndexKeys(ValidationRun vr) {
-        Instant completedAt = vr.getCompletedAt();
+        InstantWithoutNanos completedAt = vr.getCompletedAt();
         return completedAt != null ? Key.keys(Key.of(completedAt.toEpochMilli())) : Collections.emptySet();
     }
 
@@ -168,7 +168,7 @@ public class ValidationRunsStore implements ValidationRuns {
 
     @Override
     public <T extends ValidationRun> void update(Tx.Write tx, T vr) {
-        vr.setUpdatedAt(Instant.now());
+        vr.setUpdatedAt(InstantWithoutNanos.now());
         pickIxMap(vr.getType()).put(tx, vr.key(), vr);
     }
 
@@ -179,6 +179,15 @@ public class ValidationRunsStore implements ValidationRuns {
                 .filter(Optional::isPresent)
                 .findFirst()
                 .map(validationRun -> (T) validationRun.get());
+    }
+
+    @Override
+    public <T extends ValidationRun> List<T> findAll(Tx.Read tx) {
+        final List<T> result = new ArrayList<>();
+        maps.values().forEach(ixMap ->
+                ixMap.forEach(tx, (k, bb) ->
+                        result.add((T) ixMap.toValue(bb))));
+        return result;
     }
 
     @Override
@@ -194,7 +203,7 @@ public class ValidationRunsStore implements ValidationRuns {
     @SuppressWarnings("unchecked")
     public <T extends ValidationRun> List<T> findLatestSuccessful(Tx.Read tx, Class<T> type) {
         final List<T> result = new ArrayList<>();
-        List<IxMap<ValidationRun>> ixMaps = pickIxMaps(type);
+        List<IxMap<? extends ValidationRun>> ixMaps = pickIxMaps(type);
         ixMaps.forEach(ixMap ->
                 ixMap.getByIdxDescendingWhere(BY_COMPLETED_AT_INDEX, tx, ValidationRun::isSucceeded)
                         .forEach((k, v) -> result.add((T) v)));
@@ -226,7 +235,7 @@ public class ValidationRunsStore implements ValidationRuns {
     }
 
     @Override
-    public int removeOldValidationRuns(Tx.Write tx, Instant completedBefore) {
+    public int removeOldValidationRuns(Tx.Write tx, InstantWithoutNanos completedBefore) {
         final AtomicInteger count = new AtomicInteger(0);
         final Set<Key> taKeys = trustAnchors.keys(tx);
         maps.forEach((type, ixMap) -> {
@@ -430,14 +439,13 @@ public class ValidationRunsStore implements ValidationRuns {
         return (IxMap<T>) ixMap;
     }
 
-    private List<IxMap<ValidationRun>> pickIxMaps(Class<? extends ValidationRun> c) {
-        List<IxMap<ValidationRun>> ixMaps = new ArrayList<>();
-
+    private List<IxMap<? extends ValidationRun>> pickIxMaps(Class<? extends ValidationRun> c) {
+        List<IxMap<? extends ValidationRun>> ixMaps = new ArrayList<>();
         try {
             String validationRunType = FieldUtils.readDeclaredStaticField(c, "TYPE").toString();
             ixMaps.add(pickIxMap(validationRunType));
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException("Validation run "+c.toGenericString()+" has not static TYPE field declared.");
+        } catch (IllegalAccessException | IllegalArgumentException e) {
+            ixMaps.addAll(maps.values());
         }
         return ixMaps;
     }

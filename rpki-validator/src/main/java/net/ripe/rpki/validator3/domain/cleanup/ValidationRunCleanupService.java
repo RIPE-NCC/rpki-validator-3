@@ -30,6 +30,7 @@
 package net.ripe.rpki.validator3.domain.cleanup;
 
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Time;
@@ -39,7 +40,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
@@ -62,7 +62,7 @@ public class ValidationRunCleanupService {
     public Pair<AtomicInteger, AtomicInteger> cleanupValidationRuns() {
         AtomicInteger oldCount = new AtomicInteger();
         AtomicInteger orphanCount = new AtomicInteger();
-        Instant completedBefore = Instant.now().minus(cleanupGraceDuration);
+        InstantWithoutNanos completedBefore = InstantWithoutNanos.now().minus(cleanupGraceDuration);
         Long t = Time.timed(() -> {
             // Delete all validation runs older than `cleanupGraceDuration` that have a later validation run.
             oldCount.set(storage.writeTx(tx -> validationRuns.removeOldValidationRuns(tx, completedBefore)));

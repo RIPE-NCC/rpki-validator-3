@@ -31,7 +31,7 @@ package net.ripe.rpki.validator3.api.rpkirepositories;
 
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
-import net.ripe.rpki.validator3.api.Api;
+import net.ripe.rpki.validator3.api.ValidatorApi;
 import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import org.springframework.hateoas.Links;
@@ -48,7 +48,7 @@ public class RpkiRepositoryResource {
     @ApiModelProperty(allowableValues = RpkiRepository.TYPE, required = true, position = 1)
     final String type;
 
-    @ApiModelProperty(required = true, allowableValues = "range[" + Api.MINIMUM_VALID_ID + ",infinity]", example = "1", position = 2)
+    @ApiModelProperty(required = true, allowableValues = "range[" + ValidatorApi.MINIMUM_VALID_ID + ",infinity]", example = "1", position = 2)
     final long id;
 
     @NotNull

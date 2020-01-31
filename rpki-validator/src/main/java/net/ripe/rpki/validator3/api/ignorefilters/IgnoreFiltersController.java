@@ -29,14 +29,11 @@
  */
 package net.ripe.rpki.validator3.api.ignorefilters;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.api.Api;
-import net.ripe.rpki.validator3.api.ApiCommand;
-import net.ripe.rpki.validator3.api.ApiResponse;
-import net.ripe.rpki.validator3.api.Metadata;
-import net.ripe.rpki.validator3.api.Paging;
-import net.ripe.rpki.validator3.api.SearchTerm;
-import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.api.*;
 import net.ripe.rpki.validator3.api.roas.ObjectController;
 import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
@@ -63,9 +60,11 @@ import java.util.stream.Stream;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
+@PublicApiCall
 @RestController
 @Slf4j
-@RequestMapping(path = "/api/ignore-filters", produces = { Api.API_MIME_TYPE, "application/json" })
+@Api(tags = "Ignore filters")
+@RequestMapping(path = "/api/ignore-filters", produces = { ValidatorApi.API_MIME_TYPE, "application/json" })
 public class IgnoreFiltersController {
 
     @Autowired
@@ -74,12 +73,16 @@ public class IgnoreFiltersController {
     @Autowired
     private ValidatedRpkiObjects validatedRpkiObjects;
 
+    @ApiOperation("Get ignore filters (matching parameters)")
     @GetMapping
     public ResponseEntity<ApiResponse<Stream<IgnoreFilterDto>>> list(
             @RequestParam(name = "startFrom", defaultValue = "0") long startFrom,
             @RequestParam(name = "pageSize", defaultValue = "20") long pageSize,
+            @ApiParam("query string")
             @RequestParam(name = "search", defaultValue = "", required = false) String searchString,
+            @ApiParam(allowableValues = ModelPropertyDescriptions.SORT_BY_ALLOWABLE_VALUES)
             @RequestParam(name = "sortBy", defaultValue = "prefix") String sortBy,
+            @ApiParam(allowableValues = ModelPropertyDescriptions.SORT_DIRECTION_ALLOWABLE_VALUES)
             @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection) {
 
         final SearchTerm searchTerm = StringUtils.isNotBlank(searchString) ? new SearchTerm(searchString) : null;
@@ -107,7 +110,8 @@ public class IgnoreFiltersController {
         return ResponseEntity.ok(ignoreFilterResource(ignoreFilterService.get(id)));
     }
 
-    @PostMapping(consumes = { Api.API_MIME_TYPE, "application/json" })
+    @ApiOperation("Add ignore filter")
+    @PostMapping(consumes = { ValidatorApi.API_MIME_TYPE, "application/json" })
     public ResponseEntity<ApiResponse<IgnoreFilterDto>> add(@RequestBody @Valid ApiCommand<AddIgnoreFilter> command) throws Exception {
         final long id = ignoreFilterService.execute(command.getData());
         final IgnoreFilter ignoreFilter = ignoreFilterService.get(id);

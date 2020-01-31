@@ -32,7 +32,7 @@ package net.ripe.rpki.validator3.api.trustanchors;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Value;
-import net.ripe.rpki.validator3.api.Api;
+import net.ripe.rpki.validator3.api.ValidatorApi;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import org.springframework.hateoas.Links;
 
@@ -47,7 +47,7 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 public class TrustAnchorResource {
     @ApiModelProperty(allowableValues = TrustAnchor.TYPE, required = true, position = 1)
     String type;
-    @ApiModelProperty(required = true, allowableValues = "range[" + Api.MINIMUM_VALID_ID + ",infinity]", example = "1", position = 2)
+    @ApiModelProperty(required = true, allowableValues = "range[" + ValidatorApi.MINIMUM_VALID_ID + ",infinity]", example = "1", position = 2)
     long id;
     @ApiModelProperty(required = true, example = "RPKI CA", position = 3)
     String name;

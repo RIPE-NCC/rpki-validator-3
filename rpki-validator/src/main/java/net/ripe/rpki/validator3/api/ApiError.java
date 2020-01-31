@@ -30,6 +30,7 @@
 package net.ripe.rpki.validator3.api;
 
 import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Builder;
 import lombok.Value;
 import org.springframework.http.HttpStatus;
@@ -38,9 +39,12 @@ import org.springframework.http.HttpStatus;
 @Builder
 @ApiModel(value = "Error")
 public class ApiError {
+    @ApiModelProperty(value = "(HTTP) status code", example = "500", required = true)
     String status;
     String code;
+    @ApiModelProperty(value = "Reason for the error", example = "Internal Server Error", required = true)
     String title;
+    @ApiModelProperty(value = "More detailed description of the error", required = false)
     String detail;
     ApiErrorSource source;
 

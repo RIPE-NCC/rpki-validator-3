@@ -29,18 +29,10 @@
  */
 package net.ripe.rpki.validator3.api;
 
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
+import java.lang.annotation.*;
 
-@Controller
-public class AngularController {
-
-    /**
-     * @see <a href="https://stackoverflow.com/a/44850886">https://stackoverflow.com/a/44850886</a>
-     */
-    @GetMapping(value = "/**/{[path:[^\\.]*}", produces = "text/html")
-    public String redirect() {
-        // Forward to home page so that route is preserved.
-        return "forward:/";
-    }
+@Target({ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface PublicApiCall {
 }

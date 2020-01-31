@@ -31,6 +31,7 @@ package net.ripe.rpki.validator3.api.bgp;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedSet;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
@@ -74,6 +75,7 @@ import java.util.stream.Stream;
 
 import static java.util.Comparator.comparing;
 import static java.util.Comparator.comparingInt;
+import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.*;
 
 @Service
 @Slf4j
@@ -109,10 +111,13 @@ public class BgpPreviewService {
 
     @lombok.Value(staticConstructor = "of")
     public static class ValidatingRoa {
+        @ApiModelProperty(value = ORIGIN_PROPERTY, example = ASN_EXAMPLE)
         String origin;
         String prefix;
+        @ApiModelProperty(allowableValues = VALIDITY_ALLOWABLE_VALUES)
         String validity;
         Integer maxLength;
+        @ApiModelProperty(SOURCE_TRUST_ANCHOR)
         String source;
         String uri;
         Long roaPrefixAssertionId;
@@ -121,16 +126,21 @@ public class BgpPreviewService {
 
     @lombok.Value(staticConstructor = "of")
     public static class BgpValidity {
+        @ApiModelProperty(value = ORIGIN_PREFIXED_PROPERTY, example = ASN_PREFIXED_EXAMPLE)
         String origin;
         String prefix;
+        @ApiModelProperty(allowableValues = VALIDITY_ALLOWABLE_VALUES)
         String validity;
         List<ValidatingRoa> validatingRoas;
     }
 
     @lombok.Value(staticConstructor = "of")
     public static class BgpValidityWithFilteredResource {
+        @ApiModelProperty(value = ORIGIN_PREFIXED_PROPERTY, example = ASN_PREFIXED_EXAMPLE)
         String origin;
+        @ApiModelProperty(example = PREFIX_EXAMPLE)
         String prefix;
+        @ApiModelProperty(allowableValues = VALIDITY_ALLOWABLE_VALUES)
         String validity;
         List<ValidatingRoa> validatingRoas;
         List<ValidatingRoa> filteredRoas;

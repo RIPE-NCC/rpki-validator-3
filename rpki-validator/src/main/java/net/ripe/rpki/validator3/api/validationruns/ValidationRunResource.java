@@ -34,6 +34,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Builder;
 import lombok.Data;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorController;
+import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.RrdpRepositoryValidationRun;
@@ -44,7 +45,6 @@ import org.springframework.context.MessageSource;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -56,7 +56,10 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @Data
 @Builder
-@ApiModel(value = "ValidationRun")
+@ApiModel(
+        value = "ValidationRun",
+        description = "The result of a validation run (at a point in time) of the validator."
+)
 public class ValidationRunResource {
     @ApiModelProperty(
             allowableValues = TrustAnchorValidationRun.TYPE + "," +
@@ -66,10 +69,14 @@ public class ValidationRunResource {
             position = 1)
     String type;
 
-    Instant startedAt;
+    InstantWithoutNanos startedAt;
 
-    Instant completedAt;
+    InstantWithoutNanos completedAt;
 
+    @ApiModelProperty(
+            allowableValues = "RUNNING, SUCCEEDED, FAILED",
+            example = "SUCCEEDED"
+    )
     String status;
 
     List<ValidationCheckResource> validationChecks;

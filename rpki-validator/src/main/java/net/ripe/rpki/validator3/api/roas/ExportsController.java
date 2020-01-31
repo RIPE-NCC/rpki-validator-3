@@ -30,9 +30,12 @@
 package net.ripe.rpki.validator3.api.roas;
 
 import au.com.bytecode.opencsv.CSVWriter;
+import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiModelProperty;
+import io.swagger.annotations.ApiOperation;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.api.PublicApiCall;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.Settings;
@@ -44,7 +47,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.stream.Stream;
 
-import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.*;
 
 /**
  * Controller to export validated ROA prefix information.
@@ -52,6 +55,8 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
  * The API and data format is backwards compatible with the RPKI validator 2.x (see
  * https://github.com/RIPE-NCC/rpki-validator/blob/350d939d5e18858ee6cefc0c9a99e0c70b609b6d/rpki-validator-app/src/main/scala/net/ripe/rpki/validator/controllers/ExportController.scala#L41).
  */
+@Api(tags = "VRP export")
+@PublicApiCall
 @RestController
 @Slf4j
 public class ExportsController {
@@ -71,10 +76,10 @@ public class ExportsController {
         this.storage = storage;
     }
 
-    @GetMapping(path = "/api/export.json", produces = {JSON, APPLICATION_JSON_VALUE})
+    @ApiOperation("export VRPs (json)")
+    @GetMapping(path = "/api/export.json")
     public JsonExport exportJson(HttpServletResponse response) {
         response.setContentType(JSON);
-
 
         if (!storage.readTx(settings::isInitialValidationRunCompleted)) {
             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
@@ -95,7 +100,8 @@ public class ExportsController {
         return new JsonExport(validatedPrefixes);
     }
 
-    @GetMapping(path = "/api/export.csv", produces = CSV)
+    @ApiOperation("export VRPs (CSV)")
+    @GetMapping(path = "/api/export.csv")
     public void exportCsv(HttpServletResponse response) throws IOException {
         response.setContentType(CSV);
 
@@ -143,9 +149,12 @@ public class ExportsController {
 
     @Value
     private static class JsonRoaPrefix {
+        @ApiModelProperty(value = ASN_PROPERTY, example = ASN_EXAMPLE)
         private String asn;
+        @ApiModelProperty(example = PREFIX_EXAMPLE)
         private String prefix;
         private int maxLength;
+        @ApiModelProperty(value = TRUST_ANCHOR, example = TRUST_ANCHOR_EXAMPLE)
         private String ta;
     }
 }
