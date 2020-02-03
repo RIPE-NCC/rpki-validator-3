@@ -1,3 +1,6 @@
+* Mon Mon 3 2020 Mikhail Puzanov <mpuzanovg@ripe.net> - 3.1
+- Improve scalability for parallel validation execution, reduce memory usage.
+
 * Mon Jan 13 2020 Mikhail Puzanov <mpuzanovg@ripe.net> - 3.1
 - Add "rpki.validator.rsync.proxy.host" and "rpki.validator.rsync.proxy.port" settings to support HTTP and rsync
   proxies in uniform way.
