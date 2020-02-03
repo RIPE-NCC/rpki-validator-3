@@ -12,10 +12,10 @@
     <description>RPKI RTR server</description>
 
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.0.7.RELEASE</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <groupId>net.ripe.rpki</groupId>
+        <artifactId>rpki-validator-3-parent</artifactId>
+        <version>3.1-SNAPSHOT</version>
+        <relativePath>../rpki-parent/</relativePath>
     </parent>
 
     <licenses>
@@ -27,44 +27,13 @@
     </licenses>
 
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <java.version>1.8</java.version>
-
-        <maven.test.redirectTestOutputToFile>true</maven.test.redirectTestOutputToFile>
-
-        <springfox.version>2.7.0</springfox.version>
         <netty.version>4.1.19.Final</netty.version>
 
         <maven.build.timestamp.format>yyyy.MM.dd'.'HH.mm.ss</maven.build.timestamp.format>
-        <build.version>3.1</build.version>
-        <build.release>${maven.build.timestamp}</build.release>
         <jetty-http2-client.version>9.4.11.v20180605</jetty-http2-client.version>
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>net.ripe.rpki</groupId>
-            <artifactId>rpki-commons</artifactId>
-            <version>1.6-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger2</artifactId>
-            <version>${springfox.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-bean-validators</artifactId>
-            <version>${springfox.version}</version>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/javax.inject/javax.inject -->
-        <dependency>
-            <groupId>javax.inject</groupId>
-            <artifactId>javax.inject</artifactId>
-            <version>1</version>
-        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -77,12 +46,6 @@
             <groupId>org.springframework.hateoas</groupId>
             <artifactId>spring-hateoas</artifactId>
             <version>0.24.0.RELEASE</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -359,53 +322,6 @@
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
     </build>
-
-    <repositories>
-        <repository>
-            <id>spring-snapshots</id>
-            <name>Spring Snapshots</name>
-            <url>https://repo.spring.io/snapshot</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>spring-milestones</id>
-            <name>Spring Milestones</name>
-            <url>https://repo.spring.io/milestone</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-
-    <pluginRepositories>
-        <pluginRepository>
-            <id>spring-snapshots</id>
-            <name>Spring Snapshots</name>
-            <url>https://repo.spring.io/snapshot</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </pluginRepository>
-        <pluginRepository>
-            <id>spring-milestones</id>
-            <name>Spring Milestones</name>
-            <url>https://repo.spring.io/milestone</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </pluginRepository>
-    </pluginRepositories>
-
 </project>
