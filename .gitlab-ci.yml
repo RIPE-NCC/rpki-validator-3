@@ -1,4 +1,4 @@
-image: maven:3.6-jdk-8-alpine
+image: jimador/docker-jdk-8-maven-node
 # Inspired by https://gitlab.com/gitlab-examples/maven/simple-maven-dep and
 # https://gitlab.com/gitlab-org/gitlab-ci-yml/blob/master/Maven.gitlab-ci.yml
 # 
@@ -6,6 +6,13 @@ image: maven:3.6-jdk-8-alpine
 # and related code.
 #
 # run manually with `gitlab-runner exec docker <task_name>`
+
+stages:
+  - build
+  - test
+  - beta
+  - rc
+  - production
 
 variables:
   BUILD_NUMBER: ${CI_COMMIT_REF_SLUG}-${CI_PIPELINE_ID}
@@ -27,7 +34,7 @@ cache:
 before_script:
   - apk update && apk add rsync
 
-validate:
+build:
   stage: build
   script:
     - mvn clean
