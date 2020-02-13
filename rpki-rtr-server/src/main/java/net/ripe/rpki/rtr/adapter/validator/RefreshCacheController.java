@@ -45,11 +45,14 @@ import org.springframework.web.client.RestTemplate;
 import java.net.URI;
 import java.util.Base64;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 @Service
 @Slf4j
 public class RefreshCacheController {
+    private AtomicBoolean lastRefreshSucceeded = new AtomicBoolean(false);
+
     private final RestTemplate restTemplate;
 
     @Value("${rpki.validator.validated.objects.uri}")
@@ -67,6 +70,9 @@ public class RefreshCacheController {
     }
 
     public void refreshObjectCache() {
+        // Keep the previous status and set current as not succesful (in case it throws).
+        final boolean previousRefreshSucceeded = lastRefreshSucceeded.getAndSet(false);
+
         log.info("fetching validated roa prefixes from {}", validatedObjectsUri);
         ValidatedObjectsResponse response = restTemplate.getForObject(validatedObjectsUri, ValidatedObjectsResponse.class);
 
@@ -74,6 +80,10 @@ public class RefreshCacheController {
         if (!validatedObjects.ready) {
             log.warn("validator {} not ready yet, will retry later", validatedObjectsUri);
             return;
+        } else if (!previousRefreshSucceeded) {
+            // Explicitly indicate at WARN level that the validator was ready so log that contains "not ready yet"
+            // will show that it was ready later.
+            log.warn("validator {} is ready.", validatedObjectsUri);
         }
 
         List<ValidatedPrefix> validatedPrefixes = validatedObjects.getRoas();
@@ -95,6 +105,8 @@ public class RefreshCacheController {
         cache.update(Stream.concat(roaPrefixes, routerCertificates))
             .ifPresent(updatedSerialNumber ->
                 clients.cacheUpdated(cache.getSessionId(), updatedSerialNumber));
+
+        lastRefreshSucceeded.set(true);
     }
 
     @lombok.Value
