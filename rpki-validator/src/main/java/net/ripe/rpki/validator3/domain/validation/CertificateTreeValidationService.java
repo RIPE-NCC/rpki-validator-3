@@ -45,6 +45,7 @@ import net.ripe.rpki.commons.validation.objectvalidators.CertificateRepositoryOb
 import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
+import net.ripe.rpki.validator3.domain.metrics.TrustAnchorMetricsService;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
@@ -94,6 +95,8 @@ public class CertificateTreeValidationService {
 
     private static final ValidationOptions VALIDATION_OPTIONS = new ValidationOptions();
 
+    private final TrustAnchorMetricsService taMetricsService;
+
     private final RpkiObjects rpkiObjects;
     private final RpkiRepositories rpkiRepositories;
     private final Settings settings;
@@ -113,7 +116,8 @@ public class CertificateTreeValidationService {
                                             TrustAnchors trustAnchors,
                                             ValidatedRpkiObjects validatedRpkiObjects,
                                             Storage storage,
-                                            TrustAnchorState trustAnchorState) {
+                                            TrustAnchorState trustAnchorState,
+                                            TrustAnchorMetricsService taMetricsService) {
         this.rpkiObjects = rpkiObjects;
         this.rpkiRepositories = rpkiRepositories;
         this.settings = settings;
@@ -122,6 +126,7 @@ public class CertificateTreeValidationService {
         this.trustAnchors = trustAnchors;
         this.validatedRpkiObjects = validatedRpkiObjects;
         this.storage = storage;
+        this.taMetricsService = taMetricsService;
         this.trustAnchorState = trustAnchorState;
     }
 
@@ -221,6 +226,7 @@ public class CertificateTreeValidationService {
             trustAnchorState.setValidatedAfterLastRepositoryUpdate(trustAnchor);
             long delta = System.currentTimeMillis() - begin;
             logForDuration("Tree validation {} for {} in {}ms", validationRun.getStatus().toString().toLowerCase(), trustAnchor.getName(), delta);
+            taMetricsService.update(trustAnchor, validationRun, delta);
         }
     }
 

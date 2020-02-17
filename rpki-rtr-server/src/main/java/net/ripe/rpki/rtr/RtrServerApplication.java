@@ -37,7 +37,6 @@ import org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration;
 import org.springframework.boot.autoconfigure.aop.AopAutoConfiguration;
 import org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration;
 import org.springframework.boot.autoconfigure.cache.CacheAutoConfiguration;
-import org.springframework.boot.autoconfigure.cloud.CloudAutoConfiguration;
 import org.springframework.boot.autoconfigure.couchbase.CouchbaseAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.cassandra.CassandraDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.cassandra.CassandraReactiveDataAutoConfiguration;
@@ -51,7 +50,6 @@ import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchAu
 import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration;
-import org.springframework.boot.autoconfigure.data.ldap.LdapDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.ldap.LdapRepositoriesAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.mongo.MongoReactiveDataAutoConfiguration;
@@ -86,7 +84,6 @@ import org.springframework.boot.autoconfigure.jms.artemis.ArtemisAutoConfigurati
 import org.springframework.boot.autoconfigure.jooq.JooqAutoConfiguration;
 import org.springframework.boot.autoconfigure.jsonb.JsonbAutoConfiguration;
 import org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration;
-import org.springframework.boot.autoconfigure.ldap.LdapAutoConfiguration;
 import org.springframework.boot.autoconfigure.ldap.embedded.EmbeddedLdapAutoConfiguration;
 import org.springframework.boot.autoconfigure.liquibase.LiquibaseAutoConfiguration;
 import org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration;
@@ -96,13 +93,10 @@ import org.springframework.boot.autoconfigure.mongo.MongoReactiveAutoConfigurati
 import org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration;
 import org.springframework.boot.autoconfigure.mustache.MustacheAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
-import org.springframework.boot.autoconfigure.reactor.core.ReactorCoreAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.reactive.ReactiveUserDetailsServiceAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityRequestMatcherProviderAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 import org.springframework.boot.autoconfigure.sendgrid.SendGridAutoConfiguration;
 import org.springframework.boot.autoconfigure.session.SessionAutoConfiguration;
@@ -129,7 +123,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         CassandraReactiveDataAutoConfiguration.class,
         CassandraReactiveRepositoriesAutoConfiguration.class,
         CassandraRepositoriesAutoConfiguration.class,
-        CloudAutoConfiguration.class,
         CouchbaseAutoConfiguration.class,
         CouchbaseDataAutoConfiguration.class,
         CouchbaseReactiveDataAutoConfiguration.class,
@@ -164,8 +157,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         JsonbAutoConfiguration.class,
         JtaAutoConfiguration.class,
         KafkaAutoConfiguration.class,
-        LdapAutoConfiguration.class,
-        LdapDataAutoConfiguration.class,
         LdapRepositoriesAutoConfiguration.class,
         LiquibaseAutoConfiguration.class,
         MailSenderAutoConfiguration.class,
@@ -179,19 +170,16 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         MustacheAutoConfiguration.class,
         Neo4jDataAutoConfiguration.class,
         Neo4jRepositoriesAutoConfiguration.class,
-        OAuth2ClientAutoConfiguration.class,
         RabbitAutoConfiguration.class,
         ReactiveSecurityAutoConfiguration.class,
         ReactiveUserDetailsServiceAutoConfiguration.class,
         ReactiveWebServerFactoryAutoConfiguration.class,
-        ReactorCoreAutoConfiguration.class,
         RedisAutoConfiguration.class,
         RedisReactiveAutoConfiguration.class,
         RedisRepositoriesAutoConfiguration.class,
         RepositoryRestMvcAutoConfiguration.class,
         SecurityAutoConfiguration.class,
         SecurityFilterAutoConfiguration.class,
-        SecurityRequestMatcherProviderAutoConfiguration.class,
         SendGridAutoConfiguration.class,
         SessionAutoConfiguration.class,
         SolrAutoConfiguration.class,

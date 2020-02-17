@@ -126,8 +126,8 @@ public class TrustAnchorStore extends GenericStoreImpl<TrustAnchor> implements T
                 validationRuns.findLatestCaTreeValidationRun(tx, ta).map(vr -> {
                     final List<ValidationCheck> validationChecks = vr.getValidationChecks();
                     Pair<Integer, Long> objectCount = Time.timed(() -> validationRuns.getObjectCount(tx, vr));
-                    int warnings = Math.toIntExact(validationChecks.stream().filter(vc -> vc.getStatus() == ValidationCheck.Status.WARNING).count());
-                    int errors = Math.toIntExact(validationChecks.stream().filter(vc -> vc.getStatus() == ValidationCheck.Status.ERROR).count());
+                    int warnings = vr.countChecks(ValidationCheck.Status.WARNING);
+                    int errors = vr.countChecks(ValidationCheck.Status.ERROR);
                     return TaStatus.of(
                             String.valueOf(ta.key().asLong()),
                             ta.getName(),

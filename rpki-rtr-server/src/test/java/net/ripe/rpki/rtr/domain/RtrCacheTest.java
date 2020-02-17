@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.rtr.domain;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import org.junit.Test;
@@ -46,7 +47,7 @@ public class RtrCacheTest {
     private static final Set<RtrDataUnit> SINGLE_ANNOUNCEMENT = Collections.singleton(RtrDataUnit.prefix(Asn.parse("AS3333"), IpRange.parse("127.0.0.0/8"), 14));
     private static final Set<RtrDataUnit> SINGLE_WITHDRAWAL = Collections.singleton(RtrDataUnit.prefix(Asn.parse("AS3333"), IpRange.parse("127.0.0.0/8"), 14));
 
-    private RtrCache subject = new RtrCache();
+    private RtrCache subject = new RtrCache(new SimpleMeterRegistry());
 
     @Test
     public void should_increase_serial_when_valid_pdus_change() {

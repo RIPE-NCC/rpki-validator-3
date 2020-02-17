@@ -29,6 +29,8 @@
  */
 package net.ripe.rpki.rtr;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -69,7 +71,7 @@ public class RtrServerTest {
     private static final RtrPrefix AS_3333 = RtrDataUnit.prefix(Asn.parse("AS3333"), IpRange.parse("127.0.0.0/8"), 12);
     private static final RtrPrefix AS_4444 = RtrDataUnit.prefix(Asn.parse("AS4444"), IpRange.parse("127.0.0.0/8"), 12);
 
-    private final RtrCache rtrCache = new RtrCache();
+    private final RtrCache rtrCache = new RtrCache(new SimpleMeterRegistry());
     private final RtrClients clients = new RtrClients();
     private final RtrClientHandler rtrClientHandler = new RtrClientHandler(rtrCache, clients);
     private final EmbeddedChannel channel = new EmbeddedChannel(

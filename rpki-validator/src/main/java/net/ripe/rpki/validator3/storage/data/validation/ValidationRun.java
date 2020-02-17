@@ -110,6 +110,10 @@ public abstract class ValidationRun extends Base<ValidationRun> {
         });
     }
 
+    public int countChecks(ValidationCheck.Status status) {
+        return Math.toIntExact(validationChecks.stream().filter(vc -> vc.getStatus() == status).count());
+    }
+
     public abstract void visit(Visitor visitor);
 
     public interface Visitor<T> {

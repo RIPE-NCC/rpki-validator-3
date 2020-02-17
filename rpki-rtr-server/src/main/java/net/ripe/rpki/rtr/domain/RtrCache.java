@@ -30,12 +30,14 @@
 package net.ripe.rpki.rtr.domain;
 
 import fj.data.Either;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.Getter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.rtr.util.Locks;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.security.SecureRandom;
@@ -66,13 +68,28 @@ public class RtrCache {
     private volatile boolean ready;
     private VersionedSet<RtrDataUnit> data;
 
-    public RtrCache() {
-        this(SerialNumber.zero());
+    @Autowired
+    public RtrCache(MeterRegistry registry) {
+        this(registry, SerialNumber.zero());
     }
 
-    public RtrCache(SerialNumber initialVersion) {
+    public RtrCache(MeterRegistry registry, SerialNumber initialVersion) {
         this.initialVersion = initialVersion;
         reset();
+
+        // Init metrics
+        Gauge.builder("validated_objects_count", () -> this.data.size())
+            .description("Number of validated objects")
+            .register(registry);
+        Gauge.builder("validated_objects_ready", () -> this.ready ? 1 : 0)
+            .description("Status of the cache")
+            .register(registry);
+        Gauge.builder("validated_objects_session_id", () -> this.sessionId)
+            .description("Session id of the cache")
+            .register(registry);
+        Gauge.builder("validated_objects_serial", () -> this.getSerialNumber().getValue())
+            .description("Serial of the cache")
+            .register(registry);
     }
 
     public void reset() {
