@@ -32,19 +32,11 @@ package net.ripe.rpki.validator3;
 import net.ripe.rpki.validator3.storage.XodusInitialisationException;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.boot.Banner;
-import org.springframework.boot.actuate.autoconfigure.amqp.RabbitHealthIndicatorAutoConfiguration;
-import org.springframework.boot.actuate.autoconfigure.cassandra.CassandraHealthIndicatorAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.cloudfoundry.reactive.ReactiveCloudFoundryActuatorAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.cloudfoundry.servlet.CloudFoundryActuatorAutoConfiguration;
-import org.springframework.boot.actuate.autoconfigure.couchbase.CouchbaseHealthIndicatorAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.flyway.FlywayEndpointAutoConfiguration;
-import org.springframework.boot.actuate.autoconfigure.influx.InfluxDbHealthIndicatorAutoConfiguration;
-import org.springframework.boot.actuate.autoconfigure.jdbc.DataSourceHealthIndicatorAutoConfiguration;
-import org.springframework.boot.actuate.autoconfigure.jms.JmsHealthIndicatorAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.jolokia.JolokiaEndpointAutoConfiguration;
-import org.springframework.boot.actuate.autoconfigure.ldap.LdapHealthIndicatorAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.liquibase.LiquibaseEndpointAutoConfiguration;
-import org.springframework.boot.actuate.autoconfigure.mail.MailHealthIndicatorAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.amqp.RabbitMetricsAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.cache.CacheMetricsAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.export.atlas.AtlasMetricsExportAutoConfiguration;
@@ -59,16 +51,13 @@ import org.springframework.boot.actuate.autoconfigure.metrics.export.statsd.Stat
 import org.springframework.boot.actuate.autoconfigure.metrics.export.wavefront.WavefrontMetricsExportAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.jdbc.DataSourcePoolMetricsAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.web.reactive.WebFluxMetricsAutoConfiguration;
-import org.springframework.boot.actuate.autoconfigure.neo4j.Neo4jHealthIndicatorAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.session.SessionsEndpointAutoConfiguration;
-import org.springframework.boot.actuate.autoconfigure.solr.SolrHealthIndicatorAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.web.reactive.ReactiveManagementContextAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration;
 import org.springframework.boot.autoconfigure.aop.AopAutoConfiguration;
 import org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration;
 import org.springframework.boot.autoconfigure.cache.CacheAutoConfiguration;
-import org.springframework.boot.autoconfigure.cloud.CloudAutoConfiguration;
 import org.springframework.boot.autoconfigure.couchbase.CouchbaseAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.cassandra.CassandraDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.cassandra.CassandraReactiveDataAutoConfiguration;
@@ -82,7 +71,6 @@ import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchAu
 import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration;
-import org.springframework.boot.autoconfigure.data.ldap.LdapDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.ldap.LdapRepositoriesAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.mongo.MongoReactiveDataAutoConfiguration;
@@ -96,7 +84,6 @@ import org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoCo
 import org.springframework.boot.autoconfigure.data.rest.RepositoryRestMvcAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.solr.SolrRepositoriesAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.web.SpringDataWebAutoConfiguration;
-import org.springframework.boot.autoconfigure.elasticsearch.jest.JestAutoConfiguration;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.autoconfigure.freemarker.FreeMarkerAutoConfiguration;
 import org.springframework.boot.autoconfigure.groovy.template.GroovyTemplateAutoConfiguration;
@@ -127,13 +114,10 @@ import org.springframework.boot.autoconfigure.mongo.MongoReactiveAutoConfigurati
 import org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration;
 import org.springframework.boot.autoconfigure.mustache.MustacheAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
-import org.springframework.boot.autoconfigure.reactor.core.ReactorCoreAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.reactive.ReactiveUserDetailsServiceAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityRequestMatcherProviderAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 import org.springframework.boot.autoconfigure.sendgrid.SendGridAutoConfiguration;
 import org.springframework.boot.autoconfigure.session.SessionAutoConfiguration;
@@ -162,20 +146,16 @@ import java.util.Locale;
         CacheAutoConfiguration.class,
         CacheMetricsAutoConfiguration.class,
         CassandraDataAutoConfiguration.class,
-        CassandraHealthIndicatorAutoConfiguration.class,
         CassandraReactiveDataAutoConfiguration.class,
         CassandraReactiveRepositoriesAutoConfiguration.class,
         CassandraRepositoriesAutoConfiguration.class,
-        CloudAutoConfiguration.class,
         CloudFoundryActuatorAutoConfiguration.class,
         CouchbaseAutoConfiguration.class,
         CouchbaseDataAutoConfiguration.class,
-        CouchbaseHealthIndicatorAutoConfiguration.class,
         CouchbaseReactiveDataAutoConfiguration.class,
         CouchbaseReactiveRepositoriesAutoConfiguration.class,
         CouchbaseRepositoriesAutoConfiguration.class,
         DataSourceAutoConfiguration.class,
-        DataSourceHealthIndicatorAutoConfiguration.class,
         DataSourcePoolMetricsAutoConfiguration.class,
         DataSourceTransactionManagerAutoConfiguration.class,
         DatadogMetricsExportAutoConfiguration.class,
@@ -197,14 +177,11 @@ import java.util.Locale;
         HibernateJpaAutoConfiguration.class,
         HttpHandlerAutoConfiguration.class,
         InfluxDbAutoConfiguration.class,
-        InfluxDbHealthIndicatorAutoConfiguration.class,
         InfluxMetricsExportAutoConfiguration.class,
         IntegrationAutoConfiguration.class,
         JdbcTemplateAutoConfiguration.class,
         JerseyAutoConfiguration.class,
-        JestAutoConfiguration.class,
         JmsAutoConfiguration.class,
-        JmsHealthIndicatorAutoConfiguration.class,
         JmxMetricsExportAutoConfiguration.class,
         JndiConnectionFactoryAutoConfiguration.class,
         JndiDataSourceAutoConfiguration.class,
@@ -215,12 +192,9 @@ import java.util.Locale;
         JtaAutoConfiguration.class,
         KafkaAutoConfiguration.class,
         LdapAutoConfiguration.class,
-        LdapDataAutoConfiguration.class,
-        LdapHealthIndicatorAutoConfiguration.class,
         LdapRepositoriesAutoConfiguration.class,
         LiquibaseAutoConfiguration.class,
         LiquibaseEndpointAutoConfiguration.class,
-        MailHealthIndicatorAutoConfiguration.class,
         MailSenderAutoConfiguration.class,
         MailSenderValidatorAutoConfiguration.class,
         MongoAutoConfiguration.class,
@@ -231,32 +205,26 @@ import java.util.Locale;
         MongoRepositoriesAutoConfiguration.class,
         MustacheAutoConfiguration.class,
         Neo4jDataAutoConfiguration.class,
-        Neo4jHealthIndicatorAutoConfiguration.class,
         Neo4jRepositoriesAutoConfiguration.class,
         NewRelicMetricsExportAutoConfiguration.class,
-        OAuth2ClientAutoConfiguration.class,
         RabbitAutoConfiguration.class,
-        RabbitHealthIndicatorAutoConfiguration.class,
         RabbitMetricsAutoConfiguration.class,
         ReactiveCloudFoundryActuatorAutoConfiguration.class,
         ReactiveManagementContextAutoConfiguration.class,
         ReactiveSecurityAutoConfiguration.class,
         ReactiveUserDetailsServiceAutoConfiguration.class,
         ReactiveWebServerFactoryAutoConfiguration.class,
-        ReactorCoreAutoConfiguration.class,
         RedisAutoConfiguration.class,
         RedisReactiveAutoConfiguration.class,
         RedisRepositoriesAutoConfiguration.class,
         RepositoryRestMvcAutoConfiguration.class,
         SecurityAutoConfiguration.class,
         SecurityFilterAutoConfiguration.class,
-        SecurityRequestMatcherProviderAutoConfiguration.class,
         SendGridAutoConfiguration.class,
         SessionAutoConfiguration.class,
         SessionsEndpointAutoConfiguration.class,
         SignalFxMetricsExportAutoConfiguration.class,
         SolrAutoConfiguration.class,
-        SolrHealthIndicatorAutoConfiguration.class,
         SolrRepositoriesAutoConfiguration.class,
         SpringDataWebAutoConfiguration.class,
         StatsdMetricsExportAutoConfiguration.class,

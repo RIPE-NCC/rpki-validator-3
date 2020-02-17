@@ -48,6 +48,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.io.IOException;
@@ -101,5 +102,15 @@ public class ApiConfig implements WebMvcConfigurer {
         configurer
             .favorPathExtension(false)
             .defaultContentType(MediaType.valueOf(Api.API_MIME_TYPE));
+    }
+
+    /**
+     * Use /metrics for prometheus without adding explicit actuator properties in configuration (which would need
+     * to be added manually.
+     */
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        registry.addViewController("/metrics")
+                .setViewName("forward:/actuator/prometheus");
     }
 }

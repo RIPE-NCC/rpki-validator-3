@@ -1,3 +1,7 @@
+* Thu Mar 5 2020 Ties de Kock <tdekock@ripe.net> - 3.1
+- Updated spring boot to 2.2.5.
+- Add prometheus endpoint at /metrics.
+
 * Mon Mar 2 2020 Mikhail Puzanov <mpuzanovg@ripe.net> - 3.1
 - Use Undertow instead of Tomcat to reduce memory usage.
 

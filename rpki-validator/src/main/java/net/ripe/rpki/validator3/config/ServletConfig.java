@@ -65,11 +65,13 @@ public class ServletConfig implements WebMvcConfigurer {
      */
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
-        final String blackListedPaths = String.join("|", "api", "cache", "clients", "actuator");
+        final String blackListedPaths = String.join("|", "api", "cache", "clients", "actuator", "metrics");
 
         // Root
         registry.addViewController("/")
                 .setViewName("forward:/index.html");
+        registry.addViewController("/metrics")
+                .setViewName("forward:/actuator/prometheus");
         // Single directory level
         registry.addViewController(String.format("/{x:(?!(?:%s)$)[^\\.]+}", blackListedPaths))
                 .setViewName("forward:/index.html");

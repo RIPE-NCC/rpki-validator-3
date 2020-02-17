@@ -42,6 +42,7 @@ import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.commons.validation.ValidationString;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
+import net.ripe.rpki.validator3.domain.metrics.TrustAnchorMetricsService;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
@@ -71,7 +72,6 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 @Slf4j
 public class TrustAnchorValidationService {
-
     private final TrustAnchors trustAnchors;
     private final RpkiRepositories rpkiRepositories;
     private final ValidationRuns validationRuns;
@@ -81,7 +81,12 @@ public class TrustAnchorValidationService {
     private final Storage storage;
     private final RsyncFactory rsyncFactory;
 
+    private final TrustAnchorMetricsService taMetricsService;
+
+
     private Set<Key> validatedAtLeastOnce = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+
 
     @Autowired
     public TrustAnchorValidationService(
@@ -92,7 +97,8 @@ public class TrustAnchorValidationService {
         @Value("${rpki.validator.rsync.local.storage.directory}") File localRsyncStorageDirectory,
         RpkiRepositoryValidationService repositoryValidationService,
         Storage storage,
-        RsyncFactory rsyncFactory) {
+        RsyncFactory rsyncFactory,
+        TrustAnchorMetricsService trustAnchorMetricsService) {
         this.trustAnchors = trustAnchors;
         this.rpkiRepositories = rpkiRepositories;
         this.validationRuns = validationRuns;
@@ -101,6 +107,7 @@ public class TrustAnchorValidationService {
         this.repositoryValidationService = repositoryValidationService;
         this.storage = storage;
         this.rsyncFactory = rsyncFactory;
+        this.taMetricsService = trustAnchorMetricsService;
     }
 
     public void validate(long trustAnchorId) {
