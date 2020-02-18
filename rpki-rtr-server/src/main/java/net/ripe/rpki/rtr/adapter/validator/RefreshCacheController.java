@@ -63,6 +63,7 @@ public class RefreshCacheController {
 
     public RefreshCacheController(RestTemplateBuilder restTemplateBuilder) {
         log.info("RefreshCacheController loaded");
+        // Connect and read timeout are the system default.
         this.restTemplate = restTemplateBuilder.build();
     }
 
