@@ -90,6 +90,8 @@ import static net.ripe.rpki.validator3.storage.data.RpkiRepository.Type.RSYNC;
 @Service
 @Slf4j
 public class CertificateTreeValidationService {
+    public final long LONG_DURATION_WARNING_MS = 60_000;
+
     private static final ValidationOptions VALIDATION_OPTIONS = new ValidationOptions();
 
     private final RpkiObjects rpkiObjects;
@@ -121,6 +123,23 @@ public class CertificateTreeValidationService {
         this.validatedRpkiObjects = validatedRpkiObjects;
         this.storage = storage;
         this.trustAnchorState = trustAnchorState;
+    }
+
+    /** Log at INFO when below threshold, log at WARN when above */
+    private void logForDuration(final String message, Object o1, long delta) {
+        if (delta > LONG_DURATION_WARNING_MS) {
+            log.warn(String.format("SLOW: %s", message), o1, delta);
+        } else {
+            log.info(message, o1, delta);
+        }
+    }
+
+    private void logForDuration(final String message, Object o1, Object o2, long delta) {
+        if (delta > LONG_DURATION_WARNING_MS) {
+            log.warn(String.format("SLOW: %s", message), o1, o2, delta);
+        } else {
+            log.info(message, o1, o2, delta);
+        }
     }
 
     public void validate(long trustAnchorId) {
@@ -177,12 +196,12 @@ public class CertificateTreeValidationService {
             storage.writeTx0(tx -> {
                 validationRuns.add(tx, validationRun);
                 Long t = Time.timed(() -> rpkiObjectsKeys.forEach(key -> validationRuns.associateRpkiObjectKey(tx, validationRun, key)));
-                log.info("Associated {} objects with the validation run {} in {}ms", rpkiObjectsKeys.size(), validationRun.key(), t);
+                logForDuration("Associated {} objects with the validation run {} in {}ms", rpkiObjectsKeys.size(), validationRun.key(), t);
 
                 markTaObjectsReachable(tx, trustAnchorCertificate);
 
                 Long tmr = Time.timed(() -> rpkiObjects.markReachable(tx, rpkiObjectsKeys));
-                log.info("Marked {} objects as reachable in {}ms", rpkiObjectsKeys.size(), tmr);
+                logForDuration("Marked {} objects as reachable in {}ms", rpkiObjectsKeys.size(), tmr);
 
                 if (isValidationRunCompleted(validationResult)) {
                     trustAnchor.markInitialCertificateTreeValidationRunCompleted();
@@ -200,8 +219,8 @@ public class CertificateTreeValidationService {
             validationRun.completeWith(validationResult);
             storage.writeTx0(tx -> validationRuns.update(tx, validationRun));
             trustAnchorState.setValidatedAfterLastRepositoryUpdate(trustAnchor);
-            long end = System.currentTimeMillis();
-            log.info("Tree validation {} for {} in {}ms", validationRun.getStatus().toString().toLowerCase(), trustAnchor.getName(), (end - begin));
+            long delta = System.currentTimeMillis() - begin;
+            logForDuration("Tree validation {} for {} in {}ms", validationRun.getStatus().toString().toLowerCase(), trustAnchor.getName(), delta);
         }
     }
 
@@ -409,7 +428,7 @@ public class CertificateTreeValidationService {
                     } else
                         registeredRepositories.put(URI.create(r.getLocationUri()), r);
                 }));
-        log.info("Pre-loaded {} repositories in {}ms", registeredRepositories.size(), t);
+        logForDuration("Pre-loaded {} repositories in {}ms", registeredRepositories.size(), t);
         return registeredRepositories;
     }
 

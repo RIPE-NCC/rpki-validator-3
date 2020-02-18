@@ -63,7 +63,7 @@ import static net.ripe.rpki.rtr.domain.pdus.ProtocolVersion.V1;
 public class PduCodec extends ByteToMessageCodec<Pdu> {
     @Override
     protected void encode(ChannelHandlerContext ctx, Pdu msg, ByteBuf out) throws Exception {
-        log.info("writing {}", msg);
+        log.debug("writing {}", msg);
         msg.write(out /*.alloc().buffer(msg.length()) */);
     }
 

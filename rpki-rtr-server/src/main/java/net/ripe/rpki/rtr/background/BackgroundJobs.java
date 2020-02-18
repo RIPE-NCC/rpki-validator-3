@@ -35,6 +35,7 @@ import org.quartz.JobKey;
 import org.quartz.ScheduleBuilder;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
+import org.quartz.SimpleScheduleBuilder;
 import org.quartz.Trigger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -44,7 +45,6 @@ import java.util.Date;
 import static org.quartz.DateBuilder.IntervalUnit.SECOND;
 import static org.quartz.DateBuilder.futureDate;
 import static org.quartz.JobBuilder.newJob;
-import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
 import static org.quartz.TriggerBuilder.newTrigger;
 
 @Component
@@ -60,15 +60,16 @@ public class BackgroundJobs {
 
         schedule(ExpireOldDeltasJob.class,
                 futureDate(10, SECOND),
-                simpleSchedule().repeatForever().withIntervalInMinutes(1));
+                SimpleScheduleBuilder.repeatMinutelyForever());
 
         schedule(DisconnectInactiveClientsJob.class,
                 futureDate(20, SECOND),
-                simpleSchedule().repeatForever().withIntervalInMinutes(1));
+                SimpleScheduleBuilder.repeatMinutelyForever());
 
         schedule(RefreshObjectCacheJob.class,
                 futureDate(10, SECOND),
-                simpleSchedule().repeatForever().withIntervalInMinutes(1));
+                SimpleScheduleBuilder.repeatMinutelyForever()
+                        .withMisfireHandlingInstructionIgnoreMisfires());
 
     }
 

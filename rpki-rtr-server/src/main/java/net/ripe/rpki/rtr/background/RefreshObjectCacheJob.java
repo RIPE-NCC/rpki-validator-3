@@ -30,11 +30,13 @@
 package net.ripe.rpki.rtr.background;
 
 import net.ripe.rpki.rtr.adapter.validator.RefreshCacheController;
+import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 
+@DisallowConcurrentExecution
 public class RefreshObjectCacheJob implements Job {
 
     @Autowired
