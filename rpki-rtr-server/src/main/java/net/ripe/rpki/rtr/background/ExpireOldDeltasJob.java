@@ -30,11 +30,13 @@
 package net.ripe.rpki.rtr.background;
 
 import net.ripe.rpki.rtr.RtrServer;
+import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 
+@DisallowConcurrentExecution
 public class ExpireOldDeltasJob implements Job {
 
     @Autowired
