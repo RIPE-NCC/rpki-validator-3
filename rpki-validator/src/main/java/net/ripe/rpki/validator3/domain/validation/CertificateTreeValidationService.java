@@ -128,7 +128,7 @@ public class CertificateTreeValidationService {
     /** Log at INFO when below threshold, log at WARN when above */
     private void logForDuration(final String message, Object o1, long delta) {
         if (delta > LONG_DURATION_WARNING_MS) {
-            log.warn(message, o1, delta);
+            log.warn(String.format("SLOW: %s", message), o1, delta);
         } else {
             log.info(message, o1, delta);
         }
@@ -136,7 +136,7 @@ public class CertificateTreeValidationService {
 
     private void logForDuration(final String message, Object o1, Object o2, long delta) {
         if (delta > LONG_DURATION_WARNING_MS) {
-            log.warn(message, o1, o2, delta);
+            log.warn(String.format("SLOW: %s", message), o1, o2, delta);
         } else {
             log.info(message, o1, o2, delta);
         }
