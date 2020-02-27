@@ -271,7 +271,7 @@ public class CertificateTreeValidationService {
                 if (rpkiRepository.getStatus() == RpkiRepository.Status.FAILED) {
                     temporary.error(ValidationString.VALIDATOR_NO_MANIFEST_REPOSITORY_FAILED, rpkiRepository.getLocationUri());
                 } else {
-                    temporary.error(ValidationString.VALIDATOR_NO_LOCAL_MANIFEST_NO_MANIFEST_IN_REPOSITORY, rpkiRepository.getLocationUri());
+                    temporary.error(ValidationString.VALIDATOR_NO_LOCAL_MANIFEST_NO_MANIFEST_IN_REPOSITORY, manifestUri.toString(), rpkiRepository.getLocationUri());
                 }
             }
 
