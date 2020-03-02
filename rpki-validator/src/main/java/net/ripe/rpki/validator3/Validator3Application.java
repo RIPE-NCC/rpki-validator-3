@@ -148,6 +148,7 @@ import org.springframework.boot.autoconfigure.web.reactive.function.client.WebCl
 import org.springframework.boot.autoconfigure.webservices.WebServicesAutoConfiguration;
 import org.springframework.boot.autoconfigure.websocket.reactive.WebSocketReactiveAutoConfiguration;
 import org.springframework.boot.autoconfigure.websocket.servlet.WebSocketMessagingAutoConfiguration;
+import org.springframework.boot.autoconfigure.websocket.servlet.WebSocketServletAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
 import java.net.BindException;
@@ -268,6 +269,7 @@ import java.util.Locale;
         WebServicesAutoConfiguration.class,
         WebSocketMessagingAutoConfiguration.class,
         WebSocketReactiveAutoConfiguration.class,
+        WebSocketServletAutoConfiguration.class,
         XADataSourceAutoConfiguration.class,
 })
 public class Validator3Application {
