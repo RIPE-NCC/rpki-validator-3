@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.domain.validation;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpAddress;
@@ -289,6 +290,7 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
             this.getTrustAnchors().add(tx, ta);
             return ta;
         });
+        final URI manifestUri = trustAnchor.getCertificate().getManifestUri();
 
         RpkiRepository repository = wtx(tx -> {
             final Ref<TrustAnchor> trustAnchorRef = this.getTrustAnchors().makeRef(tx, trustAnchor.key());
@@ -296,7 +298,6 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
             r.setDownloaded();
             this.getRpkiRepositories().update(tx, r);
 
-            final URI manifestUri = trustAnchor.getCertificate().getManifestUri();
             final Optional<RpkiObject> mft = this.getRpkiObjects().values(tx)
                     .stream()
                     .filter(o -> this.getRpkiObjects().getLocations(tx, o.key()).contains(manifestUri.toASCIIString()))
@@ -312,7 +313,7 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
             assertThat(completed).hasSize(1);
             final List<ValidationCheck> checks = completed.get(0).getValidationChecks();
             assertThat(checks.get(0).getKey()).isEqualTo(ValidationString.VALIDATOR_NO_LOCAL_MANIFEST_NO_MANIFEST_IN_REPOSITORY);
-            assertThat(checks.get(0).getParameters()).isEqualTo(Collections.singletonList(repository.getRrdpNotifyUri()));
+            assertThat(checks.get(0).getParameters()).isEqualTo(Lists.newArrayList(manifestUri.toString(), repository.getRrdpNotifyUri()));
         });
     }
 
