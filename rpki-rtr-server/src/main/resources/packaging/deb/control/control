@@ -5,7 +5,7 @@ Priority: standard
 Architecture: all
 Description: [[description]]
 Maintainer: RIPE NCC <swe-rpki@ripe.net>
-Depends: coreutils (>=8.26), default-jre-headless (>=8), rsync, systemd
+Depends: coreutils (>=8.25), default-jre-headless (>=8), rsync, systemd
 Description: rpki-rtr-server
  RPKI RTR Server
 Homepage: https://github.com/RIPE-NCC/rpki-validator-3/
