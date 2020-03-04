@@ -79,12 +79,12 @@ public class RefreshCacheController {
 
         ValidatedObjects validatedObjects = response.getData();
         if (!validatedObjects.ready) {
-            log.warn("validator {} not ready yet, will retry later", validatedObjectsUri);
+            log.info("validator {} not ready yet, will retry later", validatedObjectsUri);
             return;
         } else if (!previousRefreshSucceeded) {
             // Explicitly indicate at WARN level that the validator was ready so log that contains "not ready yet"
             // will show that it was ready later.
-            log.warn("validator {} is ready.", validatedObjectsUri);
+            log.info("validator {} is ready.", validatedObjectsUri);
         }
 
         List<ValidatedPrefix> validatedPrefixes = validatedObjects.getRoas();
