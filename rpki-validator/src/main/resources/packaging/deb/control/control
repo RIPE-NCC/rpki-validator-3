@@ -5,7 +5,7 @@ Priority: standard
 Architecture: all
 Description: [[description]]
 Maintainer: RIPE NCC <swe-rpki@ripe.net>
-Depends: default-jre-headless (>=8), rsync, systemd
+Depends: default-jre-headless (>=8), rsync, systemd, curl
 Description: rpki-validator-3
  RPKI Validator
 Homepage: https://github.com/RIPE-NCC/rpki-validator-3/
