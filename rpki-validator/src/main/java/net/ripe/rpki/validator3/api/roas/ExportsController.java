@@ -45,6 +45,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.stream.Stream;
 
 import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.*;
@@ -93,7 +94,9 @@ public class ExportsController {
                         String.valueOf(r.getAsn()),
                         r.getPrefix().toString(),
                         r.getEffectiveLength(),
-                        r.getTrustAnchor().getName()
+                        r.getTrustAnchor().getName(),
+                        Instant.ofEpochMilli(r.getNotBefore()) + " - " + Instant.ofEpochMilli(r.getNotAfter()),
+                        r.getSerialNumber().toString()
                 ))
                 .distinct();
 
@@ -156,5 +159,9 @@ public class ExportsController {
         private int maxLength;
         @ApiModelProperty(value = TRUST_ANCHOR, example = TRUST_ANCHOR_EXAMPLE)
         private String ta;
+        @ApiModelProperty(value = VALIDITY_PERIOD, example = VALIDITY_PERIOD_EXAMPLE)
+        private String validity_period;
+        @ApiModelProperty(value = SERIAL_NUMBER, example = SERIAL_NUMBER_EXAMPLE)
+        private String serial_nr;
     }
 }

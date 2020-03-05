@@ -51,6 +51,7 @@ import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidatio
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.stores.impl.GenericStorageTest;
 import org.apache.commons.lang3.tuple.Pair;
+import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.joda.time.Instant;
 import org.junit.Before;
@@ -369,7 +370,10 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
         TrustAnchor ta = wtx(tx -> {
 
             TrustAnchor ta1 = factory.createTrustAnchor(tx, x -> x.roaPrefixes(Collections.singletonList(
-                    RoaPrefix.of(IpRange.prefix(IpAddress.parse("192.168.0.0"), 16), 24, Asn.parse("64512"))
+                    RoaPrefix.of(IpRange.prefix(IpAddress.parse("192.168.0.0"), 16), 24, Asn.parse("64512"),
+                            DateTime.now().toInstant().getMillis(),
+                            DateTime.now().plusYears(1).toInstant().getMillis(),
+                            TrustAnchorsFactory.nextSerial())
             )));
             this.getTrustAnchors().add(tx, ta1);
             final Ref<TrustAnchor> trustAnchorRef = this.getTrustAnchors().makeRef(tx, ta1.key());

@@ -30,22 +30,28 @@
 package net.ripe.rpki.validator3.api;
 
 import com.google.common.collect.ImmutableSortedSet;
-import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects.RoaPrefix;
 import org.junit.Test;
 
+import java.math.BigInteger;
+import java.time.Instant;
+
+import static java.time.temporal.ChronoUnit.DAYS;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 public class SearchTermTest {
 
-    private final RoaPrefix prefixTest = RoaPrefix.of(null, 0, IpRange.parse("10.0.0.0/8"), 32, 32, null);
-    private final RoaPrefix asnTest = RoaPrefix.of(null, 3642, null, 32, 32, null);
+    private final RoaPrefix prefixTest = RoaPrefix.of(null, 0, IpRange.parse("10.0.0.0/8"), 32, 32,
+            Instant.now().toEpochMilli(),Instant.now().plus(365, DAYS).toEpochMilli(), BigInteger.ONE,null);
+    private final RoaPrefix asnTest = RoaPrefix.of(null, 3642, null, 32, 32,
+            Instant.now().toEpochMilli(),Instant.now().plus(365, DAYS).toEpochMilli(), BigInteger.ONE,null);
     private final RoaPrefix genericTest = RoaPrefix.of(
             ValidatedRpkiObjects.TrustAnchorData.of(1L, "Bla Anchor"),
             3642,
             null, 32, 32,
+            Instant.now().toEpochMilli(),Instant.now().plus(365, DAYS).toEpochMilli(), BigInteger.ONE,
             ImmutableSortedSet.of("Some location"));
 
     @Test

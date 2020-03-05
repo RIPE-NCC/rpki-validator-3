@@ -58,6 +58,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
@@ -207,6 +208,9 @@ public class ValidatedRpkiObjects {
         IpRange prefix;
         Integer maximumLength;
         int effectiveLength;
+        long notBefore;
+        long notAfter;
+        BigInteger serialNumber;
         ImmutableSortedSet<String> locations;
     }
 
@@ -257,6 +261,9 @@ public class ValidatedRpkiObjects {
                     prefix.getPrefix(),
                     prefix.getMaximumLength(),
                     prefix.getEffectiveLength(),
+                    prefix.getNotBefore(),
+                    prefix.getNotAfter(),
+                    prefix.getSerialNumber(),
                     data.getLeft()
                 ));
             });

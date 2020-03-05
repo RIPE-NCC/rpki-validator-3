@@ -33,11 +33,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedSet;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
+import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilter;
 import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
+import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertion;
 import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionsService;
 import net.ripe.rpki.validator3.api.slurm.SlurmStore;
-import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilter;
-import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertion;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import org.joda.time.DateTime;
 import org.junit.Before;
@@ -46,12 +46,14 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
-import java.nio.file.Files;
+import java.math.BigInteger;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.stream.Stream;
 import java.util.Optional;
+import java.util.stream.Stream;
 
+import static java.time.temporal.ChronoUnit.DAYS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class BgpPreviewServiceTest {
@@ -179,7 +181,9 @@ public class BgpPreviewServiceTest {
     }
 
     private ValidatedRpkiObjects.RoaPrefix roa(Asn asn, String prefix, Integer maximumLength) {
-        return ValidatedRpkiObjects.RoaPrefix.of(null, asn.longValue(), IpRange.parse(prefix), maximumLength, maximumLength != null ? maximumLength : IpRange.parse(prefix).getPrefixLength(), ImmutableSortedSet.of());
+        return ValidatedRpkiObjects.RoaPrefix.of(null, asn.longValue(), IpRange.parse(prefix), maximumLength, maximumLength != null ? maximumLength : IpRange.parse(prefix).getPrefixLength(),
+                Instant.now().toEpochMilli(),Instant.now().plus(365, DAYS).toEpochMilli(), BigInteger.ONE,
+                ImmutableSortedSet.of());
     }
 
     private BgpPreviewService createBgpPreviewService() {

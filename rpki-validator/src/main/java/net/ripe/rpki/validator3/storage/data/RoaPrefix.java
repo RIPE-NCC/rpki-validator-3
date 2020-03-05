@@ -37,6 +37,7 @@ import net.ripe.ipresource.IpResourceType;
 import net.ripe.rpki.validator3.storage.Binary;
 
 import javax.validation.constraints.NotNull;
+import java.math.BigInteger;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -56,13 +57,23 @@ public class RoaPrefix extends Base<RoaPrefix> {
 
     long asn;
 
-    public static RoaPrefix of(IpRange prefix, Integer maximumLength, Asn asn) {
+    long notBefore;
+
+    long notAfter;
+
+    BigInteger serialNumber;
+
+    public static RoaPrefix of(IpRange prefix, Integer maximumLength, Asn asn, long notBefore, long notAfter, BigInteger serialNumber) {
         RoaPrefix result = new RoaPrefix();
         result.setPrefix(prefix);
         result.setPrefixFamily(prefix.getType() == IpResourceType.IPv4 ? FAMILY_IPV4 : FAMILY_IPV6);
         result.setMaximumLength(maximumLength);
         result.setEffectiveLength(maximumLength != null ? maximumLength : prefix.getPrefixLength());
         result.setAsn(asn.longValue());
+        result.setNotBefore(notBefore);
+        result.setNotAfter(notAfter);
+        result.setSerialNumber(serialNumber);
+
         return result;
     }
 }

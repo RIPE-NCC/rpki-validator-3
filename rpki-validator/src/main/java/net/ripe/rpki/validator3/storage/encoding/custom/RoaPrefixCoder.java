@@ -35,6 +35,7 @@ import net.ripe.rpki.validator3.api.bgp.PackedIpRange;
 import net.ripe.rpki.validator3.storage.data.RoaPrefix;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 
+import java.math.BigInteger;
 import java.util.Map;
 
 public class RoaPrefixCoder implements Coder<RoaPrefix> {
@@ -42,6 +43,9 @@ public class RoaPrefixCoder implements Coder<RoaPrefix> {
     private final static short PREFIX_TAG = Tags.unique(21);
     private final static short ASN_TAG = Tags.unique(22);
     private final static short MAX_LEN_TAG = Tags.unique(23);
+    private final static short VALIDITY_BEFORE = Tags.unique(24);
+    private final static short VALIDITY_AFTER = Tags.unique(25);
+    private final static short SERIAL_NUMBER = Tags.unique(26);
 
     @Override
     public byte[] toBytes(RoaPrefix roaPrefix) {
@@ -50,6 +54,9 @@ public class RoaPrefixCoder implements Coder<RoaPrefix> {
         encoded.append(PREFIX_TAG, new PackedIpRange(roaPrefix.getPrefix()).getContent());
         encoded.append(ASN_TAG, Coders.toBytes(roaPrefix.getAsn()));
         encoded.appendNotNull(MAX_LEN_TAG, roaPrefix.getMaximumLength(), Coders::toBytes);
+        encoded.appendNotNull(VALIDITY_BEFORE, roaPrefix.getNotBefore(), Coders::toBytes);
+        encoded.appendNotNull(VALIDITY_AFTER, roaPrefix.getNotAfter(), Coders::toBytes);
+        encoded.appendNotNull(SERIAL_NUMBER, roaPrefix.getSerialNumber(), Coders::toBytes);
         return encoded.toByteArray();
     }
 
@@ -60,8 +67,11 @@ public class RoaPrefixCoder implements Coder<RoaPrefix> {
         long asn = Coders.toLong(content.get(ASN_TAG));
         byte[] maxLen = content.get(MAX_LEN_TAG);
         Integer maximumLength = maxLen != null ? Coders.toInt(maxLen) : null;
+        long notBefore = Coders.toLong(content.get(VALIDITY_BEFORE));
+        long notAfter = Coders.toLong(content.get(VALIDITY_AFTER));
+        BigInteger serialNumber = Coders.toBigInteger(content.get(SERIAL_NUMBER));
 
-        RoaPrefix roaPrefix = RoaPrefix.of(prefix, maximumLength, new Asn(asn));
+        RoaPrefix roaPrefix = RoaPrefix.of(prefix, maximumLength, new Asn(asn),notBefore, notAfter, serialNumber);
         BaseCoder.fromBytes(content, roaPrefix);
         return roaPrefix;
     }
