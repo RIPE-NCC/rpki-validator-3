@@ -48,7 +48,15 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.stream.Stream;
 
-import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.*;
+import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.ASN_EXAMPLE;
+import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.ASN_PROPERTY;
+import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.PREFIX_EXAMPLE;
+import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.SERIAL_NUMBER;
+import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.SERIAL_NUMBER_EXAMPLE;
+import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.TRUST_ANCHOR;
+import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.TRUST_ANCHOR_EXAMPLE;
+import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.VALIDITY_PERIOD;
+import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.VALIDITY_PERIOD_EXAMPLE;
 
 /**
  * Controller to export validated ROA prefix information.
@@ -94,9 +102,7 @@ public class ExportsController {
                         String.valueOf(r.getAsn()),
                         r.getPrefix().toString(),
                         r.getEffectiveLength(),
-                        r.getTrustAnchor().getName(),
-                        Instant.ofEpochMilli(r.getNotBefore()) + " - " + Instant.ofEpochMilli(r.getNotAfter()),
-                        r.getSerialNumber().toString()
+                        r.getTrustAnchor().getName()
                 ))
                 .distinct();
 
@@ -136,6 +142,32 @@ public class ExportsController {
         }
     }
 
+    @ApiOperation("export VRPs (json) extended with validity and serial number")
+    @GetMapping(path = "/api/export-extended.json")
+    public JsonExportExtended exportJsonExtended(HttpServletResponse response) {
+        response.setContentType(JSON);
+
+        if (!storage.readTx(settings::isInitialValidationRunCompleted)) {
+            response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+            return null;
+        }
+
+        Stream<JsonRoaPrefixExtended> validatedPrefixes = validatedRpkiObjects
+                .findCurrentlyValidatedRoaPrefixes()
+                .getObjects()
+                .map(r -> new JsonRoaPrefixExtended(
+                        String.valueOf(r.getAsn()),
+                        r.getPrefix().toString(),
+                        r.getEffectiveLength(),
+                        r.getTrustAnchor().getName(),
+                        Instant.ofEpochMilli(r.getNotBefore()) + " - " + Instant.ofEpochMilli(r.getNotAfter()),
+                        r.getSerialNumber().toString()
+                ))
+                .distinct();
+
+        return new JsonExportExtended(validatedPrefixes);
+    }
+
     @Value
     private static class CsvRoaPrefix {
         private String asn;
@@ -149,7 +181,11 @@ public class ExportsController {
         @ApiModelProperty(position = 3)
         Stream<JsonRoaPrefix> roas;
     }
-
+    @Value
+    private static class JsonExportExtended {
+        @ApiModelProperty(position = 4)
+        Stream<JsonRoaPrefixExtended> roas;
+    }
     @Value
     private static class JsonRoaPrefix {
         @ApiModelProperty(value = ASN_PROPERTY, example = ASN_EXAMPLE)
@@ -159,9 +195,20 @@ public class ExportsController {
         private int maxLength;
         @ApiModelProperty(value = TRUST_ANCHOR, example = TRUST_ANCHOR_EXAMPLE)
         private String ta;
+    }
+
+    @Value
+    private static class JsonRoaPrefixExtended {
+        @ApiModelProperty(value = ASN_PROPERTY, example = ASN_EXAMPLE)
+        private String asn;
+        @ApiModelProperty(example = PREFIX_EXAMPLE)
+        private String prefix;
+        private int maxLength;
+        @ApiModelProperty(value = TRUST_ANCHOR, example = TRUST_ANCHOR_EXAMPLE)
+        private String ta;
         @ApiModelProperty(value = VALIDITY_PERIOD, example = VALIDITY_PERIOD_EXAMPLE)
-        private String validity_period;
+        private String validityPeriod;
         @ApiModelProperty(value = SERIAL_NUMBER, example = SERIAL_NUMBER_EXAMPLE)
-        private String serial_nr;
+        private String serialNumber;
     }
 }
