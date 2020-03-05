@@ -29,7 +29,6 @@
  */
 package net.ripe.rpki.validator3.storage.data;
 
-import com.google.common.base.Objects;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -41,6 +40,7 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.math.BigInteger;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 @EqualsAndHashCode(callSuper = true)
@@ -102,7 +102,7 @@ public class RpkiRepository extends Base<RpkiRepository> {
     }
 
     public @ValidLocationURI @NotNull String getLocationUri() {
-        return Objects.firstNonNull(rrdpNotifyUri, rsyncRepositoryUri);
+        return Optional.ofNullable(rrdpNotifyUri).orElse(rsyncRepositoryUri);
     }
 
     public void addTrustAnchor(Ref<TrustAnchor> trustAnchor) {

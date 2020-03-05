@@ -30,9 +30,8 @@
 package net.ripe.rpki.validator3.util;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Joiner;
-import com.google.common.base.Objects;
 import com.google.common.io.Files;
+import lombok.ToString;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.springframework.web.multipart.MultipartFile;
@@ -51,6 +50,7 @@ import java.util.Properties;
 /**
  * Represents a Trust Anchor Locator as defined in <a href="https://tools.ietf.org/html/rfc7730">RFC 7730</a>
  */
+@ToString(of = {"caName", "certificateLocations"})
 public class TrustAnchorLocator {
 
     private final String caName;
@@ -170,14 +170,6 @@ public class TrustAnchorLocator {
 
     public List<URI> getPrefetchUris() {
         return prefetchUris;
-    }
-
-    @Override
-    public String toString() {
-        return Objects.toStringHelper(this)
-                      .add("caName", getCaName())
-                      .add("certificationLocation", Joiner.on(", ").join(getCertificateLocations()))
-                      .toString();
     }
 
     public URI getFetchedCertificateUri() {

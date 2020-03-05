@@ -18,7 +18,7 @@
 
         <maven.test.redirectTestOutputToFile>true</maven.test.redirectTestOutputToFile>
 
-        <rpki-commons.version>1.7.3</rpki-commons.version>
+        <rpki-commons.version>1.8.0</rpki-commons.version>
 
         <micrometer.version>1.3.5</micrometer.version>
         <springfox.version>2.7.0</springfox.version>
