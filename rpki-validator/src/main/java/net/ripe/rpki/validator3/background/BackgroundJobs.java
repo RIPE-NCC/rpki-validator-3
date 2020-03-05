@@ -43,6 +43,8 @@ import org.quartz.Trigger;
 import org.quartz.listeners.JobListenerSupport;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
@@ -72,7 +74,10 @@ public class BackgroundJobs extends JobListenerSupport {
         this.scheduler = scheduler;
 
         scheduler.getListenerManager().addJobListener(this);
+    }
 
+    @EventListener(ApplicationReadyEvent.class)
+    public void initBackgroundTasks() throws SchedulerException {
         schedule(RpkiObjectCleanupJob.class,
                 futureDate(3, MINUTE),
                 simpleSchedule().repeatForever().withIntervalInMinutes(10));
