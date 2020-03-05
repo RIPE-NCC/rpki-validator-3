@@ -34,10 +34,11 @@ import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
-import javax.annotation.PostConstruct;
 
 @Component
 @Validated
@@ -57,7 +58,7 @@ public class RpkiRepositoryService {
         this.storage = storage;
     }
 
-    @PostConstruct
+    @EventListener(ApplicationReadyEvent.class)
     public void scheduleRpkiRepositoryValidation() {
         log.info("Schedule RPKI validation for the existing repositories");
         storage.writeTx0(tx ->
