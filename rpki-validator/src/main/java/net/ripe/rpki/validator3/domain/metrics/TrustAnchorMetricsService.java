@@ -43,14 +43,9 @@ public class TrustAnchorMetricsService {
             return;
         }
 
-        if (cetrificateTreeValidationMetrics.containsKey(uri)) {
-            cetrificateTreeValidationMetrics.get(uri).update(vr, durationMs);
-        } else {
-            final CertificateTreeValidationMetrics oldMetrics = cetrificateTreeValidationMetrics.putIfAbsent(uri, new CertificateTreeValidationMetrics(ta, vr, durationMs));
-            if (oldMetrics != null) {
-                oldMetrics.update(vr, durationMs);
-            }
-        }
+        cetrificateTreeValidationMetrics
+                .computeIfAbsent(uri, key -> new CertificateTreeValidationMetrics(ta))
+                .update(vr, durationMs);
     }
 
     private class CertificateTreeValidationMetrics {
@@ -68,7 +63,7 @@ public class TrustAnchorMetricsService {
 
         private final Timer validationRunDuration;
 
-        public CertificateTreeValidationMetrics(TrustAnchor trustAnchor, CertificateTreeValidationRun vr, long durationMs) {
+        public CertificateTreeValidationMetrics(TrustAnchor trustAnchor) {
             this.objectCount = new AtomicInteger(0);
             this.errorCount = new AtomicInteger(0);
             this.warningCount = new AtomicInteger(0);
@@ -114,8 +109,6 @@ public class TrustAnchorMetricsService {
                     .description("Timestamp (in seconds) of the last successful validation run.")
                     .tag("trust_anchor", rsyncPrefetchUri)
                     .register(registry);
-
-            this.update(vr, durationMs);
         }
 
         public void update(CertificateTreeValidationRun vr, long durationMs) {
