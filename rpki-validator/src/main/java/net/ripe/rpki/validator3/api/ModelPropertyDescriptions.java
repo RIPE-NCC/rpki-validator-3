@@ -59,5 +59,15 @@ public class ModelPropertyDescriptions {
     public static final String TRUST_ANCHOR = "Name of trust anchor";
     public static final String TRUST_ANCHOR_EXAMPLE = "RIPE NCC RPKI Root";
 
+    public static final String VALIDITY_PERIOD_NOT_BEFORE = "Validity period not before";
+    public static final String VALIDITY_PERIOD_NOT_BEFORE_EXAMPLE = "2018-06-04T05:53:04.000Z";
+
+    public static final String VALIDITY_PERIOD_NOT_AFTER = "Validity period not after";
+    public static final String VALIDITY_PERIOD_NOT_AFTER_EXAMPLE = "2018-06-11T05:58:04.000Z";
+
+
+    public static final String SERIAL_NUMBER = "Serial Number";
+    public static final String SERIAL_NUMBER_EXAMPLE = "4398793361";
+
     public static final String MAXLENGTH_PROPERTY = "Maxlength (>= prefix size)";
 }

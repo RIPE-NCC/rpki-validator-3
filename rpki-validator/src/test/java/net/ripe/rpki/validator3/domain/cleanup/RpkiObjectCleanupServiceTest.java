@@ -49,6 +49,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.security.auth.x500.X500Principal;
+import java.math.BigInteger;
 import java.time.Duration;
 import java.util.Collections;
 
@@ -70,19 +71,23 @@ public class RpkiObjectCleanupServiceTest extends GenericStorageTest {
 
     @Test
     public void should_delete_objects_not_reachable_from_manifest() throws Exception {
-
+        BigInteger serial = TrustAnchorsFactory.nextSerial();
         TrustAnchor trustAnchor = wtx(tx -> factory.createTrustAnchor(tx, ta ->
-                ta.roaPrefixes(Collections.singletonList(RoaPrefix.of(IpRange.parse("127.0.0.0/8"), null, Asn.parse("123"))))));
+                ta.roaPrefixes(Collections.singletonList(RoaPrefix.of(IpRange.parse("127.0.0.0/8"), null, Asn.parse(
+                        "123"), DateTime.now().toInstant().getMillis(),
+                        DateTime.now().plusYears(1).toInstant().getMillis(),
+                        serial)))));
 
         // No orphans, so nothing to delete
         assertThat(subject.cleanupRpkiObjects()).isEqualTo(0);
+
 
         RpkiObject orphan = new RpkiObject(
             new X509ResourceCertificateBuilder()
                 .withResources(IpResourceSet.parse("10.0.0.0/8"))
                 .withIssuerDN(trustAnchor.getCertificate().getSubject())
                 .withSubjectDN(new X500Principal("CN=orphan"))
-                .withSerial(TrustAnchorsFactory.nextSerial())
+                .withSerial(serial)
                 .withPublicKey(KEY_PAIR_FACTORY.generate().getPublic())
                 .withSigningKeyPair(KEY_PAIR_FACTORY.generate())
                 .withValidityPeriod(new ValidityPeriod(DateTime.now(), DateTime.now().plusYears(1)))

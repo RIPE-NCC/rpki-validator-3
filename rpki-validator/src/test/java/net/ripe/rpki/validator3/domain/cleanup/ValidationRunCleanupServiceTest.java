@@ -76,8 +76,14 @@ public class ValidationRunCleanupServiceTest extends GenericStorageTest {
     private TrustAnchor testTA1;
     private Ref<TrustAnchor> testTARef1;
 
-    private List<RoaPrefix> roaPrefixes1 = Collections.singletonList(RoaPrefix.of(IpRange.parse("127.0.0.0/8"), null, Asn.parse("123")));
-    private List<RoaPrefix> roaPrefixes2 = Collections.singletonList(RoaPrefix.of(IpRange.parse("128.0.0.0/8"), null, Asn.parse("124")));
+    private List<RoaPrefix> roaPrefixes1 = Collections.singletonList(RoaPrefix.of(IpRange.parse("127.0.0.0/8"), null, Asn.parse("123"),
+            DateTime.now().toInstant().getMillis(),
+            DateTime.now().plusYears(1).toInstant().getMillis(),
+            TrustAnchorsFactory.nextSerial()));
+    private List<RoaPrefix> roaPrefixes2 = Collections.singletonList(RoaPrefix.of(IpRange.parse("128.0.0.0/8"), null, Asn.parse("124"),
+            DateTime.now().toInstant().getMillis(),
+            DateTime.now().plusYears(1).toInstant().getMillis(),
+            TrustAnchorsFactory.nextSerial()));
 
     @Before
     public void setup() {

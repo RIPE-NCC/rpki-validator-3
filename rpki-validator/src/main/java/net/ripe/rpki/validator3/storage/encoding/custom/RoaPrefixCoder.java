@@ -35,13 +35,19 @@ import net.ripe.rpki.validator3.api.bgp.PackedIpRange;
 import net.ripe.rpki.validator3.storage.data.RoaPrefix;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 
+import java.math.BigInteger;
 import java.util.Map;
+
+import static net.ripe.rpki.validator3.storage.encoding.custom.Encoded.field;
 
 public class RoaPrefixCoder implements Coder<RoaPrefix> {
 
     private final static short PREFIX_TAG = Tags.unique(21);
     private final static short ASN_TAG = Tags.unique(22);
     private final static short MAX_LEN_TAG = Tags.unique(23);
+    private final static short VALIDITY_BEFORE = Tags.unique(24);
+    private final static short VALIDITY_AFTER = Tags.unique(25);
+    private final static short SERIAL_NUMBER = Tags.unique(26);
 
     @Override
     public byte[] toBytes(RoaPrefix roaPrefix) {
@@ -50,6 +56,9 @@ public class RoaPrefixCoder implements Coder<RoaPrefix> {
         encoded.append(PREFIX_TAG, new PackedIpRange(roaPrefix.getPrefix()).getContent());
         encoded.append(ASN_TAG, Coders.toBytes(roaPrefix.getAsn()));
         encoded.appendNotNull(MAX_LEN_TAG, roaPrefix.getMaximumLength(), Coders::toBytes);
+        encoded.appendNotNull(VALIDITY_BEFORE, roaPrefix.getNotBefore(), Coders::toBytes);
+        encoded.appendNotNull(VALIDITY_AFTER, roaPrefix.getNotAfter(), Coders::toBytes);
+        encoded.appendNotNull(SERIAL_NUMBER, roaPrefix.getSerialNumber(), Coders::toBytes);
         return encoded.toByteArray();
     }
 
@@ -61,8 +70,15 @@ public class RoaPrefixCoder implements Coder<RoaPrefix> {
         byte[] maxLen = content.get(MAX_LEN_TAG);
         Integer maximumLength = maxLen != null ? Coders.toInt(maxLen) : null;
 
-        RoaPrefix roaPrefix = RoaPrefix.of(prefix, maximumLength, new Asn(asn));
+        // Guards against older DB with these values not present, next validation run it will be filled.
+        // Can't give default value null here, messed up encoding/decoding.
+        RoaPrefix roaPrefix = RoaPrefix.of(prefix, maximumLength, new Asn(asn), 0l, 0l, BigInteger.ZERO);
         BaseCoder.fromBytes(content, roaPrefix);
+
+        field(content, VALIDITY_BEFORE).ifPresent(blob->roaPrefix.setNotBefore(Coders.toLong(blob)));
+        field(content, VALIDITY_AFTER).ifPresent(blob->roaPrefix.setNotAfter(Coders.toLong(blob)));
+        field(content, SERIAL_NUMBER).ifPresent(blob->roaPrefix.setSerialNumber(Coders.toBigInteger(blob)));
+
         return roaPrefix;
     }
 

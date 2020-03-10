@@ -45,7 +45,6 @@ import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificate;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
-import net.ripe.rpki.validator3.domain.constraints.ValidLocationURI;
 import net.ripe.rpki.validator3.storage.Binary;
 import net.ripe.rpki.validator3.util.Bench;
 import net.ripe.rpki.validator3.util.Sha256;
@@ -53,14 +52,10 @@ import org.joda.time.DateTime;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
 import java.math.BigInteger;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 @EqualsAndHashCode(callSuper = true)
@@ -135,8 +130,10 @@ public class RpkiObject extends Base<RpkiObject> {
             } else if (object instanceof RoaCms) {
                 RoaCms roaCms = (RoaCms) object;
                 this.type = Type.ROA;
+                long notBefore = roaCms.getValidityPeriod().getNotValidBefore().toInstant().getMillis();
+                long notAfter = roaCms.getValidityPeriod().getNotValidAfter().toInstant().getMillis();
                 this.roaPrefixes = roaCms.getPrefixes().stream()
-                    .map(prefix -> RoaPrefix.of(prefix.getPrefix(), prefix.getMaximumLength(), roaCms.getAsn()))
+                    .map(prefix -> RoaPrefix.of(prefix.getPrefix(), prefix.getMaximumLength(), roaCms.getAsn(), notBefore, notAfter, this.serialNumber))
                     .collect(Collectors.toList());
             } else if (object instanceof GhostbustersCms) {
                 this.type = Type.GBR;
