@@ -55,8 +55,10 @@ import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.SERIAL_NUMB
 import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.SERIAL_NUMBER_EXAMPLE;
 import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.TRUST_ANCHOR;
 import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.TRUST_ANCHOR_EXAMPLE;
-import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.VALIDITY_PERIOD;
-import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.VALIDITY_PERIOD_EXAMPLE;
+import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.VALIDITY_PERIOD_NOT_AFTER;
+import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.VALIDITY_PERIOD_NOT_AFTER_EXAMPLE;
+import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.VALIDITY_PERIOD_NOT_BEFORE;
+import static net.ripe.rpki.validator3.api.ModelPropertyDescriptions.VALIDITY_PERIOD_NOT_BEFORE_EXAMPLE;
 
 /**
  * Controller to export validated ROA prefix information.
@@ -160,7 +162,8 @@ public class ExportsController {
                         r.getPrefix().toString(),
                         r.getEffectiveLength(),
                         r.getTrustAnchor().getName(),
-                        Instant.ofEpochMilli(r.getNotBefore()) + " - " + Instant.ofEpochMilli(r.getNotAfter()),
+                        Instant.ofEpochMilli(r.getNotBefore()).toString(),
+                        Instant.ofEpochMilli(r.getNotAfter()).toString(),
                         r.getSerialNumber().toString()
                 ))
                 .distinct();
@@ -206,8 +209,10 @@ public class ExportsController {
         private int maxLength;
         @ApiModelProperty(value = TRUST_ANCHOR, example = TRUST_ANCHOR_EXAMPLE)
         private String ta;
-        @ApiModelProperty(value = VALIDITY_PERIOD, example = VALIDITY_PERIOD_EXAMPLE)
-        private String validityPeriod;
+        @ApiModelProperty(value = VALIDITY_PERIOD_NOT_BEFORE, example = VALIDITY_PERIOD_NOT_BEFORE_EXAMPLE)
+        private String notBefore;
+        @ApiModelProperty(value = VALIDITY_PERIOD_NOT_AFTER, example = VALIDITY_PERIOD_NOT_AFTER_EXAMPLE)
+        private String notAfter;
         @ApiModelProperty(value = SERIAL_NUMBER, example = SERIAL_NUMBER_EXAMPLE)
         private String serialNumber;
     }

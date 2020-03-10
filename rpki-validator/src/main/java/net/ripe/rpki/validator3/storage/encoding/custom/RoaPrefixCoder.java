@@ -38,6 +38,8 @@ import net.ripe.rpki.validator3.storage.encoding.Coder;
 import java.math.BigInteger;
 import java.util.Map;
 
+import static net.ripe.rpki.validator3.storage.encoding.custom.Encoded.field;
+
 public class RoaPrefixCoder implements Coder<RoaPrefix> {
 
     private final static short PREFIX_TAG = Tags.unique(21);
@@ -67,12 +69,16 @@ public class RoaPrefixCoder implements Coder<RoaPrefix> {
         long asn = Coders.toLong(content.get(ASN_TAG));
         byte[] maxLen = content.get(MAX_LEN_TAG);
         Integer maximumLength = maxLen != null ? Coders.toInt(maxLen) : null;
-        long notBefore = Coders.toLong(content.get(VALIDITY_BEFORE));
-        long notAfter = Coders.toLong(content.get(VALIDITY_AFTER));
-        BigInteger serialNumber = Coders.toBigInteger(content.get(SERIAL_NUMBER));
 
-        RoaPrefix roaPrefix = RoaPrefix.of(prefix, maximumLength, new Asn(asn),notBefore, notAfter, serialNumber);
+        // Guards against older DB with these values not present, next validation run it will be filled.
+        // Can't give default value null here, messed up encoding/decoding.
+        RoaPrefix roaPrefix = RoaPrefix.of(prefix, maximumLength, new Asn(asn), 0l, 0l, BigInteger.ZERO);
         BaseCoder.fromBytes(content, roaPrefix);
+
+        field(content, VALIDITY_BEFORE).ifPresent(blob->roaPrefix.setNotBefore(Coders.toLong(blob)));
+        field(content, VALIDITY_AFTER).ifPresent(blob->roaPrefix.setNotAfter(Coders.toLong(blob)));
+        field(content, SERIAL_NUMBER).ifPresent(blob->roaPrefix.setSerialNumber(Coders.toBigInteger(blob)));
+
         return roaPrefix;
     }
 
