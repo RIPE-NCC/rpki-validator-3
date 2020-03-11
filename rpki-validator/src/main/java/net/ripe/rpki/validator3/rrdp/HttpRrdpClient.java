@@ -31,9 +31,11 @@ package net.ripe.rpki.validator3.rrdp;
 
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.util.BuildInformation;
+import net.ripe.rpki.validator3.domain.metrics.HttpClientMetricsService;
 import net.ripe.rpki.validator3.util.Http;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpHeader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -48,6 +50,7 @@ import static org.springframework.util.StreamUtils.copy;
 @Component
 @Slf4j
 public class HttpRrdpClient implements RrdpClient {
+    private final HttpClientMetricsService httpMetrics;
 
     private final Http http;
 
@@ -56,9 +59,10 @@ public class HttpRrdpClient implements RrdpClient {
     private final BuildInformation buildInformation;
 
     @Autowired
-    public HttpRrdpClient(Http http, BuildInformation buildInformation) {
+    public HttpRrdpClient(Http http, HttpClientMetricsService httpMetrics, BuildInformation buildInformation) {
         this.http = http;
         this.buildInformation = buildInformation;
+        this.httpMetrics = httpMetrics;
     }
 
     @PostConstruct
@@ -69,16 +73,21 @@ public class HttpRrdpClient implements RrdpClient {
 
     @Override
     public <T> T readStream(final String uri, Function<InputStream, T> reader) {
+        long before = System.currentTimeMillis();
+        String statusDescription = "200";
         try {
             return Http.readStream(() -> {
                 final Request request = httpClient.newRequest(uri);
                 final String version = buildInformation.getVersion();
-                request.header("User-Agent", null);
-                request.header("User-Agent", "RIPE NCC RPKI Validator/" + version);
+                request.header(HttpHeader.USER_AGENT, null);
+                request.header(HttpHeader.USER_AGENT, "RIPE NCC RPKI Validator/" + version);
                 return request;
             }, reader);
         } catch (Exception e) {
+            statusDescription = HttpClientMetricsService.unwrapExceptionString(e);
             throw new RrdpException("Error downloading '" + uri + "', cause: " + fullMessage(e), e);
+        } finally {
+            httpMetrics.update(uri, statusDescription, System.currentTimeMillis() - before);
         }
     }
 

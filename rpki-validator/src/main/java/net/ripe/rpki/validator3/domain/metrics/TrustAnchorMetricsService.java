@@ -60,10 +60,7 @@ public class TrustAnchorMetricsService {
     @Autowired
     private ValidationRuns validationRuns;
 
-    /**
-     * Creating multiple counters for the same trust anchor has no negative side-effects.
-     */
-    private ConcurrentHashMap<String, CertificateTreeValidationMetrics> cetrificateTreeValidationMetrics = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, CertificateTreeValidationMetrics> certificateTreeValidationMetrics = new ConcurrentHashMap<>();
 
     public void update(TrustAnchor ta, CertificateTreeValidationRun vr, long durationMs) {
         final String uri = ta.getLocations().size() > 0 ? ta.getLocations().get(0) : null;
@@ -72,7 +69,7 @@ public class TrustAnchorMetricsService {
             return;
         }
 
-        cetrificateTreeValidationMetrics
+        certificateTreeValidationMetrics
                 .computeIfAbsent(uri, key -> new CertificateTreeValidationMetrics(ta))
                 .update(vr, durationMs);
     }
@@ -101,40 +98,40 @@ public class TrustAnchorMetricsService {
 
             this.rsyncPrefetchUri = trustAnchor.getLocations().get(0);
 
-            this.validationRunDuration = Timer.builder("validation_run_duration")
+            this.validationRunDuration = Timer.builder("validation.run.duration")
                     .description("Duration for the validation of the certificates descendant from this trust anchor.")
                     .tag("trust_anchor", rsyncPrefetchUri)
                     .register(registry);
 
-            this.validationRunSuccessCount = Counter.builder("validation_run_count")
+            this.validationRunSuccessCount = Counter.builder("validation.run.count")
                     .description("Number of validation runs for the tree of certificates for this trust anchor.")
                     .tag("trust_anchor", rsyncPrefetchUri)
                     .tag("succeeded", "true")
                     .register(registry);
-            this.validationRunFailedCount = Counter.builder("validation_run_count")
+            this.validationRunFailedCount = Counter.builder("validation.run.count")
                     .tag("trust_anchor", rsyncPrefetchUri)
                     .tag("succeeded", "false")
                     .register(registry);
 
-            Gauge.builder("validation_results", objectCount::get)
+            Gauge.builder("validation.results", objectCount::get)
                     .description("Status of the objects under this trust anchor (identical to numbers on front page of web interface)")
                     .tag("status", "total")
                     .tag("trust_anchor", rsyncPrefetchUri)
                     .register(registry);
 
-            Gauge.builder("validation_results", errorCount::get)
+            Gauge.builder("validation.results", errorCount::get)
                     .description("Status of the objects under this trust anchor (identical to numbers on front page of web interface)")
                     .tag("status", "error")
                     .tag("trust_anchor", rsyncPrefetchUri)
                     .register(registry);
 
-            Gauge.builder("validation_results", warningCount::get)
+            Gauge.builder("validation.results", warningCount::get)
                     .description("Status of the objects under this trust anchor (identical to numbers on front page of web interface)")
                     .tag("status", "warning")
                     .tag("trust_anchor", rsyncPrefetchUri)
                     .register(registry);
 
-            Gauge.builder("last_validation_run", lastSuccessfulValidationRunTime::get)
+            Gauge.builder("last.validation.run", lastSuccessfulValidationRunTime::get)
                     .description("Timestamp (in seconds) of the last successful validation run.")
                     .tag("trust_anchor", rsyncPrefetchUri)
                     .register(registry);

@@ -78,16 +78,16 @@ public class RtrCache {
         reset();
 
         // Init metrics
-        Gauge.builder("validated_objects_count", () -> this.data.size())
+        Gauge.builder("validated.objects.count", () -> this.data.size())
             .description("Number of validated objects")
             .register(registry);
-        Gauge.builder("validated_objects_ready", () -> this.ready ? 1 : 0)
+        Gauge.builder("validated.objects.ready", () -> this.ready ? 1 : 0)
             .description("Status of the cache")
             .register(registry);
-        Gauge.builder("validated_objects_session_id", () -> this.sessionId)
+        Gauge.builder("validated.objects.session.id", () -> this.sessionId)
             .description("Session id of the cache")
             .register(registry);
-        Gauge.builder("validated_objects_serial", () -> this.getSerialNumber().getValue())
+        Gauge.builder("validated.objects.serial", () -> this.getSerialNumber().getValue())
             .description("Serial of the cache")
             .register(registry);
     }

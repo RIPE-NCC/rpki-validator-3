@@ -33,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.ipresource.UniqueIpResource;
+import net.ripe.rpki.validator3.domain.metrics.HttpClientMetricsService;
 import net.ripe.rpki.validator3.util.Http;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
@@ -47,11 +48,7 @@ import javax.validation.constraints.NotNull;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -63,13 +60,15 @@ import java.util.zip.GZIPInputStream;
 @Component
 @Slf4j
 public class BgpRisDownloader {
+    private final HttpClientMetricsService httpMetrics;
 
     private final Http http;
 
     private HttpClient httpClient;
 
     @Autowired
-    public BgpRisDownloader(Http http) {
+    public BgpRisDownloader(HttpClientMetricsService httpMetrics, Http http) {
+        this.httpMetrics = httpMetrics;
         this.http = http;
     }
 
@@ -86,6 +85,9 @@ public class BgpRisDownloader {
 
     public BgpRisDump fetch(@NotNull BgpRisDump dump) {
         log.info("attempting to download new BGP RIS preview dump from {}", dump.url);
+        long before = System.currentTimeMillis();
+        String statusDescription = "200";
+
         final Supplier<Request> requestSupplier = () -> {
             final Request request = httpClient.newRequest(dump.url);
             if (dump.lastModified != null) {
@@ -107,7 +109,13 @@ public class BgpRisDownloader {
         try {
             return  Http.readStream(requestSupplier, streamReader);
         } catch (Http.NotModified n) {
+            statusDescription = "302";
             return dump;
+        } catch (Exception e) {
+            statusDescription = HttpClientMetricsService.unwrapExceptionString(e);
+            throw e;
+        } finally {
+            httpMetrics.update(dump.url, statusDescription, System.currentTimeMillis() - before);
         }
     }
 

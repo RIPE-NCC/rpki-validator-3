@@ -29,7 +29,9 @@
  */
 package net.ripe.rpki.validator3.util;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.domain.metrics.HttpClientMetricsService;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.ProxyConfiguration;
@@ -37,7 +39,6 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -54,6 +55,8 @@ import java.util.function.Supplier;
 @Component
 @Slf4j
 public class Http {
+    @Autowired
+    private HttpClientMetricsService httpMetrics;
 
     @Value("${rpki.validator.rrdp.trust.all.tls.certificates}")
     private boolean trustAllTlsCertificates;
@@ -65,8 +68,7 @@ public class Http {
     private Integer proxyPort;
 
     public HttpClient client() {
-        final SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setTrustAll(trustAllTlsCertificates);
+        final SslContextFactory sslContextFactory = new SslContextFactory.Client(trustAllTlsCertificates);
         HttpClient httpClient = new HttpClient(sslContextFactory);
         log.info("Trust all TLS certificates: {}, proxy host is {}, proxy port is {}", trustAllTlsCertificates, proxyHost, proxyPort);
         if (proxyHost != null && proxyPort != null) {
@@ -78,7 +80,24 @@ public class Http {
         return httpClient;
     }
 
-    public static class NotModified extends RuntimeException {
+    public static class NotModified extends HttpStatusException {
+        public NotModified(String uri) {
+            super(302, String.format("HTTP 302 NOT MODIFIED for %s", uri));
+        }
+    }
+
+    @Getter
+    public static class HttpStatusException extends Failure {
+        private int code;
+
+        public HttpStatusException(Response response, Request request) {
+            this(response.getStatus(), String.format("unexpected response status %d for %s", response.getStatus(), request.getURI()));
+        }
+
+        public HttpStatusException(int code, String message) {
+            super(message);
+            this.code = code;
+        }
     }
 
     public static class Failure extends RuntimeException {
@@ -86,8 +105,8 @@ public class Http {
             super(s);
         }
 
-        public Failure(String s, Exception e) {
-            super(s, e);
+        public Failure(String s, Throwable cause) {
+            super(s, cause);
         }
     }
 
@@ -98,6 +117,7 @@ public class Http {
 
     public static <T> T readStream(final Supplier<Request> requestF, BiFunction<InputStream, Long,  T> reader) {
         InputStreamResponseListener listener = new InputStreamResponseListener();
+
         Request request = requestF.get();
         request.header("User-Agent", "RIPE NCC RPKI Validator version 3");
         request.send(listener);
@@ -108,11 +128,11 @@ public class Http {
 
             if (response.getStatus() != 200) {
                 if (response.getStatus() == 304) {
-                    final NotModified error = new NotModified();
+                    final NotModified error = new NotModified(request.getURI().toString());
                     response.abort(error);
                     throw error;
                 } else {
-                    final Failure error = new Failure("unexpected response status " + response.getStatus() + " for " + request.getURI());
+                    final HttpStatusException error = new HttpStatusException(response, request);
                     response.abort(error);
                     throw error;
                 }
@@ -122,12 +142,19 @@ public class Http {
             try (InputStream inputStream = listener.getInputStream()) {
                 return reader.apply(inputStream, lastModified);
             }
-        } catch (IOException | InterruptedException | TimeoutException | ExecutionException e) {
+        } catch (IOException | InterruptedException | TimeoutException e) {
             final Failure error = new Failure("failed reading response stream for " + request.getURI() + ": " + e, e);
             if (response != null) {
                 response.abort(error);
             }
             throw error;
+        } catch (ExecutionException e) {
+            final Failure error = new Failure("failed reading response stream for " + request.getURI() + ": " + e.getCause(), e.getCause());
+            if (response != null) {
+                response.abort(error);
+            }
+            throw error;
+
         }
     }
 }
