@@ -30,7 +30,6 @@
         <netty.version>4.1.19.Final</netty.version>
 
         <maven.build.timestamp.format>yyyy.MM.dd'.'HH.mm.ss</maven.build.timestamp.format>
-        <jetty-http2-client.version>9.4.11.v20180605</jetty-http2-client.version>
     </properties>
 
     <dependencies>
