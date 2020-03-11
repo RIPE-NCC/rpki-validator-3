@@ -70,8 +70,7 @@ public class RoaPrefixCoder implements Coder<RoaPrefix> {
         byte[] maxLen = content.get(MAX_LEN_TAG);
         Integer maximumLength = maxLen != null ? Coders.toInt(maxLen) : null;
 
-        // Guards against older DB with these values not present, next validation run it will be filled.
-        // Can't give default value null here, messed up encoding/decoding.
+        // Guards against older DB with these values not present, requires DB clean up to fill them.
         RoaPrefix roaPrefix = RoaPrefix.of(prefix, maximumLength, new Asn(asn), 0l, 0l, BigInteger.ZERO);
         BaseCoder.fromBytes(content, roaPrefix);
 
