@@ -40,6 +40,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.EOFException;
 import java.net.URI;
+import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -49,6 +50,8 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Service
 public class HttpClientMetricsService {
+    public final static int HISTOGRAM_HOURS = 6;
+
     @Autowired
     private MeterRegistry registry;
 
@@ -92,8 +95,10 @@ public class HttpClientMetricsService {
                     .tag("status", statusDescription)
                     .register(registry);
             this.responseTiming = Timer.builder("http.response.timing")
+                    .description(String.format("HTTP response time (quantiles over requests in the last %d hours)", HISTOGRAM_HOURS))
                     .tag("url", uri)
                     .publishPercentiles(0.5, 0.95, 0.99)
+                    .distributionStatisticExpiry(Duration.ofHours(HISTOGRAM_HOURS))
                     .register(registry);
         }
 
