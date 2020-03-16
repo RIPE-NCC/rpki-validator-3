@@ -10,6 +10,7 @@ The latest version is 3.1. Feel free to give it a try:
 Latest changes in 3.1:
 
 * Prometheus endpoint on `/metrics` for both validator and rtr-server.
+* JDK 11 support
 * Minimize memory consumption and disk requirement by dropping Hibernate/H2 database, and use Xodus https://github.com/JetBrains/xodus as persistence instead.
 * Improve responsiveness, set default RPKI object clean up grace period to 48 hours (used to be 7 days).
 * Store all the ignore filters and white lists in a slurm.json file instead of the database, so now the database can be deleted any time without losing any user-configured data.
