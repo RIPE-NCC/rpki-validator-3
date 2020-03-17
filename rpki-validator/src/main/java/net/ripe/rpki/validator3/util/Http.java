@@ -67,7 +67,7 @@ public class Http {
     @Value("${rpki.validator.http.proxy.port:#{null}}")
     private Integer proxyPort;
 
-    public HttpClient client() {
+    public HttpClient client(boolean happyResolver) {
         final SslContextFactory sslContextFactory = new SslContextFactory.Client(trustAllTlsCertificates);
         HttpClient httpClient = new HttpClient(sslContextFactory);
         log.info("Trust all TLS certificates: {}, proxy host is {}, proxy port is {}", trustAllTlsCertificates, proxyHost, proxyPort);
@@ -76,8 +76,15 @@ public class Http {
             HttpProxy proxy = new HttpProxy(proxyHost, proxyPort);
             proxyConfig.getProxies().add(proxy);
         }
-        httpClient.setSocketAddressResolver(new HappyEyeballsResolver(httpClient));
+
+        if(happyResolver)
+            httpClient.setSocketAddressResolver(new HappyEyeballsResolver(httpClient));
+
         return httpClient;
+    }
+
+    public HttpClient client(){
+        return client(true);
     }
 
     public static class NotModified extends HttpStatusException {
