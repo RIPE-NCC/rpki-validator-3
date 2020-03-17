@@ -12,6 +12,8 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.util.UUID;
+
 @RunWith(SpringRunner.class)
 @IntegrationTest
 class HttpTest {
@@ -20,26 +22,40 @@ class HttpTest {
     private HttpClient client;
     private final RrdpParser rrdpParser = new RrdpParser();
 
-
     @Test()
-    void readRipeRRDPWithHappyEyeball() throws Exception {
+    void fetchRipeRRDPWithHEB() throws Exception {
         client = http.client();
         client.start();
+
         Assertions.assertThrows(Http.Failure.class, () -> {
-                    Notification notification = Http.readStream(() -> {
-                        final Request request = client.newRequest("https://rrdp.ripe.net/notification.xml");
-                        request.header(HttpHeader.USER_AGENT, null);
-                        request.header(HttpHeader.USER_AGENT, "RIPE NCC RPKI Validator/test");
-                        return request;
-                    }, rrdpParser::notification);
-                    System.out.println(notification.serial);
-                }
-        );
+            Notification notification = Http.readStream(() -> {
+                final Request request = client.newRequest("https://rrdp.ripe.net/notification.xml");
+                request.header(HttpHeader.USER_AGENT, null);
+                request.header(HttpHeader.USER_AGENT, UUID.randomUUID().toString());
+                return request;
+            }, rrdpParser::notification);
+            System.out.println(notification.serial);
+        });
+    }
+
+    @Test()
+    void fetchNLNetlabRRDPWithHEB() throws Exception {
+        client = http.client();
+        client.start();
+        Assertions.assertDoesNotThrow(() -> {
+            Notification notification = Http.readStream(() -> {
+                final Request request = client.newRequest("https://rrdp.rpki.nlnetlabs.nl/rrdp/notification.xml");
+                request.header(HttpHeader.USER_AGENT, null);
+                request.header(HttpHeader.USER_AGENT, "RIPE NCC RPKI Validator/test");
+                return request;
+            }, rrdpParser::notification);
+            System.out.println(notification.getSerial());
+        });
     }
 
 
     @Test()
-    void readRipeRRDPWithoutHappyEyeball() throws Exception {
+    void fetchRipeRRDPWithoutHEB() throws Exception {
         client = http.client(false);
         client.start();
 
