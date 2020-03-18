@@ -82,9 +82,8 @@ public class HttpClientMetricsService {
                 }
                 return rootCause.toString();
             }
-            return cause.toString();
         }
-        return "exception";
+        return cause.toString();
     }
 
     public static class HttpStatusMetric {
