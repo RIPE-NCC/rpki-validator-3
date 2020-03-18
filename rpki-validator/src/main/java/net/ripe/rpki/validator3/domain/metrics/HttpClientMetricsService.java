@@ -69,17 +69,20 @@ public class HttpClientMetricsService {
      * @param cause Throwable to unwrap
      * @return string description
      */
-
     public static String unwrapExceptionString(Throwable cause) {
-        // Unwrap the failure and return message
-        if (cause instanceof Http.Failure) {
-            final Throwable rootCause = cause.getCause();
-            if (rootCause instanceof EOFException) {
-                return rootCause.getClass().getName();
-            }
-            return rootCause.toString();
-        } else if (cause instanceof Http.HttpStatusException) {
+        // HttpStatusException is a sub-type of Http.Failure: check it first.
+        if (cause instanceof Http.HttpStatusException) {
             return String.valueOf(((Http.HttpStatusException)cause).getCode());
+        } else if (cause instanceof Http.Failure) {
+            final Throwable rootCause = cause.getCause();
+            if (rootCause != null) {
+                if (rootCause instanceof EOFException) {
+                    // message is unique for each exception, group them by name
+                    return rootCause.getClass().getName();
+                }
+                return rootCause.toString();
+            }
+            return cause.toString();
         }
         return "exception";
     }

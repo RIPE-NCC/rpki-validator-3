@@ -79,7 +79,7 @@ public class BgpRisDownloader {
     }
 
     @PreDestroy
-    public void preDestory() throws Exception {
+    public void preDestroy() throws Exception {
         httpClient.stop();
     }
 
