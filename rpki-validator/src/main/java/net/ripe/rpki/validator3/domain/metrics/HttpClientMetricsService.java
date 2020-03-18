@@ -83,7 +83,7 @@ public class HttpClientMetricsService {
                 return rootCause.toString();
             }
         }
-        return cause.toString();
+        return cause.getClass().getName();
     }
 
     public static class HttpStatusMetric {
