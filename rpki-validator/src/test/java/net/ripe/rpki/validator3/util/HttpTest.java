@@ -14,6 +14,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.UUID;
 
+import static org.junit.Assert.assertNotNull;
+
 @RunWith(SpringRunner.class)
 @IntegrationTest
 class HttpTest {
@@ -27,14 +29,15 @@ class HttpTest {
         client = http.client();
         client.start();
 
-        Assertions.assertThrows(Http.Failure.class, () -> {
+        Assertions.assertDoesNotThrow(() -> {
             Notification notification = Http.readStream(() -> {
                 final Request request = client.newRequest("https://rrdp.ripe.net/notification.xml");
                 request.header(HttpHeader.USER_AGENT, null);
                 request.header(HttpHeader.USER_AGENT, UUID.randomUUID().toString());
                 return request;
             }, rrdpParser::notification);
-            System.out.println(notification.serial);
+            assertNotNull(notification);
+            assertNotNull(notification.serial);
         });
     }
 
@@ -49,25 +52,9 @@ class HttpTest {
                 request.header(HttpHeader.USER_AGENT, "RIPE NCC RPKI Validator/test");
                 return request;
             }, rrdpParser::notification);
-            System.out.println(notification.getSerial());
+            assertNotNull(notification);
+            assertNotNull(notification.serial);
         });
     }
 
-
-    @Test()
-    void fetchRipeRRDPWithoutHEB() throws Exception {
-        client = http.client(false);
-        client.start();
-
-        Assertions.assertDoesNotThrow(() -> {
-                    Notification notification = Http.readStream(() -> {
-                        final Request request = client.newRequest("https://rrdp.ripe.net/notification.xml");
-                        request.header(HttpHeader.USER_AGENT, null);
-                        request.header(HttpHeader.USER_AGENT, "RIPE NCC RPKI Validator/test");
-                        return request;
-                    }, rrdpParser::notification);
-                    System.out.println(notification.serial);
-                }
-        );
-    }
 }
