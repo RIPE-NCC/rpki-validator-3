@@ -1,0 +1,151 @@
+#
+# External variables:
+#
+# SSH_KEY: content of ssh private key, ending with newline.
+# SSH_KNOWN_HOSTS: generate with ssh-keyscan [hostname]
+# SSH_TARGET: [user]@[host]
+#
+
+include:
+  - project: 'swe/gitlab-ci'
+    file: '/templates/whitesource-scanning.yml'
+
+stages:
+  - build
+  - test
+  - package
+  - deploy
+
+variables:
+  DEBIAN_FRONTEND: noninteractive
+  WHITESOURCE_PRODUCT: "ba-shared-teams"
+  BUILD_NUMBER: ${CI_COMMIT_REF_SLUG}-${CI_PIPELINE_ID}
+  MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+  # As of Maven 3.3.0 instead of this you may define these options in `.mvn/maven.config` so the same config is used
+
+  MAVEN_CLI_OPTS: "--errors --batch-mode --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true"
+
+# before every job - unless overridden in a stage.
+before_script:
+  - apt update && apt install --yes rpm rsync
+
+.jdk8: &jdk8
+  image: maven:3.6-jdk-8
+  cache:
+    key: jdk8
+    paths:
+      - .m2
+      - .npm
+      - ui-validator/node_modules
+
+.jdk11: &jdk11
+  image: maven:3.6-jdk-11
+  cache:
+    key: jdk11
+    paths:
+      - .m2
+      - .npm
+      - ui-validator/node_modules
+
+.test: &test
+  stage: test
+  script:
+    - mvn $MAVEN_CLI_OPTS verify -Dbuild.number=${BUILD_NUMBER}
+  artifacts:
+    reports:
+      junit:
+        - rpki-validator/target/surefire-reports/TEST-*.xml
+        - rpki-validator/target/failsafe-reports/TEST-*.xml
+        - rpki-rtr-server/target/surefire-reports/TEST-*.xml
+        - rpki-rtr-server/target/failsafe-reports/TEST-*.xml
+
+test:jdk8:
+  <<: [*jdk8, *test]
+  script:
+    - mvn $MAVEN_CLI_OPTS verify --projects !ui-validator -Dbuild.number=${BUILD_NUMBER}
+
+test:jdk11:
+  <<: [*jdk11, *test]
+  script:
+    - mvn $MAVEN_CLI_OPTS verify --projects !ui-validator -Dbuild.number=${BUILD_NUMBER}
+
+test:frontend:
+  <<: [*jdk8, *test]
+  script:
+    - mvn $MAVEN_CLI_OPTS verify --projects ui-validator -Dbuild.number=${BUILD_NUMBER}
+
+
+package:
+  <<: [*jdk8]
+  cache:
+    policy: pull
+  stage: package
+  # Can start immediately
+  needs: []
+  script:
+    - mvn clean install
+    - mkdir artifacts
+    # Move artifacts with shell so they are not nested in paths.
+    - find . -name \*.deb -exec mv {} artifacts \;
+    - find . -name \*-dist.tar.gz -exec mv {} artifacts \;
+    - find . -name \*.rpm -exec mv {} artifacts \;
+  artifacts:
+    paths:
+      - artifacts
+    expire_in: 1 week
+
+.deployenv: &deployenv
+  needs: ["package", "test:frontend", "test:jdk8"]
+  stage: deploy
+  image: debian:buster-backports
+  dependencies:
+    - package
+  before_script:
+    - if [ -z "${SSH_TARGET}" ]; then echo "set SSH_TARGET"; exit 2; fi;
+    - if [ -z "${SSH_KEY}" ]; then echo "set SSH_KEY"; exit 2; fi;
+    - if [ -z "${SSH_KNOWN_HOSTS}" ]; then echo "set SSH_KNOWN_HOSTS"; exit 2; fi;
+    - if [ -z "${SCRIPTS}" ]; then echo "set SCRIPTS"; exit 2; fi;
+    - apt-get update && apt-get install openssh-client rsync --yes
+    - mkdir /root/.ssh/
+    - echo "$SSH_KNOWN_HOSTS" > /root/.ssh/known_hosts
+    - eval "$(ssh-agent)"
+    - echo "$SSH_KEY" | tr -d '\r' | ssh-add -
+  script:
+    # Copy files and clean old ones
+    - rsync -r --delete artifacts "$SSH_TARGET:~/bin/rpki-validator-3-release/"
+    # Trigger the repo update
+    - ssh $SSH_TARGET "export REPO_STAGE=$REPO_STAGE; export BUILD_WORKING_DIRECTORY=~/bin/rpki-validator-3-release/artifacts; $SCRIPTS/update-generic.sh $REPO_STAGE $ARCHIVE"
+    - ssh $SSH_TARGET "export REPO_STAGE=$REPO_STAGE; export BUILD_WORKING_DIRECTORY=~/bin/rpki-validator-3-release/artifacts; $SCRIPTS/update-deb.sh $REPO_STAGE $ARCHIVE"
+    - ssh $SSH_TARGET "export REPO_STAGE=$REPO_STAGE; export BUILD_WORKING_DIRECTORY=~/bin/rpki-validator-3-release/artifacts; $SCRIPTS/update-rpm-repo.sh $REPO_STAGE $ARCHIVE"
+
+deploy.beta:
+  environment:
+    name: beta
+  variables:
+    REPO_STAGE: beta
+    ARCHIVE: ""
+  when: manual
+  <<: [*deployenv]
+
+deploy.rc:
+  environment:
+    name: rc
+  variables:
+    REPO_STAGE: rc
+    ARCHIVE: ""
+  when: manual
+  only:
+    - master
+  <<: [*deployenv]
+
+deploy.prod:
+  environment:
+    name: prod
+  variables:
+    REPO_STAGE: prod
+    ARCHIVE: --archive
+  <<: [*deployenv]
+  when: manual
+  only:
+    - tags
+
