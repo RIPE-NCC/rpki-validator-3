@@ -89,10 +89,24 @@ package:
     - find . -name \*.deb -exec mv {} artifacts \;
     - find . -name \*-dist.tar.gz -exec mv {} artifacts \;
     - find . -name \*.rpm -exec mv {} artifacts \;
+    - rm artifacts/*-SNAPSHOT.*
   artifacts:
     paths:
       - artifacts
     expire_in: 1 week
+
+docker:
+  stage: deploy
+  image: debian:buster-backports
+  before_script:
+    - apt-get update && apt-get install docker.io openssh-client rsync --yes
+  script:
+    - ls -al
+    - ls -al artifacts
+    - export GENERIC_BUILD_ARCHIVE=$(ls artifacts/rpki-validator-*-dist.tar.gz | head -n 1)
+    - export GENERIC_BUILD_SHA256=$(sha256sum ${GENERIC_BUILD_ARCHIVE} | cut -d ' ' -f1)
+    - echo "GENERIC_BUILD_ARCHIVE=${GENERIC_BUILD_ARCHIVE} GENERIC_BUILD_SHA256=${GENERIC_BUILD_SHA256}"
+    - docker build . --build-arg GENERIC_BUILD_ARCHIVE=${GENERIC_BUILD_ARCHIVE} --build-arg GENERIC_BUILD_SHA256=${GENERIC_BUILD_SHA256}
 
 .deployenv: &deployenv
   needs: ["package", "test:frontend", "test:jdk8"]
@@ -105,7 +119,7 @@ package:
     - if [ -z "${SSH_KEY}" ]; then echo "set SSH_KEY"; exit 2; fi;
     - if [ -z "${SSH_KNOWN_HOSTS}" ]; then echo "set SSH_KNOWN_HOSTS"; exit 2; fi;
     - if [ -z "${SCRIPTS}" ]; then echo "set SCRIPTS"; exit 2; fi;
-    - apt-get update && apt-get install openssh-client rsync --yes
+    - apt-get update && apt-get install docker.io openssh-client rsync --yes
     - mkdir /root/.ssh/
     - echo "$SSH_KNOWN_HOSTS" > /root/.ssh/known_hosts
     - eval "$(ssh-agent)"
