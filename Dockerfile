@@ -8,17 +8,12 @@
 #
 FROM adoptopenjdk:11-jre-hotspot as intermediate
 
-# The hash as an build-arg ensures that args change even when the file name is
-# equal, otherwise docker would cache an image when GENERIC_BUILD_ARCHIVE does
 ARG GENERIC_BUILD_ARCHIVE
-ARG GENERIC_BUILD_SHA256
 
 COPY ${GENERIC_BUILD_ARCHIVE} /tmp/
 
 RUN export TMPDIR=$(mktemp -d) \
     && mkdir -p /opt/rpki-validator-3 \
-    && if [ -z "$GENERIC_BUILD_SHA256" ]; then echo "Supply GENERIC_BUILD_SHA256"; exit 2; fi; \
-       echo -n "${GENERIC_BUILD_SHA256} /tmp/$(basename ${GENERIC_BUILD_ARCHIVE})" | sha256sum --check \ 
     && tar -zxf /tmp/$(basename $GENERIC_BUILD_ARCHIVE) -C ${TMPDIR} \
     # Move files from the dir in the archive (like rpki-validator-3.1-2020.01.13.09.31.26) to target folder:
     && mv ${TMPDIR}/*/* /opt/rpki-validator-3
@@ -27,9 +22,7 @@ RUN export TMPDIR=$(mktemp -d) \
 FROM adoptopenjdk:11-jre-hotspot
 # Keep the file name and sha256 in the metadata
 ARG GENERIC_BUILD_ARCHIVE
-ARG GENERIC_BUILD_SHA256
 LABEL validation.archive.file="$(basename ${GENERIC_BUILD_ARCHIVE})"
-LABEL validation.archive.sha256="${GENERIC_BUILD_SHA256}"
 
 # Webserver on 8080
 EXPOSE 8080
