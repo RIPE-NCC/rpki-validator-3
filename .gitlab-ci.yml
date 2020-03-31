@@ -89,7 +89,8 @@ package:
     - find . -name \*.deb -exec mv {} artifacts \;
     - find . -name \*-dist.tar.gz -exec mv {} artifacts \;
     - find . -name \*.rpm -exec mv {} artifacts \;
-    - rm artifacts/*-SNAPSHOT.*
+    - rm artifacts/*SNAPSHOT*
+    - ls -al artifacts/*
   artifacts:
     paths:
       - artifacts
