@@ -1,9 +1,15 @@
-# First build step: check hash and unpack archive
 #
-# The hash ensures that args change even when the file name is equal, otherwise
-# docker would cache an image when GENERIC_BUILD_ARCHIVE does not change even
-# though the file it points to has changed.
+# Two step Dockerfile
+#   - first build step: check hash and unpack archive
+#   - second build step: install dependencies, move files around, adjust config
+#
+# Unpacking in a separate build step makes sure the archive that is COPY-d does
+# not become a layer in the final image.
+#
 FROM adoptopenjdk:11-jre-hotspot as intermediate
+
+# The hash as an build-arg ensures that args change even when the file name is
+# equal, otherwise docker would cache an image when GENERIC_BUILD_ARCHIVE does
 ARG GENERIC_BUILD_ARCHIVE
 ARG GENERIC_BUILD_SHA256
 
