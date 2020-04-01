@@ -29,7 +29,6 @@
  */
 package net.ripe.rpki.validator3.domain.validation;
 
-import com.google.common.base.Objects;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
@@ -185,7 +184,7 @@ public class CertificateTreeValidationService {
                 return;
             }
 
-            URI locationUri = Objects.firstNonNull(trustAnchorCertificate.getRrdpNotifyUri(), trustAnchorCertificate.getRepositoryUri());
+            URI locationUri = Optional.ofNullable(trustAnchorCertificate.getRrdpNotifyUri()).orElse(trustAnchorCertificate.getRepositoryUri());
             validationResult.warnIfNull(locationUri, VALIDATOR_TRUST_ANCHOR_CERTIFICATE_RRDP_NOTIFY_URI_OR_REPOSITORY_URI_PRESENT);
             if (locationUri == null) {
                 return;
