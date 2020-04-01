@@ -9,9 +9,12 @@ table {
 
   thead > tr {
     th:nth-child(1) {
-      width: 4%;
+      width: 13em;
     }
-    th:nth-child(3) {
+    th:nth-child(2) {
+      width: 3.5em;
+    }
+    th:nth-child(4) {
       width: 9em;
     }
   }

@@ -50,7 +50,11 @@ public class ValidationCheckResource {
     @ApiModelProperty(required = false, position = 5, example = "CRL next update was expected on or before 2020-01-09T23:15:45.000Z")
     final String formattedMessage;
 
+    /** Milliseconds since epoch */
+    @ApiModelProperty(required = false, position = 6, example = "1585662733733")
+    final long createdAt;
+
     public static ValidationCheckResource of(ValidationCheck check, String formattedMessage) {
-        return of(check.getLocation(), check.getStatus(), check.getKey(), check.getParameters(), formattedMessage);
+        return of(check.getLocation(), check.getStatus(), check.getKey(), check.getParameters(), formattedMessage, check.getCreatedAt().toEpochMilli());
     }
 }
