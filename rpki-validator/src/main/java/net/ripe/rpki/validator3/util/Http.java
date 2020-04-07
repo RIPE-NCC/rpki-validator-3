@@ -68,7 +68,8 @@ public class Http {
     private Integer proxyPort;
 
     public HttpClient client() {
-        final SslContextFactory sslContextFactory = new SslContextFactory.Client(trustAllTlsCertificates);
+        final SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setTrustAll(trustAllTlsCertificates);
         HttpClient httpClient = new HttpClient(sslContextFactory);
         log.info("Trust all TLS certificates: {}, proxy host is {}, proxy port is {}", trustAllTlsCertificates, proxyHost, proxyPort);
         if (proxyHost != null && proxyPort != null) {
