@@ -331,7 +331,7 @@
                                     <mapper>
                                         <type>perm</type>
                                         <prefix>/etc/systemd/system/</prefix>
-                                        <filemode>755</filemode>
+                                        <filemode>644</filemode>
                                     </mapper>
                                 </data>
                             </dataSet>
