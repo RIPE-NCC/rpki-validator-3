@@ -265,7 +265,7 @@
                                 </resource>
                             </resources>
                         </configuration>
-                    </execution>                    
+                    </execution>
                 </executions>
             </plugin>
             <plugin>
@@ -475,18 +475,18 @@
                                         <path>${basedir}/src/main/resources/packaging/generic/bin/rpki-validator-3.sh</path>
                                         <path>${basedir}/src/main/resources/packaging/generic/bin/upload-tal.sh</path>
                                     </paths>
-                                    <dst>/usr/bin/</dst>                                    
+                                    <dst>/usr/bin/</dst>
                                     <mapper>
                                         <type>perm</type>
                                         <filemode>755</filemode>
                                     </mapper>
-                                </data>                              
+                                </data>
                                 <data>
                                     <src>${basedir}/target/rpki-validator-${project.version}.jar</src>
                                     <dst>/usr/lib/rpki-validator-3.jar</dst>
                                     <type>file</type>
                                     <mapper>
-                                        <type>perm</type>                                        
+                                        <type>perm</type>
                                         <filemode>755</filemode>
                                     </mapper>
                                 </data>
@@ -519,17 +519,17 @@
                                     </mapper>
                                 </data>
                                 <data>
-                                    <type>directory</type>                                    
+                                    <type>directory</type>
                                     <src>${basedir}/src/main/resources/packaging/generic/workdirs</src>
                                     <includes/>
-                                    <excludes>**/.ignore.me</excludes>                                    
+                                    <excludes>**/.ignore.me</excludes>
                                     <mapper>
                                         <user>rpki</user>
                                         <group>rpki</group>
                                         <type>perm</type>
                                         <prefix>/var/lib/rpki-validator</prefix>
                                     </mapper>
-                                </data>                                
+                                </data>
                             </dataSet>
                         </configuration>
                     </execution>

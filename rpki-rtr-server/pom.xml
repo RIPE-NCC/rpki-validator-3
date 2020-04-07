@@ -291,18 +291,18 @@
                                     <paths>
                                         <path>${basedir}/src/main/resources/packaging/generic/bin/rpki-rtr-server.sh</path>
                                     </paths>
-                                    <dst>/usr/bin/</dst>                                    
+                                    <dst>/usr/bin/</dst>
                                     <mapper>
                                         <type>perm</type>
                                         <filemode>755</filemode>
                                     </mapper>
-                                </data>                              
+                                </data>
                                 <data>
                                     <src>${basedir}/target/rpki-rtr-server-${project.version}.jar</src>
                                     <dst>/usr/lib/rpki-rtr-server.jar</dst>
                                     <type>file</type>
                                     <mapper>
-                                        <type>perm</type>                                        
+                                        <type>perm</type>
                                         <filemode>755</filemode>
                                     </mapper>
                                 </data>
