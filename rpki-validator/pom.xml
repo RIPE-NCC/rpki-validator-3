@@ -496,7 +496,7 @@
                                     <mapper>
                                         <type>perm</type>
                                         <prefix>/etc/rpki-validator-3/</prefix>
-                                        <filemode>755</filemode>
+                                        <filemode>644</filemode>
                                     </mapper>
                                 </data>
                                 <data>
@@ -506,7 +506,7 @@
                                     <mapper>
                                         <type>perm</type>
                                         <prefix>/etc/rpki-validator-3/</prefix>
-                                        <filemode>444</filemode>
+                                        <filemode>644</filemode>
                                     </mapper>
                                 </data>
                                 <data>
