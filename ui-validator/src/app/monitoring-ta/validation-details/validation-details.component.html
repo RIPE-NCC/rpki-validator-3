@@ -14,7 +14,7 @@
     </thead>
     <tbody>
     <tr *ngFor='let validationCheck of validationChecks'>
-      <td>{{validationCheck.createdAt | date: 'yyyy-MM-dd HH:MM:SS' }}</td>
+      <td>{{validationCheck.createdAt | date: 'yyyy-MM-dd HH:MM:ss' }}</td>
       <td (mouseleave)='p.close()'>
         <img src='assets/images/uri-icon.png'
              [style.width.px]='20'
