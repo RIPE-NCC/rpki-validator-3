@@ -60,7 +60,7 @@ public class RpkiRepositoryService {
 
     @EventListener(ApplicationReadyEvent.class)
     public void scheduleRpkiRepositoryValidation() {
-        log.info("Schedule RPKI validation for the existing repositories");
+        log.info("Schedule RPKI validation for the existing RRDP repositories");
         storage.writeTx0(tx ->
                 rpkiRepositories.findRrdpRepositories(tx).forEach(r -> {
                     tx.afterCommit(() -> validationScheduler.addRrdpRpkiRepository(r));
