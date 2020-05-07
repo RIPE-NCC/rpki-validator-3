@@ -131,7 +131,7 @@ public class ExportsController {
         }
     }
 
-    @ApiOperation("export VRPs (json) extended with validity and serial number")
+    @ApiOperation("export VRPs (JSON) extended with validity and serial number")
     @GetMapping(path = "/api/export-only-roas.json")
     public JsonExportExtended exportJsonOnlyRoas(HttpServletResponse response) {
         response.setContentType(JSON);
@@ -140,42 +140,72 @@ public class ExportsController {
             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
             return null;
         }
-
-        Stream<JsonRoaPrefixExtended> validatedPrefixes = validatedRpkiObjects
-                .findCurrentlyValidatedRoaPrefixes()
-                .getObjects()
-                .map(r -> new JsonRoaPrefixExtended(
-                        String.valueOf(r.getAsn()),
-                        r.getPrefix().toString(),
-                        r.getEffectiveLength(),
-                        r.getTrustAnchor().getName(),
-                        Instant.ofEpochMilli(r.getNotBefore()).toString(),
-                        Instant.ofEpochMilli(r.getNotAfter()).toString(),
-                        r.getSerialNumber().toString()
-                ))
-                .distinct();
-
-        return new JsonExportExtended(validatedPrefixes);
+        return new JsonExportExtended(vrpExtendedStream());
     }
 
-    /*
-        Get the stream of VRPs based on ROAs - whitelist + SLURM assertions.
+    @ApiOperation("export VRPs (CSV) extended with validity and serial number")
+    @GetMapping(path = "/api/export-only-roas.csv")
+    public void exportCsvOnlyRoas(HttpServletResponse response) throws IOException {
+        response.setContentType(CSV);
+
+        if (!storage.readTx(settings::isInitialValidationRunCompleted)) {
+            response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+            return;
+        }
+
+        try (CSVWriter writer = new CSVWriter(response.getWriter())) {
+            writer.writeNext(new String[]{"ASN", "IP Prefix", "Max Length", "Trust Anchor",
+                                          "Not Valid Before", "Not Valid After", "Serial Number"});
+            vrpExtendedStream().forEach(vrp ->
+                writer.writeNext(new String[]{
+                    vrp.getAsn(),
+                    vrp.getPrefix(),
+                    String.valueOf(vrp.getMaxLength()),
+                    vrp.getTa(),
+                    vrp.getNotBefore(),
+                    vrp.getNotAfter(),
+                    vrp.getSerialNumber()
+                }));
+        }
+    }
+
+    /**
+     * Get the stream of VRPs based only on ROAs, but having more fields.
      */
-    private Stream<ExportedRoaPrefix> vrpStream() {
-        Stream<ExportedRoaPrefix> validatedPrefixes = validatedRpkiObjects
+    private Stream<ExtendedRoa> vrpExtendedStream() {
+        return validatedRpkiObjects
+            .findCurrentlyValidatedRoaPrefixes()
+            .getObjects()
+            .map(r -> new ExtendedRoa(
+                String.valueOf(r.getAsn()),
+                r.getPrefix().toString(),
+                r.getEffectiveLength(),
+                r.getTrustAnchor().getName(),
+                Instant.ofEpochMilli(r.getNotBefore()).toString(),
+                Instant.ofEpochMilli(r.getNotAfter()).toString(),
+                r.getSerialNumber().toString()
+            ))
+            .distinct();
+    }
+
+    /**
+     * Get the stream of VRPs based on ROAs - whitelist + SLURM assertions.
+     */
+    private Stream<VRP> vrpStream() {
+        Stream<VRP> validatedPrefixes = validatedRpkiObjects
             .findCurrentlyValidatedRoaPrefixes()
             .getObjects()
             .filter(new IgnoreFiltersPredicate(ignoreFilters.all()).negate())
-            .map(r -> new ExportedRoaPrefix(
+            .map(r -> new VRP(
                 String.valueOf(r.getAsn()),
                 r.getPrefix().toString(),
                 r.getEffectiveLength(),
                 r.getTrustAnchor().getName())
             );
 
-        final Stream<ExportedRoaPrefix> assertions = roaPrefixAssertions
+        final Stream<VRP> assertions = roaPrefixAssertions
             .all()
-            .map(assertion -> new ExportedRoaPrefix(
+            .map(assertion -> new VRP(
                 assertion.getAsn().toString(),
                 assertion.getPrefix().toString(),
                 assertion.getMaxPrefixLength() != null ? assertion.getMaxPrefixLength() : assertion.getPrefix().getPrefixLength(),
@@ -189,27 +219,16 @@ public class ExportsController {
     @Value
     private static class JsonExport {
         @ApiModelProperty(position = 3)
-        Stream<ExportedRoaPrefix> roas;
+        Stream<VRP> roas;
     }
     @Value
     private static class JsonExportExtended {
         @ApiModelProperty(position = 4)
-        Stream<JsonRoaPrefixExtended> roas;
+        Stream<ExtendedRoa> roas;
     }
 
-//    @Value
-//    private static class JsonRoaPrefix {
-//        @ApiModelProperty(value = ASN_PROPERTY, example = ASN_EXAMPLE)
-//        private String asn;
-//        @ApiModelProperty(example = PREFIX_EXAMPLE)
-//        private String prefix;
-//        private int maxLength;
-//        @ApiModelProperty(value = TRUST_ANCHOR, example = TRUST_ANCHOR_EXAMPLE)
-//        private String trustAnchorName;
-//    }
-
     @Value
-    private static class ExportedRoaPrefix {
+    private static class VRP {
         @ApiModelProperty(value = ASN_PROPERTY, example = ASN_EXAMPLE)
         private String asn;
         @ApiModelProperty(example = PREFIX_EXAMPLE)
@@ -220,7 +239,7 @@ public class ExportsController {
     }
 
     @Value
-    private static class JsonRoaPrefixExtended {
+    private static class ExtendedRoa {
         @ApiModelProperty(value = ASN_PROPERTY, example = ASN_EXAMPLE)
         private String asn;
         @ApiModelProperty(example = PREFIX_EXAMPLE)
