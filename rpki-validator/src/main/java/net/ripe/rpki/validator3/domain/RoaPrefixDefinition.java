@@ -29,7 +29,6 @@
  */
 package net.ripe.rpki.validator3.domain;
 
-import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 
 public interface RoaPrefixDefinition {
