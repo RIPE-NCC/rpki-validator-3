@@ -12,11 +12,8 @@ ARG GENERIC_BUILD_ARCHIVE
 
 COPY ${GENERIC_BUILD_ARCHIVE} /tmp/
 
-RUN export TMPDIR=$(mktemp -d) \
-    && mkdir -p /opt/rpki-validator-3 \
-    && tar -zxf /tmp/$(basename $GENERIC_BUILD_ARCHIVE) -C ${TMPDIR} \
-    # Move files from the dir in the archive (like rpki-validator-3.1-2020.01.13.09.31.26) to target folder:
-    && mv ${TMPDIR}/*/* /opt/rpki-validator-3
+RUN mkdir -p /opt/rpki-validator-3 \
+    && tar -zxf /tmp/$(basename $GENERIC_BUILD_ARCHIVE) -C /opt/rpki-validator-3/ --strip-components=1
 
 # Second build step: Move files into place
 FROM adoptopenjdk:11-jre-hotspot
