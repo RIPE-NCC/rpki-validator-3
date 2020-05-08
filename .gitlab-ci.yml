@@ -77,8 +77,9 @@ test:frontend:
 
 package:
   <<: [*jdk8]
-  cache:
-    policy: pull
+#  cache:
+#    policy: pull
+#    key: jd
   stage: package
   # Can start immediately
   needs: []
