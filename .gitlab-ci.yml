@@ -116,18 +116,27 @@ package:
   script:
     # Copy files and clean old ones
     - rsync -r --delete artifacts "$SSH_TARGET:~/bin/rpki-validator-3-release/"
-    # Trigger the repo update
+    ## Trigger the repo update
     - ssh $SSH_TARGET "export REPO_STAGE=$REPO_STAGE; export BUILD_WORKING_DIRECTORY=~/bin/rpki-validator-3-release/artifacts; $SCRIPTS/update-generic.sh $REPO_STAGE $ARCHIVE"
     - ssh $SSH_TARGET "export REPO_STAGE=$REPO_STAGE; export BUILD_WORKING_DIRECTORY=~/bin/rpki-validator-3-release/artifacts; $SCRIPTS/update-deb.sh $REPO_STAGE $ARCHIVE"
     - ssh $SSH_TARGET "export REPO_STAGE=$REPO_STAGE; export BUILD_WORKING_DIRECTORY=~/bin/rpki-validator-3-release/artifacts; $SCRIPTS/update-rpm-repo.sh $REPO_STAGE $ARCHIVE"
     # And the docker build
     - export GENERIC_BUILD_ARCHIVE=$(ls artifacts/rpki-validator-*-dist.tar.gz | head -n 1)
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - echo $DOCKERHUB_TOKEN | docker login -u $DOCKERHUB_USER --password-stdin
     - docker build
         --build-arg GENERIC_BUILD_ARCHIVE=${GENERIC_BUILD_ARCHIVE}
-        -t  $CI_REGISTRY_IMAGE:$REPO_STAGE
+        -t  rpki-validator-3
         .
-    - docker push $CI_REGISTRY_IMAGE:$REPO_STAGE
+    - docker tag rpki-validator-3 ripencc/rpki-validator-3:$REPO_STAGE
+    - docker push ripencc/rpki-validator-3:$REPO_STAGE
+    # Abort if not on a tag
+    - if [ -z "${CI_COMMIT_TAG}" ]; then echo "Not releasing a new tagged docker image"; exit 0; fi;
+    - echo "Re-tagging image as :latest and :${CI_COMMIT_TAG}"
+    - docker tag rpki-validator-3 ripencc/rpki-validator-3:$CI_COMMIT_TAG
+    - docker push ripencc/rpki-validator-3:$CI_COMMIT_TAG
+    - docker tag rpki-validator-3 ripencc/rpki-validator-3:latest
+    - docker push ripencc/rpki-validator-3:latest
+
 
 publish.beta:
   environment:
