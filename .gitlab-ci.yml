@@ -114,6 +114,7 @@ package:
     - eval "$(ssh-agent)"
     - echo "$SSH_KEY" | tr -d '\r' | ssh-add -
   script:
+    - if [[ ("${REPO_STAGE}" == "prod") && (-z "${CI_COMMIT_TAG}") ]]; then echo "Refusing to do a release for prod without a tag."; exit 2; fi;
     # Copy files and clean old ones
     - rsync -r --delete artifacts "$SSH_TARGET:~/bin/rpki-validator-3-release/"
     ## Trigger the repo update
@@ -130,8 +131,8 @@ package:
     - docker tag rpki-validator-3 ripencc/rpki-validator-3:$REPO_STAGE
     - docker push ripencc/rpki-validator-3:$REPO_STAGE
     # Abort if not on a tag
-    - if [ -z "${CI_COMMIT_TAG}" ]; then echo "Not releasing a new tagged docker image"; exit 0; fi;
-    - echo "Re-tagging image as :latest and :${CI_COMMIT_TAG}"
+    - if [ -z "${CI_COMMIT_TAG}" ]; then echo "Not releasing docker image tagged with a version."; exit 0; fi;
+    - echo "Releasing this image as :latest and :${CI_COMMIT_TAG}"
     - docker tag rpki-validator-3 ripencc/rpki-validator-3:$CI_COMMIT_TAG
     - docker push ripencc/rpki-validator-3:$CI_COMMIT_TAG
     - docker tag rpki-validator-3 ripencc/rpki-validator-3:latest
