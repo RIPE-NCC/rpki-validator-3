@@ -1,3 +1,6 @@
+* Fri May 8 2020 Mikhail Puzanov <mpuzanovg@ripe.net> - 3.1
+- Add SLURM-based VRPs to export.json
+
 * Mon Mar 16 2020 Ties de Kock <tdekock@ripe.net> - 3.1
 - Added prometheus metrics for http responses
 - Support JDK 11 (starting from an earlier revision)
