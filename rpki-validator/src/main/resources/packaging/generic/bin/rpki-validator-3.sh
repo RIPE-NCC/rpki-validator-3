@@ -64,10 +64,13 @@ CONFIG_DEFAULT_FILE="${CONFIG_DIR}/application-defaults.properties"
 
 function parse_config_line {
     local CONFIG_KEY="$1"
-    local VALUE=`grep "^$CONFIG_KEY" "$CONFIG_DEFAULT_FILE" | sed 's/#.*//g' | awk -F "=" '{ print $2 }'`
 
+    #First check on CONFIG_FILE if it contains CONFIG_KEY
+    local VALUE=`grep "^$CONFIG_KEY" "$CONFIG_FILE" | sed 's/#.*//g' | awk -F "=" '{ print $2 }'`
+
+    #If it is not there then lookup on the default.
     if [ -z "$VALUE" ]; then
-        VALUE=`grep "^$CONFIG_KEY" "$CONFIG_FILE" | sed 's/#.*//g' | awk -F "=" '{ print $2 }'`
+        VALUE=`grep "^$CONFIG_KEY" "$CONFIG_DEFAULT_FILE" | sed 's/#.*//g' | awk -F "=" '{ print $2 }'`
     fi
 
     if [ -z "$VALUE" ]; then
@@ -76,8 +79,8 @@ function parse_config_line {
     eval "$2=$VALUE"
 }
 
-parse_config_line "jvm.mem.initial" JVM_XMS
-parse_config_line "jvm.mem.maximum" JVM_XMX
+parse_config_line "jvm.memory.initial" JVM_XMS
+parse_config_line "jvm.memory.maximum" JVM_XMX
 
 MEM_OPTIONS="-Xms$JVM_XMS -Xmx$JVM_XMX -XX:+ExitOnOutOfMemoryError"
 
