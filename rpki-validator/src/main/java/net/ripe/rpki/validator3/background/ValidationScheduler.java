@@ -30,9 +30,12 @@
 package net.ripe.rpki.validator3.background;
 
 import com.google.common.base.Preconditions;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.ValidatorApi;
+import net.ripe.rpki.validator3.domain.validation.CertificateTreeValidationService;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import org.quartz.JobKey;
@@ -42,10 +45,18 @@ import org.quartz.SimpleScheduleBuilder;
 import org.quartz.TriggerBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.TemporalField;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Component
 @Slf4j
@@ -58,15 +69,30 @@ public class ValidationScheduler {
     @Getter
     private final Duration rrpdRepositoryDownloadInterval;
 
+    private final Throttled<String> throttledTreeValidation;
+
     private boolean enabled = true;
+
+    private final CertificateTreeValidationService validationService;
 
     @Autowired
     public ValidationScheduler(Scheduler scheduler,
                                @Value("${rpki.validator.rsync.repository.download.interval:PT10M}") String rsyncRepositoryDownloadInterval,
-                               @Value("${rpki.validator.rrdp.repository.download.interval:PT2M}") String rrpdRepositoryDownloadInterval) {
+                               @Value("${rpki.validator.rrdp.repository.download.interval:PT2M}") String rrpdRepositoryDownloadInterval,
+                               @Lazy CertificateTreeValidationService validationService) {
         this.scheduler = scheduler;
         this.rsyncRepositoryDownloadInterval = Duration.parse(rsyncRepositoryDownloadInterval);
         this.rrpdRepositoryDownloadInterval = Duration.parse(rrpdRepositoryDownloadInterval);
+        this.validationService = validationService;
+
+        // Allow tre re-validation as often as minimum repository fetch interval,
+        // but in any case not more often then once a minute.
+        final long minIntervalBetweenTreeValidationsInSeconds = Math.max(60,
+            Math.min(
+                this.rsyncRepositoryDownloadInterval.getSeconds(),
+                this.rrpdRepositoryDownloadInterval.getSeconds()));
+
+        throttledTreeValidation = new Throttled<>(minIntervalBetweenTreeValidationsInSeconds);
     }
 
     public void addTrustAnchor(TrustAnchor trustAnchor) {
@@ -163,7 +189,7 @@ public class ValidationScheduler {
         }
     }
 
-    public void triggerCertificateTreeValidation(TrustAnchor trustAnchor) {
+    public void triggerCertificateTreeValidation1(TrustAnchor trustAnchor) {
         if (!enabled) {
             return;
         }
@@ -176,6 +202,29 @@ public class ValidationScheduler {
             }
         } catch (SchedulerException ex) {
             throw new RuntimeException(ex);
+        }
+    }
+
+    public void triggerCertificateTreeValidation(TrustAnchor trustAnchor) {
+        if (!enabled) {
+            return;
+        }
+        throttledTreeValidation.trigger(trustAnchor.getName(), () -> {
+            log.debug("Re-validating the CA tree for TA {}", trustAnchor.getName());
+            validationService.validate(trustAnchor.getId().asLong());
+        });
+    }
+
+    private final Map<String, CertTreeValidation> treeValidationMap = new HashMap<>();
+
+    @Data
+    @AllArgsConstructor
+    private static class CertTreeValidation {
+        private Instant lastTime;
+        private boolean alreadyScheduled;
+
+        public CertTreeValidation createScheduled() {
+            return new CertTreeValidation(lastTime, true);
         }
     }
 
