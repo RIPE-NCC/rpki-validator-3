@@ -79,8 +79,8 @@ function parse_config_line {
     eval "$2=$VALUE"
 }
 
-parse_config_line "jvm.memory.initial" JVM_XMS
-parse_config_line "jvm.memory.maximum" JVM_XMX
+parse_config_line "jvm.mem.initial" JVM_XMS
+parse_config_line "jvm.mem.maximum" JVM_XMX
 
 MEM_OPTIONS="-Xms$JVM_XMS -Xmx$JVM_XMX -XX:+ExitOnOutOfMemoryError"
 
