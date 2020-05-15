@@ -113,7 +113,6 @@ public class ValidationScheduler {
                     .withSchedule(SimpleScheduleBuilder.repeatSecondlyForever((int)rsyncRepositoryDownloadInterval.getSeconds()))
                     .build()
             );
-            scheduler.addJob(CertificateTreeValidationJob.buildJob(trustAnchor), true);
         } catch (SchedulerException ex) {
             throw new RuntimeException(ex);
         }
@@ -124,25 +123,9 @@ public class ValidationScheduler {
             return false;
         }
         try {
-            return scheduler.checkExists(TrustAnchorValidationJob.getJobKey(trustAnchor)) &&
-                    scheduler.checkExists(CertificateTreeValidationJob.getJobKey(trustAnchor));
+            return scheduler.checkExists(TrustAnchorValidationJob.getJobKey(trustAnchor));
         } catch (SchedulerException e) {
             return false;
-        }
-    }
-
-    public void removeTrustAnchor(TrustAnchor trustAnchor) {
-        if (!enabled) {
-            return;
-        }
-        try {
-            boolean trustAnchorValidationDeleted = scheduler.deleteJob(TrustAnchorValidationJob.getJobKey(trustAnchor));
-            boolean certificateTreeValidationDeleted = scheduler.deleteJob(CertificateTreeValidationJob.getJobKey(trustAnchor));
-            if (!trustAnchorValidationDeleted || !certificateTreeValidationDeleted) {
-                throw new EmptyResultDataAccessException("validation job for trust anchor or certificate tree not found", 1);
-            }
-        } catch (SchedulerException ex) {
-            throw new RuntimeException(ex);
         }
     }
 
@@ -189,22 +172,6 @@ public class ValidationScheduler {
         }
     }
 
-    public void triggerCertificateTreeValidation1(TrustAnchor trustAnchor) {
-        if (!enabled) {
-            return;
-        }
-        try {
-            final JobKey jobKey = CertificateTreeValidationJob.getJobKey(trustAnchor);
-            if (scheduler.checkExists(jobKey)) {
-                scheduler.triggerJob(jobKey);
-            } else {
-                log.warn("Trying to trigger TA validation that wasn't registered before, job {}", jobKey);
-            }
-        } catch (SchedulerException ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
     public void triggerCertificateTreeValidation(TrustAnchor trustAnchor) {
         if (!enabled) {
             return;
@@ -213,19 +180,6 @@ public class ValidationScheduler {
             log.debug("Re-validating the CA tree for TA {}", trustAnchor.getName());
             validationService.validate(trustAnchor.getId().asLong());
         });
-    }
-
-    private final Map<String, CertTreeValidation> treeValidationMap = new HashMap<>();
-
-    @Data
-    @AllArgsConstructor
-    private static class CertTreeValidation {
-        private Instant lastTime;
-        private boolean alreadyScheduled;
-
-        public CertTreeValidation createScheduled() {
-            return new CertTreeValidation(lastTime, true);
-        }
     }
 
     public void disable() {
