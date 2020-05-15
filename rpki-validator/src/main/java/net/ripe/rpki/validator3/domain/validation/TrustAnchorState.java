@@ -30,11 +30,16 @@
 package net.ripe.rpki.validator3.domain.validation;
 
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * It is to keep track of the state of a TA. A TA transitions to the VALIDATED when
@@ -44,12 +49,26 @@ import java.util.Map;
 @Component
 @Slf4j
 public class TrustAnchorState {
+
     private enum State {
         UNKNOWN,
         VALIDATED
     }
 
     private final Map<String, State> states = new HashMap<>();
+    private final Map<String, Instant> lastTreeValidationTime = new HashMap<>();
+
+    private final long minIntervalBetweenTreeValidationsInSeconds;
+
+    @Autowired
+    public TrustAnchorState(final ValidationScheduler validationScheduler) {
+        // Allow tre re-validation as often as minimum repository fetch interval,
+        // but in any case not more often then once a minute.
+        minIntervalBetweenTreeValidationsInSeconds = Math.max(60,
+            Math.min(
+                validationScheduler.getRsyncRepositoryDownloadInterval().getSeconds(),
+                validationScheduler.getRrpdRepositoryDownloadInterval().getSeconds()));
+    }
 
     public boolean allTAsValidatedAfterRepositoryLoading() {
         synchronized (states) {
@@ -69,6 +88,41 @@ public class TrustAnchorState {
         log.debug("Setting TA {} to {}", ta.getName(), state);
         synchronized (states) {
             states.put(ta.getName(), state);
+        }
+    }
+
+    /**
+     * This is to prevent validating CA too often and consume too much CPU.
+     *
+     * CertificateTreeValidationJob is triggered every time there's an update of a repository related
+     * to a TA, so the more delegated CAs are in the TA, the more often tree re-validation is happening.
+     *
+     * To prevent this, re-validate the tree only if it's not been validated some time ago.
+     */
+    public void throttledValidate(TrustAnchor ta, Consumer<TrustAnchor> f) {
+        Duration timeSinceTheLastTime = null;
+        final Instant now = Instant.now();
+        synchronized (lastTreeValidationTime) {
+            final Instant lastTime = lastTreeValidationTime.get(ta.getName());
+            if (lastTime != null) {
+                final Duration between = Duration.between(lastTime, now);
+                if (between.getSeconds() < minIntervalBetweenTreeValidationsInSeconds) {
+                    timeSinceTheLastTime = between;
+                }
+            }
+        }
+        if (timeSinceTheLastTime == null) {
+            try {
+                f.accept(ta);
+            } finally {
+                final Instant after = Instant.now();
+                synchronized (lastTreeValidationTime) {
+                    lastTreeValidationTime.put(ta.getName(), after);
+                }
+            }
+        } else {
+            log.debug("Not going to re-validate the CA tree for TA {}, validated {}s ago", ta.getName(),
+                timeSinceTheLastTime.getSeconds());
         }
     }
 

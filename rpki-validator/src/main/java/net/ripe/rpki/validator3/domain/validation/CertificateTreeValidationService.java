@@ -148,11 +148,13 @@ public class CertificateTreeValidationService {
 
     public void validate(long trustAnchorId) {
         Optional<TrustAnchor> maybeTrustAnchor = storage.readTx(tx -> trustAnchors.get(tx, Key.of(trustAnchorId)));
-        if (!maybeTrustAnchor.isPresent()) {
+        if (maybeTrustAnchor.isPresent()) {
+            final TrustAnchor trustAnchor = maybeTrustAnchor.get();
+            trustAnchorState.throttledValidate(trustAnchor, ta ->
+                Bench.mark0("validateTa " + ta.getName(), () -> validateTa(ta)));
+        } else {
             log.error("Couldn't find trust anchor {}", trustAnchorId);
-            return;
         }
-        Bench.mark0("validateTa " + maybeTrustAnchor.get().getName(), () -> validateTa(maybeTrustAnchor.get()));
     }
 
     private void validateTa(TrustAnchor trustAnchor) {

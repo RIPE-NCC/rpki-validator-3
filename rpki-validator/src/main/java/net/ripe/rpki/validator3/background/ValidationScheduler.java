@@ -52,9 +52,12 @@ import java.time.Duration;
 public class ValidationScheduler {
 
     private final Scheduler scheduler;
+
     @Getter
     private final Duration rsyncRepositoryDownloadInterval;
+    @Getter
     private final Duration rrpdRepositoryDownloadInterval;
+
     private boolean enabled = true;
 
     @Autowired
