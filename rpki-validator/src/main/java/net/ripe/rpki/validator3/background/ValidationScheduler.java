@@ -85,7 +85,7 @@ public class ValidationScheduler {
         this.rrpdRepositoryDownloadInterval = Duration.parse(rrpdRepositoryDownloadInterval);
         this.validationService = validationService;
 
-        // Allow tre re-validation as often as minimum repository fetch interval,
+        // Allow tree re-validation as often as minimum repository fetch interval,
         // but in any case not more often then once a minute.
         final long minIntervalBetweenTreeValidationsInSeconds = Math.max(60,
             Math.min(
