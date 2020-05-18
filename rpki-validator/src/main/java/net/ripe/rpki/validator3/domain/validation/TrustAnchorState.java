@@ -44,6 +44,7 @@ import java.util.Map;
 @Component
 @Slf4j
 public class TrustAnchorState {
+
     private enum State {
         UNKNOWN,
         VALIDATED

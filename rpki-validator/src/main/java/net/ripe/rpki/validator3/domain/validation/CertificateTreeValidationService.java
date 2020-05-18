@@ -148,15 +148,16 @@ public class CertificateTreeValidationService {
 
     public void validate(long trustAnchorId) {
         Optional<TrustAnchor> maybeTrustAnchor = storage.readTx(tx -> trustAnchors.get(tx, Key.of(trustAnchorId)));
-        if (!maybeTrustAnchor.isPresent()) {
+        if (maybeTrustAnchor.isPresent()) {
+            final TrustAnchor trustAnchor = maybeTrustAnchor.get();
+            Bench.mark0("validateTa " + trustAnchor.getName(), () -> validateTa(trustAnchor));
+        } else {
             log.error("Couldn't find trust anchor {}", trustAnchorId);
-            return;
         }
-        Bench.mark0("validateTa " + maybeTrustAnchor.get().getName(), () -> validateTa(maybeTrustAnchor.get()));
     }
 
     private void validateTa(TrustAnchor trustAnchor) {
-        log.info("Starting tree validation for {}", trustAnchor);
+        log.info("Starting tree validation for {}", trustAnchor.getName());
         long begin = System.currentTimeMillis();
 
         final Map<URI, RpkiRepository> registeredRepositories = createRegisteredRepositoryMap(trustAnchor);
