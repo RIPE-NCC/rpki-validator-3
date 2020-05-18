@@ -44,16 +44,16 @@ public class IgnoreFilterDto {
 
     public IgnoreFilterDto(IgnoreFilter ignoreFilter) {
         this.id = ignoreFilter.getId();
-        this.asn = ignoreFilter.getAsn().toString();
-        this.prefix = ignoreFilter.getPrefix().toString();
+        this.asn = ignoreFilter.getAsn() == null ? null : ignoreFilter.getAsn().toString();
+        this.prefix = ignoreFilter.getPrefix() == null ? null : ignoreFilter.getPrefix().toString();
         this.comment = ignoreFilter.getComment();
         this.affectedRoas = ignoreFilter.getAffectedRoas();
     }
 
     public IgnoreFilterDto(IgnoreFilter ignoreFilter, List<ObjectController.RoaPrefix> affectedRoas) {
         this.id = ignoreFilter.getId();
-        this.asn = ignoreFilter.getAsn().toString();
-        this.prefix = ignoreFilter.getPrefix().toString();
+        this.asn = ignoreFilter.getAsn() == null ? null : ignoreFilter.getAsn().toString();
+        this.prefix = ignoreFilter.getPrefix() == null ? null : ignoreFilter.getPrefix().toString();
         this.comment = ignoreFilter.getComment();
         this.affectedRoas = affectedRoas;
     }
