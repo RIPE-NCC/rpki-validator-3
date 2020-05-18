@@ -29,19 +29,31 @@
  */
 package net.ripe.rpki.validator3.background;
 
+import lombok.SneakyThrows;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ThrottledTest {
-    @Test
-    public void testTriggerDoenstTriggerTooOften() throws InterruptedException {
-        AtomicInteger counter = new AtomicInteger(0);
-        final Throttled<String> throttled = new Throttled<>(10);
 
-        throttled.trigger("x", counter::incrementAndGet);
+    private final AtomicInteger counter = new AtomicInteger(0);
+
+    private final Runnable slowIncrement = () -> {
+        waitATinyBit();
+        counter.incrementAndGet();
+    };
+
+    @Test
+    public void testTriggerDoesntTriggerTooOften() throws InterruptedException {
+        counter.set(0);
+        final Throttled<String> throttled = new Throttled<>(10);
+        throttled.trigger("x", slowIncrement);
+        assertEquals(0, counter.get());
+        throttled.trigger("x", slowIncrement);
+        assertEquals(0, counter.get());
+
         waitALittleToAllowExecutorToProcessRunnables();
         assertEquals(1, counter.get());
 
@@ -54,21 +66,27 @@ public class ThrottledTest {
 
     @Test
     public void testTriggerDoesTriggerAfterInterval() throws InterruptedException {
-        AtomicInteger counter = new AtomicInteger(0);
+        counter.set(0);
         final Throttled<String> throttled = new Throttled<>(1);
 
-        throttled.trigger("x", counter::incrementAndGet);
+        throttled.trigger("x", slowIncrement);
         waitALittleToAllowExecutorToProcessRunnables();
         assertEquals(1, counter.get());
 
         Thread.sleep(2000);
-        throttled.trigger("x", counter::incrementAndGet);
+        throttled.trigger("x", slowIncrement);
         waitALittleToAllowExecutorToProcessRunnables();
         assertEquals(2, counter.get());
     }
 
-    private void waitALittleToAllowExecutorToProcessRunnables() throws InterruptedException {
+    @SneakyThrows
+    private void waitALittleToAllowExecutorToProcessRunnables() {
         Thread.sleep(100);
+    }
+
+    @SneakyThrows
+    private void waitATinyBit() {
+        Thread.sleep(30);
     }
 
 }
