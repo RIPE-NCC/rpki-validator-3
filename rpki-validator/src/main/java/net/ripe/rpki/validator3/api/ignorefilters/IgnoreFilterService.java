@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.api.ignorefilters;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
+import net.ripe.ipresource.IpResource;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
@@ -69,8 +70,12 @@ public class IgnoreFilterService {
     public long execute(@Valid AddIgnoreFilter command) {
         return slurmStore.updateWith(slurmExt -> {
             final Slurm.SlurmPrefixFilter ignoreFilter = new Slurm.SlurmPrefixFilter();
-            ignoreFilter.setAsn(Asn.parse(command.getAsn()).longValue());
-            ignoreFilter.setPrefix(IpRange.parse(command.getPrefix()));
+            if (command.getAsn() != null) {
+                ignoreFilter.setAsn(Asn.parse(command.getAsn()).longValue());
+            }
+            if (command.getPrefix() != null) {
+                ignoreFilter.setPrefix(IpRange.parse(command.getPrefix()));
+            }
             ignoreFilter.setComment(command.getComment());
 
             final long id = slurmStore.nextId();
@@ -131,11 +136,17 @@ public class IgnoreFilterService {
     public Stream<Map.Entry<Long, Slurm.SlurmPrefixFilter>> applySearch(SearchTerm searchTerm, Stream<Map.Entry<Long, Slurm.SlurmPrefixFilter>> all) {
         if (searchTerm != null) {
             if (searchTerm.asAsn() != null) {
-                all = all.filter(pf -> pf.getValue().getAsn().longValue() == searchTerm.asAsn().longValue());
+                all = all
+                    .filter(pf -> pf.getValue().getAsn() != null)
+                    .filter(pf -> pf.getValue().getAsn().longValue() == searchTerm.asAsn().longValue());
             } else if (searchTerm.asIpRange() != null) {
-                all = all.filter(pf -> pf.getValue().getPrefix().overlaps(searchTerm.asIpRange()));
+                all = all
+                    .filter(pf -> pf.getValue().getPrefix() != null)
+                    .filter(pf -> pf.getValue().getPrefix().overlaps(searchTerm.asIpRange()));
             } else {
-                all = all.filter(pf -> pf.getValue().getComment().toLowerCase().contains(searchTerm.asString().toLowerCase()));
+                all = all
+                    .filter(pf -> pf.getValue().getComment() != null)
+                    .filter(pf -> pf.getValue().getComment().toLowerCase().contains(searchTerm.asString().toLowerCase()));
             }
         }
         return all;
@@ -160,14 +171,14 @@ public class IgnoreFilterService {
         Comparator<Map.Entry<Long, Slurm.SlurmPrefixFilter>> comparator;
         switch (sorting.getBy()) {
             case PREFIX:
-                comparator = Comparator.comparing(e -> e.getValue().getPrefix());
+                comparator = Comparator.comparing(e -> e.getValue().getPrefix(), Comparator.nullsFirst(IpResource::compareTo));
                 break;
             case COMMENT:
-                comparator = Comparator.comparing(e -> e.getValue().getComment());
+                comparator = Comparator.comparing(e -> e.getValue().getComment(), Comparator.nullsFirst(String::compareTo));
                 break;
             case ASN:
             default:
-                comparator = Comparator.comparing(e -> e.getValue().getAsn());
+                comparator = Comparator.comparing(e -> e.getValue().getAsn(), Comparator.nullsFirst(Long::compareTo));
                 break;
         }
         return sorting.getDirection() == Sorting.Direction.DESC ? comparator.reversed() : comparator;
