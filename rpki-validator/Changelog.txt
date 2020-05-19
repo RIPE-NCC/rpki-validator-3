@@ -1,3 +1,9 @@
+* Tue May 19 2020 Mikhail Puzanov <mpuzanovg@ripe.net> - 3.1
+- Fix NullPointerException when managing ignore filters with only ASN or prefix and not both.
+- Reduce CPU usage for top-down tree validation for TA with a lot of delegated CAs.
+- Fix priority of configuration properties.
+- Update Docker image
+
 * Fri May 8 2020 Mikhail Puzanov <mpuzanovg@ripe.net> - 3.1
 - Add SLURM-based VRPs to export.json
 
