@@ -193,9 +193,9 @@ public class ExportsController {
                         assertion.getPrefix().toString(),
                         assertion.getMaxPrefixLength() != null ? assertion.getMaxPrefixLength() : assertion.getPrefix().getPrefixLength(),
                         "SLURM",
-                        "",
-                        "",
-                        ""
+                        null,
+                        null,
+                        null
                 ));
 
 

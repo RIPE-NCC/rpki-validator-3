@@ -166,7 +166,8 @@
     "CLICK_LINK_TO_ANNOUNCEMENT": "Click link to see details about announcement"
   },
   "Export": {
-    "DESCRIPTION": "Here you are able to export the complete ROA data set for use in an existing BGP decision making workflow. The output will be in CSV or JSON format and consist of all validated ROAs, minus your ignore filter entries, plus your whitelist entries."
+    "DESCRIPTION": "Here you are able to export the complete ROA data set for use in an existing BGP decision making workflow. The output will be in CSV or JSON format and consist of all validated ROAs, minus your ignore filter entries, plus your whitelist entries.",
+    "DESCRIPTION_EXTENDED": "Export with additional validity and serial number information for ROAs."
   },
   "Slurm": {
     "SLURM": "Import / Export Filter and Whitelist Entries",

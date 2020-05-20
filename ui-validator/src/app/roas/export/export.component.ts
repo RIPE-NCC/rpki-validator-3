@@ -8,7 +8,11 @@ import {Component, OnInit} from '@angular/core';
       <p>{{'Export.DESCRIPTION' | translate}}</p>
       <a href="api/export.csv" class="btn-primary">Get CSV</a>
       <a href="api/export.json" class="btn-primary" target="_blank">Get JSON</a>
-      <a href="api/export-extended.json" class="btn-primary" target="_blank">Get JSON (extended)</a>
+    </div>
+    <div class="pb-4">
+      <p>{{'Export.DESCRIPTION_EXTENDED' | translate}}</p>
+      <a href="api/export-extended.csv" class="btn-primary">Get CSV  </a> &nbsp;
+      <a href="api/export-extended.json" class="btn-primary" target="_blank">Get JSON </a>
     </div>
     `,
   styles: [`
