@@ -144,7 +144,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>rpm-maven-plugin</artifactId>
-                <version>2.1.5</version>
+                <version>2.2.0</version>
                 <executions>
                     <execution>
                         <id>generate-rpm</id>
@@ -166,11 +166,12 @@
                     <description>https://github.com/RIPE-NCC/rpki-validator-3</description>
                     <needarch>noarch</needarch>
                     <targetOS>linux</targetOS>
-                    <defaultUsername>rpki</defaultUsername>
-                    <defaultGroupname>rpki</defaultGroupname>
+                    <defaultUsername>root</defaultUsername>
+                    <defaultgroupname>root</defaultgroupname>
                     <mappings>
                         <mapping>
                             <directory>/usr/lib/</directory>
+                            <filemode>644</filemode>
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
@@ -195,6 +196,8 @@
                         <mapping>
                             <directory>/etc/rpki-rtr-server/</directory>
                             <configuration>noreplace</configuration>
+                            <dirmode>755</dirmode>
+                            <filemode>644</filemode>
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
@@ -208,7 +211,8 @@
                         <mapping>
                             <directory>/etc/rpki-rtr-server/</directory>
                             <configuration>false</configuration>
-                            <filemode>444</filemode>
+                            <dirmode>755</dirmode>
+                            <filemode>644</filemode>
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
@@ -221,6 +225,7 @@
                         </mapping>
                         <mapping>
                             <directory>/etc/systemd/system/</directory>
+                            <configuration>true</configuration>
                             <filemode>644</filemode>
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
