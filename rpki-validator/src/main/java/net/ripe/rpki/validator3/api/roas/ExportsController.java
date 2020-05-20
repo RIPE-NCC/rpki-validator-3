@@ -132,7 +132,7 @@ public class ExportsController {
     }
 
     @ApiOperation("export VRPs (JSON) extended with validity and serial number")
-    @GetMapping(path = "/api/export-only-roas.json")
+    @GetMapping(path = "/api/export-extended.json")
     public JsonExportExtended exportJsonOnlyRoas(HttpServletResponse response) {
         response.setContentType(JSON);
 
@@ -144,7 +144,7 @@ public class ExportsController {
     }
 
     @ApiOperation("export VRPs (CSV) extended with validity and serial number")
-    @GetMapping(path = "/api/export-only-roas.csv")
+    @GetMapping(path = "/api/export-extended.csv")
     public void exportCsvOnlyRoas(HttpServletResponse response) throws IOException {
         response.setContentType(CSV);
 
@@ -173,19 +173,33 @@ public class ExportsController {
      * Get the stream of VRPs based only on ROAs, but having more fields.
      */
     private Stream<ExtendedRoa> vrpExtendedStream() {
-        return validatedRpkiObjects
-            .findCurrentlyValidatedRoaPrefixes()
-            .getObjects()
-            .map(r -> new ExtendedRoa(
-                String.valueOf(r.getAsn()),
-                r.getPrefix().toString(),
-                r.getEffectiveLength(),
-                r.getTrustAnchor().getName(),
-                Instant.ofEpochMilli(r.getNotBefore()).toString(),
-                Instant.ofEpochMilli(r.getNotAfter()).toString(),
-                r.getSerialNumber().toString()
-            ))
-            .distinct();
+        Stream <ExtendedRoa> validatedPrefixes =  validatedRpkiObjects
+                .findCurrentlyValidatedRoaPrefixes()
+                .getObjects()
+                .map(r -> new ExtendedRoa(
+                        String.valueOf(r.getAsn()),
+                        r.getPrefix().toString(),
+                        r.getEffectiveLength(),
+                        r.getTrustAnchor().getName(),
+                        Instant.ofEpochMilli(r.getNotBefore()).toString(),
+                        Instant.ofEpochMilli(r.getNotAfter()).toString(),
+                        r.getSerialNumber().toString()
+                ));
+
+        final Stream<ExtendedRoa> assertions = roaPrefixAssertions
+                .all()
+                .map(assertion -> new ExtendedRoa(
+                        assertion.getAsn().toString(),
+                        assertion.getPrefix().toString(),
+                        assertion.getMaxPrefixLength() != null ? assertion.getMaxPrefixLength() : assertion.getPrefix().getPrefixLength(),
+                        "SLURM",
+                        "",
+                        "",
+                        ""
+                ));
+
+
+        return Stream.concat(validatedPrefixes, assertions).distinct();
     }
 
     /**
