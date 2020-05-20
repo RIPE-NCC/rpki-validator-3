@@ -84,7 +84,23 @@ package:
   # Can start immediately
   needs: []
   script:
-    - mvn clean install
+    # Set the release version if on a tag
+    - >
+      if [[ -n "$CI_COMMIT_TAG" ]]; then
+        VERSION=$(echo $CI_COMMIT_TAG | sed -e 's/^3.*-\(.*\)$/\1/')
+        # We tag with 3.1-YYYY.MM.DD.hh.mm.ss.
+        # TODO: Test it with sed _and_ extract version with sed, the current tests may mis-match
+        if [[ "$VERSION" =~ ^20*.*.*.*.*.*$ ]]; then
+          echo "building release for tagged ${VERSION}"
+          mvn clean install -Dbuild.release=$VERSION
+        else
+          echo "Tag '${CI_COMMIT_TAG}' is not in the correct format."
+          exit 2
+        fi
+      else
+        # Untagged build
+        mvn clean install
+      fi
     - mkdir artifacts
     # Move artifacts with shell so they are not nested in paths.
     - find . -name \*.deb -exec mv {} artifacts \;
