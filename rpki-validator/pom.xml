@@ -389,6 +389,7 @@
                         <mapping>
                             <directory>/etc/systemd/system/</directory>
                             <configuration>true</configuration>
+                            <filemode>644</filemode>
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
