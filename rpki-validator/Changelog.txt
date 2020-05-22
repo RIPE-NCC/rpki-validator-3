@@ -1,4 +1,6 @@
-* Tue May 19 2020 Mikhail Puzanov <mpuzanovg@ripe.net> - 3.1
+* Fri May 22 2020 Ties de Kock <tdekock@ripe.net> 3.1
+- Packaging changes for Debian and Centos.
+- Add endpoint that applies SLURM-based VRPs to extended export and fix a broken link.
 - Fix NullPointerException when managing ignore filters with only ASN or prefix and not both.
 - Reduce CPU usage for top-down tree validation for TA with a lot of delegated CAs.
 - Fix priority of configuration properties.
