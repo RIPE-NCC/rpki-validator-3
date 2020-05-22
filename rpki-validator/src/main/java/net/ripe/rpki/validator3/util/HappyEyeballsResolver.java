@@ -153,7 +153,7 @@ public class HappyEyeballsResolver implements SocketAddressResolver {
                 }
 
             } catch (Exception e) {
-                log.warn("Error during looking for happy eyeballs: ", e);
+                log.warn(String.format("Error during lookup in happy eyeballs resolver for %s:%s", host, port), e);
                 promise.failed(e);
             } finally {
                 for (Optional<SocketChannel> channelOptional : sockets) {
