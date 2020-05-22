@@ -315,6 +315,7 @@
                                 <data>
                                     <src>${basedir}/src/main/resources/packaging/generic/conf/application.properties</src>
                                     <type>file</type>
+                                    <conffile>true</conffile>
                                     <mapper>
                                         <type>perm</type>
                                         <prefix>/etc/rpki-rtr-server/</prefix>
@@ -324,7 +325,6 @@
                                 <data>
                                     <src>${basedir}/src/main/resources/packaging/generic/conf/application-defaults.properties</src>
                                     <type>file</type>
-                                    <conffile>true</conffile>
                                     <mapper>
                                         <type>perm</type>
                                         <prefix>/etc/rpki-rtr-server/</prefix>
