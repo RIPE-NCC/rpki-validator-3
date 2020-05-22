@@ -364,7 +364,7 @@
                             <directory>/etc/rpki-validator-3/</directory>
                             <dirmode>755</dirmode>
                             <filemode>644</filemode>
-                            <configuration>noreplace</configuration>
+                            <configuration>true</configuration>
                             <directoryIncluded>false</directoryIncluded>
                             <sources>
                                 <source>
@@ -501,6 +501,7 @@
                                 <data>
                                     <src>${basedir}/target/deb-conf/application.properties</src>
                                     <type>file</type>
+                                    <conffile>true</conffile>
                                     <mapper>
                                         <type>perm</type>
                                         <prefix>/etc/rpki-validator-3/</prefix>
@@ -510,7 +511,6 @@
                                 <data>
                                     <src>${basedir}/target/generic-conf/application-defaults.properties</src>
                                     <type>file</type>
-                                    <conffile>true</conffile>
                                     <mapper>
                                         <type>perm</type>
                                         <prefix>/etc/rpki-validator-3/</prefix>
