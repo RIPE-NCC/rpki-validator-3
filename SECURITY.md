@@ -10,7 +10,7 @@ If you believe you have discovered a security vulnerability in this project plea
 
   * Contact our [Information Security Officer](security@ripe.net) with your
     findings.
-  * If you'd like to encrypt your email, you can use our [public PGP key](https://www.ripe.net/support/contact/responsible-disclosure-policy/pgp-key-for-reporting-security-vulnerabilities).
+    If you'd like to encrypt your email, you can use our [public PGP key](https://www.ripe.net/support/contact/responsible-disclosure-policy/pgp-key-for-reporting-security-vulnerabilities).
   * Provide sufficient information so we can reproduce the problem and resolve
     the vulnerability as soon as possible.
 
