@@ -1,4 +1,12 @@
 * Fri May 22 2020 Ties de Kock <tdekock@ripe.net> 3.1
+Security update: Changed permissions for CentOS systemd service files
+
+After a change in our build infrastructure, the CentOS (rpm) artifact contained
+world-writable systemd service files that would allow users with write access
+to the machine to elevate privileges and get local code execution.
+
+Version affected: 3.1-2020.05.08.09.26.49
+
 - Packaging changes for Debian and Centos.
 - Add endpoint that applies SLURM-based VRPs to extended export and fix a broken link.
 - Fix NullPointerException when managing ignore filters with only ASN or prefix and not both.
