@@ -64,6 +64,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jooq.lambda.tuple.Tuple2;
 import org.jooq.lambda.tuple.Tuple3;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -74,6 +75,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -105,6 +107,8 @@ public class CertificateTreeValidationService {
     private final Storage storage;
     private final ValidatedRpkiObjects validatedRpkiObjects;
     private final TrustAnchorState trustAnchorState;
+    @Value("${rpki.validator.strict-validation:false}")
+    private Boolean strictValidation;
 
     @Autowired
     public CertificateTreeValidationService(RpkiObjects rpkiObjects,
@@ -331,7 +335,48 @@ public class CertificateTreeValidationService {
             }
             validatedObjects.add(manifestObject.get().key());
 
-            manifest.getFiles().entrySet()
+            if(!strictValidation) {
+                processManifest(trustAnchor, registeredRepositories, context, validatedObjects, temporary, manifestUri, manifest, crlUri, x509Crl);
+            } else {
+                processManifestStrict(trustAnchor, registeredRepositories, context, validatedObjects, temporary, manifestUri, manifest, crlUri, x509Crl);
+            }
+        }catch (StrictValidationException e) {
+            log.error(e.getMessage());
+            return;
+        }
+        catch (Exception e) {
+            validationResult.error(ErrorCodes.UNHANDLED_EXCEPTION, e.toString(), ExceptionUtils.getStackTrace(e));
+        } finally {
+            validationResult.addAll(temporary);
+        }
+    }
+
+    private void processManifestStrict(TrustAnchor trustAnchor, Map<URI, RpkiRepository> registeredRepositories, CertificateRepositoryObjectValidationContext context, List<Key> validatedObjects, ValidationResult temporary, URI manifestUri, ManifestCms manifest, URI crlUri, X509Crl x509Crl) {
+        Consumer<? super Tuple3<URI, RpkiObject, ValidationResult>> continueIfAllManifestIsFine  = uriObjVR -> {
+            if(uriObjVR.v3().hasFailureForCurrentLocation()){
+                throw new StrictValidationException("Failed to fetch manifest");
+            }
+        };
+        Consumer<? super Tuple2<CertificateRepositoryObjectValidationContext, ValidationResult>> continueIfContextsAreFine = ctxTuple -> {
+            if(ctxTuple.v2().hasFailureForCurrentLocation()){
+                throw new StrictValidationException("Failed to prepare context");
+            }
+        };
+        manifest.getFiles().entrySet()
+                .parallelStream()
+                .flatMap(entry -> getManifestEntry(manifestUri, entry)).peek(continueIfAllManifestIsFine)
+                .flatMap(tuple -> getCertificateRepositoryObjectValidationContext(trustAnchor, context, validatedObjects, crlUri, x509Crl, tuple))
+                .peek(continueIfContextsAreFine)
+                .map(tuple -> {
+                    final ValidationResult vr = tuple.v2();
+                    validateCertificateAuthority(trustAnchor, registeredRepositories, tuple.v1(), vr, validatedObjects);
+                    return vr;
+                })
+                .forEachOrdered(temporary::addAll);
+    }
+
+    private void processManifest(TrustAnchor trustAnchor, Map<URI, RpkiRepository> registeredRepositories, CertificateRepositoryObjectValidationContext context, List<Key> validatedObjects, ValidationResult temporary, URI manifestUri, ManifestCms manifest, URI crlUri, X509Crl x509Crl) {
+        manifest.getFiles().entrySet()
                 .parallelStream()
                 .flatMap(entry -> getManifestEntry(manifestUri, entry))
                 .flatMap(tuple -> getCertificateRepositoryObjectValidationContext(trustAnchor, context, validatedObjects, crlUri, x509Crl, tuple))
@@ -341,11 +386,6 @@ public class CertificateTreeValidationService {
                     return vr;
                 })
                 .forEachOrdered(temporary::addAll);
-        } catch (Exception e) {
-            validationResult.error(ErrorCodes.UNHANDLED_EXCEPTION, e.toString(), ExceptionUtils.getStackTrace(e));
-        } finally {
-            validationResult.addAll(temporary);
-        }
     }
 
     private Stream<Tuple3<URI, RpkiObject, ValidationResult>> getManifestEntry(URI manifestUri,
