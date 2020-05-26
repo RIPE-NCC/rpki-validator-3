@@ -353,12 +353,16 @@ public class CertificateTreeValidationService {
 
     private void processManifestStrict(TrustAnchor trustAnchor, Map<URI, RpkiRepository> registeredRepositories, CertificateRepositoryObjectValidationContext context, List<Key> validatedObjects, ValidationResult temporary, URI manifestUri, ManifestCms manifest, URI crlUri, X509Crl x509Crl) {
         Consumer<? super Tuple3<URI, RpkiObject, ValidationResult>> continueIfAllManifestIsFine  = uriObjVR -> {
-            if(uriObjVR.v3().hasFailureForCurrentLocation()){
+            ValidationResult vr = uriObjVR.v3();
+            if(vr.hasFailureForCurrentLocation()){
+                temporary.addAll(vr);
                 throw new StrictValidationException("Failed to fetch manifest");
             }
         };
         Consumer<? super Tuple2<CertificateRepositoryObjectValidationContext, ValidationResult>> continueIfContextsAreFine = ctxTuple -> {
-            if(ctxTuple.v2().hasFailureForCurrentLocation()){
+            ValidationResult vr = ctxTuple.v2();
+            if(vr.hasFailureForCurrentLocation()){
+                temporary.addAll(vr);
                 throw new StrictValidationException("Failed to prepare context");
             }
         };

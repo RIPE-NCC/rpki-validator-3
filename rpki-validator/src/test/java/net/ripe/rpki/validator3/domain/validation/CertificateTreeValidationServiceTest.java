@@ -59,6 +59,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.security.auth.x500.X500Principal;
 import java.net.URI;
@@ -396,5 +397,43 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
         assertThat(validatedRoas).hasSize(1);
         assertThat(validatedRoas.get(0).getLeft()).isEqualTo(result);
         assertThat(validatedRoas.get(0).getRight().getRoaPrefixes()).hasSize(1);
+    }
+
+    @Test
+    public void should_terminate_early_when_strict(){
+        ReflectionTestUtils.setField(subject, "strictValidation", true);
+        TrustAnchor ta = wtx(tx -> {
+
+            TrustAnchor ta1 = factory.createTrustAnchor(tx, x -> x.roaPrefixes(Collections.singletonList(
+                    RoaPrefix.of(IpRange.prefix(IpAddress.parse("192.168.0.0"), 16), 24, Asn.parse("64512"),
+                            DateTime.now().toInstant().getMillis(),
+                            DateTime.now().plusYears(1).toInstant().getMillis(),
+                            TrustAnchorsFactory.nextSerial())
+            )));
+            this.getTrustAnchors().add(tx, ta1);
+            final Ref<TrustAnchor> trustAnchorRef = this.getTrustAnchors().makeRef(tx, ta1.key());
+            RpkiRepository repository = this.getRpkiRepositories().register(tx, trustAnchorRef, TA_RRDP_NOTIFY_URI, RpkiRepository.Type.RRDP);
+            validationScheduler.addRrdpRpkiRepository(repository);
+            repository.setDownloaded();
+            this.getRpkiRepositories().update(tx, repository);
+
+            // Delete roa so we'll fail to get manifest entry
+            this.getRpkiObjects().values(tx)
+                    .stream()
+                    .filter(o -> o.getType().equals(RpkiObject.Type.ROA))
+                    .findFirst().ifPresent(r -> this.getRpkiObjects().delete(tx, r));;
+
+            return ta1;
+        });
+
+        subject.validate(ta.key().asLong());
+
+        List<CertificateTreeValidationRun> completed = rtx(tx -> this.getValidationRuns().findAll(tx, CertificateTreeValidationRun.class));
+        assertThat(completed).hasSize(1);
+
+        List<Pair<CertificateTreeValidationRun, RpkiObject>> validatedRoas = rtx(tx -> this.getValidationRuns()
+                .findCurrentlyValidated(tx, RpkiObject.Type.ROA).collect(toList()));
+        assertThat(validatedRoas).hasSize(0);
+
     }
 }
