@@ -75,7 +75,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -335,11 +334,9 @@ public class CertificateTreeValidationService {
             }
             validatedObjects.add(manifestObject.get().key());
 
-            if(!strictValidation) {
-                processManifest(trustAnchor, registeredRepositories, context, validatedObjects, temporary, manifestUri, manifest, crlUri, x509Crl);
-            } else {
-                processManifestStrict(trustAnchor, registeredRepositories, context, validatedObjects, temporary, manifestUri, manifest, crlUri, x509Crl);
-            }
+
+            processManifest(trustAnchor, registeredRepositories, context, validatedObjects, temporary, manifestUri, manifest, crlUri, x509Crl);
+
         }catch (StrictValidationException e) {
             log.error(e.getMessage());
             return;
@@ -351,33 +348,7 @@ public class CertificateTreeValidationService {
         }
     }
 
-    private void processManifestStrict(TrustAnchor trustAnchor, Map<URI, RpkiRepository> registeredRepositories, CertificateRepositoryObjectValidationContext context, List<Key> validatedObjects, ValidationResult temporary, URI manifestUri, ManifestCms manifest, URI crlUri, X509Crl x509Crl) {
-        Consumer<? super Tuple3<URI, RpkiObject, ValidationResult>> continueIfAllManifestIsFine  = uriObjVR -> {
-            ValidationResult vr = uriObjVR.v3();
-            if(vr.hasFailureForCurrentLocation()){
-                temporary.addAll(vr);
-                throw new StrictValidationException("Failed to fetch manifest");
-            }
-        };
-        Consumer<? super Tuple2<CertificateRepositoryObjectValidationContext, ValidationResult>> continueIfContextsAreFine = ctxTuple -> {
-            ValidationResult vr = ctxTuple.v2();
-            if(vr.hasFailureForCurrentLocation()){
-                temporary.addAll(vr);
-                throw new StrictValidationException("Failed to prepare context");
-            }
-        };
-        manifest.getFiles().entrySet()
-                .parallelStream()
-                .flatMap(entry -> getManifestEntry(manifestUri, entry)).peek(continueIfAllManifestIsFine)
-                .flatMap(tuple -> getCertificateRepositoryObjectValidationContext(trustAnchor, context, validatedObjects, crlUri, x509Crl, tuple))
-                .peek(continueIfContextsAreFine)
-                .map(tuple -> {
-                    final ValidationResult vr = tuple.v2();
-                    validateCertificateAuthority(trustAnchor, registeredRepositories, tuple.v1(), vr, validatedObjects);
-                    return vr;
-                })
-                .forEachOrdered(temporary::addAll);
-    }
+
 
     private void processManifest(TrustAnchor trustAnchor, Map<URI, RpkiRepository> registeredRepositories, CertificateRepositoryObjectValidationContext context, List<Key> validatedObjects, ValidationResult temporary, URI manifestUri, ManifestCms manifest, URI crlUri, X509Crl x509Crl) {
         manifest.getFiles().entrySet()
@@ -406,7 +377,13 @@ public class CertificateTreeValidationService {
             return hashMatches ? object : Optional.empty();
         });
 
-        return rpkiObject.map(ro -> Stream.of(new Tuple3<>(location, ro, temporary))).orElse(Stream.empty());
+        if(strictValidation)
+            return rpkiObject.map(ro -> Stream.of(new Tuple3<>(location, ro, temporary)))
+                .orElseThrow(() ->  new StrictValidationException("Failed to get Manifest entry"));
+        else {
+            return rpkiObject.map(ro -> Stream.of(new Tuple3<>(location, ro, temporary)))
+                 .orElse(Stream.empty());
+        }
     }
 
     private Stream<Tuple2<CertificateRepositoryObjectValidationContext, ValidationResult>>
@@ -442,7 +419,11 @@ public class CertificateTreeValidationService {
                 }
             }
         }
-        return Stream.empty();
+        if(strictValidation){
+            throw new StrictValidationException("Can't get certificat context");
+        } else {
+            return Stream.empty();
+        }
     }
 
 
