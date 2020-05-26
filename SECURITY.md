@@ -19,13 +19,9 @@ Please do not exploit the vulnerability you've discovered or reveal the problem 
 ## How the RIPE NCC Will Handle Your Report
 
   * We will act with urgency and necessary resources to resolve the issue.
-  * We will strive to respond to your report within three business days with our
-    evaluation of the report and an expected resolution date.
   * We will handle your report with strict confidentiality and not pass on your
     personal details to third parties without your permission.
   * We will keep you informed of the progress on resolving the problem.
-  * After a major security issue has been solved, we will publish a report on
-    our website explaining the vulnerability discovered and how we fixed it.
   * If you agree to have your name used in the report, we will credit you. Note
     that we will only credit the first person that reported the vulnerability to
     us.
