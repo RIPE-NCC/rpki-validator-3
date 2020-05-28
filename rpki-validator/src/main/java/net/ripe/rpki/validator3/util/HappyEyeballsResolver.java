@@ -275,7 +275,7 @@ public class HappyEyeballsResolver implements SocketAddressResolver {
 
             final boolean haveMoreAF2 = openConnectionFromQueue(secondAfAddresses, port, selector);
             connectedSocket = awaitSuccessfulConnection(selector, CONNECTION_ATTEMPT_DELAY_MILLIS);
-            if (connectedSocket != null) return connectedSocket;
+            if (connectedSocket.isPresent()) return connectedSocket;
 
             // watch out! do not inline these booleans,
             // otherwise you'll shortcircuit second evaluation
