@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.domain.metrics;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.util.Http;
 import org.jooq.lambda.tuple.Tuple2;
@@ -53,6 +54,7 @@ public class HttpClientMetricsService {
     public final static int HISTOGRAM_HOURS = 6;
 
     @Autowired
+    @Getter
     private MeterRegistry registry;
 
     private ConcurrentHashMap<Tuple2<String, String>, HttpStatusMetric> httpMetrics = new ConcurrentHashMap<>();

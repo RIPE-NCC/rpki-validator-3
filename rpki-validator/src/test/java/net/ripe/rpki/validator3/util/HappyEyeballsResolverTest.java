@@ -30,6 +30,7 @@
 
 package net.ripe.rpki.validator3.util;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -46,7 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class HappyEyeballsResolverTest {
 
-    private HappyEyeballsResolver subject = new HappyEyeballsResolver(new HttpClient());
+    private HappyEyeballsResolver subject = new HappyEyeballsResolver(new HttpClient(), new SimpleMeterRegistry());
 
     @Test
     public void should_recognise_ipv4_literal() {
@@ -93,7 +94,7 @@ public class HappyEyeballsResolverTest {
 
         final CompletableFuture<List<InetSocketAddress>> future = new CompletableFuture<>();
         final Promise<List<InetSocketAddress>> promise = Promise.from(future);
-        final HappyEyeballsResolver happyEyeballsResolver = new HappyEyeballsResolver(httpClient);
+        final HappyEyeballsResolver happyEyeballsResolver = new HappyEyeballsResolver(httpClient, new SimpleMeterRegistry());
         final long startTime = System.nanoTime();
         happyEyeballsResolver.resolve("www.google.com", 80, promise);
         final List<InetSocketAddress> inetSocketAddresses = future.get();

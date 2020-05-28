@@ -29,6 +29,8 @@
  */
 package net.ripe.rpki.validator3.util;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.Promise;
@@ -80,8 +82,33 @@ public class HappyEyeballsResolver implements SocketAddressResolver {
 
     private final HttpClient httpClient;
 
-    public HappyEyeballsResolver(HttpClient httpClient) {
+    private final Counter dnsResolverSuccessV4;
+    private final Counter dnsResolverSuccessV6;
+    private final Counter dnsResolverErrorsV4;
+    private final Counter dnsResolverErrorsV6;
+
+    public HappyEyeballsResolver(final HttpClient httpClient, final MeterRegistry registry) {
         this.httpClient = httpClient;
+
+        this.dnsResolverSuccessV4 = Counter.builder("dns.resolver.success")
+            .description("DNS ")
+            .tag("address_family", "IPv4")
+            .register(registry);
+
+        this.dnsResolverSuccessV6 = Counter.builder("dns.resolver.success")
+            .description("DNS ")
+            .tag("address_family", "IPv6")
+            .register(registry);
+
+        this.dnsResolverErrorsV4 = Counter.builder("dns.resolver.errors")
+            .description("DNS ")
+            .tag("address_family", "IPv4")
+            .register(registry);
+
+        this.dnsResolverErrorsV6 = Counter.builder("dns.resolver.errors")
+            .description("DNS ")
+            .tag("address_family", "IPv6")
+            .register(registry);
     }
 
     @Override
