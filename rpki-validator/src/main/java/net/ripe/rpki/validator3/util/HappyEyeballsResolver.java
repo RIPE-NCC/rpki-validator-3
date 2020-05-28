@@ -46,7 +46,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.channels.Channel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -159,14 +158,6 @@ public class HappyEyeballsResolver implements SocketAddressResolver {
                 }
             }
         });
-    }
-
-    private static void closeAnyway(Channel channel) {
-        try {
-            channel.close();
-        } catch (Exception e) {
-            // ignore
-        }
     }
 
     private static void closeAnyway(Closeable closeable) {
