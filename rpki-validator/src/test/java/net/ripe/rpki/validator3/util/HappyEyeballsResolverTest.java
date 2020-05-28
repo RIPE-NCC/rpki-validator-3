@@ -31,7 +31,16 @@
 package net.ripe.rpki.validator3.util;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.junit.Ignore;
 import org.junit.Test;
+
+import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -73,5 +82,24 @@ public class HappyEyeballsResolverTest {
         assertThat(subject.isLiteralIpAddress("db8:dead:beef::/26")).isEmpty();
         assertThat(subject.isLiteralIpAddress("127")).isEmpty();
         assertThat(subject.isLiteralIpAddress("")).isEmpty();
+    }
+
+    @Test
+    @Ignore("intended for manual run only")
+    public void connectToRealAddress() throws ExecutionException, InterruptedException {
+        final SslContextFactory sslContextFactory = new SslContextFactory.Client(false);
+        HttpClient httpClient = new HttpClient(sslContextFactory);
+        httpClient.setExecutor(Executors.newCachedThreadPool());
+
+        final CompletableFuture<List<InetSocketAddress>> future = new CompletableFuture<>();
+        final Promise<List<InetSocketAddress>> promise = Promise.from(future);
+        final HappyEyeballsResolver happyEyeballsResolver = new HappyEyeballsResolver(httpClient);
+        final long startTime = System.nanoTime();
+        happyEyeballsResolver.resolve("www.google.com", 80, promise);
+        final List<InetSocketAddress> inetSocketAddresses = future.get();
+        final long elapsed = System.nanoTime() - startTime;
+        System.out.printf("Connected to: %s in %1.3fs %n",
+                inetSocketAddresses.get(0).getAddress().getHostAddress(), elapsed/1e9);
+        assertThat(inetSocketAddresses).isNotEmpty();
     }
 }
