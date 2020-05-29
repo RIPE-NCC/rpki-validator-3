@@ -18,7 +18,7 @@
 
         <maven.test.redirectTestOutputToFile>true</maven.test.redirectTestOutputToFile>
 
-        <rpki-commons.version>1.9.0</rpki-commons.version>
+        <rpki-commons.version>1.10-SNAPSHOT</rpki-commons.version>
 
         <!-- Micrometer.version from spring boot -->
 

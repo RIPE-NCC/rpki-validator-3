@@ -93,7 +93,7 @@ import static net.ripe.rpki.validator3.storage.data.RpkiRepository.Type.RSYNC;
 public class CertificateTreeValidationService {
     public final long LONG_DURATION_WARNING_MS = 60_000;
 
-    private static final ValidationOptions VALIDATION_OPTIONS = new ValidationOptions();
+    private final ValidationOptions validationOptions;
 
     private final TrustAnchorMetricsService taMetricsService;
 
@@ -108,6 +108,9 @@ public class CertificateTreeValidationService {
     private final TrustAnchorState trustAnchorState;
     @Value("${rpki.validator.strict-validation:false}")
     private Boolean strictValidation;
+
+    @Value("${rpki.validator.rsync-only:false}")
+    private Boolean rsyncOnly;
 
     @Autowired
     public CertificateTreeValidationService(RpkiObjects rpkiObjects,
@@ -130,6 +133,10 @@ public class CertificateTreeValidationService {
         this.storage = storage;
         this.taMetricsService = taMetricsService;
         this.trustAnchorState = trustAnchorState;
+        if(strictValidation){
+            validationOptions = ValidationOptions.strictValidations();
+        } else
+            validationOptions = ValidationOptions.defaultRipeNccValidator();
     }
 
     /** Log at INFO when below threshold, log at WARN when above */
@@ -183,7 +190,7 @@ public class CertificateTreeValidationService {
                     trustAnchorCertificate
             );
 
-            trustAnchorCertificate.validate(trustAnchorLocation, context, null, null, VALIDATION_OPTIONS, validationResult);
+            trustAnchorCertificate.validate(trustAnchorLocation, context, null, null, validationOptions, validationResult);
             if (validationResult.hasFailureForCurrentLocation()) {
                 return;
             }
@@ -322,13 +329,13 @@ public class CertificateTreeValidationService {
             }
 
             final X509Crl x509Crl = crl.get();
-            x509Crl.validate(crlUri.toASCIIString(), context, null, VALIDATION_OPTIONS, temporary);
+            x509Crl.validate(crlUri.toASCIIString(), context, null, validationOptions, temporary);
             if (temporary.hasFailureForCurrentLocation()) {
                 return;
             }
 
             temporary.setLocation(new ValidationLocation(manifestUri));
-            manifest.validate(manifestUri.toASCIIString(), context, x509Crl, manifest.getCrlUri(), VALIDATION_OPTIONS, temporary);
+            manifest.validate(manifestUri.toASCIIString(), context, x509Crl, manifest.getCrlUri(), validationOptions, temporary);
             if (temporary.hasFailureForCurrentLocation()) {
                 return;
             }
@@ -404,7 +411,7 @@ public class CertificateTreeValidationService {
             if (maybeCertificateRepositoryObject.isPresent()) {
                 CertificateRepositoryObject certificateRepositoryObject = maybeCertificateRepositoryObject.get();
                 Bench.mark0(trustAnchor.getName(), "certificateRepositoryObject.validate", () ->
-                    certificateRepositoryObject.validate(location.toASCIIString(), context, crl, crlUri, VALIDATION_OPTIONS, temporary));
+                    certificateRepositoryObject.validate(location.toASCIIString(), context, crl, crlUri, validationOptions, temporary));
 
                 if (!temporary.hasFailureForCurrentLocation()) {
                     validatedObjects.add(rpkiObject.key());
@@ -432,15 +439,17 @@ public class CertificateTreeValidationService {
                                               Map<URI, RpkiRepository> registeredRepositories,
                                               CertificateRepositoryObjectValidationContext context) {
 
-        if (context.getRpkiNotifyURI() != null) {
-            return registeredRepositories.computeIfAbsent(
-                    context.getRpkiNotifyURI(),
-                    uri -> {
-                        final Ref<TrustAnchor> trustAnchorRef = trustAnchors.makeRef(tx, trustAnchor.key());
-                        RpkiRepository r = rpkiRepositories.register(tx, trustAnchorRef, uri.toASCIIString(), RRDP);
-                        tx.afterCommit(() -> validationScheduler.addRrdpRpkiRepository(r));
-                        return r;
-                    });
+        if (!rsyncOnly) {
+            if (context.getRpkiNotifyURI() != null) {
+                return registeredRepositories.computeIfAbsent(
+                        context.getRpkiNotifyURI(),
+                        uri -> {
+                            final Ref<TrustAnchor> trustAnchorRef = trustAnchors.makeRef(tx, trustAnchor.key());
+                            RpkiRepository r = rpkiRepositories.register(tx, trustAnchorRef, uri.toASCIIString(), RRDP);
+                            tx.afterCommit(() -> validationScheduler.addRrdpRpkiRepository(r));
+                            return r;
+                        });
+            }
         }
         return registeredRepositories.computeIfAbsent(
                 context.getRepositoryURI(),
