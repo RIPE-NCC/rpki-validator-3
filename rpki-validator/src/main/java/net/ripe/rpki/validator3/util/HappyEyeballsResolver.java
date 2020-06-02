@@ -41,11 +41,13 @@ import org.xbill.DNS.Name;
 import org.xbill.DNS.Record;
 import org.xbill.DNS.Type;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.net.UnknownHostException;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Collections;
 import java.util.Iterator;
@@ -68,12 +70,15 @@ public class HappyEyeballsResolver implements SocketAddressResolver {
 
     // delays from RFC8305/Section 8
     private static final long RESOLUTION_DELAY_MILLIS = 50L;
-    private static final long CONNECTION_ATTEMPT_DELAY_MS = 250L;
-    private final HttpClient httpClient;
+    private static final long CONNECTION_ATTEMPT_DELAY_MILLIS = 250L;
+
+    public static final long HAPPY_EYEBALLS_TOTAL_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(10);
 
     private static final Pattern IPV4_ADDRESS_PATTERN = Pattern.compile("\\d{1,3}(?:\\.\\d{1,3}){3}");
-    private final static Pattern IPV6_ADDRESS_PATTERN =
+    private static final Pattern IPV6_ADDRESS_PATTERN =
             Pattern.compile("( [0-9A-Fa-f:.]+ (?: % [0-9A-Za-z][-0-9A-Za-z_\\ ]*)? )", Pattern.COMMENTS);
+
+    private final HttpClient httpClient;
 
     public HappyEyeballsResolver(HttpClient httpClient) {
         this.httpClient = httpClient;
@@ -116,10 +121,9 @@ public class HappyEyeballsResolver implements SocketAddressResolver {
     private void resolveAsynchronously(String host, int port, Promise<List<InetSocketAddress>> promise) {
         final Executor executor = httpClient.getExecutor();
         executor.execute(() -> {
-            final ConcurrentLinkedQueue<Optional<SocketChannel>> sockets = new ConcurrentLinkedQueue<>();
+            Selector selector = null;
             try {
                 final Name hostname = Name.fromString(host);
-                InetSocketAddress bestAddress;
 
                 final ConcurrentLinkedQueue<Optional<InetAddress>> resolvedAddressesV6 = new ConcurrentLinkedQueue<>();
                 executor.execute(dnsLookupRunnable(hostname, Type.AAAA, resolvedAddressesV6));
@@ -134,38 +138,31 @@ public class HappyEyeballsResolver implements SocketAddressResolver {
                     log.debug("Resolved v4 addresses: {} for host {}", joinAddresses(resolvedAddressesV4), host);
                 }
 
-                final Thread connectionsThread =
-                    new Thread(connectAttemptsRunnable(resolvedAddressesV6, resolvedAddressesV4, sockets, port));
-                connectionsThread.start();
+                selector = Selector.open();
 
-                bestAddress = (InetSocketAddress) awaitSuccessfulConnection(sockets);
-                if (bestAddress == null) {
-                    promise.failed(new UnknownHostException(host));
+                Optional<SocketAddress> bestAddress = findBestAddress(resolvedAddressesV6, resolvedAddressesV4, port, selector);
+                if (bestAddress.isPresent()) {
+                    promise.succeeded(Collections.singletonList((InetSocketAddress) bestAddress.get()));
                 } else {
-                    promise.succeeded(Collections.singletonList(bestAddress));
+                    promise.failed(new IOException("Could not connect to " + host));
                 }
-
-                connectionsThread.interrupt();
-
-                try {
-                    connectionsThread.join();
-                } catch (Exception ignore) {
-                }
-
             } catch (Exception e) {
                 log.warn(String.format("Error during lookup in happy eyeballs resolver for %s:%s", host, port), e);
                 promise.failed(e);
             } finally {
-                for (Optional<SocketChannel> channelOptional : sockets) {
-                    channelOptional.ifPresent(HappyEyeballsResolver::closeAnyway);
+                if (selector != null && selector.isOpen()) {
+                    for (SelectionKey key : selector.keys()) {
+                        closeAnyway(key.channel());
+                    }
+                    closeAnyway(selector);
                 }
             }
         });
     }
 
-    private static void closeAnyway(SocketChannel channel) {
+    private static void closeAnyway(Closeable closeable) {
         try {
-            channel.close();
+            closeable.close();
         } catch (Exception e) {
             // ignore
         }
@@ -179,49 +176,40 @@ public class HappyEyeballsResolver implements SocketAddressResolver {
                                   .collect(Collectors.joining(","));
     }
 
-    private static SocketAddress awaitSuccessfulConnection(ConcurrentLinkedQueue<Optional<SocketChannel>> sockets) throws IOException {
-        final long startTime = System.nanoTime();
-        final long sleepDeadline = startTime + TimeUnit.MILLISECONDS.toNanos(100);
-        final long deadline = startTime + TimeUnit.SECONDS.toNanos(10);
-        boolean keepGoing = true;
-        while (keepGoing && haveTime(deadline)) {
-            final Iterator<Optional<SocketChannel>> iterator = sockets.iterator();
-            int count = 0;
+    private static Optional<SocketAddress> awaitSuccessfulConnection(Selector selector, long selectTimeout) {
+        int count = 0;
+        try {
+            count = (selectTimeout > 0) ? selector.select(selectTimeout) : selector.selectNow();
+        } catch (IOException e) {
+            log.warn("Error awaiting for connect: ", e);
+        }
+        if (count > 0) {
+            final Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
             while (iterator.hasNext()) {
-                count++;
-                final Optional<SocketChannel> socketChannelOptional = iterator.next();
-                if (socketChannelOptional.isPresent()) {
-                    final SocketChannel socketChannel = socketChannelOptional.get();
-                    try {
-                        if (socketChannel.finishConnect()) {
-                            if (log.isDebugEnabled()) {
-                                log.debug("Successfully connected to: {}", socketChannel.getRemoteAddress());
-                            }
-                            return socketChannel.getRemoteAddress();
-                        }
-                    } catch (IOException e) {
-                        if (log.isDebugEnabled()) {
-                            log.debug("Error connecting to " + socketChannel.getRemoteAddress(), e);
-                        }
-                        closeAnyway(socketChannel);
-                        iterator.remove();
-                    }
-                } else {
-                    if (count == 1) {
-                        keepGoing = false;
-                    }
-                    break;
-                }
-            }
-            if (!haveTime(sleepDeadline)) {
+                SelectionKey key = iterator.next();
+                final SocketChannel socketChannel = (SocketChannel) key.channel();
                 try {
-                    TimeUnit.MILLISECONDS.sleep(100);
-                } catch (InterruptedException ignored) {
-                    keepGoing = false;
+                    if (socketChannel.finishConnect()) {
+                        if (log.isDebugEnabled()) {
+                            log.debug("Successfully connected to: {}", socketChannel.getRemoteAddress());
+                        }
+                        return Optional.ofNullable(socketChannel.getRemoteAddress());
+                    }
+                } catch (IOException e) {
+                    if (log.isDebugEnabled()) {
+                        try {
+                            log.debug("Error connecting to " + socketChannel.getRemoteAddress(), e);
+                        } catch (IOException ex) {
+                            log.debug("Error connecting: ", e);
+                        }
+                    }
+                    closeAnyway(socketChannel);
+                } finally {
+                    iterator.remove();
                 }
             }
         }
-        return null;
+        return Optional.empty();
     }
 
     private static void awaitDnsResponses(ConcurrentLinkedQueue<Optional<InetAddress>> resolvedAddressesV6,
@@ -273,52 +261,55 @@ public class HappyEyeballsResolver implements SocketAddressResolver {
         };
     }
 
-    private static Runnable connectAttemptsRunnable(Queue<Optional<InetAddress>> firstAfAddresses,
-                                                    Queue<Optional<InetAddress>> secondAfAddresses,
-                                                    Queue<Optional<SocketChannel>> socketChannels,
-                                                    final int port) {
-        return new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    boolean keepGoing = true;
-                    while (keepGoing && !Thread.currentThread().isInterrupted()) {
-                        final boolean haveMoreAF1 = openConnectionFromQueue(firstAfAddresses);
-                        final boolean haveMoreAF2 = openConnectionFromQueue(secondAfAddresses);
-                        // watch out! do not inline these booleans,
-                        // otherwise you'll shortcircuit second evaluation
-                        keepGoing = haveMoreAF1 || haveMoreAF2;
-                    }
-                } catch (InterruptedException e) {
-                    // just stop
-                } finally {
-                    socketChannels.add(Optional.empty());
-                }
-            }
+    private static Optional<SocketAddress> findBestAddress(final Queue<Optional<InetAddress>> firstAfAddresses,
+                                                           final Queue<Optional<InetAddress>> secondAfAddresses,
+                                                           final int port, final Selector selector) {
+        final long startTime = System.nanoTime();
+        final long deadline = startTime + HAPPY_EYEBALLS_TOTAL_TIMEOUT_NANOS;
+        Optional<SocketAddress> connectedSocket;
+        boolean keepGoing = true;
+        while (keepGoing && !Thread.currentThread().isInterrupted()) {
+            final boolean haveMoreAF1 = openConnectionFromQueue(firstAfAddresses, port, selector);
+            connectedSocket = awaitSuccessfulConnection(selector, CONNECTION_ATTEMPT_DELAY_MILLIS);
+            if (connectedSocket.isPresent()) return connectedSocket;
 
-            private boolean openConnectionFromQueue(Queue<Optional<InetAddress>> queue) throws InterruptedException {
-                final Optional<InetAddress> addressOptional = queue.poll();
-                if (addressOptional != null) {
-                    if (addressOptional.isPresent()) {
-                        final InetAddress address = addressOptional.get();
-                        try {
-                            log.debug("Connecting to {}", address);
-                            final SocketChannel socketChannel = SocketChannel.open();
-                            socketChannel.configureBlocking(false);
-                            socketChannel.connect(new InetSocketAddress(address, port));
-                            socketChannels.add(Optional.of(socketChannel));
-                        } catch (IOException e) {
-                            // can't connect - move on
-                            log.debug("Error connecting to {}", address);
-                        } finally {
-                            TimeUnit.MILLISECONDS.sleep(CONNECTION_ATTEMPT_DELAY_MS);
-                        }
-                    } else {
-                        return false;
-                    }
+            final boolean haveMoreAF2 = openConnectionFromQueue(secondAfAddresses, port, selector);
+            connectedSocket = awaitSuccessfulConnection(selector, CONNECTION_ATTEMPT_DELAY_MILLIS);
+            if (connectedSocket.isPresent()) return connectedSocket;
+
+            // watch out! do not inline these booleans,
+            // otherwise you'll shortcircuit second evaluation
+            keepGoing = (haveMoreAF1 || haveMoreAF2) && haveTime(deadline);
+        }
+        if (selector.keys().isEmpty()) {
+            return Optional.empty();
+        } else {
+            final long remainingTime = Math.max(0, deadline - System.nanoTime());
+            return awaitSuccessfulConnection(selector, TimeUnit.NANOSECONDS.toMillis(remainingTime));
+        }
+    }
+
+    private static boolean openConnectionFromQueue(Queue<Optional<InetAddress>> queue,
+                                                   int port,
+                                                   Selector selector) {
+        final Optional<InetAddress> addressOptional = queue.poll();
+        if (addressOptional != null) {
+            if (addressOptional.isPresent()) {
+                final InetAddress address = addressOptional.get();
+                try {
+                    log.info("Connecting to {}", address);
+                    final SocketChannel socketChannel = SocketChannel.open();
+                    socketChannel.configureBlocking(false);
+                    socketChannel.register(selector, SelectionKey.OP_CONNECT);
+                    socketChannel.connect(new InetSocketAddress(address, port));
+                } catch (IOException e) {
+                    // can't connect - move on
+                    log.info("Error connecting to {}", address);
                 }
-                return true;
+            } else {
+                return false;
             }
-        };
+        }
+        return true;
     }
 }
