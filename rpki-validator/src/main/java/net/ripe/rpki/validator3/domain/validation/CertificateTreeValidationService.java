@@ -438,8 +438,14 @@ public class CertificateTreeValidationService {
                                               TrustAnchor trustAnchor,
                                               Map<URI, RpkiRepository> registeredRepositories,
                                               CertificateRepositoryObjectValidationContext context) {
-
-        if (!rsyncOnly) {
+        if(rsyncOnly){
+            return registeredRepositories.computeIfAbsent(
+                    context.getRepositoryURI(),
+                    uri -> {
+                        final Ref<TrustAnchor> trustAnchorRef = trustAnchors.makeRef(tx, trustAnchor.key());
+                        return rpkiRepositories.register(tx, trustAnchorRef, uri.toASCIIString(), RSYNC);
+                    });
+        } else {
             if (context.getRpkiNotifyURI() != null) {
                 return registeredRepositories.computeIfAbsent(
                         context.getRpkiNotifyURI(),
@@ -451,12 +457,7 @@ public class CertificateTreeValidationService {
                         });
             }
         }
-        return registeredRepositories.computeIfAbsent(
-                context.getRepositoryURI(),
-                uri -> {
-                    final Ref<TrustAnchor> trustAnchorRef = trustAnchors.makeRef(tx, trustAnchor.key());
-                    return rpkiRepositories.register(tx, trustAnchorRef, uri.toASCIIString(), RSYNC);
-                });
+        return null;
     }
 
     private Map<URI, RpkiRepository> createRegisteredRepositoryMap(TrustAnchor trustAnchor) {
