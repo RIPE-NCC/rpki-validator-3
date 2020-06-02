@@ -107,10 +107,10 @@ public class CertificateTreeValidationService {
     private final ValidatedRpkiObjects validatedRpkiObjects;
     private final TrustAnchorState trustAnchorState;
     @Value("${rpki.validator.strict-validation:false}")
-    private Boolean strictValidation;
+    private boolean strictValidation;
 
     @Value("${rpki.validator.rsync-only:false}")
-    private Boolean rsyncOnly;
+    private boolean rsyncOnly;
 
     @Autowired
     public CertificateTreeValidationService(RpkiObjects rpkiObjects,
