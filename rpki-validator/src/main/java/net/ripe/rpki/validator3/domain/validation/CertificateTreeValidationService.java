@@ -36,13 +36,13 @@ import net.ripe.rpki.commons.crypto.crl.X509Crl;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.util.RepositoryObjectType;
 import net.ripe.rpki.commons.validation.ValidationLocation;
-import net.ripe.rpki.commons.validation.ValidationOptions;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.commons.validation.ValidationStatus;
 import net.ripe.rpki.commons.validation.ValidationString;
 import net.ripe.rpki.commons.validation.objectvalidators.CertificateRepositoryObjectValidationContext;
 import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
+import net.ripe.rpki.validator3.config.ValidationConfig;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
 import net.ripe.rpki.validator3.domain.metrics.TrustAnchorMetricsService;
 import net.ripe.rpki.validator3.storage.Storage;
@@ -64,7 +64,6 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jooq.lambda.tuple.Tuple2;
 import org.jooq.lambda.tuple.Tuple3;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -93,7 +92,7 @@ import static net.ripe.rpki.validator3.storage.data.RpkiRepository.Type.RSYNC;
 public class CertificateTreeValidationService {
     public final long LONG_DURATION_WARNING_MS = 60_000;
 
-    private final ValidationOptions validationOptions;
+    private final ValidationConfig validationConfig;
 
     private final TrustAnchorMetricsService taMetricsService;
 
@@ -106,11 +105,6 @@ public class CertificateTreeValidationService {
     private final Storage storage;
     private final ValidatedRpkiObjects validatedRpkiObjects;
     private final TrustAnchorState trustAnchorState;
-    @Value("${rpki.validator.strict-validation:false}")
-    private boolean strictValidation;
-
-    @Value("${rpki.validator.rsync-only:false}")
-    private boolean rsyncOnly;
 
     @Autowired
     public CertificateTreeValidationService(RpkiObjects rpkiObjects,
@@ -122,7 +116,8 @@ public class CertificateTreeValidationService {
                                             ValidatedRpkiObjects validatedRpkiObjects,
                                             Storage storage,
                                             TrustAnchorState trustAnchorState,
-                                            TrustAnchorMetricsService taMetricsService) {
+                                            TrustAnchorMetricsService taMetricsService,
+                                            ValidationConfig validationConfig) {
         this.rpkiObjects = rpkiObjects;
         this.rpkiRepositories = rpkiRepositories;
         this.settings = settings;
@@ -133,10 +128,8 @@ public class CertificateTreeValidationService {
         this.storage = storage;
         this.taMetricsService = taMetricsService;
         this.trustAnchorState = trustAnchorState;
-        if(strictValidation){
-            validationOptions = ValidationOptions.strictValidations();
-        } else
-            validationOptions = ValidationOptions.defaultRipeNccValidator();
+        this.validationConfig = validationConfig;
+
     }
 
     /** Log at INFO when below threshold, log at WARN when above */
@@ -190,7 +183,8 @@ public class CertificateTreeValidationService {
                     trustAnchorCertificate
             );
 
-            trustAnchorCertificate.validate(trustAnchorLocation, context, null, null, validationOptions, validationResult);
+            trustAnchorCertificate.validate(trustAnchorLocation, context, null, null, validationConfig.validationOptions(),
+                    validationResult);
             if (validationResult.hasFailureForCurrentLocation()) {
                 return;
             }
@@ -329,36 +323,19 @@ public class CertificateTreeValidationService {
             }
 
             final X509Crl x509Crl = crl.get();
-            x509Crl.validate(crlUri.toASCIIString(), context, null, validationOptions, temporary);
+            x509Crl.validate(crlUri.toASCIIString(), context, null, validationConfig.validationOptions(), temporary);
             if (temporary.hasFailureForCurrentLocation()) {
                 return;
             }
 
             temporary.setLocation(new ValidationLocation(manifestUri));
-            manifest.validate(manifestUri.toASCIIString(), context, x509Crl, manifest.getCrlUri(), validationOptions, temporary);
+            manifest.validate(manifestUri.toASCIIString(), context, x509Crl, manifest.getCrlUri(), validationConfig.validationOptions(), temporary);
             if (temporary.hasFailureForCurrentLocation()) {
                 return;
             }
             validatedObjects.add(manifestObject.get().key());
 
-
-            processManifest(trustAnchor, registeredRepositories, context, validatedObjects, temporary, manifestUri, manifest, crlUri, x509Crl);
-
-        }catch (StrictValidationException e) {
-            log.error(e.getMessage());
-            return;
-        }
-        catch (Exception e) {
-            validationResult.error(ErrorCodes.UNHANDLED_EXCEPTION, e.toString(), ExceptionUtils.getStackTrace(e));
-        } finally {
-            validationResult.addAll(temporary);
-        }
-    }
-
-
-
-    private void processManifest(TrustAnchor trustAnchor, Map<URI, RpkiRepository> registeredRepositories, CertificateRepositoryObjectValidationContext context, List<Key> validatedObjects, ValidationResult temporary, URI manifestUri, ManifestCms manifest, URI crlUri, X509Crl x509Crl) {
-        manifest.getFiles().entrySet()
+            manifest.getFiles().entrySet()
                 .parallelStream()
                 .flatMap(entry -> getManifestEntry(manifestUri, entry))
                 .flatMap(tuple -> getCertificateRepositoryObjectValidationContext(trustAnchor, context, validatedObjects, crlUri, x509Crl, tuple))
@@ -368,6 +345,11 @@ public class CertificateTreeValidationService {
                     return vr;
                 })
                 .forEachOrdered(temporary::addAll);
+        } catch (Exception e) {
+            validationResult.error(ErrorCodes.UNHANDLED_EXCEPTION, e.toString(), ExceptionUtils.getStackTrace(e));
+        } finally {
+            validationResult.addAll(temporary);
+        }
     }
 
     private Stream<Tuple3<URI, RpkiObject, ValidationResult>> getManifestEntry(URI manifestUri,
@@ -384,7 +366,7 @@ public class CertificateTreeValidationService {
             return hashMatches ? object : Optional.empty();
         });
 
-        if(strictValidation)
+        if(validationConfig.isStrictValidation())
             return rpkiObject.map(ro -> Stream.of(new Tuple3<>(location, ro, temporary)))
                 .orElseThrow(() ->  new StrictValidationException("Failed to get Manifest entry"));
         else {
@@ -411,7 +393,7 @@ public class CertificateTreeValidationService {
             if (maybeCertificateRepositoryObject.isPresent()) {
                 CertificateRepositoryObject certificateRepositoryObject = maybeCertificateRepositoryObject.get();
                 Bench.mark0(trustAnchor.getName(), "certificateRepositoryObject.validate", () ->
-                    certificateRepositoryObject.validate(location.toASCIIString(), context, crl, crlUri, validationOptions, temporary));
+                    certificateRepositoryObject.validate(location.toASCIIString(), context, crl, crlUri, validationConfig.validationOptions(), temporary));
 
                 if (!temporary.hasFailureForCurrentLocation()) {
                     validatedObjects.add(rpkiObject.key());
@@ -426,7 +408,7 @@ public class CertificateTreeValidationService {
                 }
             }
         }
-        if(strictValidation){
+        if(validationConfig.isStrictValidation()){
             throw new StrictValidationException("Can't get certificat context");
         } else {
             return Stream.empty();
@@ -438,26 +420,23 @@ public class CertificateTreeValidationService {
                                               TrustAnchor trustAnchor,
                                               Map<URI, RpkiRepository> registeredRepositories,
                                               CertificateRepositoryObjectValidationContext context) {
-        if(rsyncOnly){
+
+        if (context.getRpkiNotifyURI() != null) {
             return registeredRepositories.computeIfAbsent(
-                    context.getRepositoryURI(),
+                    context.getRpkiNotifyURI(),
                     uri -> {
                         final Ref<TrustAnchor> trustAnchorRef = trustAnchors.makeRef(tx, trustAnchor.key());
-                        return rpkiRepositories.register(tx, trustAnchorRef, uri.toASCIIString(), RSYNC);
+                        RpkiRepository r = rpkiRepositories.register(tx, trustAnchorRef, uri.toASCIIString(), RRDP);
+                        tx.afterCommit(() -> validationScheduler.addRrdpRpkiRepository(r));
+                        return r;
                     });
-        } else {
-            if (context.getRpkiNotifyURI() != null) {
-                return registeredRepositories.computeIfAbsent(
-                        context.getRpkiNotifyURI(),
-                        uri -> {
-                            final Ref<TrustAnchor> trustAnchorRef = trustAnchors.makeRef(tx, trustAnchor.key());
-                            RpkiRepository r = rpkiRepositories.register(tx, trustAnchorRef, uri.toASCIIString(), RRDP);
-                            tx.afterCommit(() -> validationScheduler.addRrdpRpkiRepository(r));
-                            return r;
-                        });
-            }
         }
-        return null;
+        return registeredRepositories.computeIfAbsent(
+                context.getRepositoryURI(),
+                uri -> {
+                    final Ref<TrustAnchor> trustAnchorRef = trustAnchors.makeRef(tx, trustAnchor.key());
+                    return rpkiRepositories.register(tx, trustAnchorRef, uri.toASCIIString(), RSYNC);
+                });
     }
 
     private Map<URI, RpkiRepository> createRegisteredRepositoryMap(TrustAnchor trustAnchor) {

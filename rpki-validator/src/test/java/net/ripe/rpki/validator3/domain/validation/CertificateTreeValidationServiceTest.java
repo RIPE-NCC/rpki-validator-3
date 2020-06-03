@@ -59,7 +59,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.security.auth.x500.X500Principal;
 import java.net.URI;
@@ -401,7 +400,7 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
 
     @Test
     public void should_terminate_early_when_strict(){
-        ReflectionTestUtils.setField(subject, "strictValidation", true);
+
         TrustAnchor ta = wtx(tx -> {
 
             TrustAnchor ta1 = factory.createTrustAnchor(tx, x -> x.roaPrefixes(Collections.singletonList(
