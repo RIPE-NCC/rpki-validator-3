@@ -421,7 +421,7 @@ public class CertificateTreeValidationService {
                                               Map<URI, RpkiRepository> registeredRepositories,
                                               CertificateRepositoryObjectValidationContext context) {
 
-        if (context.getRpkiNotifyURI() != null) {
+        if (!validationConfig.isRsyncOnly() && context.getRpkiNotifyURI() != null) {
             return registeredRepositories.computeIfAbsent(
                     context.getRpkiNotifyURI(),
                     uri -> {
