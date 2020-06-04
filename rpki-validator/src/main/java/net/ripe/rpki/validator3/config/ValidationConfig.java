@@ -30,18 +30,19 @@
 package net.ripe.rpki.validator3.config;
 
 import lombok.Getter;
+import lombok.Setter;
 import net.ripe.rpki.commons.validation.ValidationOptions;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 
-@Configuration
+@Component
+@ConfigurationProperties("rpki.validator")
 public class ValidationConfig {
-    @Value("${rpki.validator.strict-validation:false}")
-    @Getter
+
+    @Getter @Setter
     private boolean strictValidation;
 
-    @Value("${rpki.validator.rsync-only:false}")
-    @Getter
+    @Getter @Setter
     private boolean rsyncOnly;
 
     public ValidationOptions validationOptions(){
