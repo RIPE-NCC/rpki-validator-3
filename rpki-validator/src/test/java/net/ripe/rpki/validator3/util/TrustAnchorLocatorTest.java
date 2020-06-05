@@ -73,4 +73,52 @@ public class TrustAnchorLocatorTest {
 
         assertThrows(TrustAnchorExtractorException.class, () -> TrustAnchorLocator.fromFile(talFile));
     }
+
+    @Test
+    public void readExtendedTrustAnchor_rsync_only_accepted() throws Exception {
+        File talFile = new ClassPathResource("tals/ripeextended/ripe-ncc-rsync-only.tal").getFile();
+
+        TrustAnchorLocator tal = TrustAnchorLocator.fromFile(talFile);
+
+        then(tal.getCertificateLocations()).containsExactly(
+                URI.create("rsync://rpki.ripe.net/ta/ripe-ncc-ta.cer")
+        );
+
+        then(tal.getPublicKeyInfo()).isEqualTo(RIPE_NCC_PUBLIC_KEY);
+    }
+
+    @Test
+    public void readExtendedTrustAnchor_https_rsync_accepted() throws Exception {
+        File talFile = new ClassPathResource("tals/ripeextended/afrinic-https_rsync.tal").getFile();
+
+        TrustAnchorLocator tal = TrustAnchorLocator.fromFile(talFile);
+
+        then(tal.getCertificateLocations()).containsExactly(
+                URI.create("https://rpki.afrinic.net/repository/AfriNIC.cer"),
+                URI.create("rsync://rpki.afrinic.net/repository/AfriNIC.cer")
+        );
+
+        then(tal.getPublicKeyInfo()).isEqualTo(AFRINIC_PUBLIC_KEY);
+    }
+
+    @Test
+    public void readExtendedTrustAnchor_rsync_https_accepted() throws Exception {
+        File talFile = new ClassPathResource("tals/ripeextended/afrinic-rsync_https.tal").getFile();
+
+        TrustAnchorLocator tal = TrustAnchorLocator.fromFile(talFile);
+
+        then(tal.getCertificateLocations()).containsExactly(
+                URI.create("rsync://rpki.afrinic.net/repository/AfriNIC.cer"),
+                URI.create("https://rpki.afrinic.net/repository/AfriNIC.cer")
+        );
+
+        then(tal.getPublicKeyInfo()).isEqualTo(AFRINIC_PUBLIC_KEY);
+    }
+
+    @Test
+    public void readExtendedTrustAnchor_with_http_location_rejected() throws Exception {
+        File talFile = new ClassPathResource("tals/ripeextended/example-tal-with-http-and-rsync.tal").getFile();
+
+        assertThrows(TrustAnchorExtractorException.class, () -> TrustAnchorLocator.fromFile(talFile));
+    }
 }

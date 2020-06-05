@@ -1,0 +1,3 @@
+ca.name = Invalid TAL with http certificate location
+certificate.location = rsync://rsync.example.org/ta/ta.cer,http://rrdp.example.org/ta/ta.cer
+public.key.info = MIIBIsWhatPEMPublicKeysStartWith
