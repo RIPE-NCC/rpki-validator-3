@@ -104,7 +104,12 @@ public class TrustAnchorLocator {
             while ((line = reader.readLine()) != null) {
                 final String trimmed = line.trim();
                 if (looksLikeUri(trimmed)) {
-                    certificateLocations.add(new URI(trimmed));
+                    final URI uri = new URI(trimmed);
+
+                    if ("http".equals(uri.getScheme()))
+                        throw new IllegalArgumentException("certificate locations needs to be https");
+
+                    certificateLocations.add(uri);
                 } else break;
             }
 
