@@ -42,10 +42,8 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Represents a Trust Anchor Locator as defined in <a href="https://tools.ietf.org/html/rfc7730">RFC 7730</a>
@@ -104,12 +102,7 @@ public class TrustAnchorLocator {
             while ((line = reader.readLine()) != null) {
                 final String trimmed = line.trim();
                 if (looksLikeUri(trimmed)) {
-                    final URI uri = new URI(trimmed);
-
-                    if ("http".equals(uri.getScheme()))
-                        throw new IllegalArgumentException("certificate locations needs to be https");
-
-                    certificateLocations.add(uri);
+                    certificateLocations.add(createCertificateUri(trimmed));
                 } else break;
             }
 
@@ -128,6 +121,17 @@ public class TrustAnchorLocator {
         return string.startsWith("rsync://") || string.startsWith("https://") || string.startsWith("http://");
     }
 
+    /**
+     * Build a URI and validate it as a certificate uri
+     */
+    private static URI createCertificateUri(String rawUri) {
+        final URI uri = URI.create(rawUri.trim());
+        if ("http".equals(uri.getScheme()))
+            throw new IllegalArgumentException("certificate locations needs to be rsync or https");
+
+        return uri;
+    }
+
     private static TrustAnchorLocator readExtendedTrustAnchorLocator(String contents) throws IOException, URISyntaxException {
         Properties p = new Properties();
         p.load(new StringReader(contents));
@@ -135,7 +139,11 @@ public class TrustAnchorLocator {
         String caName = p.getProperty("ca.name");
         String loc = p.getProperty("certificate.location");
         Validate.notEmpty(loc, "'certificate.location' must be provided");
-        URI location = new URI(loc);
+
+        List<URI> locations = Arrays.stream(loc.split(","))
+                .map(TrustAnchorLocator::createCertificateUri)
+                .collect(Collectors.toList());
+
         String publicKeyInfo = p.getProperty("public.key.info", "").replaceAll("\\s+", "");
         String[] uris = p.getProperty("prefetch.uris", "").split(",");
         List<URI> prefetchUris = new ArrayList<>(uris.length);
@@ -148,7 +156,7 @@ public class TrustAnchorLocator {
                 prefetchUris.add(new URI(uri));
             }
         }
-        return new TrustAnchorLocator(caName, Collections.singletonList(location), publicKeyInfo, prefetchUris);
+        return new TrustAnchorLocator(caName, locations, publicKeyInfo, prefetchUris);
     }
 
     public TrustAnchorLocator(String caName, List<URI> location, String publicKeyInfo, List<URI> prefetchUris) {
