@@ -1,0 +1,4 @@
+rsync://rsync.example.org/ta/ta.cer
+http://rrdp.example.org/ta/ta.cer
+
+MIIBIsWhatPEMPublicKeysStartWith
