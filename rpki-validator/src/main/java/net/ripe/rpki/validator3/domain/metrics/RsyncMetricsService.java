@@ -40,9 +40,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static net.ripe.rpki.validator3.domain.metrics.HttpClientMetricsService.HISTOGRAM_HOURS;
 
 /**
  * Keep metrics for an URL and a HTTP status code <i>or</i> a string describing the error (e.g. "handshake_failure").
@@ -78,8 +81,10 @@ public class RsyncMetricsService {
                     .register(registry);
 
             this.responseDuration = Timer.builder("rpkivalidator.rsync.duration")
-                    .description("Duration of rsync in seconds")
+                    .description(String.format("Duration of rsync in seconds (quantiles over requests in the last %d hours)", HISTOGRAM_HOURS))
                     .tag("url", uri)
+                    .publishPercentiles(0.5, 0.95, 0.99)
+                    .distributionStatisticExpiry(Duration.ofHours(HISTOGRAM_HOURS))
                     .register(registry);
         }
 
