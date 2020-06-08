@@ -49,15 +49,11 @@ import static org.junit.Assert.assertNotNull;
 @IntegrationTest
 class HttpTest {
     @Autowired
-    private Http http;
     private HttpClient client;
     private final RrdpParser rrdpParser = new RrdpParser();
 
     @Test()
     void fetchRipeRRDPWithHEB() throws Exception {
-        client = http.client();
-        client.start();
-
         Assertions.assertDoesNotThrow(() -> {
             Notification notification = Http.readStream(() -> {
                 final Request request = client.newRequest("https://rrdp.ripe.net/notification.xml");
@@ -72,8 +68,6 @@ class HttpTest {
 
     @Test()
     void fetchNLNetlabRRDPWithHEB() throws Exception {
-        client = http.client();
-        client.start();
         Assertions.assertDoesNotThrow(() -> {
             Notification notification = Http.readStream(() -> {
                 final Request request = client.newRequest("https://rrdp.rpki.nlnetlabs.nl/rrdp/notification.xml");

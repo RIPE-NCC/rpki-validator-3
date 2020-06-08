@@ -52,23 +52,15 @@ import static org.springframework.util.StreamUtils.copy;
 public class HttpRrdpClient implements RrdpClient {
     private final HttpClientMetricsService httpMetrics;
 
-    private final Http http;
-
     private HttpClient httpClient;
 
     private final BuildInformation buildInformation;
 
     @Autowired
-    public HttpRrdpClient(Http http, HttpClientMetricsService httpMetrics, BuildInformation buildInformation) {
-        this.http = http;
+    public HttpRrdpClient(HttpClient httpClient, HttpClientMetricsService httpMetrics, BuildInformation buildInformation) {
+        this.httpClient = httpClient;
         this.buildInformation = buildInformation;
         this.httpMetrics = httpMetrics;
-    }
-
-    @PostConstruct
-    public void postConstruct() throws Exception {
-        httpClient = http.client();
-        httpClient.start();
     }
 
     @Override

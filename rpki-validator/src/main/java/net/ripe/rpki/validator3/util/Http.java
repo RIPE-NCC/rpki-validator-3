@@ -58,28 +58,6 @@ public class Http {
     @Autowired
     private HttpClientMetricsService httpMetrics;
 
-    @Value("${rpki.validator.rrdp.trust.all.tls.certificates}")
-    private boolean trustAllTlsCertificates;
-
-    @Value("${rpki.validator.http.proxy.host:#{null}}")
-    private String proxyHost;
-
-    @Value("${rpki.validator.http.proxy.port:#{null}}")
-    private Integer proxyPort;
-
-    public HttpClient client() {
-        final SslContextFactory sslContextFactory = new SslContextFactory.Client(trustAllTlsCertificates);
-        HttpClient httpClient = new HttpClient(sslContextFactory);
-        log.info("Trust all TLS certificates: {}, proxy host is {}, proxy port is {}", trustAllTlsCertificates, proxyHost, proxyPort);
-        if (proxyHost != null && proxyPort != null) {
-            ProxyConfiguration proxyConfig = httpClient.getProxyConfiguration();
-            HttpProxy proxy = new HttpProxy(proxyHost, proxyPort);
-            proxyConfig.getProxies().add(proxy);
-        }
-        httpClient.setSocketAddressResolver(new HappyEyeballsResolver(httpClient));
-        return httpClient;
-    }
-
     public static class NotModified extends HttpStatusException {
         public NotModified(String uri) {
             super(302, String.format("HTTP 302 NOT MODIFIED for %s", uri));

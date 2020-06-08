@@ -43,6 +43,7 @@ import net.ripe.rpki.commons.validation.ValidationString;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
 import net.ripe.rpki.validator3.domain.metrics.TrustAnchorMetricsService;
+import net.ripe.rpki.validator3.domain.retrieval.TrustAnchorRetrievalService;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
@@ -76,16 +77,13 @@ public class TrustAnchorValidationService {
     private final RpkiRepositories rpkiRepositories;
     private final ValidationRuns validationRuns;
     private final ValidationScheduler validationScheduler;
-    private final File localRsyncStorageDirectory;
     private final RpkiRepositoryValidationService repositoryValidationService;
     private final Storage storage;
-    private final RsyncFactory rsyncFactory;
 
     private final TrustAnchorMetricsService taMetricsService;
-
+    private final TrustAnchorRetrievalService trustAnchorRetrievalService;
 
     private Set<Key> validatedAtLeastOnce = Collections.newSetFromMap(new ConcurrentHashMap<>());
-
 
 
     @Autowired
@@ -94,20 +92,18 @@ public class TrustAnchorValidationService {
         RpkiRepositories rpkiRepositories,
         ValidationRuns validationRuns,
         ValidationScheduler validationScheduler,
-        @Value("${rpki.validator.rsync.local.storage.directory}") File localRsyncStorageDirectory,
         RpkiRepositoryValidationService repositoryValidationService,
         Storage storage,
-        RsyncFactory rsyncFactory,
-        TrustAnchorMetricsService trustAnchorMetricsService) {
+        TrustAnchorMetricsService trustAnchorMetricsService,
+        TrustAnchorRetrievalService trustAnchorRetrievalService) {
         this.trustAnchors = trustAnchors;
         this.rpkiRepositories = rpkiRepositories;
         this.validationRuns = validationRuns;
         this.validationScheduler = validationScheduler;
-        this.localRsyncStorageDirectory = localRsyncStorageDirectory;
         this.repositoryValidationService = repositoryValidationService;
         this.storage = storage;
-        this.rsyncFactory = rsyncFactory;
         this.taMetricsService = trustAnchorMetricsService;
+        this.trustAnchorRetrievalService = trustAnchorRetrievalService;
     }
 
     public void validate(long trustAnchorId) {
@@ -131,16 +127,16 @@ public class TrustAnchorValidationService {
             URI trustAnchorCertificateURI = URI.create(validationRun.getTrustAnchorCertificateURI()).normalize();
             ValidationResult validationResult = ValidationResult.withLocation(trustAnchorCertificateURI);
 
-            File targetFile = fetchTrustAnchorCertificate(trustAnchorCertificateURI, validationResult);
+            byte[] trustAnchorCertificate = trustAnchorRetrievalService.fetchTrustAnchorCertificate(trustAnchorCertificateURI, validationResult);
             if (!validationResult.hasFailureForCurrentLocation()) {
-                long trustAnchorCertificateSize = targetFile.length();
+                long trustAnchorCertificateSize = trustAnchorCertificate.length;
 
                 if (trustAnchorCertificateSize < RpkiObject.MIN_SIZE) {
                     validationResult.error(ErrorCodes.REPOSITORY_OBJECT_MINIMUM_SIZE, trustAnchorCertificateURI.toASCIIString(), String.valueOf(trustAnchorCertificateSize), String.valueOf(RpkiObject.MIN_SIZE));
                 } else if (trustAnchorCertificateSize > RpkiObject.MAX_SIZE) {
                     validationResult.error(ErrorCodes.REPOSITORY_OBJECT_MAXIMUM_SIZE, trustAnchorCertificateURI.toASCIIString(), String.valueOf(trustAnchorCertificateSize), String.valueOf(RpkiObject.MAX_SIZE));
                 } else {
-                    final X509ResourceCertificate parsedCertificate = parseCertificate(trustAnchor, targetFile, validationResult);
+                    final X509ResourceCertificate parsedCertificate = parseCertificate(trustAnchor, trustAnchorCertificate, validationResult);
 
                     if (!validationResult.hasFailureForCurrentLocation()) {
                         // validate(..) is called multiple times for the same trust anchor certificate (e.g. when the
@@ -186,8 +182,8 @@ public class TrustAnchorValidationService {
         }
     }
 
-    private X509ResourceCertificate parseCertificate(TrustAnchor trustAnchor, File certificateFile, ValidationResult validationResult) throws IOException {
-        CertificateRepositoryObject trustAnchorCertificate = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(Files.toByteArray(certificateFile), validationResult);
+    private X509ResourceCertificate parseCertificate(TrustAnchor trustAnchor, byte[] certificateData, ValidationResult validationResult) throws IOException {
+        CertificateRepositoryObject trustAnchorCertificate = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(certificateData, validationResult);
         validationResult.rejectIfFalse(trustAnchorCertificate instanceof X509ResourceCertificate, ErrorCodes.REPOSITORY_OBJECT_IS_TRUST_ANCHOR_CERTIFICATE, trustAnchor.getRsyncPrefetchUri());
         if (validationResult.hasFailureForCurrentLocation()) {
             return null;
@@ -209,22 +205,5 @@ public class TrustAnchorValidationService {
         validationResult.rejectIfFalse(signatureValid, ErrorCodes.TRUST_ANCHOR_SIGNATURE, trustAnchor.getRsyncPrefetchUri(), trustAnchor.getSubjectPublicKeyInfo());
 
         return certificate;
-    }
-
-    private File fetchTrustAnchorCertificate(URI trustAnchorCertificateURI, ValidationResult validationResult) throws IOException {
-        File targetFile = Rsync.localFileFromRsyncUri(localRsyncStorageDirectory, trustAnchorCertificateURI);
-        if (targetFile.getParentFile().mkdirs()) {
-            log.info("created local rsync storage directory {} for trust anchor {}", targetFile.getParentFile(), trustAnchorCertificateURI);
-        }
-
-        net.ripe.rpki.commons.rsync.Rsync rsync = rsyncFactory.rsyncFile(trustAnchorCertificateURI.toASCIIString(), targetFile.getPath());
-        int exitStatus = rsync.execute();
-        if (exitStatus != 0) {
-            validationResult.error(ErrorCodes.RSYNC_FETCH, String.valueOf(exitStatus), ArrayUtils.toString(rsync.getErrorLines()));
-            return null;
-        } else {
-            log.info("Downloaded certificate {} to {}", trustAnchorCertificateURI, targetFile);
-            return targetFile;
-        }
     }
 }
