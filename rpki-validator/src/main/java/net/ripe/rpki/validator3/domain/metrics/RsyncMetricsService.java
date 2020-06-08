@@ -29,88 +29,63 @@
  */
 package net.ripe.rpki.validator3.domain.metrics;
 
+import com.google.common.util.concurrent.AtomicDouble;
 import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.util.Http;
 import org.jooq.lambda.tuple.Tuple2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.EOFException;
 import java.net.URI;
-import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Keep metrics for an URL and a HTTP status code <i>or</i> a string describing the error (e.g. "handshake_failure").
  */
 @Slf4j
 @Service
-public class HttpClientMetricsService {
-    public final static int HISTOGRAM_HOURS = 6;
-
+public class RsyncMetricsService {
     @Autowired
     private MeterRegistry registry;
 
-    private ConcurrentHashMap<Tuple2<String, String>, HttpStatusMetric> httpMetrics = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Tuple2<String, Integer>, RsyncMetric> rsyncMetrics = new ConcurrentHashMap<>();
 
-    public void update(URI uri, String statusDescription, long durationMs) {
-        final String relativeURL = uri.resolve("/").toASCIIString();
-        httpMetrics
-                .computeIfAbsent(new Tuple2<>(relativeURL, statusDescription), key -> new HttpStatusMetric(registry, relativeURL, statusDescription))
-                .update(durationMs);
-    }
-
-    public void update(String uri, String statusDescription, long durationMs) {
+    public void update(String uri, int statusDescription, long durationMs) {
         update(URI.create(uri), statusDescription, durationMs);
     }
 
-    /**
-     * Unwrap an exception to get a more meaningful status to aggregate under in the metrics.
-     * @param cause Throwable to unwrap
-     * @return string description
-     */
-    public static String unwrapExceptionString(Throwable cause) {
-        // HttpStatusException is a sub-type of Http.Failure: check it first.
-        if (cause instanceof Http.HttpStatusException) {
-            return String.valueOf(((Http.HttpStatusException)cause).getCode());
-        } else if (cause instanceof Http.Failure) {
-            final Throwable rootCause = cause.getCause();
-            if (rootCause != null) {
-                if (rootCause instanceof EOFException) {
-                    // message is unique for each exception, group them by name
-                    return rootCause.getClass().getName();
-                }
-                return rootCause.toString();
-            }
-        }
-        return cause.getClass().getName();
+    public void update(URI uri, int statusDescription, long durationMs) {
+        final String relativeURL = uri.resolve("/").toASCIIString();
+        rsyncMetrics
+            .computeIfAbsent(new Tuple2<>(relativeURL, statusDescription), key -> new RsyncMetric(registry, relativeURL, statusDescription))
+            .update(durationMs);
     }
 
-    public static class HttpStatusMetric {
+    private static class RsyncMetric {
         public final Counter responseStatusCounter;
-        public final Timer responseTiming;
+        public final Timer responseDuration;
 
-        public HttpStatusMetric(final MeterRegistry registry, final String uri, final String statusDescription) {
-            this.responseStatusCounter = Counter.builder("http.response.status")
-                    .description("HTTP request result (per server, per status)")
+        public RsyncMetric(final MeterRegistry registry, final String uri, final long exitCode) {
+            this.responseStatusCounter = Counter.builder("rpkivalidator.rsync.status")
+                    .description("Exit code of the rsync command")
                     .tag("url", uri)
-                    .tag("status", statusDescription)
+                    .tag("status", String.valueOf(exitCode))
                     .register(registry);
-            this.responseTiming = Timer.builder("http.response.timing")
-                    .description(String.format("HTTP response time (quantiles over requests in the last %d hours)", HISTOGRAM_HOURS))
+
+            this.responseDuration = Timer.builder("rpkivalidator.rsync.duration")
+                    .description("Duration of rsync in seconds")
                     .tag("url", uri)
-                    .publishPercentiles(0.5, 0.95, 0.99)
-                    .distributionStatisticExpiry(Duration.ofHours(HISTOGRAM_HOURS))
                     .register(registry);
         }
 
         public void update(long durationMs) {
             responseStatusCounter.increment();
-            responseTiming.record(durationMs, TimeUnit.MILLISECONDS);
+            responseDuration.record(durationMs, TimeUnit.MILLISECONDS);
         }
     }
 }

@@ -37,6 +37,7 @@ import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
 import net.ripe.rpki.validator3.domain.RpkiObjectUtils;
+import net.ripe.rpki.validator3.domain.metrics.RsyncMetricsService;
 import net.ripe.rpki.validator3.rrdp.RrdpService;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.Tx;
@@ -97,6 +98,8 @@ public class RpkiRepositoryValidationService {
     private final TrustAnchorState trustAnchorState;
     private final RsyncFactory rsyncFactory;
 
+    private final RsyncMetricsService rsyncMetrics;
+
     @Autowired
     public RpkiRepositoryValidationService(
         ValidationRuns validationRuns,
@@ -107,7 +110,7 @@ public class RpkiRepositoryValidationService {
         Storage storage,
         @Value("${rpki.validator.rsync.local.storage.directory}") File rsyncLocalStorageDirectory,
         TrustAnchorState trustAnchorState,
-        ValidationScheduler validationScheduler, RsyncFactory rsyncFactory) {
+        ValidationScheduler validationScheduler, RsyncFactory rsyncFactory, RsyncMetricsService rsyncMetrics) {
         this.validationRuns = validationRuns;
         this.rpkiRepositories = rpkiRepositories;
         this.rpkiObjects = rpkiObjects;
@@ -118,6 +121,7 @@ public class RpkiRepositoryValidationService {
         this.trustAnchorState = trustAnchorState;
         this.validationScheduler = validationScheduler;
         this.rsyncFactory = rsyncFactory;
+        this.rsyncMetrics = rsyncMetrics;
     }
 
     public void validateRrdpRpkiRepository(long rpkiRepositoryId) {
@@ -466,8 +470,13 @@ public class RpkiRepositoryValidationService {
         if (targetDirectory.mkdirs()) {
             log.info("created local rsync storage directory {} for repository {}", targetDirectory, rpkiRepository);
         }
+        final long t0 = System.currentTimeMillis();
+
         net.ripe.rpki.commons.rsync.Rsync rsync = rsyncFactory.rsyncDirectory(rpkiRepository.getLocationUri(), targetDirectory.getPath());
         int exitStatus = rsync.execute();
+        rsyncMetrics.update(rpkiRepository.getLocationUri(), exitStatus, System.currentTimeMillis() - t0);
+
+
         validationResult.rejectIfTrue(exitStatus != 0, ErrorCodes.RSYNC_FETCH, String.valueOf(exitStatus), ArrayUtils.toString(rsync.getErrorLines()));
         if (validationResult.hasFailureForCurrentLocation()) {
             rpkiRepository.setFailed();
