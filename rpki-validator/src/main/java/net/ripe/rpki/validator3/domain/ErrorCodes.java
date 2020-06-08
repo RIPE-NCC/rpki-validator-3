@@ -43,6 +43,8 @@ public class ErrorCodes {
     public static final String RSYNC_FETCH = "rsync.fetch";
     public static final String RSYNC_REPOSITORY_IO = "rsync.repository.io";
 
+    public static final String TRUST_ANCHOR_FETCH = "trust.anchor.fetch";
+
     public static final String TRUST_ANCHOR_SIGNATURE = "trust.anchor.signature";
 
     public static final String REPOSITORY_OBJECT_MINIMUM_SIZE = "repository.object.minimum.size";

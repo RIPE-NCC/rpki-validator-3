@@ -62,25 +62,14 @@ import java.util.zip.GZIPInputStream;
 public class BgpRisDownloader {
     private final HttpClientMetricsService httpMetrics;
 
-    private final Http http;
-
     private HttpClient httpClient;
 
     @Autowired
-    public BgpRisDownloader(HttpClientMetricsService httpMetrics, Http http) {
+    public BgpRisDownloader(HttpClientMetricsService httpMetrics, HttpClient httpClient) {
         this.httpMetrics = httpMetrics;
-        this.http = http;
-    }
+        this.httpClient = httpClient;
 
-    @PostConstruct
-    public void postConstruct() throws Exception {
-        httpClient = http.client();
-        httpClient.start();
-    }
-
-    @PreDestroy
-    public void preDestroy() throws Exception {
-        httpClient.stop();
+        assert httpClient.isStarted();
     }
 
     public BgpRisDump fetch(@NotNull BgpRisDump dump) {
