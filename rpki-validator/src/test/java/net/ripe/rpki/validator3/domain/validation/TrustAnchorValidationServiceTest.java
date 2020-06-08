@@ -33,6 +33,7 @@ import com.google.common.collect.ImmutableList;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.validator3.IntegrationTest;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
+import net.ripe.rpki.validator3.domain.retrieval.TrustAnchorRetrievalService;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
@@ -40,11 +41,14 @@ import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.storage.stores.impl.GenericStorageTest;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -65,12 +69,20 @@ public class TrustAnchorValidationServiceTest extends GenericStorageTest {
     @Autowired
     private ValidationRuns validationRuns;
 
+    @Autowired
+    private TrustAnchorRetrievalService trustAnchorRetrievalService;
+
+    @Before
+    public void init() {
+        trustAnchorRetrievalService.setFileProtocolEnabled(true);
+    }
+
     @Test
-    public void test_success() {
+    public void test_success() throws IOException {
         TrustAnchor ta = createRipeNccTrustAnchor();
         wtx0(tx -> trustAnchors.add(tx, ta));
 
-        ta.setLocations(ImmutableList.of("src/test/resources/ripe-ncc-ta.cer"));
+        ta.setLocations(ImmutableList.of(new ClassPathResource("ripe-ncc-ta.cer").getURI().toString()));
         subject.validate(ta.key().asLong());
 
         X509ResourceCertificate certificate = rtx(tx -> trustAnchors.get(tx, ta.key()).get().getCertificate());
@@ -102,11 +114,11 @@ public class TrustAnchorValidationServiceTest extends GenericStorageTest {
     }
 
     @Test
-    public void test_empty_file() {
+    public void test_empty_file() throws IOException {
         TrustAnchor ta = createRipeNccTrustAnchor();
         wtx0(tx -> trustAnchors.add(tx, ta));
 
-        ta.setLocations(ImmutableList.of("src/test/resources/empty-file.cer"));
+        ta.setLocations(ImmutableList.of(new ClassPathResource("empty-file.cer").getURI().toString()));
         wtx0(tx -> trustAnchors.update(tx, ta));
         subject.validate(ta.key().asLong());
 

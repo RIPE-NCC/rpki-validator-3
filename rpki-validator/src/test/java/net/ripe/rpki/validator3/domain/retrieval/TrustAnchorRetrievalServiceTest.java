@@ -1,15 +1,19 @@
 package net.ripe.rpki.validator3.domain.retrieval;
 
+import net.ripe.rpki.commons.validation.ValidationCheck;
 import net.ripe.rpki.commons.validation.ValidationResult;
+import net.ripe.rpki.validator3.domain.ErrorCodes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.File;
 import java.net.URI;
+import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -37,7 +41,9 @@ public class TrustAnchorRetrievalServiceTest {
         trustAnchorRetrievalService.fetchTrustAnchorCertificate(uri, validationResult);
 
         then(trustAnchorRetrievalService).should().fetchRsyncTrustAnchorCertificate(uri, validationResult);
-        assertFalse(validationResult.hasFailures());
+
+        final List<ValidationCheck> validationChecks = validationResult.getAllValidationChecksForCurrentLocation();
+        assertThat(validationChecks).isEmpty();
     }
 
     @Test
@@ -48,7 +54,24 @@ public class TrustAnchorRetrievalServiceTest {
 
         trustAnchorRetrievalService.fetchTrustAnchorCertificate(uri, validationResult);
 
-        assertTrue(validationResult.hasFailures());
+        final List<ValidationCheck> validationChecks = validationResult.getAllValidationChecksForCurrentLocation();
+
+        assertThat(validationChecks).hasSize(1);
+        assertThat(validationChecks.get(0).getKey()).isEqualTo(ErrorCodes.TRUST_ANCHOR_FETCH);
+    }
+
+    @Test
+    public void testFetchTrustAnchorCertificate_rejects_file_url() throws Exception {
+        given(trustAnchorRetrievalService.fetchTrustAnchorCertificate(any(), any())).willCallRealMethod();
+
+        final URI uri = new File("/tmp/does-not-exist.cer").toURI();
+
+        trustAnchorRetrievalService.fetchTrustAnchorCertificate(uri, validationResult);
+
+        final List<ValidationCheck> validationChecks = validationResult.getAllValidationChecksForCurrentLocation();
+
+        assertThat(validationChecks).hasSize(1);
+        assertThat(validationChecks.get(0).getKey()).isEqualTo(ErrorCodes.TRUST_ANCHOR_FETCH);
     }
 
     @Test
@@ -61,6 +84,8 @@ public class TrustAnchorRetrievalServiceTest {
         trustAnchorRetrievalService.fetchTrustAnchorCertificate(uri, validationResult);
 
         then(trustAnchorRetrievalService).should().fetchHttpsTrustAnchorCertificate(uri, validationResult);
-        assertFalse(validationResult.hasFailures());
+
+        final List<ValidationCheck> validationChecks = validationResult.getAllValidationChecksForCurrentLocation();
+        assertThat(validationChecks).isEmpty();
     }
 }
