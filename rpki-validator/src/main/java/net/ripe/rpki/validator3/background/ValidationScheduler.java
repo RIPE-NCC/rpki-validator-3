@@ -30,15 +30,12 @@
 package net.ripe.rpki.validator3.background;
 
 import com.google.common.base.Preconditions;
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.ValidatorApi;
 import net.ripe.rpki.validator3.domain.validation.CertificateTreeValidationService;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import org.quartz.JobKey;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.SimpleScheduleBuilder;
@@ -46,17 +43,12 @@ import org.quartz.TriggerBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
-import java.time.Instant;
-import java.time.temporal.TemporalField;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 @Component
 @Slf4j
@@ -79,7 +71,8 @@ public class ValidationScheduler {
     public ValidationScheduler(Scheduler scheduler,
                                @Value("${rpki.validator.rsync.repository.download.interval:PT10M}") String rsyncRepositoryDownloadInterval,
                                @Value("${rpki.validator.rrdp.repository.download.interval:PT2M}") String rrpdRepositoryDownloadInterval,
-                               @Lazy CertificateTreeValidationService validationService) {
+                               @Lazy CertificateTreeValidationService validationService,
+                               Environment environment) {
         this.scheduler = scheduler;
         this.rsyncRepositoryDownloadInterval = Duration.parse(rsyncRepositoryDownloadInterval);
         this.rrpdRepositoryDownloadInterval = Duration.parse(rrpdRepositoryDownloadInterval);
@@ -93,6 +86,11 @@ public class ValidationScheduler {
                 this.rrpdRepositoryDownloadInterval.getSeconds()));
 
         throttledTreeValidation = new Throttled<>(minIntervalBetweenTreeValidationsInSeconds);
+
+        // Disable scheduling during tests
+        if (environment.acceptsProfiles(Profiles.of("test"))) {
+            this.disable();
+        }
     }
 
     public void addTrustAnchor(TrustAnchor trustAnchor) {
