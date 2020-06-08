@@ -26,6 +26,8 @@ import java.util.concurrent.TimeoutException;
 @Setter
 @Service
 public class TrustAnchorRetrievalService {
+    private boolean isFileProtocolEnabled = false;
+
     @Value("${rpki.validator.rsync.local.storage.directory}")
     private File localRsyncStorageDirectory;
 
@@ -44,6 +46,12 @@ public class TrustAnchorRetrievalService {
                 return fetchRsyncTrustAnchorCertificate(trustAnchorCertificateURI, validationResult);
             case "https":
                 return fetchHttpsTrustAnchorCertificate(trustAnchorCertificateURI, validationResult);
+            case "file":
+                if (isFileProtocolEnabled) {
+                    return Files.toByteArray(new File(trustAnchorCertificateURI));
+                }
+                validationResult.error(ErrorCodes.TRUST_ANCHOR_FETCH, trustAnchorCertificateURI.toASCIIString(), "File support not explicitly enabled.");
+                return null;
             default:
                 validationResult.error(ErrorCodes.TRUST_ANCHOR_FETCH, trustAnchorCertificateURI.toASCIIString(), "Unsupported URI");
                 return null;
@@ -67,7 +75,7 @@ public class TrustAnchorRetrievalService {
             return res.getContent();
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             validationResult.error(ErrorCodes.TRUST_ANCHOR_FETCH, trustAnchorCertificateURI.toASCIIString(), e.getMessage());
-            e.printStackTrace();
+            log.error("Error while loading trust anchor certificate over https", e);
             return null;
         }
     }
