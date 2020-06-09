@@ -36,13 +36,13 @@ import net.ripe.rpki.commons.crypto.crl.X509Crl;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.util.RepositoryObjectType;
 import net.ripe.rpki.commons.validation.ValidationLocation;
-import net.ripe.rpki.commons.validation.ValidationOptions;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.commons.validation.ValidationStatus;
 import net.ripe.rpki.commons.validation.ValidationString;
 import net.ripe.rpki.commons.validation.objectvalidators.CertificateRepositoryObjectValidationContext;
 import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
+import net.ripe.rpki.validator3.config.ValidationConfig;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
 import net.ripe.rpki.validator3.domain.metrics.TrustAnchorMetricsService;
 import net.ripe.rpki.validator3.storage.Storage;
@@ -92,7 +92,7 @@ import static net.ripe.rpki.validator3.storage.data.RpkiRepository.Type.RSYNC;
 public class CertificateTreeValidationService {
     public final long LONG_DURATION_WARNING_MS = 60_000;
 
-    private static final ValidationOptions VALIDATION_OPTIONS = new ValidationOptions();
+    private final ValidationConfig validationConfig;
 
     private final TrustAnchorMetricsService taMetricsService;
 
@@ -116,7 +116,8 @@ public class CertificateTreeValidationService {
                                             ValidatedRpkiObjects validatedRpkiObjects,
                                             Storage storage,
                                             TrustAnchorState trustAnchorState,
-                                            TrustAnchorMetricsService taMetricsService) {
+                                            TrustAnchorMetricsService taMetricsService,
+                                            ValidationConfig validationConfig) {
         this.rpkiObjects = rpkiObjects;
         this.rpkiRepositories = rpkiRepositories;
         this.settings = settings;
@@ -127,6 +128,8 @@ public class CertificateTreeValidationService {
         this.storage = storage;
         this.taMetricsService = taMetricsService;
         this.trustAnchorState = trustAnchorState;
+        this.validationConfig = validationConfig;
+
     }
 
     /** Log at INFO when below threshold, log at WARN when above */
@@ -180,7 +183,8 @@ public class CertificateTreeValidationService {
                     trustAnchorCertificate
             );
 
-            trustAnchorCertificate.validate(trustAnchorLocation, context, null, null, VALIDATION_OPTIONS, validationResult);
+            trustAnchorCertificate.validate(trustAnchorLocation, context, null, null, validationConfig.validationOptions(),
+                    validationResult);
             if (validationResult.hasFailureForCurrentLocation()) {
                 return;
             }
@@ -319,13 +323,13 @@ public class CertificateTreeValidationService {
             }
 
             final X509Crl x509Crl = crl.get();
-            x509Crl.validate(crlUri.toASCIIString(), context, null, VALIDATION_OPTIONS, temporary);
+            x509Crl.validate(crlUri.toASCIIString(), context, null, validationConfig.validationOptions(), temporary);
             if (temporary.hasFailureForCurrentLocation()) {
                 return;
             }
 
             temporary.setLocation(new ValidationLocation(manifestUri));
-            manifest.validate(manifestUri.toASCIIString(), context, x509Crl, manifest.getCrlUri(), VALIDATION_OPTIONS, temporary);
+            manifest.validate(manifestUri.toASCIIString(), context, x509Crl, manifest.getCrlUri(), validationConfig.validationOptions(), temporary);
             if (temporary.hasFailureForCurrentLocation()) {
                 return;
             }
@@ -362,7 +366,13 @@ public class CertificateTreeValidationService {
             return hashMatches ? object : Optional.empty();
         });
 
-        return rpkiObject.map(ro -> Stream.of(new Tuple3<>(location, ro, temporary))).orElse(Stream.empty());
+        if(validationConfig.isStrictValidation())
+            return rpkiObject.map(ro -> Stream.of(new Tuple3<>(location, ro, temporary)))
+                .orElseThrow(() ->  new StrictValidationException("Failed to get Manifest entry"));
+        else {
+            return rpkiObject.map(ro -> Stream.of(new Tuple3<>(location, ro, temporary)))
+                 .orElse(Stream.empty());
+        }
     }
 
     private Stream<Tuple2<CertificateRepositoryObjectValidationContext, ValidationResult>>
@@ -383,7 +393,7 @@ public class CertificateTreeValidationService {
             if (maybeCertificateRepositoryObject.isPresent()) {
                 CertificateRepositoryObject certificateRepositoryObject = maybeCertificateRepositoryObject.get();
                 Bench.mark0(trustAnchor.getName(), "certificateRepositoryObject.validate", () ->
-                    certificateRepositoryObject.validate(location.toASCIIString(), context, crl, crlUri, VALIDATION_OPTIONS, temporary));
+                    certificateRepositoryObject.validate(location.toASCIIString(), context, crl, crlUri, validationConfig.validationOptions(), temporary));
 
                 if (!temporary.hasFailureForCurrentLocation()) {
                     validatedObjects.add(rpkiObject.key());
@@ -398,7 +408,11 @@ public class CertificateTreeValidationService {
                 }
             }
         }
-        return Stream.empty();
+        if(validationConfig.isStrictValidation()){
+            throw new StrictValidationException("Can't get certificat context");
+        } else {
+            return Stream.empty();
+        }
     }
 
 
@@ -407,7 +421,7 @@ public class CertificateTreeValidationService {
                                               Map<URI, RpkiRepository> registeredRepositories,
                                               CertificateRepositoryObjectValidationContext context) {
 
-        if (context.getRpkiNotifyURI() != null) {
+        if (!validationConfig.isRsyncOnly() && context.getRpkiNotifyURI() != null) {
             return registeredRepositories.computeIfAbsent(
                     context.getRpkiNotifyURI(),
                     uri -> {
@@ -438,4 +452,9 @@ public class CertificateTreeValidationService {
         return registeredRepositories;
     }
 
+    public static class StrictValidationException extends RuntimeException {
+        public StrictValidationException(String message) {
+            super(message);
+        }
+    }
 }

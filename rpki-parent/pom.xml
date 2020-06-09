@@ -18,7 +18,7 @@
 
         <maven.test.redirectTestOutputToFile>true</maven.test.redirectTestOutputToFile>
 
-        <rpki-commons.version>1.9.0</rpki-commons.version>
+        <rpki-commons.version>1.10</rpki-commons.version>
 
         <!-- Micrometer.version from spring boot -->
 
@@ -40,7 +40,11 @@
             <artifactId>rpki-commons</artifactId>
             <version>${rpki-commons.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
