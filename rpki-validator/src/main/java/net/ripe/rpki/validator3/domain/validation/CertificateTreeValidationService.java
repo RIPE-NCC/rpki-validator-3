@@ -452,4 +452,9 @@ public class CertificateTreeValidationService {
         return registeredRepositories;
     }
 
+    public static class StrictValidationException extends RuntimeException {
+        public StrictValidationException(String message) {
+            super(message);
+        }
+    }
 }
