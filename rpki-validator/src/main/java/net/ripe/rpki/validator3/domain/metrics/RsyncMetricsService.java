@@ -63,9 +63,9 @@ public class RsyncMetricsService {
     }
 
     public void update(URI uri, int statusDescription, long durationMs) {
-        final String relativeURL = uri.resolve("/").toASCIIString();
+        final String rootURL = uri.resolve("/").toASCIIString();
         rsyncMetrics
-            .computeIfAbsent(new Tuple2<>(relativeURL, statusDescription), key -> new RsyncMetric(registry, relativeURL, statusDescription))
+            .computeIfAbsent(new Tuple2<>(rootURL, statusDescription), key -> new RsyncMetric(registry, rootURL, statusDescription))
             .update(durationMs);
     }
 

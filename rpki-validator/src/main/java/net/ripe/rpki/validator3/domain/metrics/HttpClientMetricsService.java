@@ -58,9 +58,9 @@ public class HttpClientMetricsService {
     private ConcurrentHashMap<Tuple2<String, String>, HttpStatusMetric> httpMetrics = new ConcurrentHashMap<>();
 
     public void update(URI uri, String statusDescription, long durationMs) {
-        final String relativeURL = uri.resolve("/").toASCIIString();
+        final String rootURL = uri.resolve("/").toASCIIString();
         httpMetrics
-                .computeIfAbsent(new Tuple2<>(relativeURL, statusDescription), key -> new HttpStatusMetric(registry, relativeURL, statusDescription))
+                .computeIfAbsent(new Tuple2<>(rootURL, statusDescription), key -> new HttpStatusMetric(registry, rootURL, statusDescription))
                 .update(durationMs);
     }
 
