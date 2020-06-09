@@ -34,7 +34,8 @@ import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.ipresource.UniqueIpResource;
 import net.ripe.rpki.validator3.domain.metrics.HttpClientMetricsService;
-import net.ripe.rpki.validator3.util.Http;
+import net.ripe.rpki.validator3.util.http.HttpStreaming;
+import net.ripe.rpki.validator3.util.http.NotModifiedException;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
 import org.joda.time.DateTime;
@@ -42,8 +43,6 @@ import org.joda.time.DateTimeZone;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import javax.validation.constraints.NotNull;
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -96,8 +95,8 @@ public class BgpRisDownloader {
         };
 
         try {
-            return  Http.readStream(requestSupplier, streamReader);
-        } catch (Http.NotModified n) {
+            return  HttpStreaming.readStream(requestSupplier, streamReader);
+        } catch (NotModifiedException n) {
             statusDescription = "302";
             return dump;
         } catch (Exception e) {

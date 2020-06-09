@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.util;
 import net.ripe.rpki.validator3.IntegrationTest;
 import net.ripe.rpki.validator3.rrdp.Notification;
 import net.ripe.rpki.validator3.rrdp.RrdpParser;
+import net.ripe.rpki.validator3.util.http.HttpStreaming;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
@@ -55,7 +56,7 @@ class HttpTest {
     @Test()
     void fetchRipeRRDPWithHEB() throws Exception {
         Assertions.assertDoesNotThrow(() -> {
-            Notification notification = Http.readStream(() -> {
+            Notification notification = HttpStreaming.readStream(() -> {
                 final Request request = client.newRequest("https://rrdp.ripe.net/notification.xml");
                 request.header(HttpHeader.USER_AGENT, null);
                 request.header(HttpHeader.USER_AGENT, UUID.randomUUID().toString());
@@ -69,7 +70,7 @@ class HttpTest {
     @Test()
     void fetchNLNetlabRRDPWithHEB() throws Exception {
         Assertions.assertDoesNotThrow(() -> {
-            Notification notification = Http.readStream(() -> {
+            Notification notification = HttpStreaming.readStream(() -> {
                 final Request request = client.newRequest("https://rrdp.rpki.nlnetlabs.nl/rrdp/notification.xml");
                 request.header(HttpHeader.USER_AGENT, null);
                 request.header(HttpHeader.USER_AGENT, "RIPE NCC RPKI Validator/test");

@@ -102,13 +102,11 @@ public class TrustAnchorRetrievalService {
         try {
             ContentResponse res = httpClient
                     .newRequest(trustAnchorCertificateURI)
-                    .header(HttpHeader.USER_AGENT, null)
-                    .header(HttpHeader.USER_AGENT, String.format("RIPE NCC RPKI Validator/%s", buildInformation.getVersion()))
                     .send();
             log.debug("HTTP {} when fetching HTTPS trust anchor from {}", res.getStatus(), trustAnchorCertificateURI);
             statusDescription = String.valueOf(res.getStatus());
             if (res.getStatus() != 200) {
-                validationResult.error(ErrorCodes.TRUST_ANCHOR_FETCH, trustAnchorCertificateURI.toASCIIString(), String.format("HTTP %d", res.getStatus()));
+                validationResult.error(ErrorCodes.TRUST_ANCHOR_FETCH, trustAnchorCertificateURI.toASCIIString(), String.format("HTTP %d - %s", res.getStatus(), res.getReason()));
                 return null;
             }
 
