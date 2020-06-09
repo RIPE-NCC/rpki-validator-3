@@ -32,10 +32,9 @@ package net.ripe.rpki.validator3.rrdp;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.util.BuildInformation;
 import net.ripe.rpki.validator3.domain.metrics.HttpClientMetricsService;
-import net.ripe.rpki.validator3.util.http.HttpStreaming;
+import net.ripe.rpki.validator3.util.HttpStreaming;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.http.HttpHeader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
