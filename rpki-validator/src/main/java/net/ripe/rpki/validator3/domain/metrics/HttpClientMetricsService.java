@@ -33,7 +33,8 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.util.Http;
+import net.ripe.rpki.validator3.util.http.HttpFailureException;
+import net.ripe.rpki.validator3.util.http.HttpStatusException;
 import org.jooq.lambda.tuple.Tuple2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -74,10 +75,10 @@ public class HttpClientMetricsService {
      * @return string description
      */
     public static String unwrapExceptionString(Throwable cause) {
-        // HttpStatusException is a sub-type of Http.Failure: check it first.
-        if (cause instanceof Http.HttpStatusException) {
-            return String.valueOf(((Http.HttpStatusException)cause).getCode());
-        } else if (cause instanceof Http.Failure) {
+        // HttpStatusException is a sub-type of HttpFailureException: check it first.
+        if (cause instanceof HttpStatusException) {
+            return String.valueOf(((HttpStatusException)cause).getCode());
+        } else if (cause instanceof HttpFailureException) {
             final Throwable rootCause = cause.getCause();
             if (rootCause != null) {
                 if (rootCause instanceof EOFException) {

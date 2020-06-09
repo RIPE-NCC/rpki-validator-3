@@ -30,10 +30,15 @@
 package net.ripe.rpki.validator3.config;
 
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.validator3.api.util.BuildInformation;
 import net.ripe.rpki.validator3.util.HappyEyeballsResolver;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.ProxyConfiguration;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -56,9 +61,11 @@ public class HttpClientConfig {
 
     private HttpClient httpClientInstance;
 
+
+
     @Bean
     @Scope("singleton")
-    public HttpClient client() throws Exception {
+    public HttpClient client(BuildInformation buildInformation) throws Exception {
         if (trustAllTlsCertificates) {
             log.warn("All TLS certificates are being accepted: HTTPS is effectively disabled. This is **NOT** recommended.");
         }
@@ -72,6 +79,7 @@ public class HttpClientConfig {
             proxyConfig.getProxies().add(proxy);
         }
         httpClientInstance.setSocketAddressResolver(new HappyEyeballsResolver(httpClientInstance));
+        httpClientInstance.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, String.format("RIPE NCC RPKI Validator/%s", buildInformation.getVersion())));
 
         httpClientInstance.start();
 

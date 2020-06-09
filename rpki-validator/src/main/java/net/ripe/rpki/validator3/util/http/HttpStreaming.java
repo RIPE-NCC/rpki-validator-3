@@ -27,21 +27,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.util;
+package net.ripe.rpki.validator3.util.http;
 
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.rpki.validator3.domain.metrics.HttpClientMetricsService;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpProxy;
-import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,42 +43,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-@Component
 @Slf4j
-public class Http {
-    @Autowired
-    private HttpClientMetricsService httpMetrics;
-
-    public static class NotModified extends HttpStatusException {
-        public NotModified(String uri) {
-            super(302, String.format("HTTP 302 NOT MODIFIED for %s", uri));
-        }
-    }
-
-    @Getter
-    public static class HttpStatusException extends Failure {
-        private int code;
-
-        public HttpStatusException(Response response, Request request) {
-            this(response.getStatus(), String.format("unexpected response status %d for %s", response.getStatus(), request.getURI()));
-        }
-
-        public HttpStatusException(int code, String message) {
-            super(message);
-            this.code = code;
-        }
-    }
-
-    public static class Failure extends RuntimeException {
-        public Failure(String s) {
-            super(s);
-        }
-
-        public Failure(String s, Throwable cause) {
-            super(s, cause);
-        }
-    }
-
+public class HttpStreaming {
     public static <T> T readStream(final Supplier<Request> requestF, Function<InputStream,  T> reader) {
         BiFunction<InputStream, Long, T> ignoreLastModified = (stream, ignoredLastModified) -> reader.apply(stream);
         return readStream(requestF, ignoreLastModified);
@@ -97,7 +54,6 @@ public class Http {
         InputStreamResponseListener listener = new InputStreamResponseListener();
 
         Request request = requestF.get();
-        request.header("User-Agent", "RIPE NCC RPKI Validator version 3");
         request.send(listener);
 
         Response response = null;
@@ -106,7 +62,7 @@ public class Http {
 
             if (response.getStatus() != 200) {
                 if (response.getStatus() == 304) {
-                    final NotModified error = new NotModified(request.getURI().toString());
+                    final NotModifiedException error = new NotModifiedException(request.getURI().toString());
                     response.abort(error);
                     throw error;
                 } else {
@@ -121,18 +77,17 @@ public class Http {
                 return reader.apply(inputStream, lastModified);
             }
         } catch (IOException | InterruptedException | TimeoutException e) {
-            final Failure error = new Failure("failed reading response stream for " + request.getURI() + ": " + e, e);
+            final HttpFailureException error = new HttpFailureException("failed reading response stream for " + request.getURI() + ": " + e, e);
             if (response != null) {
                 response.abort(error);
             }
             throw error;
         } catch (ExecutionException e) {
-            final Failure error = new Failure("failed reading response stream for " + request.getURI() + ": " + e.getCause(), e.getCause());
+            final HttpFailureException error = new HttpFailureException("failed reading response stream for " + request.getURI() + ": " + e.getCause(), e.getCause());
             if (response != null) {
                 response.abort(error);
             }
             throw error;
-
         }
     }
 }
