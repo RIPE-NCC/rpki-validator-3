@@ -32,7 +32,6 @@ package net.ripe.rpki.validator3.util;
 import net.ripe.rpki.validator3.IntegrationTest;
 import net.ripe.rpki.validator3.rrdp.Notification;
 import net.ripe.rpki.validator3.rrdp.RrdpParser;
-import net.ripe.rpki.validator3.util.http.HttpStreaming;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;

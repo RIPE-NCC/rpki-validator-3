@@ -34,8 +34,7 @@ import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.ipresource.UniqueIpResource;
 import net.ripe.rpki.validator3.domain.metrics.HttpClientMetricsService;
-import net.ripe.rpki.validator3.util.http.HttpStreaming;
-import net.ripe.rpki.validator3.util.http.NotModifiedException;
+import net.ripe.rpki.validator3.util.HttpStreaming;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
 import org.joda.time.DateTime;
@@ -96,7 +95,7 @@ public class BgpRisDownloader {
 
         try {
             return  HttpStreaming.readStream(requestSupplier, streamReader);
-        } catch (NotModifiedException n) {
+        } catch (HttpStreaming.NotModifiedException n) {
             statusDescription = "302";
             return dump;
         } catch (Exception e) {

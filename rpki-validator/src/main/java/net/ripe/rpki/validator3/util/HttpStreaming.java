@@ -27,8 +27,9 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.util.http;
+package net.ripe.rpki.validator3.util;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -88,6 +89,36 @@ public class HttpStreaming {
                 response.abort(error);
             }
             throw error;
+        }
+    }
+
+    public static class HttpFailureException extends RuntimeException {
+        public HttpFailureException(String s) {
+            super(s);
+        }
+
+        public HttpFailureException(String s, Throwable cause) {
+            super(s, cause);
+        }
+    }
+
+    @Getter
+    public static class HttpStatusException extends HttpFailureException {
+        private int code;
+
+        public HttpStatusException(Response response, Request request) {
+            this(response.getStatus(), String.format("unexpected response status %d for %s", response.getStatus(), request.getURI()));
+        }
+
+        public HttpStatusException(int code, String message) {
+            super(message);
+            this.code = code;
+        }
+    }
+
+    public static class NotModifiedException extends HttpStatusException {
+        public NotModifiedException(String uri) {
+            super(302, String.format("HTTP 302 NOT MODIFIED for %s", uri));
         }
     }
 }
