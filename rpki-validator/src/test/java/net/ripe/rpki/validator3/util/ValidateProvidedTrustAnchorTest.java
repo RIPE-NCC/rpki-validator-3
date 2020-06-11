@@ -94,8 +94,10 @@ public class ValidateProvidedTrustAnchorTest {
 
         final byte[] cert = trustAnchorRetrievalService.fetchTrustAnchorCertificate(uri, res);
 
-        assert !res.hasFailures();
+        if (res.hasFailures()) {
+            res.getFailuresForAllLocations().forEach(failure -> log.error("validation failure: {}", failure.toString()));
+            throw new IllegalStateException(String.format("Failure while validating %s", uri.toASCIIString()));
+        }
         return cert;
-
     }
 }
