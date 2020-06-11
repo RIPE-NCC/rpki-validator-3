@@ -59,8 +59,9 @@ before_script:
         - rpki-rtr-server/target/surefire-reports/TEST-*.xml
         - rpki-rtr-server/target/failsafe-reports/TEST-*.xml
     paths:
-      - rpki-rtr-server/target/surefire-reports/*
-      - rpki-validator/target/surefire-reports/*
+      - rpki-rtr-server/target/surefire-reports/
+      - rpki-validator/target/surefire-reports/
+    when: on_failure
     expire_in: 1 week
 
 test:jdk8:

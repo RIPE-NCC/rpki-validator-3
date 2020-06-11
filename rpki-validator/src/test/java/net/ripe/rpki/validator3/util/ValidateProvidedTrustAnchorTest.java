@@ -30,7 +30,6 @@
 package net.ripe.rpki.validator3.util;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.Sets;
 import com.google.common.hash.Hashing;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -39,6 +38,7 @@ import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.IntegrationTest;
 import net.ripe.rpki.validator3.domain.retrieval.TrustAnchorRetrievalService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -62,6 +62,7 @@ public class ValidateProvidedTrustAnchorTest {
     private TrustAnchorRetrievalService trustAnchorRetrievalService;
 
     @Test
+    @DisabledIfEnvironmentVariable(named = "CI_SERVER", matches = "yes")
     public void testProvidedTrustAnchors() {
         // four included tals
         assert tals.length == 4;
