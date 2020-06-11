@@ -41,8 +41,11 @@ import net.ripe.rpki.validator3.storage.Binary;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+import java.net.URI;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @EqualsAndHashCode(callSuper = true)
 @Binary
@@ -97,5 +100,12 @@ public class TrustAnchor extends Base<TrustAnchor> {
 
     public void markInitialCertificateTreeValidationRunCompleted() {
         this.initialCertificateTreeValidationRunCompleted = true;
+    }
+
+    public List<URI> getLocationsByPreference() {
+        return locations.stream()
+            .sorted(Comparator.naturalOrder())
+            .map(URI::create)
+            .collect(Collectors.toList());
     }
 }

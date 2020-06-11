@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.domain.validation;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import lombok.extern.slf4j.Slf4j;
@@ -66,6 +67,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -121,41 +123,41 @@ public class TrustAnchorValidationService {
             return new TrustAnchorValidationRun(trustAnchorRef, trustAnchor.getLocations().get(0));
         });
 
+        final ValidationLocation trustAnchorValidationLocation = new ValidationLocation(validationRun.getTrustAnchorCertificateURI());
+        ValidationResult validationResult = ValidationResult.withLocation(trustAnchorValidationLocation);
+
         boolean updatedTrustAnchor = false;
+        final List<URI> rankedTrustAnchorLocations = trustAnchor.getLocationsByPreference();
         try {
+            boolean loadedAtLeastOneTACertificate = false;
+            // Try all locations until one was successful
+            for (int i=0; i < rankedTrustAnchorLocations.size() && !updatedTrustAnchor; i++) {
+                final URI currentLocation = rankedTrustAnchorLocations.get(i);
+                // Switch validation location
+                validationResult.setLocation(new ValidationLocation(currentLocation));
 
-            URI trustAnchorCertificateURI = URI.create(validationRun.getTrustAnchorCertificateURI()).normalize();
-            ValidationResult validationResult = ValidationResult.withLocation(trustAnchorCertificateURI);
+                byte[] trustAnchorCertificate = trustAnchorRetrievalService.fetchTrustAnchorCertificate(currentLocation, validationResult);
 
-            byte[] trustAnchorCertificate = trustAnchorRetrievalService.fetchTrustAnchorCertificate(trustAnchorCertificateURI, validationResult);
-            if (!validationResult.hasFailureForCurrentLocation()) {
-                long trustAnchorCertificateSize = trustAnchorCertificate.length;
-
-                if (trustAnchorCertificateSize < RpkiObject.MIN_SIZE) {
-                    validationResult.error(ErrorCodes.REPOSITORY_OBJECT_MINIMUM_SIZE, trustAnchorCertificateURI.toASCIIString(), String.valueOf(trustAnchorCertificateSize), String.valueOf(RpkiObject.MIN_SIZE));
-                } else if (trustAnchorCertificateSize > RpkiObject.MAX_SIZE) {
-                    validationResult.error(ErrorCodes.REPOSITORY_OBJECT_MAXIMUM_SIZE, trustAnchorCertificateURI.toASCIIString(), String.valueOf(trustAnchorCertificateSize), String.valueOf(RpkiObject.MAX_SIZE));
-                } else {
-                    final X509ResourceCertificate parsedCertificate = parseCertificate(trustAnchor, trustAnchorCertificate, validationResult);
-
-                    if (!validationResult.hasFailureForCurrentLocation()) {
-                        // validate(..) is called multiple times for the same trust anchor certificate (e.g. when the
-                        // application restarts).
-                        int comparedSerial = trustAnchor.getCertificate() == null ?
-                                1 : parsedCertificate.getSerialNumber().compareTo(trustAnchor.getCertificate().getSerialNumber());
-                        validationResult.warnIfTrue(comparedSerial < 0, ValidationString.VALIDATOR_REPOSITORY_OBJECT_IS_OLDER_THAN_PREVIOUS_OBJECT, trustAnchorCertificateURI.toASCIIString());
-                        if (comparedSerial != 0) {
-                            log.info("Setting certificate {} for the TA {}", trustAnchorCertificateURI, trustAnchor.getName());
-                            trustAnchor.setCertificate(parsedCertificate);
-                            updatedTrustAnchor = true;
-                        }
-                    }
+                if (trustAnchorCertificate != null) {
+                    loadedAtLeastOneTACertificate = true;
+                    updatedTrustAnchor = readTrustAnchorFromLocation(trustAnchorCertificate, trustAnchor, currentLocation, validationResult);
                 }
+            }
+
+            // Reset the validation location
+            validationResult.setLocation(trustAnchorValidationLocation);
+
+            if (!loadedAtLeastOneTACertificate) {
+                validationResult.error(
+                        ErrorCodes.TRUST_ANCHOR_FETCH,
+                        "any location",
+                        String.format("None of the locations (%s) could be loaded.", Joiner.on(", ").join(trustAnchor.getLocations())));
+
             }
 
             if (validationResult.hasFailures()) {
                 log.warn("Validation result for the TA {} has failures: {}", trustAnchor.getName(),
-                        validationResult.getFailures(new ValidationLocation(trustAnchorCertificateURI)));
+                        validationResult.getFailuresForAllLocations());
             }
 
             validationRun.completeWith(validationResult);
@@ -180,6 +182,32 @@ public class TrustAnchorValidationService {
             validatedAtLeastOnce.add(trustAnchor.getId());
             storage.writeTx0(tx -> validationRuns.add(tx, validationRun));
         }
+    }
+
+    private boolean readTrustAnchorFromLocation(byte[] trustAnchorCertificate, TrustAnchor trustAnchor, URI trustAnchorCertificateURI, ValidationResult validationResult) throws IOException {
+        long trustAnchorCertificateSize = trustAnchorCertificate.length;
+
+        if (trustAnchorCertificateSize < RpkiObject.MIN_SIZE) {
+            validationResult.error(ErrorCodes.REPOSITORY_OBJECT_MINIMUM_SIZE, trustAnchorCertificateURI.toASCIIString(), String.valueOf(trustAnchorCertificateSize), String.valueOf(RpkiObject.MIN_SIZE));
+        } else if (trustAnchorCertificateSize > RpkiObject.MAX_SIZE) {
+            validationResult.error(ErrorCodes.REPOSITORY_OBJECT_MAXIMUM_SIZE, trustAnchorCertificateURI.toASCIIString(), String.valueOf(trustAnchorCertificateSize), String.valueOf(RpkiObject.MAX_SIZE));
+        } else {
+            final X509ResourceCertificate parsedCertificate = parseCertificate(trustAnchor, trustAnchorCertificate, validationResult);
+
+            if (!validationResult.hasFailureForCurrentLocation()) {
+                // validate(..) is called multiple times for the same trust anchor certificate (e.g. when the
+                // application restarts).
+                int comparedSerial = trustAnchor.getCertificate() == null ?
+                        1 : parsedCertificate.getSerialNumber().compareTo(trustAnchor.getCertificate().getSerialNumber());
+                validationResult.warnIfTrue(comparedSerial < 0, ValidationString.VALIDATOR_REPOSITORY_OBJECT_IS_OLDER_THAN_PREVIOUS_OBJECT, trustAnchorCertificateURI.toASCIIString());
+                if (comparedSerial != 0) {
+                    log.info("Setting certificate {} for the TA {}", trustAnchorCertificateURI, trustAnchor.getName());
+                    trustAnchor.setCertificate(parsedCertificate);
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private X509ResourceCertificate parseCertificate(TrustAnchor trustAnchor, byte[] certificateData, ValidationResult validationResult) throws IOException {
