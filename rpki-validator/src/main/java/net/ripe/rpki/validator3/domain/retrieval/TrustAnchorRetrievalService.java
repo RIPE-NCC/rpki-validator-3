@@ -106,7 +106,7 @@ public class TrustAnchorRetrievalService {
             log.debug("HTTP {} when fetching HTTPS trust anchor from {}", res.getStatus(), trustAnchorCertificateURI);
             statusDescription = String.valueOf(res.getStatus());
             if (res.getStatus() != 200) {
-                validationResult.error(ErrorCodes.TRUST_ANCHOR_FETCH, trustAnchorCertificateURI.toASCIIString(), String.format("HTTP %d - %s", res.getStatus(), res.getReason()));
+                validationResult.warn(ErrorCodes.TRUST_ANCHOR_FETCH, trustAnchorCertificateURI.toASCIIString(), String.format("HTTP %d - %s", res.getStatus(), res.getReason()));
                 return null;
             }
 
