@@ -90,7 +90,7 @@ public class TrustAnchorRetrievalService {
                 validationResult.error(ErrorCodes.TRUST_ANCHOR_FETCH, trustAnchorCertificateURI.toASCIIString(), "File support not explicitly enabled.");
                 return null;
             default:
-                validationResult.error(ErrorCodes.TRUST_ANCHOR_FETCH, trustAnchorCertificateURI.toASCIIString(), "Unsupported URI");
+                validationResult.warn(ErrorCodes.TRUST_ANCHOR_FETCH, trustAnchorCertificateURI.toASCIIString(), "Unsupported URI");
                 return null;
         }
     }
@@ -112,7 +112,7 @@ public class TrustAnchorRetrievalService {
 
             return res.getContent();
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            validationResult.error(ErrorCodes.TRUST_ANCHOR_FETCH, trustAnchorCertificateURI.toASCIIString(), e.getMessage());
+            validationResult.warn(ErrorCodes.TRUST_ANCHOR_FETCH, trustAnchorCertificateURI.toASCIIString(), e.getMessage());
             statusDescription = HttpClientMetricsService.unwrapExceptionString(e);
 
             log.error("Error while loading trust anchor certificate over https", e);
@@ -135,7 +135,7 @@ public class TrustAnchorRetrievalService {
         rsyncMetrics.update(trustAnchorCertificateURI, exitStatus, System.currentTimeMillis() - t0);
 
         if (exitStatus != 0) {
-            validationResult.error(ErrorCodes.RSYNC_FETCH, String.valueOf(exitStatus), ArrayUtils.toString(rsync.getErrorLines()));
+            validationResult.warn(ErrorCodes.RSYNC_FETCH, String.valueOf(exitStatus), ArrayUtils.toString(rsync.getErrorLines()));
             return null;
         } else {
             log.info("Downloaded certificate {} to {}", trustAnchorCertificateURI, targetFile);
