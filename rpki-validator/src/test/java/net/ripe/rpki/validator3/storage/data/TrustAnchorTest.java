@@ -49,6 +49,26 @@ public class TrustAnchorTest {
     }
 
     @Test
+    public void getLocationsByPreference_keeps_order_within_protocol() {
+        TrustAnchor ta = new TrustAnchor();
+        ta.setLocations(Lists.newArrayList("rsync://rpki.ripe.net/b/ripe-ncc-ta.cer", "rsync://rpki.ripe.net/a/ripe-ncc-ta.cer", "https://rpki.ripe.net/ta/ripe-ncc-ta.cer"));
+
+        assertThat(ta.getLocationsByPreference()).containsExactly(
+                URI.create("https://rpki.ripe.net/ta/ripe-ncc-ta.cer"),
+                URI.create("rsync://rpki.ripe.net/b/ripe-ncc-ta.cer"),
+                URI.create("rsync://rpki.ripe.net/a/ripe-ncc-ta.cer")
+        );
+
+        ta.setLocations(Lists.newArrayList("rsync://rpki.ripe.net/a/ripe-ncc-ta.cer", "https://rpki.ripe.net/ta/ripe-ncc-ta.cer", "rsync://rpki.ripe.net/b/ripe-ncc-ta.cer"));
+
+        assertThat(ta.getLocationsByPreference()).containsExactly(
+                URI.create("https://rpki.ripe.net/ta/ripe-ncc-ta.cer"),
+                URI.create("rsync://rpki.ripe.net/a/ripe-ncc-ta.cer"),
+                URI.create("rsync://rpki.ripe.net/b/ripe-ncc-ta.cer")
+        );
+    }
+
+    @Test
     public void getLocationsByPreference_handles_empty() {
         TrustAnchor ta = new TrustAnchor();
         ta.setLocations(Lists.newArrayList());
