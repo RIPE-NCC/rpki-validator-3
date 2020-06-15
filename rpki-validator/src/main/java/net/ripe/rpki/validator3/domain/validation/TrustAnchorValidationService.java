@@ -152,7 +152,7 @@ public class TrustAnchorValidationService {
                         ErrorCodes.TRUST_ANCHOR_FETCH,
                         "any location",
                         String.format("None of the locations (%s) could be loaded.", Joiner.on(", ").join(trustAnchor.getLocations())));
-
+                validationRun.setFailed();
             }
 
             if (validationResult.hasFailures()) {
@@ -192,7 +192,7 @@ public class TrustAnchorValidationService {
         } else if (trustAnchorCertificateSize > RpkiObject.MAX_SIZE) {
             validationResult.error(ErrorCodes.REPOSITORY_OBJECT_MAXIMUM_SIZE, trustAnchorCertificateURI.toASCIIString(), String.valueOf(trustAnchorCertificateSize), String.valueOf(RpkiObject.MAX_SIZE));
         } else {
-            final X509ResourceCertificate parsedCertificate = parseCertificate(trustAnchor, trustAnchorCertificate, validationResult);
+            final X509ResourceCertificate parsedCertificate = parseCertificate(trustAnchor, trustAnchorCertificate, trustAnchorCertificateURI, validationResult);
 
             if (!validationResult.hasFailureForCurrentLocation()) {
                 // validate(..) is called multiple times for the same trust anchor certificate (e.g. when the
@@ -210,9 +210,13 @@ public class TrustAnchorValidationService {
         return false;
     }
 
-    private X509ResourceCertificate parseCertificate(TrustAnchor trustAnchor, byte[] certificateData, ValidationResult validationResult) throws IOException {
+    private X509ResourceCertificate parseCertificate(TrustAnchor trustAnchor, byte[] certificateData, URI trustAnchorCertificateURI, ValidationResult validationResult) throws IOException {
+        // We provide the certificate uri because it can be one of multiple and the rsync prefetch
+        // uri can not be used since it can be null.
+        assert trustAnchor.getLocationsByPreference().contains(trustAnchorCertificateURI);
+
         CertificateRepositoryObject trustAnchorCertificate = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(certificateData, validationResult);
-        validationResult.rejectIfFalse(trustAnchorCertificate instanceof X509ResourceCertificate, ErrorCodes.REPOSITORY_OBJECT_IS_TRUST_ANCHOR_CERTIFICATE, trustAnchor.getRsyncPrefetchUri());
+        validationResult.rejectIfFalse(trustAnchorCertificate instanceof X509ResourceCertificate, ErrorCodes.REPOSITORY_OBJECT_IS_TRUST_ANCHOR_CERTIFICATE, trustAnchorCertificateURI.toASCIIString());
         if (validationResult.hasFailureForCurrentLocation()) {
             return null;
         }
@@ -230,7 +234,7 @@ public class TrustAnchorValidationService {
             signatureValid = false;
         }
 
-        validationResult.rejectIfFalse(signatureValid, ErrorCodes.TRUST_ANCHOR_SIGNATURE, trustAnchor.getRsyncPrefetchUri(), trustAnchor.getSubjectPublicKeyInfo());
+        validationResult.rejectIfFalse(signatureValid, ErrorCodes.TRUST_ANCHOR_SIGNATURE, trustAnchorCertificateURI.toASCIIString(), trustAnchor.getSubjectPublicKeyInfo());
 
         return certificate;
     }
