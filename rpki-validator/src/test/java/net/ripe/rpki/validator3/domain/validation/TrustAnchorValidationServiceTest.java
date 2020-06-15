@@ -109,8 +109,10 @@ public class TrustAnchorValidationServiceTest extends GenericStorageTest {
         assertThat(validationRun).isPresent();
 
         List<ValidationCheck> validationChecks = validationRun.get().getValidationChecks();
-        assertThat(validationChecks).hasSize(1);
-        assertThat(validationChecks.get(0).getKey()).isEqualTo(ErrorCodes.RSYNC_FETCH);
+        assertThat(validationChecks).hasSize(2);
+
+        assertThat(validationChecks).anyMatch(vc -> vc.getKey().equals(ErrorCodes.RSYNC_FETCH));
+        assertThat(validationChecks).anyMatch(vc -> vc.getKey().equals(ErrorCodes.TRUST_ANCHOR_FETCH));
     }
 
     @Test
