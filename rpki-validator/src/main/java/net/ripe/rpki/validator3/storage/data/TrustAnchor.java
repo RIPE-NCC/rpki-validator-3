@@ -104,8 +104,8 @@ public class TrustAnchor extends Base<TrustAnchor> {
 
     public List<URI> getLocationsByPreference() {
         return locations.stream()
-            .sorted(Comparator.naturalOrder())
             .map(URI::create)
+            .sorted(Comparator.comparing(URI::getScheme))
             .collect(Collectors.toList());
     }
 }
