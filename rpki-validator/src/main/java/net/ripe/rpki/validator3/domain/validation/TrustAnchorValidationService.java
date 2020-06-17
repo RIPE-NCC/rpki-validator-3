@@ -31,7 +31,6 @@ package net.ripe.rpki.validator3.domain.validation;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
-import com.google.common.io.Files;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.util.CertificateRepositoryObjectFactory;
@@ -55,14 +54,10 @@ import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
-import net.ripe.rpki.validator3.util.Rsync;
-import net.ripe.rpki.validator3.util.RsyncFactory;
-import org.apache.commons.lang3.ArrayUtils;
+import org.jooq.lambda.tuple.Tuple2;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
@@ -127,27 +122,13 @@ public class TrustAnchorValidationService {
         ValidationResult validationResult = ValidationResult.withLocation(trustAnchorValidationLocation);
 
         boolean updatedTrustAnchor = false;
-        final List<URI> rankedTrustAnchorLocations = trustAnchor.getLocationsByPreference();
         try {
-            boolean loadedAtLeastOneTACertificate = false;
-            // Try all locations until one was successful
-            for (int i=0; i < rankedTrustAnchorLocations.size() && !updatedTrustAnchor; i++) {
-                final URI currentLocation = rankedTrustAnchorLocations.get(i);
-                // Switch validation location
-                validationResult.setLocation(new ValidationLocation(currentLocation));
+            final Optional<Tuple2<URI, byte[]>> maybeTrustAnchorCertificate = fetchPreferredTrustAnchorCertificate(trustAnchor, validationResult);
 
-                byte[] trustAnchorCertificate = trustAnchorRetrievalService.fetchTrustAnchorCertificate(currentLocation, validationResult);
-
-                if (trustAnchorCertificate != null) {
-                    loadedAtLeastOneTACertificate = true;
-                    updatedTrustAnchor = readTrustAnchorFromLocation(trustAnchorCertificate, trustAnchor, currentLocation, validationResult);
-                }
-            }
-
-            // Reset the validation location
-            validationResult.setLocation(trustAnchorValidationLocation);
-
-            if (!loadedAtLeastOneTACertificate) {
+            if (maybeTrustAnchorCertificate.isPresent()) {
+                final Tuple2<URI, byte[]> res = maybeTrustAnchorCertificate.get();
+                updatedTrustAnchor = readTrustAnchorFromLocation(res.v2, trustAnchor, res.v1, validationResult);
+            } else {
                 validationResult.error(
                         ErrorCodes.TRUST_ANCHOR_FETCH,
                         "any location",
@@ -182,6 +163,34 @@ public class TrustAnchorValidationService {
             validatedAtLeastOnce.add(trustAnchor.getId());
             storage.writeTx0(tx -> validationRuns.add(tx, validationRun));
         }
+    }
+
+    /**
+     * Attempt to fetch a trust anchor (TA) certificate for this TrustAnchor by attempting to retrieve the TA certificates
+     * in order of preference. When successful, return the URI of the certificate as well as it's content.
+     *
+     * @param trustAnchor to load certificate for
+     * @param validationResult of current validation
+     * @return (URI of certificate, content of certificate)
+     */
+    public Optional<Tuple2<URI, byte[]>> fetchPreferredTrustAnchorCertificate(TrustAnchor trustAnchor, ValidationResult validationResult) {
+        final ValidationLocation initialLocation = validationResult.getCurrentLocation();
+        final List<URI> rankedTrustAnchorLocations = trustAnchor.getLocationsByPreference();
+
+        // Try all locations until one was successful
+        for (URI currentLocation : rankedTrustAnchorLocations) {
+            // Switch validation location
+            validationResult.setLocation(new ValidationLocation(currentLocation));
+
+            byte[] trustAnchorCertificate = trustAnchorRetrievalService.fetchTrustAnchorCertificate(currentLocation, validationResult);
+
+            if (trustAnchorCertificate != null) {
+                return Optional.of(new Tuple2<>(currentLocation, trustAnchorCertificate));
+            }
+        }
+
+        validationResult.setLocation(initialLocation);
+        return Optional.empty();
     }
 
     private boolean readTrustAnchorFromLocation(byte[] trustAnchorCertificate, TrustAnchor trustAnchor, URI trustAnchorCertificateURI, ValidationResult validationResult) throws IOException {
