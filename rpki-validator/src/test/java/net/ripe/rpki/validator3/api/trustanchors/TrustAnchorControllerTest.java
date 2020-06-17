@@ -40,18 +40,23 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.hateoas.Link;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import java.io.File;
+import java.nio.file.Files;
 import java.util.Arrays;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -88,7 +93,7 @@ public class TrustAnchorControllerTest {
                 .content(objectMapper.writeValueAsString(ApiCommand.of(AddTrustAnchor.builder()
                     .type(TrustAnchor.TYPE)
                     .name(TEST_CA_NAME)
-                    .locations(Arrays.asList("rsync://example.com/rpki"))
+                    .locations(Arrays.asList("rsync://example.com/rpki", "https://example.com/rpki"))
                     .subjectPublicKeyInfo("jdfakljkldf;adsfjkdsfkl;nasdjfnsldajfklsd;ajfk;ljdsakjfkla;sdhfkjdshfkljadsl;kjfdklfjdaksl;jdfkl;jafkldjsfkl;adjsfkl;adjsf;lkjkl;dj;adskjfdljadjbkfbkjblafkjdfbasfjlka")
                     .build()
                 )))
@@ -137,10 +142,95 @@ public class TrustAnchorControllerTest {
         assertThat(response.getErrors()).isNotEmpty();
     }
 
+    @Test
+    public void should_reject_missing_locations() throws Exception {
+        ResultActions result = mvc.perform(
+                post("/api/trust-anchors")
+                        .accept(ValidatorApi.API_MIME_TYPE)
+                        .contentType(ValidatorApi.API_MIME_TYPE)
+                        .content(objectMapper.writeValueAsString(ApiCommand.of(AddTrustAnchor.builder()
+                                .type(TrustAnchor.TYPE)
+                                .name(TEST_CA_NAME)
+                                .locations(Arrays.asList())
+                                .subjectPublicKeyInfo("jdfakljkldf;adsfjkdsfkl;nasdjfnsldajfklsd;ajfk;ljdsakjfkla;sdhfkjdshfkljadsl;kjfdklfjdaksl;jdfkl;jafkldjsfkl;adjsfkl;adjsf;lkjkl;dj;adskjfdljadjbkfbkjblafkjdfbasfjlka")
+                                .build()
+                        )))
+        );
+
+        result
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(ValidatorApi.API_MIME_TYPE));
+
+        ApiResponse<TrustAnchorResource> response = addTrustAnchorResponse(result);
+
+        assertThat(response.getErrors()).isNotEmpty();
+    }
+
+    @Test
+    public void should_upload_legacy_trust_anchor_rfc8630() throws Exception {
+        byte[] rfc8630Tal = Files.readAllBytes(new ClassPathResource("tals/rfc8630/afrinic-https-rsync.tal").getFile().toPath());
+        final MockMultipartFile uploadedTal = new MockMultipartFile("file", "afrinic-https-rsync.tal", "application/octet-stream", rfc8630Tal);
+
+        ResultActions result = mvc.perform(
+                multipart("/api/trust-anchors/upload")
+                        .file(uploadedTal)
+                        .accept(MediaType.ALL)
+        );
+
+        result
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(ValidatorApi.API_MIME_TYPE));
+
+        ApiResponse<TrustAnchorResource> response = addTrustAnchorResponse(result);
+        assertThat(response.getData()).isNotNull();
+
+        TrustAnchorResource resource = response.getData();
+
+        Link selfRel = resource.getLinks().getLink("self");
+        mvc.perform(
+                get(selfRel.getHref())
+                        .accept(ValidatorApi.API_MIME_TYPE)
+        )
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(ValidatorApi.API_MIME_TYPE))
+                .andExpect(jsonPath("$.data.name").value(uploadedTal.getOriginalFilename()))
+                .andExpect(jsonPath("$.data.locations", hasSize(2)));
+    }
+
+    @Test
+    public void should_upload_ripeextended_trust_anchor() throws Exception {
+        byte[] rfc8630Tal = Files.readAllBytes(new ClassPathResource("tals/ripeextended/afrinic-https_rsync.tal").getFile().toPath());
+        final MockMultipartFile uploadedTal = new MockMultipartFile("file", "afrinic-https_rsync.tal", "application/octet-stream", rfc8630Tal);
+
+        ResultActions result = mvc.perform(
+                multipart("/api/trust-anchors/upload")
+                        .file(uploadedTal)
+                        .accept(MediaType.ALL)
+        );
+
+        result
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(ValidatorApi.API_MIME_TYPE));
+
+        ApiResponse<TrustAnchorResource> response = addTrustAnchorResponse(result);
+        assertThat(response.getData()).isNotNull();
+
+        TrustAnchorResource resource = response.getData();
+
+        Link selfRel = resource.getLinks().getLink("self");
+        mvc.perform(
+                get(selfRel.getHref())
+                        .accept(ValidatorApi.API_MIME_TYPE)
+        )
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(ValidatorApi.API_MIME_TYPE))
+                .andExpect(jsonPath("$.data.name").value("AfriNIC RPKI Root"))
+                .andExpect(jsonPath("$.data.locations", hasSize(2)));
+    }
+
     private ApiResponse<TrustAnchorResource> addTrustAnchorResponse(ResultActions result) throws java.io.IOException {
         String contentAsString = result.andReturn().getResponse().getContentAsString();
         return objectMapper.readValue(contentAsString, new TypeReference<ApiResponse<TrustAnchorResource>>() {
         });
     }
-
 }

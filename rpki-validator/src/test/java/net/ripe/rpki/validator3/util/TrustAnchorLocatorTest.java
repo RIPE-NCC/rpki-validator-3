@@ -57,7 +57,7 @@ public class TrustAnchorLocatorTest {
 
     @Test
     public void readStandardTrustAnchor_rsync_only_accepted() throws Exception {
-        File talFile = new ClassPathResource("tals/rfc7730/ripe-ncc-rsync-only.tal").getFile();
+        File talFile = new ClassPathResource("tals/rfc8630/ripe-ncc-rsync-only.tal").getFile();
 
         TrustAnchorLocator tal = TrustAnchorLocator.fromFile(talFile);
 
@@ -70,7 +70,7 @@ public class TrustAnchorLocatorTest {
 
     @Test
     public void readStandardTrustAnchor_https_rsync_accepted() throws Exception {
-        File talFile = new ClassPathResource("tals/rfc7730/afrinic-https-rsync.tal").getFile();
+        File talFile = new ClassPathResource("tals/rfc8630/afrinic-https-rsync.tal").getFile();
 
         TrustAnchorLocator tal = TrustAnchorLocator.fromFile(talFile);
 
@@ -84,7 +84,7 @@ public class TrustAnchorLocatorTest {
 
     @Test
     public void readStandardTrustAnchor_rsync_https_accepted() throws Exception {
-        File talFile = new ClassPathResource("tals/rfc7730/afrinic-reversed-rsync-https.tal").getFile();
+        File talFile = new ClassPathResource("tals/rfc8630/afrinic-reversed-rsync-https.tal").getFile();
 
         TrustAnchorLocator tal = TrustAnchorLocator.fromFile(talFile);
 
@@ -98,7 +98,7 @@ public class TrustAnchorLocatorTest {
 
     @Test
     public void readStandardTrustAnchor_with_http_location_rejected() throws Exception {
-        File talFile = new ClassPathResource("tals/rfc7730/example-tal-with-http-and-rsync.tal").getFile();
+        File talFile = new ClassPathResource("tals/rfc8630/example-tal-with-http-and-rsync.tal").getFile();
 
         assertThrows(TrustAnchorExtractorException.class, () -> TrustAnchorLocator.fromFile(talFile));
     }
