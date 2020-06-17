@@ -297,14 +297,14 @@ public class HappyEyeballsResolver implements SocketAddressResolver {
             if (addressOptional.isPresent()) {
                 final InetAddress address = addressOptional.get();
                 try {
-                    log.info("Connecting to {}", address);
+                    log.debug("Connecting to {}", address);
                     final SocketChannel socketChannel = SocketChannel.open();
                     socketChannel.configureBlocking(false);
                     socketChannel.register(selector, SelectionKey.OP_CONNECT);
                     socketChannel.connect(new InetSocketAddress(address, port));
                 } catch (IOException e) {
                     // can't connect - move on
-                    log.info("Error connecting to {}", address);
+                    log.debug("Error connecting to {}", address);
                 }
             } else {
                 return false;
