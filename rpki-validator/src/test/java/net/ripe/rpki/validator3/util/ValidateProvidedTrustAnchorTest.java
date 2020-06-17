@@ -87,7 +87,6 @@ public class ValidateProvidedTrustAnchorTest {
         assertEquals(certificateHashes.size(), 1);
     }
 
-    @SneakyThrows(IOException.class)
     private byte[] readCertificateFromUri(URI uri) {
         ValidationResult res = ValidationResult.withLocation(uri);
 

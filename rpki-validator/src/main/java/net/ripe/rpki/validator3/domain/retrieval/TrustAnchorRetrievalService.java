@@ -32,17 +32,19 @@ package net.ripe.rpki.validator3.domain.retrieval;
 import com.google.common.io.Files;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.commons.validation.ValidationLocation;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.api.util.BuildInformation;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
 import net.ripe.rpki.validator3.domain.metrics.HttpClientMetricsService;
 import net.ripe.rpki.validator3.domain.metrics.RsyncMetricsService;
+import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.util.Rsync;
 import net.ripe.rpki.validator3.util.RsyncFactory;
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.http.HttpHeader;
+import org.jooq.lambda.tuple.Tuple2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -50,6 +52,8 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
@@ -77,25 +81,35 @@ public class TrustAnchorRetrievalService {
     @Autowired
     private RsyncMetricsService rsyncMetrics;
 
-    public byte[] fetchTrustAnchorCertificate(URI trustAnchorCertificateURI, ValidationResult validationResult) throws IOException {
-        switch (trustAnchorCertificateURI.getScheme()) {
-            case "rsync":
-                return fetchRsyncTrustAnchorCertificate(trustAnchorCertificateURI, validationResult);
-            case "https":
-                return fetchHttpsTrustAnchorCertificate(trustAnchorCertificateURI, validationResult);
-            case "file":
-                if (isFileProtocolEnabled) {
-                    return Files.toByteArray(new File(trustAnchorCertificateURI));
-                }
-                validationResult.error(ErrorCodes.TRUST_ANCHOR_FETCH, trustAnchorCertificateURI.toASCIIString(), "File support not explicitly enabled.");
-                return null;
-            default:
-                validationResult.warn(ErrorCodes.TRUST_ANCHOR_FETCH, trustAnchorCertificateURI.toASCIIString(), "Unsupported URI");
-                return null;
+    public byte[] fetchTrustAnchorCertificate(URI trustAnchorCertificateURI, ValidationResult validationResult) {
+        try {
+            switch (trustAnchorCertificateURI.getScheme()) {
+                case "rsync":
+                    return fetchRsyncTrustAnchorCertificate(trustAnchorCertificateURI, validationResult);
+                case "https":
+                    return fetchHttpsTrustAnchorCertificate(trustAnchorCertificateURI, validationResult);
+                case "file":
+                    return fetchFileTrustAnchorCertificate(trustAnchorCertificateURI, validationResult);
+                default:
+                    validationResult.warn(ErrorCodes.TRUST_ANCHOR_FETCH, trustAnchorCertificateURI.toASCIIString(), "Unsupported URI");
+                    return null;
+            }
+        } catch (IOException e) {
+            validationResult.warn(ErrorCodes.TRUST_ANCHOR_FETCH, trustAnchorCertificateURI.toASCIIString(), e.getMessage());
+            return null;
         }
     }
 
-    protected byte[] fetchHttpsTrustAnchorCertificate(URI trustAnchorCertificateURI, ValidationResult validationResult) throws IOException {
+    private byte[] fetchFileTrustAnchorCertificate(URI trustAnchorCertificateURI, ValidationResult validationResult) throws IOException {
+        if (isFileProtocolEnabled) {
+            return Files.toByteArray(new File(trustAnchorCertificateURI));
+        }
+        validationResult.error(ErrorCodes.TRUST_ANCHOR_FETCH, trustAnchorCertificateURI.toASCIIString(), "File support not explicitly enabled.");
+
+        return null;
+    }
+
+    protected byte[] fetchHttpsTrustAnchorCertificate(URI trustAnchorCertificateURI, ValidationResult validationResult) {
         final long t0 = System.currentTimeMillis();
         String statusDescription = "unknown";
 
