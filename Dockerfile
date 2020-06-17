@@ -10,7 +10,7 @@ FROM adoptopenjdk:11-jre-hotspot as intermediate
 
 ARG GENERIC_BUILD_ARCHIVE
 
-ADD ${GENERIC_BUILD_ARCHIVE} /tmp/
+COPY ${GENERIC_BUILD_ARCHIVE} /tmp/
 
 RUN mkdir -p /opt/rpki-validator-3 \
     && tar -zxf /tmp/$(basename $GENERIC_BUILD_ARCHIVE) -C /opt/rpki-validator-3/ --strip-components=1
