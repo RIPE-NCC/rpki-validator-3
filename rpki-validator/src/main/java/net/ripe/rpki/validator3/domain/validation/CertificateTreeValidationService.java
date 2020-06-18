@@ -408,11 +408,7 @@ public class CertificateTreeValidationService {
                 }
             }
         }
-        if(validationConfig.isStrictValidation()){
-            throw new StrictValidationException("Can't get certificat context");
-        } else {
-            return Stream.empty();
-        }
+        return Stream.empty();
     }
 
 
