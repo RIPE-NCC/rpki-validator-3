@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.domain.validation;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
@@ -345,9 +346,14 @@ public class CertificateTreeValidationService {
                     return vr;
                 })
                 .forEachOrdered(temporary::addAll);
-        } catch (Exception e) {
+        } catch (ManifestEntryException e){
+            temporary.addAll(e.getVr());
+        }
+        catch (Exception e) {
             validationResult.error(ErrorCodes.UNHANDLED_EXCEPTION, e.toString(), ExceptionUtils.getStackTrace(e));
-        } finally {
+        }
+
+        finally {
             validationResult.addAll(temporary);
         }
     }
@@ -368,7 +374,8 @@ public class CertificateTreeValidationService {
 
         if(validationConfig.isStrictValidation())
             return rpkiObject.map(ro -> Stream.of(new Tuple3<>(location, ro, temporary)))
-                .orElseThrow(() ->  new StrictValidationException("Failed to get Manifest entry"));
+                .orElseThrow(() ->
+                        new ManifestEntryException("Failed to get manifest entry "+entry.getKey(), temporary));
         else {
             return rpkiObject.map(ro -> Stream.of(new Tuple3<>(location, ro, temporary)))
                  .orElse(Stream.empty());
@@ -448,9 +455,12 @@ public class CertificateTreeValidationService {
         return registeredRepositories;
     }
 
-    public static class StrictValidationException extends RuntimeException {
-        public StrictValidationException(String message) {
+    public static class ManifestEntryException extends RuntimeException {
+        @Getter ValidationResult vr;
+
+        public ManifestEntryException(String message, ValidationResult vr) {
             super(message);
+            this.vr = vr;
         }
     }
 }
