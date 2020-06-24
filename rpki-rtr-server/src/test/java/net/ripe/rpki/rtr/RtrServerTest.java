@@ -72,7 +72,7 @@ public class RtrServerTest {
     private static final RtrPrefix AS_4444 = RtrDataUnit.prefix(Asn.parse("AS4444"), IpRange.parse("127.0.0.0/8"), 12);
 
     private final RtrCache rtrCache = new RtrCache(new SimpleMeterRegistry());
-    private final RtrClients clients = new RtrClients();
+    private final RtrClients clients = new RtrClients(new SimpleMeterRegistry());
     private final RtrClientHandler rtrClientHandler = new RtrClientHandler(rtrCache, clients);
     private final EmbeddedChannel channel = new EmbeddedChannel(
         new PduCodec(),

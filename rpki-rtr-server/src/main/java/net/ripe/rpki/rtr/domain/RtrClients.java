@@ -29,8 +29,11 @@
  */
 package net.ripe.rpki.rtr.domain;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.rtr.util.Locks;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -44,14 +47,38 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 @Service
 @Slf4j
 public class RtrClients {
+    public static final String RTRSERVER_CLIENTS_METRIC = "rtrserver.client.total";
+    public static final String RTRSERVER_CLIENTS_METRIC_DESCRIPTION = "Number of RTR server clients";
+    public static final String RTRSERVER_METRIC_TAG_OPERATION = "operation";
 
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final Set<RtrClient> clients = new HashSet<>();
+
+    private final Counter clientRegisterCount;
+    private final Counter clientUnregisterCount;
+    private final Counter clientDisconnectInactiveCount;
+
+    @Autowired
+    public RtrClients(final MeterRegistry meterRegistry) {
+        clientRegisterCount = Counter.builder(RTRSERVER_CLIENTS_METRIC)
+                .tag(RTRSERVER_METRIC_TAG_OPERATION, "register")
+                .description(RTRSERVER_CLIENTS_METRIC_DESCRIPTION)
+                .register(meterRegistry);
+        clientUnregisterCount = Counter.builder(RTRSERVER_CLIENTS_METRIC)
+                .tag(RTRSERVER_METRIC_TAG_OPERATION, "unregister")
+                .description(RTRSERVER_CLIENTS_METRIC_DESCRIPTION)
+                .register(meterRegistry);
+        clientDisconnectInactiveCount = Counter.builder(RTRSERVER_CLIENTS_METRIC)
+                .tag(RTRSERVER_METRIC_TAG_OPERATION, "disconnect_inactive")
+                .description(RTRSERVER_CLIENTS_METRIC_DESCRIPTION)
+                .register(meterRegistry);
+    }
 
     public void register(final RtrClient client) {
         boolean added = Locks.locked(lock.writeLock(), () -> clients.add(client));
         if (added) {
             log.info("registered client {}", client);
+            clientRegisterCount.increment();
         }
     }
 
@@ -63,6 +90,7 @@ public class RtrClients {
         boolean removed = Locks.locked(lock.writeLock(), () -> clients.remove(client));
         if (removed) {
             log.info("unregistered client {}", client);
+            clientUnregisterCount.increment();
         }
     }
 
@@ -85,7 +113,10 @@ public class RtrClients {
         return Locks.locked(lock.writeLock(), () -> {
             int before = clients.size();
             clients.removeIf(client -> client.disconnectIfInactive(now));
-            return before - clients.size();
+            final int change = before - clients.size();
+
+            clientDisconnectInactiveCount.increment(change);
+            return change;
         });
     }
 }

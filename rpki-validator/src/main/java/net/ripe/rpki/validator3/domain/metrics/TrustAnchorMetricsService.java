@@ -98,40 +98,40 @@ public class TrustAnchorMetricsService {
 
             this.rsyncPrefetchUri = trustAnchor.getLocations().get(0);
 
-            this.validationRunDuration = Timer.builder("validation.run.duration")
+            this.validationRunDuration = Timer.builder("rpkivalidator.validation.run.duration")
                     .description("Duration for the validation of the certificates descendant from this trust anchor.")
                     .tag("trust_anchor", rsyncPrefetchUri)
                     .register(registry);
 
-            this.validationRunSuccessCount = Counter.builder("validation.run.count")
+            this.validationRunSuccessCount = Counter.builder("rpkivalidator.validation.run.total")
                     .description("Number of validation runs for the tree of certificates for this trust anchor.")
                     .tag("trust_anchor", rsyncPrefetchUri)
                     .tag("succeeded", "true")
                     .register(registry);
-            this.validationRunFailedCount = Counter.builder("validation.run.count")
+            this.validationRunFailedCount = Counter.builder("rpkivalidator.validation.run.total")
                     .tag("trust_anchor", rsyncPrefetchUri)
                     .tag("succeeded", "false")
                     .register(registry);
 
-            Gauge.builder("validation.results", objectCount::get)
+            Gauge.builder("rpkivalidator.validated.objects", objectCount::get)
                     .description("Status of the objects under this trust anchor (identical to numbers on front page of web interface)")
                     .tag("status", "total")
                     .tag("trust_anchor", rsyncPrefetchUri)
                     .register(registry);
 
-            Gauge.builder("validation.results", errorCount::get)
+            Gauge.builder("rpkivalidator.validated.objects", errorCount::get)
                     .description("Status of the objects under this trust anchor (identical to numbers on front page of web interface)")
                     .tag("status", "error")
                     .tag("trust_anchor", rsyncPrefetchUri)
                     .register(registry);
 
-            Gauge.builder("validation.results", warningCount::get)
+            Gauge.builder("rpkivalidator.validated.objects", warningCount::get)
                     .description("Status of the objects under this trust anchor (identical to numbers on front page of web interface)")
                     .tag("status", "warning")
                     .tag("trust_anchor", rsyncPrefetchUri)
                     .register(registry);
 
-            Gauge.builder("last.validation.run", lastSuccessfulValidationRunTime::get)
+            Gauge.builder("rpkivalidator.last.validation.run", lastSuccessfulValidationRunTime::get)
                     .description("Timestamp (in seconds) of the last successful validation run.")
                     .tag("trust_anchor", rsyncPrefetchUri)
                     .register(registry);
