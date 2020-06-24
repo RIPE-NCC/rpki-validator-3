@@ -39,10 +39,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.EOFException;
+import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Keep metrics for an URL and a HTTP status code <i>or</i> a string describing the error (e.g. "handshake_failure").
@@ -80,9 +83,15 @@ public class HttpClientMetricsService {
         } else if (cause instanceof HttpStreaming.HttpFailureException) {
             final Throwable rootCause = cause.getCause();
             if (rootCause != null) {
+                // Handle a number of specific exceptions that have unique strings per host
                 if (rootCause instanceof EOFException) {
-                    // message is unique for each exception, group them by name
-                    return rootCause.getClass().getName();
+                    return "eof";
+                } else if (rootCause instanceof TimeoutException) {
+                    return "timeout";
+                } else if (rootCause instanceof SocketTimeoutException) {
+                    return "connect_timeout";
+                } else if (rootCause instanceof IOException && rootCause.getMessage().contains("Could not connect")) {
+                        return "could_not_connect";
                 }
                 return rootCause.toString();
             }
@@ -95,12 +104,12 @@ public class HttpClientMetricsService {
         public final Timer responseTiming;
 
         public HttpStatusMetric(final MeterRegistry registry, final String uri, final String statusDescription) {
-            this.responseStatusCounter = Counter.builder("http.response.status")
+            this.responseStatusCounter = Counter.builder("rpkivalidator.http.response.status")
                     .description("HTTP request result (per server, per status)")
                     .tag("url", uri)
                     .tag("status", statusDescription)
                     .register(registry);
-            this.responseTiming = Timer.builder("http.response.timing")
+            this.responseTiming = Timer.builder("rpkivalidator.http.response.duration")
                     .description(String.format("HTTP response time (quantiles over requests in the last %d hours)", HISTOGRAM_HOURS))
                     .tag("url", uri)
                     .publishPercentiles(0.5, 0.95, 0.99)
