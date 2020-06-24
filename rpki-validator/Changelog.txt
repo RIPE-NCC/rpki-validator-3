@@ -1,4 +1,9 @@
-* Fri May 22 2020 Ties de Kock <tdekock@ripe.net> 3.1
+* Wed Jun 24 2020 Ties de Kock <tdekock@ripe.net> 3.1
+- Breaking: Rename prometheus metrics to follow naming standards. Validator
+metrics start with `rpkivalidator`, rtr server metrics start with `rtrserver`.
+- Add metric for active rtr connections.
+
+* Fri May 22 2020 Ties de Kock <tdekock@ripe.net> 3.1-2020.05.22.11.25
 Security update: Changed permissions for CentOS systemd service files
 
 After a change in our build infrastructure, the CentOS (rpm) artifact contained
