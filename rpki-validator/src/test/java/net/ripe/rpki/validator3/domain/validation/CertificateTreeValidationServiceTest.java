@@ -39,7 +39,6 @@ import net.ripe.rpki.commons.crypto.ValidityPeriod;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.commons.validation.ValidationString;
-import net.ripe.rpki.validator3.IntegrationTest;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.ta.TrustAnchorsFactory;
 import net.ripe.rpki.validator3.storage.data.Ref;
@@ -58,6 +57,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.security.auth.x500.X500Principal;
@@ -80,7 +81,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(SpringRunner.class)
-@IntegrationTest
+@ActiveProfiles(profiles="test")
+@SpringBootTest(properties = "rpki.validator.strict-validation=true")
 public class CertificateTreeValidationServiceTest extends GenericStorageTest {
 
     @Autowired
@@ -429,6 +431,10 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
 
         List<CertificateTreeValidationRun> completed = rtx(tx -> this.getValidationRuns().findAll(tx, CertificateTreeValidationRun.class));
         assertThat(completed).hasSize(1);
+
+        ValidationCheck  check = completed.get(0).getValidationChecks().get(0);
+        assertThat(check.getStatus()).isEqualTo(ValidationCheck.Status.ERROR);
+        assertThat(check.getKey()).isEqualTo("validator.manifest.entry.found");
 
         List<Pair<CertificateTreeValidationRun, RpkiObject>> validatedRoas = rtx(tx -> this.getValidationRuns()
                 .findCurrentlyValidated(tx, RpkiObject.Type.ROA).collect(toList()));
