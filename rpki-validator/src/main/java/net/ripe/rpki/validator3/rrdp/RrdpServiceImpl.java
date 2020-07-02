@@ -311,7 +311,9 @@ public class RrdpServiceImpl implements RrdpService {
         final byte[] sha256 = deltaWithdraw.getHash();
         final Optional<RpkiObject> maybeObject = rpkiObjects.findBySha256(tx, sha256);
         if (maybeObject.isPresent()) {
-            rpkiObjects.deleteLocation(tx, maybeObject.get().key(), uri);
+            // The RpkiObjectCleanupJob will remove the object automatically. We cannot
+            // remove it here in case the object was also published by another repository
+            // (rsync or rrdp) or a malicious RRDP server fakes withdrawal.
             return true;
         } else {
             ValidationCheck validationCheck = new ValidationCheck(uri, ValidationCheck.Status.ERROR,
