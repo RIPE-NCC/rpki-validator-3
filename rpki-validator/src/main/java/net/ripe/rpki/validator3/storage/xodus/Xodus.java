@@ -288,19 +288,14 @@ public abstract class Xodus implements Storage {
 
     @Data
     public static class TxInfo {
-        private Long txId;
-        private Long threadId;
-        private List<String> stackTrace;
+        private long txId;
+        private long threadId;
         private boolean writing;
         private Instant startedAt;
 
         TxInfo(XodusTx xodusTx) {
             this.txId = xodusTx.getId();
             this.threadId = xodusTx.getThreadId();
-            this.stackTrace = Stream.of(Thread.currentThread().getStackTrace())
-                    .skip(2)
-                    .map(StackTraceElement::toString)
-                    .collect(Collectors.toList());
             this.writing = xodusTx instanceof XodusTx.Write;
             this.startedAt = Instant.now();
         }
