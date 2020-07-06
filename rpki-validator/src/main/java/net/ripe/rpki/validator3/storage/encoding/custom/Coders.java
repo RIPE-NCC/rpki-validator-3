@@ -72,9 +72,11 @@ public class Coders {
     }
 
     public static <R> byte[] toBytes(Collection<R> list, Function<R, byte[]> f) {
-        final List<byte[]> bs = list.stream().map(f).collect(Collectors.toList());
+        final List<byte[]> bs = list.stream()
+                .map(c -> c != null ? f.apply(c) : null)
+                .collect(Collectors.toList());
         final int fullSize = Integer.BYTES + bs.stream()
-                .map(b -> b.length + Integer.BYTES)
+                .map(b -> Integer.BYTES + (b == null ? 0 : b.length))
                 .reduce(0, Integer::sum);
 
         final byte[] array = new byte[fullSize];
@@ -82,8 +84,12 @@ public class Coders {
 
         bb.putInt(bs.size());
         bs.forEach(b -> {
-            bb.putInt(b.length);
-            bb.put(b);
+            if (b != null) {
+                bb.putInt(b.length);
+                bb.put(b);
+            } else {
+                bb.putInt(-1);
+            }
         });
         return array;
     }
@@ -94,9 +100,13 @@ public class Coders {
         final List<R> list = new ArrayList<>(fullSize);
         for (int i = 0; i < fullSize; i++) {
             int size = bb.getInt();
-            byte[] bytes = new byte[size];
-            bb.get(bytes);
-            list.add(c.apply(bytes));
+            if(size >= 0) {
+                byte[] bytes = new byte[size];
+                bb.get(bytes);
+                list.add(c.apply(bytes));
+            } else {
+                list.add(null);
+            }
         }
         return list;
     }
