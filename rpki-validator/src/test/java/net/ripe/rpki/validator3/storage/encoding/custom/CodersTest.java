@@ -69,5 +69,12 @@ public class CodersTest {
     public void testListString(List<String> b) {
         assertEquals(b, Coders.fromBytes(Coders.toBytes(b, Coders::toBytes), Coders::toString));
     }
-
+    @Property
+    public void testListStringWithNulls(List<String> b, List<Integer> nulled) {
+        for(Integer idx : nulled){
+            int safeIdx = Math.abs(idx) % b.size();
+            b.set(safeIdx, null);
+        }
+        assertEquals(b, Coders.fromBytes(Coders.toBytes(b, Coders::toBytes), Coders::toString));
+    }
 }
