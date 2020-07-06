@@ -1,3 +1,12 @@
+* Mon Jul 6 2020 Mikhail Puzanov <mpuzaanov@ripe.net> - 3.1
+- Introduce property `rpki.validator.strict-validation` enabling strict validation, i.e. manifest
+  and CRL warnings will now be considered errors. Set to false by default.
+- Introduce property `rpki.validator.rsync-only` mainly for testing and research purposed.
+  Set to false by default.
+- Support HTTPS URL for trust anchor certificates in TAL files, falling back to rsync if needed.
+- Fix Happy Eyeballs DNS resolver that could cause lots of stray threads CPU-consuming in some situations.
+- Do no trust all the HTTPS certificates by default when downloading data using RRDP.
+
 * Wed Jun 24 2020 Ties de Kock <tdekock@ripe.net> 3.1
 - Breaking: Rename prometheus metrics to follow naming standards. Validator
 metrics start with `rpkivalidator`, rtr server metrics start with `rtrserver`.
