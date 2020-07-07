@@ -29,53 +29,23 @@
  */
 package net.ripe.rpki.validator3.storage.encoding.custom;
 
-import com.pholser.junit.quickcheck.Property;
-import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import org.junit.runner.RunWith;
+import net.ripe.rpki.commons.validation.ValidationStatus;
+import net.ripe.rpki.validator3.domain.ErrorCodes;
+import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
+import net.ripe.rpki.validator3.storage.encoding.custom.validation.ValidationCheckCoder;
+import org.junit.Test;
 
-import java.math.BigInteger;
-import java.util.List;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import static org.junit.Assert.assertEquals;
+public class ValidationCheckCoderTest {
+    @Test
+    public void testEncode_with_null_param() {
+        ValidationCheck check = new ValidationCheck(
+                "rsync://rpki.example.org/ta/ta.cer",
+                new net.ripe.rpki.commons.validation.ValidationCheck(ValidationStatus.WARNING, ErrorCodes.TRUST_ANCHOR_FETCH, "first param", null));
 
-@RunWith(JUnitQuickcheck.class)
-public class CodersTest {
-    @Property
-    public void testBoolean(boolean b) {
-        assertEquals(b, Coders.toBoolean(Coders.toBytes(b)));
-    }
+        ValidationCheckCoder coder = new ValidationCheckCoder();
 
-    @Property
-    public void testInt(int b) {
-        assertEquals(b, Coders.toInt(Coders.toBytes(b)));
-    }
-
-    @Property
-    public void testLong(long b) {
-        assertEquals(b, Coders.toLong(Coders.toBytes(b)));
-    }
-
-    @Property
-    public void testString(String b) {
-        assertEquals(b, Coders.toString(Coders.toBytes(b)));
-    }
-
-    @Property
-    public void testBigInteger(BigInteger b) {
-        assertEquals(b, Coders.toBigInteger(Coders.toBytes(b)));
-    }
-
-    @Property
-    public void testListString(List<String> b) {
-        assertEquals(b, Coders.fromBytes(Coders.toBytes(b, Coders::toBytes), Coders::toString));
-    }
-
-    @Property
-    public void testListStringWithNulls(List<String> b, List<Integer> nulled) {
-        for(Integer idx : nulled){
-            int safeIdx = Math.abs(idx) % b.size();
-            b.set(safeIdx, null);
-        }
-        assertEquals(b, Coders.fromBytes(Coders.toBytes(b, Coders::toBytes), Coders::toString));
+        assertThat(coder.fromBytes(coder.toBytes(check))).isEqualTo(check);
     }
 }
