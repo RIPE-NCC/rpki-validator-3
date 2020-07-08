@@ -64,12 +64,12 @@ public class XodusImpl extends Xodus {
             log.info("Creating Xodus environment at {}", dbPath);
 
             final EnvironmentConfig config = new EnvironmentConfig()
+                .setLogCacheUseSoftReferences(true)
                 .setLogDurableWrite(true)
                 .setEnvGatherStatistics(true)
                 .setGcEnabled(true)
                 .setLogCacheUseNio(true)
-                .setEnvCloseForcedly(true)
-                .setMemoryUsagePercentage(10);
+                .setEnvCloseForcedly(true);
 
             env = Environments.newInstance(dbPath, config);
 
