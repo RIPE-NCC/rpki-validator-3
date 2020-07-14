@@ -27,26 +27,16 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.api.roaprefixassertions;
+package net.ripe.rpki.validator3.domain;
 
-import lombok.Getter;
-import net.ripe.ipresource.Asn;
+import lombok.Value;
 import net.ripe.ipresource.IpRange;
-import net.ripe.rpki.validator3.api.slurm.dtos.Slurm;
 
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.Size;
-
-public class RoaPrefixAssertion extends Slurm.SlurmPrefixAssertion {
-
-    @Getter
-    private Long id;
-
-    public RoaPrefixAssertion(Long id, Long asn, IpRange prefix,
-                              @Min(0) @Max(128) Integer maxPrefixLength,
-                              @Size(max = 2000) String comment) {
-        super(asn, prefix, maxPrefixLength, comment);
-        this.id = id;
-    }
+@Value(staticConstructor = "of")
+public class RoaPrefixAssertion implements RoaPrefixDefinition {
+    long asn;
+    IpRange prefix;
+    Integer maximumLength;
+    Long roaPrefixAssertionId;
+    String comment;
 }

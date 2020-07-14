@@ -30,7 +30,6 @@
 package net.ripe.rpki.validator3.api.bgp;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSortedSet;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
@@ -45,10 +44,12 @@ import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
 import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilter;
 import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
-import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertion;
+import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionEntity;
 import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionsService;
 import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
+import net.ripe.rpki.validator3.domain.RoaPrefixAssertion;
 import net.ripe.rpki.validator3.domain.RoaPrefixDefinition;
+import net.ripe.rpki.validator3.domain.ValidatedRoaPrefix;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.util.Locks;
 import net.ripe.rpki.validator3.util.Time;
@@ -97,11 +98,11 @@ public class BgpPreviewService {
 
     private List<BgpRisDump> bgpRisDumps;
 
-    private IntervalMap<IpRange, List<RoaPrefix>> roaPrefixes = new NestedIntervalMap<>(IpResourceIntervalStrategy.getInstance());
-    private IntervalMap<IpRange, List<RoaPrefix>> filteredRoaPrefixes = new NestedIntervalMap<>(IpResourceIntervalStrategy.getInstance());
+    private IntervalMap<IpRange, List<RoaPrefixDefinition>> roaPrefixes = new NestedIntervalMap<>(IpResourceIntervalStrategy.getInstance());
+    private IntervalMap<IpRange, List<RoaPrefixDefinition>> filteredRoaPrefixes = new NestedIntervalMap<>(IpResourceIntervalStrategy.getInstance());
 
-    private ImmutableList<RoaPrefix> validatedRoaPrefixes = ImmutableList.of();
-    private ImmutableList<RoaPrefix> roaPrefixAssertions = ImmutableList.of();
+    private ImmutableList<ValidatedRoaPrefix> validatedRoaPrefixes = ImmutableList.of();
+    private ImmutableList<RoaPrefixAssertion> roaPrefixAssertions = ImmutableList.of();
     private ImmutableList<IgnoreFilter> ignoreFilters = ImmutableList.of();
     private Map<String, ImmutableList<BgpPreviewEntry>> bgpPreviewEntries = new TreeMap<>();
 
@@ -156,41 +157,6 @@ public class BgpPreviewService {
         String validity;
         List<ValidatingRoa> validatingRoas;
         List<ValidatingRoa> filteredRoas;
-    }
-
-    @lombok.Value(staticConstructor = "of")
-    private static class RoaPrefix implements RoaPrefixDefinition {
-        ValidatedRpkiObjects.RoaPrefix roaPrefix;
-        Long roaPrefixAssertionId;
-        String comment;
-
-        public ValidatedRpkiObjects.TrustAnchorData getTrustAnchor() {
-            return roaPrefix.getTrustAnchor();
-        }
-
-        public ImmutableSortedSet<String> getLocations() {
-            return roaPrefix.getLocations();
-        }
-
-        @Override
-        public long getAsn() {
-            return roaPrefix.getAsn();
-        }
-
-        @Override
-        public IpRange getPrefix() {
-            return roaPrefix.getPrefix();
-        }
-
-        @Override
-        public Integer getMaximumLength() {
-            return roaPrefix.getMaximumLength();
-        }
-
-        @Override
-        public int getEffectiveLength() {
-            return roaPrefix.getEffectiveLength();
-        }
     }
 
     @lombok.Value
@@ -415,12 +381,9 @@ public class BgpPreviewService {
             !DEFAULT_IPV6_ROUTE.equals(entry.getPrefix());
     }
 
-    void updateValidatedRoaPrefixes(Stream<ValidatedRpkiObjects.RoaPrefix> prefixes) {
+    void updateValidatedRoaPrefixes(Stream<ValidatedRoaPrefix> prefixes) {
         Locks.locked(dataLock.writeLock(), () -> {
-            this.validatedRoaPrefixes = ImmutableList.copyOf(prefixes
-                    .map(p -> RoaPrefix.of(p, null, null))
-                    .iterator()
-            );
+            this.validatedRoaPrefixes = ImmutableList.copyOf(prefixes.iterator());
             this.roaPrefixes = recalculateRoaPrefixes(this.validatedRoaPrefixes, this.ignoreFilters, this.roaPrefixAssertions);
             this.filteredRoaPrefixes = recalculateFilteredRoaPrefixes(this.validatedRoaPrefixes, this.ignoreFilters);
             this.bgpPreviewEntries = validateBgpRisEntries(this.bgpPreviewEntries, this.roaPrefixes);
@@ -436,37 +399,24 @@ public class BgpPreviewService {
         });
     }
 
-    private void updateRoaPrefixAssertions(Collection<RoaPrefixAssertion> assertions) {
+    private void updateRoaPrefixAssertions(Collection<RoaPrefixAssertionEntity> assertions) {
         Locks.locked(dataLock.writeLock(), () -> {
-            this.roaPrefixAssertions = ImmutableList.copyOf(assertions.stream()
-                    .map(p -> RoaPrefix.of(ValidatedRpkiObjects.RoaPrefix.of(
-                            null,
-                            p.getAsn(),
-                            p.getPrefix(),
-                            p.getMaxPrefixLength(),
-                            p.getMaxPrefixLength() == null ? p.getPrefix().getPrefixLength() : p.getMaxPrefixLength(),
-                            Long.MIN_VALUE,
-                            Long.MAX_VALUE,
-                            null,
-                            null
-                            ),
-                            p.getId(),
-                            p.getComment()
-                    ))
+            this.roaPrefixAssertions = ImmutableList.copyOf(assertions
+                    .stream()
+                    .map(p -> RoaPrefixAssertion.of(p.getAsn(), p.getPrefix(), p.getMaxPrefixLength(), p.getId(), p.getComment()))
                     .iterator()
             );
-
             this.roaPrefixes = recalculateRoaPrefixes(this.validatedRoaPrefixes, this.ignoreFilters, this.roaPrefixAssertions);
             this.bgpPreviewEntries = validateBgpRisEntries(this.bgpPreviewEntries, this.roaPrefixes);
         });
     }
 
-    private static NestedIntervalMap<IpRange, List<RoaPrefix>> recalculateRoaPrefixes(
-            ImmutableList<RoaPrefix> validatedRoaPrefixes,
+    private static NestedIntervalMap<IpRange, List<RoaPrefixDefinition>> recalculateRoaPrefixes(
+            ImmutableList<ValidatedRoaPrefix> validatedRoaPrefixes,
             ImmutableList<IgnoreFilter> ignoreFilters,
-            ImmutableList<RoaPrefix> roaPrefixAssertions
+            ImmutableList<RoaPrefixAssertion> roaPrefixAssertions
     ) {
-        NestedIntervalMap<IpRange, List<RoaPrefix>> roaPrefixes = new NestedIntervalMap<>(IpResourceIntervalStrategy.getInstance());
+        NestedIntervalMap<IpRange, List<RoaPrefixDefinition>> roaPrefixes = new NestedIntervalMap<>(IpResourceIntervalStrategy.getInstance());
         Stream.concat(
                 validatedRoaPrefixes
                         .stream()
@@ -474,7 +424,7 @@ public class BgpPreviewService {
                 roaPrefixAssertions.stream()
         ).forEach(p -> {
             final IpRange ipRange = p.getPrefix();
-            List<RoaPrefix> existing = roaPrefixes.findExact(ipRange);
+            List<RoaPrefixDefinition> existing = roaPrefixes.findExact(ipRange);
             if (existing == null) {
                 existing = new ArrayList<>(1);
                 roaPrefixes.put(ipRange, existing);
@@ -484,17 +434,17 @@ public class BgpPreviewService {
         return roaPrefixes;
     }
 
-    private static NestedIntervalMap<IpRange, List<RoaPrefix>> recalculateFilteredRoaPrefixes(
-            ImmutableList<RoaPrefix> validatedRoaPrefixes,
+    private static NestedIntervalMap<IpRange, List<RoaPrefixDefinition>> recalculateFilteredRoaPrefixes(
+            ImmutableList<ValidatedRoaPrefix> validatedRoaPrefixes,
             ImmutableList<IgnoreFilter> ignoreFilters
     ) {
-        NestedIntervalMap<IpRange, List<RoaPrefix>> roaPrefixes = new NestedIntervalMap<>(IpResourceIntervalStrategy.getInstance());
+        NestedIntervalMap<IpRange, List<RoaPrefixDefinition>> roaPrefixes = new NestedIntervalMap<>(IpResourceIntervalStrategy.getInstance());
         validatedRoaPrefixes
                 .stream()
                 .filter(new IgnoreFiltersPredicate(ignoreFilters.stream()))
                 .forEach(p -> {
                     final IpRange ipRange = p.getPrefix();
-                    List<RoaPrefix> existing = roaPrefixes.findExact(ipRange);
+                    List<RoaPrefixDefinition> existing = roaPrefixes.findExact(ipRange);
                     if (existing == null) {
                         existing = new ArrayList<>(1);
                         roaPrefixes.put(ipRange, existing);
@@ -504,7 +454,7 @@ public class BgpPreviewService {
         return roaPrefixes;
     }
 
-    private <T> Map<T, ImmutableList<BgpPreviewEntry>> validateBgpRisEntries(Map<T, ImmutableList<BgpPreviewEntry>> bgpRisEntries, IntervalMap<IpRange, List<RoaPrefix>> roaPrefixes) {
+    private <T> Map<T, ImmutableList<BgpPreviewEntry>> validateBgpRisEntries(Map<T, ImmutableList<BgpPreviewEntry>> bgpRisEntries, IntervalMap<IpRange, List<RoaPrefixDefinition>> roaPrefixes) {
         return bgpRisEntries.entrySet().stream().collect(
                 Collectors.toMap(
                         Map.Entry::getKey,
@@ -514,7 +464,7 @@ public class BgpPreviewService {
 
     private ImmutableList<BgpPreviewEntry> validateBgpRisEntries(
             ImmutableList<BgpPreviewEntry> bgpRisEntries,
-            IntervalMap<IpRange, List<RoaPrefix>> roaPrefixes
+            IntervalMap<IpRange, List<RoaPrefixDefinition>> roaPrefixes
     ) {
         final Pair<ImmutableList<BgpPreviewEntry>, Long> timed = Time.timed(() -> {
             final ImmutableList.Builder<BgpPreviewEntry> builder = ImmutableList.builder();
@@ -537,13 +487,13 @@ public class BgpPreviewService {
     }
 
     private static Validity validateBgpRisEntry(
-            IntervalMap<IpRange, List<RoaPrefix>> roaPrefixes,
+            IntervalMap<IpRange, List<RoaPrefixDefinition>> roaPrefixes,
             BgpPreviewEntry bgpRisEntry
     ) {
         Validity validity = Validity.UNKNOWN;
         final int bgpPrefixLength = bgpRisEntry.getPrefix().getPrefixLength();
-        for (List<RoaPrefix> rs : roaPrefixes.findExactAndAllLessSpecific(bgpRisEntry.getPrefix())) {
-            for (RoaPrefix r : rs) {
+        for (List<RoaPrefixDefinition> rs : roaPrefixes.findExactAndAllLessSpecific(bgpRisEntry.getPrefix())) {
+            for (RoaPrefixDefinition r : rs) {
                 if (r.getAsn() == Integer.toUnsignedLong(bgpRisEntry.origin)) {
                     if (r.getEffectiveLength() < bgpPrefixLength) {
                         validity = Validity.INVALID_LENGTH;
@@ -558,7 +508,7 @@ public class BgpPreviewService {
         return validity;
     }
 
-    private static Validity validateMatchingBgpRisEntry(RoaPrefix matchingRoaPrefix, BgpPreviewEntry bgpRisEntry) {
+    private static Validity validateMatchingBgpRisEntry(RoaPrefixDefinition matchingRoaPrefix, BgpPreviewEntry bgpRisEntry) {
         if (matchingRoaPrefix.getAsn() == Integer.toUnsignedLong(bgpRisEntry.origin)) {
             if (matchingRoaPrefix.getEffectiveLength() < bgpRisEntry.getPrefix().getPrefixLength()) {
                 return Validity.INVALID_LENGTH;
@@ -591,8 +541,8 @@ public class BgpPreviewService {
             filteredRoasWithoutUnknown);
     }
 
-    private BgpValidity validity(final Asn origin, final IpRange prefix, final IntervalMap<IpRange, List<RoaPrefix>> prefixes) {
-        final List<Pair<RoaPrefix, Validity>> matchingRoaPrefixes = prefixes.findExactAndAllLessSpecific(prefix)
+    private BgpValidity validity(final Asn origin, final IpRange prefix, final IntervalMap<IpRange, List<RoaPrefixDefinition>> prefixes) {
+        final List<Pair<RoaPrefixDefinition, Validity>> matchingRoaPrefixes = prefixes.findExactAndAllLessSpecific(prefix)
                 .stream()
                 .flatMap(Collection::stream)
                 .map(r -> {
@@ -618,27 +568,29 @@ public class BgpPreviewService {
         final List<ValidatingRoa> validatingRoaStream = matchingRoaPrefixes
                 .stream()
                 .flatMap(p -> {
-                    final RoaPrefix r = p.getLeft();
-                    if (r.getTrustAnchor() != null) {
-                        return r.getLocations().stream().map(loc -> ValidatingRoa.of(
-                                String.valueOf(r.getAsn()),
-                                r.getPrefix().toString(),
+                    final RoaPrefixDefinition r = p.getLeft();
+                    if (r instanceof ValidatedRoaPrefix) {
+                        ValidatedRoaPrefix roaPrefix = (ValidatedRoaPrefix) r;
+                        return roaPrefix.getLocations().stream().map(loc -> ValidatingRoa.of(
+                                String.valueOf(roaPrefix.getAsn()),
+                                roaPrefix.getPrefix().toString(),
                                 p.getRight().toString(),
-                                r.getMaximumLength(),
-                                r.getTrustAnchor() == null ? null : r.getTrustAnchor().getName(),
+                                roaPrefix.getMaximumLength(),
+                                roaPrefix.getTrustAnchor() == null ? null : roaPrefix.getTrustAnchor().getName(),
                                 loc,
                                 null,
                                 null));
-                    } else if (r.getRoaPrefixAssertionId() != null) {
+                    } else if (r instanceof RoaPrefixAssertion) {
+                        RoaPrefixAssertion roaPrefix = (RoaPrefixAssertion) r;
                         return Stream.of(ValidatingRoa.of(
-                                String.valueOf(r.getAsn()),
-                                r.getPrefix().toString(),
+                                String.valueOf(roaPrefix.getAsn()),
+                                roaPrefix.getPrefix().toString(),
                                 p.getRight().toString(),
-                                r.getMaximumLength(),
+                                roaPrefix.getMaximumLength(),
                                 "Whitelist",
                                 null,
-                                r.getRoaPrefixAssertionId(),
-                                r.getComment()
+                                roaPrefix.getRoaPrefixAssertionId(),
+                                roaPrefix.getComment()
                         ));
                     } else {
                         return Stream.empty();

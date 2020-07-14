@@ -56,7 +56,7 @@ import java.util.stream.Stream;
 @Slf4j
 public class RoaPrefixAssertionsService {
     private final Object listenerLock = new Object();
-    private final List<Consumer<Collection<RoaPrefixAssertion>>> listeners = new ArrayList<>();
+    private final List<Consumer<Collection<RoaPrefixAssertionEntity>>> listeners = new ArrayList<>();
 
     private final SlurmStore slurmStore;
 
@@ -98,9 +98,9 @@ public class RoaPrefixAssertionsService {
         notifyListeners();
     }
 
-    public void addListener(Consumer<Collection<RoaPrefixAssertion>> listener) {
+    public void addListener(Consumer<Collection<RoaPrefixAssertionEntity>> listener) {
         synchronized (listenerLock) {
-            List<RoaPrefixAssertion> assertions = all().collect(Collectors.toList());
+            List<RoaPrefixAssertionEntity> assertions = all().collect(Collectors.toList());
             listener.accept(assertions);
             listeners.add(listener);
         }
@@ -108,18 +108,18 @@ public class RoaPrefixAssertionsService {
 
     private void notifyListeners() {
         synchronized (listenerLock) {
-            List<RoaPrefixAssertion> assertions = all().collect(Collectors.toList());
+            List<RoaPrefixAssertionEntity> assertions = all().collect(Collectors.toList());
             listeners.forEach(listener -> listener.accept(assertions));
         }
     }
 
 
-    public Stream<RoaPrefixAssertion> all() {
+    public Stream<RoaPrefixAssertionEntity> all() {
         return slurmStore.read().getPrefixAssertions().entrySet().stream()
                 .map(e -> makeIgnoreFilter(e.getKey(), e.getValue()));
     }
 
-    public Stream<RoaPrefixAssertion> find(SearchTerm searchTerm, Sorting sorting, Paging paging) {
+    public Stream<RoaPrefixAssertionEntity> find(SearchTerm searchTerm, Sorting sorting, Paging paging) {
         Stream<Map.Entry<Long, Slurm.SlurmPrefixAssertion>> all = slurmStore.read().getPrefixAssertions().entrySet().stream();
         all = applySearch(searchTerm, all).sorted(toOrderSpecifier(sorting));
         if (paging != null) {
@@ -128,8 +128,8 @@ public class RoaPrefixAssertionsService {
         return all.map(e -> makeIgnoreFilter(e.getKey(), e.getValue()));
     }
 
-    private RoaPrefixAssertion makeIgnoreFilter(Long id, Slurm.SlurmPrefixAssertion value) {
-        return new RoaPrefixAssertion(id, value.getAsn(), value.getPrefix(), value.getMaxPrefixLength(), value.getComment());
+    private RoaPrefixAssertionEntity makeIgnoreFilter(Long id, Slurm.SlurmPrefixAssertion value) {
+        return new RoaPrefixAssertionEntity(id, value.getAsn(), value.getPrefix(), value.getMaxPrefixLength(), value.getComment());
     }
 
     public Stream<Map.Entry<Long, Slurm.SlurmPrefixAssertion>> applySearch(SearchTerm searchTerm, Stream<Map.Entry<Long, Slurm.SlurmPrefixAssertion>> all) {
@@ -149,7 +149,7 @@ public class RoaPrefixAssertionsService {
         return applySearch(searchTerm, slurmStore.read().getPrefixAssertions().entrySet().stream()).count();
     }
 
-    public RoaPrefixAssertion get(long id) {
+    public RoaPrefixAssertionEntity get(long id) {
         final Slurm.SlurmPrefixAssertion prefixAssertion = slurmStore.read().getPrefixAssertions().get(id);
         if (prefixAssertion == null) {
             return null;

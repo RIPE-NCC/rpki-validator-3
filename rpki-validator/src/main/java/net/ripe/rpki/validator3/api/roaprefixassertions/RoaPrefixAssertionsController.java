@@ -90,7 +90,7 @@ public class RoaPrefixAssertionsController {
         final Sorting sorting = Sorting.parse(sortBy, sortDirection);
         final Paging paging = Paging.of(startFrom, pageSize);
 
-        final List<RoaPrefixAssertion> matching = roaPrefixAssertionsService.find(searchTerm, sorting, paging).collect(Collectors.toList());
+        final List<RoaPrefixAssertionEntity> matching = roaPrefixAssertionsService.find(searchTerm, sorting, paging).collect(Collectors.toList());
 
         long totalSize = (int) roaPrefixAssertionsService.count(searchTerm);
 
@@ -123,7 +123,7 @@ public class RoaPrefixAssertionsController {
     @PostMapping(consumes = { ValidatorApi.API_MIME_TYPE, "application/json" })
     public ResponseEntity<ApiResponse<RoaPrefixAssertionResource>> add(@RequestBody @Valid ApiCommand<AddRoaPrefixAssertion> command) {
         final long id = roaPrefixAssertionsService.execute(command.getData());
-        final RoaPrefixAssertion ignoreFilter = roaPrefixAssertionsService.get(id);
+        final RoaPrefixAssertionEntity ignoreFilter = roaPrefixAssertionsService.get(id);
         final Link selfRel = linkTo(methodOn(RoaPrefixAssertionsController.class).get(id)).withSelfRel();
         return ResponseEntity.created(URI.create(selfRel.getHref())).body(ApiResponse.data(toResource(ignoreFilter)));
     }
@@ -134,7 +134,7 @@ public class RoaPrefixAssertionsController {
         return ResponseEntity.noContent().build();
     }
 
-    private RoaPrefixAssertionResource toResource(RoaPrefixAssertion assertion) {
+    private RoaPrefixAssertionResource toResource(RoaPrefixAssertionEntity assertion) {
         Long asn = assertion.getAsn();
         List<BgpPreviewService.BgpPreviewEntry> affected = bgpPreviewService.findAffected(
             assertion.getPrefix(),
