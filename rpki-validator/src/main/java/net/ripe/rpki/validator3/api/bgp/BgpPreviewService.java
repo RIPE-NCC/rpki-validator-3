@@ -224,7 +224,7 @@ public class BgpPreviewService {
             }
             if (searchTerm.asAsn() != null) {
                 Long asn = searchTerm.asAsn();
-                return x -> asn == x.origin;
+                return x -> asn == Integer.toUnsignedLong(x.origin);
             }
             if (searchTerm.asIpRange() != null) {
                 IpRange range = searchTerm.asIpRange();
@@ -568,7 +568,7 @@ public class BgpPreviewService {
         final int bgpPrefixLength = bgpRisEntry.getPrefix().getPrefixLength();
         for (List<RoaPrefix> rs : roaPrefixes.findExactAndAllLessSpecific(bgpRisEntry.getPrefix())) {
             for (RoaPrefix r : rs) {
-                if (r.getAsn() == bgpRisEntry.origin) {
+                if (r.getAsn() == Integer.toUnsignedLong(bgpRisEntry.origin)) {
                     if (r.getEffectiveLength() < bgpPrefixLength) {
                         validity = Validity.INVALID_LENGTH;
                     } else {
@@ -583,7 +583,7 @@ public class BgpPreviewService {
     }
 
     private static Validity validateMatchingBgpRisEntry(RoaPrefix matchingRoaPrefix, BgpPreviewEntry bgpRisEntry) {
-        if (matchingRoaPrefix.getAsn() == bgpRisEntry.origin) {
+        if (matchingRoaPrefix.getAsn() == Integer.toUnsignedLong(bgpRisEntry.origin)) {
             if (matchingRoaPrefix.getEffectiveLength() < bgpRisEntry.getPrefix().getPrefixLength()) {
                 return Validity.INVALID_LENGTH;
             }
