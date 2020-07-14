@@ -88,6 +88,13 @@ public class BgpPreviewService {
 
     private final BgpRisDownloader bgpRisDownloader;
 
+    // Lock held while downloading RIS dumps to avoid running multiple downloads simultaneously.
+    // When you need both this lock and the dataLock this lock must be acquired first!
+    private final ReentrantLock downloadLock = new ReentrantLock();
+
+    // Lock held while reading and/or writing any of the data fields below.
+    private final ReentrantReadWriteLock dataLock = new ReentrantReadWriteLock();
+
     private List<BgpRisDump> bgpRisDumps;
 
     private IntervalMap<IpRange, List<RoaPrefix>> roaPrefixes = new NestedIntervalMap<>(IpResourceIntervalStrategy.getInstance());
@@ -306,27 +313,20 @@ public class BgpPreviewService {
     ) {
         this.bgpRisVisibilityThreshold = bgpRisVisibilityThreshold;
         this.bgpRisDownloader = bgpRisDownloader;
-        Locks.locked(dataLock.writeLock(), (Runnable) () ->
-            this.bgpRisDumps = Arrays.stream(bgpRisDumpUrls).map(url ->
+        this.bgpRisDumps = Arrays.stream(bgpRisDumpUrls).map(url ->
                 BgpRisDump.of(url, null, Optional.empty()))
-                .collect(Collectors.toList()));
+                .collect(Collectors.toList());
 
         validatedRpkiObjects.addListener(objects -> updateValidatedRoaPrefixes(objects.stream().flatMap(x -> x.getRoaPrefixes().stream())));
         ignoreFilterService.addListener(this::updateIgnoreFilters);
         roaPrefixAssertionsService.addListener(this::updateRoaPrefixAssertions);
     }
 
-    private ReentrantReadWriteLock dataLock = new ReentrantReadWriteLock();
-    private ReentrantLock modificationLock = new ReentrantLock();
-
-    private void sequential(Runnable r) {
-        Locks.locked(modificationLock, r);
-    }
-
     public void downloadRisPreview() {
-        sequential(() -> {
+        Locks.locked(downloadLock, () -> {
             log.info("Updating BGP RIS dumps");
-            final List<BgpRisDump> updated = bgpRisDumps.stream()
+            final List<BgpRisDump> updated = Locks.locked(dataLock.readLock(), () -> bgpRisDumps)
+                    .stream()
                     .map(bgpRisDownloader::fetch)
                     .collect(Collectors.toList());
             updateBgpRisDump(updated);
@@ -387,7 +387,7 @@ public class BgpPreviewService {
     }
 
     public void updateBgpRisDump(Collection<BgpRisDump> updated) {
-        sequential(() -> {
+        Locks.locked(dataLock.writeLock(), () -> {
             final Map<String, ImmutableList<BgpPreviewEntry>> updatedDumps = new HashMap<>(this.bgpPreviewEntries);
             for (BgpRisDump dump : updated) {
                 dump.getEntries().ifPresent(entries -> {
@@ -405,12 +405,8 @@ public class BgpPreviewService {
                 });
             }
 
-            final Map<String, ImmutableList<BgpPreviewEntry>> updatedBgpPreviewEntries = validateBgpRisEntries(updatedDumps, this.roaPrefixes);
-            final List<BgpRisDump> updatedBgpDumps = updated.stream().map(x -> BgpRisDump.of(x.getUrl(), x.getLastModified(), Optional.empty())).collect(Collectors.toList());
-            Locks.locked(dataLock.writeLock(), () -> {
-                    this.bgpPreviewEntries = updatedBgpPreviewEntries;
-                    this.bgpRisDumps = updatedBgpDumps;
-                });
+            this.bgpPreviewEntries = validateBgpRisEntries(updatedDumps, this.roaPrefixes);
+            this.bgpRisDumps = updated.stream().map(x -> BgpRisDump.of(x.getUrl(), x.getLastModified(), Optional.empty())).collect(Collectors.toList());
         });
     }
 
@@ -420,68 +416,48 @@ public class BgpPreviewService {
     }
 
     void updateValidatedRoaPrefixes(Stream<ValidatedRpkiObjects.RoaPrefix> prefixes) {
-        sequential(() -> {
-            final ImmutableList<RoaPrefix> validatedRoaPrefixes = ImmutableList.copyOf(prefixes
+        Locks.locked(dataLock.writeLock(), () -> {
+            this.validatedRoaPrefixes = ImmutableList.copyOf(prefixes
                     .map(p -> RoaPrefix.of(p, null, null))
                     .iterator()
             );
-            final NestedIntervalMap<IpRange, List<RoaPrefix>> roaPrefixes = recalculateRoaPrefixes(validatedRoaPrefixes, this.ignoreFilters, this.roaPrefixAssertions);
-            final NestedIntervalMap<IpRange, List<RoaPrefix>> filteredRoaPrefixes = recalculateFilteredRoaPrefixes(validatedRoaPrefixes, this.ignoreFilters);
-            final Map<String, ImmutableList<BgpPreviewEntry>> validatedBgpPreviewEntries = validateBgpRisEntries(this.bgpPreviewEntries, roaPrefixes);
-
-            Locks.locked(dataLock.writeLock(), () -> {
-                    this.validatedRoaPrefixes = validatedRoaPrefixes;
-                    this.roaPrefixes = roaPrefixes;
-                    this.filteredRoaPrefixes = filteredRoaPrefixes;
-                    this.bgpPreviewEntries = validatedBgpPreviewEntries;
-                });
+            this.roaPrefixes = recalculateRoaPrefixes(this.validatedRoaPrefixes, this.ignoreFilters, this.roaPrefixAssertions);
+            this.filteredRoaPrefixes = recalculateFilteredRoaPrefixes(this.validatedRoaPrefixes, this.ignoreFilters);
+            this.bgpPreviewEntries = validateBgpRisEntries(this.bgpPreviewEntries, this.roaPrefixes);
         });
     }
 
     private void updateIgnoreFilters(Collection<IgnoreFilter> filters) {
-        sequential(() -> {
-            final NestedIntervalMap<IpRange, List<RoaPrefix>> roaPrefixes = recalculateRoaPrefixes(this.validatedRoaPrefixes, this.ignoreFilters, this.roaPrefixAssertions);
-            final NestedIntervalMap<IpRange, List<RoaPrefix>> filteredRoaPrefixes = recalculateFilteredRoaPrefixes(this.validatedRoaPrefixes, this.ignoreFilters);
-
-            Locks.locked(dataLock.writeLock(), () -> {
-                    this.ignoreFilters = ImmutableList.copyOf(filters);
-                    this.roaPrefixes = roaPrefixes;
-                    this.filteredRoaPrefixes = filteredRoaPrefixes;
-                    this.bgpPreviewEntries = validateBgpRisEntries(this.bgpPreviewEntries, this.roaPrefixes);
-                });
+        Locks.locked(dataLock.writeLock(), () -> {
+            this.ignoreFilters = ImmutableList.copyOf(filters);
+            this.roaPrefixes = recalculateRoaPrefixes(this.validatedRoaPrefixes, this.ignoreFilters, this.roaPrefixAssertions);
+            this.filteredRoaPrefixes = recalculateFilteredRoaPrefixes(this.validatedRoaPrefixes, this.ignoreFilters);
+            this.bgpPreviewEntries = validateBgpRisEntries(this.bgpPreviewEntries, this.roaPrefixes);
         });
     }
 
     private void updateRoaPrefixAssertions(Collection<RoaPrefixAssertion> assertions) {
-        sequential(() -> {
-            final ImmutableList<RoaPrefix> roaPrefixAssertions = ImmutableList.copyOf(
-                    assertions
-                            .stream()
-                            .map(p -> RoaPrefix.of(ValidatedRpkiObjects.RoaPrefix.of(
-                                    null,
-                                    p.getAsn(),
-                                    p.getPrefix(),
-                                    p.getMaxPrefixLength(),
-                                    p.getMaxPrefixLength() == null ? p.getPrefix().getPrefixLength() : p.getMaxPrefixLength(),
-                                    Long.MIN_VALUE,
-                                    Long.MAX_VALUE,
-                                    null,
-                                    null
-                                    ),
-                                    p.getId(),
-                                    p.getComment()
-                            ))
-                            .iterator()
+        Locks.locked(dataLock.writeLock(), () -> {
+            this.roaPrefixAssertions = ImmutableList.copyOf(assertions.stream()
+                    .map(p -> RoaPrefix.of(ValidatedRpkiObjects.RoaPrefix.of(
+                            null,
+                            p.getAsn(),
+                            p.getPrefix(),
+                            p.getMaxPrefixLength(),
+                            p.getMaxPrefixLength() == null ? p.getPrefix().getPrefixLength() : p.getMaxPrefixLength(),
+                            Long.MIN_VALUE,
+                            Long.MAX_VALUE,
+                            null,
+                            null
+                            ),
+                            p.getId(),
+                            p.getComment()
+                    ))
+                    .iterator()
             );
 
-            final NestedIntervalMap<IpRange, List<RoaPrefix>> updatedRoaPrefixes = recalculateRoaPrefixes(this.validatedRoaPrefixes, this.ignoreFilters, roaPrefixAssertions);
-            final Map<String, ImmutableList<BgpPreviewEntry>> updatedBgpPreviewEntries = validateBgpRisEntries(this.bgpPreviewEntries, this.roaPrefixes);
-
-            Locks.locked(dataLock.writeLock(), () -> {
-                    this.roaPrefixAssertions = roaPrefixAssertions;
-                    this.roaPrefixes = updatedRoaPrefixes;
-                    this.bgpPreviewEntries = updatedBgpPreviewEntries;
-                });
+            this.roaPrefixes = recalculateRoaPrefixes(this.validatedRoaPrefixes, this.ignoreFilters, this.roaPrefixAssertions);
+            this.bgpPreviewEntries = validateBgpRisEntries(this.bgpPreviewEntries, this.roaPrefixes);
         });
     }
 
