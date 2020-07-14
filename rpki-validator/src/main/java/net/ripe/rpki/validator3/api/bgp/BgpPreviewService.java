@@ -35,6 +35,8 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
+import net.ripe.ipresource.Ipv4Address;
+import net.ripe.ipresource.Ipv6Address;
 import net.ripe.ipresource.etree.IntervalMap;
 import net.ripe.ipresource.etree.IpResourceIntervalStrategy;
 import net.ripe.ipresource.etree.NestedIntervalMap;
@@ -56,6 +58,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.math.BigInteger;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -101,6 +104,8 @@ public class BgpPreviewService {
 
     private static IpRange DEFAULT_IPV4_ROUTE = IpRange.parse("0.0.0.0/0");
     private static IpRange DEFAULT_IPV6_ROUTE = IpRange.parse("::/0");
+    private static BigInteger TWO_64 = BigInteger.ONE.shiftLeft(64);
+    private static BigInteger TWO_64_MINUS_1 = TWO_64.subtract(BigInteger.ONE);
 
     @lombok.Value(staticConstructor = "of")
     public static class BgpPreviewResult {
@@ -184,24 +189,33 @@ public class BgpPreviewService {
     @lombok.Value
     public static class BgpPreviewEntry {
         // store it in memory optimised way, as we are going to store a lot of these objects in memory
-        long origin;
-        PackedIpRange prefix;
+        int origin;
+        short prefixLength; // negative for IPv6
+        long prefixHi;
+        long prefixLo;
         Validity validity;
 
-        BgpPreviewEntry(Asn origin, IpRange prefix, Validity validity) {
-            this.origin = origin.longValue();
-            this.prefix = new PackedIpRange(prefix);
-            this.validity = validity;
-        }
-
-        BgpPreviewEntry(long origin, PackedIpRange prefix, Validity validity) {
-            this.origin = origin;
-            this.prefix = prefix;
-            this.validity = validity;
-        }
-
         public static BgpPreviewEntry of(Asn origin, IpRange prefix, Validity validity) {
-            return new BgpPreviewEntry(origin, prefix, validity);
+            short prefixLength;
+            long prefixHi;
+            long prefixLo;
+            switch (prefix.getType()) {
+                case IPv4:
+                    prefixLength = (short) prefix.getPrefixLength();
+                    prefixHi = 0;
+                    prefixLo = ((Ipv4Address) prefix.getStart()).longValue();
+                    break;
+                case IPv6: {
+                    BigInteger value = prefix.getStart().getValue();
+                    prefixLength = (short) (-prefix.getPrefixLength() - 1);
+                    prefixHi = value.shiftRight(64).and(TWO_64_MINUS_1).longValue();
+                    prefixLo = value.and(TWO_64_MINUS_1).longValue();
+                    break;
+                }
+                default:
+                    throw new IllegalArgumentException("invalid IP prefix type: " + prefix.getType());
+            }
+            return new BgpPreviewEntry((int) origin.longValue(), prefixLength, prefixHi, prefixLo, validity);
         }
 
         private static Predicate<BgpPreviewEntry> matches(SearchTerm searchTerm) {
@@ -257,15 +271,27 @@ public class BgpPreviewService {
         }
 
         BgpPreviewEntry ofValidity(Validity validity) {
-            return new BgpPreviewEntry(origin, prefix, validity);
+            return new BgpPreviewEntry(origin, prefixLength, prefixHi, prefixLo, validity);
         }
 
         public Asn getOrigin() {
-            return new Asn(origin);
+            return new Asn(Integer.toUnsignedLong(origin));
         }
 
         public IpRange getPrefix() {
-            return prefix.toIpRange();
+            if (prefixLength < 0) {
+                BigInteger prefix = BigInteger.valueOf(prefixHi);
+                if (prefixHi < 0) {
+                    prefix = prefix.add(TWO_64);
+                }
+                prefix = prefix.shiftLeft(64).add(BigInteger.valueOf(prefixLo));
+                if (prefixLo < 0) {
+                    prefix = prefix.add(TWO_64);
+                }
+                return IpRange.prefix(new Ipv6Address(prefix), -prefixLength - 1);
+            } else {
+                return IpRange.prefix(new Ipv4Address(prefixLo), prefixLength);
+            }
         }
     }
 
