@@ -148,22 +148,40 @@ public class BgpPreviewService {
 
     @lombok.Value(staticConstructor = "of")
     private static class RoaPrefix implements RoaPrefixDefinition {
-        ValidatedRpkiObjects.TrustAnchorData trustAnchor;
-        ImmutableSortedSet<String> locations;
+        ValidatedRpkiObjects.RoaPrefix roaPrefix;
         Long roaPrefixAssertionId;
         String comment;
 
-        long asn;
-        PackedIpRange prefix;
-        Integer maximumLength;
-        int effectiveLength;
+        public ValidatedRpkiObjects.TrustAnchorData getTrustAnchor() {
+            return roaPrefix.getTrustAnchor();
+        }
 
+        public ImmutableSortedSet<String> getLocations() {
+            return roaPrefix.getLocations();
+        }
+
+        @Override
+        public long getAsn() {
+            return roaPrefix.getAsn();
+        }
+
+        @Override
         public IpRange getPrefix() {
-            return prefix.toIpRange();
+            return roaPrefix.getPrefix();
+        }
+
+        @Override
+        public Integer getMaximumLength() {
+            return roaPrefix.getMaximumLength();
+        }
+
+        @Override
+        public int getEffectiveLength() {
+            return roaPrefix.getEffectiveLength();
         }
     }
 
-    @lombok.Value(staticConstructor = "of")
+    @lombok.Value
     public static class BgpPreviewEntry {
         // store it in memory optimised way, as we are going to store a lot of these objects in memory
         long origin;
@@ -378,16 +396,7 @@ public class BgpPreviewService {
     void updateValidatedRoaPrefixes(Stream<ValidatedRpkiObjects.RoaPrefix> prefixes) {
         sequential(() -> {
             final ImmutableList<RoaPrefix> validatedRoaPrefixes = ImmutableList.copyOf(prefixes
-                    .map(p -> RoaPrefix.of(
-                            p.getTrustAnchor(),
-                            p.getLocations(),
-                            null,
-                            null,
-                            p.getAsn(),
-                            new PackedIpRange(p.getPrefix()),
-                            p.getMaximumLength(),
-                            p.getEffectiveLength()
-                    ))
+                    .map(p -> RoaPrefix.of(p, null, null))
                     .iterator()
             );
             final NestedIntervalMap<IpRange, List<RoaPrefix>> roaPrefixes = recalculateRoaPrefixes(validatedRoaPrefixes, this.ignoreFilters, this.roaPrefixAssertions);
@@ -422,15 +431,19 @@ public class BgpPreviewService {
             final ImmutableList<RoaPrefix> roaPrefixAssertions = ImmutableList.copyOf(
                     assertions
                             .stream()
-                            .map(p -> RoaPrefix.of(
+                            .map(p -> RoaPrefix.of(ValidatedRpkiObjects.RoaPrefix.of(
                                     null,
-                                    null,
-                                    p.getId(),
-                                    p.getComment(),
                                     p.getAsn(),
-                                    new PackedIpRange(p.getPrefix()),
+                                    p.getPrefix(),
                                     p.getMaxPrefixLength(),
-                                    p.getMaxPrefixLength() == null ? p.getPrefix().getPrefixLength() : p.getMaxPrefixLength()
+                                    p.getMaxPrefixLength() == null ? p.getPrefix().getPrefixLength() : p.getMaxPrefixLength(),
+                                    Long.MIN_VALUE,
+                                    Long.MAX_VALUE,
+                                    null,
+                                    null
+                                    ),
+                                    p.getId(),
+                                    p.getComment()
                             ))
                             .iterator()
             );
