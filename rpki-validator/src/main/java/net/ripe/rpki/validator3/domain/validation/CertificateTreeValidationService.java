@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.domain.validation;
 
+import com.google.common.collect.ImmutableSortedSet;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
@@ -46,6 +47,7 @@ import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.config.ValidationConfig;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
 import net.ripe.rpki.validator3.domain.metrics.TrustAnchorMetricsService;
+import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects.Accumulator;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
@@ -68,9 +70,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -154,13 +154,14 @@ public class CertificateTreeValidationService {
         Optional<TrustAnchor> maybeTrustAnchor = storage.readTx(tx -> trustAnchors.get(tx, Key.of(trustAnchorId)));
         if (maybeTrustAnchor.isPresent()) {
             final TrustAnchor trustAnchor = maybeTrustAnchor.get();
-            Bench.mark0("validateTa " + trustAnchor.getName(), () -> validateTa(trustAnchor));
+            final Accumulator accumulator = new Accumulator(ValidatedRpkiObjects.TrustAnchorData.of(trustAnchorId, trustAnchor.getName()));
+            Bench.mark0("validateTa " + trustAnchor.getName(), () -> validateTa(trustAnchor, accumulator));
         } else {
             log.error("Couldn't find trust anchor {}", trustAnchorId);
         }
     }
 
-    private void validateTa(TrustAnchor trustAnchor) {
+    private void validateTa(TrustAnchor trustAnchor, Accumulator accumulator) {
         log.info("Starting tree validation for {}", trustAnchor.getName());
         long begin = System.currentTimeMillis();
 
@@ -196,22 +197,21 @@ public class CertificateTreeValidationService {
                 return;
             }
 
-            final List<Key> rpkiObjectsKeys = Collections.synchronizedList(new ArrayList<>());
-            validateCertificateAuthority(trustAnchor, registeredRepositories, context, validationResult, rpkiObjectsKeys);
-            if (rpkiObjectsKeys.isEmpty()) {
+            validateCertificateAuthority(trustAnchor, registeredRepositories, context, validationResult, accumulator);
+            if (accumulator.isEmpty()) {
                 if (isValidationRunCompleted(validationResult)) {
                     log.info("No associated objects, validation run: {}, validation result: {}", validationRun.key(), validationResult);
                 }
             }
             storage.writeTx0(tx -> {
                 validationRuns.add(tx, validationRun);
-                Long t = Time.timed(() -> rpkiObjectsKeys.forEach(key -> validationRuns.associateRpkiObjectKey(tx, validationRun, key)));
-                logForDuration("Associated {} objects with the validation run {} in {}ms", rpkiObjectsKeys.size(), validationRun.key(), t);
+                Long t = Time.timed(() -> accumulator.forEach(key -> validationRuns.associateRpkiObjectKey(tx, validationRun, key)));
+                logForDuration("Associated {} objects with the validation run {} in {}ms", accumulator.size(), validationRun.key(), t);
 
                 markTaObjectsReachable(tx, trustAnchorCertificate);
 
-                Long tmr = Time.timed(() -> rpkiObjects.markReachable(tx, rpkiObjectsKeys));
-                logForDuration("Marked {} objects as reachable in {}ms", rpkiObjectsKeys.size(), tmr);
+                Long tmr = Time.timed(() -> rpkiObjects.markReachable(tx, accumulator.getKeys()));
+                logForDuration("Marked {} objects as reachable in {}ms", accumulator.size(), tmr);
 
                 if (isValidationRunCompleted(validationResult)) {
                     trustAnchor.markInitialCertificateTreeValidationRunCompleted();
@@ -222,8 +222,8 @@ public class CertificateTreeValidationService {
                     }
                 }
             });
-            if (!rpkiObjectsKeys.isEmpty()) {
-                storage.readTx0(tx -> validatedRpkiObjects.updateByKey(tx, trustAnchorRef, rpkiObjectsKeys));
+            if (!accumulator.isEmpty()) {
+                validatedRpkiObjects.updateByKey(trustAnchorRef, accumulator);
             }
         } finally {
             validationRun.completeWith(validationResult);
@@ -258,7 +258,7 @@ public class CertificateTreeValidationService {
                                               final Map<URI, RpkiRepository> registeredRepositories,
                                               final CertificateRepositoryObjectValidationContext context,
                                               final ValidationResult validationResult,
-                                              final List<Key> validatedObjects) {
+                                              final Accumulator accumulator) {
 
         ValidationLocation certificateLocation = validationResult.getCurrentLocation();
         ValidationResult temporary = ValidationResult.withLocation(certificateLocation);
@@ -334,15 +334,15 @@ public class CertificateTreeValidationService {
             if (temporary.hasFailureForCurrentLocation()) {
                 return;
             }
-            validatedObjects.add(manifestObject.get().key());
+            accumulator.add(manifestObject.get().key(), manifest, ImmutableSortedSet.of(temporary.getCurrentLocation().getName()));
 
             manifest.getFiles().entrySet()
                 .parallelStream()
                 .flatMap(entry -> getManifestEntry(manifestUri, entry))
-                .flatMap(tuple -> getCertificateRepositoryObjectValidationContext(trustAnchor, context, validatedObjects, crlUri, x509Crl, tuple))
+                .flatMap(tuple -> getCertificateRepositoryObjectValidationContext(trustAnchor, context, accumulator, crlUri, x509Crl, tuple))
                 .map(tuple -> {
                     final ValidationResult vr = tuple.v2();
-                    validateCertificateAuthority(trustAnchor, registeredRepositories, tuple.v1(), vr, validatedObjects);
+                    validateCertificateAuthority(trustAnchor, registeredRepositories, tuple.v1(), vr, accumulator);
                     return vr;
                 })
                 .forEachOrdered(temporary::addAll);
@@ -385,7 +385,7 @@ public class CertificateTreeValidationService {
     private Stream<Tuple2<CertificateRepositoryObjectValidationContext, ValidationResult>>
         getCertificateRepositoryObjectValidationContext(TrustAnchor trustAnchor,
                                                         CertificateRepositoryObjectValidationContext context,
-                                                        List<Key> validatedObjects,
+                                                        Accumulator validatedObjects,
                                                         URI crlUri,
                                                         X509Crl crl,
                                                         Tuple3<URI, RpkiObject, ValidationResult> e) {
@@ -403,7 +403,7 @@ public class CertificateTreeValidationService {
                     certificateRepositoryObject.validate(location.toASCIIString(), context, crl, crlUri, validationConfig.validationOptions(), temporary));
 
                 if (!temporary.hasFailureForCurrentLocation()) {
-                    validatedObjects.add(rpkiObject.key());
+                    validatedObjects.add(rpkiObject.key(), certificateRepositoryObject, ImmutableSortedSet.of(temporary.getCurrentLocation().getName()));
                 }
 
                 if (certificateRepositoryObject instanceof X509ResourceCertificate
