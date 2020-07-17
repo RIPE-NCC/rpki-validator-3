@@ -35,9 +35,10 @@ import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilter;
 import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
-import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertion;
+import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionEntity;
 import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionsService;
 import net.ripe.rpki.validator3.api.slurm.SlurmStore;
+import net.ripe.rpki.validator3.domain.ValidatedRoaPrefix;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import org.joda.time.DateTime;
 import org.junit.Before;
@@ -180,8 +181,8 @@ public class BgpPreviewServiceTest {
         );
     }
 
-    private ValidatedRpkiObjects.RoaPrefix roa(Asn asn, String prefix, Integer maximumLength) {
-        return ValidatedRpkiObjects.RoaPrefix.of(null, asn.longValue(), IpRange.parse(prefix), maximumLength, maximumLength != null ? maximumLength : IpRange.parse(prefix).getPrefixLength(),
+    private ValidatedRoaPrefix roa(Asn asn, String prefix, Integer maximumLength) {
+        return ValidatedRoaPrefix.of(null, asn.longValue(), IpRange.parse(prefix), maximumLength,
                 Instant.now().toEpochMilli(),Instant.now().plus(365, DAYS).toEpochMilli(), BigInteger.ONE,
                 ImmutableSortedSet.of());
     }
@@ -199,7 +200,7 @@ public class BgpPreviewServiceTest {
             }
         }, new RoaPrefixAssertionsService(slurmStore) {
             @Override
-            public Stream<RoaPrefixAssertion> all() {
+            public Stream<RoaPrefixAssertionEntity> all() {
                 return Stream.empty();
             }
         });

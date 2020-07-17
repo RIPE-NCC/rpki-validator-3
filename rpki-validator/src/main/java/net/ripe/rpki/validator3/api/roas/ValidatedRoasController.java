@@ -39,6 +39,7 @@ import net.ripe.rpki.validator3.api.Metadata;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.domain.ValidatedRoaPrefix;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,7 +76,7 @@ public class ValidatedRoasController {
         final Sorting sorting = Sorting.parse(sortBy, sortDirection);
         final Paging paging = Paging.of(startFrom, pageSize);
 
-        ValidatedRpkiObjects.ValidatedObjects<ValidatedRpkiObjects.RoaPrefix> currentlyValidatedRoaPrefixes = validatedRpkiObjects.findCurrentlyValidatedRoaPrefixes(searchTerm, sorting, paging);
+        ValidatedRpkiObjects.ValidatedObjects<ValidatedRoaPrefix> currentlyValidatedRoaPrefixes = validatedRpkiObjects.findCurrentlyValidatedRoaPrefixes(searchTerm, sorting, paging);
         final Stream<RoaPrefix> roas = currentlyValidatedRoaPrefixes.getObjects()
             .map(prefix -> new RoaPrefix(
                 String.valueOf(prefix.getAsn()),

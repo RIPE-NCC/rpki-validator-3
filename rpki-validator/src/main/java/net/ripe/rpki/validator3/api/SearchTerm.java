@@ -32,17 +32,17 @@ package net.ripe.rpki.validator3.api;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpAddress;
 import net.ripe.ipresource.IpRange;
-import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
+import net.ripe.rpki.validator3.domain.ValidatedRoaPrefix;
 
 import java.util.function.Predicate;
 
 import static net.ripe.ipresource.IpResourceType.IPv4;
 
-public class SearchTerm implements Predicate<ValidatedRpkiObjects.RoaPrefix> {
+public class SearchTerm implements Predicate<ValidatedRoaPrefix> {
     private final String term;
     private final IpRange range;
     private final Long asn;
-    private final Predicate<ValidatedRpkiObjects.RoaPrefix> actualPredicate;
+    private final Predicate<ValidatedRoaPrefix> actualPredicate;
 
     private final static int IPv4_PREFIX_LENGTH = 32;
     private final static int IPv6_PREFIX_LENGTH = 128;
@@ -54,7 +54,7 @@ public class SearchTerm implements Predicate<ValidatedRpkiObjects.RoaPrefix> {
         actualPredicate = createPredicate();
     }
 
-    private Predicate<ValidatedRpkiObjects.RoaPrefix> createPredicate() {
+    private Predicate<ValidatedRoaPrefix> createPredicate() {
         if (asn != null) {
             return prefix -> asn == prefix.getAsn();
         }
@@ -80,7 +80,7 @@ public class SearchTerm implements Predicate<ValidatedRpkiObjects.RoaPrefix> {
         return term;
     }
 
-    public boolean test(ValidatedRpkiObjects.RoaPrefix prefix) {
+    public boolean test(ValidatedRoaPrefix prefix) {
         return actualPredicate.test(prefix);
     }
 

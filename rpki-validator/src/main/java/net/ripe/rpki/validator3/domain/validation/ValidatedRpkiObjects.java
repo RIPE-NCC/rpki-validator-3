@@ -34,14 +34,13 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.commons.crypto.x509cert.X509CertificateUtil;
 import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificate;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
-import net.ripe.rpki.validator3.domain.RoaPrefixDefinition;
+import net.ripe.rpki.validator3.domain.ValidatedRoaPrefix;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
@@ -58,7 +57,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
@@ -147,11 +145,11 @@ public class ValidatedRpkiObjects {
         notifyListeners();
     }
 
-    public ValidatedObjects<RoaPrefix> findCurrentlyValidatedRoaPrefixes() {
+    public ValidatedObjects<ValidatedRoaPrefix> findCurrentlyValidatedRoaPrefixes() {
         return findCurrentlyValidatedRoaPrefixes(null, null, null);
     }
 
-    public ValidatedObjects<RoaPrefix> findCurrentlyValidatedRoaPrefixes(SearchTerm searchTerm, Sorting sorting, Paging paging) {
+    public ValidatedObjects<ValidatedRoaPrefix> findCurrentlyValidatedRoaPrefixes(SearchTerm searchTerm, Sorting sorting, Paging paging) {
         if (paging == null) {
             paging = Paging.of(0L, Long.MAX_VALUE);
         }
@@ -191,7 +189,7 @@ public class ValidatedRpkiObjects {
 
     @Value(staticConstructor = "of")
     public static class RoaPrefixesAndRouterCertificates {
-        ImmutableSet<RoaPrefix> roaPrefixes;
+        ImmutableSet<ValidatedRoaPrefix> roaPrefixes;
         ImmutableSet<RouterCertificate> routerCertificates;
     }
 
@@ -199,19 +197,6 @@ public class ValidatedRpkiObjects {
     public static class TrustAnchorData {
         long id;
         String name;
-    }
-
-    @Value(staticConstructor = "of")
-    public static class RoaPrefix implements RoaPrefixDefinition {
-        TrustAnchorData trustAnchor;
-        long asn;
-        IpRange prefix;
-        Integer maximumLength;
-        int effectiveLength;
-        long notBefore;
-        long notAfter;
-        BigInteger serialNumber;
-        ImmutableSortedSet<String> locations;
     }
 
     @Value(staticConstructor = "of")
@@ -244,8 +229,8 @@ public class ValidatedRpkiObjects {
         return builder.build();
     }
 
-    private ImmutableSet<RoaPrefix> toRoaPrefixes(Tx.Read tx, TrustAnchorData trustAnchor, Stream<RpkiObject> roaStream) {
-        ImmutableSet.Builder<RoaPrefix> builder = ImmutableSet.builder();
+    private ImmutableSet<ValidatedRoaPrefix> toRoaPrefixes(Tx.Read tx, TrustAnchorData trustAnchor, Stream<RpkiObject> roaStream) {
+        ImmutableSet.Builder<ValidatedRoaPrefix> builder = ImmutableSet.builder();
         roaStream
             .flatMap(
                 object -> {
@@ -255,12 +240,11 @@ public class ValidatedRpkiObjects {
             )
             .forEach(data -> {
                 net.ripe.rpki.validator3.storage.data.RoaPrefix prefix = data.getRight();
-                builder.add(RoaPrefix.of(
+                builder.add(ValidatedRoaPrefix.of(
                     trustAnchor,
                     prefix.getAsn(),
                     prefix.getPrefix(),
                     prefix.getMaximumLength(),
-                    prefix.getEffectiveLength(),
                     prefix.getNotBefore(),
                     prefix.getNotAfter(),
                     prefix.getSerialNumber(),
@@ -293,7 +277,7 @@ public class ValidatedRpkiObjects {
             .count();
     }
 
-    private Stream<RoaPrefix> findRoaPrefixes(SearchTerm searchTerm, Sorting sorting, Paging paging) {
+    private Stream<ValidatedRoaPrefix> findRoaPrefixes(SearchTerm searchTerm, Sorting sorting, Paging paging) {
         return validatedObjects()
             .parallelStream()
             .flatMap(x -> x.getRoaPrefixes().stream())
