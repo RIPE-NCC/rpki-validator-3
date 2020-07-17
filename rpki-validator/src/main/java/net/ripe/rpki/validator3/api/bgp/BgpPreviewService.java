@@ -53,6 +53,7 @@ import net.ripe.rpki.validator3.domain.ValidatedRoaPrefix;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.util.Locks;
 import net.ripe.rpki.validator3.util.Time;
+import org.apache.commons.lang.Validate;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -269,10 +270,15 @@ public class BgpPreviewService {
     @lombok.EqualsAndHashCode(callSuper = true)
     @lombok.ToString(callSuper = true)
     public static class BgpPreviewEntry6 extends BgpPreviewEntry {
-        private static BigInteger TWO_64 = BigInteger.ONE.shiftLeft(64);
-        private static BigInteger TWO_64_MINUS_1 = TWO_64.subtract(BigInteger.ONE);
+        // The amount to add to convert a 64-bit signed value to a 64-bit unsigned
+        // value when the signed value is negative. This is equal to 2^64.
+        private static BigInteger TWO_TO_THE_POWER_OF_64 = BigInteger.ONE.shiftLeft(64);
 
+        // IPv6 prefix length (0 to 128 inclusive).
         short prefixLength;
+
+        // Store the (unsigned) 128-bit IPv6 address into two (signed) 64-bit values. We'll
+        // have to use BigInteger to restore the full 128-bit version again.
         long prefixHi;
         long prefixLo;
 
@@ -284,26 +290,29 @@ public class BgpPreviewService {
         }
 
         public static BgpPreviewEntry6 of(Asn origin, Validity validity, IpRange prefix) {
+            Validate.notNull(validity, "validity must not be null");
+            Validate.isTrue(prefix.isLegalPrefix(), "bgp entry must be a valid prefix");
             BigInteger value = prefix.getStart().getValue();
             short prefixLength = (short) prefix.getPrefixLength();
-            long prefixHi = value.shiftRight(64).and(TWO_64_MINUS_1).longValue();
-            long prefixLo = value.and(TWO_64_MINUS_1).longValue();
+            long prefixHi = value.shiftRight(64).longValue();
+            long prefixLo = value.longValue();
             return new BgpPreviewEntry6((int) origin.longValue(), validity, prefixLength, prefixHi, prefixLo);
         }
 
         public IpRange getPrefix() {
             BigInteger prefix = BigInteger.valueOf(prefixHi);
             if (prefixHi < 0) {
-                prefix = prefix.add(TWO_64);
+                prefix = prefix.add(TWO_TO_THE_POWER_OF_64);
             }
             prefix = prefix.shiftLeft(64).add(BigInteger.valueOf(prefixLo));
             if (prefixLo < 0) {
-                prefix = prefix.add(TWO_64);
+                prefix = prefix.add(TWO_TO_THE_POWER_OF_64);
             }
             return IpRange.prefix(new Ipv6Address(prefix), prefixLength);
         }
 
         BgpPreviewEntry ofValidity(Validity validity) {
+            Validate.notNull(validity, "validity must not be null");
             return new BgpPreviewEntry6(origin, validity, prefixLength, prefixHi, prefixLo);
         }
     }
