@@ -81,6 +81,9 @@
   <form #asnPrefixForm='ngForm'
         (ngSubmit)='onSubmitModal(asnPrefixForm.value)'>
     <div class='modal-body'>
+      <p>This page shows the impact of the ROAs available at the moment at the provided (ASN+Prefix) pair.
+          <strong>NOTE:</strong> It does not take the current BGP announcements and their visibility into consideration.
+      </p>
       <p>
         <label class='col-md-2' for='prefix'><strong>{{'Roas.PREFIX' | translate}}: </strong></label>
         <input type='text'
