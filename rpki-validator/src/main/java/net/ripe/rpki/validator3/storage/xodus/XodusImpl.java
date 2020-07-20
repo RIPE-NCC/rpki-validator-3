@@ -65,6 +65,10 @@ public class XodusImpl extends Xodus {
 
             final EnvironmentConfig config = new EnvironmentConfig()
                 .setLogCacheUseSoftReferences(true)
+                // Almost all RPKI objects are less than 2 KB so use that as the log cache page size.
+                // This avoids loading co-located objects that are unlikely to be needed, greatly
+                // reducing Xodus memory usage.
+                .setLogCachePageSize(2 * 1024)
                 .setLogDurableWrite(true)
                 .setEnvGatherStatistics(true)
                 .setGcEnabled(true)
