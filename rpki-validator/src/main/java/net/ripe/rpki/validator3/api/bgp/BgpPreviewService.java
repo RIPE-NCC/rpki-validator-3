@@ -340,9 +340,19 @@ public class BgpPreviewService {
     public void downloadRisPreview() {
         Locks.locked(downloadLock, () -> {
             log.info("Updating BGP RIS dumps");
-            final List<BgpRisDump> updated = Locks.locked(dataLock.readLock(), () -> bgpRisDumps)
+            final List<BgpRisDump<BgpPreviewEntry>> updated = Locks.locked(dataLock.readLock(), () -> bgpRisDumps)
                     .stream()
-                    .map(bgpRisDownloader::fetch)
+                    .map(dump -> bgpRisDownloader.fetch(dump, entry -> {
+                        if (entry.getVisibility() >= bgpRisVisibilityThreshold && makesSenseToShowInPreview(entry)) {
+                            return Stream.of(BgpPreviewEntry.of(
+                                    entry.getOrigin(),
+                                    entry.getPrefix(),
+                                    Validity.UNKNOWN
+                            ));
+                        } else {
+                            return Stream.empty();
+                        }
+                    }))
                     .collect(Collectors.toList());
             updateBgpRisDump(updated);
             log.info("Finished updating BGP RIS dumps");
@@ -401,23 +411,11 @@ public class BgpPreviewService {
             .collect(Collectors.toList()));
     }
 
-    public void updateBgpRisDump(Collection<BgpRisDump> updated) {
+    public void updateBgpRisDump(Collection<BgpRisDump<BgpPreviewEntry>> updated) {
         Locks.locked(dataLock.writeLock(), () -> {
             final Map<String, ImmutableList<BgpPreviewEntry>> updatedDumps = new HashMap<>(this.bgpPreviewEntries);
-            for (BgpRisDump dump : updated) {
-                dump.getEntries().ifPresent(entries -> {
-                    ImmutableList.Builder<BgpPreviewEntry> bgpRisEntries = ImmutableList.builder();
-                    for (BgpRisEntry entry : entries) {
-                        if (entry.getVisibility() >= bgpRisVisibilityThreshold && makesSenseToShowInPreview(entry)) {
-                            bgpRisEntries.add(BgpPreviewEntry.of(
-                                    entry.getOrigin(),
-                                    entry.getPrefix(),
-                                    Validity.UNKNOWN
-                            ));
-                        }
-                    }
-                    updatedDumps.put(dump.getUrl(), bgpRisEntries.build());
-                });
+            for (BgpRisDump<BgpPreviewEntry> dump : updated) {
+                dump.getEntries().ifPresent(entries -> updatedDumps.put(dump.getUrl(), entries));
             }
 
             this.bgpPreviewEntries = validateBgpRisEntries(updatedDumps, this.roaPrefixes);

@@ -30,13 +30,13 @@
 package net.ripe.rpki.validator3.api.bgp;
 
 import net.ripe.rpki.validator3.IntegrationTest;
-import org.joda.time.DateTime;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -49,15 +49,19 @@ public class BgpRisDownloaderTest {
 
     @Test
     public void download_ipv4() {
-        BgpRisDump dump = bgpRisDownloader.fetch(
-            BgpRisDump.of("http://www.ris.ripe.net/dumps/riswhoisdump.IPv4.gz",null, Optional.empty()));
+        BgpRisDump<BgpRisEntry> dump = bgpRisDownloader.fetch(
+                BgpRisDump.of("http://www.ris.ripe.net/dumps/riswhoisdump.IPv4.gz", null, Optional.empty()),
+                Stream::of
+        );
         assertThat(dump.getEntries()).hasValueSatisfying(entries -> assertThat(entries.size()).isGreaterThan(800_000));
     }
 
     @Test
     public void download_ipv6() {
-        BgpRisDump dump = bgpRisDownloader.fetch(
-            BgpRisDump.of("http://www.ris.ripe.net/dumps/riswhoisdump.IPv6.gz",null, Optional.empty()));
+        BgpRisDump<BgpRisEntry> dump = bgpRisDownloader.fetch(
+                BgpRisDump.of("http://www.ris.ripe.net/dumps/riswhoisdump.IPv6.gz", null, Optional.empty()),
+                Stream::of
+        );
         assertThat(dump.getEntries()).hasValueSatisfying(entries -> assertThat(entries.size()).isGreaterThan(60_000));
     }
 }

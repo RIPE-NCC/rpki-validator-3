@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.api.bgp;
 
+import com.google.common.collect.ImmutableList;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
@@ -52,7 +53,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
 @Component
@@ -70,7 +71,7 @@ public class BgpRisDownloader {
         assert httpClient.isStarted();
     }
 
-    public BgpRisDump fetch(@NotNull BgpRisDump dump) {
+    public <T> BgpRisDump<T> fetch(@NotNull BgpRisDump dump, Function<BgpRisEntry, Stream<T>> mapper) {
         log.info("attempting to download new BGP RIS preview dump from {}", dump.url);
         long before = System.currentTimeMillis();
         String statusDescription = "200";
@@ -85,8 +86,12 @@ public class BgpRisDownloader {
         };
         final BiFunction<InputStream, Long, BgpRisDump> streamReader = (stream, lastModified) -> {
             try {
-                List<BgpRisEntry> entries = parse(new GZIPInputStream(stream));
-                return BgpRisDump.of(dump.url, new DateTime(lastModified), Optional.of(entries));
+                Stream<BgpRisEntry> entries = parse(new GZIPInputStream(stream));
+                // Collect the stream to a list here to avoid closing the HTTP stream before
+                // all entries have been parsed.
+                ImmutableList.Builder<T> builder = ImmutableList.builder();
+                entries.flatMap(mapper).forEach(builder::add);
+                return BgpRisDump.of(dump.url, new DateTime(lastModified), Optional.of(builder.build()));
             } catch (Exception e) {
                 log.error("Error downloading RIS dump: " + dump.url);
                 return dump;
@@ -106,7 +111,7 @@ public class BgpRisDownloader {
         }
     }
 
-    public static List<BgpRisEntry> parse(final InputStream is) {
+    public static Stream<BgpRisEntry> parse(final InputStream is) {
         final IdentityMap id = new IdentityMap();
         return new BufferedReader(new InputStreamReader(is)).lines()
                 .map(s -> {
@@ -117,8 +122,7 @@ public class BgpRisDownloader {
                         return null;
                     }
                 })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .filter(Objects::nonNull);
     }
 
     private static Pattern regexp = Pattern.compile("^\\s*([0-9]+)\\s+([0-9a-fA-F.:/]+)\\s+([0-9]+)\\s*$");

@@ -33,6 +33,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedSet;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
+import net.ripe.rpki.validator3.api.bgp.BgpPreviewService.BgpPreviewEntry;
 import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilter;
 import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
 import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionEntity;
@@ -55,6 +56,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import static java.time.temporal.ChronoUnit.DAYS;
+import static net.ripe.rpki.validator3.api.bgp.BgpPreviewService.Validity.UNKNOWN;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class BgpPreviewServiceTest {
@@ -75,109 +77,109 @@ public class BgpPreviewServiceTest {
     @Test
     public void should_mark_non_matching_bgp_entry_as_unknown() {
         DateTime lastModified = DateTime.now();
-        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", lastModified, Optional.of(ImmutableList.of(BgpRisEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), 1000))))));
+        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", lastModified, Optional.of(ImmutableList.of(BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), UNKNOWN))))));
         subject.updateValidatedRoaPrefixes(ImmutableList.of(roa(AS_3333, "127.0.0.0/8", 8)).stream());
 
         BgpPreviewService.BgpPreviewResult bgpPreviewResult = subject.find(null, null, null);
         assertThat(bgpPreviewResult.getLastModified()).isEqualByComparingTo(lastModified.getMillis());
         assertThat(bgpPreviewResult.getData()).contains(
-            BgpPreviewService.BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), BgpPreviewService.Validity.UNKNOWN)
+            BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), UNKNOWN)
         );
     }
 
     @Test
     public void should_validate_matching_bgp_entry() {
-        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", null, Optional.of(ImmutableList.of(BgpRisEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), 1000))))));
+        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", null, Optional.of(ImmutableList.of(BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), UNKNOWN))))));
         subject.updateValidatedRoaPrefixes(ImmutableList.of(roa(AS_3333, "0.0.0.0/4", 8)).stream());
 
         assertThat(subject.find(null, null, null).getData()).contains(
-            BgpPreviewService.BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), BgpPreviewService.Validity.VALID)
+            BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), BgpPreviewService.Validity.VALID)
         );
     }
 
     @Test
     public void should_reject_too_specific_bgp_entry() {
-        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", null, Optional.of(ImmutableList.of(BgpRisEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), 1000))))));
+        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", null, Optional.of(ImmutableList.of(BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), UNKNOWN))))));
         subject.updateValidatedRoaPrefixes(ImmutableList.of(roa(AS_3333, "0.0.0.0/4", null)).stream());
 
         assertThat(subject.find(null, null, null).getData()).contains(
-            BgpPreviewService.BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), BgpPreviewService.Validity.INVALID_LENGTH)
+            BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), BgpPreviewService.Validity.INVALID_LENGTH)
         );
     }
 
     @Test
     public void should_reject_bgp_entry_for_different_asn() {
-        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", null, Optional.of(ImmutableList.of(BgpRisEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), 1000))))));
+        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", null, Optional.of(ImmutableList.of(BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), UNKNOWN))))));
         subject.updateValidatedRoaPrefixes(ImmutableList.of(roa(Asn.parse("AS3"), "10.0.0.0/8", null)).stream());
 
         assertThat(subject.find(null, null, null).getData()).contains(
-            BgpPreviewService.BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), BgpPreviewService.Validity.INVALID_ASN)
+            BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), BgpPreviewService.Validity.INVALID_ASN)
         );
     }
 
     @Test
     public void should_reject_bgp_entry_when_roa_exists_but_ignored_by_asn_based_filter() {
         subject = createBgpPreviewService(ImmutableList.of(ignoreFilter(AS_3333.longValue(), null)));
-        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", null, Optional.of(ImmutableList.of(BgpRisEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), 1000))))));
+        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", null, Optional.of(ImmutableList.of(BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), UNKNOWN))))));
         subject.updateValidatedRoaPrefixes(ImmutableList.of(roa(AS_3333, "10.0.0.0/8", 8)).stream());
 
         assertThat(subject.find(null, null, null).getData()).contains(
-                BgpPreviewService.BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), BgpPreviewService.Validity.UNKNOWN)
+                BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), UNKNOWN)
         );
     }
 
     @Test
     public void should_reject_bgp_entry_when_roa_exists_but_ignored_by_prefix_based_filter() {
         subject = createBgpPreviewService(ImmutableList.of(ignoreFilter(null, "10.0.0.0/8")));
-        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", null, Optional.of(ImmutableList.of(BgpRisEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), 1000))))));
+        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", null, Optional.of(ImmutableList.of(BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), UNKNOWN))))));
         subject.updateValidatedRoaPrefixes(ImmutableList.of(roa(AS_3333, "10.0.0.0/8", 8)).stream());
 
         assertThat(subject.find(null, null, null).getData()).contains(
-                BgpPreviewService.BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), BgpPreviewService.Validity.UNKNOWN)
+                BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), UNKNOWN)
         );
     }
 
     @Test
     public void should_reject_bgp_entry_when_roa_exists_but_ignored_by_filter_with_covering_prefix() {
         subject = createBgpPreviewService(ImmutableList.of(ignoreFilter(null, "0.0.0.0/4")));
-        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", null, Optional.of(ImmutableList.of(BgpRisEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), 1000))))));
+        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", null, Optional.of(ImmutableList.of(BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), UNKNOWN))))));
         subject.updateValidatedRoaPrefixes(ImmutableList.of(roa(AS_3333, "10.0.0.0/8", 8)).stream());
 
         assertThat(subject.find(null, null, null).getData()).contains(
-                BgpPreviewService.BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), BgpPreviewService.Validity.UNKNOWN)
+                BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), UNKNOWN)
         );
     }
 
     @Test
     public void should_reject_bgp_entry_when_roa_exists_but_ignored_by_ans_and_prefix_based_filter() {
         subject = createBgpPreviewService(ImmutableList.of(ignoreFilter(AS_3333.longValue(), "10.0.0.0/8")));
-        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", null, Optional.of(ImmutableList.of(BgpRisEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), 1000))))));
+        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", null, Optional.of(ImmutableList.of(BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), UNKNOWN))))));
         subject.updateValidatedRoaPrefixes(ImmutableList.of(roa(AS_3333, "10.0.0.0/8", 8)).stream());
 
         assertThat(subject.find(null, null, null).getData()).contains(
-                BgpPreviewService.BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), BgpPreviewService.Validity.UNKNOWN)
+                BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), UNKNOWN)
         );
     }
 
     @Test
     public void should_accept_bgp_entry_when_ignore_filter_is_not_exactly_matching_because_asn_differs() {
         subject = createBgpPreviewService(ImmutableList.of(ignoreFilter(AS_2222.longValue(), "10.0.0.0/8")));
-        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", null, Optional.of(ImmutableList.of(BgpRisEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), 1000))))));
+        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", null, Optional.of(ImmutableList.of(BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), UNKNOWN))))));
         subject.updateValidatedRoaPrefixes(ImmutableList.of(roa(AS_3333, "10.0.0.0/8", 8)).stream());
 
         assertThat(subject.find(null, null, null).getData()).contains(
-                BgpPreviewService.BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), BgpPreviewService.Validity.VALID)
+                BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), BgpPreviewService.Validity.VALID)
         );
     }
 
     @Test
     public void should_accept_bgp_entry_when_ignore_filter_is_not_exactly_matching_because_prefix_is_too_small() {
         subject = createBgpPreviewService(ImmutableList.of(ignoreFilter(AS_3333.longValue(), "10.10.0.0/16")));
-        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", null, Optional.of(ImmutableList.of(BgpRisEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), 1000))))));
+        subject.updateBgpRisDump(ImmutableList.of(BgpRisDump.of("", null, Optional.of(ImmutableList.of(BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), UNKNOWN))))));
         subject.updateValidatedRoaPrefixes(ImmutableList.of(roa(AS_3333, "10.0.0.0/8", 8)).stream());
 
         assertThat(subject.find(null, null, null).getData()).contains(
-                BgpPreviewService.BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), BgpPreviewService.Validity.VALID)
+                BgpPreviewEntry.of(AS_3333, IpRange.parse("10.0.0.0/8"), BgpPreviewService.Validity.VALID)
         );
     }
 
