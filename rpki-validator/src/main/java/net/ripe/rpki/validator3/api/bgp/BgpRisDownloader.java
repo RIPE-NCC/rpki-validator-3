@@ -33,7 +33,6 @@ import com.google.common.collect.ImmutableList;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
-import net.ripe.ipresource.UniqueIpResource;
 import net.ripe.rpki.validator3.domain.metrics.HttpClientMetricsService;
 import net.ripe.rpki.validator3.util.HttpStreaming;
 import org.eclipse.jetty.client.HttpClient;
@@ -112,11 +111,10 @@ public class BgpRisDownloader {
     }
 
     public static Stream<BgpRisEntry> parse(final InputStream is) {
-        final IdentityMap id = new IdentityMap();
         return new BufferedReader(new InputStreamReader(is)).lines()
                 .map(s -> {
                     try {
-                        return parseLine(s, id::unique);
+                        return parseLine(s);
                     } catch (Exception e) {
                         log.error("Unparseable line: " + s);
                         return null;
@@ -127,32 +125,15 @@ public class BgpRisDownloader {
 
     private static Pattern regexp = Pattern.compile("^\\s*([0-9]+)\\s+([0-9a-fA-F.:/]+)\\s+([0-9]+)\\s*$");
 
-    private static BgpRisEntry parseLine(final String line, final Function<Object, Object> uniq) {
+    private static BgpRisEntry parseLine(final String line) {
         final Matcher matcher = regexp.matcher(line);
         if (matcher.matches()) {
-            final Asn asn = (Asn) uniq.apply(Asn.parse(matcher.group(1)));
-            IpRange parsed = IpRange.parse(matcher.group(2));
-            final UniqueIpResource start = (UniqueIpResource) uniq.apply(parsed.getStart());
-            final UniqueIpResource end = (UniqueIpResource) uniq.apply(parsed.getEnd());
-            final IpRange prefix = (IpRange) start.upTo(end);
+            final Asn asn = Asn.parse(matcher.group(1));
+            final IpRange prefix = IpRange.parse(matcher.group(2));
             final int visibility = Integer.parseInt(matcher.group(3));
             return BgpRisEntry.of(asn, prefix, visibility);
         }
         return null;
-    }
-
-    // This is to avoid distinct object instances for objects that are equal
-    private static class IdentityMap {
-        private Map<Object, Object> unique = new HashMap<>();
-
-        Object unique(final Object o) {
-            final Object u = unique.get(o);
-            if (u == null) {
-                unique.put(o, o);
-                return o;
-            }
-            return u;
-        }
     }
 
     private String formatAsRFC2616(DateTime d) {
