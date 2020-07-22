@@ -29,15 +29,15 @@
  */
 package net.ripe.rpki.validator3.api.bgp;
 
+import com.google.common.collect.ImmutableList;
 import lombok.Data;
 import org.joda.time.DateTime;
 
-import java.util.List;
 import java.util.Optional;
 
 @Data(staticConstructor = "of")
-public class BgpRisDump {
+public class BgpRisDump<T> {
     final String url;
     final DateTime lastModified;
-    final Optional<List<BgpRisEntry>> entries;
+    final Optional<ImmutableList<T>> entries;
 }

@@ -36,6 +36,7 @@ import org.junit.Test;
 import java.io.ByteArrayInputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 
@@ -63,6 +64,6 @@ public class BgpRisParsingTest {
     }
 
     private List<BgpRisEntry> parse(String content) throws UnsupportedEncodingException {
-        return BgpRisDownloader.parse(new ByteArrayInputStream(content.getBytes("UTF-8")));
+        return BgpRisDownloader.parse(new ByteArrayInputStream(content.getBytes("UTF-8"))).collect(Collectors.toList());
     }
 }

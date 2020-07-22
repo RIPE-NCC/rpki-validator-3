@@ -29,10 +29,10 @@
  */
 package net.ripe.rpki.validator3.api.bgp;
 
+import com.google.common.collect.ImmutableList;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
-import net.ripe.ipresource.UniqueIpResource;
 import net.ripe.rpki.validator3.domain.metrics.HttpClientMetricsService;
 import net.ripe.rpki.validator3.util.HttpStreaming;
 import org.eclipse.jetty.client.HttpClient;
@@ -52,7 +52,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
 @Component
@@ -70,7 +70,7 @@ public class BgpRisDownloader {
         assert httpClient.isStarted();
     }
 
-    public BgpRisDump fetch(@NotNull BgpRisDump dump) {
+    public <T> BgpRisDump<T> fetch(@NotNull BgpRisDump dump, Function<BgpRisEntry, Stream<T>> mapper) {
         log.info("attempting to download new BGP RIS preview dump from {}", dump.url);
         long before = System.currentTimeMillis();
         String statusDescription = "200";
@@ -85,8 +85,12 @@ public class BgpRisDownloader {
         };
         final BiFunction<InputStream, Long, BgpRisDump> streamReader = (stream, lastModified) -> {
             try {
-                List<BgpRisEntry> entries = parse(new GZIPInputStream(stream));
-                return BgpRisDump.of(dump.url, new DateTime(lastModified), Optional.of(entries));
+                Stream<BgpRisEntry> entries = parse(new GZIPInputStream(stream));
+                // Collect the stream to a list here to avoid closing the HTTP stream before
+                // all entries have been parsed.
+                ImmutableList.Builder<T> builder = ImmutableList.builder();
+                entries.flatMap(mapper).forEach(builder::add);
+                return BgpRisDump.of(dump.url, new DateTime(lastModified), Optional.of(builder.build()));
             } catch (Exception e) {
                 log.error("Error downloading RIS dump: " + dump.url);
                 return dump;
@@ -106,49 +110,30 @@ public class BgpRisDownloader {
         }
     }
 
-    public static List<BgpRisEntry> parse(final InputStream is) {
-        final IdentityMap id = new IdentityMap();
+    public static Stream<BgpRisEntry> parse(final InputStream is) {
         return new BufferedReader(new InputStreamReader(is)).lines()
                 .map(s -> {
                     try {
-                        return parseLine(s, id::unique);
+                        return parseLine(s);
                     } catch (Exception e) {
                         log.error("Unparseable line: " + s);
                         return null;
                     }
                 })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .filter(Objects::nonNull);
     }
 
     private static Pattern regexp = Pattern.compile("^\\s*([0-9]+)\\s+([0-9a-fA-F.:/]+)\\s+([0-9]+)\\s*$");
 
-    private static BgpRisEntry parseLine(final String line, final Function<Object, Object> uniq) {
+    private static BgpRisEntry parseLine(final String line) {
         final Matcher matcher = regexp.matcher(line);
         if (matcher.matches()) {
-            final Asn asn = (Asn) uniq.apply(Asn.parse(matcher.group(1)));
-            IpRange parsed = IpRange.parse(matcher.group(2));
-            final UniqueIpResource start = (UniqueIpResource) uniq.apply(parsed.getStart());
-            final UniqueIpResource end = (UniqueIpResource) uniq.apply(parsed.getEnd());
-            final IpRange prefix = (IpRange) start.upTo(end);
+            final Asn asn = Asn.parse(matcher.group(1));
+            final IpRange prefix = IpRange.parse(matcher.group(2));
             final int visibility = Integer.parseInt(matcher.group(3));
             return BgpRisEntry.of(asn, prefix, visibility);
         }
         return null;
-    }
-
-    // This is to avoid distinct object instances for objects that are equal
-    private static class IdentityMap {
-        private Map<Object, Object> unique = new HashMap<>();
-
-        Object unique(final Object o) {
-            final Object u = unique.get(o);
-            if (u == null) {
-                unique.put(o, o);
-                return o;
-            }
-            return u;
-        }
     }
 
     private String formatAsRFC2616(DateTime d) {
