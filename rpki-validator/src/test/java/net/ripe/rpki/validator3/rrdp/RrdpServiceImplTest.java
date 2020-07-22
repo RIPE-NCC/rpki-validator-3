@@ -71,7 +71,7 @@ public class RrdpServiceImplTest extends GenericStorageTest {
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        subject = new RrdpServiceImpl(rrdpClient, this.getRpkiObjects(), this.getRpkiRepositories(), getStorage());
+        subject = new RrdpServiceImpl(1, rrdpClient, this.getRpkiObjects(), this.getRpkiRepositories(), getStorage());
     }
 
     @Test
@@ -135,6 +135,7 @@ public class RrdpServiceImplTest extends GenericStorageTest {
         final Ref<TrustAnchor> trustAnchorRef = rtx(tx -> this.getTrustAnchors().makeRef(tx, trustAnchor.key()));
         RpkiRepository rpkiRepository = wtx(tx -> this.getRpkiRepositories().register(tx,
                 trustAnchorRef, RRDP_RIPE_NET_NOTIFICATION_XML, RpkiRepository.Type.RRDP));
+        rpkiRepository.setRrdpSerial(BigInteger.valueOf(serial));
 
         final RrdpRepositoryValidationRun validationRun = wtx(tx -> {
             Ref<RpkiRepository> ref = this.getRpkiRepositories().makeRef(tx, rpkiRepository.key());
@@ -175,6 +176,7 @@ public class RrdpServiceImplTest extends GenericStorageTest {
         final Ref<TrustAnchor> trustAnchorRef = rtx(tx -> this.getTrustAnchors().makeRef(tx, trustAnchor.key()));
         RpkiRepository rpkiRepository = wtx(tx -> this.getRpkiRepositories().register(tx,
                 trustAnchorRef, RRDP_RIPE_NET_NOTIFICATION_XML, RpkiRepository.Type.RRDP));
+        rpkiRepository.setRrdpSerial(BigInteger.valueOf(serial));
 
         Ref<RpkiRepository> rpkiRepositoryRef = rtx(tx ->
                 this.getRpkiRepositories().makeRef(tx, rpkiRepository.key()));
@@ -421,6 +423,7 @@ public class RrdpServiceImplTest extends GenericStorageTest {
                 this.getValidationRuns().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
         subject.storeRepository(rpkiRepository, validationRun);
         assertEquals(1, validationRun.getValidationChecks().size());
+        System.out.println(validationRun.getValidationChecks());
 
         final ValidationCheck validationCheck = validationRun.getValidationChecks().get(0);
         assertEquals(ErrorCodes.RRDP_SERIAL_MISMATCH, validationCheck.getKey());
