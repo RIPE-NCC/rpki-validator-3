@@ -49,6 +49,7 @@ import org.junit.runner.RunWith;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.math.BigInteger;
+import java.util.Collections;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.UUID;
@@ -89,9 +90,15 @@ public class RrdpServiceImplTest extends GenericStorageTest {
         final RrdpRepositoryValidationRun validationRun = wtx(tx ->
                 this.getValidationRuns().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
 
-        final Snapshot snapshot = new RrdpParser().snapshot(Objects.fileIS("rrdp/snapshot2.xml"));
         AtomicBoolean changedObjects = new AtomicBoolean();
-        wtx0(tx -> subject.storeSnapshot(tx, snapshot, validationRun, changedObjects));
+        new RrdpParser().parseSnapshot(
+                Objects.fileIS("rrdp/snapshot2.xml"),
+                (snapshotInfo) -> {
+                },
+                (snapshotObject) -> {
+                    wtx0(tx -> subject.storeSnapshotObjects(tx, Collections.singleton(snapshotObject), validationRun, changedObjects));
+                }
+        );
 
         final List<RpkiObject> objects = rtx(tx -> this.getRpkiObjects().values(tx));
         assertEquals(3, objects.size());
@@ -390,7 +397,7 @@ public class RrdpServiceImplTest extends GenericStorageTest {
         final Objects.Publish crl = new Objects.Publish("rsync://host/path/crl1.crl", Objects.aParseableCrl());
         rrdpClient.add(crl.uri, crl.content);
 
-        final byte[] snapshotXml = Objects.snapshotXml(3, sessionId, crl);
+        final byte[] snapshotXml = Objects.snapshotXml(4, sessionId, crl);
 
         final Objects.SnapshotInfo emptySnapshot = new Objects.SnapshotInfo(SNAPSHOT_URL, Sha256.hash(snapshotXml));
         rrdpClient.add(emptySnapshot.uri, snapshotXml);
@@ -422,8 +429,8 @@ public class RrdpServiceImplTest extends GenericStorageTest {
         final RrdpRepositoryValidationRun validationRun = wtx(tx ->
                 this.getValidationRuns().add(tx, new RrdpRepositoryValidationRun(rpkiRepositoryRef)));
         subject.storeRepository(rpkiRepository, validationRun);
-        assertEquals(1, validationRun.getValidationChecks().size());
         System.out.println(validationRun.getValidationChecks());
+        assertEquals(1, validationRun.getValidationChecks().size());
 
         final ValidationCheck validationCheck = validationRun.getValidationChecks().get(0);
         assertEquals(ErrorCodes.RRDP_SERIAL_MISMATCH, validationCheck.getKey());

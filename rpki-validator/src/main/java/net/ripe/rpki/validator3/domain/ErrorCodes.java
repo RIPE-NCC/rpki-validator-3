@@ -34,6 +34,7 @@ public class ErrorCodes {
     public static final String RRDP_FETCH_DELTAS = "rrdp.fetch.deltas";
     public static final String RRDP_PARSE_ERROR = "rrdp.parse.error";
     public static final String RRDP_WRONG_SNAPSHOT_HASH = "rrdp.wrong.snapshot.hash";
+    public static final String RRDP_WRONG_SNAPSHOT_SESSION = "rrdp.wrong.snapshot.session";
     public static final String RRDP_WRONG_DELTA_HASH = "rrdp.wrong.delta.hash";
     public static final String RRDP_WRONG_DELTA_SESSION = "rrdp.wrong.delta.session";
     public static final String RRDP_SERIAL_MISMATCH = "rrdp.serial.mismatch";

@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.rrdp;
 
+import lombok.Value;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
 import net.ripe.rpki.validator3.util.Hex;
 
@@ -50,6 +51,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * TODO We must validate XML against RelaxNG schema and reject the invalid ones.
@@ -57,8 +59,13 @@ import java.util.Map;
  */
 public class RrdpParser {
 
-    public Snapshot snapshot(final InputStream inputStream) {
-        final Map<String, SnapshotObject> objects = new HashMap<>();
+    @Value
+    public static class SnapshotHeader {
+        String sessionId;
+        BigInteger serial;
+    }
+
+    public void parseSnapshot(InputStream inputStream, Consumer<SnapshotHeader> processSnapshotHeader, Consumer<SnapshotObject> processSnapshotObject) {
         try {
             final XMLInputFactory factory = XMLInputFactory.newInstance();
             final XMLEventReader eventReader = factory.createXMLEventReader(inputStream);
@@ -68,6 +75,7 @@ public class RrdpParser {
             String uri = null;
             StringBuilder base64 = new StringBuilder();
             boolean inPublishElement = false;
+            boolean snapshotHeaderProcessed = false;
 
             final Base64.Decoder decoder = Base64.getDecoder();
 
@@ -81,12 +89,17 @@ public class RrdpParser {
 
                         switch (qName) {
                             case "publish":
+                                if (!snapshotHeaderProcessed) {
+                                    throw new RrdpException(ErrorCodes.RRDP_PARSE_ERROR, "snapshot header not present before published objects");
+                                }
                                 uri = getAttr(startElement, "uri", "Uri is not present in 'publish' element");
                                 inPublishElement = true;
                                 break;
                             case "snapshot":
                                 serial = new BigInteger(getAttr(startElement, "serial", "Notification serial is not present"));
                                 sessionId = getAttr(startElement, "session_id", "Session id is not present");
+                                processSnapshotHeader.accept(new SnapshotHeader(sessionId, serial));
+                                snapshotHeaderProcessed = true;
                                 break;
                         }
                         break;
@@ -104,14 +117,13 @@ public class RrdpParser {
                         final String qqName = endElement.getName().getLocalPart().toLowerCase(Locale.ROOT);
                         if ("publish".equals(qqName)) {
                             final byte[] decoded = decoder.decode(base64.toString());
-                            objects.put(uri, new SnapshotObject(decoded, uri));
+                            processSnapshotObject.accept(new SnapshotObject(decoded, uri));
                             inPublishElement = false;
                             base64 = new StringBuilder();
                         }
                         break;
                 }
             }
-            return new Snapshot(objects, sessionId, serial);
         } catch (XMLStreamException e) {
             throw new RrdpException("Couldn't parse snapshot: ", e);
         }

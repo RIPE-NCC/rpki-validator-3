@@ -43,8 +43,16 @@ public class RrdpParserTest {
 
     @Test
     public void should_parse_snapshot() throws Exception {
-        final Snapshot snapshot = new RrdpParser().snapshot(fileIS("rrdp/snapshot1.xml"));
-        assertNotNull(snapshot.asMap().get("rsync://bandito.ripe.net/repo/671570f06499fbd2d6ab76c4f22566fe49d5de60.cer"));
+        new RrdpParser().parseSnapshot(
+                fileIS("rrdp/snapshot1.xml"),
+                (snapshotInfo) -> {
+                    assertEquals("9df4b597-af9e-4dca-bdda-719cce2c4e28", snapshotInfo.getSessionId());
+                    assertEquals(BigInteger.ONE, snapshotInfo.getSerial());
+                },
+                (snapshotObject) -> {
+                    assertEquals("rsync://bandito.ripe.net/repo/671570f06499fbd2d6ab76c4f22566fe49d5de60.cer", snapshotObject.getUri());
+                }
+        );
     }
 
     @Test

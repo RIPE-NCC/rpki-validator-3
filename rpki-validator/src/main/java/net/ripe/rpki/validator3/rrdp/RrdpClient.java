@@ -29,11 +29,18 @@
  */
 package net.ripe.rpki.validator3.rrdp;
 
+import com.google.common.hash.HashCode;
+import com.google.common.hash.HashFunction;
+
 import java.io.InputStream;
+import java.nio.file.Path;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public interface RrdpClient {
     <T> T readStream(String uri, Function<InputStream, T> reader);
 
     byte[] getBody(String uri);
+
+    <T> T processUsingTemporaryFile(String uri, HashFunction hashFunction, BiFunction<Path, HashCode, T> process);
 }
