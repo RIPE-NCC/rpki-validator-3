@@ -49,6 +49,7 @@ import net.ripe.rpki.validator3.util.Sha256;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -60,6 +61,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -81,11 +83,17 @@ public class RrdpServiceImpl implements RrdpService {
 
     private final Storage storage;
 
+    private final ForkJoinPool rrdpProcessingPool;
+
     @Autowired
-    public RrdpServiceImpl(final RrdpClient rrdpClient,
-                           final RpkiObjects rpkiObjects,
-                           final RpkiRepositories rpkiRepositories,
-                           final Storage storage) {
+    public RrdpServiceImpl(
+            @Value("${rpki.validator.rrdp.repository.parallelism:4}") int rrdpProcessingParallelism,
+            final RrdpClient rrdpClient,
+            final RpkiObjects rpkiObjects,
+            final RpkiRepositories rpkiRepositories,
+            final Storage storage
+    ) {
+        this.rrdpProcessingPool = new ForkJoinPool(rrdpProcessingParallelism);
         this.rrdpClient = rrdpClient;
         this.rpkiObjects = rpkiObjects;
         this.rpkiRepositories = rpkiRepositories;
@@ -116,23 +124,16 @@ public class RrdpServiceImpl implements RrdpService {
         if (notification.sessionId.equals(rpkiRepository.getRrdpSessionId())) {
             if (rpkiRepository.getRrdpSerial().compareTo(notification.serial) <= 0) {
                 try {
-                    final List<Delta> deltas = notification.deltas.stream().
-                            filter(d -> d.getSerial().compareTo(rpkiRepository.getRrdpSerial()) > 0).
-                            sorted(Comparator.comparing(DeltaInfo::getSerial)).
-                            parallel().
-                            map(di -> readDelta(notification, di)).
-                            collect(Collectors.toList());
-
-                    verifyDeltaSerials(deltas, notification, rpkiRepository);
-
-                    deltas.forEach(d -> {
-                        storage.readTx0(tx -> verifyDeltaIsApplicable(tx, d));
-                        storage.writeTx0(tx -> {
-                            storeDelta(tx, d, validationRun, rpkiRepository, changedObjects);
-                            tx.afterCommit(() -> rpkiRepository.setRrdpSerial(rpkiRepository.getRrdpSerial().add(BigInteger.ONE)));
-                        });
-                    });
-
+                    List<DeltaInfo> orderedDeltas = verifyAndOrderDeltaSerials(notification, rpkiRepository);
+                    rrdpProcessingPool.submit(() -> orderedDeltas
+                            .parallelStream()
+                            .map(di -> readDelta(notification, di))
+                            .forEachOrdered(d -> storage.writeTx0(tx -> {
+                                verifyDeltaIsApplicable(tx, d);
+                                storeDelta(tx, d, validationRun, rpkiRepository, changedObjects);
+                                tx.afterCommit(() -> rpkiRepository.setRrdpSerial(rpkiRepository.getRrdpSerial().add(BigInteger.ONE)));
+                            }))
+                    ).join();
                 } catch (RrdpException e) {
                     log.info("Processing deltas failed {}, falling back to snapshot processing.", e.getMessage());
                     final String errorCode = e.getErrorCode() != null ? e.getErrorCode() : ErrorCodes.RRDP_FETCH_DELTAS;
@@ -155,29 +156,31 @@ public class RrdpServiceImpl implements RrdpService {
     }
 
     private void readSnapshot(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun, Notification notification, AtomicBoolean changedObjects) {
-        final AtomicReference<HashingInputStream> hashingStream = new AtomicReference<>();
-        final Pair<Snapshot, Long> timedSnapshot = Time.timed(() ->
-                rrdpClient.readStream(notification.snapshotUri, is -> {
-                    hashingStream.set(new HashingInputStream(Hashing.sha256(), is));
-                    return rrdpParser.snapshot(hashingStream.get());
-                }));
+        rrdpProcessingPool.submit(() -> {
+            final AtomicReference<HashingInputStream> hashingStream = new AtomicReference<>();
+            final Pair<Snapshot, Long> timedSnapshot = Time.timed(() ->
+                    rrdpClient.readStream(notification.snapshotUri, is -> {
+                        hashingStream.set(new HashingInputStream(Hashing.sha256(), is));
+                        return rrdpParser.snapshot(hashingStream.get());
+                    }));
 
-        final byte[] snapshotHash = hashingStream.get().hash().asBytes();
-        if (!Arrays.equals(Hex.parse(notification.snapshotHash), snapshotHash)) {
-            throw new RrdpException(ErrorCodes.RRDP_WRONG_SNAPSHOT_HASH, "Hash of the snapshot file " +
-                    notification.snapshotUri + " is " + Hex.format(snapshotHash) + ", but notification file says " + notification.snapshotHash);
-        }
+            final byte[] snapshotHash = hashingStream.get().hash().asBytes();
+            if (!Arrays.equals(Hex.parse(notification.snapshotHash), snapshotHash)) {
+                throw new RrdpException(ErrorCodes.RRDP_WRONG_SNAPSHOT_HASH, "Hash of the snapshot file " +
+                        notification.snapshotUri + " is " + Hex.format(snapshotHash) + ", but notification file says " + notification.snapshotHash);
+            }
 
-        log.info("Downloading/hashing/parsing snapshot time {}ms", timedSnapshot.getRight());
-        Long timedStoreSnapshot = Time.timed(() ->
-                storage.writeTx0(tx -> {
-                    storeSnapshot(tx, timedSnapshot.getLeft(), validationRun, changedObjects);
-                    rpkiRepository.setRrdpSessionId(notification.sessionId);
-                    rpkiRepository.setRrdpSerial(notification.serial);
-                    rpkiRepositories.update(tx, rpkiRepository);
-                }));
+            log.info("Downloading/hashing/parsing snapshot time {}ms", timedSnapshot.getRight());
+            Long timedStoreSnapshot = Time.timed(() ->
+                    storage.writeTx0(tx -> {
+                        storeSnapshot(tx, timedSnapshot.getLeft(), validationRun, changedObjects);
+                        rpkiRepository.setRrdpSessionId(notification.sessionId);
+                        rpkiRepository.setRrdpSerial(notification.serial);
+                        rpkiRepositories.update(tx, rpkiRepository);
+                    }));
 
-        log.info("Storing snapshot time {}ms", timedStoreSnapshot);
+            log.info("Storing snapshot time {}ms", timedStoreSnapshot);
+        }).join();
     }
 
     private Delta readDelta(Notification notification, DeltaInfo di) {
@@ -198,10 +201,18 @@ public class RrdpServiceImpl implements RrdpService {
             throw new RrdpException(ErrorCodes.RRDP_WRONG_DELTA_SESSION, "Session id of the delta (" + di +
                 ") is not the same as in the notification file: " + notification.sessionId);
         }
+        if (!d.getSerial().equals(di.getSerial())) {
+            throw new RrdpException(ErrorCodes.RRDP_SERIAL_MISMATCH, "Serial of the delta (" + d.getSerial() +
+                    ") is not the same as in the notification file: " + di);
+        }
         return d;
     }
 
-    private void verifyDeltaSerials(final List<Delta> orderedDeltas, final Notification notification, RpkiRepository rpkiRepository) {
+    private List<DeltaInfo> verifyAndOrderDeltaSerials(final Notification notification, RpkiRepository rpkiRepository) {
+        List<DeltaInfo> orderedDeltas = notification.getDeltas().stream()
+                .filter(d -> d.getSerial().compareTo(rpkiRepository.getRrdpSerial()) > 0)
+                .sorted(Comparator.comparing(DeltaInfo::getSerial))
+                .collect(Collectors.toList());
         if (orderedDeltas.isEmpty()) {
             if (!rpkiRepository.getRrdpSerial().equals(notification.serial)) {
                 throw new RrdpException(ErrorCodes.RRDP_SERIAL_MISMATCH, "The current serial is " + rpkiRepository.getRrdpSerial() +
@@ -228,6 +239,7 @@ public class RrdpServiceImpl implements RrdpService {
                 }
             }
         }
+        return orderedDeltas;
     }
 
     /*
