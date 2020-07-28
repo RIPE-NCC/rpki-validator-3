@@ -145,22 +145,22 @@ public class RrdpServiceImpl implements RrdpService {
                     ValidationCheck validationCheck = new ValidationCheck(rpkiRepository.getRrdpNotifyUri(),
                             ValidationCheck.Status.WARNING, errorCode, e.getMessage());
                     validationRun.addCheck(validationCheck);
-                    readSnapshot(rpkiRepository, validationRun, notification, changedObjects);
+                    processSnapshot(rpkiRepository, validationRun, notification, changedObjects);
                 }
             } else {
                 log.info("Repository serial {} is ahead of serial in notification file {}, fetching the snapshot",
                         rpkiRepository.getRrdpSessionId(), notification.sessionId);
-                readSnapshot(rpkiRepository, validationRun, notification, changedObjects);
+                processSnapshot(rpkiRepository, validationRun, notification, changedObjects);
             }
         } else {
             log.info("Repository has session id '{}' but the downloaded version has session id '{}', fetching the snapshot",
                     rpkiRepository.getRrdpSessionId(), notification.sessionId);
-            readSnapshot(rpkiRepository, validationRun, notification, changedObjects);
+            processSnapshot(rpkiRepository, validationRun, notification, changedObjects);
         }
         return changedObjects.get();
     }
 
-    private void readSnapshot(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun, Notification notification, AtomicBoolean changedObjects) {
+    private void processSnapshot(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun, Notification notification, AtomicBoolean changedObjects) {
         rrdpProcessingPool.submit(() -> {
             rrdpClient.processUsingTemporaryFile(notification.snapshotUri, Hashing.sha256(), (snapshotPath, snapshotHash) -> {
                 if (!Arrays.equals(Hex.parse(notification.snapshotHash), snapshotHash.asBytes())) {
@@ -170,44 +170,11 @@ public class RrdpServiceImpl implements RrdpService {
 
                 Long timedStoreSnapshot = Time.timed(() -> {
                     try (InputStream in = new FileInputStream(snapshotPath.toFile())) {
-                        AtomicInteger counter = new AtomicInteger(0);
-                        AtomicInteger pendingObjectsBytes = new AtomicInteger(0);
-                        List<SnapshotObject> pendingObjects = new ArrayList<>(1000);
-                        rrdpParser.parseSnapshot(
-                                in,
-                                (snapshotInfo) -> {
-                                    if (!notification.sessionId.equals(snapshotInfo.getSessionId())) {
-                                        throw new RrdpException(ErrorCodes.RRDP_WRONG_SNAPSHOT_SESSION, "Session id of the snapshot (" + snapshotInfo.getSessionId() +
-                                                ") is not the same as in the notification file: " + notification.sessionId);
-                                    }
-                                    if (!notification.getSerial().equals(snapshotInfo.getSerial())) {
-                                        throw new RrdpException(ErrorCodes.RRDP_SERIAL_MISMATCH, "Serial of the snapshot (" + snapshotInfo.getSerial() +
-                                                ") is not the same as in the notification file: " + notification.serial);
-                                    }
+                        int counter = processDownloadedSnapshot(rpkiRepository, validationRun, notification, in);
 
-                                    rpkiRepository.setRrdpSessionId(snapshotInfo.getSessionId());
-                                    rpkiRepository.setRrdpSerial(snapshotInfo.getSerial());
-                                },
-                                (snapshotObject) -> {
-                                    pendingObjects.add(snapshotObject);
-                                    int bytes = pendingObjectsBytes.addAndGet(snapshotObject.content.length);
-                                    if (bytes > PENDING_OBJECT_COMMIT_BATCH_SIZE_BYTES) {
-                                        storage.writeTx0(tx -> counter.addAndGet(
-                                                storeSnapshotObjects(tx, pendingObjects, validationRun, changedObjects))
-                                        );
-                                        pendingObjects.clear();
-                                        pendingObjectsBytes.set(0);
-                                    }
-                                }
-                        );
-                        storage.writeTx0(tx -> {
-                            counter.addAndGet(
-                                    storeSnapshotObjects(tx, pendingObjects, validationRun, changedObjects)
-                            );
-                            rpkiRepositories.update(tx, rpkiRepository);
-                        });
+                        changedObjects.set(counter > 0);
 
-                        log.info("Added (or updated locations for) {} new objects", counter.get());
+                        log.info("Added (or updated locations for) {} new objects", counter);
                     } catch (IOException e) {
                         throw new RrdpException("Couldn't read snapshot: ", e);
                     }
@@ -217,6 +184,46 @@ public class RrdpServiceImpl implements RrdpService {
                 return null;
             });
         }).join();
+    }
+
+    private int processDownloadedSnapshot(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun, Notification notification, InputStream in) {
+        AtomicInteger counter = new AtomicInteger(0);
+        AtomicInteger pendingObjectsBytes = new AtomicInteger(0);
+        List<SnapshotObject> pendingObjects = new ArrayList<>(1000);
+        rrdpParser.parseSnapshot(
+                in,
+                (snapshotInfo) -> {
+                    if (!notification.sessionId.equals(snapshotInfo.getSessionId())) {
+                        throw new RrdpException(ErrorCodes.RRDP_WRONG_SNAPSHOT_SESSION, "Session id of the snapshot (" + snapshotInfo.getSessionId() +
+                                ") is not the same as in the notification file: " + notification.sessionId);
+                    }
+                    if (!notification.getSerial().equals(snapshotInfo.getSerial())) {
+                        throw new RrdpException(ErrorCodes.RRDP_SERIAL_MISMATCH, "Serial of the snapshot (" + snapshotInfo.getSerial() +
+                                ") is not the same as in the notification file: " + notification.serial);
+                    }
+
+                    rpkiRepository.setRrdpSessionId(snapshotInfo.getSessionId());
+                    rpkiRepository.setRrdpSerial(snapshotInfo.getSerial());
+                },
+                (snapshotObject) -> {
+                    pendingObjects.add(snapshotObject);
+                    int bytes = pendingObjectsBytes.addAndGet(snapshotObject.content.length);
+                    if (bytes > PENDING_OBJECT_COMMIT_BATCH_SIZE_BYTES) {
+                        storage.writeTx0(tx -> counter.addAndGet(
+                                storeSnapshotObjects(tx, pendingObjects, validationRun))
+                        );
+                        pendingObjects.clear();
+                        pendingObjectsBytes.set(0);
+                    }
+                }
+        );
+        storage.writeTx0(tx -> {
+            counter.addAndGet(
+                    storeSnapshotObjects(tx, pendingObjects, validationRun)
+            );
+            rpkiRepositories.update(tx, rpkiRepository);
+        });
+        return counter.get();
     }
 
     private Delta readDelta(Notification notification, DeltaInfo di) {
@@ -286,7 +293,7 @@ public class RrdpServiceImpl implements RrdpService {
             new ExecutorCompletionService<>(Executors.newFixedThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1)));
 
     int storeSnapshotObjects(final Tx.Write tx, Collection<SnapshotObject> snapshotObjects,
-                       final RpkiRepositoryValidationRun validationRun, AtomicBoolean changedObjects) {
+                             final RpkiRepositoryValidationRun validationRun) {
         final AtomicInteger counter = new AtomicInteger();
         final AtomicInteger workCounter = new AtomicInteger(0);
         final int threshold = 10;
@@ -309,8 +316,6 @@ public class RrdpServiceImpl implements RrdpService {
         while (workCounter.getAndDecrement() > 0) {
             storeSnapshotObject(tx, validationRun, counter);
         }
-
-        changedObjects.set(counter.get() > 0);
 
         return counter.get();
     }
