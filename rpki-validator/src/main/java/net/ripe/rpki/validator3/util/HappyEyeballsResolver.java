@@ -133,9 +133,9 @@ public class HappyEyeballsResolver implements SocketAddressResolver {
 
                 awaitDnsResponses(resolvedAddressesV6, resolvedAddressesV4);
 
-                if (log.isDebugEnabled()) {
-                    log.debug("Resolved v6 addresses: {} for host {}", joinAddresses(resolvedAddressesV6), host);
-                    log.debug("Resolved v4 addresses: {} for host {}", joinAddresses(resolvedAddressesV4), host);
+                if (log.isTraceEnabled()) {
+                    log.trace("Resolved v6 addresses: {} for host {}", joinAddresses(resolvedAddressesV6), host);
+                    log.trace("Resolved v4 addresses: {} for host {}", joinAddresses(resolvedAddressesV4), host);
                 }
 
                 selector = Selector.open();
@@ -190,17 +190,17 @@ public class HappyEyeballsResolver implements SocketAddressResolver {
                 final SocketChannel socketChannel = (SocketChannel) key.channel();
                 try {
                     if (socketChannel.finishConnect()) {
-                        if (log.isDebugEnabled()) {
-                            log.debug("Successfully connected to: {}", socketChannel.getRemoteAddress());
+                        if (log.isTraceEnabled()) {
+                            log.trace("Successfully connected to: {}", socketChannel.getRemoteAddress());
                         }
                         return Optional.ofNullable(socketChannel.getRemoteAddress());
                     }
                 } catch (IOException e) {
-                    if (log.isDebugEnabled()) {
+                    if (log.isTraceEnabled()) {
                         try {
-                            log.debug("Error connecting to " + socketChannel.getRemoteAddress(), e);
+                            log.trace("Error connecting to " + socketChannel.getRemoteAddress(), e);
                         } catch (IOException ex) {
-                            log.debug("Error connecting: ", e);
+                            log.trace("Error connecting: ", e);
                         }
                     }
                     closeAnyway(socketChannel);
@@ -297,14 +297,18 @@ public class HappyEyeballsResolver implements SocketAddressResolver {
             if (addressOptional.isPresent()) {
                 final InetAddress address = addressOptional.get();
                 try {
-                    log.info("Connecting to {}", address);
+                    if (log.isTraceEnabled()) {
+                        log.trace("Connecting to {}", address);
+                    }
                     final SocketChannel socketChannel = SocketChannel.open();
                     socketChannel.configureBlocking(false);
                     socketChannel.register(selector, SelectionKey.OP_CONNECT);
                     socketChannel.connect(new InetSocketAddress(address, port));
                 } catch (IOException e) {
                     // can't connect - move on
-                    log.info("Error connecting to {}", address);
+                    if (log.isTraceEnabled()) {
+                        log.trace("Error connecting to {}", address);
+                    }
                 }
             } else {
                 return false;
