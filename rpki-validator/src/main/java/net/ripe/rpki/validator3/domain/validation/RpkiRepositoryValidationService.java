@@ -78,9 +78,6 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 @Service
@@ -349,10 +346,6 @@ public class RpkiRepositoryValidationService {
                                     ValidationResult validationResult,
                                     Set<String> storedObjectKeys,
                                     RpkiRepository repository) throws IOException {
-
-        final AtomicInteger workCounter = new AtomicInteger(0);
-        final int threshold = 10;
-
         Files.walkFileTree(targetDirectory.toPath(), new SimpleFileVisitor<Path>() {
             private URI currentLocation = URI.create(repository.getLocationUri());
 
@@ -404,12 +397,8 @@ public class RpkiRepositoryValidationService {
                     boolean exists = storedObjectKeys.contains(key);
 
                     if (!exists) {
-                        if (workCounter.get() > threshold) {
-                            storeObject(tx, validationRun, storedObjectKeys);
-                            workCounter.decrementAndGet();
-                        }
-                        asyncCreateObjects.submit(() -> RpkiObjectUtils.createRpkiObject(location, content));
-                        workCounter.incrementAndGet();
+                        Either<ValidationResult, Pair<String, RpkiObject>> maybeRpkiObject = RpkiObjectUtils.createRpkiObject(location, content);
+                        storeObject(tx, validationRun, storedObjectKeys, maybeRpkiObject);
                     } else {
                         rpkiObjects.addLocation(tx, Key.of(key), location);
                     }
@@ -417,41 +406,29 @@ public class RpkiRepositoryValidationService {
                 return FileVisitResult.CONTINUE;
             }
         });
-
-        while (workCounter.getAndDecrement() > 0) {
-            storeObject(tx, validationRun, storedObjectKeys);
-        }
     }
 
     private void storeObject(Tx.Write tx, RpkiRepositoryValidationRun validationRun,
-                             Set<String> existingObjectsKeys) {
-        try {
-            final Either<ValidationResult, Pair<String, RpkiObject>> maybeRpkiObject = asyncCreateObjects.take().get();
-            if (maybeRpkiObject.isLeft()) {
-                final ValidationResult value = maybeRpkiObject.left().value();
-                validationRun.addChecks(value);
-                log.debug("parsing {} failed: {}", value.getCurrentLocation().getName(), value);
+                             Set<String> existingObjectsKeys, Either<ValidationResult, Pair<String, RpkiObject>> maybeRpkiObject) {
+        if (maybeRpkiObject.isLeft()) {
+            final ValidationResult value = maybeRpkiObject.left().value();
+            validationRun.addChecks(value);
+            log.debug("parsing {} failed: {}", value.getCurrentLocation().getName(), value);
+        } else {
+            final Pair<String, RpkiObject> p = maybeRpkiObject.right().value();
+            final RpkiObject object = p.getRight();
+            final String key = Hex.format(object.getSha256());
+            final String location = p.getLeft();
+            if (existingObjectsKeys.contains(key)) {
+                // re-check it for a weird case of object with the
+                // same hash inserted while this task was in the pool
+                rpkiObjects.addLocation(tx, Key.of(key), location);
             } else {
-                final Pair<String, RpkiObject> p = maybeRpkiObject.right().value();
-                final RpkiObject object = p.getRight();
-                final String key = Hex.format(object.getSha256());
-                final String location = p.getLeft();
-                if (existingObjectsKeys.contains(key)) {
-                    // re-check it for a weird case of object with the
-                    // same hash inserted while this task was in the pool
-                    rpkiObjects.addLocation(tx, Key.of(key), location);
-                } else {
-                    rpkiObjects.put(tx, object, location);
-                    existingObjectsKeys.add(key);
-                }
+                rpkiObjects.put(tx, object, location);
+                existingObjectsKeys.add(key);
             }
-        } catch (Exception e) {
-            log.error("Something strange happened here", e);
         }
     }
-
-    private ExecutorCompletionService<Either<ValidationResult, Pair<String, RpkiObject>>> asyncCreateObjects =
-        new ExecutorCompletionService<>(Executors.newFixedThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1)));
 
     private RsyncRepositoryValidationRun makeAndStoreRsyncValidationRun() {
         return storage.writeTx(tx -> validationRuns.add(tx, new RsyncRepositoryValidationRun()));
