@@ -299,12 +299,10 @@ public abstract class IxMapTest {
     public void testOnDeleteCascade() {
         final Set<Key> deleteKeys = new HashSet<>();
         ixMap.onDelete((tx, k) -> deleteKeys.add(k));
-        putAndGet("a");
-        putAndGet("bbb");
+        Key ka = putAndGet("a");
+        Key kb = putAndGet("bbb");
         putAndGet("ttt");
 
-        Key ka = Key.of("a");
-        Key kb = Key.of("bbb");
         wtx0(tx -> {
                     ixMap.delete(tx, ka);
                     ixMap.delete(tx, kb);
