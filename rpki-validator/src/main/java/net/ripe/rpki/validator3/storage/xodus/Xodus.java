@@ -50,10 +50,10 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static jetbrains.exodus.env.StoreConfig.WITHOUT_DUPLICATES;
@@ -76,27 +76,31 @@ public abstract class Xodus implements Storage {
     protected abstract Environment getEnv();
 
     public <T> T writeTx(Function<Tx.Write, T> f) {
+        AtomicReference<List<Runnable>> afterCommitHooks = new AtomicReference<>(Collections.emptyList());
+
         Environment env = getEnv();
-        return env.computeInExclusiveTransaction(txn -> {
+        T result = env.computeInExclusiveTransaction(txn -> {
             XodusTx.Write tx = XodusTx.fromRWNative(env, txn);
             txs.put(tx.getId(), new TxInfo(tx));
             try {
-                T result = f.apply(tx);
-                if (tx.getAtCommit() != null) {
-                    tx.getAtCommit().forEach(r -> {
-                        try {
-                            r.run();
-                        } catch (Exception ignored) {
-                            // this is just to keep the loop going, every Runnable
-                            // has to take care of exceptions themselves
-                        }
-                    });
-                }
-                return result;
+                T innerResult = f.apply(tx);
+                afterCommitHooks.set(tx.getAfterCommitHooks());
+                return innerResult;
             } finally {
                 txs.remove(tx.getId());
             }
         });
+
+        for (Runnable r: afterCommitHooks.get()) {
+            try {
+                r.run();
+            } catch (Exception ignored) {
+                // this is just to keep the loop going, every Runnable
+                // has to take care of exceptions themselves
+            }
+        }
+
+        return result;
     }
 
     public void writeTx0(Consumer<Tx.Write> c) {
