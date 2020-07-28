@@ -73,16 +73,21 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 @Service
 @Slf4j
 public class RpkiRepositoryValidationService {
+
+    private static final int PENDING_OBJECT_COMMIT_BATCH_SIZE_BYTES = 1_000_000;
 
     private final RrdpService rrdpService;
     private final File rsyncLocalStorageDirectory;
@@ -331,21 +336,21 @@ public class RpkiRepositoryValidationService {
                               ValidationResult validationResult,
                               Set<String> storedObjectKeys,
                               RpkiRepository repository) {
-        storage.writeTx0(tx -> {
-            try {
-                traverseFSandStore(tx, targetDirectory, validationRun, validationResult, storedObjectKeys, repository);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        try {
+            traverseFSandStore(targetDirectory, validationRun, validationResult, storedObjectKeys, repository);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    private void traverseFSandStore(Tx.Write tx,
-                                    File targetDirectory,
+    private void traverseFSandStore(File targetDirectory,
                                     RsyncRepositoryValidationRun validationRun,
                                     ValidationResult validationResult,
                                     Set<String> storedObjectKeys,
                                     RpkiRepository repository) throws IOException {
+        AtomicInteger pendingObjectsBytes = new AtomicInteger(0);
+        List<Pair<String, byte[]>> pendingObjects = new ArrayList<>(1000);
+
         Files.walkFileTree(targetDirectory.toPath(), new SimpleFileVisitor<Path>() {
             private URI currentLocation = URI.create(repository.getLocationUri());
 
@@ -388,24 +393,40 @@ public class RpkiRepositoryValidationService {
                 if (objectSize > RpkiObject.MAX_SIZE) {
                     validationResult.error(ErrorCodes.REPOSITORY_OBJECT_MAXIMUM_SIZE, objectLocation.toASCIIString(), String.valueOf(objectSize), String.valueOf(RpkiObject.MAX_SIZE));
                 } else {
-                    final byte[] content = Files.readAllBytes(file);
-                    final byte[] sha256 = Sha256.hash(content);
-
-                    final String key = Hex.format(sha256);
                     final String location = validationResult.getCurrentLocation().getName();
-
-                    boolean exists = storedObjectKeys.contains(key);
-
-                    if (!exists) {
-                        Either<ValidationResult, Pair<String, RpkiObject>> maybeRpkiObject = RpkiObjectUtils.createRpkiObject(location, content);
-                        storeObject(tx, validationRun, storedObjectKeys, maybeRpkiObject);
-                    } else {
-                        rpkiObjects.addLocation(tx, Key.of(key), location);
+                    final byte[] content = Files.readAllBytes(file);
+                    pendingObjects.add(Pair.of(location, content));
+                    int bytes = pendingObjectsBytes.addAndGet(content.length);
+                    if (bytes > PENDING_OBJECT_COMMIT_BATCH_SIZE_BYTES) {
+                        storage.writeTx0(tx ->
+                                storePendingObjects(tx, validationRun, pendingObjects, storedObjectKeys)
+                        );
+                        pendingObjects.clear();
+                        pendingObjectsBytes.set(0);
                     }
                 }
                 return FileVisitResult.CONTINUE;
             }
         });
+
+        storage.writeTx0(tx -> storePendingObjects(tx, validationRun, pendingObjects, storedObjectKeys));
+    }
+
+    private void storePendingObjects(Tx.Write tx, RsyncRepositoryValidationRun validationRun, List<Pair<String,byte[]>> pendingObjects, Set<String> storedObjectKeys) {
+        for (Pair<String, byte[]> pendingObject : pendingObjects) {
+            final String location = pendingObject.getLeft();
+            final byte[] content = pendingObject.getRight();
+            final byte[] sha256 = Sha256.hash(content);
+            final String key = Hex.format(sha256);
+
+            boolean exists = storedObjectKeys.contains(key);
+            if (!exists) {
+                Either<ValidationResult, Pair<String, RpkiObject>> maybeRpkiObject = RpkiObjectUtils.createRpkiObject(location, content);
+                storeObject(tx, validationRun, storedObjectKeys, maybeRpkiObject);
+            } else {
+                rpkiObjects.addLocation(tx, Key.of(key), location);
+            }
+        }
     }
 
     private void storeObject(Tx.Write tx, RpkiRepositoryValidationRun validationRun,
@@ -419,14 +440,8 @@ public class RpkiRepositoryValidationService {
             final RpkiObject object = p.getRight();
             final String key = Hex.format(object.getSha256());
             final String location = p.getLeft();
-            if (existingObjectsKeys.contains(key)) {
-                // re-check it for a weird case of object with the
-                // same hash inserted while this task was in the pool
-                rpkiObjects.addLocation(tx, Key.of(key), location);
-            } else {
-                rpkiObjects.put(tx, object, location);
-                existingObjectsKeys.add(key);
-            }
+            rpkiObjects.put(tx, object, location);
+            existingObjectsKeys.add(key);
         }
     }
 
