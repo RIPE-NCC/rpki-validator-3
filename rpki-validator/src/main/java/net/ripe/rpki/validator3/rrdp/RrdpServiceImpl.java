@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.rrdp;
 import com.google.common.hash.Hashing;
 import fj.data.Either;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.commons.util.RepositoryObjectType;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
 import net.ripe.rpki.validator3.domain.RpkiObjectUtils;
@@ -57,6 +58,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -66,6 +68,7 @@ import java.util.Optional;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 
@@ -167,15 +170,19 @@ public class RrdpServiceImpl implements RrdpService {
                 }
 
                 Long timedStoreSnapshot = Time.timed(() -> {
-                    try (InputStream in = new FileInputStream(snapshotPath.toFile())) {
-                        int counter = processDownloadedSnapshot(rpkiRepository, validationRun, notification, in);
+                    int counter = 0;
 
-                        changedObjects.set(counter > 0);
+                    log.debug("Processing RRDP repository {} snapshot, except for manifests", rpkiRepository.getRrdpNotifyUri());
+                    counter += processDownloadedSnapshot(rpkiRepository, validationRun, notification, snapshotPath, (type) -> type != RepositoryObjectType.Manifest);
 
-                        log.info("Added (or updated locations for) {} new objects", counter);
-                    } catch (IOException e) {
-                        throw new RrdpException("Couldn't read snapshot: ", e);
-                    }
+                    log.debug("Processing RRDP repository {} snapshot, manifests only", rpkiRepository.getRrdpNotifyUri());
+                    counter += processDownloadedSnapshot(rpkiRepository, validationRun, notification, snapshotPath, (type) -> type == RepositoryObjectType.Manifest);
+
+                    storage.writeTx0(tx -> rpkiRepositories.update(tx, rpkiRepository));
+
+                    changedObjects.set(counter > 0);
+
+                    log.info("Added (or updated locations for) {} new objects", counter);
                 });
                 log.info("Storing snapshot time {}ms", timedStoreSnapshot);
 
@@ -184,44 +191,51 @@ public class RrdpServiceImpl implements RrdpService {
         }).join();
     }
 
-    private int processDownloadedSnapshot(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun, Notification notification, InputStream in) {
-        AtomicInteger counter = new AtomicInteger(0);
-        AtomicInteger pendingObjectsBytes = new AtomicInteger(0);
-        List<SnapshotObject> pendingObjects = new ArrayList<>(1000);
-        rrdpParser.parseSnapshot(
-                in,
-                (snapshotInfo) -> {
-                    if (!notification.sessionId.equals(snapshotInfo.getSessionId())) {
-                        throw new RrdpException(ErrorCodes.RRDP_WRONG_SNAPSHOT_SESSION, "Session id of the snapshot (" + snapshotInfo.getSessionId() +
-                                ") is not the same as in the notification file: " + notification.sessionId);
-                    }
-                    if (!notification.getSerial().equals(snapshotInfo.getSerial())) {
-                        throw new RrdpException(ErrorCodes.RRDP_SERIAL_MISMATCH, "Serial of the snapshot (" + snapshotInfo.getSerial() +
-                                ") is not the same as in the notification file: " + notification.serial);
-                    }
+    private int processDownloadedSnapshot(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun, Notification notification, Path snapshotPath, Predicate<RepositoryObjectType> typePredicate) {
+        try (InputStream in = new FileInputStream(snapshotPath.toFile())) {
+            AtomicInteger counter = new AtomicInteger(0);
+            AtomicInteger pendingObjectsBytes = new AtomicInteger(0);
+            List<SnapshotObject> pendingObjects = new ArrayList<>(1000);
+            rrdpParser.parseSnapshot(
+                    in,
+                    (snapshotInfo) -> {
+                        if (!notification.sessionId.equals(snapshotInfo.getSessionId())) {
+                            throw new RrdpException(ErrorCodes.RRDP_WRONG_SNAPSHOT_SESSION, "Session id of the snapshot (" + snapshotInfo.getSessionId() +
+                                    ") is not the same as in the notification file: " + notification.sessionId);
+                        }
+                        if (!notification.getSerial().equals(snapshotInfo.getSerial())) {
+                            throw new RrdpException(ErrorCodes.RRDP_SERIAL_MISMATCH, "Serial of the snapshot (" + snapshotInfo.getSerial() +
+                                    ") is not the same as in the notification file: " + notification.serial);
+                        }
 
-                    rpkiRepository.setRrdpSessionId(snapshotInfo.getSessionId());
-                    rpkiRepository.setRrdpSerial(snapshotInfo.getSerial());
-                },
-                (snapshotObject) -> {
-                    pendingObjects.add(snapshotObject);
-                    int bytes = pendingObjectsBytes.addAndGet(snapshotObject.content.length);
-                    if (bytes > PENDING_OBJECT_COMMIT_BATCH_SIZE_BYTES) {
-                        storage.writeTx0(tx -> counter.addAndGet(
-                                storeSnapshotObjects(tx, pendingObjects, validationRun))
-                        );
-                        pendingObjects.clear();
-                        pendingObjectsBytes.set(0);
+                        rpkiRepository.setRrdpSessionId(snapshotInfo.getSessionId());
+                        rpkiRepository.setRrdpSerial(snapshotInfo.getSerial());
+                    },
+                    (snapshotObject) -> {
+                        if (!typePredicate.test(RepositoryObjectType.parse(snapshotObject.getUri()))) {
+                            return;
+                        }
+
+                        pendingObjects.add(snapshotObject);
+                        int bytes = pendingObjectsBytes.addAndGet(snapshotObject.content.length);
+                        if (bytes > PENDING_OBJECT_COMMIT_BATCH_SIZE_BYTES) {
+                            storage.writeTx0(tx -> counter.addAndGet(
+                                    storeSnapshotObjects(tx, pendingObjects, validationRun))
+                            );
+                            pendingObjects.clear();
+                            pendingObjectsBytes.set(0);
+                        }
                     }
-                }
-        );
-        storage.writeTx0(tx -> {
-            counter.addAndGet(
-                    storeSnapshotObjects(tx, pendingObjects, validationRun)
             );
-            rpkiRepositories.update(tx, rpkiRepository);
-        });
-        return counter.get();
+            storage.writeTx0(tx -> {
+                counter.addAndGet(
+                        storeSnapshotObjects(tx, pendingObjects, validationRun)
+                );
+            });
+            return counter.get();
+        } catch (IOException e) {
+            throw new RrdpException("Couldn't read snapshot: ", e);
+        }
     }
 
     private Delta readDelta(Notification notification, DeltaInfo di) {
