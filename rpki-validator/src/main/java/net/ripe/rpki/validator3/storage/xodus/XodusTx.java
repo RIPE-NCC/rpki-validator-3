@@ -131,13 +131,10 @@ public abstract class XodusTx implements AutoCloseable {
         }
 
         @Getter
-        private List<Runnable> atCommit = null;
+        private List<Runnable> afterCommitHooks = new ArrayList<>();
 
         public synchronized void afterCommit(Runnable r) {
-            if (atCommit == null) {
-                atCommit = new ArrayList<>();
-            }
-            atCommit.add(r);
+            afterCommitHooks.add(r);
         }
     }
 
