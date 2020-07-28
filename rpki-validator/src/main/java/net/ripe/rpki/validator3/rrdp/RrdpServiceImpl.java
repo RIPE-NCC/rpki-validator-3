@@ -63,8 +63,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -285,18 +283,10 @@ public class RrdpServiceImpl implements RrdpService {
         return orderedDeltas;
     }
 
-    /*
-      Creating objects from byte arrays is CPU-bound, so we do it
-      in parallel to make the writing transaction as short as possible.
-     */
-    private final ExecutorCompletionService<Either<ValidationResult, Pair<String, RpkiObject>>> asyncCreateObjects =
-            new ExecutorCompletionService<>(Executors.newFixedThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1)));
-
     int storeSnapshotObjects(final Tx.Write tx, Collection<SnapshotObject> snapshotObjects,
                              final RpkiRepositoryValidationRun validationRun) {
         final AtomicInteger counter = new AtomicInteger();
-        final AtomicInteger workCounter = new AtomicInteger(0);
-        final int threshold = 10;
+
         snapshotObjects.forEach((value) -> {
             byte[] content = value.content;
             final byte[] sha256 = Sha256.hash(content);
@@ -304,36 +294,23 @@ public class RrdpServiceImpl implements RrdpService {
             if (existing.isPresent()) {
                 rpkiObjects.addLocation(tx, existing.get().key(), value.getUri());
             } else {
-                if (workCounter.get() > threshold) {
-                    storeSnapshotObject(tx, validationRun, counter);
-                    workCounter.decrementAndGet();
-                }
-                asyncCreateObjects.submit(() -> RpkiObjectUtils.createRpkiObject(value.getUri(), content));
-                workCounter.incrementAndGet();
+                Either<ValidationResult, Pair<String, RpkiObject>> maybeRpkiObject = RpkiObjectUtils.createRpkiObject(value.getUri(), content);
+                storeSnapshotObject(tx, validationRun, maybeRpkiObject, counter);
             }
         });
-
-        while (workCounter.getAndDecrement() > 0) {
-            storeSnapshotObject(tx, validationRun, counter);
-        }
 
         return counter.get();
     }
 
-    private void storeSnapshotObject(Tx.Write tx, RpkiRepositoryValidationRun validationRun, AtomicInteger counter) {
-        try {
-            final Either<ValidationResult, Pair<String, RpkiObject>> maybeRpkiObject = asyncCreateObjects.take().get();
-            if (maybeRpkiObject.isLeft()) {
-                validationRun.addChecks(maybeRpkiObject.left().value());
-            } else {
-                final Pair<String, RpkiObject> p = maybeRpkiObject.right().value();
-                final RpkiObject object = p.getRight();
-                final String location = p.getLeft();
-                rpkiObjects.put(tx, object, location);
-                counter.incrementAndGet();
-            }
-        } catch (Exception e) {
-            log.error("Something strange happened here", e);
+    private void storeSnapshotObject(Tx.Write tx, RpkiRepositoryValidationRun validationRun, Either<ValidationResult, Pair<String, RpkiObject>> maybeRpkiObject, AtomicInteger counter) {
+        if (maybeRpkiObject.isLeft()) {
+            validationRun.addChecks(maybeRpkiObject.left().value());
+        } else {
+            final Pair<String, RpkiObject> p = maybeRpkiObject.right().value();
+            final RpkiObject object = p.getRight();
+            final String location = p.getLeft();
+            rpkiObjects.put(tx, object, location);
+            counter.incrementAndGet();
         }
     }
 
