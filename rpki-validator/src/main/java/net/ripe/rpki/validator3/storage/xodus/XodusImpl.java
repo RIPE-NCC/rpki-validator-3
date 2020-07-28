@@ -65,6 +65,11 @@ public class XodusImpl extends Xodus {
 
             final EnvironmentConfig config = new EnvironmentConfig()
                 .setLogCacheUseSoftReferences(true)
+                // Limit total memory usage of Xodus to avoid heavy garbage collector load.
+                // Soft-references ensure that the JVM will not run out of memory because of
+                // the Xodus cache, but can still cause a lot of GC work before the soft
+                // references are released.
+                .setMemoryUsagePercentage(10)
                 // Almost all RPKI objects are less than 2 KB so use that as the log cache page size.
                 // This avoids loading co-located objects that are unlikely to be needed, greatly
                 // reducing Xodus memory usage.
