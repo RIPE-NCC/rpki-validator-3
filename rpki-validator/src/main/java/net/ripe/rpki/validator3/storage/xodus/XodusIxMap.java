@@ -129,14 +129,21 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
     public Optional<T> put(Tx.Write tx, Key primaryKey, T value) {
         checkKeyAndValue(primaryKey, value);
         final Transaction txn = castTxn(tx);
-        final Optional<T> oldValue = get(tx, primaryKey);
         final ByteIterable pkBuf = primaryKey.toByteIterable();
-        final ByteIterable val = valueWithChecksum(value);
+        final ByteIterable newVal = valueWithChecksum(value);
 
-        getMainDb().put(txn, pkBuf, val);
-        if (oldValue.isPresent()) {
+        final ByteIterable oldVal = getMainDb().get(txn, pkBuf);
+        if (newVal.equals(oldVal)) {
+            // Exact same value already exists in the database, no need to store it again
+            // or to update indexes.
+            return Optional.of(value);
+        }
+
+        getMainDb().put(txn, pkBuf, newVal);
+        if (oldVal != null) {
+            final T oldValue = getValue(primaryKey, Bytes.toBytes(oldVal));
             indexFunctions.forEach((idxName, idxFun) -> {
-                final Set<Key> oldIndexKeys = idxFun.apply(oldValue.get());
+                final Set<Key> oldIndexKeys = idxFun.apply(oldValue);
                 final Set<Key> indexKeys = idxFun.apply(value).stream()
                         .filter(Objects::nonNull)
                         .collect(Collectors.toSet());
@@ -155,7 +162,7 @@ public class XodusIxMap<T extends Serializable> extends XodusIxBase<T> implement
                         .filter(ik -> !oldIndexKeys.contains(ik))
                         .forEach(ik -> index.put(txn, ik.toByteIterable(), pkBuf));
             });
-            return oldValue;
+            return Optional.of(oldValue);
         }
         indexFunctions.forEach((idxName, idxFun) -> {
             final Set<Key> indexKeys = idxFun.apply(value).stream()
