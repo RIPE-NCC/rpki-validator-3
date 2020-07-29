@@ -31,6 +31,7 @@ package net.ripe.rpki.validator3.domain.validation;
 
 import fj.data.Either;
 import lombok.extern.slf4j.Slf4j;
+import net.ripe.rpki.commons.util.RepositoryObjectType;
 import net.ripe.rpki.commons.validation.ValidationLocation;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
@@ -81,6 +82,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 @Service
@@ -88,6 +90,9 @@ import java.util.stream.Stream;
 public class RpkiRepositoryValidationService {
 
     private static final int PENDING_OBJECT_COMMIT_BATCH_SIZE_BYTES = 1_000_000;
+
+    public static final Predicate<RepositoryObjectType> NO_MANIFESTS_PREDICATE = (type) -> type != RepositoryObjectType.Manifest;
+    public static final Predicate<RepositoryObjectType> ONLY_MANIFESTS_PREDICATE = (type) -> type == RepositoryObjectType.Manifest;
 
     private final RrdpService rrdpService;
     private final File rsyncLocalStorageDirectory;
@@ -337,7 +342,8 @@ public class RpkiRepositoryValidationService {
                               Set<String> storedObjectKeys,
                               RpkiRepository repository) {
         try {
-            traverseFSandStore(targetDirectory, validationRun, validationResult, storedObjectKeys, repository);
+            traverseFSandStore(targetDirectory, validationRun, validationResult, storedObjectKeys, repository, NO_MANIFESTS_PREDICATE);
+            traverseFSandStore(targetDirectory, validationRun, validationResult, storedObjectKeys, repository, ONLY_MANIFESTS_PREDICATE);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -347,7 +353,8 @@ public class RpkiRepositoryValidationService {
                                     RsyncRepositoryValidationRun validationRun,
                                     ValidationResult validationResult,
                                     Set<String> storedObjectKeys,
-                                    RpkiRepository repository) throws IOException {
+                                    RpkiRepository repository,
+                                    Predicate<RepositoryObjectType> typePredicate) throws IOException {
         AtomicInteger pendingObjectsBytes = new AtomicInteger(0);
         List<Pair<String, byte[]>> pendingObjects = new ArrayList<>(1000);
 
@@ -387,6 +394,10 @@ public class RpkiRepositoryValidationService {
                 super.visitFile(file, attrs);
 
                 final URI objectLocation = currentLocation.resolve(file.getFileName().toString());
+                if (!typePredicate.test(RepositoryObjectType.parse(objectLocation.toString()))) {
+                    return FileVisitResult.CONTINUE;
+                }
+
                 validationResult.setLocation(new ValidationLocation(objectLocation));
 
                 final long objectSize = file.toFile().length();
