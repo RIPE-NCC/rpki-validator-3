@@ -57,7 +57,6 @@ import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Hex;
 import net.ripe.rpki.validator3.util.Rsync;
 import net.ripe.rpki.validator3.util.RsyncFactory;
-import net.ripe.rpki.validator3.util.Sha256;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -83,6 +82,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
@@ -91,8 +91,8 @@ public class RpkiRepositoryValidationService {
 
     private static final int PENDING_OBJECT_COMMIT_BATCH_SIZE_BYTES = 1_000_000;
 
-    public static final Predicate<RepositoryObjectType> NO_MANIFESTS_PREDICATE = (type) -> type != RepositoryObjectType.Manifest;
-    public static final Predicate<RepositoryObjectType> ONLY_MANIFESTS_PREDICATE = (type) -> type == RepositoryObjectType.Manifest;
+    private static final Predicate<RepositoryObjectType> NO_MANIFESTS_PREDICATE = (type) -> type != RepositoryObjectType.Manifest;
+    private static final Predicate<RepositoryObjectType> ONLY_MANIFESTS_PREDICATE = (type) -> type == RepositoryObjectType.Manifest;
 
     private final RrdpService rrdpService;
     private final File rsyncLocalStorageDirectory;
@@ -250,9 +250,9 @@ public class RpkiRepositoryValidationService {
                 fetchRsyncRepository(repository, targetDirectory, validationResult);
 
                 log.info("Storing objects downloaded for {}", repository.getLocationUri());
-                final Set<String> storedObjectKeys = new HashSet<>();
-                Long t = Time.timed(() -> storeObjects(targetDirectory, validationRun, validationResult, storedObjectKeys, repository));
-                log.info("Stored {} objects from the repository {} in {}ms", storedObjectKeys.size(), repository, t);
+                AtomicInteger counter = new AtomicInteger();
+                Long t = Time.timed(() -> storeObjects(targetDirectory, validationRun, validationResult, counter, repository));
+                log.info("Stored {} objects from the repository {} in {}ms", counter.get(), repository, t);
                 repository.setDownloaded();
             } catch (IOException e) {
                 repository.setFailed();
@@ -295,9 +295,9 @@ public class RpkiRepositoryValidationService {
                 repository.getType() == RpkiRepository.Type.RSYNC &&
                     (parentRepository == null || parentRepository.getType() == RpkiRepository.Type.RSYNC_PREFETCH)) {
                 log.info("Storing objects downloaded for {}", repository.getLocationUri());
-                final Set<String> storedObjectKeys = new HashSet<>();
-                Long t = Time.timed(() -> storeObjects(targetDirectory, validationRun, validationResult, storedObjectKeys, repository));
-                log.info("Stored {} objects from the repository {} in {}ms", storedObjectKeys.size(), repository, t);
+                AtomicInteger counter = new AtomicInteger();
+                Long t = Time.timed(() -> storeObjects(targetDirectory, validationRun, validationResult, counter, repository));
+                log.info("Stored {} objects from the repository {} in {}ms", counter.get(), repository, t);
                 repository.setDownloaded();
             }
         } catch (IOException e) {
@@ -339,11 +339,11 @@ public class RpkiRepositoryValidationService {
     private void storeObjects(File targetDirectory,
                               RsyncRepositoryValidationRun validationRun,
                               ValidationResult validationResult,
-                              Set<String> storedObjectKeys,
+                              AtomicInteger counter,
                               RpkiRepository repository) {
         try {
-            traverseFSandStore(targetDirectory, validationRun, validationResult, storedObjectKeys, repository, NO_MANIFESTS_PREDICATE);
-            traverseFSandStore(targetDirectory, validationRun, validationResult, storedObjectKeys, repository, ONLY_MANIFESTS_PREDICATE);
+            traverseFSandStore(targetDirectory, validationRun, validationResult, counter, repository, NO_MANIFESTS_PREDICATE);
+            traverseFSandStore(targetDirectory, validationRun, validationResult, counter, repository, ONLY_MANIFESTS_PREDICATE);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -352,11 +352,18 @@ public class RpkiRepositoryValidationService {
     private void traverseFSandStore(File targetDirectory,
                                     RsyncRepositoryValidationRun validationRun,
                                     ValidationResult validationResult,
-                                    Set<String> storedObjectKeys,
+                                    AtomicInteger counter,
                                     RpkiRepository repository,
                                     Predicate<RepositoryObjectType> typePredicate) throws IOException {
         AtomicInteger pendingObjectsBytes = new AtomicInteger(0);
         List<Pair<String, byte[]>> pendingObjects = new ArrayList<>(1000);
+        Runnable commitPendingObjects = () -> {
+            storage.writeTx0((tx) -> counter.addAndGet(
+                    storePendingObjects(tx, validationRun, pendingObjects))
+            );
+            pendingObjects.clear();
+            pendingObjectsBytes.set(0);
+        };
 
         Files.walkFileTree(targetDirectory.toPath(), new SimpleFileVisitor<Path>() {
             private URI currentLocation = URI.create(repository.getLocationUri());
@@ -409,39 +416,32 @@ public class RpkiRepositoryValidationService {
                     pendingObjects.add(Pair.of(location, content));
                     int bytes = pendingObjectsBytes.addAndGet(content.length);
                     if (bytes > PENDING_OBJECT_COMMIT_BATCH_SIZE_BYTES) {
-                        storage.writeTx0(tx ->
-                                storePendingObjects(tx, validationRun, pendingObjects, storedObjectKeys)
-                        );
-                        pendingObjects.clear();
-                        pendingObjectsBytes.set(0);
+                        commitPendingObjects.run();
                     }
                 }
                 return FileVisitResult.CONTINUE;
             }
         });
 
-        storage.writeTx0(tx -> storePendingObjects(tx, validationRun, pendingObjects, storedObjectKeys));
+        commitPendingObjects.run();
     }
 
-    private void storePendingObjects(Tx.Write tx, RsyncRepositoryValidationRun validationRun, List<Pair<String,byte[]>> pendingObjects, Set<String> storedObjectKeys) {
-        for (Pair<String, byte[]> pendingObject : pendingObjects) {
-            final String location = pendingObject.getLeft();
-            final byte[] content = pendingObject.getRight();
-            final byte[] sha256 = Sha256.hash(content);
-            final String key = Hex.format(sha256);
+    private int storePendingObjects(Tx.Write tx, RsyncRepositoryValidationRun validationRun, List<Pair<String,byte[]>> pendingObjects) {
+        AtomicInteger counter = new AtomicInteger();
 
-            boolean exists = storedObjectKeys.contains(key);
-            if (!exists) {
-                Either<ValidationResult, Pair<String, RpkiObject>> maybeRpkiObject = RpkiObjectUtils.createRpkiObject(location, content);
-                storeObject(tx, validationRun, storedObjectKeys, maybeRpkiObject);
-            } else {
-                rpkiObjects.addLocation(tx, Key.of(key), location);
-            }
-        }
+        // Parsing RPKI objects is CPU bound, so do this with any available threads
+        pendingObjects.parallelStream().map(pendingObject ->
+                RpkiObjectUtils.createRpkiObject(pendingObject.getLeft(), pendingObject.getRight())
+        ).collect(Collectors.toList()).forEach((maybeRpkiObject) ->
+            storeObject(tx, validationRun, maybeRpkiObject, counter)
+        );
+
+        return counter.get();
     }
 
     private void storeObject(Tx.Write tx, RpkiRepositoryValidationRun validationRun,
-                             Set<String> existingObjectsKeys, Either<ValidationResult, Pair<String, RpkiObject>> maybeRpkiObject) {
+                             Either<ValidationResult, Pair<String, RpkiObject>> maybeRpkiObject,
+                             AtomicInteger counter) {
         if (maybeRpkiObject.isLeft()) {
             final ValidationResult value = maybeRpkiObject.left().value();
             validationRun.addChecks(value);
@@ -452,7 +452,7 @@ public class RpkiRepositoryValidationService {
             final String key = Hex.format(object.getSha256());
             final String location = p.getLeft();
             rpkiObjects.put(tx, object, location);
-            existingObjectsKeys.add(key);
+            counter.incrementAndGet();
         }
     }
 
