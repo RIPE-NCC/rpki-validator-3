@@ -29,18 +29,31 @@
  */
 package net.ripe.rpki.validator3.rrdp;
 
+import com.google.common.hash.HashCode;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
+import com.google.common.hash.HashingInputStream;
+import com.google.common.hash.HashingOutputStream;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.util.BuildInformation;
 import net.ripe.rpki.validator3.domain.metrics.HttpClientMetricsService;
 import net.ripe.rpki.validator3.util.HttpStreaming;
+import net.ripe.rpki.validator3.util.Time;
+import org.apache.commons.io.IOUtils;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static org.springframework.util.StreamUtils.copy;
@@ -105,5 +118,36 @@ public class HttpRrdpClient implements RrdpClient {
             }
         });
         return baos.toByteArray();
+    }
+
+    @Override
+    public <T> T processUsingTemporaryFile(String uri, HashFunction hashFunction, BiFunction<Path, HashCode, T> process) {
+        try {
+            // Creates a file with default permissions (only readable/writable by owner)
+            final Path tempFile = Files.createTempFile("rrdp-", ".tmp");
+            try {
+                return readStream(uri, in -> {
+                    HashingInputStream hashingStream = new HashingInputStream(hashFunction, in);
+
+                    Long timedDownload = Time.timed(() -> {
+                        try (OutputStream out = new FileOutputStream(tempFile.toFile())) {
+                            IOUtils.copy(hashingStream, out);
+                        } catch (IOException e) {
+                            throw new RrdpException("Error downloading '" + uri + "', cause: " + fullMessage(e), e);
+                        }
+                    });
+                    log.info("snapshot {} of {} bytes downloaded in {}ms", uri, tempFile.toFile().length(), timedDownload);
+
+                    return process.apply(tempFile, hashingStream.hash());
+                });
+            } finally {
+                try {
+                    Files.deleteIfExists(tempFile);
+                } catch (IOException ignored) {
+                }
+            }
+        } catch (IOException e) {
+            throw new RrdpException("Error downloading '" + uri + "', cause: " + fullMessage(e), e);
+        }
     }
 }

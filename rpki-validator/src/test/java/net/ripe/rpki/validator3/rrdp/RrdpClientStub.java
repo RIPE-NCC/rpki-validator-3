@@ -29,15 +29,27 @@
  */
 package net.ripe.rpki.validator3.rrdp;
 
+import com.google.common.hash.HashCode;
+import com.google.common.hash.HashFunction;
+import net.ripe.rpki.validator3.api.util.BuildInformation;
+import net.ripe.rpki.validator3.domain.metrics.HttpClientMetricsService;
+import org.eclipse.jetty.client.HttpClient;
+
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public class RrdpClientStub implements RrdpClient {
+public class RrdpClientStub extends HttpRrdpClient {
 
     private Map<String, byte[]> contents = new HashMap<>();
+
+    public RrdpClientStub() {
+        super(null, null, null);
+    }
 
     @Override
     public <T> T readStream(String uri, Function<InputStream, T> reader) {
