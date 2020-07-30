@@ -61,7 +61,6 @@ import java.math.BigInteger;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -78,6 +77,9 @@ import java.util.stream.Collectors;
 public class RrdpServiceImpl implements RrdpService {
 
     private static final int PENDING_OBJECT_COMMIT_BATCH_SIZE_BYTES = 1_000_000;
+
+    private static final Predicate<RepositoryObjectType> NO_MANIFESTS_PREDICATE = (type) -> type != RepositoryObjectType.Manifest;
+    private static final Predicate<RepositoryObjectType> ONLY_MANIFESTS_PREDICATE = (type) -> type == RepositoryObjectType.Manifest;
 
     private final RrdpParser rrdpParser = new RrdpParser();
 
@@ -173,10 +175,10 @@ public class RrdpServiceImpl implements RrdpService {
                     int counter = 0;
 
                     log.debug("Processing RRDP repository {} snapshot, except for manifests", rpkiRepository.getRrdpNotifyUri());
-                    counter += processDownloadedSnapshot(rpkiRepository, validationRun, notification, snapshotPath, (type) -> type != RepositoryObjectType.Manifest);
+                    counter += processDownloadedSnapshot(rpkiRepository, validationRun, notification, snapshotPath, NO_MANIFESTS_PREDICATE);
 
                     log.debug("Processing RRDP repository {} snapshot, manifests only", rpkiRepository.getRrdpNotifyUri());
-                    counter += processDownloadedSnapshot(rpkiRepository, validationRun, notification, snapshotPath, (type) -> type == RepositoryObjectType.Manifest);
+                    counter += processDownloadedSnapshot(rpkiRepository, validationRun, notification, snapshotPath, ONLY_MANIFESTS_PREDICATE);
 
                     storage.writeTx0(tx -> rpkiRepositories.update(tx, rpkiRepository));
 
@@ -184,7 +186,7 @@ public class RrdpServiceImpl implements RrdpService {
 
                     log.info("Added (or updated locations for) {} new objects", counter);
                 });
-                log.info("Storing snapshot time {}ms", timedStoreSnapshot);
+                log.info("Storing snapshot {} time {}ms", rpkiRepository.getRrdpNotifyUri(), timedStoreSnapshot);
 
                 return null;
             });
@@ -196,6 +198,14 @@ public class RrdpServiceImpl implements RrdpService {
             AtomicInteger counter = new AtomicInteger(0);
             AtomicInteger pendingObjectsBytes = new AtomicInteger(0);
             List<SnapshotObject> pendingObjects = new ArrayList<>(1000);
+            Runnable commitPendingObjects = () -> {
+                storage.writeTx0(tx -> counter.addAndGet(
+                        storeSnapshotObjects(tx, pendingObjects, validationRun))
+                );
+                pendingObjects.clear();
+                pendingObjectsBytes.set(0);
+            };
+
             rrdpParser.parseSnapshot(
                     in,
                     (snapshotInfo) -> {
@@ -219,19 +229,13 @@ public class RrdpServiceImpl implements RrdpService {
                         pendingObjects.add(snapshotObject);
                         int bytes = pendingObjectsBytes.addAndGet(snapshotObject.content.length);
                         if (bytes > PENDING_OBJECT_COMMIT_BATCH_SIZE_BYTES) {
-                            storage.writeTx0(tx -> counter.addAndGet(
-                                    storeSnapshotObjects(tx, pendingObjects, validationRun))
-                            );
-                            pendingObjects.clear();
-                            pendingObjectsBytes.set(0);
+                            commitPendingObjects.run();
                         }
                     }
             );
-            storage.writeTx0(tx -> {
-                counter.addAndGet(
-                        storeSnapshotObjects(tx, pendingObjects, validationRun)
-                );
-            });
+
+            commitPendingObjects.run();
+
             return counter.get();
         } catch (IOException e) {
             throw new RrdpException("Couldn't read snapshot: ", e);
@@ -297,21 +301,16 @@ public class RrdpServiceImpl implements RrdpService {
         return orderedDeltas;
     }
 
-    int storeSnapshotObjects(final Tx.Write tx, Collection<SnapshotObject> snapshotObjects,
+    int storeSnapshotObjects(final Tx.Write tx, List<SnapshotObject> snapshotObjects,
                              final RpkiRepositoryValidationRun validationRun) {
         final AtomicInteger counter = new AtomicInteger();
 
-        snapshotObjects.forEach((value) -> {
-            byte[] content = value.content;
-            final byte[] sha256 = Sha256.hash(content);
-            Optional<RpkiObject> existing = rpkiObjects.findBySha256(tx, sha256);
-            if (existing.isPresent()) {
-                rpkiObjects.addLocation(tx, existing.get().key(), value.getUri());
-            } else {
-                Either<ValidationResult, Pair<String, RpkiObject>> maybeRpkiObject = RpkiObjectUtils.createRpkiObject(value.getUri(), content);
-                storeSnapshotObject(tx, validationRun, maybeRpkiObject, counter);
-            }
-        });
+        // Parsing RPKI objects is CPU bound, so do this with any available threads
+        snapshotObjects.parallelStream().map((value) ->
+                RpkiObjectUtils.createRpkiObject(value.getUri(), value.getContent())
+        ).collect(Collectors.toList()).forEach((maybeRpkiObject) ->
+                storeSnapshotObject(tx, validationRun, maybeRpkiObject, counter)
+        );
 
         return counter.get();
     }
