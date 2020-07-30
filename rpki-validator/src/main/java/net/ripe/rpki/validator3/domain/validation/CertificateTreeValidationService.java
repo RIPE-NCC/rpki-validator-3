@@ -171,7 +171,7 @@ public class CertificateTreeValidationService {
         final CertificateTreeValidationRun validationRun = new CertificateTreeValidationRun(trustAnchorRef);
 
         String trustAnchorLocation = trustAnchor.getLocations().get(0);
-        ValidationResult validationResult = ValidationResult.withLocation(trustAnchorLocation);
+        ValidationResult validationResult = ValidationResult.withLocation(trustAnchorLocation).withoutStoringPassingChecks();
 
         try {
             X509ResourceCertificate trustAnchorCertificate = trustAnchor.getCertificate();
@@ -240,7 +240,7 @@ public class CertificateTreeValidationService {
         rpkiObjects.findLatestMftByAKI(tx, taCertificate.getSubjectKeyIdentifier())
             .ifPresent(manifest -> {
                 rpkiObjects.markReachable(tx, manifest.key(), now);
-                manifest.get(ManifestCms.class, ValidationResult.withLocation("ta-manifest.mft"))
+                manifest.get(ManifestCms.class, ValidationResult.withLocation("ta-manifest.mft").withoutStoringPassingChecks())
                     .ifPresent(manifestCms ->
                         rpkiObjects.findObjectsInManifest(tx, manifestCms)
                             .forEach((entry, rpkiObject) ->
@@ -261,7 +261,7 @@ public class CertificateTreeValidationService {
                                               final Accumulator accumulator) {
 
         ValidationLocation certificateLocation = validationResult.getCurrentLocation();
-        ValidationResult temporary = ValidationResult.withLocation(certificateLocation);
+        ValidationResult temporary = ValidationResult.withLocation(certificateLocation).withoutStoringPassingChecks();
         try {
             RpkiRepository rpkiRepository = Bench.mark(trustAnchor.getName(),"registerRepository", () ->
                 storage.writeTx(tx -> registerRepository(tx, trustAnchor, registeredRepositories, context)));
@@ -361,7 +361,7 @@ public class CertificateTreeValidationService {
     private Stream<Tuple3<URI, RpkiObject, ValidationResult>> getManifestEntry(URI manifestUri,
                                                                                Map.Entry<String, byte[]> entry) {
         URI location = manifestUri.resolve(entry.getKey());
-        ValidationResult temporary = ValidationResult.withLocation(new ValidationLocation(location));
+        ValidationResult temporary = ValidationResult.withLocation(new ValidationLocation(location)).withoutStoringPassingChecks();
 
         Optional<RpkiObject> object = storage.readTx(tx -> rpkiObjects.findBySha256(tx, entry.getValue()));
         temporary.rejectIfFalse(object.isPresent(), VALIDATOR_MANIFEST_ENTRY_FOUND, manifestUri.toASCIIString());

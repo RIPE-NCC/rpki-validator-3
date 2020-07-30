@@ -41,7 +41,7 @@ import static net.ripe.rpki.commons.validation.ValidationString.OBJECTS_GENERAL_
 public class RpkiObjectUtils {
 
     public static Either<ValidationResult, Pair<String, RpkiObject>> createRpkiObject(final String uri, final byte[] content) {
-        ValidationResult validationResult = ValidationResult.withLocation(uri);
+        ValidationResult validationResult = ValidationResult.withLocation(uri).withoutStoringPassingChecks();
         CertificateRepositoryObject repositoryObject = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(content, validationResult);
         if (validationResult.hasFailures()) {
             return Either.left(validationResult);

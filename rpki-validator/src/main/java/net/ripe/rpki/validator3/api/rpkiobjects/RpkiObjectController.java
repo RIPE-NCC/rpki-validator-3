@@ -139,8 +139,8 @@ public class RpkiObjectController {
                     final SortedSet<String> locations = triple.getMiddle();
                     Optional<ValidationCheck> vc = triple.getRight();
                     return mapRpkiObject(rpkiObject, vc
-                            .map(c -> ValidationResult.withLocation(c.getLocation()))
-                            .orElse(ValidationResult.withLocation(location(rpkiObject.getType(), locations))));
+                            .map(c -> ValidationResult.withLocation(c.getLocation()).withoutStoringPassingChecks())
+                            .orElse(ValidationResult.withLocation(location(rpkiObject.getType(), locations))).withoutStoringPassingChecks());
                 })
                 .filter(Objects::nonNull);
     }
@@ -184,7 +184,7 @@ public class RpkiObjectController {
                 collect(Collectors.toList()).
                 parallelStream().
                 map(bytes -> {
-                    final ValidationResult vr = ValidationResult.withLocation("whatever." + fileExtension);
+                    ValidationResult vr = ValidationResult.withLocation("whatever." + fileExtension).withoutStoringPassingChecks();
                     return CertificateRepositoryObjectFactory.createCertificateRepositoryObject(bytes, vr);
                 });
     }

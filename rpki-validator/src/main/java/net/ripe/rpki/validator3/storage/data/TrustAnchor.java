@@ -94,7 +94,7 @@ public class TrustAnchor extends Base<TrustAnchor> {
 
         return (X509ResourceCertificate) CertificateRepositoryObjectFactory.createCertificateRepositoryObject(
                 encodedCertificate,
-                ValidationResult.withLocation(locations.get(0))
+                ValidationResult.withLocation(locations.get(0)).withoutStoringPassingChecks()
         );
     }
 

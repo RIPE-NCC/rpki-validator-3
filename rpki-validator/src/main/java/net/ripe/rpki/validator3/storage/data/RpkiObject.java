@@ -149,7 +149,7 @@ public class RpkiObject extends Base<RpkiObject> {
     }
 
     public <T extends CertificateRepositoryObject> Optional<T> get(Class<T> clazz, ValidationResult validationResult) {
-        ValidationResult temporary = ValidationResult.withLocation(validationResult.getCurrentLocation());
+        ValidationResult temporary = ValidationResult.withLocation(validationResult.getCurrentLocation()).withoutStoringPassingChecks();
         try {
             return get(clazz, validationResult.getCurrentLocation().getName());
         } finally {
@@ -158,9 +158,9 @@ public class RpkiObject extends Base<RpkiObject> {
     }
 
     public <T extends CertificateRepositoryObject> Optional<T> get(final Class<T> clazz, final String location) {
-        ValidationResult temporary = ValidationResult.withLocation(location);
+        ValidationResult temporary = ValidationResult.withLocation(location).withoutStoringPassingChecks();
 
-        ValidationResult ignored = ValidationResult.withLocation(location);
+        ValidationResult ignored = ValidationResult.withLocation(location).withoutStoringPassingChecks();
         CertificateRepositoryObject candidate = Bench.mark("createCertificateRepositoryObject", () ->
             CertificateRepositoryObjectFactory.createCertificateRepositoryObject(
                 encoded,

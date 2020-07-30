@@ -132,7 +132,7 @@ public class RpkiRepositoryValidationService {
             return;
         }
         log.info("Starting RPKI repository validation for " + rpkiRepository);
-        final ValidationResult validationResult = ValidationResult.withLocation(rpkiRepository.getRrdpNotifyUri());
+        final ValidationResult validationResult = ValidationResult.withLocation(rpkiRepository.getRrdpNotifyUri()).withoutStoringPassingChecks();
 
         final RpkiRepositoryValidationRun validationRun = storage.writeTx(tx -> {
             Ref<RpkiRepository> rpkiRepositoryRef = rpkiRepositories.makeRef(tx, rpkiRepository.key());
@@ -212,7 +212,7 @@ public class RpkiRepositoryValidationService {
                     return processRsyncRepository(affectedTrustAnchors, validationRun, fetchedLocations, existingObjectKeys, repository);
                 }
             ).collect(
-                () -> ValidationResult.withLocation("placeholder"),
+                () -> ValidationResult.withLocation("placeholder").withoutStoringPassingChecks(),
                 ValidationResult::addAll,
                 ValidationResult::addAll
             );
@@ -236,7 +236,7 @@ public class RpkiRepositoryValidationService {
 
             final RsyncRepositoryValidationRun validationRun = makeAndStoreRsyncValidationRun();
 
-            final ValidationResult validationResult = ValidationResult.withLocation(URI.create(repository.getRsyncRepositoryUri()));
+            final ValidationResult validationResult = ValidationResult.withLocation(URI.create(repository.getRsyncRepositoryUri())).withoutStoringPassingChecks();
             storage.writeTx0(tx -> validationRuns.associate(tx, validationRun, repository));
 
             final Set<String> existingObjectsBySha256 = new HashSet<>();
@@ -270,7 +270,7 @@ public class RpkiRepositoryValidationService {
                                                     Set<String> existingObjectsSha256,
                                                     RpkiRepository repository) {
 
-        final ValidationResult validationResult = ValidationResult.withLocation(URI.create(repository.getRsyncRepositoryUri()));
+        final ValidationResult validationResult = ValidationResult.withLocation(URI.create(repository.getRsyncRepositoryUri())).withoutStoringPassingChecks();
 
         try {
             File targetDirectory = Rsync.localFileFromRsyncUri(

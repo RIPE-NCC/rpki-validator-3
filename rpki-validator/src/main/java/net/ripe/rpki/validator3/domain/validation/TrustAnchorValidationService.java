@@ -119,7 +119,7 @@ public class TrustAnchorValidationService {
         });
 
         final ValidationLocation trustAnchorValidationLocation = new ValidationLocation(validationRun.getTrustAnchorCertificateURI());
-        ValidationResult validationResult = ValidationResult.withLocation(trustAnchorValidationLocation);
+        ValidationResult validationResult = ValidationResult.withLocation(trustAnchorValidationLocation).withoutStoringPassingChecks();
 
         boolean updatedTrustAnchor = false;
         try {
