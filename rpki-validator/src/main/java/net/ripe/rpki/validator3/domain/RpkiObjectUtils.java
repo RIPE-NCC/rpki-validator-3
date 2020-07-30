@@ -32,16 +32,40 @@ package net.ripe.rpki.validator3.domain;
 import fj.data.Either;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.util.CertificateRepositoryObjectFactory;
+import net.ripe.rpki.commons.validation.ValidationLocation;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import org.apache.commons.lang3.tuple.Pair;
+
+import java.net.URI;
 
 import static net.ripe.rpki.commons.validation.ValidationString.OBJECTS_GENERAL_PARSING;
 
 public class RpkiObjectUtils {
 
+    /**
+     * @return ValidationResult that will not store passing checks.
+     */
+    public static ValidationResult newValidationResult(String location) {
+        return ValidationResult.withLocation(location).withoutStoringPassingChecks();
+    }
+
+    /**
+     * @return ValidationResult that will not store passing checks.
+     */
+    public static ValidationResult newValidationResult(URI location) {
+        return ValidationResult.withLocation(location).withoutStoringPassingChecks();
+    }
+
+    /**
+     * @return ValidationResult that will not store passing checks.
+     */
+    public static ValidationResult newValidationResult(ValidationLocation location) {
+        return ValidationResult.withLocation(location).withoutStoringPassingChecks();
+    }
+
     public static Either<ValidationResult, Pair<String, RpkiObject>> createRpkiObject(final String uri, final byte[] content) {
-        ValidationResult validationResult = ValidationResult.withLocation(uri).withoutStoringPassingChecks();
+        ValidationResult validationResult = newValidationResult(uri);
         CertificateRepositoryObject repositoryObject = CertificateRepositoryObjectFactory.createCertificateRepositoryObject(content, validationResult);
         if (validationResult.hasFailures()) {
             return Either.left(validationResult);

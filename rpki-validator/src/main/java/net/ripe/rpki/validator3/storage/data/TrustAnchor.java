@@ -47,6 +47,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static net.ripe.rpki.validator3.domain.RpkiObjectUtils.newValidationResult;
+
 @EqualsAndHashCode(callSuper = true)
 @Binary
 @ToString(exclude = {"encodedCertificate", "subjectPublicKeyInfo"})
@@ -94,7 +96,7 @@ public class TrustAnchor extends Base<TrustAnchor> {
 
         return (X509ResourceCertificate) CertificateRepositoryObjectFactory.createCertificateRepositoryObject(
                 encodedCertificate,
-                ValidationResult.withLocation(locations.get(0)).withoutStoringPassingChecks()
+                newValidationResult(locations.get(0))
         );
     }
 

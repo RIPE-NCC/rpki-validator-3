@@ -58,6 +58,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static net.ripe.rpki.validator3.domain.RpkiObjectUtils.newValidationResult;
+
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Binary
@@ -149,7 +151,7 @@ public class RpkiObject extends Base<RpkiObject> {
     }
 
     public <T extends CertificateRepositoryObject> Optional<T> get(Class<T> clazz, ValidationResult validationResult) {
-        ValidationResult temporary = ValidationResult.withLocation(validationResult.getCurrentLocation()).withoutStoringPassingChecks();
+        ValidationResult temporary = newValidationResult(validationResult.getCurrentLocation());
         try {
             return get(clazz, validationResult.getCurrentLocation().getName());
         } finally {

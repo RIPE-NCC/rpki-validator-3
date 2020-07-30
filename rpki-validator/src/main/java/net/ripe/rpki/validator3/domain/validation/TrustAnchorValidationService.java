@@ -67,6 +67,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static net.ripe.rpki.validator3.domain.RpkiObjectUtils.newValidationResult;
+
 @Service
 @Slf4j
 public class TrustAnchorValidationService {
@@ -119,7 +121,7 @@ public class TrustAnchorValidationService {
         });
 
         final ValidationLocation trustAnchorValidationLocation = new ValidationLocation(validationRun.getTrustAnchorCertificateURI());
-        ValidationResult validationResult = ValidationResult.withLocation(trustAnchorValidationLocation).withoutStoringPassingChecks();
+        ValidationResult validationResult = newValidationResult(trustAnchorValidationLocation);
 
         boolean updatedTrustAnchor = false;
         try {

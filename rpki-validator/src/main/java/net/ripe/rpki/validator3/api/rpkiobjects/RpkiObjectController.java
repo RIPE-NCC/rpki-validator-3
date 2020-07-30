@@ -97,6 +97,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static net.ripe.rpki.validator3.domain.RpkiObjectUtils.newValidationResult;
+
 @Api(tags = "RPKI objects")
 @PublicApiCall
 @RestController
@@ -139,8 +141,8 @@ public class RpkiObjectController {
                     final SortedSet<String> locations = triple.getMiddle();
                     Optional<ValidationCheck> vc = triple.getRight();
                     return mapRpkiObject(rpkiObject, vc
-                            .map(c -> ValidationResult.withLocation(c.getLocation()).withoutStoringPassingChecks())
-                            .orElse(ValidationResult.withLocation(location(rpkiObject.getType(), locations))).withoutStoringPassingChecks());
+                            .map(c -> newValidationResult(c.getLocation()))
+                            .orElse(newValidationResult(location(rpkiObject.getType(), locations))));
                 })
                 .filter(Objects::nonNull);
     }
@@ -184,7 +186,7 @@ public class RpkiObjectController {
                 collect(Collectors.toList()).
                 parallelStream().
                 map(bytes -> {
-                    ValidationResult vr = ValidationResult.withLocation("whatever." + fileExtension).withoutStoringPassingChecks();
+                    ValidationResult vr = newValidationResult("whatever." + fileExtension);
                     return CertificateRepositoryObjectFactory.createCertificateRepositoryObject(bytes, vr);
                 });
     }

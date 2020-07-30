@@ -83,6 +83,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+import static net.ripe.rpki.validator3.domain.RpkiObjectUtils.newValidationResult;
+
 @Service
 @Slf4j
 public class RpkiRepositoryValidationService {
@@ -132,7 +134,7 @@ public class RpkiRepositoryValidationService {
             return;
         }
         log.info("Starting RPKI repository validation for " + rpkiRepository);
-        final ValidationResult validationResult = ValidationResult.withLocation(rpkiRepository.getRrdpNotifyUri()).withoutStoringPassingChecks();
+        final ValidationResult validationResult = newValidationResult(rpkiRepository.getRrdpNotifyUri());
 
         final RpkiRepositoryValidationRun validationRun = storage.writeTx(tx -> {
             Ref<RpkiRepository> rpkiRepositoryRef = rpkiRepositories.makeRef(tx, rpkiRepository.key());
@@ -212,7 +214,7 @@ public class RpkiRepositoryValidationService {
                     return processRsyncRepository(affectedTrustAnchors, validationRun, fetchedLocations, existingObjectKeys, repository);
                 }
             ).collect(
-                () -> ValidationResult.withLocation("placeholder").withoutStoringPassingChecks(),
+                () -> newValidationResult("placeholder"),
                 ValidationResult::addAll,
                 ValidationResult::addAll
             );
@@ -236,7 +238,7 @@ public class RpkiRepositoryValidationService {
 
             final RsyncRepositoryValidationRun validationRun = makeAndStoreRsyncValidationRun();
 
-            final ValidationResult validationResult = ValidationResult.withLocation(URI.create(repository.getRsyncRepositoryUri())).withoutStoringPassingChecks();
+            final ValidationResult validationResult = newValidationResult(repository.getRsyncRepositoryUri());
             storage.writeTx0(tx -> validationRuns.associate(tx, validationRun, repository));
 
             final Set<String> existingObjectsBySha256 = new HashSet<>();
@@ -270,7 +272,7 @@ public class RpkiRepositoryValidationService {
                                                     Set<String> existingObjectsSha256,
                                                     RpkiRepository repository) {
 
-        final ValidationResult validationResult = ValidationResult.withLocation(URI.create(repository.getRsyncRepositoryUri())).withoutStoringPassingChecks();
+        final ValidationResult validationResult = newValidationResult(repository.getRsyncRepositoryUri());
 
         try {
             File targetDirectory = Rsync.localFileFromRsyncUri(
