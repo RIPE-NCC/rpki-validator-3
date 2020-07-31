@@ -85,6 +85,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static net.ripe.rpki.validator3.domain.RpkiObjectUtils.newValidationResult;
+
 @Service
 @Slf4j
 public class RpkiRepositoryValidationService {
@@ -139,7 +141,7 @@ public class RpkiRepositoryValidationService {
             return;
         }
         log.info("Starting RPKI repository validation for " + rpkiRepository);
-        final ValidationResult validationResult = ValidationResult.withLocation(rpkiRepository.getRrdpNotifyUri());
+        final ValidationResult validationResult = newValidationResult(rpkiRepository.getRrdpNotifyUri());
 
         final RpkiRepositoryValidationRun validationRun = storage.writeTx(tx -> {
             Ref<RpkiRepository> rpkiRepositoryRef = rpkiRepositories.makeRef(tx, rpkiRepository.key());
@@ -218,7 +220,7 @@ public class RpkiRepositoryValidationService {
                     return processRsyncRepository(affectedTrustAnchors, validationRun, fetchedLocations, repository);
                 }
             ).collect(
-                () -> ValidationResult.withLocation("placeholder"),
+                () -> newValidationResult("placeholder"),
                 ValidationResult::addAll,
                 ValidationResult::addAll
             );
@@ -242,7 +244,7 @@ public class RpkiRepositoryValidationService {
 
             final RsyncRepositoryValidationRun validationRun = makeAndStoreRsyncValidationRun();
 
-            final ValidationResult validationResult = ValidationResult.withLocation(URI.create(repository.getRsyncRepositoryUri()));
+            final ValidationResult validationResult = newValidationResult(repository.getRsyncRepositoryUri());
             storage.writeTx0(tx -> validationRuns.associate(tx, validationRun, repository));
 
             try {
@@ -275,7 +277,7 @@ public class RpkiRepositoryValidationService {
                                                     Map<URI, RpkiRepository> fetchedLocations,
                                                     RpkiRepository repository) {
 
-        final ValidationResult validationResult = ValidationResult.withLocation(URI.create(repository.getRsyncRepositoryUri()));
+        final ValidationResult validationResult = newValidationResult(repository.getRsyncRepositoryUri());
 
         try {
             File targetDirectory = Rsync.localFileFromRsyncUri(

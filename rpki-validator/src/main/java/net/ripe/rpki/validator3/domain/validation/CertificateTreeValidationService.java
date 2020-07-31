@@ -85,6 +85,7 @@ import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_MANIFE
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_RPKI_REPOSITORY_PENDING;
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_TRUST_ANCHOR_CERTIFICATE_AVAILABLE;
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_TRUST_ANCHOR_CERTIFICATE_RRDP_NOTIFY_URI_OR_REPOSITORY_URI_PRESENT;
+import static net.ripe.rpki.validator3.domain.RpkiObjectUtils.newValidationResult;
 import static net.ripe.rpki.validator3.storage.data.RpkiRepository.Type.RRDP;
 import static net.ripe.rpki.validator3.storage.data.RpkiRepository.Type.RSYNC;
 
@@ -171,7 +172,7 @@ public class CertificateTreeValidationService {
         final CertificateTreeValidationRun validationRun = new CertificateTreeValidationRun(trustAnchorRef);
 
         String trustAnchorLocation = trustAnchor.getLocations().get(0);
-        ValidationResult validationResult = ValidationResult.withLocation(trustAnchorLocation);
+        ValidationResult validationResult = ValidationResult.withLocation(trustAnchorLocation).withoutStoringPassingChecks();
 
         try {
             X509ResourceCertificate trustAnchorCertificate = trustAnchor.getCertificate();
@@ -240,7 +241,7 @@ public class CertificateTreeValidationService {
         rpkiObjects.findLatestMftByAKI(tx, taCertificate.getSubjectKeyIdentifier())
             .ifPresent(manifest -> {
                 rpkiObjects.markReachable(tx, manifest.key(), now);
-                manifest.get(ManifestCms.class, ValidationResult.withLocation("ta-manifest.mft"))
+                manifest.get(ManifestCms.class, newValidationResult("ta-manifest.mft"))
                     .ifPresent(manifestCms ->
                         rpkiObjects.findObjectsInManifest(tx, manifestCms)
                             .forEach((entry, rpkiObject) ->
@@ -261,7 +262,7 @@ public class CertificateTreeValidationService {
                                               final Accumulator accumulator) {
 
         ValidationLocation certificateLocation = validationResult.getCurrentLocation();
-        ValidationResult temporary = ValidationResult.withLocation(certificateLocation);
+        ValidationResult temporary = newValidationResult(certificateLocation);
         try {
             RpkiRepository rpkiRepository = Bench.mark(trustAnchor.getName(),"registerRepository", () ->
                 storage.writeTx(tx -> registerRepository(tx, trustAnchor, registeredRepositories, context)));
@@ -361,7 +362,7 @@ public class CertificateTreeValidationService {
     private Stream<Tuple3<URI, RpkiObject, ValidationResult>> getManifestEntry(URI manifestUri,
                                                                                Map.Entry<String, byte[]> entry) {
         URI location = manifestUri.resolve(entry.getKey());
-        ValidationResult temporary = ValidationResult.withLocation(new ValidationLocation(location));
+        ValidationResult temporary = newValidationResult(location);
 
         Optional<RpkiObject> object = storage.readTx(tx -> rpkiObjects.findBySha256(tx, entry.getValue()));
         temporary.rejectIfFalse(object.isPresent(), VALIDATOR_MANIFEST_ENTRY_FOUND, manifestUri.toASCIIString());
