@@ -53,7 +53,7 @@ else
 fi
 
 if [ ! -x $JAVA_CMD ]; then
-  error_exit "Cannot find java, please install java 8 or higher"
+  error_exit "Cannot find java, please install java 8, java 11 or higher"
 fi
 
 JAR=${JAR:-"./lib/rpki-validator-3.jar"}
