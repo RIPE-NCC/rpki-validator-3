@@ -29,26 +29,53 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 
-EXECUTION_DIR=`dirname "$BASH_SOURCE"`
-cd ${EXECUTION_DIR}
-
-JAVA_CMD=${JAVA_CMD:-"/usr/bin/java"}
-JAR=${JAR:-"./lib/rpki-rtr-server.jar"}
-CONFIG_DIR=${CONFIG_DIR:-"./conf"}
-
-CONFIG_FILE="${CONFIG_DIR}/application.properties"
+function warn {
+    echo -e "[ warning ] $1"
+}
 
 function error_exit {
     echo -e "[ error ] $1"
     exit 1
 }
 
+EXECUTION_DIR=`dirname "$BASH_SOURCE"`
+cd ${EXECUTION_DIR}
+
+if [ -z ${JAVA_CMD} ]; then
+  if [ -z ${JAVA_HOME} ]; then
+    warn "Neither JAVA_CMD nor JAVA_HOME are set, will try to find java on path."
+    export JAVA_CMD=`which java`
+  else
+    export JAVA_CMD="${JAVA_HOME}/bin/java"
+  fi
+else
+  warn "JAVA_CMD is set"
+fi
+
+if [ ! -x $JAVA_CMD ]; then
+  error_exit "Cannot find java, please install java 8, java 11 or higher"
+fi
+
+JAVA_CMD=${JAVA_CMD:-"/usr/bin/java"}
+JAR=${JAR:-"./lib/rpki-rtr-server.jar"}
+CONFIG_DIR=${CONFIG_DIR:-"./conf"}
+
+CONFIG_FILE="${CONFIG_DIR}/application.properties"
+CONFIG_DEFAULT_FILE="${CONFIG_DIR}/application-defaults.properties"
+
 function parse_config_line {
-    local CONFIG_KEY=$1
+    local CONFIG_KEY="$1"
+
+    #First check on CONFIG_FILE if it contains CONFIG_KEY
     local VALUE=`grep "^$CONFIG_KEY" "$CONFIG_FILE" | sed 's/#.*//g' | awk -F "=" '{ print $2 }'`
 
-    if [ -z $VALUE ]; then
-        error_exit "Cannot find value for: $CONFIG_KEY in config-file: $CONFIG_FILE"
+    #If it is not there then lookup on the default.
+    if [ -z "$VALUE" ]; then
+        VALUE=`grep "^$CONFIG_KEY" "$CONFIG_DEFAULT_FILE" | sed 's/#.*//g' | awk -F "=" '{ print $2 }'`
+    fi
+
+    if [ -z "$VALUE" ]; then
+        error_exit "Cannot find value for: $CONFIG_KEY in config-files: $CONFIG_DEFAULT_FILE, $CONFIG_FILE"
     fi
     eval "$2=$VALUE"
 }
