@@ -158,10 +158,13 @@ public class RpkiRepositoryValidationService {
         try {
             final String uri = rpkiRepository.getRrdpNotifyUri();
             if (isRrdpUri(uri)) {
+                long t0 = System.currentTimeMillis();
                 changedAtLeastOneObject = rrdpService.storeRepository(rpkiRepository, validationRun);
                 if (validationRun.isFailed()) {
+                    rrdpMetricsService.update(uri,  ErrorCodes.RRDP_FETCH, System.currentTimeMillis() - t0);
                     rpkiRepository.setFailed();
                 } else {
+                    rrdpMetricsService.update(uri,  "OK", System.currentTimeMillis() - t0);
                     rpkiRepository.setDownloaded();
                 }
             } else if (isRsyncUri(uri)) {

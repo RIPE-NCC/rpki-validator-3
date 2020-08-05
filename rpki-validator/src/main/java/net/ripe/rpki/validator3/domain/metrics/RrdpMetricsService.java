@@ -53,16 +53,16 @@ public class RrdpMetricsService {
     @Autowired
     private MeterRegistry registry;
 
-    private ConcurrentHashMap<Tuple2<String, Integer>, RrdpMetric> rrdpMetrics = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Tuple2<String, String>, RrdpMetric> rrdpMetrics = new ConcurrentHashMap<>();
 
-    public void update(String uri, int statusDescription, long durationMs) {
-        update(URI.create(uri), statusDescription, durationMs);
+    public void update(String uri, String status, long durationMs) {
+        update(URI.create(uri), status, durationMs);
     }
 
-    public void update(URI uri, int statusDescription, long durationMs) {
+    public void update(URI uri, String status, long durationMs) {
         final String rootURL = uri.resolve("/").toASCIIString();
         rrdpMetrics
-            .computeIfAbsent(new Tuple2<>(rootURL, statusDescription), key -> new RrdpMetric(registry, rootURL, statusDescription))
+            .computeIfAbsent(new Tuple2<>(rootURL, status), key -> new RrdpMetric(registry, rootURL, status))
             .update(durationMs);
     }
 
@@ -70,11 +70,11 @@ public class RrdpMetricsService {
         public final Counter responseStatusCounter;
         public final Timer responseDuration;
 
-        public RrdpMetric(final MeterRegistry registry, final String uri, final long exitCode) {
+        public RrdpMetric(final MeterRegistry registry, final String uri, final String status) {
             this.responseStatusCounter = Counter.builder("rpkivalidator.rrdp.status")
                     .description("Exit code of the rrdp command")
                     .tag("url", uri)
-                    .tag("status", String.valueOf(exitCode))
+                    .tag("status", status)
                     .register(registry);
 
             this.responseDuration = Timer.builder("rpkivalidator.rrdp.duration")
