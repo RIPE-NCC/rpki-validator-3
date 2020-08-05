@@ -51,6 +51,7 @@ import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.RpkiRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.RrdpRepositoryValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.RsyncRepositoryValidationRun;
+import net.ripe.rpki.validator3.storage.data.validation.ValidationRun;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
@@ -161,10 +162,10 @@ public class RpkiRepositoryValidationService {
                 long t0 = System.currentTimeMillis();
                 changedAtLeastOneObject = rrdpService.storeRepository(rpkiRepository, validationRun);
                 if (validationRun.isFailed()) {
-                    rrdpMetricsService.update(uri,  ErrorCodes.RRDP_FETCH, System.currentTimeMillis() - t0);
+                    rrdpMetricsService.update(uri, ValidationRun.Status.FAILED.name(), System.currentTimeMillis() - t0);
                     rpkiRepository.setFailed();
                 } else {
-                    rrdpMetricsService.update(uri,  "OK", System.currentTimeMillis() - t0);
+                    rrdpMetricsService.update(uri,  ValidationRun.Status.SUCCEEDED.name(), System.currentTimeMillis() - t0);
                     rpkiRepository.setDownloaded();
                 }
             } else if (isRsyncUri(uri)) {
