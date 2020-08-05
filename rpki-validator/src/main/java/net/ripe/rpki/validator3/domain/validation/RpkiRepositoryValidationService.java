@@ -159,13 +159,16 @@ public class RpkiRepositoryValidationService {
         try {
             final String uri = rpkiRepository.getRrdpNotifyUri();
             if (isRrdpUri(uri)) {
-                long t0 = System.currentTimeMillis();
-                changedAtLeastOneObject = rrdpService.storeRepository(rpkiRepository, validationRun);
+
+                Pair<Boolean, Long> timed = Time.timed(() -> rrdpService.storeRepository(rpkiRepository, validationRun));
+                changedAtLeastOneObject = timed.getLeft();
+                Long duration = timed.getRight();
+
                 if (validationRun.isFailed()) {
-                    rrdpMetricsService.update(uri, ValidationRun.Status.FAILED.name(), System.currentTimeMillis() - t0);
+                    rrdpMetricsService.update(uri, ValidationRun.Status.FAILED.name(), duration);
                     rpkiRepository.setFailed();
                 } else {
-                    rrdpMetricsService.update(uri,  ValidationRun.Status.SUCCEEDED.name(), System.currentTimeMillis() - t0);
+                    rrdpMetricsService.update(uri,  ValidationRun.Status.SUCCEEDED.name(), duration);
                     rpkiRepository.setDownloaded();
                 }
             } else if (isRsyncUri(uri)) {
@@ -481,11 +484,15 @@ public class RpkiRepositoryValidationService {
         if (targetDirectory.mkdirs()) {
             log.info("created local rsync storage directory {} for repository {}", targetDirectory, rpkiRepository);
         }
-        final long t0 = System.currentTimeMillis();
 
         net.ripe.rpki.commons.rsync.Rsync rsync = rsyncFactory.rsyncDirectory(rpkiRepository.getLocationUri(), targetDirectory.getPath());
-        int exitStatus = rsync.execute();
-        rsyncMetrics.update(rpkiRepository.getLocationUri(), exitStatus, System.currentTimeMillis() - t0);
+
+        Pair<Integer, Long> timed = Time.timed(() ->  rsync.execute());
+
+        int exitStatus = timed.getLeft();
+        Long duration = timed.getRight();
+
+        rsyncMetrics.update(rpkiRepository.getLocationUri(), exitStatus, duration);
 
 
         validationResult.rejectIfTrue(exitStatus != 0, ErrorCodes.RSYNC_FETCH, String.valueOf(exitStatus), ArrayUtils.toString(rsync.getErrorLines()));
