@@ -72,7 +72,7 @@ public class RrdpMetricsService {
 
         public RrdpMetric(final MeterRegistry registry, final String uri, final String status) {
             this.responseStatusCounter = Counter.builder("rpkivalidator.rrdp.status")
-                    .description("Exit code of the rrdp command")
+                    .description("Status of fetching and storing rrdp source")
                     .tag("url", uri)
                     .tag("status", status)
                     .register(registry);
