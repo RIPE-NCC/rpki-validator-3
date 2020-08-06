@@ -155,10 +155,7 @@ public class RpkiRepositoryValidationService {
         try {
             final String uri = rpkiRepository.getRrdpNotifyUri();
             if (isRrdpUri(uri)) {
-
-                Pair<Boolean, Long> timed = Time.timed(() -> rrdpService.storeRepository(rpkiRepository, validationRun));
-                changedAtLeastOneObject = timed.getLeft();
-                Long duration = timed.getRight();
+                changedAtLeastOneObject = rrdpService.storeRepository(rpkiRepository, validationRun);
 
                 if (validationRun.isFailed()) {
                     rpkiRepository.setFailed();
