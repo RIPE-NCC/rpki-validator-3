@@ -6,7 +6,7 @@
 # Unpacking in a separate build step makes sure the archive that is COPY-d does
 # not become a layer in the final image.
 #
-FROM adoptopenjdk:11-jre-hotspot as intermediate
+FROM library/openjdk:11-slim as intermediate
 
 ARG GENERIC_BUILD_ARCHIVE
 
@@ -16,7 +16,7 @@ RUN mkdir -p /opt/rpki-validator-3 \
     && tar -zxf /tmp/$(basename $GENERIC_BUILD_ARCHIVE) -C /opt/rpki-validator-3/ --strip-components=1
 
 # Second build step: Move files into place
-FROM adoptopenjdk:11-jre-hotspot
+FROM library/openjdk:11-slim
 # Keep the file name and sha256 in the metadata
 ARG GENERIC_BUILD_ARCHIVE
 LABEL validation.archive.file="$(basename ${GENERIC_BUILD_ARCHIVE})"
@@ -53,6 +53,8 @@ RUN apt-get update && apt-get install --no-install-recommends --yes rsync \
     && sed -i 's:rpki\.validator\.preconfigured\.trust\.anchors\.directory=./preconfigured-tals:rpki.validator.preconfigured.trust.anchors.directory=/config/preconfigured-tals:g' ${CONFIG_DIR}/application.properties \
     # Store data in /data
     && sed -i 's:rpki\.validator\.data\.path=.:rpki.validator.data.path=/data:g' ${CONFIG_DIR}/application.properties \
+    # And rsync in /data/rsync
+    && sed -i 's:rpki\.validator\.rsync\.local.storage\.directory=.:rpki.validator.rsync.local.storage.directory=/data/:g' ${CONFIG_DIR}/application.properties \
     && useradd -M -d /opt/rpki-validator-3 rpki
 
 # https://github.com/just-containers/s6-overlay functionality
