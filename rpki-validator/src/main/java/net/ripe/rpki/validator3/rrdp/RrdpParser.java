@@ -196,7 +196,7 @@ public class RrdpParser {
             }
             return new Delta(uriToDeltaElement, sessionId, serial);
         } catch (XMLStreamException e) {
-            throw new RrdpException("Couldn't parse snapshot: ", e);
+            throw new RrdpException("Couldn't parse delta: ", e);
         }
     }
 
@@ -239,7 +239,7 @@ public class RrdpParser {
             }
             return new Notification(sessionId, serial, snapshotUri, snapshotHash, deltas);
         } catch (XMLStreamException e) {
-            throw new RrdpException("Couldn't parse snapshot: ", e);
+            throw new RrdpException("Couldn't parse notification: ", e);
         }
     }
 

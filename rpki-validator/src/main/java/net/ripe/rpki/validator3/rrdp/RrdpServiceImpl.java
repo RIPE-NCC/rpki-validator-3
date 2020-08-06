@@ -36,6 +36,7 @@ import net.ripe.rpki.commons.util.RepositoryObjectType;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
 import net.ripe.rpki.validator3.domain.RpkiObjectUtils;
+import net.ripe.rpki.validator3.domain.metrics.RrdpMetricsService;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
@@ -93,19 +94,23 @@ public class RrdpServiceImpl implements RrdpService {
 
     private final ForkJoinPool rrdpProcessingPool;
 
+    private final RrdpMetricsService rrdpMetrics;
+
     @Autowired
     public RrdpServiceImpl(
             @Value("${rpki.validator.rrdp.repository.parallelism:4}") int rrdpProcessingParallelism,
             final RrdpClient rrdpClient,
             final RpkiObjects rpkiObjects,
             final RpkiRepositories rpkiRepositories,
-            final Storage storage
+            final Storage storage,
+            final RrdpMetricsService rrdpMetrics
     ) {
         this.rrdpProcessingPool = new ForkJoinPool(rrdpProcessingParallelism);
         this.rrdpClient = rrdpClient;
         this.rpkiObjects = rpkiObjects;
         this.rpkiRepositories = rpkiRepositories;
         this.storage = storage;
+        this.rrdpMetrics = rrdpMetrics;
     }
 
     @Override
@@ -130,7 +135,9 @@ public class RrdpServiceImpl implements RrdpService {
 
         AtomicBoolean changedObjects = new AtomicBoolean(false);
         if (notification.sessionId.equals(rpkiRepository.getRrdpSessionId())) {
+            // The RRDP session is still the same
             if (rpkiRepository.getRrdpSerial().compareTo(notification.serial) <= 0) {
+                // The notification contains updates that we do not have locally
                 try {
                     List<DeltaInfo> orderedDeltas = verifyAndOrderDeltaSerials(notification, rpkiRepository);
                     rrdpProcessingPool.submit(() -> orderedDeltas
@@ -151,11 +158,13 @@ public class RrdpServiceImpl implements RrdpService {
                     processSnapshot(rpkiRepository, validationRun, notification, changedObjects);
                 }
             } else {
+                // The local repository is *ahead* the snapshot (for the same session): This should not happen, fall back to snapshot.
                 log.info("Repository serial {} is ahead of serial in notification file {}, fetching the snapshot",
                         rpkiRepository.getRrdpSessionId(), notification.sessionId);
                 processSnapshot(rpkiRepository, validationRun, notification, changedObjects);
             }
         } else {
+            // New RRDP session: Start from snapshot
             log.info("Repository has session id '{}' but the downloaded version has session id '{}', fetching the snapshot",
                     rpkiRepository.getRrdpSessionId(), notification.sessionId);
             processSnapshot(rpkiRepository, validationRun, notification, changedObjects);

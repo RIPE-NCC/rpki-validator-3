@@ -33,6 +33,7 @@ import com.google.common.collect.Sets;
 import net.ripe.rpki.validator3.IntegrationTest;
 import net.ripe.rpki.validator3.TestObjects;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
+import net.ripe.rpki.validator3.domain.metrics.RrdpMetricsService;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
@@ -46,6 +47,7 @@ import net.ripe.rpki.validator3.util.Sha256;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.math.BigInteger;
@@ -68,10 +70,13 @@ public class RrdpServiceImplTest extends GenericStorageTest {
 
     private RrdpServiceImpl subject;
 
+    @MockBean
+    private RrdpMetricsService rrdpMetricsService;
+
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        subject = new RrdpServiceImpl(1, rrdpClient, this.getRpkiObjects(), this.getRpkiRepositories(), getStorage());
+        subject = new RrdpServiceImpl(1, rrdpClient, this.getRpkiObjects(), this.getRpkiRepositories(), getStorage(), rrdpMetricsService);
     }
 
     @Test
