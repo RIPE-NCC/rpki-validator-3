@@ -100,7 +100,7 @@ public class HttpClientMetricsService {
                     return "timeout";
                 } else if (rootCause instanceof SocketTimeoutException) {
                     return "connect_timeout";
-                } else if (rootCause instanceof IOException && rootCause.getMessage().contains("Could not connect")) {
+                } else if (rootCause instanceof IOException && rootCause.getMessage() != null && rootCause.getMessage().contains("Could not connect")) {
                         return "could_not_connect";
                 }
                 return rootCause.toString();
