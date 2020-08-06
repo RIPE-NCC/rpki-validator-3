@@ -124,8 +124,6 @@ public class RrdpServiceImpl implements RrdpService {
             log.warn("Error retrieving RRDP repository at {}: " + e.getMessage(), rpkiRepository.getRrdpNotifyUri());
             ValidationCheck validationCheck = new ValidationCheck(rpkiRepository.getRrdpNotifyUri(),
                     ValidationCheck.Status.ERROR, ErrorCodes.RRDP_FETCH, e.getMessage());
-            String errorStatus = ErrorCodes.RRDP_FETCH + "." + (e.getErrorCode() != null? e.getErrorCode() : e.getMessage());
-            rrdpMetrics.update(rpkiRepository.getRrdpNotifyUri(), errorStatus);
             validationRun.addCheck(validationCheck);
             validationRun.setFailed();
         }
