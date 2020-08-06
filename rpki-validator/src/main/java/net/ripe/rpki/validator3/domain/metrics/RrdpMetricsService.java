@@ -52,10 +52,19 @@ public class RrdpMetricsService {
     private ConcurrentHashMap<Tuple2<String, String>, RrdpMetric> rrdpMetrics = new ConcurrentHashMap<>();
 
     public void update(String uri, String status) {
+        if (uri == null) {
+            log.info("null url provided to RrdpMetricsService, with status {}", status);
+            return;
+        }
         update(URI.create(uri), status);
     }
 
     public void update(URI uri, String status) {
+        if (uri == null || status == null) {
+            log.info("null url or status provided to RrdpMetricsService, uri: '{}', status: '{}'", uri, status);
+            return;
+        }
+
         final String rootURL = uri.resolve("/").toASCIIString();
         final String targetStatus = status.replace("rrdp.", "");
         rrdpMetrics
