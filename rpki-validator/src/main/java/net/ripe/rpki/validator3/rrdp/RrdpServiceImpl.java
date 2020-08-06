@@ -71,6 +71,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static net.ripe.rpki.validator3.domain.ErrorCodes.RRDP_SNAPSHOT_FETCH_LOCAL_AHEAD;
+import static net.ripe.rpki.validator3.domain.ErrorCodes.RRDP_SNAPSHOT_FETCH_NEW_SESSION;
+
 
 @Service
 @Slf4j
@@ -151,7 +154,7 @@ public class RrdpServiceImpl implements RrdpService {
                     ).join();
                 } catch (RrdpException e) {
                     log.info("Processing deltas failed {}, falling back to snapshot processing.", e.getMessage());
-                    rrdpMetrics.update(rpkiRepository.getRrdpNotifyUri(), RrdpMetricsService.RRDPProcessingStatus.SNAPSHOT_FALLBACK_DELTA_FAILS);
+                    rrdpMetrics.update(rpkiRepository.getRrdpNotifyUri(), ErrorCodes.RRDP_FETCH_DELTAS);
                     final String errorCode = e.getErrorCode() != null ? e.getErrorCode() : ErrorCodes.RRDP_FETCH_DELTAS;
                     ValidationCheck validationCheck = new ValidationCheck(rpkiRepository.getRrdpNotifyUri(),
                             ValidationCheck.Status.WARNING, errorCode, e.getMessage());
@@ -162,14 +165,14 @@ public class RrdpServiceImpl implements RrdpService {
                 // The local repository is *ahead* the snapshot (for the same session): This should not happen, fall back to snapshot.
                 log.info("Repository serial {} is ahead of serial in notification file {}, fetching the snapshot",
                         rpkiRepository.getRrdpSessionId(), notification.sessionId);
-                rrdpMetrics.update(rpkiRepository.getRrdpNotifyUri(), RrdpMetricsService.RRDPProcessingStatus.SNAPSHOT_FALLBACK_LOCAL_AHEAD);
+                rrdpMetrics.update(rpkiRepository.getRrdpNotifyUri(), RRDP_SNAPSHOT_FETCH_LOCAL_AHEAD);
                 processSnapshot(rpkiRepository, validationRun, notification, changedObjects);
             }
         } else {
             // New RRDP session: Start from snapshot
             log.info("Repository has session id '{}' but the downloaded version has session id '{}', fetching the snapshot",
                     rpkiRepository.getRrdpSessionId(), notification.sessionId);
-            rrdpMetrics.update(rpkiRepository.getRrdpNotifyUri(), RrdpMetricsService.RRDPProcessingStatus.SNAPSHOT_FALLBACK_NEW_SESSION);
+            rrdpMetrics.update(rpkiRepository.getRrdpNotifyUri(), RRDP_SNAPSHOT_FETCH_NEW_SESSION);
             processSnapshot(rpkiRepository, validationRun, notification, changedObjects);
         }
         return changedObjects.get();

@@ -38,7 +38,6 @@ import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
 import net.ripe.rpki.validator3.domain.ErrorCodes;
 import net.ripe.rpki.validator3.domain.RpkiObjectUtils;
-import net.ripe.rpki.validator3.domain.metrics.RrdpMetricsService;
 import net.ripe.rpki.validator3.domain.metrics.RsyncMetricsService;
 import net.ripe.rpki.validator3.rrdp.RrdpService;
 import net.ripe.rpki.validator3.storage.Storage;
@@ -109,7 +108,6 @@ public class RpkiRepositoryValidationService {
     private final RsyncFactory rsyncFactory;
 
     private final RsyncMetricsService rsyncMetrics;
-    private final RrdpMetricsService rrdpMetricsService;
 
     @Autowired
     public RpkiRepositoryValidationService(
@@ -121,7 +119,7 @@ public class RpkiRepositoryValidationService {
             Storage storage,
             @Value("${rpki.validator.rsync.local.storage.directory}") File rsyncLocalStorageDirectory,
             TrustAnchorState trustAnchorState,
-            ValidationScheduler validationScheduler, RsyncFactory rsyncFactory, RsyncMetricsService rsyncMetrics, RrdpMetricsService rrdpMetricsService) {
+            ValidationScheduler validationScheduler, RsyncFactory rsyncFactory, RsyncMetricsService rsyncMetrics) {
         this.validationRuns = validationRuns;
         this.rpkiRepositories = rpkiRepositories;
         this.rpkiObjects = rpkiObjects;
@@ -133,7 +131,6 @@ public class RpkiRepositoryValidationService {
         this.validationScheduler = validationScheduler;
         this.rsyncFactory = rsyncFactory;
         this.rsyncMetrics = rsyncMetrics;
-        this.rrdpMetricsService = rrdpMetricsService;
     }
 
     public void validateRrdpRpkiRepository(long rpkiRepositoryId) {
@@ -164,10 +161,8 @@ public class RpkiRepositoryValidationService {
                 Long duration = timed.getRight();
 
                 if (validationRun.isFailed()) {
-                    rrdpMetricsService.update(uri, RrdpMetricsService.RRDPProcessingStatus.INVALID);
                     rpkiRepository.setFailed();
                 } else {
-                    rrdpMetricsService.update(uri,   RrdpMetricsService.RRDPProcessingStatus.SUCCESSFUL);
                     rpkiRepository.setDownloaded();
                 }
             } else if (isRsyncUri(uri)) {
