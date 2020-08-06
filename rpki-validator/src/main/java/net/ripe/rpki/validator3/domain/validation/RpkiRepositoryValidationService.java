@@ -478,13 +478,11 @@ public class RpkiRepositoryValidationService {
 
         net.ripe.rpki.commons.rsync.Rsync rsync = rsyncFactory.rsyncDirectory(rpkiRepository.getLocationUri(), targetDirectory.getPath());
 
-        Pair<Integer, Long> timed = Time.timed(() ->  rsync.execute());
+        Pair<Integer, Long> timed = Time.timed(rsync::execute);
 
         int exitStatus = timed.getLeft();
-        Long duration = timed.getRight();
 
-        rsyncMetrics.update(rpkiRepository.getLocationUri(), exitStatus, duration);
-
+        rsyncMetrics.update(rpkiRepository.getLocationUri(), exitStatus, timed.getRight());
 
         validationResult.rejectIfTrue(exitStatus != 0, ErrorCodes.RSYNC_FETCH, String.valueOf(exitStatus), ArrayUtils.toString(rsync.getErrorLines()));
         if (validationResult.hasFailureForCurrentLocation()) {

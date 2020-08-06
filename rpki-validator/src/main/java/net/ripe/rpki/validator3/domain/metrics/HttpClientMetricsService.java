@@ -61,6 +61,10 @@ public class HttpClientMetricsService {
     private ConcurrentHashMap<Tuple2<String, String>, HttpStatusMetric> httpMetrics = new ConcurrentHashMap<>();
 
     public void update(URI uri, String statusDescription, long durationMs) {
+        if (uri == null || statusDescription == null) {
+            log.info("null url or statusdescription provided to HttpClientMetricsService, uri: '{}', status: '{}', durationMs: {}", uri, statusDescription, durationMs);
+            return;
+        }
         final String rootURL = uri.resolve("/").toASCIIString();
         httpMetrics
                 .computeIfAbsent(new Tuple2<>(rootURL, statusDescription), key -> new HttpStatusMetric(registry, rootURL, statusDescription))
@@ -68,6 +72,10 @@ public class HttpClientMetricsService {
     }
 
     public void update(String uri, String statusDescription, long durationMs) {
+        if (uri == null) {
+            log.info("null uri provided to HttpClientMetricsService with statusDescription: '{}', durationMs: {}", statusDescription, durationMs);
+            return;
+        }
         update(URI.create(uri), statusDescription, durationMs);
     }
 
@@ -77,8 +85,10 @@ public class HttpClientMetricsService {
      * @return string description
      */
     public static String unwrapExceptionString(Throwable cause) {
-        // HttpStatusException is a sub-type of HttpFailureException: check it first.
-        if (cause instanceof HttpStreaming.HttpStatusException) {
+        if (cause == null) {
+            return "null";
+        } else if (cause instanceof HttpStreaming.HttpStatusException) {
+            // HttpStatusException is a sub-type of HttpFailureException: check it first.
             return String.valueOf(((HttpStreaming.HttpStatusException)cause).getCode());
         } else if (cause instanceof HttpStreaming.HttpFailureException) {
             final Throwable rootCause = cause.getCause();
@@ -94,6 +104,8 @@ public class HttpClientMetricsService {
                         return "could_not_connect";
                 }
                 return rootCause.toString();
+            } else {
+                return "null";
             }
         }
         return cause.getClass().getName();
