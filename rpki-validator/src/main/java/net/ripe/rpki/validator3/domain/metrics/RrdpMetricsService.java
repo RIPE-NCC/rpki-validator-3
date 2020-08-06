@@ -48,27 +48,29 @@ public class RrdpMetricsService {
     @Autowired
     private MeterRegistry registry;
 
-    private ConcurrentHashMap<Tuple2<String, RRDPProcessingStatus>, RrdpMetric> rrdpMetrics = new ConcurrentHashMap<>();
 
-    public void update(String uri, RRDPProcessingStatus status) {
+    private ConcurrentHashMap<Tuple2<String, String>, RrdpMetric> rrdpMetrics = new ConcurrentHashMap<>();
+
+    public void update(String uri, String status) {
         update(URI.create(uri), status);
     }
 
-    public void update(URI uri, RRDPProcessingStatus status) {
+    public void update(URI uri, String status) {
         final String rootURL = uri.resolve("/").toASCIIString();
+        final String targetStatus = status.replace("rrdp.", "");
         rrdpMetrics
-            .computeIfAbsent(new Tuple2<>(rootURL, status), key -> new RrdpMetric(registry, rootURL, status))
+            .computeIfAbsent(new Tuple2<>(rootURL, targetStatus), key -> new RrdpMetric(registry, rootURL, targetStatus))
             .update();
     }
 
     private static class RrdpMetric {
         public final Counter responseStatusCounter;
 
-        public RrdpMetric(final MeterRegistry registry, final String uri, final RRDPProcessingStatus status) {
+        public RrdpMetric(final MeterRegistry registry, final String uri, final String status) {
             this.responseStatusCounter = Counter.builder("rpkivalidator.rrdp.status")
                     .description("Status of RRDP operation")
                     .tag("url", uri)
-                    .tag("status", status.getDisplayString())
+                    .tag("status", status)
                     .register(registry);
         }
 
@@ -77,22 +79,5 @@ public class RrdpMetricsService {
         }
     }
 
-    public enum RRDPProcessingStatus {
 
-        ERROR_RETRIEVING("error_retrieving"),
-        INVALID("invalid_response"),
-        SNAPSHOT_FALLBACK_DELTA_FAILS("fallback_to_snapshot_delta_fails"),
-        SNAPSHOT_FALLBACK_NEW_SESSION("fallback_to_snapshot_new_session"),
-        SNAPSHOT_FALLBACK_LOCAL_AHEAD("fallback_to_snapshot_local_ahead"),
-        SUCCESSFUL("success");
-        
-        private String displayString;
-        RRDPProcessingStatus(String displayString) {
-            this.displayString = displayString;
-        }
-
-        public String getDisplayString() {
-            return displayString;
-        }
-    }
 }

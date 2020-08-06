@@ -40,6 +40,9 @@ public class ErrorCodes {
     public static final String RRDP_SERIAL_MISMATCH = "rrdp.serial.mismatch";
     public static final String RRDP_REPLACE_NONEXISTENT_OBJECT = "rrdp.replace.nonexistent.object";
     public static final String RRDP_WITHDRAW_NONEXISTENT_OBJECT = "rrdp.withdraw.nonexistent.object";
+    public static final String RRDP_SNAPSHOT_FETCH_LOCAL_AHEAD = "rrdp.fetch.snapshot.local.ahead";
+    public static final String RRDP_SNAPSHOT_FETCH_NEW_SESSION = "rrdp.fetch.snapshot.new.session";
+
 
     public static final String RSYNC_FETCH = "rsync.fetch";
     public static final String RSYNC_REPOSITORY_IO = "rsync.repository.io";
