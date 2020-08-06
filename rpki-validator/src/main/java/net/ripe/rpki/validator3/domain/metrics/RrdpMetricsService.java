@@ -79,18 +79,14 @@ public class RrdpMetricsService {
 
     public enum RRDPProcessingStatus {
 
-
         ERROR_RETRIEVING("error_retrieving"),
         INVALID("invalid_response"),
-        NEW_SESSION("new_session"),
-        SERIAL_MISMATCH("serial_mismatch"),
-        SNAPSHOT_FALLBACK("fallback_to_snapshot"),
+        SNAPSHOT_FALLBACK_DELTA_FAILS("fallback_to_snapshot_delta_fails"),
+        SNAPSHOT_FALLBACK_NEW_SESSION("fallback_to_snapshot_new_session"),
+        SNAPSHOT_FALLBACK_LOCAL_AHEAD("fallback_to_snapshot_local_ahead"),
         SUCCESSFUL("success");
-
-
+        
         private String displayString;
-
-
         RRDPProcessingStatus(String displayString) {
             this.displayString = displayString;
         }
