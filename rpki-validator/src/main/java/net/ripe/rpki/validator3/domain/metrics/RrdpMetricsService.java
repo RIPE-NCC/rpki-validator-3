@@ -31,21 +31,13 @@ package net.ripe.rpki.validator3.domain.metrics;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.lambda.tuple.Tuple2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
-import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-
-import static net.ripe.rpki.validator3.domain.metrics.HttpClientMetricsService.HISTOGRAM_HOURS;
 
 /**
  * RRDP Metrics service.
@@ -86,18 +78,25 @@ public class RrdpMetricsService {
     }
 
     public enum RRDPProcessingStatus {
+
+
         ERROR_RETRIEVING("error_retrieving"),
-        INVALID("invalid_response");
+        INVALID("invalid_response"),
         NEW_SESSION("new_session"),
         SERIAL_MISMATCH("serial_mismatch"),
         SNAPSHOT_FALLBACK("fallback_to_snapshot"),
-        SUCCESSFUL("success"),
+        SUCCESSFUL("success");
 
-        @Getter
+
         private String displayString;
+
 
         RRDPProcessingStatus(String displayString) {
             this.displayString = displayString;
+        }
+
+        public String getDisplayString() {
+            return displayString;
         }
     }
 }
