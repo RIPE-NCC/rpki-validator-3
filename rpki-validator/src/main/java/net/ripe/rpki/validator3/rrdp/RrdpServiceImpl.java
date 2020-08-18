@@ -225,7 +225,7 @@ public class RrdpServiceImpl implements RrdpService {
                     in,
                     (snapshotInfo) -> {
                         if (!notification.sessionId.equals(snapshotInfo.getSessionId())) {
-                            rrdpMetrics.update(notification.snapshotUri, ErrorCodes.RRDP_WRONG_SNAPSHOT_HASH);
+                            rrdpMetrics.update(notification.snapshotUri, ErrorCodes.RRDP_WRONG_SNAPSHOT_SESSION);
                             throw new RrdpException(ErrorCodes.RRDP_WRONG_SNAPSHOT_SESSION, "Session id of the snapshot (" + snapshotInfo.getSessionId() +
                                     ") is not the same as in the notification file: " + notification.sessionId);
                         }
