@@ -50,7 +50,6 @@ import net.ripe.rpki.validator3.util.Sha256;
 import net.ripe.rpki.validator3.util.Time;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -64,7 +63,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -94,20 +92,16 @@ public class RrdpServiceImpl implements RrdpService {
 
     private final Storage storage;
 
-    private final ForkJoinPool rrdpProcessingPool;
-
     private final RrdpMetricsService rrdpMetrics;
 
     @Autowired
     public RrdpServiceImpl(
-            @Value("${rpki.validator.rrdp.repository.parallelism:4}") int rrdpProcessingParallelism,
             final RrdpClient rrdpClient,
             final RpkiObjects rpkiObjects,
             final RpkiRepositories rpkiRepositories,
             final Storage storage,
             final RrdpMetricsService rrdpMetrics
     ) {
-        this.rrdpProcessingPool = new ForkJoinPool(rrdpProcessingParallelism);
         this.rrdpClient = rrdpClient;
         this.rpkiObjects = rpkiObjects;
         this.rpkiRepositories = rpkiRepositories;
@@ -172,33 +166,31 @@ public class RrdpServiceImpl implements RrdpService {
     }
 
     private void processSnapshot(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun, Notification notification, AtomicBoolean changedObjects) {
-        rrdpProcessingPool.submit(() -> {
-            rrdpClient.processUsingTemporaryFile(notification.snapshotUri, Hashing.sha256(), (snapshotPath, snapshotHash) -> {
-                if (!Arrays.equals(Hex.parse(notification.snapshotHash), snapshotHash.asBytes())) {
-                    throw new RrdpException(ErrorCodes.RRDP_WRONG_SNAPSHOT_HASH, "Hash of the snapshot file " +
-                            notification.snapshotUri + " is " + Hex.format(snapshotHash.asBytes()) + ", but notification file says " + notification.snapshotHash);
-                }
+        rrdpClient.processUsingTemporaryFile(notification.snapshotUri, Hashing.sha256(), (snapshotPath, snapshotHash) -> {
+            if (!Arrays.equals(Hex.parse(notification.snapshotHash), snapshotHash.asBytes())) {
+                throw new RrdpException(ErrorCodes.RRDP_WRONG_SNAPSHOT_HASH, "Hash of the snapshot file " +
+                        notification.snapshotUri + " is " + Hex.format(snapshotHash.asBytes()) + ", but notification file says " + notification.snapshotHash);
+            }
 
-                Long timedStoreSnapshot = Time.timed(() -> {
-                    int counter = 0;
+            Long timedStoreSnapshot = Time.timed(() -> {
+                int counter = 0;
 
-                    log.debug("Processing RRDP repository {} snapshot, except for manifests", rpkiRepository.getRrdpNotifyUri());
-                    counter += processDownloadedSnapshot(rpkiRepository, validationRun, notification, snapshotPath, NO_MANIFESTS_PREDICATE);
+                log.debug("Processing RRDP repository {} snapshot, except for manifests", rpkiRepository.getRrdpNotifyUri());
+                counter += processDownloadedSnapshot(rpkiRepository, validationRun, notification, snapshotPath, NO_MANIFESTS_PREDICATE);
 
-                    log.debug("Processing RRDP repository {} snapshot, manifests only", rpkiRepository.getRrdpNotifyUri());
-                    counter += processDownloadedSnapshot(rpkiRepository, validationRun, notification, snapshotPath, ONLY_MANIFESTS_PREDICATE);
+                log.debug("Processing RRDP repository {} snapshot, manifests only", rpkiRepository.getRrdpNotifyUri());
+                counter += processDownloadedSnapshot(rpkiRepository, validationRun, notification, snapshotPath, ONLY_MANIFESTS_PREDICATE);
 
-                    storage.writeTx0(tx -> rpkiRepositories.update(tx, rpkiRepository));
+                storage.writeTx0(tx -> rpkiRepositories.update(tx, rpkiRepository));
 
-                    changedObjects.set(counter > 0);
+                changedObjects.set(counter > 0);
 
-                    log.info("Added (or updated locations for) {} new objects", counter);
-                });
-                log.info("Storing snapshot {} time {}ms", rpkiRepository.getRrdpNotifyUri(), timedStoreSnapshot);
-
-                return null;
+                log.info("Added (or updated locations for) {} new objects", counter);
             });
-        }).join();
+            log.info("Storing snapshot {} time {}ms", rpkiRepository.getRrdpNotifyUri(), timedStoreSnapshot);
+
+            return null;
+        });
     }
 
     private int processDownloadedSnapshot(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun, Notification notification, Path snapshotPath, Predicate<RepositoryObjectType> typePredicate) {
@@ -253,34 +245,32 @@ public class RrdpServiceImpl implements RrdpService {
     }
 
     private void processDelta(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun, Notification notification, DeltaInfo di, AtomicBoolean changedObjects) {
-        rrdpProcessingPool.submit(() -> {
-            rrdpClient.processUsingTemporaryFile(di.getUri(), Hashing.sha256(), (deltaPath, deltaHash) -> {
-                if (!Arrays.equals(Hex.parse(di.getHash()), deltaHash.asBytes())) {
-                    rrdpMetrics.update(notification.snapshotUri, ErrorCodes.RRDP_WRONG_DELTA_HASH);
-                    throw new RrdpException(ErrorCodes.RRDP_WRONG_DELTA_HASH, "Hash of the delta file " + di + " is " + Hex.format(deltaHash.asBytes()) +
-                            ", but notification file says " + di.getHash());
-                }
+        rrdpClient.processUsingTemporaryFile(di.getUri(), Hashing.sha256(), (deltaPath, deltaHash) -> {
+            if (!Arrays.equals(Hex.parse(di.getHash()), deltaHash.asBytes())) {
+                rrdpMetrics.update(notification.snapshotUri, ErrorCodes.RRDP_WRONG_DELTA_HASH);
+                throw new RrdpException(ErrorCodes.RRDP_WRONG_DELTA_HASH, "Hash of the delta file " + di + " is " + Hex.format(deltaHash.asBytes()) +
+                        ", but notification file says " + di.getHash());
+            }
 
-                Long timedStoreDelta = Time.timed(() -> {
-                    int counter = 0;
+            Long timedStoreDelta = Time.timed(() -> {
+                int counter = 0;
 
-                    log.debug("Processing RRDP repository {} delta, except for manifests", rpkiRepository.getRrdpNotifyUri());
-                    counter += processDownloadedDelta(rpkiRepository, validationRun, notification, di, deltaPath, NO_MANIFESTS_PREDICATE);
+                log.debug("Processing RRDP repository {} delta, except for manifests", rpkiRepository.getRrdpNotifyUri());
+                counter += processDownloadedDelta(rpkiRepository, validationRun, notification, di, deltaPath, NO_MANIFESTS_PREDICATE);
 
-                    log.debug("Processing RRDP repository {} delta, manifests only", rpkiRepository.getRrdpNotifyUri());
-                    counter += processDownloadedDelta(rpkiRepository, validationRun, notification, di, deltaPath, ONLY_MANIFESTS_PREDICATE);
+                log.debug("Processing RRDP repository {} delta, manifests only", rpkiRepository.getRrdpNotifyUri());
+                counter += processDownloadedDelta(rpkiRepository, validationRun, notification, di, deltaPath, ONLY_MANIFESTS_PREDICATE);
 
-                    storage.writeTx0(tx -> rpkiRepositories.update(tx, rpkiRepository));
+                storage.writeTx0(tx -> rpkiRepositories.update(tx, rpkiRepository));
 
-                    changedObjects.set(counter > 0);
+                changedObjects.set(counter > 0);
 
-                    log.info("Added (or updated locations for) {} new objects", counter);
-                });
-                log.info("Storing delta {} time {}ms", rpkiRepository.getRrdpNotifyUri(), timedStoreDelta);
-
-                return null;
+                log.info("Added (or updated locations for) {} new objects", counter);
             });
-        }).join();
+            log.info("Storing delta {} time {}ms", rpkiRepository.getRrdpNotifyUri(), timedStoreDelta);
+
+            return null;
+        });
     }
 
     private int processDownloadedDelta(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun, Notification notification, DeltaInfo di, Path deltaPath, Predicate<RepositoryObjectType> typePredicate) {
