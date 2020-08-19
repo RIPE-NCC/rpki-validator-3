@@ -225,6 +225,7 @@ public class RrdpServiceImpl implements RrdpService {
                     in,
                     (snapshotInfo) -> {
                         if (!notification.sessionId.equals(snapshotInfo.getSessionId())) {
+                            rrdpMetrics.update(notification.snapshotUri, ErrorCodes.RRDP_WRONG_SNAPSHOT_SESSION);
                             throw new RrdpException(ErrorCodes.RRDP_WRONG_SNAPSHOT_SESSION, "Session id of the snapshot (" + snapshotInfo.getSessionId() +
                                     ") is not the same as in the notification file: " + notification.sessionId);
                         }
@@ -253,6 +254,7 @@ public class RrdpServiceImpl implements RrdpService {
 
             return counter.get();
         } catch (IOException e) {
+            rrdpMetrics.update(notification.snapshotUri, ErrorCodes.RRDP_CORRUPTED_SNAPSHOT);
             throw new RrdpException("Couldn't read snapshot: ", e);
         }
     }
@@ -261,6 +263,7 @@ public class RrdpServiceImpl implements RrdpService {
         final byte[] deltaBody = rrdpClient.getBody(di.getUri());
         final byte[] deltaHash = Sha256.hash(deltaBody);
         if (!Arrays.equals(Hex.parse(di.getHash()), deltaHash)) {
+            rrdpMetrics.update(notification.snapshotUri, ErrorCodes.RRDP_WRONG_DELTA_HASH);
             throw new RrdpException(ErrorCodes.RRDP_WRONG_DELTA_HASH, "Hash of the delta file " + di + " is " + Hex.format(deltaHash) +
                     ", but notification file says " + di.getHash());
         }

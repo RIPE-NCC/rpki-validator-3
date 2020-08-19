@@ -42,6 +42,7 @@ public class ErrorCodes {
     public static final String RRDP_WITHDRAW_NONEXISTENT_OBJECT = "rrdp.withdraw.nonexistent.object";
     public static final String RRDP_SNAPSHOT_FETCH_LOCAL_AHEAD = "rrdp.fetch.snapshot.local.ahead";
     public static final String RRDP_SNAPSHOT_FETCH_NEW_SESSION = "rrdp.fetch.snapshot.new.session";
+    public static final String RRDP_CORRUPTED_SNAPSHOT = "rrdp.corrupted.snapshot";
 
 
     public static final String RSYNC_FETCH = "rsync.fetch";
