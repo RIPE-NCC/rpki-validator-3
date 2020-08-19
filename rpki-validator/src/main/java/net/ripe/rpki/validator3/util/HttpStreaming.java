@@ -55,11 +55,13 @@ public class HttpStreaming {
         InputStreamResponseListener listener = new InputStreamResponseListener();
 
         Request request = requestF.get();
+        request.timeout(1, TimeUnit.HOURS);
+        request.idleTimeout(1, TimeUnit.MINUTES);
         request.send(listener);
 
         Response response = null;
         try {
-            response = listener.get(30, TimeUnit.SECONDS);
+            response = listener.get(2, TimeUnit.MINUTES);
 
             if (response.getStatus() != 200) {
                 if (response.getStatus() == 304) {
