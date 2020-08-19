@@ -46,11 +46,9 @@ import java.io.InputStream;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -61,6 +59,12 @@ public class RrdpParser {
 
     @Value
     public static class SnapshotHeader {
+        String sessionId;
+        BigInteger serial;
+    }
+
+    @Value
+    public static class DeltaHeader {
         String sessionId;
         BigInteger serial;
     }
@@ -129,8 +133,7 @@ public class RrdpParser {
         }
     }
 
-    public Delta delta(final InputStream inputStream) {
-        final Map<String, DeltaElement> uriToDeltaElement = new HashMap<>();
+    public void parseDelta(InputStream inputStream, Consumer<DeltaHeader> processDeltaHeader, Consumer<DeltaPublish> processDeltaPublish, Consumer<DeltaWithdraw> processDeltaWithdraw) {
         try {
             final XMLInputFactory factory = XMLInputFactory.newInstance();
             final XMLEventReader eventReader = factory.createXMLEventReader(inputStream);
@@ -141,6 +144,7 @@ public class RrdpParser {
             String hash = null;
             StringBuilder base64 = new StringBuilder();
             boolean inPublishElement = false;
+            boolean deltaHeaderProcessed = false;
 
             final Base64.Decoder decoder = Base64.getDecoder();
 
@@ -154,17 +158,25 @@ public class RrdpParser {
 
                         switch (qName) {
                             case "publish":
+                                if (!deltaHeaderProcessed) {
+                                    throw new RrdpException(ErrorCodes.RRDP_PARSE_ERROR, "delta header not present before elements");
+                                }
                                 uri = getAttr(startElement, "uri", "Uri is not present in 'publish' element");
                                 hash = getAttr(startElement, "hash");
                                 inPublishElement = true;
                                 break;
                             case "withdraw":
+                                if (!deltaHeaderProcessed) {
+                                    throw new RrdpException(ErrorCodes.RRDP_PARSE_ERROR, "delta header not present before elements");
+                                }
                                 uri = getAttr(startElement, "uri", "Uri is not present in 'publish' element");
                                 hash = getAttr(startElement, "hash", "Hash is not present in 'withdraw' element");
                                 break;
                             case "delta":
                                 serial = new BigInteger(getAttr(startElement, "serial", "Notification serial is not present"));
                                 sessionId = getAttr(startElement, "session_id", "Session id is not present");
+                                processDeltaHeader.accept(new DeltaHeader(sessionId, serial));
+                                deltaHeaderProcessed = true;
                                 break;
                         }
                         break;
@@ -184,17 +196,16 @@ public class RrdpParser {
                         switch (qqName) {
                             case "publish":
                                 final byte[] decoded = decoder.decode(base64.toString());
-                                uriToDeltaElement.put(uri, new DeltaPublish(decoded, uri, Hex.parse(hash)));
                                 base64 = new StringBuilder();
+                                processDeltaPublish.accept(new DeltaPublish(decoded, uri, Hex.parse(hash)));
                                 break;
                             case "withdraw":
-                                uriToDeltaElement.put(uri, new DeltaWithdraw(uri, Hex.parse(hash)));
+                                processDeltaWithdraw.accept(new DeltaWithdraw(uri, Hex.parse(hash)));
                                 break;
                         }
                         break;
                 }
             }
-            return new Delta(uriToDeltaElement, sessionId, serial);
         } catch (XMLStreamException e) {
             throw new RrdpException("Couldn't parse delta: ", e);
         }

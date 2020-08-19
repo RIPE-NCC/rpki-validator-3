@@ -54,7 +54,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
-import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -143,15 +142,9 @@ public class RrdpServiceImpl implements RrdpService {
                 // The notification contains updates that we do not have locally
                 try {
                     List<DeltaInfo> orderedDeltas = verifyAndOrderDeltaSerials(notification, rpkiRepository);
-                    rrdpProcessingPool.submit(() -> orderedDeltas
-                            .stream()
-                            .map(di -> readDelta(notification, di))
-                            .forEachOrdered(d -> storage.writeTx0(tx -> {
-                                verifyDeltaIsApplicable(tx, d);
-                                storeDelta(tx, d, validationRun, rpkiRepository, changedObjects);
-                                tx.afterCommit(() -> rpkiRepository.setRrdpSerial(rpkiRepository.getRrdpSerial().add(BigInteger.ONE)));
-                            }))
-                    ).join();
+                    for (DeltaInfo deltaInfo : orderedDeltas) {
+                        processDelta(rpkiRepository, validationRun, notification, deltaInfo, changedObjects);
+                    }
                 } catch (RrdpException e) {
                     log.info("Processing deltas failed {}, falling back to snapshot processing.", e.getMessage());
                     rrdpMetrics.update(rpkiRepository.getRrdpNotifyUri(), ErrorCodes.RRDP_FETCH_DELTAS);
@@ -259,30 +252,94 @@ public class RrdpServiceImpl implements RrdpService {
         }
     }
 
-    private Delta readDelta(Notification notification, DeltaInfo di) {
-        final byte[] deltaBody = rrdpClient.getBody(di.getUri());
-        final byte[] deltaHash = Sha256.hash(deltaBody);
-        if (!Arrays.equals(Hex.parse(di.getHash()), deltaHash)) {
-            rrdpMetrics.update(notification.snapshotUri, ErrorCodes.RRDP_WRONG_DELTA_HASH);
-            throw new RrdpException(ErrorCodes.RRDP_WRONG_DELTA_HASH, "Hash of the delta file " + di + " is " + Hex.format(deltaHash) +
-                    ", but notification file says " + di.getHash());
-        }
+    private void processDelta(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun, Notification notification, DeltaInfo di, AtomicBoolean changedObjects) {
+        rrdpProcessingPool.submit(() -> {
+            rrdpClient.processUsingTemporaryFile(di.getUri(), Hashing.sha256(), (deltaPath, deltaHash) -> {
+                if (!Arrays.equals(Hex.parse(di.getHash()), deltaHash.asBytes())) {
+                    rrdpMetrics.update(notification.snapshotUri, ErrorCodes.RRDP_WRONG_DELTA_HASH);
+                    throw new RrdpException(ErrorCodes.RRDP_WRONG_DELTA_HASH, "Hash of the delta file " + di + " is " + Hex.format(deltaHash.asBytes()) +
+                            ", but notification file says " + di.getHash());
+                }
 
-        final Delta d;
-        try {
-            d = rrdpParser.delta(new ByteArrayInputStream(deltaBody));
-        } catch (Exception e) {
+                Long timedStoreDelta = Time.timed(() -> {
+                    int counter = 0;
+
+                    log.debug("Processing RRDP repository {} delta, except for manifests", rpkiRepository.getRrdpNotifyUri());
+                    counter += processDownloadedDelta(rpkiRepository, validationRun, notification, di, deltaPath, NO_MANIFESTS_PREDICATE);
+
+                    log.debug("Processing RRDP repository {} delta, manifests only", rpkiRepository.getRrdpNotifyUri());
+                    counter += processDownloadedDelta(rpkiRepository, validationRun, notification, di, deltaPath, ONLY_MANIFESTS_PREDICATE);
+
+                    storage.writeTx0(tx -> rpkiRepositories.update(tx, rpkiRepository));
+
+                    changedObjects.set(counter > 0);
+
+                    log.info("Added (or updated locations for) {} new objects", counter);
+                });
+                log.info("Storing delta {} time {}ms", rpkiRepository.getRrdpNotifyUri(), timedStoreDelta);
+
+                return null;
+            });
+        }).join();
+    }
+
+    private int processDownloadedDelta(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun, Notification notification, DeltaInfo di, Path deltaPath, Predicate<RepositoryObjectType> typePredicate) {
+        try (InputStream in = new FileInputStream(deltaPath.toFile())) {
+            AtomicInteger counter = new AtomicInteger(0);
+            AtomicInteger pendingObjectsBytes = new AtomicInteger(0);
+            List<DeltaElement> pendingObjects = new ArrayList<>(1000);
+            Runnable commitPendingObjects = () -> {
+                storage.readTx0(tx -> verifyDeltaIsApplicable(tx, pendingObjects));
+                storage.writeTx0(tx -> counter.addAndGet(
+                        storeDeltaObjects(tx, pendingObjects, validationRun))
+                );
+                pendingObjects.clear();
+                pendingObjectsBytes.set(0);
+            };
+
+            rrdpParser.parseDelta(
+                    in,
+                    (deltaHeader) -> {
+                        if (!notification.sessionId.equals(deltaHeader.getSessionId())) {
+                            throw new RrdpException(ErrorCodes.RRDP_WRONG_DELTA_SESSION, "Session id of the delta (" + deltaHeader +
+                                    ") is not the same as in the notification file: " + notification.sessionId);
+                        }
+                        if (!di.getSerial().equals(deltaHeader.getSerial())) {
+                            throw new RrdpException(ErrorCodes.RRDP_SERIAL_MISMATCH, "Serial of the delta (" + deltaHeader.getSerial() +
+                                    ") is not the same as in the notification file: " + di);
+                        }
+
+                        rpkiRepository.setRrdpSerial(deltaHeader.getSerial());
+                    },
+                    (deltaPublish) -> {
+                        if (!typePredicate.test(RepositoryObjectType.parse(deltaPublish.getUri()))) {
+                            return;
+                        }
+
+                        pendingObjects.add(deltaPublish);
+                        int bytes = pendingObjectsBytes.addAndGet(deltaPublish.getContent().length);
+                        if (bytes > PENDING_OBJECT_COMMIT_BATCH_SIZE_BYTES) {
+                            commitPendingObjects.run();
+                        }
+                    },
+                    (deltaWithdraw) -> {
+                        if (!typePredicate.test(RepositoryObjectType.parse(deltaWithdraw.getUri()))) {
+                            return;
+                        }
+
+                        pendingObjects.add(deltaWithdraw);
+                        int bytes = pendingObjectsBytes.addAndGet(deltaWithdraw.uri.length() + deltaWithdraw.getHash().length);
+                        if (bytes > PENDING_OBJECT_COMMIT_BATCH_SIZE_BYTES) {
+                            commitPendingObjects.run();
+                        }
+                    }
+            );
+
+            commitPendingObjects.run();
+            return counter.get();
+        } catch (IOException e) {
             throw new RrdpException("Error parsing delta (" + di + "): " + notification.sessionId, e);
         }
-        if (!d.getSessionId().equals(notification.sessionId)) {
-            throw new RrdpException(ErrorCodes.RRDP_WRONG_DELTA_SESSION, "Session id of the delta (" + di +
-                ") is not the same as in the notification file: " + notification.sessionId);
-        }
-        if (!d.getSerial().equals(di.getSerial())) {
-            throw new RrdpException(ErrorCodes.RRDP_SERIAL_MISMATCH, "Serial of the delta (" + d.getSerial() +
-                    ") is not the same as in the notification file: " + di);
-        }
-        return d;
     }
 
     private List<DeltaInfo> verifyAndOrderDeltaSerials(final Notification notification, RpkiRepository rpkiRepository) {
@@ -345,28 +402,23 @@ public class RrdpServiceImpl implements RrdpService {
         }
     }
 
-    private void storeDelta(final Tx.Write wtx,
-                            final Delta delta,
-                            final RpkiRepositoryValidationRun validationRun,
-                            final RpkiRepository rpkiRepository,
-                            AtomicBoolean changedObjectsCounter) {
+    private int storeDeltaObjects(final Tx.Write wtx,
+                                  final List<DeltaElement> deltaElements,
+                                  final RpkiRepositoryValidationRun validationRun) {
         final AtomicInteger added = new AtomicInteger();
         final AtomicInteger deleted = new AtomicInteger();
-        delta.asMap().forEach((uri, deltaElement) -> {
+        deltaElements.forEach((deltaElement) -> {
             if (deltaElement instanceof DeltaPublish) {
-                if (applyDeltaPublish(validationRun, uri, (DeltaPublish) deltaElement, wtx)) {
+                if (applyDeltaPublish(validationRun, deltaElement.getUri(), (DeltaPublish) deltaElement, wtx)) {
                     added.incrementAndGet();
-                    changedObjectsCounter.set(true);
                 }
             } else if (deltaElement instanceof DeltaWithdraw) {
-                if (applyDeltaWithdraw(validationRun, uri, (DeltaWithdraw) deltaElement, wtx)) {
+                if (applyDeltaWithdraw(validationRun, deltaElement.getUri(), (DeltaWithdraw) deltaElement, wtx)) {
                     deleted.incrementAndGet();
-                    changedObjectsCounter.set(true);
                 }
             }
         });
-        log.info("Repository {}: added (or updated locations for) {} new objects, delete (or removed locations) for {} objects",
-                rpkiRepository.getRrdpNotifyUri(), added.get(), deleted.get());
+        return added.get() + deleted.get();
     }
 
     private boolean applyDeltaWithdraw(RpkiRepositoryValidationRun validationRun, String uri, DeltaWithdraw deltaWithdraw, Tx.Write tx) {
@@ -385,8 +437,8 @@ public class RrdpServiceImpl implements RrdpService {
         return false;
     }
 
-    private void verifyDeltaIsApplicable(Tx.Read tx, Delta d) {
-        d.asMap().forEach((uri, deltaElement) -> {
+    private void verifyDeltaIsApplicable(Tx.Read tx, List<DeltaElement> pendingObjects) {
+        pendingObjects.forEach((deltaElement) -> {
                     if (deltaElement instanceof DeltaPublish) {
                         // If hash existed it means DeltaPublish is trying to replace, thus hash must already been in
                         // the snapshot!.

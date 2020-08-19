@@ -35,9 +35,10 @@ import org.junit.Test;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 public class RrdpParserTest {
 
@@ -57,19 +58,29 @@ public class RrdpParserTest {
 
     @Test
     public void should_parse_delta() throws Exception {
-        final Delta delta = new RrdpParser().delta(fileIS("rrdp/delta1.xml"));
+        Map<String, DeltaElement> delta = new HashMap<>();
+        new RrdpParser().parseDelta(
+                fileIS("rrdp/delta1.xml"),
+                (deltaHeader) -> {
+                    assertEquals("9df4b597-af9e-4dca-bdda-719cce2c4e28", deltaHeader.getSessionId());
+                    assertEquals(BigInteger.valueOf(2), deltaHeader.getSerial());
+                },
+                (deltaPublish) -> delta.put(deltaPublish.getUri(), deltaPublish),
+                (deltaWithdraw) -> delta.put(deltaWithdraw.getUri(), deltaWithdraw)
+        );
+
         final String uri1 = "rsync://bandito.ripe.net/repo/3a87a4b1-6e22-4a63-ad0f-06f83ad3ca16/default/671570f06499fbd2d6ab76c4f22566fe49d5de60.mft";
-        DeltaElement e1 = delta.asMap().get(uri1);
+        DeltaElement e1 = delta.get(uri1);
         assertEquals(uri1, ((DeltaPublish)e1).uri);
         assertEquals("226AB8CD3C887A6EBDDDF317F2FAFC9CF3EFC5D43A86347AC0FEFFE4DC0F607E", Hex.format(((DeltaPublish)e1).getHash().get()));
 
         final String uri2 = "rsync://bandito.ripe.net/repo/3a87a4b1-6e22-4a63-ad0f-06f83ad3ca16/default/671570f06499fbd2d6ab76c4f22566fe49d5de60.crl";
-        DeltaElement e2 = delta.asMap().get(uri2);
+        DeltaElement e2 = delta.get(uri2);
         assertEquals(uri2, ((DeltaPublish)e2).uri);
         assertEquals("2B551A6C10CCA04C174B0CEB3B64652A5534D1385BEAA40A55A68CB06055E6BB", Hex.format(((DeltaPublish)e2).getHash().get()));
 
         final String uri3 = "rsync://bandito.ripe.net/repo/3a87a4b1-6e22-4a63-ad0f-06f83ad3ca16/default/example.roa";
-        DeltaElement e3 = delta.asMap().get(uri3);
+        DeltaElement e3 = delta.get(uri3);
         assertEquals(uri3, ((DeltaWithdraw)e3).uri);
         assertEquals("2B551A6C10CCA04C174B0CEB3B64652A5534D1385BEAA40A55A68CB06055E6BB", Hex.format(((DeltaWithdraw) e3).getHash()));
     }
