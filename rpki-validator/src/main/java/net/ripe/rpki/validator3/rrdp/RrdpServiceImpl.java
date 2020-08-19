@@ -144,7 +144,7 @@ public class RrdpServiceImpl implements RrdpService {
                 try {
                     List<DeltaInfo> orderedDeltas = verifyAndOrderDeltaSerials(notification, rpkiRepository);
                     rrdpProcessingPool.submit(() -> orderedDeltas
-                            .parallelStream()
+                            .stream()
                             .map(di -> readDelta(notification, di))
                             .forEachOrdered(d -> storage.writeTx0(tx -> {
                                 verifyDeltaIsApplicable(tx, d);
