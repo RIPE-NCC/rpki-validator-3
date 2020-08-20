@@ -1,3 +1,14 @@
+* Thu Aug 20 2020 Mikhail Puzanov <mpuzanov@ripe.net> - 3.1
+- Revert changes related to RRDP parallel processing to avoid potential deadlock. This also reverts 
+  all memory and metrics changes introduced in the previous release. 
+
+* Thu Aug 6 2020 Ties de Kock <tdekock@ripe.net> - 3.1
+- Multiple performance improvements, about 25% less CPU usage.
+- Multiple improvements in memory consumption, the validator is able to comfortably work with setting
+  `jvm.mem.maximum=768m` or even 512m.
+- Fixes in rpki-rtr-server shell script to prevent startup failures.
+- Added detailed metric for rrdp status (e.g. invalid responses): `rpkivalidator_rrdp_status_total`
+
 * Mon Jul 6 2020 Mikhail Puzanov <mpuzaanov@ripe.net> - 3.1
 - Introduce property `rpki.validator.strict-validation` enabling strict validation, i.e. manifest
   and CRL warnings will now be considered errors. Set to false by default.
