@@ -99,7 +99,7 @@ public class RrdpServiceImplTest extends GenericStorageTest {
                 (snapshotInfo) -> {
                 },
                 (snapshotObject) -> {
-                    wtx0(tx -> subject.storeSnapshotObjects(tx, Collections.singletonList(snapshotObject), validationRun));
+                    subject.storeSnapshotObjects(Collections.singletonList(snapshotObject), validationRun);
                 }
         );
 
