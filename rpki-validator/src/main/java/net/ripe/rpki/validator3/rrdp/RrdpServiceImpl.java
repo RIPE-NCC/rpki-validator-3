@@ -228,7 +228,7 @@ public class RrdpServiceImpl implements RrdpService {
                         }
 
                         pendingObjects.add(snapshotObject);
-                        int bytes = pendingObjectsBytes.addAndGet(snapshotObject.content.length);
+                        int bytes = pendingObjectsBytes.addAndGet(snapshotObject.estimatedSize());
                         if (bytes > PENDING_OBJECT_COMMIT_BATCH_SIZE_BYTES) {
                             commitPendingObjects.run();
                         }
@@ -255,17 +255,17 @@ public class RrdpServiceImpl implements RrdpService {
             Long timedStoreDelta = Time.timed(() -> {
                 int counter = 0;
 
-                log.debug("Processing RRDP repository {} delta, except for manifests", rpkiRepository.getRrdpNotifyUri());
+                log.debug("Processing RRDP repository {} delta {}, except for manifests", rpkiRepository.getRrdpNotifyUri(), di.getSerial());
                 counter += processDownloadedDelta(rpkiRepository, validationRun, notification, di, deltaPath, NO_MANIFESTS_PREDICATE);
 
-                log.debug("Processing RRDP repository {} delta, manifests only", rpkiRepository.getRrdpNotifyUri());
+                log.debug("Processing RRDP repository {} delta {}, manifests only", rpkiRepository.getRrdpNotifyUri(), di.getSerial());
                 counter += processDownloadedDelta(rpkiRepository, validationRun, notification, di, deltaPath, ONLY_MANIFESTS_PREDICATE);
 
                 storage.writeTx0(tx -> rpkiRepositories.update(tx, rpkiRepository));
 
                 changedObjects.set(counter > 0);
 
-                log.info("Added (or updated locations for) {} new objects", counter);
+                log.info("Added, withdrew, or updated locations for {} new objects", counter);
             });
             log.info("Storing delta {} time {}ms", rpkiRepository.getRrdpNotifyUri(), timedStoreDelta);
 
@@ -301,24 +301,13 @@ public class RrdpServiceImpl implements RrdpService {
 
                         rpkiRepository.setRrdpSerial(deltaHeader.getSerial());
                     },
-                    (deltaPublish) -> {
-                        if (!typePredicate.test(RepositoryObjectType.parse(deltaPublish.getUri()))) {
+                    (deltaElement) -> {
+                        if (!typePredicate.test(RepositoryObjectType.parse(deltaElement.getUri()))) {
                             return;
                         }
 
-                        pendingObjects.add(deltaPublish);
-                        int bytes = pendingObjectsBytes.addAndGet(deltaPublish.getContent().length);
-                        if (bytes > PENDING_OBJECT_COMMIT_BATCH_SIZE_BYTES) {
-                            commitPendingObjects.run();
-                        }
-                    },
-                    (deltaWithdraw) -> {
-                        if (!typePredicate.test(RepositoryObjectType.parse(deltaWithdraw.getUri()))) {
-                            return;
-                        }
-
-                        pendingObjects.add(deltaWithdraw);
-                        int bytes = pendingObjectsBytes.addAndGet(deltaWithdraw.uri.length() + deltaWithdraw.getHash().length);
+                        pendingObjects.add(deltaElement);
+                        int bytes = pendingObjectsBytes.addAndGet(deltaElement.estimatedSize());
                         if (bytes > PENDING_OBJECT_COMMIT_BATCH_SIZE_BYTES) {
                             commitPendingObjects.run();
                         }

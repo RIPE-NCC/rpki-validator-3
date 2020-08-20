@@ -34,6 +34,8 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class DeltaElement {
+public abstract class DeltaElement {
     protected String uri;
+
+    public abstract int estimatedSize();
 }

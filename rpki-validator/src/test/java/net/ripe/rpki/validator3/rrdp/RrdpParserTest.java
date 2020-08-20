@@ -65,8 +65,7 @@ public class RrdpParserTest {
                     assertEquals("9df4b597-af9e-4dca-bdda-719cce2c4e28", deltaHeader.getSessionId());
                     assertEquals(BigInteger.valueOf(2), deltaHeader.getSerial());
                 },
-                (deltaPublish) -> delta.put(deltaPublish.getUri(), deltaPublish),
-                (deltaWithdraw) -> delta.put(deltaWithdraw.getUri(), deltaWithdraw)
+                (deltaElement) -> delta.put(deltaElement.getUri(), deltaElement)
         );
 
         final String uri1 = "rsync://bandito.ripe.net/repo/3a87a4b1-6e22-4a63-ad0f-06f83ad3ca16/default/671570f06499fbd2d6ab76c4f22566fe49d5de60.mft";

@@ -133,7 +133,7 @@ public class RrdpParser {
         }
     }
 
-    public void parseDelta(InputStream inputStream, Consumer<DeltaHeader> processDeltaHeader, Consumer<DeltaPublish> processDeltaPublish, Consumer<DeltaWithdraw> processDeltaWithdraw) {
+    public void parseDelta(InputStream inputStream, Consumer<DeltaHeader> processDeltaHeader, Consumer<DeltaElement> processDeltaElement) {
         try {
             final XMLInputFactory factory = XMLInputFactory.newInstance();
             final XMLEventReader eventReader = factory.createXMLEventReader(inputStream);
@@ -197,10 +197,10 @@ public class RrdpParser {
                             case "publish":
                                 final byte[] decoded = decoder.decode(base64.toString());
                                 base64 = new StringBuilder();
-                                processDeltaPublish.accept(new DeltaPublish(decoded, uri, Hex.parse(hash)));
+                                processDeltaElement.accept(new DeltaPublish(decoded, uri, Hex.parse(hash)));
                                 break;
                             case "withdraw":
-                                processDeltaWithdraw.accept(new DeltaWithdraw(uri, Hex.parse(hash)));
+                                processDeltaElement.accept(new DeltaWithdraw(uri, Hex.parse(hash)));
                                 break;
                         }
                         break;
