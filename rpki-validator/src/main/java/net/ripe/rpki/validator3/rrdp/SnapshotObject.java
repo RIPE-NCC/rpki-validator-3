@@ -39,4 +39,8 @@ public class SnapshotObject extends RepoObject {
         super(content);
         this.uri = uri;
     }
+
+    public int estimatedSize() {
+        return content.length + uri.length();
+    }
 }

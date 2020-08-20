@@ -50,4 +50,9 @@ public class DeltaPublish extends DeltaElement {
     public Optional<byte[]> getHash() {
         return Optional.ofNullable(hash);
     }
+
+    @Override
+    public int estimatedSize() {
+        return uri.length() + (hash == null ? 0 : hash.length) + content.length;
+    }
 }

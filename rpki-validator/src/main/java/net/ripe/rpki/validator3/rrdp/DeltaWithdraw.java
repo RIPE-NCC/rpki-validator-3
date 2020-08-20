@@ -40,4 +40,9 @@ class DeltaWithdraw extends DeltaElement {
         super(uri);
         this.hash = hash;
     }
+
+    @Override
+    public int estimatedSize() {
+        return uri.length() + hash.length;
+    }
 }
