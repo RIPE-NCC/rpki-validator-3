@@ -214,9 +214,8 @@ public class RrdpServiceImpl implements RrdpService {
             AtomicInteger pendingObjectsBytes = new AtomicInteger(0);
             List<SnapshotObject> pendingObjects = new ArrayList<>(1000);
             Runnable commitPendingObjects = () -> {
-                storage.writeTx0(tx -> counter.addAndGet(
-                        storeSnapshotObjects(tx, pendingObjects, validationRun))
-                );
+                int count = storeSnapshotObjects(pendingObjects, validationRun);
+                counter.addAndGet(count);
                 pendingObjects.clear();
                 pendingObjectsBytes.set(0);
             };
@@ -319,16 +318,18 @@ public class RrdpServiceImpl implements RrdpService {
         return orderedDeltas;
     }
 
-    int storeSnapshotObjects(final Tx.Write tx, List<SnapshotObject> snapshotObjects,
+    int storeSnapshotObjects(List<SnapshotObject> snapshotObjects,
                              final RpkiRepositoryValidationRun validationRun) {
         final AtomicInteger counter = new AtomicInteger();
 
         // Parsing RPKI objects is CPU bound, so do this with any available threads
-        snapshotObjects.parallelStream().map((value) ->
+        List<Either<ValidationResult, Pair<String, RpkiObject>>> converted = snapshotObjects.parallelStream().map((value) ->
                 RpkiObjectUtils.createRpkiObject(value.getUri(), value.getContent())
-        ).collect(Collectors.toList()).forEach((maybeRpkiObject) ->
+        ).collect(Collectors.toList());
+
+        storage.writeTx0(tx -> converted.forEach((maybeRpkiObject) ->
                 storeSnapshotObject(tx, validationRun, maybeRpkiObject, counter)
-        );
+        ));
 
         return counter.get();
     }

@@ -361,9 +361,8 @@ public class RpkiRepositoryValidationService {
         AtomicInteger pendingObjectsBytes = new AtomicInteger(0);
         List<Pair<String, byte[]>> pendingObjects = new ArrayList<>(1000);
         Runnable commitPendingObjects = () -> {
-            storage.writeTx0((tx) -> counter.addAndGet(
-                    storePendingObjects(tx, validationRun, pendingObjects))
-            );
+            int count = storePendingObjects(validationRun, pendingObjects);
+            counter.addAndGet(count);
             pendingObjects.clear();
             pendingObjectsBytes.set(0);
         };
@@ -429,15 +428,17 @@ public class RpkiRepositoryValidationService {
         commitPendingObjects.run();
     }
 
-    private int storePendingObjects(Tx.Write tx, RsyncRepositoryValidationRun validationRun, List<Pair<String,byte[]>> pendingObjects) {
+    private int storePendingObjects(RsyncRepositoryValidationRun validationRun, List<Pair<String,byte[]>> pendingObjects) {
         AtomicInteger counter = new AtomicInteger();
 
         // Parsing RPKI objects is CPU bound, so do this with any available threads
-        pendingObjects.parallelStream().map(pendingObject ->
+        List<Either<ValidationResult, Pair<String, RpkiObject>>> converted = pendingObjects.parallelStream().map(pendingObject ->
                 RpkiObjectUtils.createRpkiObject(pendingObject.getLeft(), pendingObject.getRight())
-        ).collect(Collectors.toList()).forEach((maybeRpkiObject) ->
+        ).collect(Collectors.toList());
+
+        storage.writeTx0((tx) -> converted.forEach((maybeRpkiObject) ->
             storeObject(tx, validationRun, maybeRpkiObject, counter)
-        );
+        ));
 
         return counter.get();
     }
