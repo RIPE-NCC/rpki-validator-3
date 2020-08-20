@@ -136,7 +136,7 @@ public class HttpRrdpClient implements RrdpClient {
                             throw new RrdpException("Error downloading '" + uri + "', cause: " + fullMessage(e), e);
                         }
                     });
-                    log.info("snapshot {} of {} bytes downloaded in {}ms", uri, tempFile.toFile().length(), timedDownload);
+                    log.info("file {} of {} bytes downloaded in {}ms", uri, tempFile.toFile().length(), timedDownload);
 
                     return process.apply(tempFile, hashingStream.hash());
                 });

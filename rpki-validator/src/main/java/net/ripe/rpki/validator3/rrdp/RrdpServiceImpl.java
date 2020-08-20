@@ -111,16 +111,20 @@ public class RrdpServiceImpl implements RrdpService {
 
     @Override
     public boolean storeRepository(final RpkiRepository rpkiRepository, final RpkiRepositoryValidationRun validationRun) {
-        try {
-            return doStoreRepository(rpkiRepository, validationRun);
-        } catch (RrdpException e) {
-            log.warn("Error retrieving RRDP repository at {}: " + e.getMessage(), rpkiRepository.getRrdpNotifyUri());
-            ValidationCheck validationCheck = new ValidationCheck(rpkiRepository.getRrdpNotifyUri(),
-                    ValidationCheck.Status.ERROR, ErrorCodes.RRDP_FETCH, e.getMessage());
-            validationRun.addCheck(validationCheck);
-            validationRun.setFailed();
-        }
-        return false;
+        Pair<Boolean, Long> timed = Time.timed(() -> {
+            try {
+                return doStoreRepository(rpkiRepository, validationRun);
+            } catch (RrdpException e) {
+                log.warn("Error retrieving RRDP repository at {}: " + e.getMessage(), rpkiRepository.getRrdpNotifyUri());
+                ValidationCheck validationCheck = new ValidationCheck(rpkiRepository.getRrdpNotifyUri(),
+                        ValidationCheck.Status.ERROR, ErrorCodes.RRDP_FETCH, e.getMessage());
+                validationRun.addCheck(validationCheck);
+                validationRun.setFailed();
+            }
+            return false;
+        });
+        log.info("RRDP repository job for {} took {}ms", rpkiRepository.getRrdpNotifyUri(), timed.getRight());
+        return timed.getLeft();
     }
 
     private boolean doStoreRepository(RpkiRepository rpkiRepository, RpkiRepositoryValidationRun validationRun) {
