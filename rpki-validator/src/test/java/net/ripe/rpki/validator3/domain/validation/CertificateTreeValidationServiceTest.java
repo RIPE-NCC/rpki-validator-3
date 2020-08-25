@@ -397,7 +397,6 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
                 .findCurrentlyValidated(tx, RpkiObject.Type.ROA).collect(toList()));
         assertThat(validatedRoas).hasSize(1);
         assertThat(validatedRoas.get(0).getLeft()).isEqualTo(result);
-        assertThat(validatedRoas.get(0).getRight().getRoaPrefixes()).hasSize(1);
     }
 
     @Test

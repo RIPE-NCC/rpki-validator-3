@@ -32,9 +32,7 @@ package net.ripe.rpki.validator3.storage.encoding.custom;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 
-import java.util.List;
 import java.util.Map;
-import java.util.TreeSet;
 
 public class RpkiObjectCoder implements Coder<RpkiObject> {
 
@@ -48,8 +46,6 @@ public class RpkiObjectCoder implements Coder<RpkiObject> {
     private final static short LOCATIONS_TAG = Tags.unique(38);
     private final static short ROA_PREFIXES = Tags.unique(39);
 
-    private final static RoaPrefixCoder roaPrefixCoder = new RoaPrefixCoder();
-
     @Override
     public byte[] toBytes(RpkiObject rpkiObject) {
         final Encoded encoded = new Encoded();
@@ -62,11 +58,6 @@ public class RpkiObjectCoder implements Coder<RpkiObject> {
         encoded.appendNotNull(SERIAL_TAG, rpkiObject.getSerialNumber(), Coders::toBytes);
         encoded.appendNotNull(ENCODED_TAG, rpkiObject.getEncoded());
         encoded.appendNotNull(SIGNING_TIME_TAG, rpkiObject.getSigningTime(), Coders::toBytes);
-
-        if (rpkiObject.getRoaPrefixes() != null && !rpkiObject.getRoaPrefixes().isEmpty()) {
-            byte[] prefixesBytes = Coders.toBytes(rpkiObject.getRoaPrefixes(), roaPrefixCoder::toBytes);
-            encoded.append(ROA_PREFIXES, prefixesBytes);
-        }
 
         return encoded.toByteArray();
     }
@@ -84,9 +75,6 @@ public class RpkiObjectCoder implements Coder<RpkiObject> {
         rpkiObject.setAuthorityKeyIdentifier(content.get(AKI_TAG));
         Encoded.field(content, SIGNING_TIME_TAG).ifPresent(b -> rpkiObject.setSigningTime(Coders.toInstant(b)));
         Encoded.field(content, SERIAL_TAG).ifPresent(b -> rpkiObject.setSerialNumber(Coders.toBigInteger(b)));
-
-        Encoded.field(content, ROA_PREFIXES).ifPresent(b ->
-                rpkiObject.setRoaPrefixes(Coders.fromBytes(b, roaPrefixCoder::fromBytes)));
 
         return rpkiObject;
     }
