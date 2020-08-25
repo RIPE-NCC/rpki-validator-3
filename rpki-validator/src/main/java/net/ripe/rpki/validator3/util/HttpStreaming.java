@@ -52,6 +52,10 @@ public class HttpStreaming {
     }
 
     public static <T> T readStream(final Supplier<Request> requestF, BiFunction<InputStream, Long,  T> reader) {
+        return ForkJoin.blocking(() -> doReadStream(requestF, reader));
+    }
+
+    private static <T> T doReadStream(Supplier<Request> requestF, BiFunction<InputStream, Long, T> reader) {
         InputStreamResponseListener listener = new InputStreamResponseListener();
 
         Request request = requestF.get();

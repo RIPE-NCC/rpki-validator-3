@@ -43,6 +43,7 @@ import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 import net.ripe.rpki.validator3.storage.encoding.CoderFactory;
 import net.ripe.rpki.validator3.storage.Storage;
+import net.ripe.rpki.validator3.util.ForkJoin;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.NotNull;
 
@@ -79,7 +80,7 @@ public abstract class Xodus implements Storage {
         AtomicReference<List<Runnable>> afterCommitHooks = new AtomicReference<>(Collections.emptyList());
 
         Environment env = getEnv();
-        T result = env.computeInExclusiveTransaction(txn -> {
+        T result = ForkJoin.blocking(() -> env.computeInExclusiveTransaction(txn -> {
             XodusTx.Write tx = XodusTx.fromRWNative(env, txn);
             txs.put(tx.getId(), new TxInfo(tx));
             try {
@@ -89,7 +90,7 @@ public abstract class Xodus implements Storage {
             } finally {
                 txs.remove(tx.getId());
             }
-        });
+        }));
 
         for (Runnable r: afterCommitHooks.get()) {
             try {
@@ -112,14 +113,16 @@ public abstract class Xodus implements Storage {
 
     public <T> T readTx(Function<Tx.Read, T> f) {
         Environment env = getEnv();
-        return env.computeInReadonlyTransaction(txn -> {
-            XodusTx.Read tx = XodusTx.fromRONative(env, txn);
-            txs.put(tx.getId(), new TxInfo(tx));
-            try {
-                return f.apply(tx);
-            } finally {
-                txs.remove(tx.getId());
-            }
+        return ForkJoin.blocking(() -> {
+            return env.computeInReadonlyTransaction(txn -> {
+                XodusTx.Read tx = XodusTx.fromRONative(env, txn);
+                txs.put(tx.getId(), new TxInfo(tx));
+                try {
+                    return f.apply(tx);
+                } finally {
+                    txs.remove(tx.getId());
+                }
+            });
         });
     }
 
