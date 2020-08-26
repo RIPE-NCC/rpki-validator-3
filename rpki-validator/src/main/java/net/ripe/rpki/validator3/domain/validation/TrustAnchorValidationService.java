@@ -48,6 +48,7 @@ import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
+import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
 import net.ripe.rpki.validator3.storage.data.validation.ValidationCheck;
@@ -141,6 +142,14 @@ public class TrustAnchorValidationService {
             if (validationResult.hasFailures()) {
                 log.warn("Validation result for the TA {} has failures: {}", trustAnchor.getName(),
                         validationResult.getFailuresForAllLocations());
+            }
+
+            if (trustAnchor.getRsyncPrefetchUri() != null) {
+                storage.writeTx0(tx -> {
+                    final Ref<TrustAnchor> trustAnchorRef = trustAnchors.makeRef(tx, trustAnchor.key());
+                    rpkiRepositories.register(tx, trustAnchorRef,
+                            trustAnchor.getRsyncPrefetchUri(), RpkiRepository.Type.RSYNC_PREFETCH);
+                });
             }
 
             validationRun.completeWith(validationResult);

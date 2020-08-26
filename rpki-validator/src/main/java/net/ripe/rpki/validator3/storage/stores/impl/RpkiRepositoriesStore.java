@@ -120,6 +120,8 @@ public class RpkiRepositoriesStore extends GenericStoreImpl<RpkiRepository> impl
             registered.setId(primaryKey);
         }
 
+        registered.setLastReferencedAt(InstantWithoutNanos.now());
+
         if (type == RpkiRepository.Type.RSYNC && registered.getType() == RpkiRepository.Type.RSYNC_PREFETCH) {
             registered.setType(RpkiRepository.Type.RSYNC);
         }

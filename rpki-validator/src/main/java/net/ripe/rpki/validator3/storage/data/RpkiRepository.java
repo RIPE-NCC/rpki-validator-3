@@ -67,6 +67,11 @@ public class RpkiRepository extends Base<RpkiRepository> {
 
     private InstantWithoutNanos lastDownloadedAt;
 
+    /**
+     * Time when this repository was last referenced by a trust anchor or certificate tree validation run.
+     */
+    private InstantWithoutNanos lastReferencedAt;
+
     @NotEmpty
     private Set<Ref<TrustAnchor>> trustAnchors = new HashSet<>();
 

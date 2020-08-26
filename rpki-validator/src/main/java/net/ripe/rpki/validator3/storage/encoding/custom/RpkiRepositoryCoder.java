@@ -49,6 +49,7 @@ public class RpkiRepositoryCoder implements Coder<RpkiRepository> {
     private final static short LAST_DOWNLOADED = Tags.unique(57);
     private final static short PARENT_REPOSITORY = Tags.unique(58);
     private final static short TRUST_ANCHORS = Tags.unique(59);
+    private final static short LAST_REFERENCED = Tags.unique(60);
 
     private final static RefCoder<RpkiRepository> repoRefCoder = new RefCoder<>();
     private final static RefCoder<TrustAnchor> taRefCoder = new RefCoder<>();
@@ -66,6 +67,7 @@ public class RpkiRepositoryCoder implements Coder<RpkiRepository> {
         encoded.appendNotNull(RRDP_SESSION, rpkiRepository.getRrdpSessionId(), Coders::toBytes);
         encoded.appendNotNull(RRDP_SERIAL, rpkiRepository.getRrdpSerial(), Coders::toBytes);
         encoded.appendNotNull(LAST_DOWNLOADED, rpkiRepository.getLastDownloadedAt(), Coders::toBytes);
+        encoded.appendNotNull(LAST_REFERENCED, rpkiRepository.getLastReferencedAt(), Coders::toBytes);
 
         if (rpkiRepository.getTrustAnchors() != null && !rpkiRepository.getTrustAnchors().isEmpty()) {
             byte[] taBytes = Coders.toBytes(rpkiRepository.getTrustAnchors(), taRefCoder::toBytes);
@@ -89,6 +91,7 @@ public class RpkiRepositoryCoder implements Coder<RpkiRepository> {
         Encoded.field(content, RRDP_SESSION).ifPresent(b -> rpkiRepository.setRrdpSessionId(Coders.toString(b)));
         Encoded.field(content, RRDP_SERIAL).ifPresent(b -> rpkiRepository.setRrdpSerial(Coders.toBigInteger(b)));
         Encoded.field(content, LAST_DOWNLOADED).ifPresent(b -> rpkiRepository.setLastDownloadedAt(Coders.toInstant(b)));
+        Encoded.field(content, LAST_REFERENCED).ifPresent(b -> rpkiRepository.setLastReferencedAt(Coders.toInstant(b)));
 
         Encoded.field(content, TRUST_ANCHORS).ifPresent(b -> {
             final List<Ref<TrustAnchor>> objects = Coders.fromBytes(b, taRefCoder::fromBytes);
