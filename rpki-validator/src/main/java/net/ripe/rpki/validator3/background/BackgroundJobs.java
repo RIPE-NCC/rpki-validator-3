@@ -84,8 +84,12 @@ public class BackgroundJobs extends JobListenerSupport {
                 futureDate(3, MINUTE),
                 simpleSchedule().repeatForever().withIntervalInMinutes(10));
 
-        schedule(ValidationRunCleanupJob.class,
+        schedule(RpkiRepositoryCleanupJob.class,
                 futureDate(4, MINUTE),
+                simpleSchedule().repeatForever().withIntervalInMinutes(60));
+
+        schedule(ValidationRunCleanupJob.class,
+                futureDate(5, MINUTE),
                 simpleSchedule().repeatForever().withIntervalInMinutes(5));
 
         schedule(ValidateRsyncRepositoriesJob.class,

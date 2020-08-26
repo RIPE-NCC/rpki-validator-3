@@ -39,9 +39,10 @@ import net.ripe.rpki.validator3.storage.Binary;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.math.BigInteger;
-import java.util.HashSet;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -68,12 +69,15 @@ public class RpkiRepository extends Base<RpkiRepository> {
     private InstantWithoutNanos lastDownloadedAt;
 
     /**
-     * Time when this repository was last referenced by a trust anchor or certificate tree validation run.
+     * Trust anchors that referenced this repository and need to be re-validated when new information is downloaded.
+     * For each trust anchor we store the last time the trust anchor referenced this repository.
+     *
+     * After a grace period trust anchors will be removed from this map if they no longer reference this repository.
+     * When a repository is no longer referenced by any trust anchor it will be removed and no longer downloaded
+     * periodically.
      */
-    private InstantWithoutNanos lastReferencedAt;
-
     @NotEmpty
-    private Set<Ref<TrustAnchor>> trustAnchors = new HashSet<>();
+    private Map<@NotNull Ref<TrustAnchor>, @NotNull  InstantWithoutNanos> trustAnchors = new HashMap<>();
 
     @ValidLocationURI
     private String rsyncRepositoryUri;
@@ -108,8 +112,8 @@ public class RpkiRepository extends Base<RpkiRepository> {
         return Optional.ofNullable(rrdpNotifyUri).orElse(rsyncRepositoryUri);
     }
 
-    public void addTrustAnchor(Ref<TrustAnchor> trustAnchor) {
-        this.trustAnchors.add(trustAnchor);
+    public void addTrustAnchor(@NotNull Ref<TrustAnchor> trustAnchor) {
+        this.trustAnchors.put(trustAnchor, InstantWithoutNanos.now());
     }
 
     public void removeTrustAnchor(Ref<TrustAnchor> trustAnchor) {
@@ -137,7 +141,6 @@ public class RpkiRepository extends Base<RpkiRepository> {
         this.lastDownloadedAt = lastDownloadedAt;
     }
 
-
     public void setDownloaded() {
         setDownloaded(InstantWithoutNanos.now());
     }
@@ -145,6 +148,10 @@ public class RpkiRepository extends Base<RpkiRepository> {
     public void setDownloaded(InstantWithoutNanos lastDownloadedAt) {
         this.status = Status.DOWNLOADED.name();
         this.lastDownloadedAt = lastDownloadedAt;
+    }
+
+    public InstantWithoutNanos getLastReferencedAt() {
+        return trustAnchors.values().stream().max(Comparator.naturalOrder()).orElseThrow(() -> new RuntimeException("trustAnchors is empty"));
     }
 
     public Type getType() {

@@ -181,7 +181,7 @@ public class RpkiRepositoryValidationService {
         } finally {
             if (triggerCaTreeAfter && changedAtLeastOneObject) {
                 storage.readTx0(tx ->
-                    rpkiRepository.getTrustAnchors().forEach(taRef ->
+                    rpkiRepository.getTrustAnchors().keySet().forEach(taRef ->
                         trustAnchors.get(tx, taRef.key()).ifPresent(trustAnchorState::setUnknown)));
             }
             storage.writeTx0(tx -> {
@@ -190,7 +190,7 @@ public class RpkiRepositoryValidationService {
             });
             if (triggerCaTreeAfter && changedAtLeastOneObject) {
                 storage.readTx0(tx ->
-                    rpkiRepository.getTrustAnchors().forEach(taRef ->
+                    rpkiRepository.getTrustAnchors().keySet().forEach(taRef ->
                         trustAnchors.get(tx, taRef.key())
                             .ifPresent(validationScheduler::triggerCertificateTreeValidation)));
             }
@@ -270,7 +270,7 @@ public class RpkiRepositoryValidationService {
                 });
             }
             storage.readTx0(tx ->
-                repository.getTrustAnchors().forEach(taRef ->
+                repository.getTrustAnchors().keySet().forEach(taRef ->
                     trustAnchors.get(tx, taRef.key()).ifPresent(affectedTrustAnchors::add)));
         }
         return affectedTrustAnchors;
@@ -314,7 +314,7 @@ public class RpkiRepositoryValidationService {
         }
 
         storage.readTx0(tx ->
-            repository.getTrustAnchors().forEach(taRef ->
+            repository.getTrustAnchors().keySet().forEach(taRef ->
                 trustAnchors.get(tx, taRef.key()).ifPresent(ta -> {
                     trustAnchorState.setUnknown(ta);
                     affectedTrustAnchors.add(ta);

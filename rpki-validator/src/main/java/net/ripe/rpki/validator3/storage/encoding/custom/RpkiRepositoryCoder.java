@@ -29,12 +29,16 @@
  */
 package net.ripe.rpki.validator3.storage.encoding.custom;
 
+import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.encoding.Coder;
 
-import java.util.HashSet;
+import javax.validation.constraints.NotEmpty;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -48,8 +52,8 @@ public class RpkiRepositoryCoder implements Coder<RpkiRepository> {
     private final static short RRDP_SESSION = Tags.unique(56);
     private final static short LAST_DOWNLOADED = Tags.unique(57);
     private final static short PARENT_REPOSITORY = Tags.unique(58);
-    private final static short TRUST_ANCHORS = Tags.unique(59);
-    private final static short LAST_REFERENCED = Tags.unique(60);
+    private final static short TRUST_ANCHORS_KEYS = Tags.unique(59);
+    private final static short TRUST_ANCHORS_VALUES = Tags.unique(60);
 
     private final static RefCoder<RpkiRepository> repoRefCoder = new RefCoder<>();
     private final static RefCoder<TrustAnchor> taRefCoder = new RefCoder<>();
@@ -67,11 +71,22 @@ public class RpkiRepositoryCoder implements Coder<RpkiRepository> {
         encoded.appendNotNull(RRDP_SESSION, rpkiRepository.getRrdpSessionId(), Coders::toBytes);
         encoded.appendNotNull(RRDP_SERIAL, rpkiRepository.getRrdpSerial(), Coders::toBytes);
         encoded.appendNotNull(LAST_DOWNLOADED, rpkiRepository.getLastDownloadedAt(), Coders::toBytes);
-        encoded.appendNotNull(LAST_REFERENCED, rpkiRepository.getLastReferencedAt(), Coders::toBytes);
 
-        if (rpkiRepository.getTrustAnchors() != null && !rpkiRepository.getTrustAnchors().isEmpty()) {
-            byte[] taBytes = Coders.toBytes(rpkiRepository.getTrustAnchors(), taRefCoder::toBytes);
-            encoded.append(TRUST_ANCHORS, taBytes);
+        @NotEmpty Map<Ref<TrustAnchor>, InstantWithoutNanos> trustAnchors = rpkiRepository.getTrustAnchors();
+        if (trustAnchors != null && !trustAnchors.isEmpty()) {
+            List<Ref<TrustAnchor>> keys = new ArrayList<>(trustAnchors.size());
+            List<InstantWithoutNanos> values = new ArrayList<>(trustAnchors.size());
+
+            // Iterate once over the map to guarantee same order of keys and values
+            for (Map.Entry<Ref<TrustAnchor>, InstantWithoutNanos> entry : trustAnchors.entrySet()) {
+                keys.add(entry.getKey());
+                values.add(entry.getValue());
+            }
+
+            byte[] taBytes = Coders.toBytes(keys, taRefCoder::toBytes);
+            encoded.append(TRUST_ANCHORS_KEYS, taBytes);
+            byte[] lastReferencedAtBytes = Coders.toBytes(values, Coders::toBytes);
+            encoded.append(TRUST_ANCHORS_VALUES, lastReferencedAtBytes);
         }
 
         return encoded.toByteArray();
@@ -91,14 +106,26 @@ public class RpkiRepositoryCoder implements Coder<RpkiRepository> {
         Encoded.field(content, RRDP_SESSION).ifPresent(b -> rpkiRepository.setRrdpSessionId(Coders.toString(b)));
         Encoded.field(content, RRDP_SERIAL).ifPresent(b -> rpkiRepository.setRrdpSerial(Coders.toBigInteger(b)));
         Encoded.field(content, LAST_DOWNLOADED).ifPresent(b -> rpkiRepository.setLastDownloadedAt(Coders.toInstant(b)));
-        Encoded.field(content, LAST_REFERENCED).ifPresent(b -> rpkiRepository.setLastReferencedAt(Coders.toInstant(b)));
 
-        Encoded.field(content, TRUST_ANCHORS).ifPresent(b -> {
+        Encoded.field(content, TRUST_ANCHORS_KEYS).ifPresent(b -> {
             final List<Ref<TrustAnchor>> objects = Coders.fromBytes(b, taRefCoder::fromBytes);
-            rpkiRepository.setTrustAnchors(new HashSet<>(objects));
+            List<InstantWithoutNanos> lastReferencedAt = Encoded.field(content, TRUST_ANCHORS_VALUES).map(bs -> Coders.fromBytes(bs, Coders::toInstant)).orElse(Collections.emptyList());
+            Map<Ref<TrustAnchor>, InstantWithoutNanos> trustAnchors = new HashMap<>();
+            if (objects.size() == lastReferencedAt.size()) {
+                for (int i = 0; i < objects.size(); ++i) {
+                    trustAnchors.put(objects.get(i), lastReferencedAt.get(i));
+                }
+            } else {
+                // Older versions of the validator did not track last referenced time for trust anchors,
+                // initialize it with the current time.
+                InstantWithoutNanos now = InstantWithoutNanos.now();
+                for (int i = 0; i < objects.size(); ++i) {
+                    trustAnchors.put(objects.get(i), now);
+                }
+            }
+            rpkiRepository.setTrustAnchors(trustAnchors);
         });
 
         return rpkiRepository;
     }
-
 }
