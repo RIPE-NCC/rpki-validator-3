@@ -46,8 +46,6 @@ public class RpkiRepositoryCoderTest {
     public void testSaveRead() {
         Ref<TrustAnchor> trustAnchorRef = Ref.unsafe("bla", Key.of(123L));
         RpkiRepository rpkiRepository = new RpkiRepository(trustAnchorRef, "some-uri", RpkiRepository.Type.RRDP);
-        Ref<RpkiRepository> parentRepoRef = Ref.unsafe("foo", Key.of(987654321L));
-        rpkiRepository.setParentRepository(parentRepoRef);
         rpkiRepository.setLastDownloadedAt(InstantWithoutNanos.now());
         rpkiRepository.setRrdpSerial(new BigInteger("2133553334897396402696204629648763485348763845"));
         rpkiRepository.setRrdpSessionId("sfjbkskbsfkbjsfkjbs");

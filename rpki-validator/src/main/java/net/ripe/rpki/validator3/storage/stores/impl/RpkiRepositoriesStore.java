@@ -126,7 +126,6 @@ public class RpkiRepositoriesStore extends GenericStoreImpl<RpkiRepository> impl
 
         if (registered.getType() == RpkiRepository.Type.RSYNC) {
             findRsyncParentRepository(tx, uri).ifPresent(parent -> {
-                registered.setParentRepository(Ref.of(tx, ixMap, parent.key()));
                 if (parent.isDownloaded()) {
                     registered.setDownloaded(parent.getLastDownloadedAt());
                 }
@@ -196,11 +195,10 @@ public class RpkiRepositoriesStore extends GenericStoreImpl<RpkiRepository> impl
 
         if (hideChildrenOfDownloadedParent) {
             stream = stream.filter(r -> {
-                final Ref<RpkiRepository> parentRef = r.getParentRepository();
-                if (parentRef == null) {
+                if (r.getType() != RpkiRepository.Type.RSYNC) {
                     return true;
                 }
-                final Optional<RpkiRepository> parent = ixMap.get(tx, parentRef.key());
+                final Optional<RpkiRepository> parent = findRsyncParentRepository(tx, r.getRsyncRepositoryUri());
                 return !parent.isPresent() ||
                         parent.get().getStatus() == RpkiRepository.Status.FAILED &&
                                 parent.get().getLastDownloadedAt() == null;

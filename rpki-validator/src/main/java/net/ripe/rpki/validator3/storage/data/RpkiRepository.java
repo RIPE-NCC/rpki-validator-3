@@ -80,8 +80,6 @@ public class RpkiRepository extends Base<RpkiRepository> {
 
     private BigInteger rrdpSerial;
 
-    private Ref<RpkiRepository> parentRepository;
-
     public RpkiRepository() {
     }
 
