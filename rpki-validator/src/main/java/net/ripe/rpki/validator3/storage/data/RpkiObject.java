@@ -50,13 +50,9 @@ import net.ripe.rpki.validator3.util.Bench;
 import net.ripe.rpki.validator3.util.Sha256;
 import org.joda.time.DateTime;
 
-import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static net.ripe.rpki.validator3.domain.RpkiObjectUtils.newValidationResult;
 
@@ -94,10 +90,6 @@ public class RpkiObject extends Base<RpkiObject> {
     @NotNull
     private byte[] encoded;
 
-    @NotNull
-    @Valid
-    private List<RoaPrefix> roaPrefixes = new ArrayList<>();
-
     public RpkiObject() {
     }
 
@@ -130,13 +122,7 @@ public class RpkiObject extends Base<RpkiObject> {
                 this.type = Type.MFT;
                 this.serialNumber = ((ManifestCms) object).getNumber();
             } else if (object instanceof RoaCms) {
-                RoaCms roaCms = (RoaCms) object;
                 this.type = Type.ROA;
-                long notBefore = roaCms.getValidityPeriod().getNotValidBefore().toInstant().getMillis();
-                long notAfter = roaCms.getValidityPeriod().getNotValidAfter().toInstant().getMillis();
-                this.roaPrefixes = roaCms.getPrefixes().stream()
-                    .map(prefix -> RoaPrefix.of(prefix.getPrefix(), prefix.getMaximumLength(), roaCms.getAsn(), notBefore, notAfter, this.serialNumber))
-                    .collect(Collectors.toList());
             } else if (object instanceof GhostbustersCms) {
                 this.type = Type.GBR;
             } else {
