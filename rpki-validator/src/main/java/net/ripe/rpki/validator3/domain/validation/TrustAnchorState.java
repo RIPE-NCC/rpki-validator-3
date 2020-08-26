@@ -67,9 +67,11 @@ public class TrustAnchorState {
     }
 
     private void setState(TrustAnchor ta, State state) {
-        log.debug("Setting TA {} to {}", ta.getName(), state);
         synchronized (states) {
-            states.put(ta.getName(), state);
+            State previousState = states.put(ta.getName(), state);
+            if (state != previousState) {
+                log.debug("Setting TA {} to {}", ta.getName(), state);
+            }
         }
     }
 
