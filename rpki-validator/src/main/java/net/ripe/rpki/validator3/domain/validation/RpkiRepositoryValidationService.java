@@ -74,6 +74,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -214,7 +215,9 @@ public class RpkiRepositoryValidationService {
                         fetchedLocations.put(URI.create(repository.getRsyncRepositoryUri()), repository);
                     }
                     return needsUpdate;
-                });
+                })
+                // Sort repositories by location URI so that parents are processed before children
+                .sorted(Comparator.comparing((RpkiRepository r) -> URI.create(r.getRsyncRepositoryUri()).normalize()));
 
             ValidationResult results = repositoriesNeedingUpdate.map(repository -> {
                     storage.writeTx0(tx -> validationRuns.associate(tx, validationRun, repository));
