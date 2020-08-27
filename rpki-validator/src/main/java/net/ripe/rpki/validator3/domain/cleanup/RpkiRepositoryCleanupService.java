@@ -53,11 +53,12 @@ public class RpkiRepositoryCleanupService {
 
     private final Storage storage;
 
-
-    public RpkiRepositoryCleanupService(@Value("${rpki.validator.rpki.repository.cleanup.grace.duration}") String cleanupGraceDuration,
-                                        Storage storage) {
-        this.cleanupGraceDuration = Duration.parse(cleanupGraceDuration);
+    public RpkiRepositoryCleanupService(
+            @Value("${rpki.validator.rpki.repository.cleanup.grace.duration:P7D}") Duration cleanupGraceDuration,
+            Storage storage
+    ) {
         log.info("Configured to remove repositories older than {}", cleanupGraceDuration);
+        this.cleanupGraceDuration = cleanupGraceDuration;
         this.storage = storage;
     }
 
@@ -67,5 +68,4 @@ public class RpkiRepositoryCleanupService {
         log.info("Removed {} RPKI repositories that have not been referenced since {}, took {}ms", deleted.getLeft(), unreferencedSince, deleted.getRight());
         return deleted.getLeft();
     }
-
 }
