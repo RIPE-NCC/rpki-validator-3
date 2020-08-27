@@ -340,6 +340,9 @@ public class RpkiRepositoriesStore extends GenericStoreImpl<RpkiRepository> impl
                     if (trustAnchors.isEmpty()) {
                         log.info("removing RPKI repository {} (unreferenced since {})", rpkiRepository.getLocationUri(), unreferencedSince);
                         if (rpkiRepository.getType() == RpkiRepository.Type.RRDP) {
+                            // RRDP jobs are scheduled separately for each repository, remove from scheduling
+                            // before deletion. RSYNC repositories are managed by a single background job, so
+                            // no special action needed.
                             tx.afterCommit(() -> validationScheduler.removeRrdpRpkiRepository(rpkiRepository));
                         }
                         ixMap.delete(tx, rpkiRepository.key());
