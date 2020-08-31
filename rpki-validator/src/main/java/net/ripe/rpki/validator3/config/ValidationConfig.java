@@ -50,14 +50,14 @@ public class ValidationConfig {
      */
     @Getter
     @Setter
-    private boolean paranoidValidation = false;
+    private boolean earlyWarningValidation = false;
 
     @Getter
     @Setter
     private boolean rsyncOnly;
 
     public ValidationOptions validationOptions() {
-        if (paranoidValidation) {
+        if (earlyWarningValidation) {
             return ValidationOptions.paranoidTestValidations();
         }
         if (strictValidation) {
