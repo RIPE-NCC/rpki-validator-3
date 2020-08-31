@@ -39,16 +39,18 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties("rpki.validator")
 public class ValidationConfig {
 
-    @Getter @Setter
+    @Getter
+    @Setter
     private boolean strictValidation;
 
-    @Getter @Setter
+    @Getter
+    @Setter
     private boolean rsyncOnly;
 
-    public ValidationOptions validationOptions(){
-        if(strictValidation){
-            return ValidationOptions.strictValidations();
+    public ValidationOptions validationOptions() {
+        if (strictValidation) {
+            return ValidationOptions.strictValidation();
         } else
-            return ValidationOptions.defaultRipeNccValidator();
+            return ValidationOptions.backCompatibleRipeNccValidator();
     }
 }
