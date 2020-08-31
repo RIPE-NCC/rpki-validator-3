@@ -39,18 +39,11 @@ public class Dates {
     static final DateTimeFormatter UTCFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC);
 
     public static String formatUTC(Object o) {
-        if (o == null) {
-            return null;
-        }
-        return formatUTC(((Timestamp) o).toInstant());
+        return o == null ? null : formatUTC(((Timestamp) o).toInstant());
     }
 
     public static String formatUTC(TemporalAccessor i) {
-        if (i == null) {
-            return null;
-        }
-
-        return UTCFormatter.format(i);
+        return i == null ? null : UTCFormatter.format(i);
     }
 
     public static Instant parseUTC(String formatted){

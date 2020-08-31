@@ -43,14 +43,26 @@ public class ValidationConfig {
     @Setter
     private boolean strictValidation;
 
+    /**
+     * Internally used option: strict validation with _negative_ grace periods,
+     * i.e. validator starts to complain about objects before they expire. This
+     * options is supposed to be used only for internal RIPE NCC repository testing.
+     */
+    @Getter
+    @Setter
+    private boolean paranoidValidation = false;
+
     @Getter
     @Setter
     private boolean rsyncOnly;
 
     public ValidationOptions validationOptions() {
+        if (paranoidValidation) {
+            return ValidationOptions.paranoidTestValidations();
+        }
         if (strictValidation) {
             return ValidationOptions.strictValidation();
-        } else
-            return ValidationOptions.backCompatibleRipeNccValidator();
+        }
+        return ValidationOptions.backCompatibleRipeNccValidator();
     }
 }
