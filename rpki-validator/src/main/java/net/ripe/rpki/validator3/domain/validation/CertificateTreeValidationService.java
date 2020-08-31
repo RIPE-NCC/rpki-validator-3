@@ -373,13 +373,13 @@ public class CertificateTreeValidationService {
             return hashMatches ? object : Optional.empty();
         });
 
-        if(validationConfig.isStrictValidation())
+        if (validationConfig.isStrictValidation())
             return rpkiObject.map(ro -> Stream.of(new Tuple3<>(location, ro, temporary)))
                 .orElseThrow(() ->
-                        new ManifestEntryException("Failed to get manifest entry "+entry.getKey(), temporary));
+                    new ManifestEntryException("Failed to get manifest entry " + entry.getKey(), temporary));
         else {
             return rpkiObject.map(ro -> Stream.of(new Tuple3<>(location, ro, temporary)))
-                 .orElse(Stream.empty());
+                .orElse(Stream.empty());
         }
     }
 
