@@ -24,7 +24,7 @@
   "OF": "of",
   "SHOW": "Show",
   "ENTRIES": "entries",
-  "SEEN_AT": "Seen at",
+  "SEEN_AT": "Seen at (UTC)",
   "URI": "URI",
   "PREFIX": "Prefix",
   "PREFIX_PLACEHOLDER": "IPv4 or IPv6 prefix",

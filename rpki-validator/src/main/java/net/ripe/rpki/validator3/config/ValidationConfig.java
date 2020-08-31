@@ -39,16 +39,30 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties("rpki.validator")
 public class ValidationConfig {
 
-    @Getter @Setter
+    @Getter
+    @Setter
     private boolean strictValidation;
 
-    @Getter @Setter
+    /**
+     * Internally used option: strict validation with _negative_ grace periods,
+     * i.e. validator starts to complain about objects before they expire. This
+     * options is supposed to be used only for internal RIPE NCC repository testing.
+     */
+    @Getter
+    @Setter
+    private boolean earlyWarningValidation = false;
+
+    @Getter
+    @Setter
     private boolean rsyncOnly;
 
-    public ValidationOptions validationOptions(){
-        if(strictValidation){
-            return ValidationOptions.strictValidations();
-        } else
-            return ValidationOptions.defaultRipeNccValidator();
+    public ValidationOptions validationOptions() {
+        if (earlyWarningValidation) {
+            return ValidationOptions.paranoidTestValidations();
+        }
+        if (strictValidation) {
+            return ValidationOptions.strictValidation();
+        }
+        return ValidationOptions.backCompatibleRipeNccValidator();
     }
 }
