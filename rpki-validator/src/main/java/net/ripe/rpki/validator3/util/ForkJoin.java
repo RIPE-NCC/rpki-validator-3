@@ -29,13 +29,34 @@
  */
 package net.ripe.rpki.validator3.util;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
+@Slf4j
 public class ForkJoin {
+
+    private static final Semaphore maximumManagedBlockers;
+
+    static {
+        int maximumSpares = Integer.parseInt(System.getProperty("java.util.concurrent.ForkJoinPool.common.maximumSpares", "256"));
+        int max = Math.min(2 * ForkJoinPool.getCommonPoolParallelism(), maximumSpares / 4);
+        log.info("maximum concurrent blocking threads for common fork-join pool is {}", max);
+        maximumManagedBlockers = new Semaphore(max);
+    }
+
     /**
      * Indicates that supplier is potentially blocking so {@link ForkJoinPool} can spawn additional threads if needed.
+     *
+     * The maximum number of threads marked "blocking" is bounded by the {@see maximumManagedBlockers} semaphore to
+     * avoid filling up the spare threads of the fork-join pool and causing
+     * {@link java.util.concurrent.RejectedExecutionException}s.
+     *
+     * Furthermore, this code should only be called when using the common fork-join pool as it does not have a
+     * semaphore for other fork-join pools.
      *
      * @param supplier potentially blocking operation
      * @param <T>      type of result
@@ -43,8 +64,12 @@ public class ForkJoin {
      * @see ForkJoinPool#managedBlock
      */
     public static <T> T blocking(Supplier<T> supplier) {
-        AtomicReference<T> result = new AtomicReference<>();
+        if (!maximumManagedBlockers.tryAcquire()) {
+            return supplier.get();
+        }
+
         try {
+            AtomicReference<T> result = new AtomicReference<>();
             ForkJoinPool.managedBlock(new ForkJoinPool.ManagedBlocker() {
                 @Override
                 public boolean block() {
@@ -57,11 +82,13 @@ public class ForkJoin {
                     return false;
                 }
             });
+            return result.get();
         } catch (InterruptedException e) {
             // We're not throwing an InterruptedException, and neither is ForkJoinPool#managedBlock,
             // so this shouldn't happen.
             throw new RuntimeException(e);
+        } finally {
+            maximumManagedBlockers.release();
         }
-        return result.get();
     }
 }
