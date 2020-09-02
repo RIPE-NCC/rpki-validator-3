@@ -69,11 +69,15 @@ public class RpkiRepository extends Base<RpkiRepository> {
     private InstantWithoutNanos lastDownloadedAt;
 
     /**
-     * Trust anchors that referenced this repository and need to be re-validated when new information is downloaded.
-     * For each trust anchor we store the last time the trust anchor referenced this repository.
+     * The set of trust anchors that referenced this repository during validation. Whenever this RPKI repository
+     * is updated re-validation for this set of trust anchors will be triggered. Normally a repository is only
+     * referenced by a single trust anchor, but this is not guaranteed.
      *
-     * After a grace period trust anchors will be removed from this map if they no longer reference this repository.
-     * When a repository is no longer referenced by any trust anchor it will be removed and no longer downloaded
+     * For each trust anchor we store the last time the trust anchor referenced this repository during validation.
+     * When a trust anchor no longer references a this repository during validation it will be removed from this
+     * set. This way the trust anchor will no longer be re-validated when this repository is updated.
+     *
+     * When the repository is no longer referenced by any trust anchor it will be removed and no longer updated
      * periodically.
      */
     @NotEmpty
