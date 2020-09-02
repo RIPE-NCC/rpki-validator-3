@@ -42,9 +42,14 @@ public class ForkJoin {
     private static final Semaphore maximumManagedBlockers;
 
     static {
+        // The default maximumSpares used by the common fork-join pool
         int maximumSpares = Integer.parseInt(System.getProperty("java.util.concurrent.ForkJoinPool.common.maximumSpares", "256"));
+
+        // The number of additional concurrent threads we want to use up. We do not want to use all the maximumSpares,
+        // since other parts or libraries may also use a few and we really want to avoid `RejectedEcecutionExceptions`.
+        // Furthermore, using a large number of additional threads is probably not optimal anyway.
         int max = Math.min(2 * ForkJoinPool.getCommonPoolParallelism(), maximumSpares / 4);
-        log.info("maximum concurrent blocking threads for common fork-join pool is {}", max);
+        log.info("maximum additional concurrent blocking threads for common fork-join pool is {}", max);
         maximumManagedBlockers = new Semaphore(max);
     }
 
