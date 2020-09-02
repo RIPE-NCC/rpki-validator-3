@@ -33,9 +33,11 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.IntegrationTest;
 import net.ripe.rpki.validator3.TestObjects;
 import net.ripe.rpki.validator3.api.SearchTerm;
+import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,7 +45,10 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Map;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 @RunWith(SpringRunner.class)
 @IntegrationTest
@@ -58,9 +63,7 @@ public class RpkiRepositoriesStoreTest extends GenericStorageTest {
         trustAnchor = TestObjects.newTrustAnchor();
         wtx0(tx -> this.getTrustAnchors().add(tx, trustAnchor));
 
-        final Ref<TrustAnchor> trustAnchorRef = rtx(tx -> this.getTrustAnchors().makeRef(tx, trustAnchor.key()));
-        rsyncRepo = wtx(tx -> this.getRpkiRepositories().register(tx,
-                trustAnchorRef, "rsync://some.rsync.repo", RpkiRepository.Type.RSYNC));
+        rsyncRepo = registerRsyncRepo();
     }
 
     @Test
@@ -95,4 +98,20 @@ public class RpkiRepositoriesStoreTest extends GenericStorageTest {
         assertEquals(0, countAll);
     }
 
+    @Test
+    public void should_update_last_referenced_at_on_registration() throws InterruptedException {
+        InstantWithoutNanos lastReferencedAt = rsyncRepo.getLastReferencedAt();
+        assertThat(lastReferencedAt, is(Matchers.notNullValue()));
+
+        Thread.sleep(10);
+
+        RpkiRepository rpkiRepository = registerRsyncRepo();
+        assertThat(rpkiRepository.getLastReferencedAt(), is(greaterThan(lastReferencedAt)));
+    }
+
+    private RpkiRepository registerRsyncRepo() {
+        final Ref<TrustAnchor> trustAnchorRef = rtx(tx -> this.getTrustAnchors().makeRef(tx, trustAnchor.key()));
+        return wtx(tx -> this.getRpkiRepositories().register(tx,
+                trustAnchorRef, "rsync://some.rsync.repo", RpkiRepository.Type.RSYNC));
+    }
 }

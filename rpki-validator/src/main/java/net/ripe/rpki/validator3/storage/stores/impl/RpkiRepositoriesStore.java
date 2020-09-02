@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.storage.stores.impl;
 
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.Paging;
@@ -56,11 +57,13 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -87,7 +90,7 @@ public class RpkiRepositoriesStore extends GenericStoreImpl<RpkiRepository> impl
                 RPKI_REPOSITORIES,
                 ImmutableMap.of(
                         BY_URI_PREFIX, this::locationIndex,
-                        BY_TA, r -> r.getTrustAnchors().stream().map(Ref::key).collect(Collectors.toSet())
+                        BY_TA, r -> r.getTrustAnchors().keySet().stream().map(Ref::key).collect(Collectors.toSet())
                 ),
                 RpkiRepository.class
         );
@@ -126,7 +129,6 @@ public class RpkiRepositoriesStore extends GenericStoreImpl<RpkiRepository> impl
 
         if (registered.getType() == RpkiRepository.Type.RSYNC) {
             findRsyncParentRepository(tx, uri).ifPresent(parent -> {
-                registered.setParentRepository(Ref.of(tx, ixMap, parent.key()));
                 if (parent.isDownloaded()) {
                     registered.setDownloaded(parent.getLastDownloadedAt());
                 }
@@ -196,11 +198,10 @@ public class RpkiRepositoriesStore extends GenericStoreImpl<RpkiRepository> impl
 
         if (hideChildrenOfDownloadedParent) {
             stream = stream.filter(r -> {
-                final Ref<RpkiRepository> parentRef = r.getParentRepository();
-                if (parentRef == null) {
+                if (r.getType() != RpkiRepository.Type.RSYNC) {
                     return true;
                 }
-                final Optional<RpkiRepository> parent = ixMap.get(tx, parentRef.key());
+                final Optional<RpkiRepository> parent = findRsyncParentRepository(tx, r.getRsyncRepositoryUri());
                 return !parent.isPresent() ||
                         parent.get().getStatus() == RpkiRepository.Status.FAILED &&
                                 parent.get().getLastDownloadedAt() == null;
@@ -296,7 +297,7 @@ public class RpkiRepositoriesStore extends GenericStoreImpl<RpkiRepository> impl
                     rpkiRepository.removeTrustAnchor(taRef);
                     if (rpkiRepository.getTrustAnchors().isEmpty()) {
                         if (rpkiRepository.getType() == RpkiRepository.Type.RRDP) {
-                            tx.afterCommit(() -> validationScheduler.removeRpkiRepository(rpkiRepository));
+                            tx.afterCommit(() -> validationScheduler.removeRrdpRpkiRepository(rpkiRepository));
                         }
                         ixMap.delete(tx, pk);
                     } else {
@@ -313,6 +314,45 @@ public class RpkiRepositoriesStore extends GenericStoreImpl<RpkiRepository> impl
     @Override
     public Collection<RpkiRepository> findByTrustAnchor(Tx.Read tx, Key key) {
         return ixMap.getByIndex(BY_TA, tx, key).values();
+    }
+
+    @Override
+    public long deleteUnreferencedRepositories(Tx.Write tx, InstantWithoutNanos unreferencedSince) {
+        Stream<RpkiRepository> repositories = findRepositoriesByPredicate(tx, Predicates.alwaysTrue());
+        AtomicLong counter = new AtomicLong(0);
+
+        repositories
+                .sorted(Comparator.comparing(RpkiRepository::getLocationUri).reversed())
+                .forEach(rpkiRepository -> {
+                    Map<Ref<TrustAnchor>, InstantWithoutNanos> trustAnchors = rpkiRepository.getTrustAnchors();
+
+                    boolean updated = false;
+                    Iterator<Map.Entry<Ref<TrustAnchor>, InstantWithoutNanos>> it = trustAnchors.entrySet().iterator();
+                    while (it.hasNext()) {
+                        Map.Entry<Ref<TrustAnchor>, InstantWithoutNanos> pair = it.next();
+                        InstantWithoutNanos lastReferencedAt = pair.getValue();
+                        if (lastReferencedAt.isBefore(unreferencedSince)) {
+                            it.remove();
+                            updated = true;
+                        }
+                    }
+
+                    if (trustAnchors.isEmpty()) {
+                        log.info("removing RPKI repository {} (unreferenced since {})", rpkiRepository.getLocationUri(), unreferencedSince);
+                        if (rpkiRepository.getType() == RpkiRepository.Type.RRDP) {
+                            // RRDP jobs are scheduled separately for each repository, remove from scheduling
+                            // before deletion. RSYNC repositories are managed by a single background job, so
+                            // no special action needed.
+                            tx.afterCommit(() -> validationScheduler.removeRrdpRpkiRepository(rpkiRepository));
+                        }
+                        ixMap.delete(tx, rpkiRepository.key());
+
+                        counter.incrementAndGet();
+                    } else if (updated) {
+                        update(tx, rpkiRepository);
+                    }
+                });
+        return counter.get();
     }
 
     @Override

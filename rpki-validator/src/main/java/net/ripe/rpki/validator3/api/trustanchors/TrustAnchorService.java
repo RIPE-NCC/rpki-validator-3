@@ -36,8 +36,6 @@ import net.ripe.rpki.validator3.domain.validation.TrustAnchorState;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
-import net.ripe.rpki.validator3.storage.data.Ref;
-import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
@@ -103,12 +101,6 @@ public class TrustAnchorService {
 
     long add(Tx.Write tx, TrustAnchor trustAnchor) {
         trustAnchors.add(tx, trustAnchor);
-
-        final Ref<TrustAnchor> trustAnchorRef = trustAnchors.makeRef(tx, trustAnchor.key());
-        if (trustAnchor.getRsyncPrefetchUri() != null) {
-            rpkiRepositories.register(tx, trustAnchorRef,
-                    trustAnchor.getRsyncPrefetchUri(), RpkiRepository.Type.RSYNC_PREFETCH);
-        }
         tx.afterCommit(() -> validationScheduler.addTrustAnchor(trustAnchor));
         log.info("Added trust anchor '{}'", trustAnchor);
         return trustAnchor.key().asLong();

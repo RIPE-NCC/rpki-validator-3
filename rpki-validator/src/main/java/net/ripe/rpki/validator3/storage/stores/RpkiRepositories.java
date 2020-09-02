@@ -32,6 +32,7 @@ package net.ripe.rpki.validator3.storage.stores;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
 import net.ripe.rpki.validator3.api.Sorting;
+import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
@@ -77,4 +78,6 @@ public interface RpkiRepositories extends GenericStore<RpkiRepository> {
     void remove(Tx.Write tx, Key key);
 
     Collection<RpkiRepository> findByTrustAnchor(Tx.Read tx, Key key);
+
+    long deleteUnreferencedRepositories(Tx.Write tx, InstantWithoutNanos unreferencedSince);
 }

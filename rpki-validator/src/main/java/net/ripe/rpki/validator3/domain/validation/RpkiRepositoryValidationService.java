@@ -74,6 +74,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -180,7 +181,7 @@ public class RpkiRepositoryValidationService {
         } finally {
             if (triggerCaTreeAfter && changedAtLeastOneObject) {
                 storage.readTx0(tx ->
-                    rpkiRepository.getTrustAnchors().forEach(taRef ->
+                    rpkiRepository.getTrustAnchors().keySet().forEach(taRef ->
                         trustAnchors.get(tx, taRef.key()).ifPresent(trustAnchorState::setUnknown)));
             }
             storage.writeTx0(tx -> {
@@ -189,7 +190,7 @@ public class RpkiRepositoryValidationService {
             });
             if (triggerCaTreeAfter && changedAtLeastOneObject) {
                 storage.readTx0(tx ->
-                    rpkiRepository.getTrustAnchors().forEach(taRef ->
+                    rpkiRepository.getTrustAnchors().keySet().forEach(taRef ->
                         trustAnchors.get(tx, taRef.key())
                             .ifPresent(validationScheduler::triggerCertificateTreeValidation)));
             }
@@ -214,7 +215,9 @@ public class RpkiRepositoryValidationService {
                         fetchedLocations.put(URI.create(repository.getRsyncRepositoryUri()), repository);
                     }
                     return needsUpdate;
-                });
+                })
+                // Sort repositories by location URI so that parents are processed before children
+                .sorted(Comparator.comparing((RpkiRepository r) -> URI.create(r.getRsyncRepositoryUri()).normalize()));
 
             ValidationResult results = repositoriesNeedingUpdate.map(repository -> {
                     storage.writeTx0(tx -> validationRuns.associate(tx, validationRun, repository));
@@ -267,7 +270,7 @@ public class RpkiRepositoryValidationService {
                 });
             }
             storage.readTx0(tx ->
-                repository.getTrustAnchors().forEach(taRef ->
+                repository.getTrustAnchors().keySet().forEach(taRef ->
                     trustAnchors.get(tx, taRef.key()).ifPresent(affectedTrustAnchors::add)));
         }
         return affectedTrustAnchors;
@@ -311,7 +314,7 @@ public class RpkiRepositoryValidationService {
         }
 
         storage.readTx0(tx ->
-            repository.getTrustAnchors().forEach(taRef ->
+            repository.getTrustAnchors().keySet().forEach(taRef ->
                 trustAnchors.get(tx, taRef.key()).ifPresent(ta -> {
                     trustAnchorState.setUnknown(ta);
                     affectedTrustAnchors.add(ta);
@@ -326,14 +329,10 @@ public class RpkiRepositoryValidationService {
         URI location = URI.create(repository.getRsyncRepositoryUri());
         for (URI parentLocation : Rsync.generateCandidateParentUris(location)) {
             RpkiRepository parentRepository = fetchedLocations.get(parentLocation);
-            if (parentRepository != null) {
-                final Ref<RpkiRepository> rpkiRepositoryRef = storage.readTx(tx -> rpkiRepositories.makeRef(tx, parentRepository.key()));
-                repository.setParentRepository(rpkiRepositoryRef);
-                if (parentRepository.isDownloaded()) {
-                    log.debug("Already fetched {} as part of {}, skipping", repository.getLocationUri(), parentRepository.getLocationUri());
-                    repository.setDownloaded(parentRepository.getLastDownloadedAt());
-                    return parentRepository;
-                }
+            if (parentRepository != null && parentRepository.isDownloaded()) {
+                log.trace("Already fetched {} as part of {}, skipping", repository.getLocationUri(), parentRepository.getLocationUri());
+                repository.setDownloaded(parentRepository.getLastDownloadedAt());
+                return parentRepository;
             }
         }
         return null;

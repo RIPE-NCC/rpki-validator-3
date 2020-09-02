@@ -156,7 +156,7 @@ public class ValidationScheduler {
         }
     }
 
-    public void removeRpkiRepository(RpkiRepository repository) {
+    public void removeRrdpRpkiRepository(RpkiRepository repository) {
         if (!enabled) {
             return;
         }

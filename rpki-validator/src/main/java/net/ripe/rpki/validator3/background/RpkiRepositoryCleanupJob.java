@@ -27,32 +27,27 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.encoding.custom;
+package net.ripe.rpki.validator3.background;
 
-import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
-import net.ripe.rpki.validator3.storage.data.Key;
-import net.ripe.rpki.validator3.storage.data.Ref;
-import net.ripe.rpki.validator3.storage.data.RpkiRepository;
-import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import org.junit.Test;
+import net.ripe.rpki.validator3.domain.cleanup.RpkiRepositoryCleanupService;
+import org.quartz.DisallowConcurrentExecution;
+import org.quartz.Job;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import java.math.BigInteger;
+@DisallowConcurrentExecution
+class RpkiRepositoryCleanupJob implements Job {
 
-import static org.junit.Assert.*;
+    @Autowired
+    private RpkiRepositoryCleanupService rpkiRepositoryCleanupService;
 
-public class RpkiRepositoryCoderTest {
-
-    @Test
-    public void testSaveRead() {
-        Ref<TrustAnchor> trustAnchorRef = Ref.unsafe("bla", Key.of(123L));
-        RpkiRepository rpkiRepository = new RpkiRepository(trustAnchorRef, "some-uri", RpkiRepository.Type.RRDP);
-        rpkiRepository.setLastDownloadedAt(InstantWithoutNanos.now());
-        rpkiRepository.setRrdpSerial(new BigInteger("2133553334897396402696204629648763485348763845"));
-        rpkiRepository.setRrdpSessionId("sfjbkskbsfkbjsfkjbs");
-
-        RpkiRepositoryCoder coder = new RpkiRepositoryCoder();
-        RpkiRepository rpkiRepository1 = coder.fromBytes(coder.toBytes(rpkiRepository));
-
-        assertEquals(rpkiRepository, rpkiRepository1);
+    @Override
+    public void execute(JobExecutionContext context) throws JobExecutionException {
+        try {
+            rpkiRepositoryCleanupService.cleanupRpkiRepositories();
+        } catch (Exception e) {
+            throw new JobExecutionException(e);
+        }
     }
 }

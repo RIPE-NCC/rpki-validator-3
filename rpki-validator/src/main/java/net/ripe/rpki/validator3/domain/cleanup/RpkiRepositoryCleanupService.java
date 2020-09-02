@@ -27,32 +27,45 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.ripe.rpki.validator3.storage.encoding.custom;
+package net.ripe.rpki.validator3.domain.cleanup;
 
+import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
-import net.ripe.rpki.validator3.storage.data.Key;
-import net.ripe.rpki.validator3.storage.data.Ref;
-import net.ripe.rpki.validator3.storage.data.RpkiRepository;
-import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import org.junit.Test;
+import net.ripe.rpki.validator3.storage.Storage;
+import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
+import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
+import net.ripe.rpki.validator3.util.Time;
+import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
-import java.math.BigInteger;
+import java.time.Duration;
 
-import static org.junit.Assert.*;
+@Service
+@Slf4j
+public class RpkiRepositoryCleanupService {
 
-public class RpkiRepositoryCoderTest {
+    @Autowired
+    private RpkiRepositories rpkiRepositories;
 
-    @Test
-    public void testSaveRead() {
-        Ref<TrustAnchor> trustAnchorRef = Ref.unsafe("bla", Key.of(123L));
-        RpkiRepository rpkiRepository = new RpkiRepository(trustAnchorRef, "some-uri", RpkiRepository.Type.RRDP);
-        rpkiRepository.setLastDownloadedAt(InstantWithoutNanos.now());
-        rpkiRepository.setRrdpSerial(new BigInteger("2133553334897396402696204629648763485348763845"));
-        rpkiRepository.setRrdpSessionId("sfjbkskbsfkbjsfkjbs");
+    private final Duration cleanupGraceDuration;
 
-        RpkiRepositoryCoder coder = new RpkiRepositoryCoder();
-        RpkiRepository rpkiRepository1 = coder.fromBytes(coder.toBytes(rpkiRepository));
+    private final Storage storage;
 
-        assertEquals(rpkiRepository, rpkiRepository1);
+    public RpkiRepositoryCleanupService(
+            @Value("${rpki.validator.rpki.repository.cleanup.grace.duration:P7D}") Duration cleanupGraceDuration,
+            Storage storage
+    ) {
+        log.info("Configured to remove repositories older than {}", cleanupGraceDuration);
+        this.cleanupGraceDuration = cleanupGraceDuration;
+        this.storage = storage;
+    }
+
+    public long cleanupRpkiRepositories() {
+        final InstantWithoutNanos unreferencedSince = InstantWithoutNanos.now().minus(cleanupGraceDuration);
+        final Pair<Long, Long> deleted = Time.timed(() -> storage.writeTx(tx -> rpkiRepositories.deleteUnreferencedRepositories(tx, unreferencedSince)));
+        log.info("Removed {} RPKI repositories that have not been referenced since {}, took {}ms", deleted.getLeft(), unreferencedSince, deleted.getRight());
+        return deleted.getLeft();
     }
 }
