@@ -337,9 +337,9 @@ public class CertificateTreeValidationService {
             }
             accumulator.add(manifestObject.get().key(), manifest, ImmutableSortedSet.of(temporary.getCurrentLocation().getName()));
 
-            manifest.getFiles().entrySet()
-                .parallelStream()
+            manifest.getFiles().entrySet().stream()
                 .flatMap(entry -> getManifestEntry(manifestUri, entry))
+                .parallel()
                 .flatMap(tuple -> getCertificateRepositoryObjectValidationContext(trustAnchor, context, accumulator, crlUri, x509Crl, tuple))
                 .map(tuple -> {
                     final ValidationResult vr = tuple.v2();

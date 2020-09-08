@@ -113,16 +113,14 @@ public abstract class Xodus implements Storage {
 
     public <T> T readTx(Function<Tx.Read, T> f) {
         Environment env = getEnv();
-        return ForkJoin.blocking(() -> {
-            return env.computeInReadonlyTransaction(txn -> {
-                XodusTx.Read tx = XodusTx.fromRONative(env, txn);
-                txs.put(tx.getId(), new TxInfo(tx));
-                try {
-                    return f.apply(tx);
-                } finally {
-                    txs.remove(tx.getId());
-                }
-            });
+        return env.computeInReadonlyTransaction(txn -> {
+            XodusTx.Read tx = XodusTx.fromRONative(env, txn);
+            txs.put(tx.getId(), new TxInfo(tx));
+            try {
+                return f.apply(tx);
+            } finally {
+                txs.remove(tx.getId());
+            }
         });
     }
 
