@@ -61,7 +61,6 @@ import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -78,7 +77,7 @@ public class ValidatedRpkiObjects {
 
     private final List<Consumer<Collection<RoaPrefixesAndRouterCertificates>>> listeners = new ArrayList<>();
 
-    private Map<Long, RoaPrefixesAndRouterCertificates> validatedObjectsByTrustAnchor = new HashMap<>();
+    private final Map<Long, RoaPrefixesAndRouterCertificates> validatedObjectsByTrustAnchor = new HashMap<>();
 
     @Autowired
     private RpkiObjects rpkiObjects;
@@ -92,7 +91,7 @@ public class ValidatedRpkiObjects {
     @Autowired
     private Storage storage;
 
-    private ReentrantReadWriteLock dataLock = new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock dataLock = new ReentrantReadWriteLock();
 
     @PostConstruct
     private void initialize() {
@@ -100,8 +99,8 @@ public class ValidatedRpkiObjects {
             final List<TrustAnchor> trustAnchorList = storage.readTx(tx -> trustAnchors.findAll(tx));
             trustAnchorList.parallelStream().forEach(ta ->
                     storage.readTx0(tx -> {
-                        TrustAnchorData trustAnchorData = TrustAnchorData.of(ta.getId().asLong(), ta.getName());
-                        final Accumulator validatedObjects = new Accumulator(trustAnchorData);
+                        TrustAnchorData trustAnchorData = TrustAnchorData.of(ta.getId(), ta.getName());
+                        final Accumulator validatedObjects = new Accumulator();
                         validationRuns.findLatestSuccessfulCaTreeValidationRun(tx, ta).ifPresent(vr -> {
                             final Set<Key> associatedPks = validationRuns.findAssociatedPks(tx, vr);
                             Stream<RpkiObject> roaStream = streamByType(tx, associatedPks, RpkiObject.Type.ROA);
@@ -118,7 +117,7 @@ public class ValidatedRpkiObjects {
                                     log.warn("Unparsable RPKI object {}, skipping", rpkiObject.key());
                                     return;
                                 }
-                                validatedObjects.add(rpkiObject.key(), maybeObject.get(), ImmutableSortedSet.copyOf(locations));
+                                validatedObjects.add(trustAnchorData, rpkiObject.key(), maybeObject.get(), ImmutableSortedSet.copyOf(locations));
                             });
                             updateByKey(vr.getTrustAnchor(), validatedObjects);
                         });
@@ -210,7 +209,7 @@ public class ValidatedRpkiObjects {
 
     @Value(staticConstructor = "of")
     public static class TrustAnchorData {
-        long id;
+        Key id;
         String name;
     }
 
@@ -260,16 +259,11 @@ public class ValidatedRpkiObjects {
     }
 
     public static class Accumulator {
-        private final TrustAnchorData trustAnchorData;
-        private final List<Key> validatedObjectKeys = Collections.synchronizedList(new ArrayList<>());
-        private final List<ValidatedRoaPrefix> validatedRoaPrefixes = Collections.synchronizedList(new ArrayList<>());
-        private final List<RouterCertificate> routerCertificates = Collections.synchronizedList(new ArrayList<>());
+        private final List<Key> validatedObjectKeys = new ArrayList<>();
+        private final List<ValidatedRoaPrefix> validatedRoaPrefixes = new ArrayList<>();
+        private final List<RouterCertificate> routerCertificates = new ArrayList<>();
 
-        public Accumulator(TrustAnchorData trustAnchorData) {
-            this.trustAnchorData = trustAnchorData;
-        }
-
-        public void add(Key key, CertificateRepositoryObject object, ImmutableSortedSet<String> locations) {
+        public void add(TrustAnchorData trustAnchorData, Key key, CertificateRepositoryObject object, ImmutableSortedSet<String> locations) {
             validatedObjectKeys.add(key);
             if (object instanceof RoaCms) {
                 RoaCms roa = (RoaCms) object;
@@ -322,6 +316,12 @@ public class ValidatedRpkiObjects {
 
         public List<RouterCertificate> getRouterCertificates() {
             return routerCertificates;
+        }
+
+        public void addAll(Accumulator that) {
+            this.validatedObjectKeys.addAll(that.validatedObjectKeys);
+            this.routerCertificates.addAll(that.routerCertificates);
+            this.validatedRoaPrefixes.addAll(that.validatedRoaPrefixes);
         }
     }
 }

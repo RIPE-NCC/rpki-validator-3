@@ -33,6 +33,7 @@ import com.google.common.collect.ImmutableSortedSet;
 import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.domain.ValidatedRoaPrefix;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
+import net.ripe.rpki.validator3.storage.data.Key;
 import org.junit.Test;
 
 import java.math.BigInteger;
@@ -48,7 +49,7 @@ public class SearchTermTest {
     private final ValidatedRoaPrefix asnTest = ValidatedRoaPrefix.of(null, 3642, null, 32,
             Instant.now().toEpochMilli(),Instant.now().plus(365, DAYS).toEpochMilli(), BigInteger.ONE,null);
     private final ValidatedRoaPrefix genericTest = ValidatedRoaPrefix.of(
-            ValidatedRpkiObjects.TrustAnchorData.of(1L, "Bla Anchor"),
+            ValidatedRpkiObjects.TrustAnchorData.of(Key.of(1L), "Bla Anchor"),
             3642,
             null, 32,
             Instant.now().toEpochMilli(),Instant.now().plus(365, DAYS).toEpochMilli(), BigInteger.ONE,

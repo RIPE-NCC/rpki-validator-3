@@ -33,6 +33,7 @@ import com.google.common.collect.ImmutableList;
 import net.ripe.ipresource.Asn;
 import net.ripe.rpki.validator3.IntegrationTest;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
+import net.ripe.rpki.validator3.storage.data.Key;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,15 +66,15 @@ public class BgpSecFilterServiceTest {
     private static final String PK_3 = "zzzzzzz";
 
     private static final ValidatedRpkiObjects.RouterCertificate CERTIFICATE_1 = ValidatedRpkiObjects.RouterCertificate.of(
-            ValidatedRpkiObjects.TrustAnchorData.of(1L, "Test TA 1"),
+            ValidatedRpkiObjects.TrustAnchorData.of(Key.of(1L), "Test TA 1"),
             ImmutableList.of(ASN_1.toString()), SKI_1, PK_1);
 
     private static final ValidatedRpkiObjects.RouterCertificate CERTIFICATE_2 = ValidatedRpkiObjects.RouterCertificate.of(
-            ValidatedRpkiObjects.TrustAnchorData.of(2L, "Test TA 2"),
+            ValidatedRpkiObjects.TrustAnchorData.of(Key.of(2L), "Test TA 2"),
             ImmutableList.of(ASN_1.toString(), ASN_2.toString()), SKI_2, PK_2);
 
     private static final ValidatedRpkiObjects.RouterCertificate CERTIFICATE_3 = ValidatedRpkiObjects.RouterCertificate.of(
-            ValidatedRpkiObjects.TrustAnchorData.of(3L, "Test TA 3"),
+            ValidatedRpkiObjects.TrustAnchorData.of(Key.of(3L), "Test TA 3"),
             ImmutableList.of(ASN_1.toString()), SKI_3, PK_3);
 
     @Test
