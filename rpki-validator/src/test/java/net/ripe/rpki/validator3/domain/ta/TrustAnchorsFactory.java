@@ -203,16 +203,19 @@ public class TrustAnchorsFactory {
         }
 
         if (ca.roaPrefixes != null) {
-            ca.roaPrefixes.stream().collect(groupingBy(RoaPrefix::getAsn)).forEach((asn, roaPrefix) -> {
+            ca.roaPrefixes.stream().forEach(roaPrefix -> {
                 KeyPair roaKeyPair = KEY_PAIR_FACTORY.generate();
                 IpResourceSet resources = new IpResourceSet();
-                roaPrefix.forEach(p -> resources.add(p.getPrefix()));
+                resources.add(roaPrefix.getPrefix());
                 X509ResourceCertificate roaCertificate = new X509ResourceCertificateBuilder()
 //                    .withInheritedResourceTypes(EnumSet.allOf(IpResourceType.class))
                     .withResources(resources)
                     .withIssuerDN(new X500Principal(ca.dn))
-                    .withSubjectDN(new X500Principal("CN=AS" + asn + ", CN=roa, " + ca.dn))
-                    .withValidityPeriod(typicalValidityPeriod())
+                    .withSubjectDN(new X500Principal("CN=AS" + roaPrefix.getAsn() + ", CN=roa, " + ca.dn))
+                    .withValidityPeriod(new ValidityPeriod(
+                            Instant.ofEpochMilli(roaPrefix.getNotBefore()),
+                            Instant.ofEpochMilli(roaPrefix.getNotAfter())
+                    ))
                     .withPublicKey(roaKeyPair.getPublic())
                     .withSigningKeyPair(ca.keyPair)
                     .withCa(false)
@@ -221,18 +224,18 @@ public class TrustAnchorsFactory {
                     .withCrlDistributionPoints(URI.create(ca.crlDistributionPoint))
                     .build();
                 RoaCms roaCms = new RoaCmsBuilder()
-                    .withAsn(new Asn(asn))
-                    .withPrefixes(roaPrefix.stream()
-                        .map(p -> new net.ripe.rpki.commons.crypto.cms.roa.RoaPrefix(p.getPrefix(), p.getMaximumLength()))
-                        .collect(toList()))
+                    .withAsn(new Asn(roaPrefix.getAsn()))
+                    .withPrefixes(Collections.singletonList(
+                            new net.ripe.rpki.commons.crypto.cms.roa.RoaPrefix(roaPrefix.getPrefix(), roaPrefix.getMaximumLength())
+                    ))
                     .withCertificate(roaCertificate)
                     .withSignatureProvider(BouncyCastleProvider.PROVIDER_NAME)
                     .build(roaKeyPair.getPrivate());
 
                 final RpkiObject roaObject = new RpkiObject(roaCms);
                 rpkiObjects.put(tx, roaObject);
-                rpkiObjects.addLocation(tx, roaObject.key(), ca.repositoryURI + "/" + "AS" + asn + ".roa");
-                manifestBuilder.addFile("AS" + asn + ".roa", roaCms.getEncoded());
+                rpkiObjects.addLocation(tx, roaObject.key(), ca.repositoryURI + "/" + "AS" + roaPrefix.getAsn() + ".roa");
+                manifestBuilder.addFile("AS" + roaPrefix.getAsn() + ".roa", roaCms.getEncoded());
             });
         }
 

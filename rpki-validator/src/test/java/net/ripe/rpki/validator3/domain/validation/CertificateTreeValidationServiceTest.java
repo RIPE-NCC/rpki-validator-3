@@ -400,12 +400,15 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
     }
 
     @Test
-    public void should_terminate_early_when_strict(){
+    public void should_reject_complete_manifest_when_single_object_fails_validation_with_strict_validation(){
 
         TrustAnchor ta = wtx(tx -> {
-
-            TrustAnchor ta1 = factory.createTrustAnchor(tx, x -> x.roaPrefixes(Collections.singletonList(
-                    RoaPrefix.of(IpRange.prefix(IpAddress.parse("192.168.0.0"), 16), 24, Asn.parse("64512"),
+            TrustAnchor ta1 = factory.createTrustAnchor(tx, x -> x.roaPrefixes(Lists.newArrayList(
+                    RoaPrefix.of(IpRange.prefix(IpAddress.parse("192.168.0.0"), 24), 24, Asn.parse("64512"),
+                            DateTime.now().minusDays(10).getMillis(),
+                            DateTime.now().minusDays(2).toInstant().getMillis(),
+                            TrustAnchorsFactory.nextSerial()),
+                    RoaPrefix.of(IpRange.prefix(IpAddress.parse("192.168.1.0"), 24), 24, Asn.parse("64513"),
                             DateTime.now().toInstant().getMillis(),
                             DateTime.now().plusYears(1).toInstant().getMillis(),
                             TrustAnchorsFactory.nextSerial())
@@ -417,12 +420,6 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
             repository.setDownloaded();
             this.getRpkiRepositories().update(tx, repository);
 
-            // Delete roa so we'll fail to get manifest entry
-            this.getRpkiObjects().values(tx)
-                    .stream()
-                    .filter(o -> o.getType().equals(RpkiObject.Type.ROA))
-                    .findFirst().ifPresent(r -> this.getRpkiObjects().delete(tx, r));;
-
             return ta1;
         });
 
@@ -431,13 +428,12 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
         List<CertificateTreeValidationRun> completed = rtx(tx -> this.getValidationRuns().findAll(tx, CertificateTreeValidationRun.class));
         assertThat(completed).hasSize(1);
 
-        ValidationCheck  check = completed.get(0).getValidationChecks().get(0);
+        ValidationCheck check = completed.get(0).getValidationChecks().get(0);
         assertThat(check.getStatus()).isEqualTo(ValidationCheck.Status.ERROR);
-        assertThat(check.getKey()).isEqualTo("validator.manifest.entry.found");
+        assertThat(check.getKey()).isEqualTo("cert.not.valid.after");
 
         List<Pair<CertificateTreeValidationRun, RpkiObject>> validatedRoas = rtx(tx -> this.getValidationRuns()
                 .findCurrentlyValidated(tx, RpkiObject.Type.ROA).collect(toList()));
         assertThat(validatedRoas).hasSize(0);
-
     }
 }
