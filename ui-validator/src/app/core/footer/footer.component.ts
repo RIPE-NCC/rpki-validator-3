@@ -1,4 +1,6 @@
 import {Component, OnInit} from '@angular/core';
+import {HttpClient} from "@angular/common/http";
+import {IResponse} from "../../shared/response.model";
 
 @Component({
   selector: 'app-footer',
@@ -7,10 +9,16 @@ import {Component, OnInit} from '@angular/core';
 })
 export class FooterComponent implements OnInit {
 
-  constructor() {
-  }
+  version: string;
+
+  constructor(private _http: HttpClient) {}
 
   ngOnInit() {
+    this._http.get<IResponse>('/api/healthcheck', {})
+      .subscribe(
+        response => {
+          this.version = response.data.buildInformation.version
+        });
   }
 
 }
