@@ -143,10 +143,11 @@ package:
     - ssh $SSH_TARGET "export REPO_STAGE=$REPO_STAGE; export BUILD_WORKING_DIRECTORY=~/bin/rpki-validator-3-release/artifacts; $SCRIPTS/update-deb.sh $REPO_STAGE $ARCHIVE"
     - ssh $SSH_TARGET "export REPO_STAGE=$REPO_STAGE; export BUILD_WORKING_DIRECTORY=~/bin/rpki-validator-3-release/artifacts; $SCRIPTS/update-rpm-repo.sh $REPO_STAGE $ARCHIVE"
     # And the docker build
-    - export GENERIC_BUILD_ARCHIVE=$(ls artifacts/rpki-validator-*-dist.tar.gz | head -n 1)
+    - export VALIDATOR_GENERIC_BUILD_ARCHIVE=$(ls artifacts/rpki-validator-*-dist.tar.gz | head -n 1)
     - echo $DOCKERHUB_TOKEN | docker login -u $DOCKERHUB_USER --password-stdin
     - docker build
-        --build-arg GENERIC_BUILD_ARCHIVE=${GENERIC_BUILD_ARCHIVE}
+        -f Dockerfile.validator
+        --build-arg VALIDATOR_GENERIC_BUILD_ARCHIVE=${VALIDATOR_GENERIC_BUILD_ARCHIVE}
         -t  rpki-validator-3
         .
     - docker tag rpki-validator-3 ripencc/rpki-validator-3:$REPO_STAGE
