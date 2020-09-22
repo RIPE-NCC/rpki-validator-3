@@ -153,10 +153,10 @@ package:
     - docker tag rpki-validator-3 ripencc/rpki-validator-3:$REPO_STAGE
     - docker push ripencc/rpki-validator-3:$REPO_STAGE
     # And the docker build - rtr server
-    - export RTRSSERVER_GENERIC_BUILD_ARCHIVE=$(ls artifacts/rpki-rtr-server-*-dist.tar.gz | head -n 1)
+    - export RTRSERVER_GENERIC_BUILD_ARCHIVE=$(ls artifacts/rpki-rtr-server-*-dist.tar.gz | head -n 1)
     - docker build
         -f Dockerfile.rtr-server
-        --build-arg RTRSSERVER_GENERIC_BUILD_ARCHIVE=${RTRSSERVER_GENERIC_BUILD_ARCHIVE}
+        --build-arg RTRSERVER_GENERIC_BUILD_ARCHIVE=${RTRSERVER_GENERIC_BUILD_ARCHIVE}
         -t  rpki-rtr-server
         .
     - docker tag rpki-rtr-server ripencc/rpki-rtr-server:$REPO_STAGE
