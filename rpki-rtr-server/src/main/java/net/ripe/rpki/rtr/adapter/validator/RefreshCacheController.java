@@ -74,12 +74,12 @@ public class RefreshCacheController {
         // Keep the previous status and set current as not succesful (in case it throws).
         final boolean previousRefreshSucceeded = lastRefreshSucceeded.getAndSet(false);
 
-        log.info("fetching validated roa prefixes from {}", validatedObjectsUri);
+        log.debug("fetching validated roa prefixes from {}", validatedObjectsUri);
         ValidatedObjectsResponse response = restTemplate.getForObject(validatedObjectsUri, ValidatedObjectsResponse.class);
 
         ValidatedObjects validatedObjects = response.getData();
         if (!validatedObjects.ready) {
-            log.info("validator {} not ready yet, will retry later", validatedObjectsUri);
+            log.info("validator {} not ready at the moment, will retry later", validatedObjectsUri);
             return;
         } else if (!previousRefreshSucceeded) {
             // Explicitly indicate at WARN level that the validator was ready so log that contains "not ready yet"
