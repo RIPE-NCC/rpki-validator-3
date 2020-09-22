@@ -24,9 +24,6 @@ LABEL validation.archive.file="$(basename ${VALIDATOR_GENERIC_BUILD_ARCHIVE})"
 # Webserver on 8080
 EXPOSE 8080
 
-# JVM memory settings
-ENV JVM_XMS=""
-ENV JVM_XMX=""
 # Used by `rpki-validator-3.sh`
 ENV CONFIG_DIR="/config"
 
