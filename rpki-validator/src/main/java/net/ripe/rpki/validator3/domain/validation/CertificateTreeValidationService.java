@@ -164,7 +164,7 @@ public class CertificateTreeValidationService {
         log.info("Starting tree validation for {}", trustAnchor.getName());
         long begin = System.currentTimeMillis();
 
-        final Map<URI, RpkiRepository> registeredRepositories = createRegisteredRepositoryMap(trustAnchor);
+        final Map<URI, RpkiRepository> registeredRepositories = new ConcurrentHashMap<>();
 
         final Ref<TrustAnchor> trustAnchorRef = storage.readTx(tx -> trustAnchors.makeRef(tx, trustAnchor.key()));
         final CertificateTreeValidationRun validationRun = new CertificateTreeValidationRun(trustAnchorRef);
@@ -448,19 +448,6 @@ public class CertificateTreeValidationService {
                     final Ref<TrustAnchor> trustAnchorRef = trustAnchors.makeRef(tx, trustAnchor.getId());
                     return rpkiRepositories.register(tx, trustAnchorRef, uri.toASCIIString(), RSYNC);
                 });
-    }
-
-    private Map<URI, RpkiRepository> createRegisteredRepositoryMap(TrustAnchor trustAnchor) {
-        final Map<URI, RpkiRepository> registeredRepositories = new ConcurrentHashMap<>();
-        long t = Time.timed(() -> storage.readTx(tx -> rpkiRepositories.findByTrustAnchor(tx, trustAnchor.key()))
-                .forEach(r -> {
-                    if (r.getRrdpNotifyUri() != null) {
-                        registeredRepositories.put(URI.create(r.getRrdpNotifyUri()), r);
-                    } else
-                        registeredRepositories.put(URI.create(r.getLocationUri()), r);
-                }));
-        logForDuration("Pre-loaded {} repositories in {}ms", registeredRepositories.size(), t);
-        return registeredRepositories;
     }
 
     @Value(staticConstructor = "of")
