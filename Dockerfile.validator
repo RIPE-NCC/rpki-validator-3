@@ -6,7 +6,15 @@
 # Unpacking in a separate build step makes sure the archive that is COPY-d does
 # not become a layer in the final image.
 #
-FROM library/openjdk:11-slim as intermediate
+# How to build:
+#
+# export VALIDATOR_GENERIC_BUILD_ARCHIVE=$(ls rpki-validator/target/rpki-validator-*-dist.tar.gz | head -n 1)
+# export RTRSERVER_GENERIC_BUILD_ARCHIVE=$(ls rpki-rtr-server/target/rpki*-dist.tar.gz | head -n 1)
+#
+# docker build -f Dockerfile.validator --build-arg VALIDATOR_GENERIC_BUILD_ARCHIVE=${VALIDATOR_GENERIC_BUILD_ARCHIVE} .
+# docker build -f Dockerfile.rtr-server --build-arg RTRSERVER_GENERIC_BUILD_ARCHIVE=${RTRSERVER_GENERIC_BUILD_ARCHIVE} .
+#
+FROM library/openjdk:11-jre-slim as intermediate
 
 ARG VALIDATOR_GENERIC_BUILD_ARCHIVE
 
@@ -16,7 +24,7 @@ RUN mkdir -p /opt/rpki-validator-3 \
     && tar -zxf /tmp/$(basename $VALIDATOR_GENERIC_BUILD_ARCHIVE) -C /opt/rpki-validator-3/ --strip-components=1
 
 # Second build step: Move files into place
-FROM library/openjdk:11-slim
+FROM library/openjdk:11-jre-slim
 # Keep the file name and sha256 in the metadata
 ARG VALIDATOR_GENERIC_BUILD_ARCHIVE
 LABEL validation.archive.file="$(basename ${VALIDATOR_GENERIC_BUILD_ARCHIVE})"

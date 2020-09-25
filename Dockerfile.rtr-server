@@ -6,7 +6,7 @@
 # Unpacking in a separate build step makes sure the archive that is COPY-d does
 # not become a layer in the final image.
 #
-FROM library/openjdk:11-slim as intermediate
+FROM library/openjdk:11-jre-slim as intermediate
 
 ARG RTRSERVER_GENERIC_BUILD_ARCHIVE
 
@@ -16,7 +16,7 @@ RUN mkdir -p /opt/rtr-server \
     && tar -zxf /tmp/$(basename $RTRSERVER_GENERIC_BUILD_ARCHIVE) -C /opt/rtr-server/ --strip-components=1
 
 # Second build step: Move files into place
-FROM library/openjdk:11-slim
+FROM library/openjdk:11-jre-slim
 # Keep the file name and sha256 in the metadata
 ARG RTRSERVER_GENERIC_BUILD_ARCHIVE
 LABEL validation.archive.file="$(basename ${RTRSERVER_GENERIC_BUILD_ARCHIVE})"
