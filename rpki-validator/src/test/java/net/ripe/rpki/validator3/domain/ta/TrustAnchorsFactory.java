@@ -87,8 +87,8 @@ public class TrustAnchorsFactory {
     private static final X509ResourceCertificate RIPE_NCC_TA_CERTIFICATE = loadCertificate("/ripe-ncc-ta.cer");
     public static final String TA_RRDP_NOTIFY_URI = "https://rpki.test/notification.xml";
     public static final String TA_CA_REPOSITORY_URI = "rsync://rpki.test/repository/";
-    private static final String TA_MANIFEST_URI = "rsync://rpki.test/test-trust-anchor.mft";
-    private static final String TA_CRL_URI = "rsync://rpki.test/test-trust-anchor.crl";
+    private static final String TA_MANIFEST_URI = TA_CA_REPOSITORY_URI + "test-trust-anchor.mft";
+    private static final String TA_CRL_URI = TA_CA_REPOSITORY_URI + "test-trust-anchor.crl";
     public static final KeyPairFactory KEY_PAIR_FACTORY = new KeyPairFactory(BouncyCastleProvider.PROVIDER_NAME);
     private static final String TA_ISSUER_DN = "CN=test";
 
@@ -197,7 +197,7 @@ public class TrustAnchorsFactory {
 
                 final RpkiObject certObject = new RpkiObject(childCertificate);
                 rpkiObjects.put(tx, certObject);
-                rpkiObjects.addLocation(tx, certObject.key(), ca.repositoryURI + "/" + child.dn + ".cer");
+                rpkiObjects.addLocation(tx, certObject.key(), ca.repositoryURI + child.dn + ".cer");
                 manifestBuilder.addFile(child.dn + ".cer", childCertificate.getEncoded());
             }
         }
@@ -234,7 +234,7 @@ public class TrustAnchorsFactory {
 
                 final RpkiObject roaObject = new RpkiObject(roaCms);
                 rpkiObjects.put(tx, roaObject);
-                rpkiObjects.addLocation(tx, roaObject.key(), ca.repositoryURI + "/" + "AS" + roaPrefix.getAsn() + ".roa");
+                rpkiObjects.addLocation(tx, roaObject.key(), ca.repositoryURI + "AS" + roaPrefix.getAsn() + ".roa");
                 manifestBuilder.addFile("AS" + roaPrefix.getAsn() + ".roa", roaCms.getEncoded());
             });
         }

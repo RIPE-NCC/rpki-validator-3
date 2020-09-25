@@ -74,6 +74,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.stream.Collectors.toList;
@@ -81,6 +82,8 @@ import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_CRL_FO
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_MANIFEST_CONTAINS_ONE_CRL_ENTRY;
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_MANIFEST_ENTRY_FOUND;
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_MANIFEST_ENTRY_HASH_MATCHES;
+import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_REPOSITORY_AT_EXPECTED_LOCATION_AND_ELSEWHERE;
+import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_REPOSITORY_NOT_AT_EXPECTED_LOCATION;
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_RPKI_REPOSITORY_PENDING;
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_TRUST_ANCHOR_CERTIFICATE_AVAILABLE;
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_TRUST_ANCHOR_CERTIFICATE_RRDP_NOTIFY_URI_OR_REPOSITORY_URI_PRESENT;
@@ -399,6 +402,13 @@ public class CertificateTreeValidationService {
         if (validations.hasFailureForCurrentLocation()) {
             return result;
         }
+
+        SortedSet<String> locations = storage.readTx(tx -> rpkiObjects.getLocations(tx, rpkiObject.key()));
+        validations.rejectIfFalse(locations.contains(location.toASCIIString()), VALIDATOR_REPOSITORY_NOT_AT_EXPECTED_LOCATION, location.toASCIIString());
+        if (validations.hasFailureForCurrentLocation()) {
+            return result;
+        }
+        validations.warnIfTrue(locations.size() > 1, VALIDATOR_REPOSITORY_AT_EXPECTED_LOCATION_AND_ELSEWHERE, String.join(", ", locations));
 
         final Optional<CertificateRepositoryObject> maybeCertificateRepositoryObject = Bench.mark(trustAnchor.getName(),
                 "rpkiObject.get", () -> rpkiObject.get(CertificateRepositoryObject.class, validations));
