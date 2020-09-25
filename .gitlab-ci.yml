@@ -158,6 +158,7 @@ package:
     - docker push ripencc/rpki-validator-3:$CI_COMMIT_TAG
     - docker tag rpki-validator-3 ripencc/rpki-validator-3:latest
     - docker push ripencc/rpki-validator-3:latest
+    - docker tag ripencc/rpki-validator-3-docker:latest
     - docker push ripencc/rpki-validator-3-docker:latest
 
 

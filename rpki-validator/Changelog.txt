@@ -1,6 +1,13 @@
+* Fri Sep 18 2020 Mikhail Puzanov <mpuzanov@ripe.net> - 3.1
+- Remove repositories from the cache if they are not referred by any certificate for long enough.
+- Make 'strict mode' enabled by `rpki.validator.strict-validation=true` more compliant with RFC 6486bis.
+- Multiple changes for improving parallel execution and fix potential deadlock.
+- Improvements in CPU and memory usage.
+- Improvements in storing ROAs in the cache to save space for big ROA objects.
+
 * Thu Aug 20 2020 Mikhail Puzanov <mpuzanov@ripe.net> - 3.1
-- Revert changes related to RRDP parallel processing to avoid potential deadlock. This also reverts 
-  all memory and metrics changes introduced in the previous release. 
+- Revert changes related to RRDP parallel processing to avoid potential deadlock. This also reverts
+  all memory and metrics changes introduced in the previous release.
 
 * Thu Aug 6 2020 Ties de Kock <tdekock@ripe.net> - 3.1
 - Multiple performance improvements, about 25% less CPU usage.

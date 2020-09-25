@@ -74,6 +74,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.stream.Collectors.toList;
@@ -81,6 +82,8 @@ import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_CRL_FO
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_MANIFEST_CONTAINS_ONE_CRL_ENTRY;
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_MANIFEST_ENTRY_FOUND;
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_MANIFEST_ENTRY_HASH_MATCHES;
+import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_REPOSITORY_AT_EXPECTED_LOCATION_AND_ELSEWHERE;
+import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_REPOSITORY_NOT_AT_EXPECTED_LOCATION;
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_RPKI_REPOSITORY_PENDING;
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_TRUST_ANCHOR_CERTIFICATE_AVAILABLE;
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_TRUST_ANCHOR_CERTIFICATE_RRDP_NOTIFY_URI_OR_REPOSITORY_URI_PRESENT;
@@ -164,7 +167,7 @@ public class CertificateTreeValidationService {
         log.info("Starting tree validation for {}", trustAnchor.getName());
         long begin = System.currentTimeMillis();
 
-        final Map<URI, RpkiRepository> registeredRepositories = createRegisteredRepositoryMap(trustAnchor);
+        final Map<URI, RpkiRepository> registeredRepositories = new ConcurrentHashMap<>();
 
         final Ref<TrustAnchor> trustAnchorRef = storage.readTx(tx -> trustAnchors.makeRef(tx, trustAnchor.key()));
         final CertificateTreeValidationRun validationRun = new CertificateTreeValidationRun(trustAnchorRef);
@@ -400,6 +403,13 @@ public class CertificateTreeValidationService {
             return result;
         }
 
+        SortedSet<String> locations = storage.readTx(tx -> rpkiObjects.getLocations(tx, rpkiObject.key()));
+        validations.rejectIfFalse(locations.contains(location.toASCIIString()), VALIDATOR_REPOSITORY_NOT_AT_EXPECTED_LOCATION, location.toASCIIString());
+        if (validations.hasFailureForCurrentLocation()) {
+            return result;
+        }
+        validations.warnIfTrue(locations.size() > 1, VALIDATOR_REPOSITORY_AT_EXPECTED_LOCATION_AND_ELSEWHERE, String.join(", ", locations));
+
         final Optional<CertificateRepositoryObject> maybeCertificateRepositoryObject = Bench.mark(trustAnchor.getName(),
                 "rpkiObject.get", () -> rpkiObject.get(CertificateRepositoryObject.class, validations));
         if (validations.hasFailureForCurrentLocation()) {
@@ -448,19 +458,6 @@ public class CertificateTreeValidationService {
                     final Ref<TrustAnchor> trustAnchorRef = trustAnchors.makeRef(tx, trustAnchor.getId());
                     return rpkiRepositories.register(tx, trustAnchorRef, uri.toASCIIString(), RSYNC);
                 });
-    }
-
-    private Map<URI, RpkiRepository> createRegisteredRepositoryMap(TrustAnchor trustAnchor) {
-        final Map<URI, RpkiRepository> registeredRepositories = new ConcurrentHashMap<>();
-        long t = Time.timed(() -> storage.readTx(tx -> rpkiRepositories.findByTrustAnchor(tx, trustAnchor.key()))
-                .forEach(r -> {
-                    if (r.getRrdpNotifyUri() != null) {
-                        registeredRepositories.put(URI.create(r.getRrdpNotifyUri()), r);
-                    } else
-                        registeredRepositories.put(URI.create(r.getLocationUri()), r);
-                }));
-        logForDuration("Pre-loaded {} repositories in {}ms", registeredRepositories.size(), t);
-        return registeredRepositories;
     }
 
     @Value(staticConstructor = "of")
