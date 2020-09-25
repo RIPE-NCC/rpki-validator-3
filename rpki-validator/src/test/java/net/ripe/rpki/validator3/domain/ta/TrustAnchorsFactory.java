@@ -81,6 +81,7 @@ import java.util.function.Consumer;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
+import static net.ripe.rpki.commons.crypto.x509cert.X509CertificateInformationAccessDescriptor.ID_AD_SIGNED_OBJECT;
 
 @Component
 public class TrustAnchorsFactory {
@@ -204,14 +205,18 @@ public class TrustAnchorsFactory {
 
         if (ca.roaPrefixes != null) {
             ca.roaPrefixes.stream().forEach(roaPrefix -> {
+                String roaFilename = "AS" + roaPrefix.getAsn() + ".roa";
+                String roaLocation = ca.repositoryURI + roaFilename;
+
                 KeyPair roaKeyPair = KEY_PAIR_FACTORY.generate();
                 IpResourceSet resources = new IpResourceSet();
                 resources.add(roaPrefix.getPrefix());
+
                 X509ResourceCertificate roaCertificate = new X509ResourceCertificateBuilder()
 //                    .withInheritedResourceTypes(EnumSet.allOf(IpResourceType.class))
                     .withResources(resources)
                     .withIssuerDN(new X500Principal(ca.dn))
-                    .withSubjectDN(new X500Principal("CN=AS" + roaPrefix.getAsn() + ", CN=roa, " + ca.dn))
+                    .withSubjectDN(new X500Principal("CN=AS" + roaPrefix.getAsn() + "-" + ca.dn.substring(3)))
                     .withValidityPeriod(new ValidityPeriod(
                             Instant.ofEpochMilli(roaPrefix.getNotBefore()),
                             Instant.ofEpochMilli(roaPrefix.getNotAfter())
@@ -222,6 +227,9 @@ public class TrustAnchorsFactory {
                     .withKeyUsage(KeyUsage.digitalSignature)
                     .withSerial(nextSerial())
                     .withCrlDistributionPoints(URI.create(ca.crlDistributionPoint))
+                    .withSubjectInformationAccess(
+                        new X509CertificateInformationAccessDescriptor(ID_AD_SIGNED_OBJECT, URI.create(roaLocation))
+                    )
                     .build();
                 RoaCms roaCms = new RoaCmsBuilder()
                     .withAsn(new Asn(roaPrefix.getAsn()))
@@ -234,8 +242,8 @@ public class TrustAnchorsFactory {
 
                 final RpkiObject roaObject = new RpkiObject(roaCms);
                 rpkiObjects.put(tx, roaObject);
-                rpkiObjects.addLocation(tx, roaObject.key(), ca.repositoryURI + "AS" + roaPrefix.getAsn() + ".roa");
-                manifestBuilder.addFile("AS" + roaPrefix.getAsn() + ".roa", roaCms.getEncoded());
+                rpkiObjects.addLocation(tx, roaObject.key(), roaLocation);
+                manifestBuilder.addFile(roaFilename, roaCms.getEncoded());
             });
         }
 
@@ -243,7 +251,7 @@ public class TrustAnchorsFactory {
         X509ResourceCertificate manifestCertificate = new X509ResourceCertificateBuilder()
             .withInheritedResourceTypes(EnumSet.allOf(IpResourceType.class))
             .withIssuerDN(caCertificate.getSubject())
-            .withSubjectDN(new X500Principal("CN=manifest, " + caCertificate.getSubject()))
+            .withSubjectDN(new X500Principal("CN=manifest- " + caCertificate.getSubject().toString().substring(3)))
             .withValidityPeriod(mftValidityPeriod)
             .withPublicKey(manifestKeyPair.getPublic())
             .withSigningKeyPair(ca.keyPair)
@@ -251,6 +259,9 @@ public class TrustAnchorsFactory {
             .withKeyUsage(KeyUsage.digitalSignature)
             .withSerial(nextSerial())
             .withCrlDistributionPoints(URI.create(ca.crlDistributionPoint))
+            .withSubjectInformationAccess(
+                new X509CertificateInformationAccessDescriptor(ID_AD_SIGNED_OBJECT, URI.create(ca.manifestURI))
+            )
             .build();
         manifestBuilder
             .withCertificate(manifestCertificate)

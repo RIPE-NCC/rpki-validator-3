@@ -139,36 +139,34 @@ public class RpkiObject extends Base<RpkiObject> {
     public <T extends CertificateRepositoryObject> Optional<T> get(Class<T> clazz, ValidationResult validationResult) {
         ValidationResult temporary = newValidationResult(validationResult.getCurrentLocation());
         try {
-            return get(clazz, validationResult.getCurrentLocation().getName());
+            CertificateRepositoryObject candidate = Bench.mark("createCertificateRepositoryObject", () ->
+                    CertificateRepositoryObjectFactory.createCertificateRepositoryObject(
+                            encoded,
+                            temporary
+                    ));
+
+            temporary.rejectIfNull(candidate, "rpki.object.parsable");
+            if (temporary.hasFailureForCurrentLocation()) {
+                return Optional.empty();
+            }
+
+            final boolean isNeededInstance = clazz.isInstance(candidate);
+            if (!isNeededInstance) {
+                temporary.error( "rpki.object.type.matches", clazz.getSimpleName(), candidate.getClass().getSimpleName());
+                if (temporary.hasFailureForCurrentLocation()) {
+                    return Optional.empty();
+                }
+            }
+
+            return Optional.of(clazz.cast(candidate));
         } finally {
             validationResult.addAll(temporary);
         }
     }
 
     public <T extends CertificateRepositoryObject> Optional<T> get(final Class<T> clazz, final String location) {
-        ValidationResult temporary = ValidationResult.withLocation(location).withoutStoringPassingChecks();
-
-        ValidationResult ignored = ValidationResult.withLocation(location).withoutStoringPassingChecks();
-        CertificateRepositoryObject candidate = Bench.mark("createCertificateRepositoryObject", () ->
-            CertificateRepositoryObjectFactory.createCertificateRepositoryObject(
-                encoded,
-                ignored // Ignore any parse errors, as all stored objects must be parsable
-            ));
-
-        temporary.rejectIfNull(candidate, "rpki.object.parsable");
-        if (temporary.hasFailureForCurrentLocation()) {
-            return Optional.empty();
-        }
-
-        final boolean isNeededInstance = clazz.isInstance(candidate);
-        if (!isNeededInstance) {
-            temporary.rejectIfFalse(isNeededInstance, "rpki.object.type.matches", clazz.getSimpleName(), candidate.getClass().getSimpleName());
-            if (temporary.hasFailureForCurrentLocation()) {
-                return Optional.empty();
-            }
-        }
-
-        return Optional.of(clazz.cast(candidate));
+        ValidationResult temporary = newValidationResult(location);
+        return get(clazz, temporary);
     }
 
 }
