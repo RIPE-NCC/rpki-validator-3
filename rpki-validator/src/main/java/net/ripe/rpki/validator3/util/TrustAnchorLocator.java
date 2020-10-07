@@ -118,7 +118,8 @@ public class TrustAnchorLocator {
     }
 
     private static boolean looksLikeUri(String string) {
-        return string.startsWith("rsync://") || string.startsWith("https://") || string.startsWith("http://");
+        String lowered = string.toLowerCase();
+        return lowered.startsWith("rsync://") || lowered.startsWith("https://") || lowered.startsWith("http://");
     }
 
     /**
@@ -126,8 +127,9 @@ public class TrustAnchorLocator {
      */
     private static URI createCertificateUri(String rawUri) {
         final URI uri = URI.create(rawUri.trim());
-        if ("http".equals(uri.getScheme()))
+        if (!"rsync".equalsIgnoreCase(uri.getScheme()) && !"https".equalsIgnoreCase(uri.getScheme())) {
             throw new IllegalArgumentException("certificate locations needs to be rsync or https");
+        }
 
         return uri;
     }
