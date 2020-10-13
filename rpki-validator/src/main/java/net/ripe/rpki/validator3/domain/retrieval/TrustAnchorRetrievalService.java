@@ -83,16 +83,15 @@ public class TrustAnchorRetrievalService {
 
     public byte[] fetchTrustAnchorCertificate(URI trustAnchorCertificateURI, ValidationResult validationResult) {
         try {
-            switch (trustAnchorCertificateURI.getScheme()) {
-                case "rsync":
-                    return fetchRsyncTrustAnchorCertificate(trustAnchorCertificateURI, validationResult);
-                case "https":
-                    return fetchHttpsTrustAnchorCertificate(trustAnchorCertificateURI, validationResult);
-                case "file":
-                    return fetchFileTrustAnchorCertificate(trustAnchorCertificateURI, validationResult);
-                default:
-                    validationResult.warn(ErrorCodes.TRUST_ANCHOR_FETCH, trustAnchorCertificateURI.toASCIIString(), "Unsupported URI");
-                    return null;
+            if ("rsync".equalsIgnoreCase(trustAnchorCertificateURI.getScheme())) {
+                return fetchRsyncTrustAnchorCertificate(trustAnchorCertificateURI, validationResult);
+            } else if ("https".equalsIgnoreCase(trustAnchorCertificateURI.getScheme())) {
+                return fetchHttpsTrustAnchorCertificate(trustAnchorCertificateURI, validationResult);
+            } else if ("file".equalsIgnoreCase(trustAnchorCertificateURI.getScheme())) {
+                return fetchFileTrustAnchorCertificate(trustAnchorCertificateURI, validationResult);
+            } else {
+                validationResult.warn(ErrorCodes.TRUST_ANCHOR_FETCH, trustAnchorCertificateURI.toASCIIString(), "Unsupported URI");
+                return null;
             }
         } catch (IOException e) {
             validationResult.warn(ErrorCodes.TRUST_ANCHOR_FETCH, trustAnchorCertificateURI.toASCIIString(), e.getMessage());

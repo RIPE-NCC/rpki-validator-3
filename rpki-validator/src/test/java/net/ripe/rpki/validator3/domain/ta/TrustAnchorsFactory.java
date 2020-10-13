@@ -228,7 +228,7 @@ public class TrustAnchorsFactory {
                     .withSerial(nextSerial())
                     .withCrlDistributionPoints(URI.create(ca.crlDistributionPoint))
                     .withSubjectInformationAccess(
-                        new X509CertificateInformationAccessDescriptor(ID_AD_SIGNED_OBJECT, URI.create(roaLocation))
+                            new X509CertificateInformationAccessDescriptor(ID_AD_SIGNED_OBJECT, URI.create(roaLocation))
                     )
                     .build();
                 RoaCms roaCms = new RoaCmsBuilder()
@@ -260,7 +260,7 @@ public class TrustAnchorsFactory {
             .withSerial(nextSerial())
             .withCrlDistributionPoints(URI.create(ca.crlDistributionPoint))
             .withSubjectInformationAccess(
-                new X509CertificateInformationAccessDescriptor(ID_AD_SIGNED_OBJECT, URI.create(ca.manifestURI))
+                    new X509CertificateInformationAccessDescriptor(ID_AD_SIGNED_OBJECT, URI.create(ca.manifestURI))
             )
             .build();
         manifestBuilder
