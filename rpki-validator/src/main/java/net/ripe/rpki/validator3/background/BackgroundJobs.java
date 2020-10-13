@@ -94,7 +94,7 @@ public class BackgroundJobs extends JobListenerSupport {
 
         schedule(ValidateRsyncRepositoriesJob.class,
                 futureDate(10, SECOND),
-                simpleSchedule().repeatForever().withIntervalInMinutes(5));
+                simpleSchedule().repeatForever().withIntervalInMinutes(1));
 
         schedule(DownloadBgpRisDumpsJob.class,
                 futureDate(10, SECOND),
