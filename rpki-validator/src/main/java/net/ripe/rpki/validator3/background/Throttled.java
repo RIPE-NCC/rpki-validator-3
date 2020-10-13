@@ -32,7 +32,6 @@ package net.ripe.rpki.validator3.background;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,85 +43,104 @@ import java.util.concurrent.TimeUnit;
  * The purpose of this class is to be able to execute an arbitrary action
  * not more often than a certain interval. I.e.
  * <p>
- * val throttled = new Throttled(10)
+ * val throttled = new Throttled(10_000)
  * <p>
- * throttled.trigger("action1", r) - will execute immediately.
+ * throttled.trigger("action1", r1) - will execute r1 immediately.
  * <p>
- * Thread.sleep(3)
+ * Thread.sleep(3000)
  * <p>
- * throttled.trigger("action1", r) - will schedule execution in 7 (i.e. 10 - 3) seconds from now.
- * throttled.trigger("action1", r) - will be ignored as there's already execution scheduled.
+ * throttled.trigger("action1", r2) - will schedule execution of r2 in 7 (i.e. 10 - 3) seconds from now.
+ * throttled.trigger("action1", r3) - will replace scheduled execution with r3.
  * <p>
- * Thread.sleep(10)
+ * Thread.sleep(7010);
+ * throttled.trigger("action1", r4) - executes r4 after the currently running action completes ensuring the minimum delay.
  * <p>
- * throttled.trigger("action1", r) - will execute immediately again.
+ * Thread.sleep(11000)
+ * <p>
+ * throttled.trigger("action1", r5) - will execute r5 immediately again.
  */
 public class Throttled<Key> {
 
-    private final long minIntervalInSeconds;
+    private final long minIntervalMs;
 
     private final Map<Key, Action> actionMap = new HashMap<>();
 
     private final ScheduledExecutorService scheduledExecutor =
         Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
 
-    public Throttled(long minIntervalInSeconds) {
-        this.minIntervalInSeconds = minIntervalInSeconds;
+    public Throttled(long minIntervalMs) {
+        this.minIntervalMs = minIntervalMs;
     }
 
     public void trigger(Key key, Runnable r) {
-        final Runnable wrappedRunnable = () -> {
+        synchronized (actionMap) {
+            final Instant now = Instant.now();
+            final Action action = actionMap.get(key);
+
+            if (action == null) {
+                actionMap.put(key, Action.toBeExecutedASAP(now, r));
+                scheduledExecutor.execute(actionRunner(key));
+            } else if (action.running) {
+                actionMap.put(key, action.scheduled(r));
+            } else if (action.alreadyScheduled) {
+                actionMap.put(key, action.replaced(r));
+            } else {
+                final Instant lastTime = action.getExecutionTime();
+                final long delay = minIntervalMs - (now.toEpochMilli() - lastTime.toEpochMilli());
+                actionMap.put(key, action.scheduled(r));
+                scheduledExecutor.schedule(actionRunner(key), delay, TimeUnit.MILLISECONDS);
+            }
+        }
+    }
+
+    private Runnable actionRunner(Key key) {
+        return () -> {
             try {
-                r.run();
-            } finally {
-                final Instant after = Instant.now();
+                Action action;
                 synchronized (actionMap) {
-                    actionMap.put(key, Action.toBeExecutedSomeTimeLater(after));
+                    action = actionMap.get(key);
+                    actionMap.put(key, action.started(Instant.now()));
+                }
+                action.runnable.run();
+            } finally {
+                synchronized (actionMap) {
+                    Action action = actionMap.get(key);
+                    actionMap.put(key, action.stopped());
+                    if (action.alreadyScheduled) {
+                        trigger(key, action.runnable);
+                    }
                 }
             }
         };
-
-        final Instant now = Instant.now();
-        synchronized (actionMap) {
-            final Action action = actionMap.get(key);
-            if (action != null) {
-                if (!action.alreadyScheduled) {
-                    final Instant lastTime = action.getExecutionTime();
-                    final Duration between = Duration.between(lastTime, now);
-                    if (between.getSeconds() < minIntervalInSeconds) {
-                        final long delay = minIntervalInSeconds - between.getSeconds();
-                        actionMap.put(key, action.scheduled());
-                        scheduledExecutor.schedule(wrappedRunnable, delay, TimeUnit.SECONDS);
-                    } else {
-                        actionMap.put(key, action.scheduled());
-                        scheduledExecutor.execute(wrappedRunnable);
-                    }
-                }
-            } else {
-                actionMap.put(key, Action.toBeExecutedASAP(now));
-                scheduledExecutor.execute(wrappedRunnable);
-            }
-        }
     }
 
     @Value
     @AllArgsConstructor
     private static class Action {
-        // Time of the last execution or the time when it was scheduled for immediate execution.
+        // Time of the start of the last execution or the time when it was scheduled for immediate execution.
         Instant executionTime;
         boolean alreadyScheduled;
+        boolean running;
+        Runnable runnable;
 
-        private static Action toBeExecutedSomeTimeLater(Instant executionTime) {
-            return new Action(executionTime, false);
+        private static Action toBeExecutedASAP(Instant executionTime, Runnable runnable) {
+            return new Action(executionTime, false, false, runnable);
         }
 
-        private static Action toBeExecutedASAP(Instant executionTime) {
-            return new Action(executionTime, true);
+        private Action started(Instant executionTime) {
+            return new Action(executionTime, false, true, this.runnable);
         }
 
-        public Action scheduled() {
-            return new Action(executionTime, true);
+        public Action stopped() {
+            return new Action(this.executionTime, false, false, this.runnable);
+        }
+
+        public Action scheduled(Runnable runnable) {
+            return new Action(this.executionTime, true, this.running, runnable);
+        }
+
+        public Action replaced(Runnable runnable) {
+            return new Action(this.executionTime, this.alreadyScheduled, this.running, runnable);
         }
     }
-
 }

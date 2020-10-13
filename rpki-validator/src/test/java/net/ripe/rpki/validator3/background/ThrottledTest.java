@@ -32,9 +32,13 @@ package net.ripe.rpki.validator3.background;
 import lombok.SneakyThrows;
 import org.junit.Test;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class ThrottledTest {
 
@@ -48,7 +52,7 @@ public class ThrottledTest {
     @Test
     public void testTriggerDoesntTriggerTooOften() throws InterruptedException {
         counter.set(0);
-        final Throttled<String> throttled = new Throttled<>(10);
+        final Throttled<String> throttled = new Throttled<>(10_000);
         throttled.trigger("x", slowIncrement);
         assertEquals(0, counter.get());
         throttled.trigger("x", slowIncrement);
@@ -67,7 +71,7 @@ public class ThrottledTest {
     @Test
     public void testTriggerDoesTriggerAfterInterval() throws InterruptedException {
         counter.set(0);
-        final Throttled<String> throttled = new Throttled<>(1);
+        final Throttled<String> throttled = new Throttled<>(1000);
 
         throttled.trigger("x", slowIncrement);
         waitALittleToAllowExecutorToProcessRunnables();
@@ -77,6 +81,47 @@ public class ThrottledTest {
         throttled.trigger("x", slowIncrement);
         waitALittleToAllowExecutorToProcessRunnables();
         assertEquals(2, counter.get());
+    }
+
+    @Test
+    public void trigger_during_execution_should_run_action_immediately_after_finishing_current_execution() {
+        final Throttled<String> throttled = new Throttled<>(200);
+        CountDownLatch started = new CountDownLatch(1);
+        CountDownLatch triggeredDuringExecution = new CountDownLatch(1);
+        CountDownLatch completed = new CountDownLatch(1);
+
+        throttled.trigger("x", () -> {
+            started.countDown();
+            await(triggeredDuringExecution);
+        });
+
+        await(started);
+
+        throttled.trigger("x", () -> completed.countDown());
+        triggeredDuringExecution.countDown();
+
+        assertTrue(await(completed));
+    }
+
+    @Test
+    public void trigger_during_wait_replaces_runnable() {
+        final Throttled<String> throttled = new Throttled<>(200);
+        CountDownLatch firstTerminated = new CountDownLatch(1);
+        CountDownLatch replacedTaskRan = new CountDownLatch(1);
+        CountDownLatch replacementTaskRan = new CountDownLatch(1);
+
+        throttled.trigger("x", () -> {
+            firstTerminated.countDown();
+        });
+
+        await(firstTerminated);
+        waitATinyBit();
+
+        throttled.trigger("x", replacedTaskRan::countDown);
+        throttled.trigger("x", replacementTaskRan::countDown);
+
+        assertTrue("replacement task ran", await(replacementTaskRan));
+        assertFalse("replaced task ran", await(replacedTaskRan));
     }
 
     @SneakyThrows
@@ -89,4 +134,8 @@ public class ThrottledTest {
         Thread.sleep(30);
     }
 
+    @SneakyThrows
+    private boolean await(CountDownLatch latch) {
+        return latch.await(500, TimeUnit.MILLISECONDS);
+    }
 }
