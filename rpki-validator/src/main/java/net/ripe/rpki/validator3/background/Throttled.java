@@ -63,6 +63,11 @@ public class Throttled<Key> {
 
     private final long minIntervalMs;
 
+    /*
+     * Tracks the action for each Key. This map is used concurrently by multiple threads
+     * so must be locked for any access. This might become a bottleneck when there are many
+     * keyed tasks, but currently this is not the case.
+     */
     private final Map<Key, Action> actionMap = new HashMap<>();
 
     private final ScheduledExecutorService scheduledExecutor =
@@ -78,13 +83,23 @@ public class Throttled<Key> {
             final Action action = actionMap.get(key);
 
             if (action == null) {
+                // New key, start running action as soon as possible.
                 actionMap.put(key, Action.toBeExecutedASAP(now, r));
                 scheduledExecutor.execute(actionRunner(key));
             } else if (action.running) {
+                // Action for this key is currently running, mark the
+                // action as scheduled so that it will be started again
+                // as soon as the current one finishes.
                 actionMap.put(key, action.scheduled(r));
             } else if (action.alreadyScheduled) {
+                // Action already scheduled for this key, only replace
+                // the task that needs to be run when it starts.
                 actionMap.put(key, action.replaced(r));
             } else {
+                // Action not running or scheduled, so schedule it for
+                // execution taking into account the minIntervalMs.
+                // Note that a negative delay will schedule the action for
+                // immediate execution.
                 final Instant lastTime = action.getExecutionTime();
                 final long delay = minIntervalMs - (now.toEpochMilli() - lastTime.toEpochMilli());
                 actionMap.put(key, action.scheduled(r));
@@ -105,7 +120,7 @@ public class Throttled<Key> {
             } finally {
                 synchronized (actionMap) {
                     Action action = actionMap.get(key);
-                    actionMap.put(key, action.stopped());
+                    actionMap.put(key, action.finished());
                     if (action.alreadyScheduled) {
                         trigger(key, action.runnable);
                     }
@@ -119,8 +134,11 @@ public class Throttled<Key> {
     private static class Action {
         // Time of the start of the last execution or the time when it was scheduled for immediate execution.
         Instant executionTime;
+        // Action is scheduled to run using the scheduled, or if already running, when the current execution finishes.
         boolean alreadyScheduled;
+        // True this action is currently executing, false otherwise.
         boolean running;
+        // The code to run when the next execution starts.
         Runnable runnable;
 
         private static Action toBeExecutedASAP(Instant executionTime, Runnable runnable) {
@@ -131,15 +149,15 @@ public class Throttled<Key> {
             return new Action(executionTime, false, true, this.runnable);
         }
 
-        public Action stopped() {
+        private Action finished() {
             return new Action(this.executionTime, false, false, this.runnable);
         }
 
-        public Action scheduled(Runnable runnable) {
+        private Action scheduled(Runnable runnable) {
             return new Action(this.executionTime, true, this.running, runnable);
         }
 
-        public Action replaced(Runnable runnable) {
+        private Action replaced(Runnable runnable) {
             return new Action(this.executionTime, this.alreadyScheduled, this.running, runnable);
         }
     }
