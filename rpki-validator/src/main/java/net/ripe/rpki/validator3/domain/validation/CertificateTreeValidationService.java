@@ -210,6 +210,9 @@ public class CertificateTreeValidationService {
                 }
             }
 
+            log.info("TA {} next validation time {}", trustAnchor.getName(), accumulator.getNextUpdateTime());
+            validationRun.setNextValidationNeededAt(InstantWithoutNanos.from(accumulator.getNextUpdateTime()));
+
             storage.writeTx0(tx -> {
                 validationRuns.add(tx, validationRun);
                 Long t = Time.timed(() -> accumulator.forEach(key -> validationRuns.associateRpkiObjectKey(tx, validationRun, key)));

@@ -135,11 +135,12 @@ public class TrustAnchorStore extends GenericStoreImpl<TrustAnchor> implements T
                             warnings,
                             objectCount.getLeft(),
                             vr.getCompletedAt() == null ? null : Dates.formatUTC(vr.getCompletedAt()),
+                            vr.getNextValidationNeededAt() == null ? null : Dates.formatUTC(vr.getNextValidationNeededAt()),
                             ta.isInitialCertificateTreeValidationRunCompleted()
                     );
                 }).orElse(TaStatus.of(
                         String.valueOf(ta.key().asLong()),
-                        ta.getName(), 0, 1, 0, null, false
+                        ta.getName(), 0, 1, 0, null, null, false
                 )))
                 .sorted(Comparator.comparing(ta -> ta.getTaName().toLowerCase()))
                 .collect(Collectors.toList());

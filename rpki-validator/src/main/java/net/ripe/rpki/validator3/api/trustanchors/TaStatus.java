@@ -39,5 +39,6 @@ public class TaStatus {
     final int warnings;
     final int successful;
     final String lastUpdated;
+    final String nextValidationNeededAt;
     final boolean completedValidation;
 }

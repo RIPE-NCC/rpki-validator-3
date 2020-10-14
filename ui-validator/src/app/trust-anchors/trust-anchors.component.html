@@ -5,6 +5,7 @@
     <th scope='col'>{{ 'TRUST_ANCHORS' | translate }}</th>
     <th scope='col'>{{ 'TrustAnchors.PROCESSED_ITEMS' | translate }}</th>
     <th scope='col'>{{ 'TrustAnchors.LAST_UPDATED' | translate }}</th>
+    <th scope='col'>{{ 'TrustAnchors.NEXT_VALIDATION_NEEDED_AT' | translate }}</th>
   </tr>
   </thead>
   <tbody>
@@ -28,6 +29,7 @@
         <flag [value]='"PENDING"'></flag>
       </ng-template>
     </td>
+    <td>{{ta.nextValidationNeededAt}}</td>
   </tr>
   </tbody>
 </table>

@@ -35,9 +35,13 @@ import com.google.common.collect.ImmutableSortedSet;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
+import net.ripe.rpki.commons.crypto.UnknownCertificateRepositoryObject;
+import net.ripe.rpki.commons.crypto.cms.RpkiSignedObject;
 import net.ripe.rpki.commons.crypto.cms.roa.RoaCms;
 import net.ripe.rpki.commons.crypto.cms.roa.RoaPrefix;
+import net.ripe.rpki.commons.crypto.crl.X509Crl;
 import net.ripe.rpki.commons.crypto.x509cert.X509CertificateUtil;
+import net.ripe.rpki.commons.crypto.x509cert.X509GenericCertificate;
 import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificate;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
@@ -54,10 +58,12 @@ import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Locks;
 import net.ripe.rpki.validator3.util.Time;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
@@ -259,6 +265,7 @@ public class ValidatedRpkiObjects {
     }
 
     public static class Accumulator {
+        private Instant nextUpdateTime = Instant.MAX;
         private final List<Key> validatedObjectKeys = new ArrayList<>();
         private final List<ValidatedRoaPrefix> validatedRoaPrefixes = new ArrayList<>();
         private final List<RouterCertificate> routerCertificates = new ArrayList<>();
@@ -292,6 +299,26 @@ public class ValidatedRpkiObjects {
                         pkInfo
                 ));
             }
+
+            DateTime expiresAt = null;
+            if (object instanceof RpkiSignedObject) {
+                RpkiSignedObject obj = (RpkiSignedObject) object;
+                expiresAt = obj.getNotValidAfter();
+            } else if (object instanceof X509GenericCertificate) {
+                X509GenericCertificate cert = (X509GenericCertificate) object;
+                expiresAt = cert.getValidityPeriod().getNotValidAfter();
+            } else if (object instanceof X509Crl) {
+                X509Crl crl = (X509Crl) object;
+                expiresAt = crl.getNextUpdateTime();
+            } else if (object instanceof UnknownCertificateRepositoryObject) {
+                // ignore
+            } else {
+                log.warn("unknown repository object type, no expiration time known: " + object.getClass().getSimpleName());
+            }
+
+            if (expiresAt != null && Instant.ofEpochMilli(expiresAt.getMillis()).isBefore(nextUpdateTime)) {
+                nextUpdateTime = Instant.ofEpochMilli(expiresAt.getMillis());
+            }
         }
 
         public boolean isEmpty() {
@@ -300,6 +327,10 @@ public class ValidatedRpkiObjects {
 
         public int size() {
             return validatedObjectKeys.size();
+        }
+
+        public Instant getNextUpdateTime() {
+            return nextUpdateTime;
         }
 
         public List<Key> getKeys() {
@@ -319,6 +350,7 @@ public class ValidatedRpkiObjects {
         }
 
         public void addAll(Accumulator that) {
+            this.nextUpdateTime = this.nextUpdateTime.isBefore(that.nextUpdateTime) ? this.nextUpdateTime : that.nextUpdateTime;
             this.validatedObjectKeys.addAll(that.validatedObjectKeys);
             this.routerCertificates.addAll(that.routerCertificates);
             this.validatedRoaPrefixes.addAll(that.validatedRoaPrefixes);

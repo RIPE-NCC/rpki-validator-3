@@ -32,6 +32,8 @@ package net.ripe.rpki.validator3.storage.data.validation;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.Setter;
+import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.storage.Binary;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
@@ -45,8 +47,12 @@ public class CertificateTreeValidationRun extends ValidationRun {
     @Getter
     private final Ref<TrustAnchor> trustAnchor;
 
+    @Getter @Setter
+    private InstantWithoutNanos nextValidationNeededAt;
+
     public CertificateTreeValidationRun(Ref<TrustAnchor> trustAnchor) {
         this.trustAnchor = trustAnchor;
+        this.nextValidationNeededAt = null;
     }
 
     @Override
