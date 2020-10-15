@@ -352,7 +352,11 @@ public class ValidatedRpkiObjects {
         }
 
         public void addAll(Accumulator that) {
-            this.nextUpdateTime = this.nextUpdateTime == null ? that.nextUpdateTime : that.nextUpdateTime == null ? this.nextUpdateTime : this.nextUpdateTime.isBefore(that.nextUpdateTime) ? this.nextUpdateTime : that.nextUpdateTime;
+            if (this.nextUpdateTime == null) {
+                this.nextUpdateTime = that.nextUpdateTime;
+            } else if (that.nextUpdateTime != null && that.nextUpdateTime.isBefore(this.nextUpdateTime)) {
+                this.nextUpdateTime = that.nextUpdateTime;
+            }
             this.validatedObjectKeys.addAll(that.validatedObjectKeys);
             this.routerCertificates.addAll(that.routerCertificates);
             this.validatedRoaPrefixes.addAll(that.validatedRoaPrefixes);
