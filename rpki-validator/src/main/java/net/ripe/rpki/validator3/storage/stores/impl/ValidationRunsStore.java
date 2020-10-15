@@ -223,7 +223,7 @@ public class ValidationRunsStore implements ValidationRuns {
     }
 
     @Override
-    public Optional<CertificateTreeValidationRun> findLatestCaTreeValidationRun(Tx.Read tx, TrustAnchor trustAnchor) {
+    public Optional<CertificateTreeValidationRun> findLatestCompletedCaTreeValidationRun(Tx.Read tx, TrustAnchor trustAnchor) {
         return ctIxMap.getByIdxDescendingWhere(BY_COMPLETED_AT_INDEX, tx,
                 vr -> trustAnchor.key().equals(vr.getTrustAnchor().key())).values().stream().findFirst();
     }

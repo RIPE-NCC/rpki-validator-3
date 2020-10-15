@@ -109,7 +109,7 @@ public class ValidationRunController {
                 ResponseEntity.ok(ApiResponse.data(
                         new Links(linkTo(methodOn(ValidationRunController.class).listLatestCompletedPerTa(locale)).withSelfRel()),
                         trustAnchors.findAll(tx).stream().flatMap(ta ->
-                                validationRuns.findLatestCaTreeValidationRun(tx, ta)
+                                validationRuns.findLatestCompletedCaTreeValidationRun(tx, ta)
                                         .map(validationRun -> Stream.of(ValidationRunResource.of(validationRun,
                                                 vr -> validationRuns.getObjectCount(tx, vr),
                                                 messageSource, locale)))

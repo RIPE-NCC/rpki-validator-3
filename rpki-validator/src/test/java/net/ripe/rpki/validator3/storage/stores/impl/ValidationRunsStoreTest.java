@@ -123,7 +123,7 @@ public class ValidationRunsStoreTest extends GenericStorageTest {
         });
 
         rtx0(tx -> {
-            Optional<CertificateTreeValidationRun> latestCompletedForTrustAnchor = this.getValidationRuns().findLatestCaTreeValidationRun(tx, trustAnchor);
+            Optional<CertificateTreeValidationRun> latestCompletedForTrustAnchor = this.getValidationRuns().findLatestCompletedCaTreeValidationRun(tx, trustAnchor);
             assertTrue(latestCompletedForTrustAnchor.isPresent());
             assertEquals(vr3, latestCompletedForTrustAnchor.get());
         });
@@ -134,7 +134,7 @@ public class ValidationRunsStoreTest extends GenericStorageTest {
         });
 
         rtx0(tx -> {
-            Optional<CertificateTreeValidationRun> latestCompletedForTrustAnchor = this.getValidationRuns().findLatestCaTreeValidationRun(tx, trustAnchor);
+            Optional<CertificateTreeValidationRun> latestCompletedForTrustAnchor = this.getValidationRuns().findLatestCompletedCaTreeValidationRun(tx, trustAnchor);
             assertTrue(latestCompletedForTrustAnchor.isPresent());
             assertEquals(vr2, latestCompletedForTrustAnchor.get());
         });

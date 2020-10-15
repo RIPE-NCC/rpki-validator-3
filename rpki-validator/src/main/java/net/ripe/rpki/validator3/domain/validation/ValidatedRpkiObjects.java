@@ -265,7 +265,7 @@ public class ValidatedRpkiObjects {
     }
 
     public static class Accumulator {
-        private Instant nextUpdateTime = Instant.MAX;
+        private Instant nextUpdateTime;
         private final List<Key> validatedObjectKeys = new ArrayList<>();
         private final List<ValidatedRoaPrefix> validatedRoaPrefixes = new ArrayList<>();
         private final List<RouterCertificate> routerCertificates = new ArrayList<>();
@@ -316,8 +316,10 @@ public class ValidatedRpkiObjects {
                 log.warn("unknown repository object type, no expiration time known: " + object.getClass().getSimpleName());
             }
 
-            if (expiresAt != null && Instant.ofEpochMilli(expiresAt.getMillis()).isBefore(nextUpdateTime)) {
-                nextUpdateTime = Instant.ofEpochMilli(expiresAt.getMillis());
+            if (expiresAt != null) {
+                if (nextUpdateTime == null || expiresAt.getMillis() < nextUpdateTime.toEpochMilli()) {
+                    nextUpdateTime = Instant.ofEpochMilli(expiresAt.getMillis());
+                }
             }
         }
 
@@ -350,7 +352,7 @@ public class ValidatedRpkiObjects {
         }
 
         public void addAll(Accumulator that) {
-            this.nextUpdateTime = this.nextUpdateTime.isBefore(that.nextUpdateTime) ? this.nextUpdateTime : that.nextUpdateTime;
+            this.nextUpdateTime = this.nextUpdateTime == null ? that.nextUpdateTime : that.nextUpdateTime == null ? this.nextUpdateTime : this.nextUpdateTime.isBefore(that.nextUpdateTime) ? this.nextUpdateTime : that.nextUpdateTime;
             this.validatedObjectKeys.addAll(that.validatedObjectKeys);
             this.routerCertificates.addAll(that.routerCertificates);
             this.validatedRoaPrefixes.addAll(that.validatedRoaPrefixes);
