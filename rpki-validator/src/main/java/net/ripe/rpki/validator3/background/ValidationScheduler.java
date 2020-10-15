@@ -78,14 +78,7 @@ public class ValidationScheduler {
         this.rrpdRepositoryDownloadInterval = Duration.parse(rrpdRepositoryDownloadInterval);
         this.validationService = validationService;
 
-        // Allow tree re-validation as often as minimum repository fetch interval,
-        // but in any case not more often then once a minute.
-        final long minIntervalBetweenTreeValidationsInSeconds = Math.max(60,
-            Math.min(
-                this.rsyncRepositoryDownloadInterval.getSeconds(),
-                this.rrpdRepositoryDownloadInterval.getSeconds()));
-
-        throttledTreeValidation = new Throttled<>(minIntervalBetweenTreeValidationsInSeconds);
+        this.throttledTreeValidation = new Throttled<>(30_000);
 
         // Disable scheduling during tests
         if (environment.acceptsProfiles(Profiles.of("test"))) {
