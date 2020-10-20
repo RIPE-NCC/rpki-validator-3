@@ -87,6 +87,7 @@ import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_REPOSI
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_RPKI_REPOSITORY_PENDING;
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_TRUST_ANCHOR_CERTIFICATE_AVAILABLE;
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_TRUST_ANCHOR_CERTIFICATE_RRDP_NOTIFY_URI_OR_REPOSITORY_URI_PRESENT;
+import static net.ripe.rpki.validator3.domain.ErrorCodes.MANIFEST_ALL_ENTRIES_VALID;
 import static net.ripe.rpki.validator3.domain.RpkiObjectUtils.newValidationResult;
 import static net.ripe.rpki.validator3.storage.data.RpkiRepository.Type.RRDP;
 import static net.ripe.rpki.validator3.storage.data.RpkiRepository.Type.RSYNC;
@@ -367,7 +368,15 @@ public class CertificateTreeValidationService {
                         CertificateAuthorityValidationResult::addAll
                 );
 
-        if (validationConfig.isStrictValidation() && result.getValidationResult().hasFailures()) {
+        if (!validationConfig.isStrictValidation()) {
+            return result;
+
+        }
+
+        boolean hasFailures = result.getValidationResult().hasFailures();
+        result.getValidationResult().setLocation(new ValidationLocation(manifestUri));
+        result.getValidationResult().warnIfTrue(hasFailures, MANIFEST_ALL_ENTRIES_VALID);
+        if (hasFailures) {
             // RFC 6486bis: drop all validated objects from this CA (and its children) since there
             // was at least one validation failure on this manifest.
             return CertificateAuthorityValidationResult.of(result.getValidationResult());
