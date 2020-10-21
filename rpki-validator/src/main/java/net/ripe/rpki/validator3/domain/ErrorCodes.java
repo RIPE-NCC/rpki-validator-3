@@ -56,6 +56,8 @@ public class ErrorCodes {
     public static final String REPOSITORY_OBJECT_MAXIMUM_SIZE = "repository.object.maximum.size";
     public static final String REPOSITORY_OBJECT_IS_TRUST_ANCHOR_CERTIFICATE = "repository.object.is.trust.anchor.certificate";
 
+    public static final String MANIFEST_ALL_ENTRIES_VALID = "manifest.all.entries.valid";
+
     public static final String UNHANDLED_EXCEPTION = "unhandled.exception";
 
     private ErrorCodes() {
