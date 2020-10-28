@@ -168,7 +168,7 @@ package:
     - docker push ripencc/rpki-validator-3:$CI_COMMIT_TAG
     - docker tag rpki-validator-3 ripencc/rpki-validator-3:latest
     - docker push ripencc/rpki-validator-3:latest
-    - docker tag ripencc/rpki-validator-3-docker:latest
+    - docker tag rpki-validator-3 ripencc/rpki-validator-3-docker:latest
     - docker push ripencc/rpki-validator-3-docker:latest
     - echo "Releasing rtr server image as :latest and :${CI_COMMIT_TAG}"
     - docker tag rpki-rtr-server ripencc/rpki-rtr-server:$CI_COMMIT_TAG
