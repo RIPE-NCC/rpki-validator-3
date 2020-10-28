@@ -6,7 +6,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>net.ripe.rpki</groupId>
     <artifactId>rpki-validator-3</artifactId>
-    <version>3.1-SNAPSHOT</version>
+    <version>3.2-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Multi Chapter Parent Project</name>
     <modules>

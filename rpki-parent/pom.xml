@@ -4,7 +4,7 @@
 
     <groupId>net.ripe.rpki</groupId>
     <artifactId>rpki-validator-3-parent</artifactId>
-    <version>3.1-SNAPSHOT</version>
+    <version>3.2-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Shared parent dependencies</name>

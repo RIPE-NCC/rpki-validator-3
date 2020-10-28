@@ -5,7 +5,7 @@
 
     <groupId>net.ripe.rpki</groupId>
     <artifactId>rpki-validator</artifactId>
-    <version>3.1-SNAPSHOT</version>
+    <version>3.2-SNAPSHOT</version>
     <packaging>jar</packaging>
     <inceptionYear>2017</inceptionYear>
     <name>rpki-validator-3</name>
@@ -13,7 +13,7 @@
     <parent>
         <groupId>net.ripe.rpki</groupId>
         <artifactId>rpki-validator-3-parent</artifactId>
-        <version>3.1-SNAPSHOT</version>
+        <version>3.2-SNAPSHOT</version>
         <relativePath>../rpki-parent/</relativePath>
     </parent>
 
