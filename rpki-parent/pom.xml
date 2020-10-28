@@ -23,7 +23,7 @@
         <!-- Micrometer.version from spring boot -->
 
         <springfox.version>2.7.0</springfox.version>
-        <build.version>3.1</build.version>
+        <build.version>3.2</build.version>
         <build.release>${maven.build.timestamp}</build.release>
     </properties>
 
