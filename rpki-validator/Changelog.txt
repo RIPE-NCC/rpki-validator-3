@@ -1,3 +1,10 @@
+* Wed Oct 28 2020 Mikhail Puzanov <mpuzanov@ripe.net> - 3.2
+- Make `rpki.validator.strict-validation=true` the default (it's a breaking change, thus version 3.2).
+- Decrease bootstrap time to first validation.
+- Use case insensitive URI schemes in object validations
+- Validate that RPKI repository object was found at the correct location
+- Fix Docker container creation during release
+
 * Fri Sep 18 2020 Mikhail Puzanov <mpuzanov@ripe.net> - 3.1
 - Remove repositories from the cache if they are not referred by any certificate for long enough.
 - Make 'strict mode' enabled by `rpki.validator.strict-validation=true` more compliant with RFC 6486bis.
