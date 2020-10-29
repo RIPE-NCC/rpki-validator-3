@@ -9,7 +9,7 @@ Or follow the step-by-step [installation instructions](https://github.com/RIPE-N
 
 Changes in 3.2:
 ---------------
-  * Defaults to [draft-ietf-sidrops-6486bis](https://datatracker.ietf.org/doc/draft-ietf-sidrops-6486bis/) compliant validation.
+  * Strict validation by default, with minor differences from [draft-ietf-sidrops-6486bis](https://datatracker.ietf.org/doc/draft-ietf-sidrops-6486bis/).
   * Decrease bootstrap time.
 
 Latest changes in 3.1:
