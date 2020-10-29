@@ -48,11 +48,11 @@ public class CertificateTreeValidationRun extends ValidationRun {
     private final Ref<TrustAnchor> trustAnchor;
 
     @Getter @Setter
-    private InstantWithoutNanos nextValidationNeededAt;
+    private InstantWithoutNanos earliestObjectExpiration;
 
     public CertificateTreeValidationRun(Ref<TrustAnchor> trustAnchor) {
         this.trustAnchor = trustAnchor;
-        this.nextValidationNeededAt = null;
+        this.earliestObjectExpiration = null;
     }
 
     @Override

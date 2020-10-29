@@ -57,13 +57,13 @@ import static org.junit.jupiter.api.Assertions.*;
 @RunWith(SpringRunner.class)
 @ActiveProfiles(profiles="test")
 @SpringBootTest(properties = "rpki.validator.strict-validation=true")
-public class CertificateTreeNextValidationJobTest extends GenericStorageTest {
+public class CertificateTreeObjectExpirationValidationJobTest extends GenericStorageTest {
     @Autowired
     private TrustAnchorsFactory factory;
 
     @Autowired
     private AutowireCapableBeanFactory beanFactory;
-    private CertificateTreeNextValidationJob subject;
+    private CertificateTreeObjectExpirationValidationJob subject;
     private TrustAnchor trustAnchor;
     private Ref<TrustAnchor> trustAnchorRef;
     private TrustAnchor validationTriggered;
@@ -79,7 +79,7 @@ public class CertificateTreeNextValidationJobTest extends GenericStorageTest {
             return getTrustAnchors().makeRef(tx, trustAnchor.key());
         });
 
-        subject = new CertificateTreeNextValidationJob();
+        subject = new CertificateTreeObjectExpirationValidationJob();
         beanFactory.autowireBean(subject);
         subject.validateTrustAnchor = (ta) -> this.validationTriggered = ta;
     }
@@ -87,7 +87,7 @@ public class CertificateTreeNextValidationJobTest extends GenericStorageTest {
     @Test
     public void trigger_execution_when_last_succeeded_validation_run_validation_neeeded_at_is_in_the_past() throws JobExecutionException {
         CertificateTreeValidationRun run = new CertificateTreeValidationRun(trustAnchorRef);
-        run.setNextValidationNeededAt(InstantWithoutNanos.now());
+        run.setEarliestObjectExpiration(InstantWithoutNanos.now());
         run.completeWith(ValidationResult.withLocation("unused-location"));
         wtx0(tx -> this.getValidationRuns().add(tx, run));
 
@@ -99,7 +99,7 @@ public class CertificateTreeNextValidationJobTest extends GenericStorageTest {
     @Test
     public void skip_execution_when_validation_run_is_still_running() throws JobExecutionException {
         CertificateTreeValidationRun run = new CertificateTreeValidationRun(trustAnchorRef);
-        run.setNextValidationNeededAt(InstantWithoutNanos.now());
+        run.setEarliestObjectExpiration(InstantWithoutNanos.now());
         wtx0(tx -> this.getValidationRuns().add(tx, run));
 
         subject.execute(null);
@@ -110,7 +110,7 @@ public class CertificateTreeNextValidationJobTest extends GenericStorageTest {
     @Test
     public void skip_execution_when_last_succeeded_validation_run_validation_neeeded_at_is_in_the_future() throws JobExecutionException {
         CertificateTreeValidationRun run = new CertificateTreeValidationRun(trustAnchorRef);
-        run.setNextValidationNeededAt(InstantWithoutNanos.from(Instant.now().plus(10, ChronoUnit.HOURS)));
+        run.setEarliestObjectExpiration(InstantWithoutNanos.from(Instant.now().plus(10, ChronoUnit.HOURS)));
         wtx0(tx -> this.getValidationRuns().add(tx, run));
 
         subject.execute(null);

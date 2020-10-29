@@ -29,7 +29,6 @@
  */
 package net.ripe.rpki.validator3.storage.encoding.custom.validation;
 
-import net.ripe.rpki.validator3.api.util.InstantWithoutNanos;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.CertificateTreeValidationRun;
@@ -44,7 +43,7 @@ import java.util.Map;
 public class CTValidationRunCoder implements Coder<CertificateTreeValidationRun> {
 
     private final static short TA_TAG = Tags.unique(81);
-    private final static short NEXT_VALIDATION_TIME = Tags.unique(82);
+    private final static short EARLIEST_OBJECT_EXPIRATION_TAG = Tags.unique(82);
 
     private final static RefCoder<TrustAnchor> taRefCoder = new RefCoder<>();
 
@@ -53,7 +52,7 @@ public class CTValidationRunCoder implements Coder<CertificateTreeValidationRun>
         final Encoded encoded = new Encoded();
         ValidationRunCoder.toBytes(validationRun, encoded);
         encoded.appendNotNull(TA_TAG, validationRun.getTrustAnchor(), taRefCoder::toBytes);
-        encoded.appendNotNull(NEXT_VALIDATION_TIME, validationRun.getNextValidationNeededAt(), Coders::toBytes);
+        encoded.appendNotNull(EARLIEST_OBJECT_EXPIRATION_TAG, validationRun.getEarliestObjectExpiration(), Coders::toBytes);
         return encoded.toByteArray();
     }
 
@@ -62,7 +61,7 @@ public class CTValidationRunCoder implements Coder<CertificateTreeValidationRun>
         Map<Short, byte[]> content = Encoded.fromByteArray(bytes).getContent();
         final Ref<TrustAnchor> trustAnchorRef = taRefCoder.fromBytes(content.get(TA_TAG));
         final CertificateTreeValidationRun validationRun = new CertificateTreeValidationRun(trustAnchorRef);
-        Encoded.field(content, NEXT_VALIDATION_TIME).ifPresent(b -> validationRun.setNextValidationNeededAt(Coders.toInstant(b)));
+        Encoded.field(content, EARLIEST_OBJECT_EXPIRATION_TAG).ifPresent(b -> validationRun.setEarliestObjectExpiration(Coders.toInstant(b)));
         ValidationRunCoder.fromBytes(content, validationRun);
         return validationRun;
     }

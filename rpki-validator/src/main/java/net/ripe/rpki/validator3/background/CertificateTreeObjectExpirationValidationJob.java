@@ -45,7 +45,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 @DisallowConcurrentExecution
-public class CertificateTreeNextValidationJob implements Job {
+public class CertificateTreeObjectExpirationValidationJob implements Job {
     @Autowired
     private Storage storage;
 
@@ -71,9 +71,9 @@ public class CertificateTreeNextValidationJob implements Job {
                     }
                     CertificateTreeValidationRun vr = maybeVr.get();
 
-                    InstantWithoutNanos nextValidationNeededAt = vr.getNextValidationNeededAt();
-                    return (nextValidationNeededAt != null
-                            && nextValidationNeededAt.isBefore(InstantWithoutNanos.now()));
+                    InstantWithoutNanos earliestObjectExpiration = vr.getEarliestObjectExpiration();
+                    return (earliestObjectExpiration != null
+                            && earliestObjectExpiration.isBefore(InstantWithoutNanos.now()));
                 })
                 .forEach(validateTrustAnchor)
         );

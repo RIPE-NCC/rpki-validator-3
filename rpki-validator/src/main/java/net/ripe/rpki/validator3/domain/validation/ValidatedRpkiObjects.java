@@ -265,7 +265,7 @@ public class ValidatedRpkiObjects {
     }
 
     public static class Accumulator {
-        private Instant nextUpdateTime;
+        private Instant earliestObjectExpiration;
         private final List<Key> validatedObjectKeys = new ArrayList<>();
         private final List<ValidatedRoaPrefix> validatedRoaPrefixes = new ArrayList<>();
         private final List<RouterCertificate> routerCertificates = new ArrayList<>();
@@ -317,8 +317,8 @@ public class ValidatedRpkiObjects {
             }
 
             if (expiresAt != null) {
-                if (nextUpdateTime == null || expiresAt.getMillis() < nextUpdateTime.toEpochMilli()) {
-                    nextUpdateTime = Instant.ofEpochMilli(expiresAt.getMillis());
+                if (earliestObjectExpiration == null || expiresAt.getMillis() < earliestObjectExpiration.toEpochMilli()) {
+                    earliestObjectExpiration = Instant.ofEpochMilli(expiresAt.getMillis());
                 }
             }
         }
@@ -331,8 +331,8 @@ public class ValidatedRpkiObjects {
             return validatedObjectKeys.size();
         }
 
-        public Instant getNextUpdateTime() {
-            return nextUpdateTime;
+        public Instant getEarliestObjectExpiration() {
+            return earliestObjectExpiration;
         }
 
         public List<Key> getKeys() {
@@ -352,10 +352,10 @@ public class ValidatedRpkiObjects {
         }
 
         public void addAll(Accumulator that) {
-            if (this.nextUpdateTime == null) {
-                this.nextUpdateTime = that.nextUpdateTime;
-            } else if (that.nextUpdateTime != null && that.nextUpdateTime.isBefore(this.nextUpdateTime)) {
-                this.nextUpdateTime = that.nextUpdateTime;
+            if (this.earliestObjectExpiration == null) {
+                this.earliestObjectExpiration = that.earliestObjectExpiration;
+            } else if (that.earliestObjectExpiration != null && that.earliestObjectExpiration.isBefore(this.earliestObjectExpiration)) {
+                this.earliestObjectExpiration = that.earliestObjectExpiration;
             }
             this.validatedObjectKeys.addAll(that.validatedObjectKeys);
             this.routerCertificates.addAll(that.routerCertificates);

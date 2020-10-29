@@ -210,9 +210,9 @@ public class CertificateTreeValidationService {
                 }
             }
 
-            if (accumulator.getNextUpdateTime() != null) {
-                log.info("TA {} next validation time {}", trustAnchor.getName(), accumulator.getNextUpdateTime());
-                validationRun.setNextValidationNeededAt(InstantWithoutNanos.from(accumulator.getNextUpdateTime()));
+            if (accumulator.getEarliestObjectExpiration() != null) {
+                log.info("TA {} earliest object expiration time {}", trustAnchor.getName(), accumulator.getEarliestObjectExpiration());
+                validationRun.setEarliestObjectExpiration(InstantWithoutNanos.from(accumulator.getEarliestObjectExpiration()));
             }
 
             storage.writeTx0(tx -> {
