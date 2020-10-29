@@ -1,14 +1,15 @@
 * Wed Oct 28 2020 Mikhail Puzanov <mpuzanov@ripe.net> - 3.2
 **New minor release due to change in validation behaviour.**
 
-- Make `rpki.validator.strict-validation=true` (RFC 6486-bis compliant)
-  validation behaviour the default.
+- Use strict validation (`rpki.validator.strict-validation=true`) by default,
+  with minor differences from [draft-ietf-sidrops-6486bis-00](https://www.ietf.org/archive/id/draft-ietf-sidrops-6486bis-00.txt).
+- Use case insensitive URI schemes in object validations.
+- Validate that RPKI repository object was found at the correct location.
+- Stricter checking of certificate Subject and Issuer DN.
 - Decrease bootstrap time by checking rsync repositories earlier after they
   are first encountered, and by triggering revalidation when needed.
-- Use case insensitive URI schemes in object validations
-- Validate that RPKI repository object was found at the correct location
-- Fix Docker tag creation during the release
-- Add docker image for rtr server
+- Fix Docker tag creation during the release.
+- Add docker image for rtr server.
 
 * Fri Sep 18 2020 Mikhail Puzanov <mpuzanov@ripe.net> - 3.1
 - Remove repositories from the cache if they are not referred by any certificate for long enough.
