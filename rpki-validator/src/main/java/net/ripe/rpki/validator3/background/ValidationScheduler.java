@@ -164,6 +164,9 @@ public class ValidationScheduler {
         }
     }
 
+    /**
+     * Triggers certificate tree validation but throttles to avoid running too frequently.
+     */
     public void triggerCertificateTreeValidation(TrustAnchor trustAnchor) {
         if (!enabled) {
             return;

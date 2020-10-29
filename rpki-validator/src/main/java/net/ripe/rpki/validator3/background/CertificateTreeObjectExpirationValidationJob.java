@@ -58,7 +58,7 @@ public class CertificateTreeObjectExpirationValidationJob implements Job {
     @Autowired
     private ValidationScheduler validationScheduler;
 
-    Consumer<TrustAnchor> validateTrustAnchor = (ta) -> validationScheduler.triggerCertificateTreeValidation(ta);
+    Consumer<TrustAnchor> triggerCertificateTreeValidation = (ta) -> validationScheduler.triggerCertificateTreeValidation(ta);
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
@@ -75,7 +75,7 @@ public class CertificateTreeObjectExpirationValidationJob implements Job {
                     return (earliestObjectExpiration != null
                             && earliestObjectExpiration.isBefore(InstantWithoutNanos.now()));
                 })
-                .forEach(validateTrustAnchor)
+                .forEach(triggerCertificateTreeValidation)
         );
     }
 }

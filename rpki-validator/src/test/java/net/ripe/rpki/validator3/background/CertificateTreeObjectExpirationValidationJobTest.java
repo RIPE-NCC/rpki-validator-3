@@ -47,10 +47,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.time.Instant;
-import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -81,7 +78,7 @@ public class CertificateTreeObjectExpirationValidationJobTest extends GenericSto
 
         subject = new CertificateTreeObjectExpirationValidationJob();
         beanFactory.autowireBean(subject);
-        subject.validateTrustAnchor = (ta) -> this.validationTriggered = ta;
+        subject.triggerCertificateTreeValidation = (ta) -> this.validationTriggered = ta;
     }
 
     @Test
