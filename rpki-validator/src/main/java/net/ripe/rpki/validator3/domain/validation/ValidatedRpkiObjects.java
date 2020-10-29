@@ -37,6 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.UnknownCertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.RpkiSignedObject;
+import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.crypto.cms.roa.RoaCms;
 import net.ripe.rpki.commons.crypto.cms.roa.RoaPrefix;
 import net.ripe.rpki.commons.crypto.crl.X509Crl;
@@ -300,22 +301,7 @@ public class ValidatedRpkiObjects {
                 ));
             }
 
-            DateTime expiresAt = null;
-            if (object instanceof RpkiSignedObject) {
-                RpkiSignedObject obj = (RpkiSignedObject) object;
-                expiresAt = obj.getNotValidAfter();
-            } else if (object instanceof X509GenericCertificate) {
-                X509GenericCertificate cert = (X509GenericCertificate) object;
-                expiresAt = cert.getValidityPeriod().getNotValidAfter();
-            } else if (object instanceof X509Crl) {
-                X509Crl crl = (X509Crl) object;
-                expiresAt = crl.getNextUpdateTime();
-            } else if (object instanceof UnknownCertificateRepositoryObject) {
-                // ignore
-            } else {
-                log.warn("unknown repository object type, no expiration time known: " + object.getClass().getSimpleName());
-            }
-
+            DateTime expiresAt = getExpirationTime(object);
             if (expiresAt != null) {
                 if (earliestObjectExpiration == null || expiresAt.getMillis() < earliestObjectExpiration.toEpochMilli()) {
                     earliestObjectExpiration = Instant.ofEpochMilli(expiresAt.getMillis());
@@ -360,6 +346,30 @@ public class ValidatedRpkiObjects {
             this.validatedObjectKeys.addAll(that.validatedObjectKeys);
             this.routerCertificates.addAll(that.routerCertificates);
             this.validatedRoaPrefixes.addAll(that.validatedRoaPrefixes);
+        }
+
+        private DateTime getExpirationTime(CertificateRepositoryObject object) {
+            if (object instanceof ManifestCms) {
+                ManifestCms obj = (ManifestCms) object;
+                DateTime nextUpdateTime = obj.getNextUpdateTime();
+                DateTime notValidAfter = obj.getNotValidAfter();
+                return nextUpdateTime.isBefore(notValidAfter) ? nextUpdateTime : notValidAfter;
+            } else if (object instanceof RpkiSignedObject) {
+                RpkiSignedObject obj = (RpkiSignedObject) object;
+                return obj.getNotValidAfter();
+            } else if (object instanceof X509GenericCertificate) {
+                X509GenericCertificate cert = (X509GenericCertificate) object;
+                return cert.getValidityPeriod().getNotValidAfter();
+            } else if (object instanceof X509Crl) {
+                X509Crl crl = (X509Crl) object;
+                return crl.getNextUpdateTime();
+            } else if (object instanceof UnknownCertificateRepositoryObject) {
+                // ignore
+                return null;
+            } else {
+                log.warn("unknown repository object type, no expiration time known: " + object.getClass().getSimpleName());
+                return null;
+            }
         }
     }
 }
