@@ -67,7 +67,6 @@ import org.springframework.boot.autoconfigure.data.couchbase.CouchbaseDataAutoCo
 import org.springframework.boot.autoconfigure.data.couchbase.CouchbaseReactiveDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.couchbase.CouchbaseReactiveRepositoriesAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.couchbase.CouchbaseRepositoriesAutoConfiguration;
-import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration;
@@ -159,7 +158,6 @@ import java.util.Locale;
         DataSourcePoolMetricsAutoConfiguration.class,
         DataSourceTransactionManagerAutoConfiguration.class,
         DatadogMetricsExportAutoConfiguration.class,
-        ElasticsearchAutoConfiguration.class,
         ElasticsearchDataAutoConfiguration.class,
         ElasticsearchRepositoriesAutoConfiguration.class,
         EmbeddedLdapAutoConfiguration.class,
