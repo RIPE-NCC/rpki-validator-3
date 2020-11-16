@@ -1,7 +1,6 @@
 * Mon Nov 16 2020 Ties de Kock <tdekock@ripe.net> - 3.2
 
 - Update of rpki-commons to 1.15: more specific check on file-names, bouncy castle update which fixes algorithm identifier mis-match.
-- Update of dependencies
 
 * Wed Oct 28 2020 Mikhail Puzanov <mpuzanov@ripe.net> - 3.2
 **New minor release due to change in validation behaviour.**
