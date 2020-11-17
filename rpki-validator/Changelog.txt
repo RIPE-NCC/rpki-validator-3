@@ -1,3 +1,7 @@
+* Tue Nov 17 2020 Erik Rozendaal <erozendaal@ripe.net> - 3.2
+
+- Update of rpki-commons to 1.16: updated dependencies including XStream security update.
+
 * Mon Nov 16 2020 Ties de Kock <tdekock@ripe.net> - 3.2
 
 - Update of rpki-commons to 1.15: more specific check on file-names, bouncy castle update which fixes algorithm identifier mis-match.
@@ -73,7 +77,7 @@ Other releases and builds were not affected.
 
 * Tue Mar 10 2020 Adianto Wibisono <awibisono@ripe.net> - 3.1
 - Remove core-utils dependency, now works on ubuntu 16.
-- Extended roa export end point with validity and serial number added, see issue #39 
+- Extended roa export end point with validity and serial number added, see issue #39
 
 * Thu Mar 5 2020 Ties de Kock <tdekock@ripe.net> - 3.1
 - Updated spring boot to 2.2.5.
@@ -131,9 +135,9 @@ Other releases and builds were not affected.
 - For migration, the content of the 'db' directory should be remove and export and re-import of SLURM is required.
 
 * Mon Apr 8 2019 Adianto Wibisono <awibisono@@ripe.net> - 3.0
-- Avoid unique constraint violation due to redundant background jobs 
-- Shorter DB clean up grace period default configuration: from 6 days to 3 days   
-- Immediate prefetch on uploaded Tals, to shorten bootstrap for the first time. 
+- Avoid unique constraint violation due to redundant background jobs
+- Shorter DB clean up grace period default configuration: from 6 days to 3 days
+- Immediate prefetch on uploaded Tals, to shorten bootstrap for the first time.
 
 * Tue Mar 19 2019 Mikhail Puzanov <mpuzanov@ripe.net> - 3.0
 - fixed issue with very slow initial sync (https://github.com/RIPE-NCC/rpki-validator-3/issues/77)
