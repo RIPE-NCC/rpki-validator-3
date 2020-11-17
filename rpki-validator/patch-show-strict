@@ -1,0 +1,24 @@
+diff --git a/rpki-validator/src/main/java/net/ripe/rpki/validator3/api/util/BuildInformation.java b/rpki-validator/src/main/java/net/ripe/rpki/validator3/api/util/BuildInformation.java
+index 04574e2b..c53f8b2c 100644
+--- a/rpki-validator/src/main/java/net/ripe/rpki/validator3/api/util/BuildInformation.java
++++ b/rpki-validator/src/main/java/net/ripe/rpki/validator3/api/util/BuildInformation.java
+@@ -39,14 +39,16 @@ import org.springframework.stereotype.Component;
+ public class BuildInformation {
+ 
+     private final String version;
++    private final Boolean strict;
+ 
+     @Autowired
+-    public BuildInformation(@Value("${validator.version}") String version) {
++    public BuildInformation(@Value("${validator.version}") String version, @Value("${rpki.validator.strict-validation}") Boolean strict) {
+         this.version = version;
+-        log.info("validator.version initialised with " + version);
++        this.strict = strict;
++        log.info("validator.version initialised with " + version + (strict ? "-strict" : ""));
+     }
+ 
+     public String getVersion() {
+-        return version;
++        return version + (strict ? "-strict" : "");
+     }
+ }

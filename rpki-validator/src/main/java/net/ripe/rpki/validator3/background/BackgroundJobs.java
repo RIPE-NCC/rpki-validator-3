@@ -42,7 +42,6 @@ import org.quartz.SchedulerException;
 import org.quartz.Trigger;
 import org.quartz.listeners.JobListenerSupport;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
@@ -52,7 +51,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
-import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -94,7 +92,7 @@ public class BackgroundJobs extends JobListenerSupport {
 
         schedule(ValidateRsyncRepositoriesJob.class,
                 futureDate(10, SECOND),
-                simpleSchedule().repeatForever().withIntervalInMinutes(1));
+                simpleSchedule().repeatForever().withIntervalInMinutes(3));
 
         schedule(DownloadBgpRisDumpsJob.class,
                 futureDate(10, SECOND),
