@@ -46,7 +46,6 @@ import org.springframework.boot.autoconfigure.data.couchbase.CouchbaseDataAutoCo
 import org.springframework.boot.autoconfigure.data.couchbase.CouchbaseReactiveDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.couchbase.CouchbaseReactiveRepositoriesAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.couchbase.CouchbaseRepositoriesAutoConfiguration;
-import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration;
@@ -63,7 +62,6 @@ import org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoCo
 import org.springframework.boot.autoconfigure.data.rest.RepositoryRestMvcAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.solr.SolrRepositoriesAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.web.SpringDataWebAutoConfiguration;
-import org.springframework.boot.autoconfigure.elasticsearch.jest.JestAutoConfiguration;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.autoconfigure.freemarker.FreeMarkerAutoConfiguration;
 import org.springframework.boot.autoconfigure.groovy.template.GroovyTemplateAutoConfiguration;
@@ -130,7 +128,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         CouchbaseRepositoriesAutoConfiguration.class,
         DataSourceAutoConfiguration.class,
         DataSourceTransactionManagerAutoConfiguration.class,
-        ElasticsearchAutoConfiguration.class,
         ElasticsearchDataAutoConfiguration.class,
         ElasticsearchRepositoriesAutoConfiguration.class,
         EmbeddedLdapAutoConfiguration.class,
@@ -148,7 +145,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         IntegrationAutoConfiguration.class,
         JdbcTemplateAutoConfiguration.class,
         JerseyAutoConfiguration.class,
-        JestAutoConfiguration.class,
         JmsAutoConfiguration.class,
         JndiConnectionFactoryAutoConfiguration.class,
         JndiDataSourceAutoConfiguration.class,
