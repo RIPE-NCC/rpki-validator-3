@@ -340,7 +340,8 @@ public class BgpPreviewService {
     public void downloadRisPreview() {
         Locks.locked(downloadLock, () -> {
             log.info("Updating BGP RIS dumps");
-            final List<BgpRisDump<BgpPreviewEntry>> updated = Locks.locked(dataLock.readLock(), () -> bgpRisDumps)
+            final List<BgpRisDump<BgpPreviewEntry>> updated =
+                Locks.locked(dataLock.readLock(), () -> bgpRisDumps)
                     .stream()
                     .map(dump -> bgpRisDownloader.fetch(dump, entry -> {
                         if (entry.getVisibility() >= bgpRisVisibilityThreshold && makesSenseToShowInPreview(entry)) {
@@ -419,7 +420,9 @@ public class BgpPreviewService {
             }
 
             this.bgpPreviewEntries = validateBgpRisEntries(updatedDumps, this.roaPrefixes);
-            this.bgpRisDumps = updated.stream().map(x -> BgpRisDump.of(x.getUrl(), x.getLastModified(), Optional.empty())).collect(Collectors.toList());
+            this.bgpRisDumps = updated.stream()
+                .map(x -> BgpRisDump.of(x.getUrl(), x.getLastModified(), Optional.empty()))
+                .collect(Collectors.toList());
         });
     }
 

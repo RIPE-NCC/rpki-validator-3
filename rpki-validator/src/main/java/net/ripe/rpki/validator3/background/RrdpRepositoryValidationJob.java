@@ -34,7 +34,6 @@ import lombok.Setter;
 import net.ripe.rpki.validator3.domain.validation.RpkiRepositoryValidationService;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import org.quartz.DisallowConcurrentExecution;
-import org.quartz.Job;
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
@@ -42,7 +41,7 @@ import org.quartz.JobKey;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @DisallowConcurrentExecution
-public class RrdpRepositoryValidationJob implements Job {
+public class RrdpRepositoryValidationJob extends SafeJob {
 
     private static final String RPKI_REPOSITORY_ID = "rpkiRepositoryId";
 
@@ -54,7 +53,7 @@ public class RrdpRepositoryValidationJob implements Job {
     private long rpkiRepositoryId;
 
     @Override
-    public void execute(JobExecutionContext context) {
+    protected void doExecute(JobExecutionContext context) {
         rpkiRepositoryValidationService.validateRrdpRpkiRepository(rpkiRepositoryId);
     }
 
@@ -67,6 +66,6 @@ public class RrdpRepositoryValidationJob implements Job {
 
     static JobKey getJobKey(RpkiRepository rpkiRepository) {
         return new JobKey(String.format("%s#%s#%d", rpkiRepository.getType(),
-                rpkiRepository.getRrdpNotifyUri(), rpkiRepository.key().asLong()));
+            rpkiRepository.getRrdpNotifyUri(), rpkiRepository.key().asLong()));
     }
 }

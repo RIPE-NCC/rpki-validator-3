@@ -60,7 +60,7 @@ import java.util.zip.GZIPInputStream;
 public class BgpRisDownloader {
     private final HttpClientMetricsService httpMetrics;
 
-    private HttpClient httpClient;
+    private final HttpClient httpClient;
 
     @Autowired
     public BgpRisDownloader(HttpClientMetricsService httpMetrics, HttpClient httpClient) {
@@ -78,8 +78,9 @@ public class BgpRisDownloader {
         final Supplier<Request> requestSupplier = () -> {
             final Request request = httpClient.newRequest(dump.url);
             if (dump.lastModified != null) {
-                log.debug("Adding 'If-Modified-Since' equals to {}", formatAsRFC2616(dump.lastModified));
-                request.header("If-Modified-Since", formatAsRFC2616(dump.lastModified));
+                final String lastModifiedFormatted = formatAsRFC2616(dump.lastModified);
+                log.debug("Adding 'If-Modified-Since' equals to {}", lastModifiedFormatted);
+                request.header("If-Modified-Since", lastModifiedFormatted);
             }
             return request;
         };

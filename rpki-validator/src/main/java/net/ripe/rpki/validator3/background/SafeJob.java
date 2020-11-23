@@ -29,19 +29,20 @@
  */
 package net.ripe.rpki.validator3.background;
 
-import net.ripe.rpki.validator3.domain.cleanup.RpkiRepositoryCleanupService;
-import org.quartz.DisallowConcurrentExecution;
+import org.quartz.Job;
 import org.quartz.JobExecutionContext;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.quartz.JobExecutionException;
 
-@DisallowConcurrentExecution
-class RpkiRepositoryCleanupJob extends SafeJob {
+public abstract class SafeJob implements Job {
 
-    @Autowired
-    private RpkiRepositoryCleanupService rpkiRepositoryCleanupService;
+    protected abstract void doExecute(JobExecutionContext context);
 
     @Override
-    protected void doExecute(JobExecutionContext context) {
-        rpkiRepositoryCleanupService.cleanupRpkiRepositories();
+    public void execute(JobExecutionContext context) throws JobExecutionException {
+        try {
+            doExecute(context);
+        } catch (Exception e) {
+            throw new JobExecutionException(e);
+        }
     }
 }

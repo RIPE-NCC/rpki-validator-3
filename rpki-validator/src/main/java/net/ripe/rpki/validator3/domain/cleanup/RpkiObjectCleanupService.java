@@ -61,7 +61,7 @@ public class RpkiObjectCleanupService {
         this.storage = storage;
     }
 
-    public long cleanupRpkiObjects() throws Exception {
+    public long cleanupRpkiObjects() {
         final InstantWithoutNanos unreachableSince = InstantWithoutNanos.now().minus(cleanupGraceDuration);
         final Pair<Long, Long> deleted = Time.timed(() -> rpkiObjects.deleteUnreachableObjects(unreachableSince));
         log.info("Removed {} RPKI objects that have not been marked reachable since {}, took {}ms", deleted.getLeft(), unreachableSince, deleted.getRight());

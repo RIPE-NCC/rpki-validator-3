@@ -37,13 +37,13 @@ import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @DisallowConcurrentExecution
-class ValidateRsyncRepositoriesJob implements Job {
+class ValidateRsyncRepositoriesJob extends SafeJob {
 
     @Autowired
     private RpkiRepositoryValidationService rpkiRepositoryValidationService;
 
     @Override
-    public void execute(JobExecutionContext context) throws JobExecutionException {
+    protected void doExecute(JobExecutionContext context) {
         rpkiRepositoryValidationService.validateRsyncRepositories();
     }
 }
