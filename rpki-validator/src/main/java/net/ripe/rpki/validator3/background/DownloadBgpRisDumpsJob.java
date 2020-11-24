@@ -34,7 +34,6 @@ import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.springframework.beans.factory.annotation.Autowired;
 
-@DisallowConcurrentExecution
 class DownloadBgpRisDumpsJob extends SafeJob {
 
     @Autowired
@@ -42,6 +41,8 @@ class DownloadBgpRisDumpsJob extends SafeJob {
 
     @Override
     protected void doExecute(JobExecutionContext context) {
-        bgpPreviewService.downloadRisPreview();
+        synchronized (bgpPreviewService) {
+            bgpPreviewService.downloadRisPreview();
+        }
     }
 }
