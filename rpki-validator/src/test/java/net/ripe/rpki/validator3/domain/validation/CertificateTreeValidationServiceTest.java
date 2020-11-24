@@ -215,7 +215,7 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
             TrustAnchorsFactory.CertificateAuthority child = TrustAnchorsFactory.CertificateAuthority.builder()
                 .dn("CN=child-ca")
                 .keyPair(childKeyPair)
-                .certificateLocation(TA_CA_REPOSITORY_URI + "CN=child-ca.cer")
+                .certificateLocation(TA_CA_REPOSITORY_URI + "child-ca.cer")
                 .resources(IpResourceSet.parse("192.168.128.0/17"))
                 .notifyURI(TA_RRDP_NOTIFY_URI)
                 .manifestURI("rsync://rpki.test/CN=child-ca/child-ca.mft")

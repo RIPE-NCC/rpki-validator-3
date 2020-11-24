@@ -198,8 +198,8 @@ public class TrustAnchorsFactory {
 
                 final RpkiObject certObject = new RpkiObject(childCertificate);
                 rpkiObjects.put(tx, certObject);
-                rpkiObjects.addLocation(tx, certObject.key(), ca.repositoryURI + child.dn + ".cer");
-                manifestBuilder.addFile(child.dn + ".cer", childCertificate.getEncoded());
+                rpkiObjects.addLocation(tx, certObject.key(), child.certificateLocation);
+                manifestBuilder.addFile(child.certificateLocation.substring(child.certificateLocation.lastIndexOf('/') + 1), childCertificate.getEncoded());
             }
         }
 
