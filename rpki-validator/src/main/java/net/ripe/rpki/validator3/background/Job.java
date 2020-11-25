@@ -29,43 +29,12 @@
  */
 package net.ripe.rpki.validator3.background;
 
-import lombok.Getter;
-import lombok.Setter;
-import net.ripe.rpki.validator3.domain.validation.RpkiRepositoryValidationService;
-import net.ripe.rpki.validator3.storage.data.RpkiRepository;
-import org.quartz.DisallowConcurrentExecution;
-import org.quartz.JobBuilder;
-import org.quartz.JobDetail;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobKey;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
+import lombok.Value;
 
-@DisallowConcurrentExecution
-public class RrdpRepositoryValidationJob extends SafeJob {
-
-    private static final String RPKI_REPOSITORY_ID = "rpkiRepositoryId";
-
-    @Autowired
-    private RpkiRepositoryValidationService rpkiRepositoryValidationService;
-
-    @Getter
-    @Setter
-    private long rpkiRepositoryId;
-
-    @Override
-    protected void doExecute(JobExecutionContext context) {
-        rpkiRepositoryValidationService.validateRrdpRpkiRepository(rpkiRepositoryId);
-    }
-
-    static JobDetail buildJob(RpkiRepository rpkiRepository) {
-        return JobBuilder.newJob(RrdpRepositoryValidationJob.class)
-            .withIdentity(getJobKey(rpkiRepository))
-            .usingJobData(RPKI_REPOSITORY_ID, rpkiRepository.key().asLong())
-            .build();
-    }
-
-    static JobKey getJobKey(RpkiRepository rpkiRepository) {
-        return new JobKey(String.format("%s#%s#%d", rpkiRepository.getType(),
-            rpkiRepository.getRrdpNotifyUri(), rpkiRepository.key().asLong()));
-    }
+@Value
+@AllArgsConstructor(staticName = "of")
+public class Job {
+    String key;
+    Runnable runnable;
 }

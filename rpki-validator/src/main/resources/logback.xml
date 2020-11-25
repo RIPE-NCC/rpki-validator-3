@@ -31,7 +31,6 @@
 -->
 <configuration>
     <logger name="org.hibernate.transaction" level="OFF"/>
-    <logger name="org.quartz" level="OFF"/>
 
     <root level="WARN">
         <appender class="ch.qos.logback.core.ConsoleAppender">

@@ -34,12 +34,10 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.ValidatorApi;
 import net.ripe.rpki.validator3.domain.validation.CertificateTreeValidationService;
+import net.ripe.rpki.validator3.domain.validation.RpkiRepositoryValidationService;
+import net.ripe.rpki.validator3.domain.validation.TrustAnchorValidationService;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
-import org.quartz.Scheduler;
-import org.quartz.SchedulerException;
-import org.quartz.SimpleScheduleBuilder;
-import org.quartz.TriggerBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -49,12 +47,13 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 @Component
 @Slf4j
 public class ValidationScheduler {
 
-    private final Scheduler scheduler;
+    private final BackgroundJobs backgroundJobs;
 
     @Getter
     private final Duration rsyncRepositoryDownloadInterval;
@@ -67,16 +66,24 @@ public class ValidationScheduler {
 
     private final CertificateTreeValidationService validationService;
 
+    private final TrustAnchorValidationService trustAnchorValidationService;
+
+    private final RpkiRepositoryValidationService rpkiRepositoryValidationService;
+
     @Autowired
-    public ValidationScheduler(Scheduler scheduler,
-                               @Value("${rpki.validator.rsync.repository.download.interval:PT10M}") String rsyncRepositoryDownloadInterval,
+    public ValidationScheduler(@Value("${rpki.validator.rsync.repository.download.interval:PT10M}") String rsyncRepositoryDownloadInterval,
                                @Value("${rpki.validator.rrdp.repository.download.interval:PT2M}") String rrpdRepositoryDownloadInterval,
                                @Lazy CertificateTreeValidationService validationService,
-                               Environment environment) {
-        this.scheduler = scheduler;
+                               Environment environment,
+                               @Lazy BackgroundJobs backgroundJobs,
+                               @Lazy TrustAnchorValidationService trustAnchorValidationService,
+                               @Lazy RpkiRepositoryValidationService rpkiRepositoryValidationService) {
         this.rsyncRepositoryDownloadInterval = Duration.parse(rsyncRepositoryDownloadInterval);
         this.rrpdRepositoryDownloadInterval = Duration.parse(rrpdRepositoryDownloadInterval);
         this.validationService = validationService;
+        this.backgroundJobs = backgroundJobs;
+        this.trustAnchorValidationService = trustAnchorValidationService;
+        this.rpkiRepositoryValidationService = rpkiRepositoryValidationService;
 
         this.throttledTreeValidation = new Throttled<>(30_000);
 
@@ -96,28 +103,17 @@ public class ValidationScheduler {
             trustAnchor.key()
         );
 
-        try {
-            scheduler.scheduleJob(
-                TrustAnchorValidationJob.buildJob(trustAnchor),
-                TriggerBuilder.newTrigger()
-                    .startNow()
-                    .withSchedule(SimpleScheduleBuilder.repeatSecondlyForever((int)rsyncRepositoryDownloadInterval.getSeconds()))
-                    .build()
-            );
-        } catch (SchedulerException ex) {
-            throw new RuntimeException(ex);
-        }
+        backgroundJobs.schedule(
+            Job.of(BackgroundJobs.getTaValidationJobKey(trustAnchor),
+                () -> trustAnchorValidationService.validate(trustAnchor.key().asLong())),
+            0, (int) rsyncRepositoryDownloadInterval.getSeconds(), TimeUnit.SECONDS);
     }
 
     public boolean scheduledTrustAnchor(TrustAnchor trustAnchor) {
         if (!enabled) {
             return false;
         }
-        try {
-            return scheduler.checkExists(TrustAnchorValidationJob.getJobKey(trustAnchor));
-        } catch (SchedulerException e) {
-            return false;
-        }
+        return backgroundJobs.jobExists(BackgroundJobs.getTaValidationJobKey(trustAnchor));
     }
 
     public synchronized void addRrdpRpkiRepository(RpkiRepository rpkiRepository) {
@@ -132,20 +128,13 @@ public class ValidationScheduler {
             "rpkiRepository id %s is not valid",
             rpkiRepository.key()
         );
-        try {
-            if (!scheduler.checkExists(RrdpRepositoryValidationJob.getJobKey(rpkiRepository))) {
-                log.info("Adding repository to the scheduler {}", rpkiRepository);
+        if (!backgroundJobs.jobExists(BackgroundJobs.getRrdpRepoValidationJobKey(rpkiRepository))) {
+            log.info("Adding repository to the scheduler {}", rpkiRepository);
 
-                scheduler.scheduleJob(
-                        RrdpRepositoryValidationJob.buildJob(rpkiRepository),
-                        TriggerBuilder.newTrigger()
-                                .startNow()
-                                .withSchedule(SimpleScheduleBuilder.repeatSecondlyForever((int)rrpdRepositoryDownloadInterval.getSeconds()))
-                                .build()
-                );
-            }
-        } catch (SchedulerException ex) {
-            throw new RuntimeException(ex);
+            backgroundJobs.schedule(
+                Job.of(BackgroundJobs.getRrdpRepoValidationJobKey(rpkiRepository),
+                    () -> rpkiRepositoryValidationService.validateRrdpRpkiRepository(rpkiRepository.key().asLong())),
+                0, (int) rrpdRepositoryDownloadInterval.getSeconds(), TimeUnit.SECONDS);
         }
     }
 
@@ -153,13 +142,9 @@ public class ValidationScheduler {
         if (!enabled) {
             return;
         }
-        try {
-            boolean jobDeleted = scheduler.deleteJob(RrdpRepositoryValidationJob.getJobKey(repository));
-            if (!jobDeleted) {
-                throw new EmptyResultDataAccessException("validation job for RPKI repository not found", 1);
-            }
-        } catch (SchedulerException ex) {
-            throw new RuntimeException(ex);
+        boolean jobDeleted = backgroundJobs.deleteJob(BackgroundJobs.getRrdpRepoValidationJobKey(repository));
+        if (!jobDeleted) {
+            throw new EmptyResultDataAccessException("validation job for RPKI repository not found", 1);
         }
     }
 
