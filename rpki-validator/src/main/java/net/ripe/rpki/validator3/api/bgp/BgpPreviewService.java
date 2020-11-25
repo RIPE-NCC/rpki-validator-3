@@ -90,10 +90,6 @@ public class BgpPreviewService {
 
     private final BgpRisDownloader bgpRisDownloader;
 
-    // Lock held while downloading RIS dumps to avoid running multiple downloads simultaneously.
-    // When you need both this lock and the dataLock this lock must be acquired first!
-    private final ReentrantLock downloadLock = new ReentrantLock();
-
     // Lock held while reading and/or writing any of the data fields below.
     private final ReentrantReadWriteLock dataLock = new ReentrantReadWriteLock();
 
@@ -337,27 +333,25 @@ public class BgpPreviewService {
         roaPrefixAssertionsService.addListener(this::updateRoaPrefixAssertions);
     }
 
-    public void downloadRisPreview() {
-        Locks.locked(downloadLock, () -> {
-            log.info("Updating BGP RIS dumps");
-            final List<BgpRisDump<BgpPreviewEntry>> updated =
-                Locks.locked(dataLock.readLock(), () -> bgpRisDumps)
-                    .stream()
-                    .map(dump -> bgpRisDownloader.fetch(dump, entry -> {
-                        if (entry.getVisibility() >= bgpRisVisibilityThreshold && makesSenseToShowInPreview(entry)) {
-                            return Stream.of(BgpPreviewEntry.of(
-                                    entry.getOrigin(),
-                                    entry.getPrefix(),
-                                    Validity.UNKNOWN
-                            ));
-                        } else {
-                            return Stream.empty();
-                        }
-                    }))
-                    .collect(Collectors.toList());
-            updateBgpRisDump(updated);
-            log.info("Finished updating BGP RIS dumps");
-        });
+    public synchronized void downloadRisPreview() {
+        log.info("Updating BGP RIS dumps");
+        final List<BgpRisDump<BgpPreviewEntry>> updated =
+            Locks.locked(dataLock.readLock(), () -> bgpRisDumps)
+                .stream()
+                .map(dump -> bgpRisDownloader.fetch(dump, entry -> {
+                    if (entry.getVisibility() >= bgpRisVisibilityThreshold && makesSenseToShowInPreview(entry)) {
+                        return Stream.of(BgpPreviewEntry.of(
+                            entry.getOrigin(),
+                            entry.getPrefix(),
+                            Validity.UNKNOWN
+                        ));
+                    } else {
+                        return Stream.empty();
+                    }
+                }))
+                .collect(Collectors.toList());
+        updateBgpRisDump(updated);
+        log.info("Finished updating BGP RIS dumps");
     }
 
     public BgpPreviewResult find(SearchTerm searchTerm, Sorting sorting, Paging paging) {

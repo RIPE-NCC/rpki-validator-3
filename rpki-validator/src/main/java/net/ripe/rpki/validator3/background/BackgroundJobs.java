@@ -41,18 +41,17 @@ import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.data.validation.TrustAnchorValidationRun;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Profile;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -80,8 +79,8 @@ public class BackgroundJobs {
                           RpkiRepositoryValidationService rpkiRepositoryValidationService,
                           BgpPreviewService bgpPreviewService) {
 
-        this.jobs = new HashMap<>();
-        this.scheduledExecutorService = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
+        this.jobs = new ConcurrentHashMap<>();
+        this.scheduledExecutorService = Executors.newScheduledThreadPool(32);
 
         this.rpkiObjectCleanupService = rpkiObjectCleanupService;
         this.rpkiRepositoryCleanupService = rpkiRepositoryCleanupService;
@@ -90,23 +89,27 @@ public class BackgroundJobs {
         this.bgpPreviewService = bgpPreviewService;
     }
 
-    @EventListener(ApplicationReadyEvent.class)
+    @PostConstruct
     public void initBackgroundTasks() {
         schedule(
             Job.of("rpkiObjectCleanupService", rpkiObjectCleanupService::cleanupRpkiObjects),
             3, 10, TimeUnit.MINUTES);
 
-        schedule(Job.of("rpkiRepositoryCleanupService", rpkiRepositoryCleanupService::cleanupRpkiRepositories),
+        schedule(
+            Job.of("rpkiRepositoryCleanupService", rpkiRepositoryCleanupService::cleanupRpkiRepositories),
             4, 60, TimeUnit.MINUTES);
 
-        schedule(Job.of("validationRunCleanupService", validationRunCleanupService::cleanupValidationRuns),
+        schedule(
+            Job.of("validationRunCleanupService", validationRunCleanupService::cleanupValidationRuns),
             5, 5, TimeUnit.MINUTES);
 
-        schedule(Job.of("rpkiRepositoryValidationService", rpkiRepositoryValidationService::validateRsyncRepositories),
-            10, 60, TimeUnit.SECONDS);
+        schedule(
+            Job.of("rpkiRepositoryValidationService", rpkiRepositoryValidationService::validateRsyncRepositories),
+            11, 60, TimeUnit.SECONDS);
 
-        schedule(Job.of("bgpPreviewService", bgpPreviewService::downloadRisPreview),
-            10, 600, TimeUnit.SECONDS);
+        schedule(
+            Job.of("bgpPreviewService", bgpPreviewService::downloadRisPreview),
+            7, 600, TimeUnit.SECONDS);
     }
 
     public void schedule(Job job, long delay, long period, TimeUnit timeUnit) {
