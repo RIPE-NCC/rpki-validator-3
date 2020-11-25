@@ -29,20 +29,15 @@
  */
 package net.ripe.rpki.validator3.background;
 
-import com.google.common.base.CaseFormat;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.quartz.Job;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
-import org.quartz.JobKey;
-import org.quartz.ScheduleBuilder;
-import org.quartz.Scheduler;
-import org.quartz.SchedulerException;
-import org.quartz.Trigger;
+import net.ripe.rpki.validator3.api.bgp.BgpPreviewService;
+import net.ripe.rpki.validator3.domain.cleanup.RpkiObjectCleanupService;
+import net.ripe.rpki.validator3.domain.cleanup.RpkiRepositoryCleanupService;
+import net.ripe.rpki.validator3.domain.cleanup.ValidationRunCleanupService;
+import net.ripe.rpki.validator3.domain.validation.RpkiRepositoryValidationService;
 import org.quartz.listeners.JobListenerSupport;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
@@ -51,72 +46,71 @@ import org.springframework.stereotype.Component;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Date;
-import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
-
-import static org.quartz.DateBuilder.IntervalUnit.MINUTE;
-import static org.quartz.DateBuilder.IntervalUnit.SECOND;
-import static org.quartz.DateBuilder.futureDate;
-import static org.quartz.JobBuilder.newJob;
-import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
-import static org.quartz.TriggerBuilder.newTrigger;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Profile("!test")
 @Component
 @Slf4j
 public class BackgroundJobs extends JobListenerSupport {
 
-    private final Scheduler scheduler;
+    private final ScheduledExecutorService scheduledExecutorService;
+
+    private final RpkiObjectCleanupService rpkiObjectCleanupService;
+    private final RpkiRepositoryCleanupService rpkiRepositoryCleanupService;
+    private final ValidationRunCleanupService validationRunCleanupService;
+    private final RpkiRepositoryValidationService rpkiRepositoryValidationService;
+    private final BgpPreviewService bgpPreviewService;
 
     @Autowired
-    public BackgroundJobs(Scheduler scheduler) throws SchedulerException {
+    public BackgroundJobs(RpkiObjectCleanupService rpkiObjectCleanupService,
+                          RpkiRepositoryCleanupService rpkiRepositoryCleanupService,
+                          ValidationRunCleanupService validationRunCleanupService,
+                          RpkiRepositoryValidationService rpkiRepositoryValidationService,
+                          BgpPreviewService bgpPreviewService) {
+        this.scheduledExecutorService = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
 
-        this.scheduler = scheduler;
-
-        scheduler.getListenerManager().addJobListener(this);
+        this.rpkiObjectCleanupService = rpkiObjectCleanupService;
+        this.rpkiRepositoryCleanupService = rpkiRepositoryCleanupService;
+        this.validationRunCleanupService = validationRunCleanupService;
+        this.rpkiRepositoryValidationService = rpkiRepositoryValidationService;
+        this.bgpPreviewService = bgpPreviewService;
     }
 
     @EventListener(ApplicationReadyEvent.class)
-    public void initBackgroundTasks() throws SchedulerException {
-        schedule(RpkiObjectCleanupJob.class,
-                futureDate(3, MINUTE),
-                simpleSchedule().repeatForever().withIntervalInMinutes(10));
+    public void initBackgroundTasks() {
+        schedule("rpkiObjectCleanupService", 3, 10, TimeUnit.MINUTES,
+            () -> rpkiObjectCleanupService.cleanupRpkiObjects());
 
-        schedule(RpkiRepositoryCleanupJob.class,
-                futureDate(4, MINUTE),
-                simpleSchedule().repeatForever().withIntervalInMinutes(60));
+        schedule("rpkiRepositoryCleanupService", 4, 60, TimeUnit.MINUTES,
+            () -> rpkiRepositoryCleanupService.cleanupRpkiRepositories());
 
-        schedule(ValidationRunCleanupJob.class,
-                futureDate(5, MINUTE),
-                simpleSchedule().repeatForever().withIntervalInMinutes(5));
+        schedule("validationRunCleanupService", 5, 5, TimeUnit.MINUTES,
+            () -> validationRunCleanupService.cleanupValidationRuns());
 
-        schedule(ValidateRsyncRepositoriesJob.class,
-                futureDate(10, SECOND),
-                simpleSchedule().repeatForever().withIntervalInMinutes(1));
+        schedule("rpkiRepositoryValidationService", 10, 60, TimeUnit.SECONDS,
+            () -> rpkiRepositoryValidationService.validateRsyncRepositories());
 
-        schedule(DownloadBgpRisDumpsJob.class,
-                futureDate(10, SECOND),
-                simpleSchedule().repeatForever().withIntervalInMinutes(10));
+        schedule("bgpPreviewService", 10, 600, TimeUnit.SECONDS,
+            () -> bgpPreviewService.downloadRisPreview());
     }
 
-    private <T extends Trigger> void schedule(Class<? extends Job> jobClass, Date startAt, ScheduleBuilder<T> schedule) throws SchedulerException {
-        final JobKey jobKey = JobKey.jobKey(CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN, jobClass.getSimpleName()));
-        if (scheduler.checkExists(jobKey)) {
-            scheduler.deleteJob(jobKey);
-        }
-        scheduler.scheduleJob(
-                newJob(jobClass)
-                        .withIdentity(jobKey)
-                        .build(),
-                newTrigger()
-                        .withIdentity(jobKey + "-Trigger")
-                        .startAt(startAt)
-                        .withSchedule(schedule)
-                        .build()
-        );
-        log.info(String.format("Scheduled '%s', starting from '%s'", jobKey, startAt));
+    private void schedule(String key, long delay, long period, TimeUnit timeUnit, Runnable r) {
+        final Runnable rr = () -> {
+            jobToBeExecuted(key);
+            try {
+                r.run();
+            } catch (Exception e) {
+                log.error(String.format("Error executing job '%s'", key), e);
+            } finally {
+                jobWasExecuted(key);
+            }
+        };
+        scheduledExecutorService.scheduleAtFixedRate(rr, delay, period, timeUnit);
+        log.info(String.format("Scheduled '%s'", key));
     }
 
     @Data(staticConstructor = "of")
@@ -147,18 +141,14 @@ public class BackgroundJobs extends JobListenerSupport {
 
     private final TreeMap<String, Execution> backgroundJobStats = new TreeMap<>();
 
-    @Override
-    public void jobToBeExecuted(JobExecutionContext context) {
-        final String key = context.getJobDetail().getKey().toString();
+    public void jobToBeExecuted(String key) {
         synchronized (backgroundJobStats) {
             final Execution execution = backgroundJobStats.get(key);
             backgroundJobStats.put(key, Execution.again(execution));
         }
     }
 
-    @Override
-    public void jobWasExecuted(JobExecutionContext context, JobExecutionException jobException) {
-        final String key = context.getJobDetail().getKey().toString();
+    public void jobWasExecuted(String key) {
         synchronized (backgroundJobStats) {
             final Execution execution = backgroundJobStats.get(key);
             if (execution != null) {
