@@ -114,6 +114,7 @@ import org.springframework.boot.autoconfigure.mongo.MongoReactiveAutoConfigurati
 import org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration;
 import org.springframework.boot.autoconfigure.mustache.MustacheAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
+import org.springframework.boot.autoconfigure.quartz.QuartzAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.reactive.ReactiveUserDetailsServiceAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
@@ -207,6 +208,7 @@ import java.util.Locale;
         Neo4jDataAutoConfiguration.class,
         Neo4jRepositoriesAutoConfiguration.class,
         NewRelicMetricsExportAutoConfiguration.class,
+        QuartzAutoConfiguration.class,
         RabbitAutoConfiguration.class,
         RabbitMetricsAutoConfiguration.class,
         ReactiveCloudFoundryActuatorAutoConfiguration.class,
