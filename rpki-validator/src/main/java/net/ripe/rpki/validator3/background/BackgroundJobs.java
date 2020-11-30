@@ -39,10 +39,10 @@ import org.quartz.JobKey;
 import org.quartz.ScheduleBuilder;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
+import org.quartz.SimpleScheduleBuilder;
 import org.quartz.Trigger;
 import org.quartz.listeners.JobListenerSupport;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
@@ -52,7 +52,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
-import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -78,27 +77,34 @@ public class BackgroundJobs extends JobListenerSupport {
         scheduler.getListenerManager().addJobListener(this);
     }
 
+    private SimpleScheduleBuilder typicalSchedule() {
+        return simpleSchedule()
+            .repeatForever()
+            .withMisfireHandlingInstructionNowWithRemainingCount();
+    }
+
     @EventListener(ApplicationReadyEvent.class)
     public void initBackgroundTasks() throws SchedulerException {
+
         schedule(RpkiObjectCleanupJob.class,
-                futureDate(3, MINUTE),
-                simpleSchedule().repeatForever().withIntervalInMinutes(10));
+            futureDate(3, MINUTE),
+            typicalSchedule().withIntervalInMinutes(10));
 
         schedule(RpkiRepositoryCleanupJob.class,
-                futureDate(4, MINUTE),
-                simpleSchedule().repeatForever().withIntervalInMinutes(60));
+            futureDate(4, MINUTE),
+            typicalSchedule().withIntervalInMinutes(60));
 
         schedule(ValidationRunCleanupJob.class,
-                futureDate(5, MINUTE),
-                simpleSchedule().repeatForever().withIntervalInMinutes(5));
+            futureDate(5, MINUTE),
+            typicalSchedule().withIntervalInMinutes(5));
 
         schedule(ValidateRsyncRepositoriesJob.class,
-                futureDate(10, SECOND),
-                simpleSchedule().repeatForever().withIntervalInMinutes(1));
+            futureDate(10, SECOND),
+            typicalSchedule().withIntervalInMinutes(1));
 
         schedule(DownloadBgpRisDumpsJob.class,
-                futureDate(10, SECOND),
-                simpleSchedule().repeatForever().withIntervalInMinutes(10));
+            futureDate(10, SECOND),
+            typicalSchedule().withIntervalInMinutes(10));
     }
 
     private <T extends Trigger> void schedule(Class<? extends Job> jobClass, Date startAt, ScheduleBuilder<T> schedule) throws SchedulerException {
