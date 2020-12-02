@@ -34,6 +34,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.ValidatorApi;
 import net.ripe.rpki.validator3.domain.validation.CertificateTreeValidationService;
+import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import org.quartz.Scheduler;
@@ -61,7 +62,7 @@ public class ValidationScheduler {
     @Getter
     private final Duration rrpdRepositoryDownloadInterval;
 
-    private final Throttled<String> throttledTreeValidation;
+    private final Throttled<Key> throttledTreeValidation;
 
     private boolean enabled = true;
 
@@ -163,11 +164,14 @@ public class ValidationScheduler {
         }
     }
 
+    /**
+     * Triggers certificate tree validation but throttles to avoid running too frequently.
+     */
     public void triggerCertificateTreeValidation(TrustAnchor trustAnchor) {
         if (!enabled) {
             return;
         }
-        throttledTreeValidation.trigger(trustAnchor.getName(), () -> {
+        throttledTreeValidation.trigger(trustAnchor.getId(), () -> {
             log.debug("Re-validating the CA tree for TA {}", trustAnchor.getName());
             validationService.validate(trustAnchor.getId().asLong());
         });

@@ -63,7 +63,7 @@ public interface ValidationRuns {
 
     Optional<TrustAnchorValidationRun> findLatestCompletedForTrustAnchor(Tx.Read tx, TrustAnchor trustAnchor);
 
-    Optional<CertificateTreeValidationRun> findLatestCaTreeValidationRun(Tx.Read tx, TrustAnchor trustAnchor);
+    Optional<CertificateTreeValidationRun> findLatestCompletedCaTreeValidationRun(Tx.Read tx, TrustAnchor trustAnchor);
 
     int removeOldValidationRuns(Tx.Write tx, InstantWithoutNanos completedBefore);
 

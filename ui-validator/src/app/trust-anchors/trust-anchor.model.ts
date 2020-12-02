@@ -5,6 +5,7 @@ export interface ITrustAnchorOverview {
   warnings: string;
   errors: string[];
   lastUpdated: string[];
+  earliestObjectExpiration: string[];
   completedValidation: boolean;
 }
 

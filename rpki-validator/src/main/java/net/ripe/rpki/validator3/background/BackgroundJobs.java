@@ -105,6 +105,10 @@ public class BackgroundJobs extends JobListenerSupport {
         schedule(DownloadBgpRisDumpsJob.class,
             futureDate(10, SECOND),
             typicalSchedule().withIntervalInMinutes(10));
+
+        schedule(CertificateTreeObjectExpirationValidationJob.class,
+            futureDate(1, MINUTE),
+            typicalSchedule().withIntervalInMinutes(1));
     }
 
     private <T extends Trigger> void schedule(Class<? extends Job> jobClass, Date startAt, ScheduleBuilder<T> schedule) throws SchedulerException {

@@ -211,6 +211,13 @@ public class CertificateTreeValidationService {
                 }
             }
 
+            if (accumulator.getEarliestObjectExpiration() != null) {
+                log.info("TA {} earliest object expiration time {}", trustAnchor.getName(), accumulator.getEarliestObjectExpiration());
+                validationRun.setEarliestObjectExpiration(InstantWithoutNanos.from(accumulator.getEarliestObjectExpiration()));
+            } else {
+                log.warn("TA {} does not contain any valid, non-expired objects", trustAnchor.getName());
+            }
+
             storage.writeTx0(tx -> {
                 validationRuns.add(tx, validationRun);
                 Long t = Time.timed(() -> accumulator.forEach(key -> validationRuns.associateRpkiObjectKey(tx, validationRun, key)));

@@ -123,7 +123,7 @@ public class TrustAnchorStore extends GenericStoreImpl<TrustAnchor> implements T
     @Override
     public List<TaStatus> getStatuses(Tx.Read tx) {
         return findAll(tx).stream().map(ta ->
-                validationRuns.findLatestCaTreeValidationRun(tx, ta).map(vr -> {
+                validationRuns.findLatestCompletedCaTreeValidationRun(tx, ta).map(vr -> {
                     final List<ValidationCheck> validationChecks = vr.getValidationChecks();
                     Pair<Integer, Long> objectCount = Time.timed(() -> validationRuns.getObjectCount(tx, vr));
                     int warnings = vr.countChecks(ValidationCheck.Status.WARNING);
@@ -135,11 +135,12 @@ public class TrustAnchorStore extends GenericStoreImpl<TrustAnchor> implements T
                             warnings,
                             objectCount.getLeft(),
                             vr.getCompletedAt() == null ? null : Dates.formatUTC(vr.getCompletedAt()),
+                            vr.getEarliestObjectExpiration() == null ? null : Dates.formatUTC(vr.getEarliestObjectExpiration()),
                             ta.isInitialCertificateTreeValidationRunCompleted()
                     );
                 }).orElse(TaStatus.of(
                         String.valueOf(ta.key().asLong()),
-                        ta.getName(), 0, 1, 0, null, false
+                        ta.getName(), 0, 1, 0, null, null, false
                 )))
                 .sorted(Comparator.comparing(ta -> ta.getTaName().toLowerCase()))
                 .collect(Collectors.toList());

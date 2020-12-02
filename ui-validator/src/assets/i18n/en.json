@@ -69,6 +69,7 @@
   "TrustAnchors": {
     "PROCESSED_ITEMS": "Processed Items",
     "LAST_UPDATED": "Last Updated (UTC)",
+    "NEXT_VALIDATION_NEEDED_AT": "Earliest Object Expiration (UTC)",
     "TOOLTIP_CLICK": "Click for overview"
   },
   "Monitoring": {

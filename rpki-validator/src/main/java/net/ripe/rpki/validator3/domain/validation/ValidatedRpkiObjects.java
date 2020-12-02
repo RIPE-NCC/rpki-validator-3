@@ -35,9 +35,14 @@ import com.google.common.collect.ImmutableSortedSet;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
+import net.ripe.rpki.commons.crypto.UnknownCertificateRepositoryObject;
+import net.ripe.rpki.commons.crypto.cms.RpkiSignedObject;
+import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.crypto.cms.roa.RoaCms;
 import net.ripe.rpki.commons.crypto.cms.roa.RoaPrefix;
+import net.ripe.rpki.commons.crypto.crl.X509Crl;
 import net.ripe.rpki.commons.crypto.x509cert.X509CertificateUtil;
+import net.ripe.rpki.commons.crypto.x509cert.X509GenericCertificate;
 import net.ripe.rpki.commons.crypto.x509cert.X509RouterCertificate;
 import net.ripe.rpki.validator3.api.Paging;
 import net.ripe.rpki.validator3.api.SearchTerm;
@@ -54,10 +59,12 @@ import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Locks;
 import net.ripe.rpki.validator3.util.Time;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
@@ -259,6 +266,7 @@ public class ValidatedRpkiObjects {
     }
 
     public static class Accumulator {
+        private Instant earliestObjectExpiration;
         private final List<Key> validatedObjectKeys = new ArrayList<>();
         private final List<ValidatedRoaPrefix> validatedRoaPrefixes = new ArrayList<>();
         private final List<RouterCertificate> routerCertificates = new ArrayList<>();
@@ -292,6 +300,13 @@ public class ValidatedRpkiObjects {
                         pkInfo
                 ));
             }
+
+            DateTime expiresAt = getExpirationTime(object);
+            if (expiresAt != null) {
+                if (earliestObjectExpiration == null || expiresAt.getMillis() < earliestObjectExpiration.toEpochMilli()) {
+                    earliestObjectExpiration = Instant.ofEpochMilli(expiresAt.getMillis());
+                }
+            }
         }
 
         public boolean isEmpty() {
@@ -300,6 +315,10 @@ public class ValidatedRpkiObjects {
 
         public int size() {
             return validatedObjectKeys.size();
+        }
+
+        public Instant getEarliestObjectExpiration() {
+            return earliestObjectExpiration;
         }
 
         public List<Key> getKeys() {
@@ -319,9 +338,38 @@ public class ValidatedRpkiObjects {
         }
 
         public void addAll(Accumulator that) {
+            if (this.earliestObjectExpiration == null) {
+                this.earliestObjectExpiration = that.earliestObjectExpiration;
+            } else if (that.earliestObjectExpiration != null && that.earliestObjectExpiration.isBefore(this.earliestObjectExpiration)) {
+                this.earliestObjectExpiration = that.earliestObjectExpiration;
+            }
             this.validatedObjectKeys.addAll(that.validatedObjectKeys);
             this.routerCertificates.addAll(that.routerCertificates);
             this.validatedRoaPrefixes.addAll(that.validatedRoaPrefixes);
+        }
+
+        private DateTime getExpirationTime(CertificateRepositoryObject object) {
+            if (object instanceof ManifestCms) {
+                ManifestCms obj = (ManifestCms) object;
+                DateTime nextUpdateTime = obj.getNextUpdateTime();
+                DateTime notValidAfter = obj.getNotValidAfter();
+                return nextUpdateTime.isBefore(notValidAfter) ? nextUpdateTime : notValidAfter;
+            } else if (object instanceof RpkiSignedObject) {
+                RpkiSignedObject obj = (RpkiSignedObject) object;
+                return obj.getNotValidAfter();
+            } else if (object instanceof X509GenericCertificate) {
+                X509GenericCertificate cert = (X509GenericCertificate) object;
+                return cert.getValidityPeriod().getNotValidAfter();
+            } else if (object instanceof X509Crl) {
+                X509Crl crl = (X509Crl) object;
+                return crl.getNextUpdateTime();
+            } else if (object instanceof UnknownCertificateRepositoryObject) {
+                // ignore
+                return null;
+            } else {
+                log.warn("unknown repository object type, no expiration time known: " + object.getClass().getSimpleName());
+                return null;
+            }
         }
     }
 }
