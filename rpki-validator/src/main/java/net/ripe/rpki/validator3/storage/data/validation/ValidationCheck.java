@@ -109,4 +109,9 @@ public class ValidationCheck extends Base<ValidationCheck> implements MessageSou
         }
         throw new IllegalArgumentException("Unknown status: " + status);
     }
+
+    @Override
+    public String getDefaultMessage() {
+        return this.key + ": [" + String.join(", ", this.parameters) + "]";
+    }
 }
