@@ -400,8 +400,7 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
     }
 
     @Test
-    public void should_reject_complete_manifest_when_single_object_fails_validation_with_strict_validation(){
-
+    public void should_accept_validated_objects_from_manifest_even_when_single_object_fails_validation_with_strict_validation(){
         TrustAnchor ta = wtx(tx -> {
             TrustAnchor ta1 = factory.createTrustAnchor(tx, x -> x.roaPrefixes(Lists.newArrayList(
                     RoaPrefix.of(IpRange.prefix(IpAddress.parse("192.168.0.0"), 24), 24, Asn.parse("64512"),
@@ -434,6 +433,6 @@ public class CertificateTreeValidationServiceTest extends GenericStorageTest {
 
         List<Pair<CertificateTreeValidationRun, RpkiObject>> validatedRoas = rtx(tx -> this.getValidationRuns()
                 .findCurrentlyValidated(tx, RpkiObject.Type.ROA).collect(toList()));
-        assertThat(validatedRoas).hasSize(0);
+        assertThat(validatedRoas).hasSize(1);
     }
 }
