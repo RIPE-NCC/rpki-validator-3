@@ -9,8 +9,13 @@ Or follow the step-by-step [installation instructions](https://github.com/RIPE-N
 
 Changes in 3.2:
 ---------------
-  * Strict validation by default, with minor differences from [draft-ietf-sidrops-6486bis-00](https://www.ietf.org/archive/id/draft-ietf-sidrops-6486bis-00.txt).
+  * Strict validation by default as specified [draft-ietf-sidrops-6486bis-03](https://www.ietf.org/archive/id/draft-ietf-sidrops-6486bis-03.txt),
+    however objects mentioned in the manifest are only checked against the SHA256 hash in the manifest. So objects that match the hash but are
+    otherwise invalid or unrecognized do not cause the complete manifest to fail validation.
+  * Validate manifest entry filenames against pattern [a-zA-Z_-]+\.[a-z]{3}.
+  * Automatically re-run validation when objects are about to expire.
   * Decrease bootstrap time.
+  * Dependency updates and bug fixes.
 
 Latest changes in 3.1:
 ----------------------

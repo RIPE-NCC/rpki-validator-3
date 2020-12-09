@@ -1,3 +1,13 @@
+* Tue Dec  9 2020 Erik Rozendaal <erozendaal@ripe.net> - 3.2
+
+- only fail full manifest when entries not found or hashes don't
+  match, individual object validation no longer causes the complete
+  manifest to fail.
+- Increased quartz threads from 10 to 32 to avoid deadlocks
+- update of rpki-commons to 1.17: strict manifest entry filename
+  validation.
+- spring-boot 2.4.0
+
 * Tue Nov 17 2020 Erik Rozendaal <erozendaal@ripe.net> - 3.2
 
 - Update of rpki-commons to 1.16: updated dependencies including XStream security update.
