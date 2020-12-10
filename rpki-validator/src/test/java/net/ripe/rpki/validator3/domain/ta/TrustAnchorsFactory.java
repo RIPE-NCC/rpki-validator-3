@@ -181,8 +181,8 @@ public class TrustAnchorsFactory {
 
         X509Crl crl = new X509CrlBuilder()
             .withIssuerDN(caCertificate.getSubject())
-            .withThisUpdateTime(DateTime.now())
-            .withNextUpdateTime(DateTime.now().plusHours(8))
+            .withThisUpdateTime(mftValidityPeriod.getNotValidBefore())
+            .withNextUpdateTime(mftValidityPeriod.getNotValidAfter())
             .withAuthorityKeyIdentifier(ca.keyPair.getPublic())
             .withNumber(nextSerial())
             .build(ca.keyPair.getPrivate());
@@ -266,8 +266,8 @@ public class TrustAnchorsFactory {
         manifestBuilder
             .withCertificate(manifestCertificate)
             .withManifestNumber(nextSerial())
-            .withThisUpdateTime(DateTime.now())
-            .withNextUpdateTime(DateTime.now().plusHours(8));
+            .withThisUpdateTime(mftValidityPeriod.getNotValidBefore())
+            .withNextUpdateTime(mftValidityPeriod.getNotValidAfter());
         ManifestCms manifest = manifestBuilder.build(manifestKeyPair.getPrivate());
 
         final RpkiObject mftObject = new RpkiObject(manifest);

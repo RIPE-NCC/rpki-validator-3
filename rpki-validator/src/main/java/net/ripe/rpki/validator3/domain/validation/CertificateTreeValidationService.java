@@ -96,6 +96,8 @@ import static net.ripe.rpki.validator3.storage.data.RpkiRepository.Type.RSYNC;
 @Service
 @Slf4j
 public class CertificateTreeValidationService {
+    public static final int MAX_NEXT_UPDATE_DIFFERENCE_MS = 60_000;
+
     public final long LONG_DURATION_WARNING_MS = 60_000;
 
     private final ValidationConfig validationConfig;
@@ -341,6 +343,9 @@ public class CertificateTreeValidationService {
             if (validations.hasFailureForCurrentLocation()) {
                 return result;
             }
+
+            long nextUpdateTimeDifferenceMs = manifest.getNextUpdateTime().getMillis() - x509Crl.getNextUpdateTime().getMillis();
+            validations.warnIfFalse(Math.abs(nextUpdateTimeDifferenceMs) < MAX_NEXT_UPDATE_DIFFERENCE_MS, "manifest.crl.next.update.time.matches", manifest.getNextUpdateTime().toString(), x509Crl.getNextUpdateTime().toString());
 
             validations.setLocation(new ValidationLocation(manifestUri));
             manifest.validate(manifestUri.toASCIIString(), context, x509Crl, manifest.getCrlUri(), validationConfig.validationOptions(), validations);
