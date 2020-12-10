@@ -73,7 +73,6 @@
     "TOOLTIP_CLICK": "Click for overview"
   },
   "Monitoring": {
-    "VALIDATED_USING_TA_LOCATOR": "Trust Anchor could be validated",
     "LAST_VALIDATION": "Last completed validation",
     "TOOLTIP_OBJECTS_DOWNLOADED": "valid objects",
     "TOOLTIP_OBJECTS_PENDING": "objects with warnings",
