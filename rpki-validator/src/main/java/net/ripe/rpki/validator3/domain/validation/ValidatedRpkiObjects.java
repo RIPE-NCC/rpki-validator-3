@@ -53,12 +53,12 @@ import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
 import net.ripe.rpki.validator3.storage.data.Ref;
 import net.ripe.rpki.validator3.storage.data.RpkiObject;
+import net.ripe.rpki.validator3.storage.data.RpkiRepository;
 import net.ripe.rpki.validator3.storage.data.TrustAnchor;
 import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
+import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
-import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.Locks;
-import net.ripe.rpki.validator3.util.Time;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -73,7 +73,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -93,7 +92,7 @@ public class ValidatedRpkiObjects {
     private TrustAnchors trustAnchors;
 
     @Autowired
-    private ValidationRuns validationRuns;
+    private RpkiRepositories rpkiRepositories;
 
     @Autowired
     private Storage storage;
@@ -102,35 +101,20 @@ public class ValidatedRpkiObjects {
 
     @PostConstruct
     private void initialize() {
-        Long t = Time.timed(() -> {
-            final List<TrustAnchor> trustAnchorList = storage.readTx(tx -> trustAnchors.findAll(tx));
-            trustAnchorList.parallelStream().forEach(ta ->
-                    storage.readTx0(tx -> {
-                        TrustAnchorData trustAnchorData = TrustAnchorData.of(ta.getId(), ta.getName());
-                        final Accumulator validatedObjects = new Accumulator();
-                        validationRuns.findLatestSuccessfulCaTreeValidationRun(tx, ta).ifPresent(vr -> {
-                            final Set<Key> associatedPks = validationRuns.findAssociatedPks(tx, vr);
-                            Stream<RpkiObject> roaStream = streamByType(tx, associatedPks, RpkiObject.Type.ROA);
-                            Stream<RpkiObject> routerCertStream = streamByType(tx, associatedPks, RpkiObject.Type.ROUTER_CER);
-                            Stream.concat(roaStream, routerCertStream).forEach(rpkiObject -> {
-                                SortedSet<String> locations = rpkiObjects.getLocations(tx, rpkiObject.key());
-                                if (locations.isEmpty()) {
-                                    log.warn("RPKI object {} without location, skipping", rpkiObject.key());
-                                    return;
-                                }
-
-                                Optional<CertificateRepositoryObject> maybeObject = rpkiObject.get(CertificateRepositoryObject.class, locations.first());
-                                if (!maybeObject.isPresent()) {
-                                    log.warn("Unparsable RPKI object {}, skipping", rpkiObject.key());
-                                    return;
-                                }
-                                validatedObjects.add(trustAnchorData, rpkiObject.key(), maybeObject.get(), ImmutableSortedSet.copyOf(locations));
-                            });
-                            updateByKey(vr.getTrustAnchor(), validatedObjects);
-                        });
-                    }));
+        // Mark trust anchors and repositories as pending on startup until first validation run completes, so we avoid
+        // handing out/ possibly incomplete VRPs (for example, to the RTR server) if the validator hasn't been running
+        // for a while.
+        log.info("resetting trust anchor and repositories to PENDING");
+        storage.writeTx0(tx -> {
+            for (RpkiRepository repository : rpkiRepositories.values(tx)) {
+                repository.setStatus(RpkiRepository.Status.PENDING.name());
+                rpkiRepositories.update(tx, repository);
+            }
+            for (TrustAnchor trustAnchor : trustAnchors.values(tx)) {
+                trustAnchor.setInitialCertificateTreeValidationRunCompleted(false);
+                trustAnchors.update(tx, trustAnchor);
+            }
         });
-        log.info("Validated objects cache initialised in {}ms", t);
     }
 
     void updateByKey(Ref<TrustAnchor> trustAnchor, Accumulator validatedObjects) {
