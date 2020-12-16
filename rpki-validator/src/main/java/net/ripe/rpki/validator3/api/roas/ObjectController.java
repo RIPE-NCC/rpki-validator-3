@@ -42,7 +42,6 @@ import net.ripe.rpki.validator3.api.ignorefilters.IgnoreFilterService;
 import net.ripe.rpki.validator3.api.roaprefixassertions.RoaPrefixAssertionsService;
 import net.ripe.rpki.validator3.api.trustanchors.TrustAnchorResource;
 import net.ripe.rpki.validator3.domain.IgnoreFiltersPredicate;
-import net.ripe.rpki.validator3.domain.validation.TrustAnchorState;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.storage.Storage;
 import net.ripe.rpki.validator3.storage.data.RpkiRepository;
@@ -91,9 +90,6 @@ public class ObjectController {
 
     @Autowired
     private BgpSecFilterService bgpSecFilterService;
-
-    @Autowired
-    private TrustAnchorState trustAnchorState;
 
     @Autowired
     private Storage storage;
@@ -149,7 +145,7 @@ public class ObjectController {
 
         return ResponseEntity.ok(ApiResponse.<ValidatedObjects>builder()
             .data(new ValidatedObjects(
-                allTasDoneInitialLoading && noPendingRepositories && trustAnchorState.allTAsValidatedAfterRepositoryLoading(),
+                allTasDoneInitialLoading && noPendingRepositories,
                 trustAnchorResources,
                 combinedPrefixes,
                 combinedAssertions))
