@@ -112,7 +112,6 @@ public class CertificateTreeValidationService {
     private final TrustAnchors trustAnchors;
     private final Storage storage;
     private final ValidatedRpkiObjects validatedRpkiObjects;
-    private final TrustAnchorState trustAnchorState;
 
     @Autowired
     public CertificateTreeValidationService(RpkiObjects rpkiObjects,
@@ -123,7 +122,6 @@ public class CertificateTreeValidationService {
                                             TrustAnchors trustAnchors,
                                             ValidatedRpkiObjects validatedRpkiObjects,
                                             Storage storage,
-                                            TrustAnchorState trustAnchorState,
                                             TrustAnchorMetricsService taMetricsService,
                                             ValidationConfig validationConfig) {
         this.rpkiObjects = rpkiObjects;
@@ -135,7 +133,6 @@ public class CertificateTreeValidationService {
         this.validatedRpkiObjects = validatedRpkiObjects;
         this.storage = storage;
         this.taMetricsService = taMetricsService;
-        this.trustAnchorState = trustAnchorState;
         this.validationConfig = validationConfig;
 
     }
@@ -246,7 +243,6 @@ public class CertificateTreeValidationService {
         } finally {
             validationRun.completeWith(validations);
             storage.writeTx0(tx -> validationRuns.update(tx, validationRun));
-            trustAnchorState.setValidatedAfterLastRepositoryUpdate(trustAnchor);
             long delta = System.currentTimeMillis() - begin;
             logForDuration("Tree validation {} for {} in {}ms", validationRun.getStatus().toString().toLowerCase(), trustAnchor.getName(), delta);
             taMetricsService.update(trustAnchor, validationRun, delta);
