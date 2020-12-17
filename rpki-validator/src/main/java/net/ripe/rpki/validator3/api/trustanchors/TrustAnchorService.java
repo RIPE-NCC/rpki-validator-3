@@ -32,7 +32,6 @@ package net.ripe.rpki.validator3.api.trustanchors;
 import com.google.common.io.PatternFilenameFilter;
 import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.background.ValidationScheduler;
-import net.ripe.rpki.validator3.domain.validation.TrustAnchorState;
 import net.ripe.rpki.validator3.domain.validation.ValidatedRpkiObjects;
 import net.ripe.rpki.validator3.storage.Tx;
 import net.ripe.rpki.validator3.storage.data.Key;
@@ -69,8 +68,6 @@ public class TrustAnchorService {
 
     private final ValidationScheduler validationScheduler;
 
-    private final TrustAnchorState trustAnchorState;
-
     @Value("${rpki.validator.preconfigured.trust.anchors.directory}")
     private File preconfiguredTrustAnchorDirectory;
 
@@ -81,12 +78,11 @@ public class TrustAnchorService {
                               RpkiRepositories rpkiRepositories,
                               ValidatedRpkiObjects validatedRpkiObjects,
                               ValidationScheduler validationScheduler,
-                              TrustAnchorState trustAnchorState, Storage storage) {
+                              Storage storage) {
         this.trustAnchors = trustAnchors;
         this.rpkiRepositories = rpkiRepositories;
         this.validatedRpkiObjects = validatedRpkiObjects;
         this.validationScheduler = validationScheduler;
-        this.trustAnchorState = trustAnchorState;
         this.storage = storage;
     }
 
@@ -154,7 +150,6 @@ public class TrustAnchorService {
         storage.readTx0(tx -> {
             log.info("Schedule validation for TAs that were in the database already");
             trustAnchors.findAll(tx).forEach(ta -> {
-                trustAnchorState.setUnknown(ta);
                 if (!validationScheduler.scheduledTrustAnchor(ta)) {
                     log.info("Adding {} to the validation scheduler", ta.getName());
                     validationScheduler.addTrustAnchor(ta);

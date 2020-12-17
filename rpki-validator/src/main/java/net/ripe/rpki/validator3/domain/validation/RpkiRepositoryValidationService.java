@@ -105,7 +105,6 @@ public class RpkiRepositoryValidationService {
     private final TrustAnchors trustAnchors;
     private final ValidationScheduler validationScheduler;
     private final Storage storage;
-    private final TrustAnchorState trustAnchorState;
     private final RsyncFactory rsyncFactory;
 
     private final RsyncMetricsService rsyncMetrics;
@@ -119,7 +118,6 @@ public class RpkiRepositoryValidationService {
             TrustAnchors trustAnchors,
             Storage storage,
             @Value("${rpki.validator.rsync.local.storage.directory}") File rsyncLocalStorageDirectory,
-            TrustAnchorState trustAnchorState,
             ValidationScheduler validationScheduler, RsyncFactory rsyncFactory, RsyncMetricsService rsyncMetrics) {
         this.validationRuns = validationRuns;
         this.rpkiRepositories = rpkiRepositories;
@@ -128,7 +126,6 @@ public class RpkiRepositoryValidationService {
         this.trustAnchors = trustAnchors;
         this.rsyncLocalStorageDirectory = rsyncLocalStorageDirectory;
         this.storage = storage;
-        this.trustAnchorState = trustAnchorState;
         this.validationScheduler = validationScheduler;
         this.rsyncFactory = rsyncFactory;
         this.rsyncMetrics = rsyncMetrics;
@@ -152,12 +149,12 @@ public class RpkiRepositoryValidationService {
         });
 
         boolean triggerCaTreeAfter = false;
-        boolean changedAtLeastOneObject = false;
         try {
             final String uri = rpkiRepository.getRrdpNotifyUri();
             if (isRrdpUri(uri)) {
-                changedAtLeastOneObject = rrdpService.storeRepository(rpkiRepository, validationRun);
+                boolean changedAtLeastOneObject = rrdpService.storeRepository(rpkiRepository, validationRun);
 
+                triggerCaTreeAfter = changedAtLeastOneObject || rpkiRepository.isPending();
                 if (validationRun.isFailed()) {
                     rpkiRepository.setFailed();
                 } else {
@@ -173,22 +170,16 @@ public class RpkiRepositoryValidationService {
                 validationRun.setFailed();
             } else {
                 validationRun.setSucceeded();
-                triggerCaTreeAfter = true;
             }
         } catch (Exception e) {
             log.error("Error validating repository " + rpkiRepository, e);
             validationRun.setFailed();
         } finally {
-            if (triggerCaTreeAfter && changedAtLeastOneObject) {
-                storage.readTx0(tx ->
-                    rpkiRepository.getTrustAnchors().keySet().forEach(taRef ->
-                        trustAnchors.get(tx, taRef.key()).ifPresent(trustAnchorState::setUnknown)));
-            }
             storage.writeTx0(tx -> {
                 rpkiRepositories.update(tx, rpkiRepository);
                 validationRuns.update(tx, validationRun);
             });
-            if (triggerCaTreeAfter && changedAtLeastOneObject) {
+            if (triggerCaTreeAfter) {
                 storage.readTx0(tx ->
                     rpkiRepository.getTrustAnchors().keySet().forEach(taRef ->
                         trustAnchors.get(tx, taRef.key())
@@ -315,10 +306,7 @@ public class RpkiRepositoryValidationService {
 
         storage.readTx0(tx ->
             repository.getTrustAnchors().keySet().forEach(taRef ->
-                trustAnchors.get(tx, taRef.key()).ifPresent(ta -> {
-                    trustAnchorState.setUnknown(ta);
-                    affectedTrustAnchors.add(ta);
-                })));
+                trustAnchors.get(tx, taRef.key()).ifPresent(affectedTrustAnchors::add)));
 
         fetchedLocations.put(URI.create(repository.getRsyncRepositoryUri()), repository);
 
