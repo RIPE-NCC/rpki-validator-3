@@ -1,4 +1,4 @@
-* TBD Ties de Kock <tdekock@ripe.net> - 3.2
+* Mon Dec 21 2020 Ties de Kock <tdekock@ripe.net> - 3.2
 
 - Change the default value for the cleanup of repositories that have not been
   referenced in a validation run to two days.
