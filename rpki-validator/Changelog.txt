@@ -1,3 +1,10 @@
+* Mon Dec 21 2020 Ties de Kock <tdekock@ripe.net> - 3.2
+
+- Change the default value for the cleanup of repositories that have not been
+  referenced in a validation run to two days.
+- Change the default interval at which RRDP repositories are checked for
+  updated to 10  minutes.
+
 * Tue Dec  9 2020 Erik Rozendaal <erozendaal@ripe.net> - 3.2
 
 - only fail full manifest when entries not found or hashes don't
