@@ -424,7 +424,7 @@ public class CertificateTreeValidationService {
         }
 
         SortedSet<String> locations = storage.readTx(tx -> rpkiObjects.getLocations(tx, rpkiObject.key()));
-        validations.rejectIfFalse(locations.contains(entryLocation.toASCIIString()), VALIDATOR_REPOSITORY_NOT_AT_EXPECTED_LOCATION, entryLocation.toASCIIString());
+        validations.rejectIfFalse(locations.contains(entryLocation.toASCIIString()), VALIDATOR_REPOSITORY_NOT_AT_EXPECTED_LOCATION, entryLocation.toASCIIString(), String.join(", ", locations));
         if (validations.hasFailureForCurrentLocation()) {
             return result;
         }
