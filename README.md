@@ -1,3 +1,5 @@
+*We will archive RIPE NCC RPKI Validator 2.x and 3.x on 1 July 2021. Please migrate to alternative RPKI Relying Party software.*  
+
 The latest version is 3.2. Feel free to give it a try using one of our builds:
 
 * Docker image: https://hub.docker.com/r/ripencc/rpki-validator-3-docker
