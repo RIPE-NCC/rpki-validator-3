@@ -270,7 +270,7 @@ public class RrdpServiceImpl implements RrdpService {
 
                 log.info("Added, withdrew, or updated locations for {} new objects", counter);
             });
-            log.info("Storing delta {} time {}ms", rpkiRepository.getRrdpNotifyUri(), timedStoreDelta);
+            log.info("Storing delta {} referenced from {} time {}ms", di.getSerial(), rpkiRepository.getRrdpNotifyUri(), timedStoreDelta);
 
             return null;
         });
