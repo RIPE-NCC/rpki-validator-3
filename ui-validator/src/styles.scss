@@ -21,6 +21,12 @@ $alert-font: #404040;
   color: #404040;
 }
 
+.alert-danger {
+  color: #721c24;
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+}
+
 ngb-alert {
   p {
     margin-bottom: 0 !important;
