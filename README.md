@@ -1,4 +1,16 @@
-*We will archive RIPE NCC RPKI Validator 2.x and 3.x on 1 July 2021. Please migrate to alternative RPKI Relying Party software.*  
+**We will archive RIPE NCC RPKI Validator 2.x and 3.x on 1 July 2021. Please migrate to alternative RPKI Relying Party software.**
+
+These are a number of actively maintained Open Source alternatives:
+  * [Routinator](https://github.com/NLnetLabs/routinator/)
+  * [FORT](https://github.com/NICMx/FORT-validator/)
+  * [OctoRPKI](https://github.com/cloudflare/cfrpki)
+  * [RPKI-client](https://rpki-client.org/)
+  * [Prover](https://github.com/lolepezy/rpki-prover)
+  * [Rpstir2](https://github.com/bgpsecurity/rpstir2)
+
+You can read more about archiving of the RIPE NCC RPKI Validator in our [RIPE labs article](https://labs.ripe.net/Members/nathalie_nathalie/life-cycle-of-the-ripe-ncc-rpki-validator-1)
+
+---------------------------------------
 
 The latest version is 3.2. Feel free to give it a try using one of our builds:
 
