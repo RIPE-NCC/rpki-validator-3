@@ -1,4 +1,4 @@
-* Mon Feb 8 2021 Ties de Kock <tdekock@ripe.net> - 3.2
+* Tue Feb 9 2021 Ties de Kock <tdekock@ripe.net> - 3.2
 
 - Included deprecation warning in front page.
 - Change the default value for the cleanup of repositories that have not been
