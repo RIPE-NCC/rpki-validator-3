@@ -1,3 +1,11 @@
+* Tue Mar 2 2021 Ties de Kock <tdekock@ripe.net> - 3.2
+
+- Spring Boot 2.4.3
+  This upgrades to Undertow 2.2.4.Final and prevents non-applicable warnings
+  about CVE-2020-27782 in the projects dependencies. The CVE is a denial of
+  service attack that is not applicable to RPKI Validator 3 because the AJP
+  connector is not used.
+
 * Tue Feb 9 2021 Ties de Kock <tdekock@ripe.net> - 3.2
 
 - Included deprecation warning in front page.
