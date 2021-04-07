@@ -1,3 +1,12 @@
+* Wed Apr 7 2021 Ties de Kock <tdekock@ripe.net> - 3.2
+
+No new RFCs and RIR policies will be implemented. Security updates will
+continue until the 1st of July 2021
+
+- Spring Boot 2.4.4
+- Updated the banner and README.md
+- fix: Updated default settings to cleanup every 2 days on non-CentOS
+
 * Tue Mar 2 2021 Ties de Kock <tdekock@ripe.net> - 3.2
 
 - Spring Boot 2.4.3

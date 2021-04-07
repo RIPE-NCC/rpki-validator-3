@@ -1,5 +1,7 @@
 **We will archive RIPE NCC RPKI Validator 2.x and 3.x on 1 July 2021. Please migrate to alternative RPKI Relying Party software.**
 
+**No new RFCs and RIR policies will be implemented. Security updates will continue until the 1st of July 2021**
+
 These are a number of actively maintained Open Source alternatives:
   * [Routinator](https://github.com/NLnetLabs/routinator/)
   * [FORT](https://github.com/NICMx/FORT-validator/)
