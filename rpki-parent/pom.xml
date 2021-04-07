@@ -39,6 +39,12 @@
             <groupId>net.ripe.rpki</groupId>
             <artifactId>rpki-commons</artifactId>
             <version>${rpki-commons.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.thoughtworks.xstream</groupId>
+                    <artifactId>xstream</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
