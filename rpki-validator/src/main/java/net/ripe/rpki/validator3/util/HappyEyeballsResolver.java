@@ -133,9 +133,9 @@ public class HappyEyeballsResolver implements SocketAddressResolver {
 
                 awaitDnsResponses(resolvedAddressesV6, resolvedAddressesV4);
 
-                if (log.isTraceEnabled()) {
-                    log.trace("Resolved v6 addresses: {} for host {}", joinAddresses(resolvedAddressesV6), host);
-                    log.trace("Resolved v4 addresses: {} for host {}", joinAddresses(resolvedAddressesV4), host);
+                if (log.isInfoEnabled()) {
+                    log.info("Resolved v6 addresses: {} for host {}", joinAddresses(resolvedAddressesV6), host);
+                    log.info("Resolved v4 addresses: {} for host {}", joinAddresses(resolvedAddressesV4), host);
                 }
 
                 selector = Selector.open();
