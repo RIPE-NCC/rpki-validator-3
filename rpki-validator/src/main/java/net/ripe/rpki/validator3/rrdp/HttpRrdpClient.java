@@ -29,6 +29,7 @@
  */
 package net.ripe.rpki.validator3.rrdp;
 
+import com.google.common.io.ByteStreams;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
@@ -39,7 +40,6 @@ import net.ripe.rpki.validator3.api.util.BuildInformation;
 import net.ripe.rpki.validator3.domain.metrics.HttpClientMetricsService;
 import net.ripe.rpki.validator3.util.HttpStreaming;
 import net.ripe.rpki.validator3.util.Time;
-import org.apache.commons.io.IOUtils;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -131,7 +131,7 @@ public class HttpRrdpClient implements RrdpClient {
 
                     Long timedDownload = Time.timed(() -> {
                         try (OutputStream out = new FileOutputStream(tempFile.toFile())) {
-                            IOUtils.copy(hashingStream, out);
+                            ByteStreams.copy(hashingStream, out);
                         } catch (IOException e) {
                             throw new RrdpException("Error downloading '" + uri + "', cause: " + fullMessage(e), e);
                         }
