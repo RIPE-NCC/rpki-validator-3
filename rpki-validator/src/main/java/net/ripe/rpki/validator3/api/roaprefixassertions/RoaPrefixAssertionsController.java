@@ -37,7 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.ripe.rpki.validator3.api.*;
 import net.ripe.rpki.validator3.api.bgp.BgpPreviewController;
 import net.ripe.rpki.validator3.api.bgp.BgpPreviewService;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;

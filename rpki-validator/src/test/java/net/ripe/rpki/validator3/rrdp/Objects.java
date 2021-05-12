@@ -30,14 +30,14 @@
 package net.ripe.rpki.validator3.rrdp;
 
 import net.ripe.rpki.validator3.util.Hex;
-import org.apache.commons.lang.StringEscapeUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Base64;
 
-import static org.apache.commons.lang.StringEscapeUtils.escapeXml;
+import static org.apache.commons.lang3.StringEscapeUtils.escapeXml11;
+
 
 public class Objects {
 
@@ -129,9 +129,9 @@ public class Objects {
     static byte[] notificationXml(long serial, String sessionId, SnapshotInfo snapshot, DeltaInfo... deltas) {
         final StringBuilder sb = new StringBuilder();
         sb.append("<notification xmlns=\"HTTP://www.ripe.net/rpki/rrdp\" version=\"1\" session_id=\"").append(sessionId).append("\" serial=\"").append(serial).append("\">");
-        sb.append("    <snapshot uri=\"").append(escapeXml(snapshot.uri)).append("\" hash=\"").append(Hex.format(snapshot.hash)).append("\"/>");
+        sb.append("    <snapshot uri=\"").append(escapeXml11(snapshot.uri)).append("\" hash=\"").append(Hex.format(snapshot.hash)).append("\"/>");
         for (DeltaInfo di : deltas) {
-            sb.append("  <delta uri=\"").append(escapeXml(di.uri)).append("\" hash=\"").append(Hex.format(di.hash)).append("\" serial=\"").append(di.serial).append("\"/>");
+            sb.append("  <delta uri=\"").append(escapeXml11(di.uri)).append("\" hash=\"").append(Hex.format(di.hash)).append("\" serial=\"").append(di.serial).append("\"/>");
         }
         sb.append("</notification>");
         return getBytes(sb);
@@ -162,18 +162,18 @@ public class Objects {
     }
 
     private static String publishXml(Publish publish) {
-        return "  <publish uri=\"" + escapeXml(publish.uri) + "\">\n    " + encode(publish.content) + "\n</publish>\n";
+        return "  <publish uri=\"" + escapeXml11(publish.uri) + "\">\n    " + encode(publish.content) + "\n</publish>\n";
     }
 
     private static String publishXml(DeltaPublish publish) {
         if (publish.hash != null) {
-            return "  <publish uri=\"" + escapeXml(publish.uri) + "\" hash=\"" + Hex.format(publish.hash) + "\">\n    " + encode(publish.content) + "\n</publish>\n";
+            return "  <publish uri=\"" + escapeXml11(publish.uri) + "\" hash=\"" + Hex.format(publish.hash) + "\">\n    " + encode(publish.content) + "\n</publish>\n";
         }
-        return "  <publish uri=\"" + escapeXml(publish.uri) + "\">\n    " + encode(publish.content) + "\n</publish>\n";
+        return "  <publish uri=\"" + escapeXml11(publish.uri) + "\">\n    " + encode(publish.content) + "\n</publish>\n";
     }
 
     private static String withdrawXml(DeltaWithdraw withdraw) {
-        return "  <withdraw uri=\"" + escapeXml(withdraw.uri) + "\" hash=\"" + Hex.format(withdraw.hash) + "\"/>";
+        return "  <withdraw uri=\"" + escapeXml11(withdraw.uri) + "\" hash=\"" + Hex.format(withdraw.hash) + "\"/>";
     }
 
     private static byte[] getBytes(StringBuilder sb) {

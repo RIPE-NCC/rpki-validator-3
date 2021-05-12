@@ -295,7 +295,6 @@ public class TrustAnchorsFactory {
             .withKeyUsage(KeyUsage.keyCertSign | KeyUsage.cRLSign)
             .withSerial(nextSerial())
             .withValidityPeriod(new ValidityPeriod(Instant.now(), Instant.now().plus(Duration.standardDays(7))))
-            .withSubjectKeyIdentifier(true)
             .withPublicKey(publicKey)
             .withSigningKeyPair(signingKey)
             .build();

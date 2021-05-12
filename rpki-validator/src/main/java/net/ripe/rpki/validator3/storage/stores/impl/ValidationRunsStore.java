@@ -56,7 +56,7 @@ import net.ripe.rpki.validator3.storage.stores.RpkiObjects;
 import net.ripe.rpki.validator3.storage.stores.RpkiRepositories;
 import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
-import org.apache.commons.lang.reflect.FieldUtils;
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;

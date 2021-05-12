@@ -36,7 +36,7 @@ import net.ripe.ipresource.Asn;
 import net.ripe.ipresource.IpRange;
 import net.ripe.rpki.validator3.api.*;
 import net.ripe.rpki.validator3.api.ApiResponse;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;

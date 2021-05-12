@@ -46,7 +46,7 @@ import net.ripe.rpki.validator3.storage.stores.TrustAnchors;
 import net.ripe.rpki.validator3.storage.stores.ValidationRuns;
 import net.ripe.rpki.validator3.util.TrustAnchorExtractorException;
 import net.ripe.rpki.validator3.util.TrustAnchorLocator;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.hateoas.Link;
